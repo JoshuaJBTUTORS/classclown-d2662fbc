@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, MoreHorizontal, Filter } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Filter, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 import StudentForm from '@/components/forms/StudentForm';
+import { supabase } from '@/lib/supabase';
 
 interface Student {
   id: string;
@@ -40,50 +41,140 @@ interface Student {
   subjects: string[];
   status: 'active' | 'inactive';
   joinedDate: string;
+  first_name: string;
+  last_name: string;
+  parent_first_name: string;
+  parent_last_name: string;
+  student_id?: string;
 }
 
 const Students = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
-  const handleAddStudent = (data: any) => {
-    // Convert comma-separated subjects to array
-    const subjectsArray = data.subjects
-      .split(',')
-      .map((subject: string) => subject.trim())
-      .filter((subject: string) => subject !== '');
-
-    // Create new student object
-    const newStudent = {
-      id: `${students.length + 1}`,
-      name: `${data.firstName} ${data.lastName}`,
-      email: data.email,
-      phone: '', // You could add phone to the form if needed
-      subjects: subjectsArray,
-      status: 'active' as const,
-      joinedDate: new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }),
+  
+  // Fetch students from Supabase on component mount
+  useEffect(() => {
+    const fetchStudents = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('students')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Transform the data to match our Student interface
+        const transformedStudents = data.map(student => ({
+          id: student.id,
+          name: `${student.first_name} ${student.last_name}`,
+          email: student.email,
+          phone: student.phone || '',
+          subjects: student.subjects || [],
+          status: student.status || 'active',
+          joinedDate: new Date(student.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          first_name: student.first_name,
+          last_name: student.last_name,
+          parent_first_name: student.parent_first_name,
+          parent_last_name: student.parent_last_name,
+          student_id: student.student_id
+        }));
+        
+        setStudents(transformedStudents);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load students",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    // Add new student to the array
-    setStudents(prevStudents => [...prevStudents, newStudent]);
-    
-    console.log('New student:', newStudent);
-    
-    // Close dialog and show success message
-    setDialogOpen(false);
-    toast({
-      title: "Success",
-      description: "Student has been added successfully",
-    });
+    fetchStudents();
+  }, []);
+
+  const handleAddStudent = async (data: any) => {
+    try {
+      // Convert comma-separated subjects to array
+      const subjectsArray = data.subjects
+        .split(',')
+        .map((subject: string) => subject.trim())
+        .filter((subject: string) => subject !== '');
+      
+      const newStudent = {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        parent_first_name: data.parentFirstName,
+        parent_last_name: data.parentLastName,
+        student_id: data.studentId || null,
+        subjects: subjectsArray,
+        status: 'active',
+        created_at: new Date().toISOString(),
+      };
+      
+      // Add to Supabase
+      const { data: insertedData, error } = await supabase
+        .from('students')
+        .insert(newStudent)
+        .select();
+        
+      if (error) throw error;
+      
+      if (insertedData && insertedData[0]) {
+        // Transform the inserted data to match our Student interface
+        const studentRecord = insertedData[0];
+        const newStudentRecord = {
+          id: studentRecord.id,
+          name: `${studentRecord.first_name} ${studentRecord.last_name}`,
+          email: studentRecord.email,
+          phone: '',
+          subjects: studentRecord.subjects || [],
+          status: studentRecord.status,
+          joinedDate: new Date(studentRecord.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          first_name: studentRecord.first_name,
+          last_name: studentRecord.last_name,
+          parent_first_name: studentRecord.parent_first_name,
+          parent_last_name: studentRecord.parent_last_name,
+          student_id: studentRecord.student_id
+        };
+        
+        // Update state with new student
+        setStudents(prevStudents => [newStudentRecord, ...prevStudents]);
+        
+        setDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Student has been added successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding student:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add student",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -144,72 +235,79 @@ const Students = () => {
             </div>
             
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Subjects</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.length === 0 ? (
+              {isLoading ? (
+                <div className="flex justify-center items-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2">Loading students...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No students added yet. Add your first student by clicking the "Add New Student" button.
-                      </TableCell>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Subjects</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ) : (
-                    students.map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell>
-                          <div>{student.email}</div>
-                          <div className="text-muted-foreground text-sm">{student.phone}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {student.subjects.map((subject, i) => (
-                              <Badge key={i} variant="secondary" className="rounded-sm">
-                                {subject}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={student.status === 'active' ? 'default' : 'outline'} 
-                            className="capitalize"
-                          >
-                            {student.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{student.joinedDate}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Profile</DropdownMenuItem>
-                              <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                              <DropdownMenuItem>Schedule Session</DropdownMenuItem>
-                              <DropdownMenuItem>View Progress</DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                  </TableHeader>
+                  <TableBody>
+                    {students.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No students added yet. Add your first student by clicking the "Add New Student" button.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      students.map((student) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{student.name}</TableCell>
+                          <TableCell>
+                            <div>{student.email}</div>
+                            <div className="text-muted-foreground text-sm">{student.phone}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {student.subjects.map((subject, i) => (
+                                <Badge key={i} variant="secondary" className="rounded-sm">
+                                  {subject}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={student.status === 'active' ? 'default' : 'outline'} 
+                              className="capitalize"
+                            >
+                              {student.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{student.joinedDate}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>View Profile</DropdownMenuItem>
+                                <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                                <DropdownMenuItem>Schedule Session</DropdownMenuItem>
+                                <DropdownMenuItem>View Progress</DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </div>
             
             <div className="flex items-center justify-between px-4 py-3 border-t">
