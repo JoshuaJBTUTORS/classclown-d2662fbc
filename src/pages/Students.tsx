@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -21,6 +20,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, MoreHorizontal, Filter } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from '@/hooks/use-toast';
+import StudentForm from '@/components/forms/StudentForm';
 
 interface Student {
   id: string;
@@ -82,9 +91,42 @@ const students: Student[] = [
 
 const Students = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleAddStudent = (data: any) => {
+    // Convert comma-separated subjects to array
+    const subjectsArray = data.subjects
+      .split(',')
+      .map((subject: string) => subject.trim())
+      .filter((subject: string) => subject !== '');
+
+    // In a real app, you would save this to the database
+    const newStudent = {
+      id: `${students.length + 1}`,
+      name: `${data.firstName} ${data.lastName}`,
+      email: data.email,
+      phone: '', // You could add phone to the form if needed
+      subjects: subjectsArray,
+      status: 'active' as const,
+      joinedDate: new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }),
+    };
+
+    console.log('New student:', newStudent);
+    
+    // Close dialog and show success message
+    setDialogOpen(false);
+    toast({
+      title: "Success",
+      description: "Student has been added successfully",
+    });
   };
 
   return (
@@ -99,10 +141,27 @@ const Students = () => {
               subtitle="Manage all your students and their information"
               className="mb-4 md:mb-0"
             />
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add New Student
-            </Button>
+            
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add New Student
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Student</DialogTitle>
+                  <DialogDescription>
+                    Enter the student's details below to add them to the system.
+                  </DialogDescription>
+                </DialogHeader>
+                <StudentForm 
+                  onSubmit={handleAddStudent} 
+                  onCancel={() => setDialogOpen(false)} 
+                />
+              </DialogContent>
+            </Dialog>
           </div>
           
           <div className="bg-white rounded-lg border shadow-sm">
