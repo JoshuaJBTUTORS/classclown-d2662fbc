@@ -1,11 +1,60 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState } from 'react';
+import Navbar from '@/components/navigation/Navbar';
+import Sidebar from '@/components/navigation/Sidebar';
+import PageTitle from '@/components/ui/PageTitle';
+import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
+import UpcomingSessions from '@/components/dashboard/UpcomingSessions';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar isOpen={sidebarOpen} />
+      <div className="flex flex-col flex-1 lg:pl-64">
+        <Navbar toggleSidebar={toggleSidebar} />
+        <main className="flex-1 p-4 md:p-6">
+          <PageTitle 
+            title="Dashboard" 
+            subtitle="Welcome to TutorHub CRM - Your tuition service management platform."
+          />
+          <div className="space-y-6">
+            <DashboardMetrics />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Weekly Activity</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center bg-muted/20">
+                  <p className="text-muted-foreground text-sm">Activity chart will be shown here</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Student Distribution</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center bg-muted/20">
+                  <p className="text-muted-foreground text-sm">Distribution chart will be shown here</p>
+                </CardContent>
+              </Card>
+              <UpcomingSessions />
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Recent Activities</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center bg-muted/20">
+                  <p className="text-muted-foreground text-sm">Activity log will be shown here</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
