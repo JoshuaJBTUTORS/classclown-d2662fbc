@@ -197,7 +197,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         onSuccess();
       }
       
-      // Close the dialog
+      // Close the dialog - fixing the issue by ensuring this runs
       onClose();
     } catch (error) {
       console.error('Error completing session:', error);
@@ -207,8 +207,9 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     }
   };
 
-  if (!lesson) {
-    return null; // Or a loading state
+  // If dialog isn't open or no lesson data, don't render
+  if (!isOpen || !lesson) {
+    return null;
   }
 
   return (
