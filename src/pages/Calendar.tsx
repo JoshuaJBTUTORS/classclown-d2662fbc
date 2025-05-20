@@ -85,6 +85,7 @@ const Calendar = () => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
+  const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [isAssignHomeworkOpen, setIsAssignHomeworkOpen] = useState(false);
   const [tutorFilter, setTutorFilter] = useState<string>("all");
   const [studentFilter, setStudentFilter] = useState<string>("all");
@@ -219,9 +220,12 @@ const Calendar = () => {
             const instanceEndTime = new Date(currentInstance.getTime() + duration);
             
             // Create a copy of the lesson with updated dates
+            // IMPORTANT: Use a consistent format for the instance ID
+            const instanceId = `${lesson.id}-${format(currentInstance, 'yyyy-MM-dd')}`;
+            
             const instanceLesson = {
               ...lesson,
-              id: `${lesson.id}-${format(currentInstance, 'yyyy-MM-dd')}`, // Create a unique ID
+              id: instanceId, // Create a unique ID
               start_time: format(currentInstance, "yyyy-MM-dd'T'HH:mm:ss"),
               end_time: format(instanceEndTime, "yyyy-MM-dd'T'HH:mm:ss"),
               is_recurring_instance: true, // Flag to identify as a generated instance
@@ -300,17 +304,18 @@ const Calendar = () => {
   const handleHomeworkAssigned = () => {
     // When homework is assigned, proceed to attendance tracking
     if (completionFlow?.lessonId) {
-      setIsAssignHomeworkOpen(false);
+      setIsAssigningHomework(false);
       setIsCompleteSessionOpen(true);
     }
   };
 
   const openLessonDetails = (lessonId: string) => {
+    console.log("Opening lesson details for:", lessonId);
     setSelectedLessonId(lessonId);
     setIsLessonDetailsOpen(true);
   };
 
-  // New function to start the completion flow
+  // Start the completion flow
   const startCompletionFlow = (lessonId: string) => {
     console.log("Starting completion flow for lesson:", lessonId);
     setSelectedLessonId(lessonId);
@@ -318,7 +323,7 @@ const Calendar = () => {
       step: 'homework',
       lessonId
     });
-    setIsAssignHomeworkOpen(true);
+    setIsAssigningHomework(true);
   };
 
   const openCompleteSession = (lessonId: string, event?: React.MouseEvent) => {
@@ -614,14 +619,13 @@ const Calendar = () => {
         </main>
       </div>
 
-      {/* Add Lesson Dialog */}
+      {/* Dialogs */}
       <AddLessonForm 
         isOpen={isAddingLesson} 
         onClose={() => setIsAddingLesson(false)}
         onSuccess={handleAddLessonSuccess}
       />
 
-      {/* Lesson Details Dialog */}
       <LessonDetailsDialog
         lessonId={selectedLessonId}
         isOpen={isLessonDetailsOpen}
@@ -634,20 +638,18 @@ const Calendar = () => {
         onDelete={handleDeleteLesson}
       />
 
-      {/* Assign Homework Dialog (Part of completion flow) */}
       <AssignHomeworkDialog 
-        isOpen={isAssignHomeworkOpen}
+        isOpen={isAssigningHomework}
         onClose={() => {
-          setIsAssignHomeworkOpen(false);
+          setIsAssigningHomework(false);
           setCompletionFlow(null);
         }}
         onSuccess={handleHomeworkAssigned}
         preSelectedLessonId={completionFlow?.lessonId || undefined}
       />
 
-      {/* Complete Session Dialog */}
       <CompleteSessionDialog
-        lessonId={selectedLessonId}
+        lessonId={completionFlow?.lessonId}
         isOpen={isCompleteSessionOpen}
         onClose={() => {
           setIsCompleteSessionOpen(false);

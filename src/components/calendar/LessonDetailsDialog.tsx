@@ -38,6 +38,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   useEffect(() => {
     if (lessonId && isOpen) {
+      console.log("Opening lesson details for ID:", lessonId);
       // Check if this is a recurring instance by looking for a dash in the ID
       if (lessonId.includes('-')) {
         const parts = lessonId.split('-');
@@ -45,8 +46,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         setOriginalLessonId(baseId);
         setIsRecurringInstance(true);
         
-        // For recurring instances, fetch the original lesson first
-        fetchOriginalLessonThenRender(baseId, lessonId);
+        // For recurring instances, directly use the calendar data
+        // This avoids the UUID conversion error with composite IDs
+        renderRecurringInstance(lessonId);
       } else {
         setOriginalLessonId(lessonId);
         setIsRecurringInstance(false);
@@ -59,89 +61,99 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   }, [lessonId, isOpen]);
 
-  const fetchOriginalLessonThenRender = async (originalId: string, instanceId: string) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('lessons')
-        .select(`
-          *,
-          tutor:tutors(id, first_name, last_name),
-          lesson_students!inner(
-            student:students(id, first_name, last_name)
-          )
-        `)
-        .eq('id', originalId)
-        .single();
-
-      if (error) {
-        console.error("Error fetching original lesson:", error);
-        // If we can't fetch the original, try to use the instance data from the calendar
-        renderRecurringInstance(instanceId);
-        return;
-      }
-
-      // Transform the data
-      if (data) {
-        const students = data.lesson_students.map((ls: any) => ls.student);
-        const originalLesson = {
-          ...data,
-          students,
-          lesson_students: undefined
-        };
-        
-        // Now, modify this with the instance-specific data
-        renderRecurringInstanceFromOriginal(originalLesson, instanceId);
-      }
-    } catch (error) {
-      console.error('Error in fetchOriginalLessonThenRender:', error);
-      toast.error('Failed to load lesson details');
-      setIsLoading(false);
-    }
-  };
-
-  const renderRecurringInstanceFromOriginal = (originalLesson: Lesson, instanceId: string) => {
-    // Extract the date part from the instance ID
-    const datePart = instanceId.split('-').slice(1).join('-');
-    
-    try {
-      // Parse the date from the ID
-      const instanceDate = parseISO(datePart);
-      
-      // Create a copy of the original lesson with the instance date
-      const instanceLesson: Lesson = {
-        ...originalLesson,
-        id: instanceId,
-        start_time: format(instanceDate, "yyyy-MM-dd") + originalLesson.start_time.substring(10),
-        end_time: format(instanceDate, "yyyy-MM-dd") + originalLesson.end_time.substring(10),
-        is_recurring_instance: true
-      };
-      
-      setLesson(instanceLesson);
-    } catch (error) {
-      console.error('Error parsing instance date:', error);
-      toast.error('Failed to process recurring lesson data');
-    }
-    
-    setIsLoading(false);
-  };
-
+  // This function now gets calendar data directly instead of trying to fetch
   const renderRecurringInstance = (instanceId: string) => {
-    // This is a fallback if we can't get the original lesson
-    // We'll just display the minimal info we have
-    setLesson({
-      id: instanceId,
-      title: "Recurring Lesson",
-      description: "This is a recurring lesson instance. Some details may not be available.",
-      start_time: "",
-      end_time: "",
-      is_group: false,
-      status: "scheduled",
-      tutor_id: "",
-      is_recurring: true,
-      is_recurring_instance: true
-    });
-    setIsLoading(false);
+    setIsLoading(true);
+    
+    // Try to find the lesson in the calendar data
+    const findLessonInCalendar = async () => {
+      try {
+        // Extract date part for finding the correct instance
+        const datePart = instanceId.split('-').slice(1).join('-');
+        
+        // Query calendar lessons that match this date
+        const { data, error } = await supabase
+          .from('lessons')
+          .select(`
+            *,
+            tutor:tutors(id, first_name, last_name),
+            lesson_students(
+              student:students(id, first_name, last_name),
+              attendance_status
+            )
+          `)
+          .eq('id', originalLessonId)
+          .single();
+          
+        if (error) {
+          console.error("Error fetching original lesson:", error);
+          // Fall back to basic info
+          setLesson({
+            id: instanceId,
+            title: data?.title || "Recurring Lesson",
+            description: data?.description || "This is a recurring lesson instance.",
+            start_time: "",
+            end_time: "",
+            is_group: data?.is_group || false,
+            status: "scheduled",
+            tutor_id: data?.tutor_id || "",
+            is_recurring: true,
+            is_recurring_instance: true,
+            recurrence_interval: data?.recurrence_interval || "weekly"
+          });
+        } else {
+          // We have the original lesson data, now create an instance with the date from the ID
+          const instanceDate = parseISO(datePart);
+          
+          // Transform students
+          const students = data.lesson_students?.map((ls: any) => ({
+            id: ls.student.id,
+            first_name: ls.student.first_name,
+            last_name: ls.student.last_name,
+            attendance_status: ls.attendance_status || 'pending'
+          })) || [];
+          
+          // Create the instance with the correct date but keeping other properties
+          const startDate = parseISO(data.start_time);
+          const endDate = parseISO(data.end_time);
+          
+          const startTime = format(instanceDate, "yyyy-MM-dd") + 
+            format(startDate, "'T'HH:mm:ss");
+          const endTime = format(instanceDate, "yyyy-MM-dd") + 
+            format(endDate, "'T'HH:mm:ss');
+            
+          setLesson({
+            ...data,
+            id: instanceId,
+            start_time: startTime,
+            end_time: endTime,
+            is_recurring_instance: true,
+            students: students,
+            lesson_students: undefined
+          });
+        }
+      } catch (error) {
+        console.error("Error in findLessonInCalendar:", error);
+        // Basic fallback data
+        setLesson({
+          id: instanceId,
+          title: "Recurring Lesson",
+          description: "This is a recurring lesson instance.",
+          start_time: "",
+          end_time: "",
+          is_group: false,
+          status: "scheduled",
+          tutor_id: "",
+          is_recurring: true,
+          is_recurring_instance: true,
+          recurrence_interval: "weekly"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    findLessonInCalendar();
   };
 
   const fetchLessonDetails = async (id: string) => {
@@ -152,8 +164,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .select(`
           *,
           tutor:tutors(id, first_name, last_name),
-          lesson_students!inner(
-            student:students(id, first_name, last_name)
+          lesson_students(
+            student:students(id, first_name, last_name),
+            attendance_status
           )
         `)
         .eq('id', id)
@@ -163,7 +176,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       // Transform the data
       if (data) {
-        const students = data.lesson_students.map((ls: any) => ls.student);
+        const students = data.lesson_students.map((ls: any) => ({
+          id: ls.student.id,
+          first_name: ls.student.first_name,
+          last_name: ls.student.last_name,
+          attendance_status: ls.attendance_status || 'pending'
+        }));
         const processedLesson = {
           ...data,
           students,

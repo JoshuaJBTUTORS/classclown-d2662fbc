@@ -79,7 +79,14 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
   // Fetch lesson details when dialog opens
   useEffect(() => {
     if (isOpen && lessonId) {
-      fetchLessonDetails(lessonId);
+      // For recurring lessons, extract the base ID
+      const baseId = lessonId.includes('-') ? lessonId.split('-')[0] : lessonId;
+      fetchLessonDetails(baseId);
+    } else {
+      // Reset form if dialog closes
+      form.reset({
+        students: [],
+      });
     }
   }, [isOpen, lessonId]);
 
@@ -103,6 +110,8 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
   const fetchLessonDetails = async (id: string) => {
     try {
       setLoading(true);
+      console.log("Fetching lesson details for completion:", id);
+      
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
         .select(`
@@ -116,7 +125,10 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         .eq('id', id)
         .single();
 
-      if (lessonError) throw lessonError;
+      if (lessonError) {
+        console.error('Error fetching lesson details:', lessonError);
+        throw lessonError;
+      }
 
       // Transform the data to match our Lesson interface
       const students = lessonData.lesson_students.map((ls: any) => ({
@@ -130,7 +142,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         ...lessonData,
         students,
         // Remove the original nested structure from our state
-        // We don't actually have lesson_students in our Lesson interface
+        lesson_students: undefined
       };
 
       setLesson(transformedLesson);
@@ -149,6 +161,9 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     
     try {
       console.log('Updating lesson status to completed');
+      // Extract base ID if it's a recurring instance
+      const baseId = lessonId.includes('-') ? lessonId.split('-')[0] : lessonId;
+      
       // 1. Update the lesson status to completed
       const { error: lessonError } = await supabase
         .from('lessons')
@@ -156,7 +171,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           status: 'completed',
           completion_date: new Date().toISOString()
         })
-        .eq('id', lessonId);
+        .eq('id', baseId);
       
       if (lessonError) {
         console.error('Error updating lesson status:', lessonError);
@@ -172,7 +187,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           .update({ 
             attendance_status: student.attendance 
           })
-          .eq('lesson_id', lessonId)
+          .eq('lesson_id', baseId)
           .eq('student_id', student.id);
         
         if (error) {
@@ -192,12 +207,12 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
 
       toast.success('Session completed successfully!');
       
-      // Call the onSuccess callback to refresh the parent component
+      // Make sure to explicitly call the onSuccess callback
       if (onSuccess) {
         onSuccess();
       }
       
-      // Close the dialog - ensure this runs by calling it directly
+      // Explicitly close the dialog
       onClose();
     } catch (error) {
       console.error('Error completing session:', error);
@@ -208,7 +223,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
   };
 
   // If dialog isn't open or no lesson data, don't render
-  if (!isOpen || !lesson) {
+  if (!isOpen) {
     return null;
   }
 
@@ -220,98 +235,108 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5" /> 
-            Student Attendance & Feedback: {lesson.title}
+            Student Attendance & Feedback
           </DialogTitle>
           <DialogDescription>
-            {format(parseISO(lesson.start_time), 'MMMM d, yyyy • h:mm a')} - 
-            {format(parseISO(lesson.end_time), 'h:mm a')}
+            {lesson ? (
+              <>
+                {lesson.title} - {format(parseISO(lesson.start_time), 'MMMM d, yyyy • h:mm a')} - 
+                {format(parseISO(lesson.end_time), 'h:mm a')}
+              </>
+            ) : 'Complete the session by recording attendance and feedback'}
           </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Student Attendance and Feedback Section */}
-            <div className="space-y-4">
-              <Separator />
-              
-              {form.getValues().students.map((student, index) => (
-                <div key={student.id} className="p-4 border rounded-md space-y-3">
-                  <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
-                  
-                  <FormField
-                    control={form.control}
-                    name={`students.${index}.attendance`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Attendance</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
+        {loading ? (
+          <div className="py-6 text-center">Loading lesson details...</div>
+        ) : lesson ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Student Attendance and Feedback Section */}
+              <div className="space-y-4">
+                <Separator />
+                
+                {form.getValues().students.map((student, index) => (
+                  <div key={student.id} className="p-4 border rounded-md space-y-3">
+                    <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
+                    
+                    <FormField
+                      control={form.control}
+                      name={`students.${index}.attendance`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Attendance</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select attendance status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="attended">
+                                <div className="flex items-center gap-2">
+                                  <UserCheck className="h-4 w-4 text-green-500" />
+                                  <span>Attended</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="missed">
+                                <div className="flex items-center gap-2">
+                                  <span className="h-4 w-4 text-red-500">✗</span>
+                                  <span>Missed</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="cancelled">
+                                <span>Cancelled</span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name={`students.${index}.feedback`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Feedback (Optional)</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select attendance status" />
-                            </SelectTrigger>
+                            <Textarea 
+                              placeholder="Brief feedback for this student..."
+                              className="min-h-[60px]"
+                              {...field}
+                              value={field.value || ''}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="attended">
-                              <div className="flex items-center gap-2">
-                                <UserCheck className="h-4 w-4 text-green-500" />
-                                <span>Attended</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="missed">
-                              <div className="flex items-center gap-2">
-                                <span className="h-4 w-4 text-red-500">✗</span>
-                                <span>Missed</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="cancelled">
-                              <span>Cancelled</span>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name={`students.${index}.feedback`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Feedback (Optional)</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Brief feedback for this student..."
-                            className="min-h-[60px]"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              ))}
-            </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ))}
+              </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                Cancel
-              </Button>
-              <Button type="submit" className="gap-1" disabled={loading}>
-                {loading ? 'Completing...' : (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Complete Session
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="gap-1" disabled={loading}>
+                  {loading ? 'Completing...' : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Complete Session
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        ) : (
+          <div className="py-6 text-center">No lesson data available</div>
+        )}
       </DialogContent>
     </Dialog>
   );
