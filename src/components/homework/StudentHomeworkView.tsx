@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parseISO, isPast } from 'date-fns';
@@ -211,23 +210,40 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         }
       }
 
-      // Create the submission
-      const submissionData = {
-        homework_id: selectedHomework.id,
-        student_id: studentId,
-        submission_text: submissionText || null,
-        attachment_url: attachmentUrl,
-        status: 'submitted',
-        submitted_at: new Date().toISOString()
-      };
+      // Check if this is a new submission or an update to an existing one
+      if (selectedHomework.submission) {
+        // Update existing submission
+        const { error } = await supabase
+          .from('homework_submissions')
+          .update({
+            submission_text: submissionText || null,
+            attachment_url: attachmentUrl || selectedHomework.submission.attachment_url,
+            status: 'submitted',
+            submitted_at: new Date().toISOString()
+          })
+          .eq('id', selectedHomework.submission.id);
 
-      const { error } = await supabase
-        .from('homework_submissions')
-        .insert(submissionData);
+        if (error) throw error;
+        toast.success('Homework submission updated!');
+      } else {
+        // Create a new submission
+        const submissionData = {
+          homework_id: selectedHomework.id,
+          student_id: studentId,
+          submission_text: submissionText || null,
+          attachment_url: attachmentUrl,
+          status: 'submitted',
+          submitted_at: new Date().toISOString()
+        };
 
-      if (error) throw error;
+        const { error } = await supabase
+          .from('homework_submissions')
+          .insert(submissionData);
+
+        if (error) throw error;
+        toast.success('Homework submitted successfully!');
+      }
       
-      toast.success('Homework submitted successfully!');
       setIsSubmitDialogOpen(false);
       fetchHomework(); // Refresh homework list
       
@@ -267,7 +283,18 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
               <Card key={homework.id} className={`
                 ${isOverdue ? 'border-red-200 bg-red-50/50' : ''}
                 ${hasSubmission && homework.submission?.status === 'graded' ? 'border-green-200 bg-green-50/50' : ''}
-              `}>
+                hover:shadow-md transition-shadow cursor-pointer
+              `}
+              onClick={() => {
+                setSelectedHomework(homework);
+                if (hasSubmission) {
+                  setIsViewSubmissionOpen(true);
+                } else {
+                  setSubmissionText('');
+                  setSelectedFile(null);
+                  setIsSubmitDialogOpen(true);
+                }
+              }}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-base line-clamp-1">{homework.title}</CardTitle>
@@ -303,52 +330,13 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                 </CardContent>
                 <CardFooter className="flex justify-between pt-0">
                   {hasSubmission ? (
-                    <div className="flex w-full gap-2">
-                      <Button
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => {
-                          setSelectedHomework(homework);
-                          setIsViewSubmissionOpen(true);
-                        }}
-                      >
-                        View Submission
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          setSelectedHomework(homework);
-                          // Pre-fill with existing submission data
-                          if (homework.submission) {
-                            setSubmissionText(homework.submission.submission_text || '');
-                            setSelectedFile(null);
-                          }
-                          setIsSubmitDialogOpen(true);
-                        }}
-                      >
-                        Update
-                      </Button>
+                    <div className="w-full text-center">
+                      <p className="text-sm text-muted-foreground">Click to view your submission</p>
                     </div>
                   ) : (
-                    <Button 
-                      variant={isOverdue ? "destructive" : "default"}
-                      className="w-full"
-                      onClick={() => {
-                        setSelectedHomework(homework);
-                        setSubmissionText('');
-                        setSelectedFile(null);
-                        setIsSubmitDialogOpen(true);
-                      }}
-                    >
-                      {isOverdue ? (
-                        <>
-                          <Clock className="mr-2 h-4 w-4" />
-                          Submit Late
-                        </>
-                      ) : (
-                        "Submit Homework"
-                      )}
-                    </Button>
+                    <div className="w-full text-center">
+                      <p className="text-sm text-muted-foreground">Click to submit homework</p>
+                    </div>
                   )}
                 </CardFooter>
               </Card>
@@ -391,7 +379,10 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(selectedHomework.attachment_url!, '_blank')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(selectedHomework.attachment_url!, '_blank');
+                    }}
                     className="gap-2"
                   >
                     <Download className="h-4 w-4" />
@@ -509,7 +500,10 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(selectedHomework.submission.attachment_url!, '_blank')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(selectedHomework.submission.attachment_url!, '_blank');
+                    }}
                     className="gap-2"
                   >
                     <Download className="h-4 w-4" />

@@ -38,3 +38,15 @@ export interface Lesson {
   color?: string;
   is_recurring_instance?: boolean;
 }
+
+export interface HomeworkSubmission {
+  id: string;
+  homework_id: string;
+  student_id: number;
+  submission_text: string | null;
+  attachment_url: string | null;
+  status: string;
+  grade: string | null;
+  feedback: string | null;
+  submitted_at: string;
+}
