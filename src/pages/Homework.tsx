@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
-import HomeworkManager from '@/components/homework/HomeworkManager';
-import StudentHomeworkView from '@/components/homework/StudentHomeworkView';
+import UnifiedHomeworkView from '@/components/homework/UnifiedHomeworkView';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -103,7 +102,7 @@ const Homework: React.FC = () => {
             toast.warning("No students found, using default ID: 1");
           }
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Failed to get student ID:", error);
           setStudentId(1);
           toast.error("Error fetching student data");
@@ -153,14 +152,8 @@ const Homework: React.FC = () => {
 
           {isLoading ? (
             <div className="py-10 text-center">Loading role information...</div>
-          ) : userRole === 'tutor' ? (
-            <HomeworkManager />
-          ) : studentId ? (
-            <StudentHomeworkView studentId={studentId} />
           ) : (
-            <div className="py-10 text-center text-red-500">
-              Failed to determine student ID. Please refresh the page.
-            </div>
+            <UnifiedHomeworkView userRole={userRole} studentId={studentId} />
           )}
         </main>
       </div>
