@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, MoreHorizontal, Filter, Loader2 } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Filter, Loader2, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 import StudentForm from '@/components/forms/StudentForm';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface Student {
   id: string;
@@ -53,6 +53,7 @@ const Students = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSupabaseReady, setIsSupabaseReady] = useState(isSupabaseConfigured());
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -62,6 +63,19 @@ const Students = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       setIsLoading(true);
+      
+      // Check if Supabase is properly configured
+      if (!isSupabaseReady) {
+        console.error('Supabase is not configured properly. Please set the environment variables.');
+        setIsLoading(false);
+        toast({
+          title: "Configuration Error",
+          description: "Supabase is not configured. Please connect to Supabase first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('students')
@@ -73,7 +87,7 @@ const Students = () => {
         }
         
         // Transform the data to match our Student interface
-        const transformedStudents = data.map(student => ({
+        const transformedStudents = data ? data.map(student => ({
           id: student.id,
           name: `${student.first_name} ${student.last_name}`,
           email: student.email,
@@ -90,7 +104,7 @@ const Students = () => {
           parent_first_name: student.parent_first_name,
           parent_last_name: student.parent_last_name,
           student_id: student.student_id
-        }));
+        })) : [];
         
         setStudents(transformedStudents);
       } catch (error) {
@@ -106,9 +120,19 @@ const Students = () => {
     };
 
     fetchStudents();
-  }, []);
+  }, [isSupabaseReady]);
 
   const handleAddStudent = async (data: any) => {
+    // Check if Supabase is properly configured
+    if (!isSupabaseReady) {
+      toast({
+        title: "Configuration Error",
+        description: "Supabase is not configured. Please connect to Supabase first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Convert comma-separated subjects to array
       const subjectsArray = data.subjects
@@ -239,6 +263,18 @@ const Students = () => {
                 <div className="flex justify-center items-center p-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <span className="ml-2">Loading students...</span>
+                </div>
+              ) : !isSupabaseReady ? (
+                <div className="flex flex-col justify-center items-center p-8 text-center">
+                  <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Supabase Configuration Required</h3>
+                  <p className="text-muted-foreground mb-4 max-w-md">
+                    Please connect your project to Supabase using the green Supabase button in the top right corner.
+                    This will allow you to store and manage your students data.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    After connecting, you'll need to create a 'students' table with appropriate columns.
+                  </p>
                 </div>
               ) : (
                 <Table>
