@@ -7,100 +7,108 @@ import HomeworkManager from '@/components/homework/HomeworkManager';
 import StudentHomeworkView from '@/components/homework/StudentHomeworkView';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { UserCog } from 'lucide-react';
 import { toast } from 'sonner';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Homework: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userRole, setUserRole] = useState<'tutor' | 'student' | null>(null);
   const [studentId, setStudentId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugMode, setDebugMode] = useState(true); // For development testing
 
   useEffect(() => {
     // For demonstration purposes, we'll detect role based on the user's email
     // In a real app, this would be based on proper authentication
-    checkUserRole();
-  }, []);
-
-  const checkUserRole = async () => {
-    setIsLoading(true);
-    try {
-      console.log("Checking user role...");
-      // Check if user is a tutor
-      const { data: tutorData, error: tutorError } = await supabase
-        .from('tutors')
-        .select('id')
-        .limit(1);
-      
-      console.log("Tutor check result:", { tutorData, tutorError });
-      
-      if (!tutorError && tutorData && tutorData.length > 0) {
-        console.log("Setting user as tutor");
-        setUserRole('tutor');
-        setIsLoading(false);
-        return;
-      }
-
-      // Check if user is a student
-      const { data: studentData, error: studentError } = await supabase
-        .from('students')
-        .select('id')
-        .limit(1);
-      
-      console.log("Student check result:", { studentData, studentError });
-      
-      if (!studentError && studentData && studentData.length > 0) {
-        console.log("Setting user as student");
-        setUserRole('student');
-        setStudentId(studentData[0].id);
-        setIsLoading(false);
-        return;
-      }
-
-      // Default to tutor role if no match is found
-      console.log("No role match found, defaulting to tutor");
-      setUserRole('tutor');
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error checking user role:", error);
-      setUserRole('tutor'); // Default to tutor on error
-      setIsLoading(false);
-    }
-  };
-
-  const handleRoleSwitch = async () => {
-    if (userRole === 'tutor') {
+    const checkUserRole = async () => {
+      setIsLoading(true);
       try {
-        // Switch to student - check if we have any student data
-        const { data, error } = await supabase
+        console.log("Checking user role...");
+
+        // Check if user is a tutor
+        const { data: tutorData, error: tutorError } = await supabase
+          .from('tutors')
+          .select('id')
+          .limit(1);
+        
+        console.log("Tutor check result:", { tutorData, tutorError });
+        
+        if (!tutorError && tutorData && tutorData.length > 0) {
+          console.log("Setting user as tutor");
+          setUserRole('tutor');
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if user is a student
+        const { data: studentData, error: studentError } = await supabase
           .from('students')
           .select('id')
           .limit(1);
         
-        if (error) {
-          throw error;
-        }
+        console.log("Student check result:", { studentData, studentError });
         
-        if (data && data.length > 0) {
+        if (!studentError && studentData && studentData.length > 0) {
+          console.log("Setting user as student with ID:", studentData[0].id);
           setUserRole('student');
-          setStudentId(data[0].id);
-          toast.success('Switched to Student view');
-        } else {
-          toast.error('No student data available for testing');
+          setStudentId(studentData[0].id);
+          setIsLoading(false);
+          return;
         }
+
+        // Default to student role with ID 1 if no match is found
+        console.log("No role found, defaulting to student");
+        setUserRole('student');
+        setStudentId(1);
+        toast.info("No specific role found, defaulting to student view");
       } catch (error) {
-        console.error("Error switching to student role:", error);
-        toast.error('Failed to switch roles');
+        console.error("Error detecting user role:", error);
+        toast.error("Failed to detect user role");
+        // Fallback to student role
+        setUserRole('student');
+        setStudentId(1);
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      // Switch to tutor
-      setUserRole('tutor');
-      toast.success('Switched to Tutor view');
-    }
-  };
+    };
+
+    checkUserRole();
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  // Function to switch roles for testing
+  const handleRoleSwitch = (role: 'tutor' | 'student') => {
+    setUserRole(role);
+    if (role === 'student') {
+      // Get first student for testing
+      supabase
+        .from('students')
+        .select('id')
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setStudentId(data[0].id);
+            toast.success(`Switched to student view with ID: ${data[0].id}`);
+          } else {
+            setStudentId(1);
+            toast.warning("No students found, using default ID: 1");
+          }
+        })
+        .catch(error => {
+          console.error("Failed to get student ID:", error);
+          setStudentId(1);
+          toast.error("Error fetching student data");
+        });
+    }
   };
 
   return (
@@ -119,26 +127,40 @@ const Homework: React.FC = () => {
             />
             
             {/* Role switcher for testing */}
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2 mb-4 md:mb-0" 
-              onClick={handleRoleSwitch}
-            >
-              <UserCog className="h-4 w-4" />
-              {userRole === 'tutor' 
-                ? 'Switch to Student View' 
-                : 'Switch to Tutor View'}
-            </Button>
+            {debugMode && (
+              <div className="flex items-center space-x-2 mb-4 md:mb-0">
+                <span className="text-sm text-muted-foreground">Testing:</span>
+                <Select
+                  value={userRole || ""}
+                  onValueChange={(val) => handleRoleSwitch(val as 'tutor' | 'student')}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tutor">Tutor Role</SelectItem>
+                    <SelectItem value="student">Student Role</SelectItem>
+                  </SelectContent>
+                </Select>
+                {userRole === 'student' && (
+                  <span className="text-xs text-muted-foreground">
+                    Student ID: {studentId || 'None'}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {isLoading ? (
-            <div className="py-10 text-center">Loading...</div>
+            <div className="py-10 text-center">Loading role information...</div>
           ) : userRole === 'tutor' ? (
             <HomeworkManager />
           ) : studentId ? (
             <StudentHomeworkView studentId={studentId} />
           ) : (
-            <div className="py-10 text-center">Loading...</div>
+            <div className="py-10 text-center text-red-500">
+              Failed to determine student ID. Please refresh the page.
+            </div>
           )}
         </main>
       </div>
