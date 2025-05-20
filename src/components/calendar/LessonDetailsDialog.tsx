@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Lesson } from '@/types/lesson';
@@ -9,15 +8,13 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { Check, Clock, BookOpen, Edit, Trash2 } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   lessonId: string | null;
   onSave?: (lesson: Lesson) => void;
-  onDelete?: (lessonId: string, deleteAllRecurring: boolean) => void;
+  onDelete?: (lessonId: string) => void;
   onCompleteSession?: (lessonId: string) => void;
 }
 
@@ -33,7 +30,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [deleteRecurringOption, setDeleteRecurringOption] = useState<'single' | 'all'>('single');
 
   useEffect(() => {
     if (lessonId && isOpen) {
@@ -46,9 +42,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const fetchLessonDetails = async (id: string) => {
     setIsLoading(true);
     try {
-      // Handle IDs for recurring instances (they have a dash followed by a date)
-      const originalId = id.includes('-') ? id.split('-')[0] : id;
-      
       const { data, error } = await supabase
         .from('lessons')
         .select(`
@@ -58,7 +51,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             student:students(id, first_name, last_name)
           )
         `)
-        .eq('id', originalId)
+        .eq('id', id)
         .single();
 
       if (error) throw error;
@@ -69,10 +62,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         const processedLesson = {
           ...data,
           students,
-          lesson_students: undefined,
-          // If this is a recurring instance, preserve that info
-          is_recurring_instance: id.includes('-'),
-          original_id: id
+          lesson_students: undefined
         };
         setLesson(processedLesson);
       }
@@ -90,8 +80,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const confirmDeleteLesson = () => {
     if (lesson && onDelete) {
-      const idToDelete = lesson.is_recurring_instance ? lesson.id.split('-')[0] : lesson.id;
-      onDelete(idToDelete, deleteRecurringOption === 'all');
+      onDelete(lesson.id);
       setIsDeleteConfirmOpen(false);
       onClose();
     }
@@ -129,7 +118,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Lesson Details</DialogTitle>
-            <DialogDescription>View and manage session details</DialogDescription>
           </DialogHeader>
           
           {isLoading ? (
@@ -250,29 +238,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              {lesson?.is_recurring ? (
-                <div className="space-y-4">
-                  <p>This is a recurring lesson. How would you like to delete it?</p>
-                  <RadioGroup 
-                    value={deleteRecurringOption} 
-                    onValueChange={(value) => setDeleteRecurringOption(value as 'single' | 'all')}
-                    className="space-y-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="single" id="delete-single" />
-                      <Label htmlFor="delete-single">Delete only this occurrence</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="all" id="delete-all" />
-                      <Label htmlFor="delete-all">Delete this and all future occurrences</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              ) : (
-                <p>This will permanently delete the session "{lesson?.title}". This action cannot be undone.</p>
-              )}
+              This will permanently delete the session "{lesson?.title}". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

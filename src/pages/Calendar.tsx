@@ -354,42 +354,31 @@ const Calendar = () => {
     // You would need to pass the lesson data to the form
   };
 
-  // Updated function to handle lesson deletion with recurring options
-  const handleDeleteLesson = async (lessonId: string, deleteAllRecurring: boolean = false) => {
+  // Add a new function to handle lesson deletion
+  const handleDeleteLesson = async (lessonId: string) => {
     try {
       // Check if the lesson is a recurring instance (has a dash in the ID)
       const isRecurringInstance = lessonId.includes('-');
-      const originalId = isRecurringInstance ? lessonId.split('-')[0] : lessonId;
       
-      if (isRecurringInstance && !deleteAllRecurring) {
-        // For recurring instances when only deleting this instance
-        toast.info("This is a recurring lesson instance. Only the master series can be deleted.");
+      if (isRecurringInstance) {
+        // For recurring instances, we notify the user that this is just a visual representation
+        toast.info("This is a recurring lesson instance. To delete the series, edit the original lesson.");
         return;
       }
-      
-      console.log(`Deleting lesson: ${originalId}, delete all recurring: ${deleteAllRecurring}`);
       
       // Delete the lesson from the database
       const { error } = await supabase
         .from('lessons')
         .delete()
-        .eq('id', originalId);
+        .eq('id', lessonId);
 
-      if (error) {
-        console.error('Error deleting lesson:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       // Update the lessons state to remove the deleted lesson
-      setLessons(prev => prev.filter(lesson => {
-        if (deleteAllRecurring) {
-          // Remove the specific lesson and any of its recurring instances
-          return lesson.id !== originalId && !lesson.id.startsWith(`${originalId}-`);
-        } else {
-          // Only remove this specific lesson
-          return lesson.id !== originalId;
-        }
-      }));
+      setLessons(prev => prev.filter(lesson => 
+        // Remove the specific lesson and any of its recurring instances
+        lesson.id !== lessonId && !lesson.id.startsWith(`${lessonId}-`))
+      );
       
       toast.success('Lesson deleted successfully');
     } catch (error) {

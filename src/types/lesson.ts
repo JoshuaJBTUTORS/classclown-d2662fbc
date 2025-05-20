@@ -32,7 +32,6 @@ export interface Lesson {
     description?: string | null;
   };
   homework_assigned?: boolean;
-  color?: string; 
-  is_recurring_instance?: boolean;
-  original_id?: string; // Added to keep track of the original lesson ID for recurring instances
+  color?: string; // Added color property to fix TypeScript error
+  is_recurring_instance?: boolean; // Added is_recurring_instance property to fix TypeScript error
 }
