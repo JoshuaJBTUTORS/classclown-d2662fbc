@@ -354,15 +354,25 @@ const Calendar = () => {
     // You would need to pass the lesson data to the form
   };
 
+  // This regex pattern matches the format we generate for recurring lessons: UUID-YYYY-MM-DD
+  const RECURRING_INSTANCE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d{4}-\d{2}-\d{2}$/;
+
+  // Function to check if the ID is a recurring instance ID
+  const isRecurringInstanceId = (id: string): boolean => {
+    return RECURRING_INSTANCE_REGEX.test(id);
+  };
+
   // Update the handleDeleteLesson function to handle recurring lessons
   const handleDeleteLesson = async (lessonId: string, deleteAllFuture: boolean = false) => {
     try {
-      // Check if the lesson is a recurring instance (has a dash in the ID)
-      const isRecurringInstance = lessonId.includes('-');
+      console.log("Deleting lesson with ID:", lessonId, "deleteAllFuture:", deleteAllFuture);
+      
+      // Check if the lesson is a recurring instance using our specific regex pattern
+      const isRecurringInstance = isRecurringInstanceId(lessonId);
       
       if (isRecurringInstance && !deleteAllFuture) {
         // For recurring instances without "delete all future", we just remove it visually
-        // since it's just a visual representation
+        console.log("Removing recurring instance visually:", lessonId);
         setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
         toast.success('Lesson instance removed');
         return;
@@ -370,7 +380,17 @@ const Calendar = () => {
       
       if (deleteAllFuture) {
         // For "delete all future" on a recurring lesson
-        const originalId = isRecurringInstance ? lessonId.split('-')[0] : lessonId;
+        let originalId;
+        
+        if (isRecurringInstance) {
+          // Extract the original lesson ID (first 5 segments with dashes)
+          const parts = lessonId.split('-');
+          originalId = parts.slice(0, 5).join('-');
+        } else {
+          originalId = lessonId;
+        }
+        
+        console.log("Deleting recurring lesson and all future instances. Original ID:", originalId);
         
         // Delete the lesson from the database
         const { error } = await supabase
@@ -378,23 +398,37 @@ const Calendar = () => {
           .delete()
           .eq('id', originalId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error deleting recurring lesson:", error);
+          throw error;
+        }
         
         // Update the lessons state to remove the original and all its instances
         setLessons(prev => prev.filter(lesson => {
-          // Remove the specific lesson and any of its recurring instances
-          return !lesson.id.startsWith(`${originalId}`);
+          // If this is a recurring instance, check if it belongs to the deleted series
+          if (isRecurringInstanceId(lesson.id)) {
+            const parts = lesson.id.split('-');
+            const instanceBaseId = parts.slice(0, 5).join('-');
+            return instanceBaseId !== originalId;
+          }
+          // For regular lessons, just check if it's not the deleted one
+          return lesson.id !== originalId;
         }));
         
         toast.success('All future lessons deleted successfully');
       } else {
         // Regular delete for a non-recurring lesson
+        console.log("Deleting regular lesson:", lessonId);
+        
         const { error } = await supabase
           .from('lessons')
           .delete()
           .eq('id', lessonId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error deleting regular lesson:", error);
+          throw error;
+        }
         
         // Update the lessons state
         setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
