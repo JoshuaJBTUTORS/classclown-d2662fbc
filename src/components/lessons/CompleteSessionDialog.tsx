@@ -148,6 +148,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     setLoading(true);
     
     try {
+      console.log('Updating lesson status to completed');
       // 1. Update the lesson status to completed
       const { error: lessonError } = await supabase
         .from('lessons')
@@ -157,10 +158,15 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         })
         .eq('id', lessonId);
       
-      if (lessonError) throw lessonError;
+      if (lessonError) {
+        console.error('Error updating lesson status:', lessonError);
+        throw lessonError;
+      }
 
+      console.log('Updating student attendance');
       // 2. Update attendance status and feedback for all students
       const attendanceUpdates = data.students.map(async (student) => {
+        console.log(`Updating attendance for student ${student.id} to ${student.attendance}`);
         const { error } = await supabase
           .from('lesson_students')
           .update({ 

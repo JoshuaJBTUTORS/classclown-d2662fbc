@@ -148,6 +148,7 @@ export type Database = {
       }
       lessons: {
         Row: {
+          completion_date: string | null
           created_at: string | null
           description: string | null
           end_time: string
@@ -164,6 +165,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          completion_date?: string | null
           created_at?: string | null
           description?: string | null
           end_time: string
@@ -180,6 +182,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          completion_date?: string | null
           created_at?: string | null
           description?: string | null
           end_time?: string
