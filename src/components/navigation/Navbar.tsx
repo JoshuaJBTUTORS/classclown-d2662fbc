@@ -24,14 +24,14 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
 
   // Get user initials for avatar
   const getUserInitials = () => {
-    if (!user) return 'CU'; // Default to ClassClown User
+    if (!user) return 'CC'; // Default to ClassClown User
     
     const email = user.email || '';
     if (email) {
       return email.substring(0, 2).toUpperCase();
     }
     
-    return 'CU';
+    return 'CC';
   };
 
   return (
@@ -43,7 +43,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
         </Button>
         <div className="flex items-center gap-2 md:hidden">
           <img
-            src="/tutorhub-logo.svg"
+            src="/classclown-logo.svg"
             alt="ClassClown Logo"
             className="h-8 w-8"
             onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/32?text=CC' }}
