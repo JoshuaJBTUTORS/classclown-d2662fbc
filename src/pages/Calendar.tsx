@@ -223,6 +223,7 @@ const Calendar = () => {
 
   // New function to start the completion flow
   const startCompletionFlow = (lessonId: string) => {
+    console.log("Starting completion flow for lesson:", lessonId);
     setSelectedLessonId(lessonId);
     setCompletionFlow({
       step: 'homework',

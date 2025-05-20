@@ -86,6 +86,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [existingAttachmentUrl, setExistingAttachmentUrl] = useState<string | null>(null);
   const [existingAttachmentType, setExistingAttachmentType] = useState<string | null>(null);
+  const [preSelectedLesson, setPreSelectedLesson] = useState<Lesson | null>(null);
   
   const isEditing = Boolean(editingHomework);
 
@@ -104,8 +105,37 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   useEffect(() => {
     if (preSelectedLessonId) {
       form.setValue('lesson_id', preSelectedLessonId);
+      fetchPreSelectedLesson(preSelectedLessonId);
     }
   }, [preSelectedLessonId, form]);
+
+  // Fetch pre-selected lesson details
+  const fetchPreSelectedLesson = async (lessonId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select(`
+          id,
+          title,
+          tutor:tutors(first_name, last_name)
+        `)
+        .eq('id', lessonId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setPreSelectedLesson({
+          id: data.id,
+          title: data.title,
+          tutor_first_name: data.tutor.first_name,
+          tutor_last_name: data.tutor.last_name
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching pre-selected lesson:', error);
+    }
+  };
 
   // Fetch lessons on component mount
   useEffect(() => {
@@ -156,6 +186,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   };
 
   const onSubmit = async (data: FormData) => {
+    console.log("Submitting homework data:", data);
     setLoading(true);
     
     try {
@@ -164,9 +195,20 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       
       // Upload file if provided
       if (data.attachment) {
+        // Create a storage bucket if it doesn't exist
+        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('homework');
+        
+        if (bucketError && bucketError.message.includes('not found')) {
+          // Create the bucket if it doesn't exist
+          await supabase.storage.createBucket('homework', {
+            public: true,
+            fileSizeLimit: 10485760 // 10MB
+          });
+        }
+        
         const fileExt = data.attachment.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `homework/${fileName}`;
+        const filePath = `${fileName}`;
         
         // Upload the file to Supabase Storage
         const { error: uploadError, data: uploadData } = await supabase.storage
@@ -187,6 +229,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
         attachmentType = fileExt;
       }
 
+      // Prepare the homework data
       const homeworkData = {
         title: data.title,
         description: data.description || null,
@@ -196,6 +239,8 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
         attachment_type: attachmentType,
       };
 
+      console.log("Saving homework with data:", homeworkData);
+
       if (isEditing && editingHomework) {
         // Update the existing homework
         const { error } = await supabase
@@ -203,17 +248,25 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
           .update(homeworkData)
           .eq('id', editingHomework.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating homework:", error);
+          throw error;
+        }
         
         toast.success('Homework updated successfully!');
       } else {
         // Create a new homework
-        const { error } = await supabase
+        const { error, data: insertData } = await supabase
           .from('homework')
-          .insert(homeworkData);
+          .insert(homeworkData)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error inserting homework:", error);
+          throw error;
+        }
         
+        console.log("Homework created successfully:", insertData);
         toast.success('Homework assigned successfully!');
       }
 
@@ -226,9 +279,6 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       setLoading(false);
     }
   };
-
-  // Find the pre-selected lesson in the lessons array for display
-  const preSelectedLesson = lessons.find(lesson => lesson.id === preSelectedLessonId);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {

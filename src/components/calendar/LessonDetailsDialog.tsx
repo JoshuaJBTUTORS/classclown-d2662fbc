@@ -6,7 +6,7 @@ import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -133,6 +133,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </p>
               </div>
             )}
+            <div className="pt-2">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${lesson.status === 'completed' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                <span className="text-sm font-medium">
+                  Status: {lesson.status === 'completed' ? 'Completed' : 'Scheduled'}
+                </span>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="py-6 text-center">No lesson data available</div>
@@ -153,9 +161,20 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 className="flex items-center gap-1" 
                 onClick={handleCompleteSession}
                 variant="default"
+                size="lg"
               >
                 <Check className="h-4 w-4" />
                 Complete Session
+              </Button>
+            )}
+            {lesson && lesson.status === 'completed' && (
+              <Button 
+                className="flex items-center gap-1" 
+                variant="outline"
+                disabled
+              >
+                <Clock className="h-4 w-4" />
+                Completed
               </Button>
             )}
             {onSave && lesson && (
