@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -47,7 +46,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         setOriginalLessonId(baseId);
         setIsRecurringInstance(true);
         
-        // For recurring instances, fetch the original lesson and create a temporary instance
+        // For recurring instances, fetch the original lesson and create a display instance
         fetchRecurringInstanceData(baseId, lessonId);
       } else {
         setOriginalLessonId(lessonId);
@@ -114,7 +113,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                    format(endDate, "'T'HH:mm:ss"),
           is_recurring_instance: true,
           students,
-          lesson_students: undefined
+          // Remove the lesson_students property as it's not in the Lesson type
+          // This is what was causing the error
         };
         
         setLesson(instanceLesson);
@@ -177,7 +177,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         const processedLesson = {
           ...data,
           students,
-          lesson_students: undefined
+          // Don't include lesson_students in the processed lesson as it's not in the Lesson type
         };
         
         setLesson(processedLesson);
