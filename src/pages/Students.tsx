@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -65,7 +64,7 @@ const Students = () => {
       setIsLoading(true);
       
       // Check if Supabase is properly configured
-      if (!isSupabaseReady) {
+      if (!isSupabaseReady || !supabase) {
         console.error('Supabase is not configured properly. Please set the environment variables.');
         setIsLoading(false);
         toast({
@@ -124,7 +123,7 @@ const Students = () => {
 
   const handleAddStudent = async (data: any) => {
     // Check if Supabase is properly configured
-    if (!isSupabaseReady) {
+    if (!isSupabaseReady || !supabase) {
       toast({
         title: "Configuration Error",
         description: "Supabase is not configured. Please connect to Supabase first.",

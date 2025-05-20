@@ -11,4 +11,8 @@ export const isSupabaseConfigured = () => {
 };
 
 // Create a single supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Only create the client if the required values are available
+export const supabase = isSupabaseConfigured() 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
