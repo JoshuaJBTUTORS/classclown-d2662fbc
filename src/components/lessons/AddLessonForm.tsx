@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,6 +38,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -87,6 +87,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSuccess }) => {
+  // Initialize students as empty array to avoid undefined is not iterable error
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
@@ -391,39 +392,36 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="p-0 w-[300px]" side="bottom" align="start">
-                      {/* Initialize Command explicitly with empty items if students array is empty */}
                       <Command>
                         <CommandInput placeholder="Search students..." />
-                        <CommandEmpty>No students found.</CommandEmpty>
-                        <CommandGroup className="max-h-48 overflow-auto">
-                          {students && students.length > 0 ? students.map((student) => {
-                            const isSelected = selectedStudents.some(s => s.id === student.id);
-                            return (
-                              <CommandItem
-                                key={student.id}
-                                value={student.id.toString()}
-                                onSelect={() => {
-                                  handleStudentSelect(student);
-                                  if (!isGroup) {
-                                    setIsPopoverOpen(false);
-                                  }
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    isSelected ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {student.first_name} {student.last_name}
-                              </CommandItem>
-                            );
-                          }) : (
-                            <CommandItem value="empty" disabled>
-                              <div className="py-2 px-2 text-sm">Loading students...</div>
-                            </CommandItem>
-                          )}
-                        </CommandGroup>
+                        <CommandList>
+                          <CommandEmpty>No students found.</CommandEmpty>
+                          <CommandGroup className="max-h-48 overflow-auto">
+                            {students.map((student) => {
+                              const isSelected = selectedStudents.some(s => s.id === student.id);
+                              return (
+                                <CommandItem
+                                  key={student.id}
+                                  value={student.id.toString()}
+                                  onSelect={() => {
+                                    handleStudentSelect(student);
+                                    if (!isGroup) {
+                                      setIsPopoverOpen(false);
+                                    }
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      isSelected ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {student.first_name} {student.last_name}
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </CommandList>
                       </Command>
                     </PopoverContent>
                   </Popover>
