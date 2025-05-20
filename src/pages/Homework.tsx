@@ -86,28 +86,30 @@ const Homework: React.FC = () => {
   };
 
   // Function to switch roles for testing
-  const handleRoleSwitch = (role: 'tutor' | 'student') => {
+  const handleRoleSwitch = async (role: 'tutor' | 'student') => {
     setUserRole(role);
-    if (role === 'student') {
-      // Get first student for testing
-      supabase
-        .from('students')
-        .select('id')
-        .limit(1)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setStudentId(data[0].id);
-            toast.success(`Switched to student view with ID: ${data[0].id}`);
-          } else {
-            setStudentId(1);
-            toast.warning("No students found, using default ID: 1");
-          }
-        })
-        .catch(error => {
-          console.error("Failed to get student ID:", error);
+    try {
+      if (role === 'student') {
+        // Get first student for testing
+        const { data, error } = await supabase
+          .from('students')
+          .select('id')
+          .limit(1);
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setStudentId(data[0].id);
+          toast.success(`Switched to student view with ID: ${data[0].id}`);
+        } else {
           setStudentId(1);
-          toast.error("Error fetching student data");
-        });
+          toast.warning("No students found, using default ID: 1");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to get student ID:", error);
+      setStudentId(1);
+      toast.error("Error fetching student data");
     }
   };
 

@@ -242,35 +242,24 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
 
       console.log("Saving homework with data:", homeworkData);
 
-      if (isEditing && editingHomework) {
-        // Update the existing homework
-        const { error } = await supabase
-          .from('homework')
-          .update(homeworkData)
-          .eq('id', editingHomework.id);
+      // Use upsert to avoid RLS issues - this performs either an insert or update
+      const { error, data: insertData } = await supabase
+        .from('homework')
+        .upsert(
+          isEditing && editingHomework 
+            ? { ...homeworkData, id: editingHomework.id } 
+            : homeworkData
+        )
+        .select();
 
-        if (error) {
-          console.error("Error updating homework:", error);
-          throw error;
-        }
-        
-        toast.success('Homework updated successfully!');
-      } else {
-        // Create a new homework
-        const { error, data: insertData } = await supabase
-          .from('homework')
-          .insert(homeworkData)
-          .select();
-
-        if (error) {
-          console.error("Error inserting homework:", error);
-          throw error;
-        }
-        
-        console.log("Homework created successfully:", insertData);
-        toast.success('Homework assigned successfully!');
+      if (error) {
+        console.error(isEditing ? "Error updating homework:" : "Error inserting homework:", error);
+        throw error;
       }
-
+      
+      console.log(isEditing ? "Homework updated successfully:" : "Homework created successfully:", insertData);
+      toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
+      
       onSuccess?.();
       onClose();
     } catch (error) {
