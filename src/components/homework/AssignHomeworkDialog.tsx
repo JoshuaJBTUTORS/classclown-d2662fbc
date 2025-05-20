@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -53,6 +54,7 @@ interface AssignHomeworkDialogProps {
     attachment_url?: string;
     attachment_type?: string;
   };
+  preSelectedLessonId?: string;
 }
 
 interface Lesson {
@@ -72,7 +74,13 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ isOpen, onClose, onSuccess, editingHomework }) => {
+const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  editingHomework,
+  preSelectedLessonId
+}) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -86,11 +94,18 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ isOpen, onC
     defaultValues: {
       title: editingHomework?.title || "",
       description: editingHomework?.description || "",
-      lesson_id: editingHomework?.lesson_id || "",
+      lesson_id: preSelectedLessonId || editingHomework?.lesson_id || "",
       due_date: editingHomework?.due_date,
       attachment: undefined,
     },
   });
+
+  // Effect to set preSelectedLessonId when it changes
+  useEffect(() => {
+    if (preSelectedLessonId) {
+      form.setValue('lesson_id', preSelectedLessonId);
+    }
+  }, [preSelectedLessonId, form]);
 
   // Fetch lessons on component mount
   useEffect(() => {
@@ -212,6 +227,9 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ isOpen, onC
     }
   };
 
+  // Find the pre-selected lesson in the lessons array for display
+  const preSelectedLesson = lessons.find(lesson => lesson.id === preSelectedLessonId);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
@@ -242,10 +260,18 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ isOpen, onC
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Related Lesson</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                    disabled={!!preSelectedLessonId}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a lesson" />
+                        <SelectValue placeholder={
+                          preSelectedLesson 
+                            ? `${preSelectedLesson.title} (${preSelectedLesson.tutor_first_name} ${preSelectedLesson.tutor_last_name})`
+                            : "Select a lesson"
+                        } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -257,7 +283,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ isOpen, onC
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Choose the lesson this homework is related to
+                    {preSelectedLessonId ? "Lesson is pre-selected based on your current session" : "Choose the lesson this homework is related to"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

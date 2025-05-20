@@ -6,6 +6,7 @@ import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
+import { Check } from 'lucide-react';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface LessonDetailsDialogProps {
   lessonId: string | null;
   onSave?: (lesson: Lesson) => void;
   onDelete?: (lessonId: string) => void;
+  onCompleteSession?: (lessonId: string) => void;
 }
 
 const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
@@ -20,7 +22,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   onClose,
   lessonId,
   onSave,
-  onDelete
+  onDelete,
+  onCompleteSession
 }) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +74,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const handleDeleteLesson = () => {
     if (lesson && onDelete) {
       onDelete(lesson.id);
+      onClose();
+    }
+  };
+
+  const handleCompleteSession = () => {
+    if (lesson && onCompleteSession) {
+      onCompleteSession(lesson.id);
       onClose();
     }
   };
@@ -138,6 +148,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             </Button>
           )}
           <div className="flex gap-2 ml-auto">
+            {lesson && lesson.status !== 'completed' && onCompleteSession && (
+              <Button 
+                className="flex items-center gap-1" 
+                onClick={handleCompleteSession}
+                variant="default"
+              >
+                <Check className="h-4 w-4" />
+                Complete Session
+              </Button>
+            )}
             {onSave && lesson && (
               <Button onClick={() => onSave(lesson)}>
                 Edit

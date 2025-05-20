@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -30,6 +31,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import { Lesson } from '@/types/lesson';
 
 // Interfaces
@@ -83,9 +85,16 @@ const Calendar = () => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
+  const [isAssignHomeworkOpen, setIsAssignHomeworkOpen] = useState(false);
   const [tutorFilter, setTutorFilter] = useState<string>("all");
   const [tutors, setTutors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // New state for tracking completion flow
+  const [completionFlow, setCompletionFlow] = useState<{
+    step: 'homework' | 'attendance' | 'final',
+    lessonId: string | null
+  } | null>(null);
 
   // Calculate week range
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start from Monday
@@ -196,6 +205,15 @@ const Calendar = () => {
   const handleCompleteSessionSuccess = () => {
     fetchLessons();
     toast.success('Session marked as completed');
+    setCompletionFlow(null); // Reset the completion flow
+  };
+
+  const handleHomeworkAssigned = () => {
+    // When homework is assigned, proceed to attendance tracking
+    if (completionFlow?.lessonId) {
+      setIsAssignHomeworkOpen(false);
+      setIsCompleteSessionOpen(true);
+    }
   };
 
   const openLessonDetails = (lessonId: string) => {
@@ -203,10 +221,19 @@ const Calendar = () => {
     setIsLessonDetailsOpen(true);
   };
 
-  const openCompleteSession = (lessonId: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent opening the lesson details
+  // New function to start the completion flow
+  const startCompletionFlow = (lessonId: string) => {
     setSelectedLessonId(lessonId);
-    setIsCompleteSessionOpen(true);
+    setCompletionFlow({
+      step: 'homework',
+      lessonId
+    });
+    setIsAssignHomeworkOpen(true);
+  };
+
+  const openCompleteSession = (lessonId: string, event?: React.MouseEvent) => {
+    if (event) event.stopPropagation(); // Prevent opening the lesson details
+    startCompletionFlow(lessonId);
   };
 
   const getDayFromDate = (dateString: string) => {
@@ -362,6 +389,7 @@ const Calendar = () => {
                                     size="icon" 
                                     className="h-5 w-5 p-0.5 rounded-full bg-white hover:bg-green-50"
                                     onClick={(e) => openCompleteSession(lesson.id, e)}
+                                    title="Complete Session"
                                   >
                                     <Check className="h-4 w-4 text-green-600" />
                                   </Button>
@@ -406,14 +434,33 @@ const Calendar = () => {
         lessonId={selectedLessonId}
         isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
+        onCompleteSession={(lessonId) => {
+          setIsLessonDetailsOpen(false);
+          startCompletionFlow(lessonId);
+        }}
+      />
+
+      {/* Assign Homework Dialog (Part of completion flow) */}
+      <AssignHomeworkDialog 
+        isOpen={isAssignHomeworkOpen}
+        onClose={() => {
+          setIsAssignHomeworkOpen(false);
+          setCompletionFlow(null);
+        }}
+        onSuccess={handleHomeworkAssigned}
+        preSelectedLessonId={completionFlow?.lessonId || undefined}
       />
 
       {/* Complete Session Dialog */}
       <CompleteSessionDialog
         lessonId={selectedLessonId}
         isOpen={isCompleteSessionOpen}
-        onClose={() => setIsCompleteSessionOpen(false)}
+        onClose={() => {
+          setIsCompleteSessionOpen(false);
+          setCompletionFlow(null);
+        }}
         onSuccess={handleCompleteSessionSuccess}
+        skipHomeworkStep={true} // Skip homework assignment as we're handling it separately
       />
     </div>
   );

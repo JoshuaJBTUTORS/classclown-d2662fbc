@@ -6,7 +6,7 @@ import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO } from 'date-fns';
-import { Check, UserCheck, UserX, Calendar, Book } from 'lucide-react';
+import { Check, UserCheck } from 'lucide-react';
 
 import {
   Dialog,
@@ -24,10 +24,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import {
   Select,
@@ -43,12 +41,11 @@ interface CompleteSessionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  skipHomeworkStep?: boolean;
 }
 
-// Define the form schema for homework and feedback
+// Define the form schema for attendance and feedback
 const formSchema = z.object({
-  homeworkTitle: z.string().min(2, { message: "Homework title must be at least 2 characters." }),
-  homeworkDescription: z.string().optional(),
   students: z.array(
     z.object({
       id: z.number(),
@@ -66,7 +63,8 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
   lessonId, 
   isOpen, 
   onClose, 
-  onSuccess 
+  onSuccess,
+  skipHomeworkStep = false
 }) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,8 +72,6 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      homeworkTitle: '',
-      homeworkDescription: '',
       students: [],
     },
   });
@@ -99,8 +95,6 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       }));
 
       form.reset({
-        homeworkTitle: '',
-        homeworkDescription: '',
         students: studentData,
       });
     }
@@ -165,21 +159,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       
       if (lessonError) throw lessonError;
 
-      // 2. Create homework for the lesson
-      const { data: homeworkData, error: homeworkError } = await supabase
-        .from('homework')
-        .insert({
-          title: data.homeworkTitle,
-          description: data.homeworkDescription || null,
-          lesson_id: lessonId,
-          due_date: null, // You can modify this to add a due date option
-        })
-        .select()
-        .single();
-      
-      if (homeworkError) throw homeworkError;
-
-      // 3. Update attendance status and feedback for all students
+      // 2. Update attendance status and feedback for all students
       const attendanceUpdates = data.students.map(async (student) => {
         const { error } = await supabase
           .from('lesson_students')
@@ -223,8 +203,8 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" /> 
-            Complete Session: {lesson.title}
+            <UserCheck className="h-5 w-5" /> 
+            Student Attendance & Feedback: {lesson.title}
           </DialogTitle>
           <DialogDescription>
             {format(parseISO(lesson.start_time), 'MMMM d, yyyy • h:mm a')} - 
@@ -234,54 +214,8 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Homework Assignment Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Book className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-medium">Assign Homework</h3>
-              </div>
-              <Separator />
-              
-              <FormField
-                control={form.control}
-                name="homeworkTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Homework Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Practice Problems Chapter 5" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="homeworkDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Instructions (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Detailed homework instructions..."
-                        className="min-h-[80px]"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
             {/* Student Attendance and Feedback Section */}
-            <div className="space-y-4 mt-8">
-              <div className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-medium">Student Attendance & Feedback</h3>
-              </div>
+            <div className="space-y-4">
               <Separator />
               
               {form.getValues().students.map((student, index) => (
@@ -312,7 +246,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
                             </SelectItem>
                             <SelectItem value="missed">
                               <div className="flex items-center gap-2">
-                                <UserX className="h-4 w-4 text-red-500" />
+                                <span className="h-4 w-4 text-red-500">✗</span>
                                 <span>Missed</span>
                               </div>
                             </SelectItem>
