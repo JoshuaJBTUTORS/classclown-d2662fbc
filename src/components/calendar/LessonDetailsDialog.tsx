@@ -21,6 +21,9 @@ interface LessonDetailsDialogProps {
   onCompleteSession?: (lessonId: string) => void;
 }
 
+// This regex pattern matches the format we generate for recurring lessons: UUID-YYYY-MM-DD
+const RECURRING_INSTANCE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d{4}-\d{2}-\d{2}$/;
+
 const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   isOpen,
   onClose,
@@ -37,15 +40,21 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [originalLessonId, setOriginalLessonId] = useState<string | null>(null);
   const [isRecurringInstance, setIsRecurringInstance] = useState(false);
 
+  // Function to check if the ID is a recurring instance ID using our specific format
+  const isRecurringInstanceId = (id: string): boolean => {
+    return RECURRING_INSTANCE_REGEX.test(id);
+  };
+
   useEffect(() => {
     if (lessonId && isOpen) {
       console.log("Opening lesson details for ID:", lessonId);
       setLesson(null); // Reset lesson data
       
-      // Check if this is a recurring instance by looking for a dash in the ID
-      if (lessonId.includes('-')) {
+      // Check if this is a recurring instance by looking for our specific ID format
+      if (isRecurringInstanceId(lessonId)) {
         const parts = lessonId.split('-');
-        const baseId = parts[0];
+        // Extract the UUID part (first 5 segments with dashes)
+        const baseId = parts.slice(0, 5).join('-');
         setOriginalLessonId(baseId);
         setIsRecurringInstance(true);
         
@@ -84,6 +93,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       if (error) {
         console.error("Error fetching original lesson:", error);
+        toast.error('Failed to load recurring lesson data');
         // Create a placeholder lesson if we can't fetch the original
         createPlaceholderLesson(instanceId);
         return;
@@ -91,15 +101,17 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       if (!data) {
         console.error("No data returned for original lesson");
+        toast.error('Recurring lesson not found');
         createPlaceholderLesson(instanceId);
         return;
       }
 
-      // Extract the date part from the instance ID
-      const datePart = instanceId.split('-').slice(1).join('-');
-      
-      // Parse the date from the ID
-      const instanceDate = parseISO(datePart);
+      // Extract the date part from the instance ID (format is uuid-YYYY-MM-DD)
+      const dateParts = instanceId.split('-');
+      const year = parseInt(dateParts[5], 10);
+      const month = parseInt(dateParts[6], 10) - 1; // JS months are 0-indexed
+      const day = parseInt(dateParts[7], 10);
+      const instanceDate = new Date(year, month, day);
       
       // Transform students data
       const students = data.lesson_students?.map((ls: any) => ({
@@ -129,6 +141,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       setLesson(instanceLesson);
     } catch (error) {
       console.error('Error in fetchRecurringInstance:', error);
+      toast.error('Failed to load recurring lesson data');
       createPlaceholderLesson(instanceId);
     } finally {
       setIsLoading(false);
