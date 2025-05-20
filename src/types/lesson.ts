@@ -21,5 +21,10 @@ export interface Lesson {
     id: number;
     first_name: string;
     last_name: string;
+    attendance_status?: string;
+    feedback?: string;
   }[];
+  completed?: boolean;
+  completion_date?: string | null;
+  homework_assigned?: boolean;
 }

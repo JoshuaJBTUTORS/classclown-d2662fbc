@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -23,12 +22,15 @@ import {
   ChevronRight, 
   Plus, 
   Users,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
+import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import { Lesson } from '@/types/lesson';
 
 // Interfaces
 interface Tutor {
@@ -91,8 +93,9 @@ const Calendar = () => {
   const [isAddingLesson, setIsAddingLesson] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
+  const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [tutorFilter, setTutorFilter] = useState<string>("all");
-  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [tutors, setTutors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Calculate week range
@@ -150,7 +153,8 @@ const Calendar = () => {
           *,
           tutor:tutors(id, first_name, last_name),
           lesson_students!inner(
-            student:students(id, first_name, last_name)
+            student:students(id, first_name, last_name),
+            attendance_status
           )
         `)
         .gte('start_time', startDate)
@@ -168,7 +172,12 @@ const Calendar = () => {
       // Process the data to transform it into the format we need
       const processedLessons = data.map(lesson => {
         // Extract students from the nested structure
-        const students = lesson.lesson_students.map((ls: any) => ls.student);
+        const students = lesson.lesson_students.map((ls: any) => ({
+          id: ls.student.id,
+          first_name: ls.student.first_name,
+          last_name: ls.student.last_name,
+          attendance_status: ls.attendance_status || 'pending'
+        }));
         
         // Calculate the color based on the lesson title
         const color = getColorForLesson(lesson.title);
@@ -195,9 +204,20 @@ const Calendar = () => {
     fetchLessons();
   };
 
+  const handleCompleteSessionSuccess = () => {
+    fetchLessons();
+    toast.success('Session marked as completed');
+  };
+
   const openLessonDetails = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setIsLessonDetailsOpen(true);
+  };
+
+  const openCompleteSession = (lessonId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent opening the lesson details
+    setSelectedLessonId(lessonId);
+    setIsCompleteSessionOpen(true);
   };
 
   const getDayFromDate = (dateString: string) => {
@@ -343,7 +363,21 @@ const Calendar = () => {
                               }}
                               onClick={() => openLessonDetails(lesson.id)}
                             >
-                              <div className="font-medium text-sm truncate">{lesson.title}</div>
+                              <div className="font-medium text-sm truncate flex justify-between items-center">
+                                <span>{lesson.title}</span>
+                                {lesson.status === 'completed' ? (
+                                  <Check className="h-4 w-4 text-green-600 bg-white rounded-full p-0.5" />
+                                ) : (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-5 w-5 p-0.5 rounded-full bg-white hover:bg-green-50"
+                                    onClick={(e) => openCompleteSession(lesson.id, e)}
+                                  >
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                )}
+                              </div>
                               {lesson.students && lesson.students.length > 0 && (
                                 <div className="flex items-center gap-1 text-xs mt-1">
                                   <Users className="h-3 w-3" />
@@ -383,6 +417,14 @@ const Calendar = () => {
         lessonId={selectedLessonId}
         isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
+      />
+
+      {/* Complete Session Dialog */}
+      <CompleteSessionDialog
+        lessonId={selectedLessonId}
+        isOpen={isCompleteSessionOpen}
+        onClose={() => setIsCompleteSessionOpen(false)}
+        onSuccess={handleCompleteSessionSuccess}
       />
     </div>
   );

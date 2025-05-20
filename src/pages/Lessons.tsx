@@ -33,33 +33,15 @@ import {
   Download,
   Plus, 
   Search, 
-  Users, 
+  Users,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
-
-interface Lesson {
-  id: string;
-  title: string;
-  description: string | null;
-  tutor_id: string;
-  start_time: string;
-  end_time: string;
-  is_group: boolean;
-  status: string;
-  tutor: {
-    id: string;
-    first_name: string;
-    last_name: string;
-  };
-  students: {
-    id: number;
-    first_name: string;
-    last_name: string;
-  }[];
-}
+import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import { Lesson } from '@/types/lesson';
 
 const Lessons = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -68,6 +50,7 @@ const Lessons = () => {
   const [isAddingLesson, setIsAddingLesson] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
+  const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -125,9 +108,9 @@ const Lessons = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(lesson => 
         lesson.title.toLowerCase().includes(query) ||
-        lesson.tutor.first_name.toLowerCase().includes(query) ||
-        lesson.tutor.last_name.toLowerCase().includes(query) ||
-        lesson.students.some(student => 
+        lesson.tutor?.first_name.toLowerCase().includes(query) ||
+        lesson.tutor?.last_name.toLowerCase().includes(query) ||
+        lesson.students?.some(student => 
           student.first_name.toLowerCase().includes(query) ||
           student.last_name.toLowerCase().includes(query)
         )
@@ -151,9 +134,19 @@ const Lessons = () => {
     toast.success('Lesson added successfully!');
   };
 
+  const handleCompleteSessionSuccess = () => {
+    fetchLessons();
+    toast.success('Session completed successfully!');
+  };
+
   const viewLessonDetails = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setIsLessonDetailsOpen(true);
+  };
+
+  const openCompleteSession = (lessonId: string) => {
+    setSelectedLessonId(lessonId);
+    setIsCompleteSessionOpen(true);
   };
 
   const formatDateTime = (dateString: string) => {
@@ -247,12 +240,12 @@ const Lessons = () => {
                         <TableRow key={lesson.id}>
                           <TableCell className="font-medium">{lesson.title}</TableCell>
                           <TableCell>
-                            {lesson.tutor.first_name} {lesson.tutor.last_name}
+                            {lesson.tutor?.first_name} {lesson.tutor?.last_name}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Users className="h-4 w-4 text-muted-foreground" />
-                              <span>{lesson.students.length}</span>
+                              <span>{lesson.students?.length || 0}</span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -268,7 +261,11 @@ const Lessons = () => {
                                 lesson.status === 'completed' ? 'default' :
                                 'destructive'
                               }
+                              className={lesson.status === 'completed' ? 'bg-green-100 text-green-800 hover:bg-green-200' : ''}
                             >
+                              {lesson.status === 'completed' && (
+                                <Check className="mr-1 h-3 w-3" />
+                              )}
                               {lesson.status.charAt(0).toUpperCase() + lesson.status.slice(1)}
                             </Badge>
                           </TableCell>
@@ -281,13 +278,26 @@ const Lessons = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => viewLessonDetails(lesson.id)}
-                            >
-                              View
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              {lesson.status !== 'completed' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  onClick={() => openCompleteSession(lesson.id)}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Complete
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => viewLessonDetails(lesson.id)}
+                              >
+                                View
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -312,6 +322,14 @@ const Lessons = () => {
         lessonId={selectedLessonId}
         isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
+      />
+
+      {/* Complete Session Dialog */}
+      <CompleteSessionDialog
+        lessonId={selectedLessonId}
+        isOpen={isCompleteSessionOpen}
+        onClose={() => setIsCompleteSessionOpen(false)}
+        onSuccess={handleCompleteSessionSuccess}
       />
     </div>
   );
