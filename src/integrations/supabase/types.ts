@@ -9,6 +9,104 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      homework: {
+        Row: {
+          attachment_type: string | null
+          attachment_url: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          lesson_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          attachment_type?: string | null
+          attachment_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lesson_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          attachment_type?: string | null
+          attachment_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lesson_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      homework_submissions: {
+        Row: {
+          attachment_url: string | null
+          feedback: string | null
+          grade: string | null
+          homework_id: string
+          id: string
+          status: string | null
+          student_id: number
+          submission_text: string | null
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attachment_url?: string | null
+          feedback?: string | null
+          grade?: string | null
+          homework_id: string
+          id?: string
+          status?: string | null
+          student_id: number
+          submission_text?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attachment_url?: string | null
+          feedback?: string | null
+          grade?: string | null
+          homework_id?: string
+          id?: string
+          status?: string | null
+          student_id?: number
+          submission_text?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_submissions_homework_id_fkey"
+            columns: ["homework_id"]
+            isOneToOne: false
+            referencedRelation: "homework"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homework_submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_students: {
         Row: {
           attendance_status: string | null
@@ -55,6 +153,10 @@ export type Database = {
           end_time: string
           id: string
           is_group: boolean
+          is_recurring: boolean
+          recurrence_day: string | null
+          recurrence_end_date: string | null
+          recurrence_interval: string | null
           start_time: string
           status: string
           title: string
@@ -67,6 +169,10 @@ export type Database = {
           end_time: string
           id?: string
           is_group?: boolean
+          is_recurring?: boolean
+          recurrence_day?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: string | null
           start_time: string
           status?: string
           title: string
@@ -79,6 +185,10 @@ export type Database = {
           end_time?: string
           id?: string
           is_group?: boolean
+          is_recurring?: boolean
+          recurrence_day?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: string | null
           start_time?: string
           status?: string
           title?: string

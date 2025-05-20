@@ -1,128 +1,129 @@
-
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  BarChart3, 
-  Users, 
-  BookOpen, 
-  Calendar, 
-  MessageSquare, 
-  CreditCard, 
-  Settings, 
-  HelpCircle
+import {
+  Home,
+  Calendar,
+  Users,
+  User,
+  Settings,
+  Book,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { NavLink } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
 }
 
-interface SidebarItemProps {
-  icon: React.ElementType;
-  label: string;
-  href: string;
-  isActive: boolean;
-}
-
-function SidebarItem({ icon: Icon, label, href, isActive }: SidebarItemProps) {
-  return (
-    <Link
-      to={href}
-      className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-        isActive ? "sidebar-item-active" : "hover:bg-accent"
-      )}
-    >
-      <Icon className="h-5 w-5" />
-      <span>{label}</span>
-    </Link>
-  );
-}
-
-export default function Sidebar({ isOpen }: SidebarProps) {
-  const location = useLocation();
-  const currentPath = location.pathname;
+const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+  const sidebarClass = isOpen ? 'w-64' : 'w-20';
 
   return (
-    <div 
-      className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-white transition-transform duration-300 lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}
+    <div
+      className={`fixed top-0 left-0 h-full bg-white border-r shadow-sm transition-width duration-300 ease-in-out ${sidebarClass} z-50`}
     >
-      <div className="flex h-16 items-center border-b px-6">
-        <div className="flex items-center gap-2">
-          <img
-            src="/tutorhub-logo.svg"
-            alt="ClassClown Logo"
-            className="h-8 w-8"
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/32?text=CC' }}
-          />
-          <span className="font-bold text-lg text-primary">ClassClown</span>
+      <div className="flex flex-col h-full">
+        <div className="p-4">
+          <h1 className={`text-2xl font-bold transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+            Tutor App
+          </h1>
         </div>
-      </div>
-      <div className="flex-1 overflow-auto py-4">
-        <nav className="grid gap-1 px-2">
-          <SidebarItem 
-            icon={BarChart3} 
-            label="Dashboard" 
-            href="/" 
-            isActive={currentPath === "/"} 
-          />
-          <SidebarItem 
-            icon={Users} 
-            label="Students" 
-            href="/students" 
-            isActive={currentPath === "/students"} 
-          />
-          <SidebarItem 
-            icon={Users} 
-            label="Tutors" 
-            href="/tutors" 
-            isActive={currentPath === "/tutors"} 
-          />
-          <SidebarItem 
-            icon={Calendar} 
-            label="Calendar" 
-            href="/calendar" 
-            isActive={currentPath === "/calendar"} 
-          />
-          <SidebarItem 
-            icon={BookOpen} 
-            label="Courses" 
-            href="/courses" 
-            isActive={currentPath === "/courses"} 
-          />
-          <SidebarItem 
-            icon={MessageSquare} 
-            label="Messages" 
-            href="/messages" 
-            isActive={currentPath === "/messages"} 
-          />
-          <SidebarItem 
-            icon={CreditCard} 
-            label="Billing" 
-            href="/billing" 
-            isActive={currentPath === "/billing"} 
-          />
+
+        <nav className="flex-1 px-2 py-4">
+          <ul>
+            <li className="mb-1">
+              <NavLink
+                to="/"
+                className={({ isActive }) =>
+                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
+                }
+              >
+                <Home className="mr-2 h-4 w-4" />
+                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  Dashboard
+                </span>
+              </NavLink>
+            </li>
+            <li className="mb-1">
+              <NavLink
+                to="/calendar"
+                className={({ isActive }) =>
+                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
+                }
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  Calendar
+                </span>
+              </NavLink>
+            </li>
+            <li className="mb-1">
+              <NavLink
+                to="/lessons"
+                className={({ isActive }) =>
+                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
+                }
+              >
+                <Book className="mr-2 h-4 w-4" />
+                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  Lessons
+                </span>
+              </NavLink>
+            </li>
+            <li className="mb-1">
+              <NavLink
+                to="/homework"
+                className={({ isActive }) =>
+                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
+                }
+              >
+                <Book className="mr-2 h-4 w-4" />
+                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  Homework
+                </span>
+              </NavLink>
+            </li>
+            <li className="mb-1">
+              <NavLink
+                to="/students"
+                className={({ isActive }) =>
+                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
+                }
+              >
+                <Users className="mr-2 h-4 w-4" />
+                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  Students
+                </span>
+              </NavLink>
+            </li>
+            <li className="mb-1">
+              <NavLink
+                to="/tutors"
+                className={({ isActive }) =>
+                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
+                }
+              >
+                <User className="mr-2 h-4 w-4" />
+                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  Tutors
+                </span>
+              </NavLink>
+            </li>
+          </ul>
         </nav>
-      </div>
-      <div className="border-t p-4">
-        <nav className="grid gap-1">
-          <SidebarItem 
-            icon={Settings} 
-            label="Settings" 
-            href="/settings" 
-            isActive={currentPath === "/settings"} 
-          />
-          <SidebarItem 
-            icon={HelpCircle} 
-            label="Help & Support" 
-            href="/support" 
-            isActive={currentPath === "/support"} 
-          />
-        </nav>
+
+        <div className="p-4">
+          <NavLink
+            to="/settings"
+            className={`flex items-center p-2 rounded-md hover:bg-gray-100`}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+              Settings
+            </span>
+          </NavLink>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default Sidebar;

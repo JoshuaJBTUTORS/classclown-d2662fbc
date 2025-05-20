@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Check, Clock, Users } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { toast } from 'sonner';
+import { Check, Edit, Trash2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 import {
@@ -10,23 +11,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import AddLessonForm from '@/components/lessons/AddLessonForm';
+import { Separator } from '@/components/ui/separator';
 
-interface Student {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  attendance_status: string;
-}
-
-interface Tutor {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
+interface LessonDetailsDialogProps {
+  lessonId: string | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onLessonUpdated?: () => void;
 }
 
 interface Lesson {
@@ -37,203 +32,314 @@ interface Lesson {
   start_time: string;
   end_time: string;
   is_group: boolean;
-  status: 'scheduled' | 'completed' | 'cancelled';
-  tutor?: Tutor;
-  students?: Student[];
+  is_recurring: boolean;
+  recurrence_interval: string | null;
+  recurrence_day: string | null;
+  recurrence_end_date: string | null;
+  status: string;
+  tutor: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+  students: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  }[];
 }
 
-interface LessonDetailsDialogProps {
-  lessonId: string | null;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
-  lessonId,
-  isOpen,
+const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({ 
+  lessonId, 
+  isOpen, 
   onClose,
+  onLessonUpdated 
 }) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (lessonId && isOpen) {
-      fetchLessonDetails(lessonId);
+    if (isOpen && lessonId) {
+      fetchLessonDetails();
     }
-  }, [lessonId, isOpen]);
+  }, [isOpen, lessonId]);
 
-  const fetchLessonDetails = async (id: string) => {
+  const fetchLessonDetails = async () => {
+    if (!lessonId) return;
+    
     setLoading(true);
     try {
-      // Fetch lesson details
-      const { data: lessonData, error: lessonError } = await supabase
+      const { data, error } = await supabase
         .from('lessons')
-        .select('*')
-        .eq('id', id)
+        .select(`
+          *,
+          tutor:tutors(id, first_name, last_name),
+          lesson_students(
+            student:students(id, first_name, last_name)
+          )
+        `)
+        .eq('id', lessonId)
         .single();
 
-      if (lessonError) throw lessonError;
+      if (error) throw error;
 
-      // Fetch tutor details
-      const { data: tutorData, error: tutorError } = await supabase
-        .from('tutors')
-        .select('id, first_name, last_name, email')
-        .eq('id', lessonData.tutor_id)
-        .single();
-
-      if (tutorError) throw tutorError;
-
-      // Fetch student details
-      const { data: lessonStudents, error: studentsError } = await supabase
-        .from('lesson_students')
-        .select('student_id, attendance_status')
-        .eq('lesson_id', id);
-
-      if (studentsError) throw studentsError;
-
-      // If there are students, fetch their details
-      let students: Student[] = [];
-      if (lessonStudents && lessonStudents.length > 0) {
-        const studentIds = lessonStudents.map(ls => ls.student_id);
-        
-        const { data: studentsData, error: studentsFetchError } = await supabase
-          .from('students')
-          .select('id, first_name, last_name, email')
-          .in('id', studentIds);
-
-        if (studentsFetchError) throw studentsFetchError;
-
-        // Combine student data with attendance status
-        students = studentsData.map(student => {
-          const lessonStudent = lessonStudents.find(ls => ls.student_id === student.id);
-          return {
-            ...student,
-            attendance_status: lessonStudent?.attendance_status || 'pending'
-          };
-        });
-      }
-
-      // Combine everything, ensuring the proper typing for status
-      const status = lessonData.status as 'scheduled' | 'completed' | 'cancelled';
-      
+      // Process the data
+      const students = data.lesson_students.map((ls: any) => ls.student);
       setLesson({
-        ...lessonData,
-        status,
-        tutor: tutorData,
-        students: students
+        ...data,
+        students,
+        lesson_students: undefined
       });
-
     } catch (error) {
       console.error('Error fetching lesson details:', error);
+      toast.error('Failed to load lesson details');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!lesson) {
-    return null;
-  }
+  const handleStatusChange = async (newStatus: string) => {
+    if (!lesson) return;
+    
+    try {
+      const { error } = await supabase
+        .from('lessons')
+        .update({ status: newStatus })
+        .eq('id', lesson.id);
 
-  const formatTime = (dateString: string) => {
-    return format(new Date(dateString), 'h:mm a');
-  };
-
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'EEEE, MMMM d, yyyy');
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'scheduled':
-        return <Badge variant="outline">Scheduled</Badge>;
-      case 'completed':
-        return <Badge variant="default">Completed</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive">Cancelled</Badge>;
-      case 'pending':
-        return <Badge variant="outline">Pending</Badge>;
-      case 'present':
-        return <Badge variant="default">Present</Badge>;
-      case 'absent':
-        return <Badge variant="destructive">Absent</Badge>;
-      case 'late':
-        return <Badge variant="secondary">Late</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      if (error) throw error;
+      
+      setLesson({...lesson, status: newStatus});
+      toast.success(`Lesson marked as ${newStatus}`);
+      if (onLessonUpdated) onLessonUpdated();
+    } catch (error) {
+      console.error('Error updating lesson status:', error);
+      toast.error('Failed to update lesson status');
     }
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center justify-between">
-            {lesson.title}
-            {getStatusBadge(lesson.status)}
-          </DialogTitle>
-        </DialogHeader>
+  const handleDelete = async () => {
+    if (!lesson || !isDeleting) return;
+    
+    try {
+      // First delete related lesson_students records
+      const { error: studentError } = await supabase
+        .from('lesson_students')
+        .delete()
+        .eq('lesson_id', lesson.id);
 
-        <div className="py-4 space-y-4">
-          {lesson.description && (
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
-              <p className="text-base">{lesson.description}</p>
-            </div>
-          )}
+      if (studentError) throw studentError;
+      
+      // Then delete the lesson
+      const { error } = await supabase
+        .from('lessons')
+        .delete()
+        .eq('id', lesson.id);
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
-                <CalendarIcon className="w-4 h-4" /> Date
-              </div>
-              <p className="text-base">{formatDate(lesson.start_time)}</p>
-            </div>
+      if (error) throw error;
+      
+      toast.success('Lesson deleted successfully');
+      onClose();
+      if (onLessonUpdated) onLessonUpdated();
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+      toast.error('Failed to delete lesson');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
-                <Clock className="w-4 h-4" /> Time
-              </div>
-              <p className="text-base">
-                {formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}
-              </p>
-            </div>
-          </div>
+  const formatDateTime = (dateString: string) => {
+    return format(parseISO(dateString), 'PPP p');
+  };
 
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium text-muted-foreground">Tutor</h3>
-            <p className="text-base">
-              {lesson.tutor?.first_name} {lesson.tutor?.last_name}
+  const renderRecurrenceInfo = () => {
+    if (!lesson?.is_recurring) return null;
+    
+    return (
+      <div className="mt-4 p-3 bg-muted/50 rounded-md">
+        <h4 className="font-medium mb-1">Recurring Session</h4>
+        <div className="text-sm">
+          <p>
+            <span className="font-medium">Frequency:</span> {' '}
+            {lesson.recurrence_interval?.charAt(0).toUpperCase() + lesson.recurrence_interval?.slice(1) || 'N/A'}
+          </p>
+          {lesson.recurrence_day && (
+            <p>
+              <span className="font-medium">Day:</span> {' '}
+              {lesson.recurrence_day.charAt(0).toUpperCase() + lesson.recurrence_day.slice(1)}
             </p>
-          </div>
-
-          {lesson.students && lesson.students.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                {lesson.is_group ? 'Students' : 'Student'}
-                {lesson.is_group && (
-                  <Badge variant="outline" className="ml-2">Group Lesson</Badge>
-                )}
-              </h3>
-              <div className="space-y-2">
-                {lesson.students.map((student) => (
-                  <div key={student.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
-                    <span>
-                      {student.first_name} {student.last_name}
-                    </span>
-                    {getStatusBadge(student.attendance_status)}
-                  </div>
-                ))}
-              </div>
-            </div>
+          )}
+          {lesson.recurrence_end_date && (
+            <p>
+              <span className="font-medium">Until:</span> {' '}
+              {format(parseISO(lesson.recurrence_end_date), 'PPP')}
+            </p>
           )}
         </div>
+      </div>
+    );
+  };
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </DialogFooter>
+  if (isEditing && lesson) {
+    return (
+      <AddLessonForm 
+        isOpen={true}
+        onClose={() => setIsEditing(false)} 
+        onSuccess={() => {
+          fetchLessonDetails();
+          setIsEditing(false);
+          if (onLessonUpdated) onLessonUpdated();
+        }}
+        editingLesson={{
+          id: lesson.id,
+          title: lesson.title,
+          description: lesson.description || undefined,
+          tutor_id: lesson.tutor_id,
+          students: lesson.students,
+          date: parseISO(lesson.start_time),
+          start_time: format(parseISO(lesson.start_time), 'HH:mm'),
+          end_time: format(parseISO(lesson.end_time), 'HH:mm'),
+          is_group: lesson.is_group,
+          is_recurring: lesson.is_recurring,
+          recurrence_interval: lesson.recurrence_interval || undefined,
+          recurrence_day: lesson.recurrence_day || undefined,
+          recurrence_end_date: lesson.recurrence_end_date ? parseISO(lesson.recurrence_end_date) : undefined,
+        }}
+      />
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
+      <DialogContent className="sm:max-w-[500px]">
+        {loading ? (
+          <div className="py-10 text-center">Loading lesson details...</div>
+        ) : lesson ? (
+          <>
+            <DialogHeader>
+              <div className="flex justify-between items-center">
+                <DialogTitle>{lesson.title}</DialogTitle>
+                <div className="flex space-x-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  {isDeleting ? (
+                    <div className="flex items-center space-x-1">
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        onClick={handleDelete}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setIsDeleting(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setIsDeleting(true)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </DialogHeader>
+              
+            <div className="space-y-4">
+              {lesson.description && (
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Description</h4>
+                  <p className="text-sm">{lesson.description}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Tutor</h4>
+                  <p className="text-sm">{lesson.tutor.first_name} {lesson.tutor.last_name}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Type</h4>
+                  <Badge variant="secondary">{lesson.is_group ? 'Group' : 'Individual'}</Badge>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-1">Students</h4>
+                <div className="flex flex-wrap gap-1">
+                  {lesson.students.map((student) => (
+                    <Badge key={student.id} variant="outline">
+                      {student.first_name} {student.last_name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Start</h4>
+                  <p className="text-sm">{formatDateTime(lesson.start_time)}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium mb-1">End</h4>
+                  <p className="text-sm">{formatDateTime(lesson.end_time)}</p>
+                </div>
+              </div>
+
+              {renderRecurrenceInfo()}
+
+              <div className="pt-2">
+                <h4 className="text-sm font-medium mb-2">Status</h4>
+                <div className="flex gap-2">
+                  <Button
+                    variant={lesson.status === 'scheduled' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange('scheduled')}
+                  >
+                    Scheduled
+                  </Button>
+                  <Button
+                    variant={lesson.status === 'completed' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange('completed')}
+                  >
+                    Completed
+                  </Button>
+                  <Button
+                    variant={lesson.status === 'cancelled' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange('cancelled')}
+                  >
+                    Cancelled
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <div className="py-10 text-center">Lesson not found</div>
+        )}
       </DialogContent>
     </Dialog>
   );
