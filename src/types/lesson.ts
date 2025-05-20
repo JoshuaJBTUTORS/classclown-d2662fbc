@@ -26,5 +26,10 @@ export interface Lesson {
   }[];
   completed?: boolean;
   completion_date?: string | null;
+  homework?: {
+    id: string;
+    title: string;
+    description?: string | null;
+  };
   homework_assigned?: boolean;
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -114,7 +113,6 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ isOpen, onC
           title,
           tutor:tutors(first_name, last_name)
         `)
-        .eq('status', 'scheduled')
         .order('start_time', { ascending: false });
 
       if (error) throw error;

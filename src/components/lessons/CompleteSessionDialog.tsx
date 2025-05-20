@@ -94,7 +94,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         id: student.id,
         first_name: student.first_name,
         last_name: student.last_name,
-        attendance: student.attendance_status || 'attended',
+        attendance: student.attendance_status as 'attended' | 'missed' | 'cancelled' || 'attended',
         feedback: '',
       }));
 
@@ -135,7 +135,8 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       const transformedLesson: Lesson = {
         ...lessonData,
         students,
-        lesson_students: undefined
+        // Remove the original nested structure from our state
+        // We don't actually have lesson_students in our Lesson interface
       };
 
       setLesson(transformedLesson);
@@ -165,14 +166,16 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       if (lessonError) throw lessonError;
 
       // 2. Create homework for the lesson
-      const { error: homeworkError } = await supabase
+      const { data: homeworkData, error: homeworkError } = await supabase
         .from('homework')
         .insert({
           title: data.homeworkTitle,
           description: data.homeworkDescription || null,
           lesson_id: lessonId,
           due_date: null, // You can modify this to add a due date option
-        });
+        })
+        .select()
+        .single();
       
       if (homeworkError) throw homeworkError;
 

@@ -45,18 +45,7 @@ interface Student {
   last_name: string;
 }
 
-interface Lesson {
-  id: string;
-  title: string;
-  tutor_id: string;
-  start_time: string;
-  end_time: string;
-  is_group: boolean;
-  status: string;
-  tutor?: Tutor;
-  students?: Student[];
-  color?: string;
-}
+// Using the imported Lesson type from @/types/lesson
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
