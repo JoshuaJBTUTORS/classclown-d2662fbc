@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -19,7 +20,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, MoreHorizontal, Filter, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Filter, Loader2, AlertTriangle, Eye, Pencil } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 import StudentForm from '@/components/forms/StudentForm';
+import ViewStudentProfile from '@/components/students/ViewStudentProfile';
+import EditStudentForm from '@/components/students/EditStudentForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -53,6 +56,9 @@ const Students = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [viewProfileOpen, setViewProfileOpen] = useState(false);
+  const [editStudentOpen, setEditStudentOpen] = useState(false);
   const { user } = useAuth();
   
   const toggleSidebar = () => {
@@ -86,21 +92,21 @@ const Students = () => {
         
         // Transform the data to match our Student interface
         const transformedStudents = data ? data.map(student => ({
-          id: student.id,
+          id: String(student.id),
           name: `${student.first_name} ${student.last_name}`,
-          email: student.email,
+          email: student.email || '',
           phone: student.phone || '',
-          subjects: student.subjects ? student.subjects.split(',').map(subject => subject.trim()) : [],
+          subjects: student.subjects ? student.subjects.split(',').map((subject: string) => subject.trim()) : [],
           status: student.status || 'active',
           joinedDate: new Date(student.created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
           }),
-          first_name: student.first_name,
-          last_name: student.last_name,
-          parent_first_name: student.parent_first_name,
-          parent_last_name: student.parent_last_name,
+          first_name: student.first_name || '',
+          last_name: student.last_name || '',
+          parent_first_name: student.parent_first_name || '',
+          parent_last_name: student.parent_last_name || '',
           student_id: student.student_id
         })) : [];
         
@@ -162,22 +168,22 @@ const Students = () => {
       if (insertedData && insertedData[0]) {
         // Transform the inserted data to match our Student interface
         const studentRecord = insertedData[0];
-        const newStudentRecord = {
-          id: studentRecord.id,
+        const newStudentRecord: Student = {
+          id: String(studentRecord.id),
           name: `${studentRecord.first_name} ${studentRecord.last_name}`,
-          email: studentRecord.email,
+          email: studentRecord.email || '',
           phone: studentRecord.phone || '',
-          subjects: studentRecord.subjects ? studentRecord.subjects.split(',') : [],
-          status: studentRecord.status,
+          subjects: studentRecord.subjects ? studentRecord.subjects.split(',').map((subject: string) => subject.trim()) : [],
+          status: studentRecord.status || 'active',
           joinedDate: new Date(studentRecord.created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
           }),
-          first_name: studentRecord.first_name,
-          last_name: studentRecord.last_name,
-          parent_first_name: studentRecord.parent_first_name,
-          parent_last_name: studentRecord.parent_last_name,
+          first_name: studentRecord.first_name || '',
+          last_name: studentRecord.last_name || '',
+          parent_first_name: studentRecord.parent_first_name || '',
+          parent_last_name: studentRecord.parent_last_name || '',
           student_id: studentRecord.student_id
         };
         
@@ -198,6 +204,24 @@ const Students = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewProfile = (student: Student) => {
+    setSelectedStudent(student);
+    setViewProfileOpen(true);
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setEditStudentOpen(true);
+  };
+
+  const handleStudentUpdate = (updatedStudent: Student) => {
+    setStudents(prevStudents => 
+      prevStudents.map(student => 
+        student.id === updatedStudent.id ? updatedStudent : student
+      )
+    );
   };
 
   return (
@@ -325,8 +349,14 @@ const Students = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>View Profile</DropdownMenuItem>
-                                <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleViewProfile(student)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditStudent(student)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit Details
+                                </DropdownMenuItem>
                                 <DropdownMenuItem>Schedule Session</DropdownMenuItem>
                                 <DropdownMenuItem>View Progress</DropdownMenuItem>
                                 <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
@@ -353,6 +383,21 @@ const Students = () => {
           </div>
         </main>
       </div>
+      
+      {/* View Student Profile Dialog */}
+      <ViewStudentProfile 
+        student={selectedStudent} 
+        isOpen={viewProfileOpen} 
+        onClose={() => setViewProfileOpen(false)} 
+      />
+      
+      {/* Edit Student Dialog */}
+      <EditStudentForm 
+        student={selectedStudent} 
+        isOpen={editStudentOpen} 
+        onClose={() => setEditStudentOpen(false)}
+        onUpdate={handleStudentUpdate}
+      />
     </div>
   );
 };
