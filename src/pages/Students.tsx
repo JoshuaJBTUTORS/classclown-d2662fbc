@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -144,6 +145,9 @@ const Students = () => {
         .filter((subject: string) => subject !== '')
         .join(',');
       
+      // Define status explicitly as 'active' literal type
+      const studentStatus: 'active' = 'active';
+      
       const newStudent = {
         first_name: data.firstName,
         last_name: data.lastName,
@@ -152,7 +156,7 @@ const Students = () => {
         parent_last_name: data.parentLastName,
         student_id: data.studentId || null,
         subjects: subjectsString,
-        status: 'active' as 'active', // Explicitly type as 'active' literal
+        status: studentStatus, // Use the typed variable
         created_at: new Date().toISOString(),
         // No need to set user_id as RLS will handle it via auth.uid()
       };
