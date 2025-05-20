@@ -89,11 +89,21 @@ const Homework: React.FC = () => {
     setUserRole(role);
     if (role === 'student') {
       // Get first student for testing
-      supabase
-        .from('students')
-        .select('id')
-        .limit(1)
-        .then(({ data }) => {
+      // Fix the TypeScript error by using async/await or proper Promise handling
+      const fetchStudentId = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('students')
+            .select('id')
+            .limit(1);
+          
+          if (error) {
+            console.error("Failed to get student ID:", error);
+            setStudentId(1);
+            toast.error("Error fetching student data");
+            return;
+          }
+          
           if (data && data.length > 0) {
             setStudentId(data[0].id);
             toast.success(`Switched to student view with ID: ${data[0].id}`);
@@ -101,12 +111,15 @@ const Homework: React.FC = () => {
             setStudentId(1);
             toast.warning("No students found, using default ID: 1");
           }
-        })
-        .catch((error) => {
-          console.error("Failed to get student ID:", error);
+        } catch (err) {
+          console.error("Exception while fetching student ID:", err);
           setStudentId(1);
           toast.error("Error fetching student data");
-        });
+        }
+      };
+      
+      // Execute the async function
+      fetchStudentId();
     }
   };
 
