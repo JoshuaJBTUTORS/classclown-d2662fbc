@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -104,7 +103,7 @@ const Students = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -205,17 +204,17 @@ const Students = () => {
     }
   };
 
-  const handleEditClick = (studentId: number) => {
-    setSelectedStudentId(studentId);
+  const handleEditClick = (student: Student) => {
+    setSelectedStudent(student);
     setIsEditDialogOpen(true);
   };
 
-  const handleViewClick = (studentId: number) => {
-    setSelectedStudentId(studentId);
+  const handleViewClick = (student: Student) => {
+    setSelectedStudent(student);
     setIsViewDialogOpen(true);
   };
 
-  const handleStudentUpdated = () => {
+  const handleStudentUpdated = (updatedStudent: any) => {
     fetchStudents();
     setIsEditDialogOpen(false);
   };
@@ -319,10 +318,10 @@ const Students = () => {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Options</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleViewClick(student.id)}>
+                              <DropdownMenuItem onClick={() => handleViewClick(student)}>
                                 View Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditClick(student.id)}>
+                              <DropdownMenuItem onClick={() => handleEditClick(student)}>
                                 Edit Student
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -516,20 +515,19 @@ const Students = () => {
       </Dialog>
 
       {/* Edit Student Dialog */}
-      {selectedStudentId && (
+      {selectedStudent && (
         <EditStudentForm
-          studentId={selectedStudentId}
+          student={selectedStudent}
           isOpen={isEditDialogOpen}
           onClose={() => setIsEditDialogOpen(false)}
-          onSuccess={handleStudentUpdated}
-          availableSubjects={availableSubjects}
+          onUpdate={handleStudentUpdated}
         />
       )}
 
       {/* View Student Dialog */}
-      {selectedStudentId && (
+      {selectedStudent && (
         <ViewStudentProfile
-          studentId={selectedStudentId}
+          student={selectedStudent}
           isOpen={isViewDialogOpen}
           onClose={() => setIsViewDialogOpen(false)}
         />

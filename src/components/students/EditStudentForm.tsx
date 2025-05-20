@@ -23,8 +23,22 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 
+interface Student {
+  id: string | number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  parent_first_name?: string;
+  parent_last_name?: string;
+  student_id?: string;
+  subjects?: string | string[];
+  status: 'active' | 'inactive';
+  created_at?: string;
+}
+
 interface EditStudentFormProps {
-  student: any;
+  student: Student;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedStudent: any) => void;
@@ -56,6 +70,11 @@ const formSchema = z.object({
 const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
 
+  // Convert subjects array to string if needed
+  const subjectsString = Array.isArray(student?.subjects) 
+    ? student.subjects.join(', ') 
+    : student?.subjects || '';
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -65,13 +84,18 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
       parentFirstName: student?.parent_first_name || "",
       parentLastName: student?.parent_last_name || "",
       studentId: student?.student_id || "",
-      subjects: student?.subjects?.join(', ') || "",
+      subjects: subjectsString,
       status: student?.status || "active",
     },
   });
 
   useEffect(() => {
     if (student) {
+      // Convert subjects array to string if needed
+      const subjectsValue = Array.isArray(student.subjects) 
+        ? student.subjects.join(', ') 
+        : student.subjects || '';
+
       form.reset({
         firstName: student.first_name || "",
         lastName: student.last_name || "",
@@ -79,7 +103,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         parentFirstName: student.parent_first_name || "",
         parentLastName: student.parent_last_name || "",
         studentId: student.student_id || "",
-        subjects: student.subjects?.join(', ') || "",
+        subjects: subjectsValue,
         status: student.status || "active",
       });
     }
