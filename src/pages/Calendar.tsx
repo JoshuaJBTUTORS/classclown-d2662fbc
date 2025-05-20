@@ -225,6 +225,7 @@ const Calendar = () => {
               start_time: format(currentInstance, "yyyy-MM-dd'T'HH:mm:ss"),
               end_time: format(instanceEndTime, "yyyy-MM-dd'T'HH:mm:ss"),
               is_recurring_instance: true, // Flag to identify as a generated instance
+              original_id: lesson.id, // Store the original lesson ID
             };
             
             processedLessons.push(instanceLesson);

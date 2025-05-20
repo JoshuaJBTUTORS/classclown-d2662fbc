@@ -46,8 +46,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const fetchLessonDetails = async (id: string) => {
     setIsLoading(true);
     try {
-      // Handle IDs for recurring instances (they have a dash followed by a date)
-      const originalId = id.includes('-') ? id.split('-')[0] : id;
+      // For recurring instances (ID format: original-id-yyyy-MM-dd), extract the original ID
+      const isRecurringInstance = id.includes('-');
+      const originalId = isRecurringInstance ? id.split('-')[0] : id;
+      
+      console.log(`Fetching lesson details for ID: ${id}, originalId: ${originalId}`);
       
       const { data, error } = await supabase
         .from('lessons')
@@ -66,19 +69,28 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       // Transform the data
       if (data) {
         const students = data.lesson_students.map((ls: any) => ls.student);
-        const processedLesson = {
+        
+        // If this is a recurring instance (has a dash in the ID), preserve the original ID
+        // and mark it as a recurring instance
+        const processedLesson: Lesson = {
           ...data,
           students,
           lesson_students: undefined,
           // If this is a recurring instance, preserve that info
-          is_recurring_instance: id.includes('-'),
-          original_id: id
+          is_recurring_instance: isRecurringInstance,
+          original_id: isRecurringInstance ? id : undefined
         };
+        
+        console.log("Processed lesson:", processedLesson);
         setLesson(processedLesson);
+      } else {
+        console.log("No lesson data found");
+        setLesson(null);
       }
     } catch (error) {
       console.error('Error fetching lesson details:', error);
       toast.error('Failed to load lesson details');
+      setLesson(null);
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +102,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const confirmDeleteLesson = () => {
     if (lesson && onDelete) {
-      const idToDelete = lesson.is_recurring_instance ? lesson.id.split('-')[0] : lesson.id;
+      const idToDelete = lesson.is_recurring_instance && lesson.original_id 
+        ? lesson.original_id 
+        : lesson.id;
+      
       onDelete(idToDelete, deleteRecurringOption === 'all');
       setIsDeleteConfirmOpen(false);
       onClose();
@@ -103,7 +118,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const handleCompleteSession = () => {
     if (lesson && onCompleteSession) {
-      onCompleteSession(lesson.id);
+      const idToUse = lesson.is_recurring_instance && lesson.original_id 
+        ? lesson.original_id 
+        : lesson.id;
+      onCompleteSession(idToUse);
       onClose();
     }
   };
