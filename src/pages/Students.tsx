@@ -4,228 +4,224 @@ import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { Plus, Search } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, MoreHorizontal, Filter, Loader2, AlertTriangle, Eye, Pencil } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { toast } from '@/hooks/use-toast';
-import StudentForm from '@/components/forms/StudentForm';
-import ViewStudentProfile from '@/components/students/ViewStudentProfile';
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import EditStudentForm from '@/components/students/EditStudentForm';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import ViewStudentProfile from '@/components/students/ViewStudentProfile';
 
+// Define Student interface
 interface Student {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  subjects: string[];
-  status: 'active' | 'inactive';
-  joinedDate: string;
+  id: number;
   first_name: string;
   last_name: string;
-  parent_first_name: string;
-  parent_last_name: string;
+  email: string;
+  phone?: string;
+  parent_first_name?: string;
+  parent_last_name?: string;
   student_id?: string;
+  subjects?: string;
+  status: 'active' | 'inactive';
+  created_at?: string;
 }
 
+// Define form schema for adding new students
+const formSchema = z.object({
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
+  lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  phone: z.string().optional(),
+  parentFirstName: z.string().optional(),
+  parentLastName: z.string().optional(),
+  studentId: z.string().optional(),
+  subjects: z.array(z.string()).default([]),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+const availableSubjects = [
+  'Mathematics',
+  'Science',
+  'English',
+  'History',
+  'Geography',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'Computer Science',
+  'Foreign Languages',
+  'Music',
+  'Art',
+];
+
 const Students = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [viewProfileOpen, setViewProfileOpen] = useState(false);
-  const [editStudentOpen, setEditStudentOpen] = useState(false);
-  const { user } = useAuth();
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-  
-  // Fetch students from Supabase on component mount
-  useEffect(() => {
-    const fetchStudents = async () => {
-      setIsLoading(true);
-      
-      if (!user) {
-        setIsLoading(false);
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to view students.",
-          variant: "destructive",
-        });
-        return;
-      }
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      parentFirstName: "",
+      parentLastName: "",
+      studentId: "",
+      subjects: [],
+    },
+  });
 
-      try {
-        const { data, error } = await supabase
-          .from('students')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          throw error;
-        }
-        
-        // Transform the data to match our Student interface
-        const transformedStudents = data ? data.map(student => ({
-          id: String(student.id),
-          name: `${student.first_name} ${student.last_name}`,
-          email: student.email || '',
-          phone: student.phone || '',
-          subjects: student.subjects ? student.subjects.split(',').map((subject: string) => subject.trim()) : [],
-          status: (student.status || 'active') as 'active' | 'inactive',
-          joinedDate: new Date(student.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          }),
-          first_name: student.first_name || '',
-          last_name: student.last_name || '',
-          parent_first_name: student.parent_first_name || '',
-          parent_last_name: student.parent_last_name || '',
-          student_id: student.student_id
-        })) : [];
-        
-        setStudents(transformedStudents);
-      } catch (error) {
-        console.error('Error fetching students:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load students",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStudents();
-  }, [user]);
-
-  // Add student function
-  const handleAddStudent = async (data: any) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to add students.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  // Fetch students from Supabase
+  const fetchStudents = async () => {
+    setIsLoading(true);
     try {
-      // Convert comma-separated subjects to string (Supabase expecting string, not array)
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('last_name', { ascending: true });
+
+      if (error) throw error;
+      
+      setStudents(data as Student[]);
+      setFilteredStudents(data as Student[]);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      toast.error('Failed to load students. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  // Filter students based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredStudents(students);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = students.filter(
+        (student) =>
+          student.first_name.toLowerCase().includes(query) ||
+          student.last_name.toLowerCase().includes(query) ||
+          student.email.toLowerCase().includes(query) ||
+          (student.subjects && student.subjects.toLowerCase().includes(query))
+      );
+      setFilteredStudents(filtered);
+    }
+  }, [searchQuery, students]);
+
+  const handleAddStudent = async (data: FormData) => {
+    try {
+      // Convert subjects array to comma-separated string
       const subjectsString = data.subjects
-        .split(',')
-        .map((subject: string) => subject.trim())
         .filter((subject: string) => subject !== '')
         .join(',');
       
-      // Define status explicitly as 'active' literal type
-      const studentStatus: 'active' = 'active';
+      // Define status as 'active' with literal type
+      const studentStatus: 'active' | 'inactive' = 'active';
       
       const newStudent = {
         first_name: data.firstName,
         last_name: data.lastName,
         email: data.email,
+        phone: data.phone || null,
         parent_first_name: data.parentFirstName,
         parent_last_name: data.parentLastName,
         student_id: data.studentId || null,
         subjects: subjectsString,
-        status: studentStatus, // Use the typed variable
+        status: studentStatus,
         created_at: new Date().toISOString(),
         // No need to set user_id as RLS will handle it via auth.uid()
       };
-      
-      // Add to Supabase
-      const { data: insertedData, error } = await supabase
+
+      const { error } = await supabase
         .from('students')
-        .insert(newStudent)
-        .select();
-        
+        .insert([newStudent]);
+
       if (error) throw error;
-      
-      if (insertedData && insertedData[0]) {
-        // Transform the inserted data to match our Student interface
-        const studentRecord = insertedData[0];
-        const newStudentRecord: Student = {
-          id: String(studentRecord.id),
-          name: `${studentRecord.first_name} ${studentRecord.last_name}`,
-          email: studentRecord.email || '',
-          phone: studentRecord.phone || '',
-          subjects: studentRecord.subjects ? studentRecord.subjects.split(',').map((subject: string) => subject.trim()) : [],
-          status: studentRecord.status || 'active',
-          joinedDate: new Date(studentRecord.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          }),
-          first_name: studentRecord.first_name || '',
-          last_name: studentRecord.last_name || '',
-          parent_first_name: studentRecord.parent_first_name || '',
-          parent_last_name: studentRecord.parent_last_name || '',
-          student_id: studentRecord.student_id
-        };
-        
-        // Update state with new student
-        setStudents(prevStudents => [newStudentRecord, ...prevStudents]);
-        
-        setDialogOpen(false);
-        toast({
-          title: "Success",
-          description: "Student has been added successfully",
-        });
-      }
-    } catch (error: any) {
+
+      toast.success('Student added successfully!');
+      form.reset();
+      setIsAddDialogOpen(false);
+      fetchStudents();
+    } catch (error) {
       console.error('Error adding student:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add student",
-        variant: "destructive",
-      });
+      toast.error('Failed to add student. Please try again.');
     }
   };
 
-  const handleViewProfile = (student: Student) => {
-    setSelectedStudent(student);
-    setViewProfileOpen(true);
+  const handleEditClick = (studentId: number) => {
+    setSelectedStudentId(studentId);
+    setIsEditDialogOpen(true);
   };
 
-  const handleEditStudent = (student: Student) => {
-    setSelectedStudent(student);
-    setEditStudentOpen(true);
+  const handleViewClick = (studentId: number) => {
+    setSelectedStudentId(studentId);
+    setIsViewDialogOpen(true);
   };
 
-  const handleStudentUpdate = (updatedStudent: Student) => {
-    setStudents(prevStudents => 
-      prevStudents.map(student => 
-        student.id === updatedStudent.id ? updatedStudent : student
-      )
-    );
+  const handleStudentUpdated = () => {
+    fetchStudents();
+    setIsEditDialogOpen(false);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   return (
@@ -234,174 +230,310 @@ const Students = () => {
       <div className="flex flex-col flex-1 lg:pl-64">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6">
             <PageTitle 
               title="Students" 
-              subtitle="Manage all your students and their information"
+              subtitle="Manage your students"
               className="mb-4 md:mb-0"
             />
-            
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add New Student
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Student</DialogTitle>
-                  <DialogDescription>
-                    Enter the student's details below to add them to the system.
-                  </DialogDescription>
-                </DialogHeader>
-                <StudentForm 
-                  onSubmit={handleAddStudent} 
-                  onCancel={() => setDialogOpen(false)} 
-                />
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Student
+            </Button>
           </div>
           
-          <div className="bg-white rounded-lg border shadow-sm">
-            <div className="p-4 border-b">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex flex-1 items-center">
-                  <div className="relative w-full md:w-80">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="search"
-                      placeholder="Search students..."
-                      className="w-full pl-8"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="flex items-center gap-1">
-                    <Filter className="h-4 w-4" />
-                    Filter
-                  </Button>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <CardTitle>Student List</CardTitle>
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search students..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8"
+                  />
                 </div>
               </div>
-            </div>
-            
-            <div className="overflow-x-auto">
-              {isLoading ? (
-                <div className="flex justify-center items-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <span className="ml-2">Loading students...</span>
-                </div>
-              ) : !user ? (
-                <div className="flex flex-col justify-center items-center p-8 text-center">
-                  <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Authentication Required</h3>
-                  <p className="text-muted-foreground mb-4 max-w-md">
-                    Please log in to view and manage students. You need to be authenticated to access this feature.
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Email</TableHead>
+                    <TableHead className="hidden md:table-cell">Subjects</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Subjects</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableCell colSpan={5} className="text-center py-10">
+                        Loading students...
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {students.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          No students added yet. Add your first student by clicking the "Add New Student" button.
+                  ) : filteredStudents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-10">
+                        No students found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <div className="font-medium">
+                            {student.first_name} {student.last_name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {student.email}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex flex-wrap gap-1">
+                            {student.subjects ? 
+                              student.subjects.split(',').map((subject, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {subject.trim()}
+                                </Badge>
+                              )) : 
+                              <span className="text-muted-foreground text-sm">None</span>
+                            }
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
+                            {student.status === 'active' ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                Actions
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Options</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleViewClick(student.id)}>
+                                View Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditClick(student.id)}>
+                                Edit Student
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                              >
+                                Delete Student
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      students.map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.name}</TableCell>
-                          <TableCell>
-                            <div>{student.email}</div>
-                            <div className="text-muted-foreground text-sm">{student.phone}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {student.subjects.map((subject, i) => (
-                                <Badge key={i} variant="secondary" className="rounded-sm">
-                                  {subject}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={student.status === 'active' ? 'default' : 'outline'} 
-                              className="capitalize"
-                            >
-                              {student.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{student.joinedDate}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Actions</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewProfile(student)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditStudent(student)}>
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Edit Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>Schedule Session</DropdownMenuItem>
-                                <DropdownMenuItem>View Progress</DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <div className="text-sm text-muted-foreground">
-                Showing <strong>{students.length}</strong> of <strong>{students.length}</strong> students
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>Previous</Button>
-                <Button variant="outline" size="sm" disabled={students.length === 0}>Next</Button>
-              </div>
-            </div>
-          </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </main>
       </div>
-      
-      {/* View Student Profile Dialog */}
-      <ViewStudentProfile 
-        student={selectedStudent} 
-        isOpen={viewProfileOpen} 
-        onClose={() => setViewProfileOpen(false)} 
-      />
-      
+
+      {/* Add Student Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Student</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleAddStudent)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="john.doe@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 (555) 123-4567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="parentFirstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Parent's First Name (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Jane" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="parentLastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Parent's Last Name (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="studentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Student ID (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ST12345" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subjects"
+                render={() => (
+                  <FormItem>
+                    <div className="mb-2">
+                      <FormLabel>Subjects</FormLabel>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      {availableSubjects.map((subject) => (
+                        <FormField
+                          key={subject}
+                          control={form.control}
+                          name="subjects"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={subject}
+                                className="flex flex-row items-start space-x-2 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(subject)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...field.value, subject])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== subject
+                                            )
+                                          )
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="text-sm font-normal">
+                                  {subject}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Add Student</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Student Dialog */}
-      <EditStudentForm 
-        student={selectedStudent} 
-        isOpen={editStudentOpen} 
-        onClose={() => setEditStudentOpen(false)}
-        onUpdate={handleStudentUpdate}
-      />
+      {selectedStudentId && (
+        <EditStudentForm
+          studentId={selectedStudentId}
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          onSuccess={handleStudentUpdated}
+          availableSubjects={availableSubjects}
+        />
+      )}
+
+      {/* View Student Dialog */}
+      {selectedStudentId && (
+        <ViewStudentProfile
+          studentId={selectedStudentId}
+          isOpen={isViewDialogOpen}
+          onClose={() => setIsViewDialogOpen(false)}
+        />
+      )}
     </div>
   );
 };

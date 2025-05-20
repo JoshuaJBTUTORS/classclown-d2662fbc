@@ -92,7 +92,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   const [loading, setLoading] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [isGroup, setIsGroup] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const form = useForm<FormData>({
@@ -145,7 +144,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       form.reset();
       setSelectedStudents([]);
       setIsGroup(false);
-      setCommandOpen(false);
       setIsPopoverOpen(false);
     }
   }, [isOpen, form]);
@@ -258,9 +256,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {
-      setCommandOpen(false);
-      onClose();
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
     }}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -378,13 +375,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                   </div>
                   <Popover 
                     open={isPopoverOpen} 
-                    onOpenChange={(open) => {
-                      setIsPopoverOpen(open);
-                      // Only set commandOpen when popover is open
-                      if (open) {
-                        setCommandOpen(true);
-                      }
-                    }}
+                    onOpenChange={setIsPopoverOpen}
                   >
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -393,7 +384,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                           role="combobox"
                           className="justify-between w-full"
                           disabled={!isGroup && selectedStudents.length > 0}
-                          onClick={() => setIsPopoverOpen(true)}
                         >
                           {isGroup ? "Add students" : (selectedStudents.length === 0 ? "Select student" : "Change student")}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -401,6 +391,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="p-0 w-[300px]" side="bottom" align="start">
+                      {/* Initialize Command explicitly with empty items if students array is empty */}
                       <Command>
                         <CommandInput placeholder="Search students..." />
                         <CommandEmpty>No students found.</CommandEmpty>
@@ -428,7 +419,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                               </CommandItem>
                             );
                           }) : (
-                            <div className="py-2 px-2 text-sm">Loading students...</div>
+                            <CommandItem value="empty" disabled>
+                              <div className="py-2 px-2 text-sm">Loading students...</div>
+                            </CommandItem>
                           )}
                         </CommandGroup>
                       </Command>
