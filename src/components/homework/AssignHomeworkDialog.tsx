@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -185,6 +186,38 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
     }
   };
 
+  // Helper function to ensure the homework bucket exists
+  const ensureHomeworkBucketExists = async () => {
+    try {
+      // First check if the bucket exists
+      const { data: buckets, error: listError } = await supabase
+        .storage
+        .listBuckets();
+      
+      if (listError) throw listError;
+      
+      // Check if the homework bucket exists
+      const homeworkBucket = buckets.find(bucket => bucket.name === 'homework');
+      
+      if (!homeworkBucket) {
+        // Create the bucket if it doesn't exist
+        const { error: createError } = await supabase.storage.createBucket('homework', {
+          public: true,
+          fileSizeLimit: 10485760 // 10MB
+        });
+        
+        if (createError) throw createError;
+        
+        console.log("Created homework bucket successfully");
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error ensuring homework bucket exists:", error);
+      return false;
+    }
+  }
+
   const onSubmit = async (data: FormData) => {
     console.log("Submitting homework data:", data);
     setLoading(true);
@@ -195,15 +228,11 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       
       // Upload file if provided
       if (data.attachment) {
-        // Create a storage bucket if it doesn't exist
-        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('homework');
+        // Ensure the homework bucket exists
+        const bucketExists = await ensureHomeworkBucketExists();
         
-        if (bucketError && bucketError.message.includes('not found')) {
-          // Create the bucket if it doesn't exist
-          await supabase.storage.createBucket('homework', {
-            public: true,
-            fileSizeLimit: 10485760 // 10MB
-          });
+        if (!bucketExists) {
+          throw new Error("Could not create storage bucket for homework attachments");
         }
         
         const fileExt = data.attachment.name.split('.').pop();
@@ -218,7 +247,10 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
             upsert: false,
           });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("File upload error:", uploadError);
+          throw uploadError;
+        }
         
         // Get the public URL of the uploaded file
         const { data: urlData } = supabase.storage
@@ -287,6 +319,9 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Homework' : 'Assign New Homework'}</DialogTitle>
+          <DialogDescription>
+            Create an assignment for students to complete after their lesson
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
