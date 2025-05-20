@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -23,86 +23,29 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Plus, MoreHorizontal, Filter, Eye, Pencil } from 'lucide-react';
 import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
 import EditTutorForm from '@/components/tutors/EditTutorForm';
+import AddTutorForm from '@/components/tutors/AddTutorForm';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Tutor {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
+  name?: string; // For display purposes
   email: string;
-  phone: string;
+  phone: string | null;
   specialities: string[];
   status: 'active' | 'inactive' | 'pending';
-  rating: number;
-  joinedDate: string;
-  first_name?: string;
-  last_name?: string;
-  title?: string;
-  bio?: string;
-  education?: string;
+  rating: number | null;
+  title?: string | null;
+  bio?: string | null;
+  education?: string | null;
+  joined_date: string;
 }
 
-const tutors: Tutor[] = [
-  {
-    id: '1',
-    name: 'Dr. Emma Wilson',
-    email: 'emma.wilson@example.com',
-    phone: '(123) 456-7890',
-    specialities: ['Mathematics', 'Physics'],
-    status: 'active',
-    rating: 4.9,
-    joinedDate: 'Jan 10, 2024',
-    first_name: 'Emma',
-    last_name: 'Wilson',
-    title: 'Doctor',
-    bio: 'Dr. Wilson has over 10 years of teaching experience in advanced mathematics and physics. She specializes in helping students prepare for university entrance exams and competitions.',
-    education: 'PhD in Theoretical Physics, MIT (2014)'
-  },
-  {
-    id: '2',
-    name: 'Prof. Michael Brown',
-    email: 'michael.brown@example.com',
-    phone: '(123) 987-6543',
-    specialities: ['Physics', 'Chemistry'],
-    status: 'active',
-    rating: 4.8,
-    joinedDate: 'Feb 15, 2024',
-    title: 'Professor',
-    bio: 'Professor Brown has taught at university level for 15 years and now helps high school students excel in science subjects.'
-  },
-  {
-    id: '3',
-    name: 'Dr. Alex Thompson',
-    email: 'alex.t@example.com',
-    phone: '(456) 789-0123',
-    specialities: ['Chemistry', 'Biology'],
-    status: 'pending',
-    rating: 4.5,
-    joinedDate: 'Apr 3, 2025'
-  },
-  {
-    id: '4',
-    name: 'Prof. James Wilson',
-    email: 'james.w@example.com',
-    phone: '(789) 456-1230',
-    specialities: ['English Literature', 'History'],
-    status: 'active',
-    rating: 4.7,
-    joinedDate: 'Oct 20, 2024'
-  },
-  {
-    id: '5',
-    name: 'Dr. Susan Taylor',
-    email: 'susan.t@example.com',
-    phone: '(321) 654-0987',
-    specialities: ['Biology', 'Psychology'],
-    status: 'inactive',
-    rating: 4.3,
-    joinedDate: 'Dec 5, 2024',
-    education: 'PhD in Biology, Stanford University (2016)'
-  },
-];
-
-const generateStars = (rating: number) => {
+const generateStars = (rating: number | null) => {
+  if (rating === null) return '☆☆☆☆☆';
+  
   const fullStars = Math.floor(rating);
   const remainder = rating - fullStars;
   const stars = [];
@@ -124,14 +67,59 @@ const generateStars = (rating: number) => {
 
 const Tutors = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [tutorsList, setTutorsList] = useState<Tutor[]>(tutors);
+  const [tutorsList, setTutorsList] = useState<Tutor[]>([]);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const [viewProfileOpen, setViewProfileOpen] = useState(false);
   const [editTutorOpen, setEditTutorOpen] = useState(false);
+  const [addTutorOpen, setAddTutorOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // Fetch tutors from Supabase
+  const fetchTutors = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('tutors')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Transform data to match the Tutor interface
+      const formattedTutors = data.map(tutor => ({
+        ...tutor,
+        name: `${tutor.title ? tutor.title + ' ' : ''}${tutor.first_name} ${tutor.last_name}`,
+        status: tutor.status as 'active' | 'inactive' | 'pending',
+        specialities: tutor.specialities || [],
+        joined_date: new Date(tutor.joined_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
+      }));
+
+      setTutorsList(formattedTutors);
+    } catch (error: any) {
+      toast({
+        title: "Failed to load tutors",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTutors();
+  }, []);
 
   const handleViewProfile = (tutor: Tutor) => {
     setSelectedTutor(tutor);
@@ -146,15 +134,35 @@ const Tutors = () => {
   const handleTutorUpdate = (updatedTutor: Tutor) => {
     setTutorsList(prevTutors => 
       prevTutors.map(tutor => 
-        tutor.id === updatedTutor.id ? updatedTutor : tutor
+        tutor.id === updatedTutor.id ? {
+          ...updatedTutor,
+          name: `${updatedTutor.title ? updatedTutor.title + ' ' : ''}${updatedTutor.first_name} ${updatedTutor.last_name}`
+        } : tutor
       )
     );
     
     toast({
       title: "Tutor updated",
-      description: `${updatedTutor.name}'s information has been updated successfully.`,
+      description: `${updatedTutor.first_name} ${updatedTutor.last_name}'s information has been updated successfully.`,
     });
   };
+
+  const handleAddNewTutor = () => {
+    setAddTutorOpen(true);
+  };
+
+  // Filter tutors based on search query
+  const filteredTutors = tutorsList.filter(tutor => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      tutor.name?.toLowerCase().includes(query) ||
+      tutor.email.toLowerCase().includes(query) ||
+      tutor.phone?.toLowerCase().includes(query) ||
+      tutor.specialities.some(speciality => speciality.toLowerCase().includes(query))
+    );
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -168,7 +176,7 @@ const Tutors = () => {
               subtitle="Manage your tutor team and their assignments"
               className="mb-4 md:mb-0"
             />
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" onClick={handleAddNewTutor}>
               <Plus className="h-4 w-4" />
               Add New Tutor
             </Button>
@@ -184,6 +192,8 @@ const Tutors = () => {
                       type="search"
                       placeholder="Search tutors..."
                       className="w-full pl-8"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
                 </div>
@@ -210,76 +220,96 @@ const Tutors = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tutorsList.map((tutor) => (
-                    <TableRow key={tutor.id}>
-                      <TableCell className="font-medium">{tutor.name}</TableCell>
-                      <TableCell>
-                        <div>{tutor.email}</div>
-                        <div className="text-muted-foreground text-sm">{tutor.phone}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {tutor.specialities.map((speciality, i) => (
-                            <Badge key={i} variant="secondary" className="rounded-sm">
-                              {speciality}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            tutor.status === 'active' ? 'default' : 
-                            tutor.status === 'pending' ? 'outline' : 'secondary'
-                          } 
-                          className="capitalize"
-                        >
-                          {tutor.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className="text-amber-500">{generateStars(tutor.rating)}</span>
-                          <span className="font-medium">{tutor.rating}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{tutor.joinedDate}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Actions</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewProfile(tutor)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditTutor(tutor)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Assign Classes</DropdownMenuItem>
-                            <DropdownMenuItem>View Schedule</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-10">
+                        Loading tutors...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : filteredTutors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-10">
+                        {searchQuery 
+                          ? "No tutors match your search criteria." 
+                          : "No tutors found. Add a new tutor to get started."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredTutors.map((tutor) => (
+                      <TableRow key={tutor.id}>
+                        <TableCell className="font-medium">{tutor.name}</TableCell>
+                        <TableCell>
+                          <div>{tutor.email}</div>
+                          <div className="text-muted-foreground text-sm">{tutor.phone || 'No phone'}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {tutor.specialities && tutor.specialities.length > 0 ? (
+                              tutor.specialities.map((speciality, i) => (
+                                <Badge key={i} variant="secondary" className="rounded-sm">
+                                  {speciality}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-sm">None specified</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              tutor.status === 'active' ? 'default' : 
+                              tutor.status === 'pending' ? 'outline' : 'secondary'
+                            } 
+                            className="capitalize"
+                          >
+                            {tutor.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className="text-amber-500">{generateStars(tutor.rating)}</span>
+                            <span className="font-medium">{tutor.rating || '-'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{tutor.joined_date}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Actions</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewProfile(tutor)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditTutor(tutor)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>Assign Classes</DropdownMenuItem>
+                              <DropdownMenuItem>View Schedule</DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
             
             <div className="flex items-center justify-between px-4 py-3 border-t">
               <div className="text-sm text-muted-foreground">
-                Showing <strong>{tutorsList.length}</strong> of <strong>24</strong> tutors
+                Showing <strong>{filteredTutors.length}</strong> tutors
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" disabled>Previous</Button>
-                <Button variant="outline" size="sm">Next</Button>
+                <Button variant="outline" size="sm" disabled={filteredTutors.length < 10}>Next</Button>
               </div>
             </div>
           </div>
@@ -299,6 +329,13 @@ const Tutors = () => {
         isOpen={editTutorOpen} 
         onClose={() => setEditTutorOpen(false)}
         onUpdate={handleTutorUpdate}
+      />
+
+      {/* Add New Tutor Dialog */}
+      <AddTutorForm
+        isOpen={addTutorOpen}
+        onClose={() => setAddTutorOpen(false)}
+        onSuccess={fetchTutors}
       />
     </div>
   );

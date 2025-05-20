@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 import {
   Dialog,
@@ -33,60 +34,39 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
-interface Tutor {
-  id: string;
-  first_name: string;
-  last_name: string;
-  name?: string;
-  email: string;
-  phone: string | null;
-  specialities: string[];
-  status: 'active' | 'inactive' | 'pending';
-  rating: number | null;
-  title?: string | null;
-  bio?: string | null;
-  education?: string | null;
-  joined_date: string;
-}
-
-interface EditTutorFormProps {
-  tutor: Tutor | null;
+interface AddTutorFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (tutor: Tutor) => void;
+  onSuccess: () => void;
 }
 
 const tutorFormSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().nullable(),
-  title: z.string().nullable(),
+  phone: z.string().optional(),
+  title: z.string().optional(),
   status: z.enum(['active', 'inactive', 'pending']),
-  specialities: z.string(),
-  bio: z.string().nullable(),
-  education: z.string().nullable(),
-  rating: z.number().min(0).max(5).nullable()
+  specialities: z.string().transform((val) => val.split(',').map(s => s.trim()).filter(s => s)),
+  bio: z.string().optional(),
+  education: z.string().optional()
 });
 
 type TutorFormValues = z.infer<typeof tutorFormSchema>;
 
-const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
-  if (!tutor) return null;
-  
+const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const form = useForm<TutorFormValues>({
     resolver: zodResolver(tutorFormSchema),
     defaultValues: {
-      first_name: tutor.first_name,
-      last_name: tutor.last_name,
-      email: tutor.email,
-      phone: tutor.phone || '',
-      title: tutor.title || '',
-      status: tutor.status,
-      specialities: tutor.specialities ? tutor.specialities.join(', ') : '',
-      bio: tutor.bio || '',
-      education: tutor.education || '',
-      rating: tutor.rating
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      title: '',
+      status: 'pending',
+      specialities: '',
+      bio: '',
+      education: ''
     }
   });
 
@@ -95,51 +75,39 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
 
   const onSubmit = async (values: TutorFormValues) => {
     try {
-      // Convert specialities to array
-      const specialitiesArray = values.specialities 
-        ? values.specialities.split(',').map(s => s.trim()).filter(s => s) 
-        : [];
-      
-      // Update tutor in Supabase
-      const { data, error } = await supabase
+      // Insert tutor data into Supabase
+      const { error } = await supabase
         .from('tutors')
-        .update({
+        .insert({
           first_name: values.first_name,
           last_name: values.last_name,
           email: values.email,
-          phone: values.phone,
-          title: values.title,
+          phone: values.phone || null,
+          title: values.title || null,
           status: values.status,
-          specialities: specialitiesArray,
-          bio: values.bio,
-          education: values.education,
-          rating: values.rating
-        })
-        .eq('id', tutor.id)
-        .select('*')
-        .single();
+          specialities: values.specialities,
+          bio: values.bio || null,
+          education: values.education || null
+        });
 
       if (error) {
         throw error;
       }
 
-      // Format the updated tutor for the UI
-      const updatedTutor: Tutor = {
-        ...data,
-        name: `${data.title ? data.title + ' ' : ''}${data.first_name} ${data.last_name}`,
-        specialities: data.specialities || [],
-        joined_date: new Date(data.joined_date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })
-      };
-
-      onUpdate(updatedTutor);
+      toast({
+        title: "Success!",
+        description: "New tutor has been added successfully.",
+      });
+      
+      form.reset();
+      onSuccess();
       onClose();
-    } catch (error) {
-      console.error("Error updating tutor:", error);
-      // Handle error (could add toast notification here)
+    } catch (error: any) {
+      toast({
+        title: "Error adding tutor",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -147,7 +115,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Edit Tutor</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Add New Tutor</DialogTitle>
           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
@@ -162,9 +130,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 name="first_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel>First Name *</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="John" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -176,9 +144,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 name="last_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel>Last Name *</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,9 +160,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email *</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <Input placeholder="john.doe@example.com" type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -208,7 +176,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input placeholder="(123) 456-7890" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -224,7 +192,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input placeholder="Professor" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -236,7 +204,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>Status *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -255,55 +223,17 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="rating"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rating (0-5)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        max="5"
-                        step="0.1"
-                        {...field}
-                        value={field.value === null ? '' : field.value}
-                        onChange={(e) => {
-                          const value = e.target.value === '' ? null : parseFloat(e.target.value);
-                          field.onChange(value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="education"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Education</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
               name="specialities"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Specialities (comma-separated)</FormLabel>
+                  <FormLabel>Specialities</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input 
+                      placeholder="Mathematics, Physics, Chemistry (comma-separated)" 
+                      {...field} 
+                    />
                   </FormControl>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {field.value && field.value.split(',').map((speciality, i) => (
@@ -327,10 +257,24 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormLabel>Bio</FormLabel>
                   <FormControl>
                     <Textarea 
+                      placeholder="Brief description of tutor's background and teaching style..." 
                       className="min-h-[100px]"
-                      {...field}
-                      value={field.value || ''}
+                      {...field} 
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="education"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Education</FormLabel>
+                  <FormControl>
+                    <Input placeholder="PhD in Physics, Stanford University (2018)" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -340,7 +284,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {isSubmitting ? 'Adding...' : 'Add Tutor'}
               </Button>
             </div>
           </form>
@@ -350,4 +294,4 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   );
 };
 
-export default EditTutorForm;
+export default AddTutorForm;

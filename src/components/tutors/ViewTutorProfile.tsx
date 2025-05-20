@@ -5,25 +5,23 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from "@/components/ui/card";
 
 interface Tutor {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
+  name?: string;
   email: string;
-  phone: string;
+  phone: string | null;
   specialities: string[];
   status: 'active' | 'inactive' | 'pending';
-  rating: number;
-  joinedDate: string;
-  first_name?: string;
-  last_name?: string;
-  title?: string;
-  bio?: string;
-  education?: string;
+  rating: number | null;
+  title?: string | null;
+  bio?: string | null;
+  education?: string | null;
+  joined_date: string;
 }
 
 interface ViewTutorProfileProps {
@@ -32,7 +30,9 @@ interface ViewTutorProfileProps {
   onClose: () => void;
 }
 
-const generateStars = (rating: number) => {
+const generateStars = (rating: number | null) => {
+  if (rating === null) return '☆☆☆☆☆';
+  
   const fullStars = Math.floor(rating);
   const remainder = rating - fullStars;
   const stars = [];
@@ -55,24 +55,19 @@ const generateStars = (rating: number) => {
 const ViewTutorProfile: React.FC<ViewTutorProfileProps> = ({ tutor, isOpen, onClose }) => {
   if (!tutor) return null;
 
-  // Extract first name and last name from the full name if not directly provided
-  const firstName = tutor.first_name || tutor.name.split(' ')[0];
-  const lastName = tutor.last_name || tutor.name.split(' ').slice(1).join(' ');
-  const tutorTitle = tutor.title || firstName.startsWith('Dr.') ? 'Doctor' : 
-                     firstName.startsWith('Prof.') ? 'Professor' : '';
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">{tutor.name}'s Profile</DialogTitle>
-          <DialogDescription>
-            View detailed information about this tutor.
-          </DialogDescription>
+          <DialogTitle className="text-xl font-bold">{tutor.first_name} {tutor.last_name}'s Profile</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-medium text-sm text-muted-foreground mb-1">Title</h3>
+              <p className="text-base">{tutor.title || 'No title'}</p>
+            </div>
             <div>
               <h3 className="font-medium text-sm text-muted-foreground mb-1">Status</h3>
               <Badge 
@@ -85,71 +80,72 @@ const ViewTutorProfile: React.FC<ViewTutorProfileProps> = ({ tutor, isOpen, onCl
                 {tutor.status}
               </Badge>
             </div>
-            <div>
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Rating</h3>
-              <div className="flex items-center gap-1">
-                <span className="text-amber-500">{generateStars(tutor.rating)}</span>
-                <span className="font-medium">{tutor.rating}</span>
+          </div>
+          
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Contact Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
+              <div>
+                <h3 className="font-medium text-sm text-muted-foreground mb-1">Full Name</h3>
+                <p className="text-base">
+                  {tutor.title ? `${tutor.title} ` : ''}{tutor.first_name} {tutor.last_name}
+                </p>
+              </div>
+              <div>
+                <h3 className="font-medium text-sm text-muted-foreground mb-1">Email Address</h3>
+                <p className="text-base">{tutor.email}</p>
+              </div>
+              <div>
+                <h3 className="font-medium text-sm text-muted-foreground mb-1">Phone Number</h3>
+                <p className="text-base">{tutor.phone || 'Not provided'}</p>
               </div>
             </div>
           </div>
           
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-lg font-semibold mb-2">Contact Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Email Address</h3>
-                  <p className="text-base">{tutor.email}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Phone Number</h3>
-                  <p className="text-base">{tutor.phone || 'Not provided'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-lg font-semibold mb-2">Professional Information</h2>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Title</h3>
-                  <p className="text-base">{tutorTitle || 'Tutor'}</p>
-                </div>
-                {tutor.bio && (
-                  <div>
-                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Biography</h3>
-                    <p className="text-base">{tutor.bio}</p>
-                  </div>
-                )}
-                {tutor.education && (
-                  <div>
-                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Education</h3>
-                    <p className="text-base">{tutor.education}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-lg font-semibold mb-2">Specialities</h2>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {tutor.specialities.map((speciality, i) => (
-                  <Badge key={i} variant="secondary" className="text-sm">
-                    {speciality}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
           <div>
-            <h3 className="font-medium text-sm text-muted-foreground mb-1">Joined Date</h3>
-            <p className="text-base">{tutor.joinedDate}</p>
+            <h2 className="text-lg font-semibold mb-2">Academic Information</h2>
+            <div className="pl-2">
+              <h3 className="font-medium text-sm text-muted-foreground mb-1">Specialities</h3>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {tutor.specialities && tutor.specialities.length > 0 ? (
+                  tutor.specialities.map((speciality, i) => (
+                    <Badge key={i} variant="secondary">
+                      {speciality}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground">No specialities listed</p>
+                )}
+              </div>
+            </div>
+            
+            {tutor.education && (
+              <div className="pl-2 mt-4">
+                <h3 className="font-medium text-sm text-muted-foreground mb-1">Education</h3>
+                <p className="text-base">{tutor.education}</p>
+              </div>
+            )}
+          </div>
+          
+          {tutor.bio && (
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Biography</h2>
+              <p className="text-base pl-2">{tutor.bio}</p>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-medium text-sm text-muted-foreground mb-1">Rating</h3>
+              <div className="flex items-center gap-1">
+                <span className="text-amber-500">{generateStars(tutor.rating)}</span>
+                <span className="font-medium">{tutor.rating || 'Not yet rated'}</span>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-medium text-sm text-muted-foreground mb-1">Joined Date</h3>
+              <p className="text-base">{tutor.joined_date}</p>
+            </div>
           </div>
         </div>
       </DialogContent>
