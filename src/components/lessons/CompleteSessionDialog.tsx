@@ -169,7 +169,10 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           .eq('lesson_id', lessonId)
           .eq('student_id', student.id);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating attendance:', error);
+          throw error;
+        }
 
         // Save feedback if provided
         if (student.feedback) {
@@ -182,7 +185,13 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       await Promise.all(attendanceUpdates);
 
       toast.success('Session completed successfully!');
-      onSuccess?.();
+      
+      // Call the onSuccess callback to refresh the parent component
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      // Close the dialog
       onClose();
     } catch (error) {
       console.error('Error completing session:', error);

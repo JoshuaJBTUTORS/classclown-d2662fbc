@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -206,6 +205,7 @@ const Calendar = () => {
     fetchLessons();
     toast.success('Session marked as completed');
     setCompletionFlow(null); // Reset the completion flow
+    setIsCompleteSessionOpen(false); // Make sure to close the complete session dialog
   };
 
   const handleHomeworkAssigned = () => {
