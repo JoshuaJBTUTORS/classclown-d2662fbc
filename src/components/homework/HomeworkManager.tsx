@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
@@ -112,7 +111,10 @@ const HomeworkManager: React.FC = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching homework:', error);
+        throw error;
+      }
       
       const processedData = data.map((hw) => ({
         ...hw,

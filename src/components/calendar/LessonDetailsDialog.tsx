@@ -6,7 +6,8 @@ import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check, Clock } from 'lucide-react';
+import { Check, Clock, BookOpen } from 'lucide-react';
+import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 }) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAssigningHomework, setIsAssigningHomework] = useState(false);
 
   useEffect(() => {
     if (lessonId && isOpen) {
@@ -82,6 +84,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     if (lesson && onCompleteSession) {
       onCompleteSession(lesson.id);
       onClose();
+    }
+  };
+  
+  const handleAssignHomework = () => {
+    if (lesson) {
+      setIsAssigningHomework(true);
     }
   };
 
@@ -156,6 +164,17 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             </Button>
           )}
           <div className="flex gap-2 ml-auto">
+            {lesson && (
+              <Button
+                className="flex items-center gap-1"
+                onClick={handleAssignHomework}
+                variant="outline"
+                size="sm"
+              >
+                <BookOpen className="h-4 w-4" />
+                Assign Homework
+              </Button>
+            )}
             {lesson && lesson.status !== 'completed' && onCompleteSession && (
               <Button 
                 className="flex items-center gap-1" 
@@ -186,6 +205,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           </div>
         </div>
       </DialogContent>
+
+      {lesson && (
+        <AssignHomeworkDialog
+          isOpen={isAssigningHomework}
+          onClose={() => setIsAssigningHomework(false)}
+          preSelectedLessonId={lesson.id}
+        />
+      )}
     </Dialog>
   );
 };
