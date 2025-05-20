@@ -33,4 +33,5 @@ export interface Lesson {
   };
   homework_assigned?: boolean;
   color?: string; // Added color property to fix TypeScript error
+  is_recurring_instance?: boolean; // Added is_recurring_instance property to fix TypeScript error
 }
