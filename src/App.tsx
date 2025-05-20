@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Students from "./pages/Students";
 import Tutors from "./pages/Tutors";
 import Calendar from "./pages/Calendar";
+import Lessons from "./pages/Lessons";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/students" element={<Students />} />
               <Route path="/tutors" element={<Tutors />} />
               <Route path="/calendar" element={<Calendar />} />
+              <Route path="/lessons" element={<Lessons />} />
             </Route>
             
             {/* Catch-all route */}

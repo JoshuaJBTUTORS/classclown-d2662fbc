@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { format, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -24,70 +25,201 @@ import {
   Users,
   Calendar as CalendarIcon
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import AddLessonForm from '@/components/lessons/AddLessonForm';
+import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
+
+// Interfaces
+interface Tutor {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface Student {
+  id: number;
+  first_name: string;
+  last_name: string;
+}
+
+interface Lesson {
+  id: string;
+  title: string;
+  tutor_id: string;
+  start_time: string;
+  end_time: string;
+  is_group: boolean;
+  status: string;
+  tutor?: Tutor;
+  students?: Student[];
+  color?: string;
+}
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
 
-const events = [
-  {
-    id: '1',
-    title: 'Advanced Mathematics',
-    student: 'John Smith',
-    tutor: 'Dr. Emma Wilson',
-    day: 'Mon',
-    startHour: 9,
-    duration: 1.5,
-    color: 'bg-blue-100 border-blue-300 text-blue-800',
-  },
-  {
-    id: '2',
-    title: 'Physics',
-    student: 'Sarah Johnson',
-    tutor: 'Prof. Michael Brown',
-    day: 'Mon',
-    startHour: 13,
-    duration: 1,
-    color: 'bg-purple-100 border-purple-300 text-purple-800',
-  },
-  {
-    id: '3',
-    title: 'Chemistry',
-    student: 'David Lee',
-    tutor: 'Dr. Alex Thompson',
-    day: 'Wed',
-    startHour: 10,
-    duration: 1.5,
-    color: 'bg-green-100 border-green-300 text-green-800',
-  },
-  {
-    id: '4',
-    title: 'English Literature',
-    student: 'Emily Chen',
-    tutor: 'Prof. James Wilson',
-    day: 'Thu',
-    startHour: 14,
-    duration: 1.5,
-    color: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-  },
-  {
-    id: '5',
-    title: 'Biology',
-    student: 'Robert Miller',
-    tutor: 'Dr. Susan Taylor',
-    day: 'Fri',
-    startHour: 16,
-    duration: 1.5,
-    color: 'bg-pink-100 border-pink-300 text-pink-800',
-  },
-];
+// Generate a consistent color based on lesson title
+const getColorForLesson = (title: string) => {
+  const colors = [
+    'bg-blue-100 border-blue-300 text-blue-800',
+    'bg-purple-100 border-purple-300 text-purple-800',
+    'bg-green-100 border-green-300 text-green-800',
+    'bg-yellow-100 border-yellow-300 text-yellow-800',
+    'bg-pink-100 border-pink-300 text-pink-800',
+    'bg-orange-100 border-orange-300 text-orange-800',
+    'bg-teal-100 border-teal-300 text-teal-800',
+    'bg-indigo-100 border-indigo-300 text-indigo-800',
+  ];
+  
+  // Simple hash function to select a color based on the title
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = ((hash << 5) - hash) + title.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
 
 const Calendar = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentView, setCurrentView] = useState('week');
-  const [currentWeek, setCurrentWeek] = useState('May 19 - May 25, 2025');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [isAddingLesson, setIsAddingLesson] = useState(false);
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
+  const [tutorFilter, setTutorFilter] = useState<string>("all");
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Calculate week range
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start from Monday
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 }); // End on Sunday
+  const weekDates = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const currentWeekText = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const goToNextWeek = () => {
+    setCurrentDate(addWeeks(currentDate, 1));
+  };
+
+  const goToPreviousWeek = () => {
+    setCurrentDate(subWeeks(currentDate, 1));
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  useEffect(() => {
+    fetchTutors();
+    fetchLessons();
+  }, [currentDate, tutorFilter]);
+
+  const fetchTutors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name')
+        .eq('status', 'active');
+
+      if (error) throw error;
+      setTutors(data || []);
+    } catch (error) {
+      console.error('Error fetching tutors:', error);
+      toast.error('Failed to load tutors');
+    }
+  };
+
+  const fetchLessons = async () => {
+    setIsLoading(true);
+    try {
+      const startDate = format(weekStart, 'yyyy-MM-dd');
+      const endDate = format(weekEnd, 'yyyy-MM-dd 23:59:59');
+
+      // Create a query to fetch lessons within the date range
+      let query = supabase
+        .from('lessons')
+        .select(`
+          *,
+          tutor:tutors(id, first_name, last_name),
+          lesson_students!inner(
+            student:students(id, first_name, last_name)
+          )
+        `)
+        .gte('start_time', startDate)
+        .lte('start_time', endDate);
+
+      // Apply tutor filter if selected
+      if (tutorFilter !== "all") {
+        query = query.eq('tutor_id', tutorFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Process the data to transform it into the format we need
+      const processedLessons = data.map(lesson => {
+        // Extract students from the nested structure
+        const students = lesson.lesson_students.map((ls: any) => ls.student);
+        
+        // Calculate the color based on the lesson title
+        const color = getColorForLesson(lesson.title);
+
+        return {
+          ...lesson,
+          students,
+          color,
+          // Remove the original nested structure
+          lesson_students: undefined
+        };
+      });
+
+      setLessons(processedLessons);
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+      toast.error('Failed to load lessons');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddLessonSuccess = () => {
+    fetchLessons();
+  };
+
+  const openLessonDetails = (lessonId: string) => {
+    setSelectedLessonId(lessonId);
+    setIsLessonDetailsOpen(true);
+  };
+
+  const getDayFromDate = (dateString: string) => {
+    const date = parseISO(dateString);
+    return format(date, 'EEE');
+  };
+
+  const getLessonPosition = (lesson: Lesson) => {
+    const startTime = parseISO(lesson.start_time);
+    const endTime = parseISO(lesson.end_time);
+    
+    const hourStart = startTime.getHours() + startTime.getMinutes() / 60;
+    const hourEnd = endTime.getHours() + endTime.getMinutes() / 60;
+    
+    const top = (hourStart - hours[0]) * 80;
+    const height = (hourEnd - hourStart) * 80;
+    
+    return { top, height };
+  };
+
+  const getLessonsForDay = (day: string) => {
+    return lessons.filter(lesson => getDayFromDate(lesson.start_time) === day);
   };
 
   return (
@@ -102,7 +234,7 @@ const Calendar = () => {
               subtitle="Manage and schedule tuition sessions"
               className="mb-4 md:mb-0"
             />
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" onClick={() => setIsAddingLesson(true)}>
               <Plus className="h-4 w-4" />
               New Session
             </Button>
@@ -112,26 +244,28 @@ const Calendar = () => {
             <CardHeader className="border-b">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" onClick={goToPreviousWeek}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <div className="text-lg font-medium">{currentWeek}</div>
-                  <Button variant="outline" size="icon">
+                  <div className="text-lg font-medium">{currentWeekText}</div>
+                  <Button variant="outline" size="icon" onClick={goToNextWeek}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm">Today</Button>
+                  <Button variant="outline" size="sm" onClick={goToToday}>Today</Button>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <Select defaultValue="all">
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Select filter" />
+                    <Select value={tutorFilter} onValueChange={setTutorFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by tutor" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Tutors</SelectItem>
-                        <SelectItem value="math">Math Tutors</SelectItem>
-                        <SelectItem value="science">Science Tutors</SelectItem>
-                        <SelectItem value="english">English Tutors</SelectItem>
+                        {tutors.map((tutor) => (
+                          <SelectItem key={tutor.id} value={tutor.id}>
+                            {tutor.first_name} {tutor.last_name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -155,9 +289,15 @@ const Calendar = () => {
                 <div className="flex">
                   <div className="w-16 flex-shrink-0"></div>
                   <div className="flex-grow grid grid-cols-7">
-                    {days.map((day) => (
-                      <div key={day} className="py-3 text-center font-medium border-b border-l">
-                        {day}
+                    {weekDates.map((date, index) => (
+                      <div 
+                        key={index} 
+                        className={`py-3 text-center font-medium border-b border-l ${
+                          isSameDay(date, new Date()) ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div>{format(date, 'EEE')}</div>
+                        <div className="text-sm text-gray-500">{format(date, 'MMM d')}</div>
                       </div>
                     ))}
                   </div>
@@ -178,41 +318,48 @@ const Calendar = () => {
                   
                   {/* Calendar grid */}
                   <div className="flex-grow grid grid-cols-7">
-                    {days.map((day) => (
-                      <div key={day} className="relative">
+                    {weekDates.map((date, dateIndex) => (
+                      <div key={dateIndex} className="relative">
                         {hours.map((hour) => (
-                          <div key={hour} className="h-20 border-b border-l relative"></div>
+                          <div 
+                            key={hour} 
+                            className={`h-20 border-b border-l relative ${
+                              isSameDay(date, new Date()) ? 'bg-blue-50' : ''
+                            }`}
+                          ></div>
                         ))}
                         
-                        {/* Events */}
-                        {events
-                          .filter(event => event.day === day)
-                          .map(event => {
-                            const top = (event.startHour - hours[0]) * 80;
-                            const height = event.duration * 80;
+                        {/* Lessons for this day */}
+                        {getLessonsForDay(format(date, 'EEE')).map(lesson => {
+                          const { top, height } = getLessonPosition(lesson);
                             
-                            return (
-                              <div 
-                                key={event.id}
-                                className={`absolute left-1 right-1 rounded-md p-2 border ${event.color} overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
-                                style={{
-                                  top: `${top}px`,
-                                  height: `${height}px`,
-                                }}
-                              >
-                                <div className="font-medium text-sm truncate">{event.title}</div>
+                          return (
+                            <div 
+                              key={lesson.id}
+                              className={`absolute left-1 right-1 rounded-md p-2 border ${lesson.color || 'bg-blue-100 border-blue-300 text-blue-800'} overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+                              style={{
+                                top: `${top}px`,
+                                height: `${height}px`,
+                              }}
+                              onClick={() => openLessonDetails(lesson.id)}
+                            >
+                              <div className="font-medium text-sm truncate">{lesson.title}</div>
+                              {lesson.students && lesson.students.length > 0 && (
                                 <div className="flex items-center gap-1 text-xs mt-1">
                                   <Users className="h-3 w-3" />
-                                  <div className="truncate">{event.student}</div>
+                                  <div className="truncate">
+                                    {lesson.students.length > 1 
+                                      ? `${lesson.students.length} Students` 
+                                      : lesson.students[0]?.first_name + ' ' + lesson.students[0]?.last_name}
+                                  </div>
                                 </div>
-                                <div className="text-xs">
-                                  {event.startHour % 12 === 0 ? 12 : event.startHour % 12}
-                                  {event.startHour >= 12 ? 'PM' : 'AM'} - 
-                                  {(event.startHour + event.duration) % 12 === 0 ? 12 : (event.startHour + event.duration) % 12}
-                                  {(event.startHour + event.duration) >= 12 ? 'PM' : 'AM'}
-                                </div>
+                              )}
+                              <div className="text-xs">
+                                {format(parseISO(lesson.start_time), 'h:mm a')} - 
+                                {format(parseISO(lesson.end_time), 'h:mm a')}
                               </div>
-                            );
+                            </div>
+                          );
                         })}
                       </div>
                     ))}
@@ -223,6 +370,20 @@ const Calendar = () => {
           </Card>
         </main>
       </div>
+
+      {/* Add Lesson Dialog */}
+      <AddLessonForm 
+        isOpen={isAddingLesson} 
+        onClose={() => setIsAddingLesson(false)}
+        onSuccess={handleAddLessonSuccess}
+      />
+
+      {/* Lesson Details Dialog */}
+      <LessonDetailsDialog
+        lessonId={selectedLessonId}
+        isOpen={isLessonDetailsOpen}
+        onClose={() => setIsLessonDetailsOpen(false)}
+      />
     </div>
   );
 };

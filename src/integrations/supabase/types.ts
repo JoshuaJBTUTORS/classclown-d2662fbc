@@ -9,6 +9,92 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      lesson_students: {
+        Row: {
+          attendance_status: string | null
+          created_at: string | null
+          id: string
+          lesson_id: string
+          student_id: number
+        }
+        Insert: {
+          attendance_status?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          student_id: number
+        }
+        Update: {
+          attendance_status?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          student_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_students_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_time: string
+          id: string
+          is_group: boolean
+          start_time: string
+          status: string
+          title: string
+          tutor_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_time: string
+          id?: string
+          is_group?: boolean
+          start_time: string
+          status?: string
+          title: string
+          tutor_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          is_group?: boolean
+          start_time?: string
+          status?: string
+          title?: string
+          tutor_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           created_at: string | null
