@@ -35,5 +35,4 @@ export interface Lesson {
   color?: string; 
   is_recurring_instance?: boolean;
   original_id?: string; // Added to keep track of the original lesson ID for recurring instances
-  lesson_students?: any[]; // Added to support the nested structure from the database
 }

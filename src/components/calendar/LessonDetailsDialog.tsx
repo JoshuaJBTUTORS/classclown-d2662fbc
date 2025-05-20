@@ -46,22 +46,19 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const fetchLessonDetails = async (id: string) => {
     setIsLoading(true);
     try {
-      // For recurring instances, extract the original ID properly
-      const isRecurringInstance = id.includes('-');
-      
-      // Important fix: Use the full ID, not just the first part
-      console.log(`Fetching lesson details for ID: ${id}`);
+      // Handle IDs for recurring instances (they have a dash followed by a date)
+      const originalId = id.includes('-') ? id.split('-')[0] : id;
       
       const { data, error } = await supabase
         .from('lessons')
         .select(`
           *,
           tutor:tutors(id, first_name, last_name),
-          lesson_students(
+          lesson_students!inner(
             student:students(id, first_name, last_name)
           )
         `)
-        .eq('id', isRecurringInstance ? id.split('-')[0] : id)
+        .eq('id', originalId)
         .single();
 
       if (error) throw error;
@@ -69,28 +66,19 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       // Transform the data
       if (data) {
         const students = data.lesson_students.map((ls: any) => ls.student);
-        
-        // If this is a recurring instance (has a dash in the ID), preserve the original ID
-        // and mark it as a recurring instance
-        const processedLesson: Lesson = {
+        const processedLesson = {
           ...data,
           students,
           lesson_students: undefined,
           // If this is a recurring instance, preserve that info
-          is_recurring_instance: isRecurringInstance,
-          original_id: isRecurringInstance ? id : undefined
+          is_recurring_instance: id.includes('-'),
+          original_id: id
         };
-        
-        console.log("Processed lesson:", processedLesson);
         setLesson(processedLesson);
-      } else {
-        console.log("No lesson data found");
-        setLesson(null);
       }
     } catch (error) {
       console.error('Error fetching lesson details:', error);
       toast.error('Failed to load lesson details');
-      setLesson(null);
     } finally {
       setIsLoading(false);
     }
@@ -102,11 +90,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const confirmDeleteLesson = () => {
     if (lesson && onDelete) {
-      // For recurring instances, use the correct ID for deletion
-      const idToDelete = lesson.is_recurring_instance 
-        ? lesson.id   // Use the base ID for recurring instances
-        : lesson.id;
-      
+      const idToDelete = lesson.is_recurring_instance ? lesson.id.split('-')[0] : lesson.id;
       onDelete(idToDelete, deleteRecurringOption === 'all');
       setIsDeleteConfirmOpen(false);
       onClose();
@@ -119,12 +103,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const handleCompleteSession = () => {
     if (lesson && onCompleteSession) {
-      // For recurring instances, use the correct ID for completion
-      const idToUse = lesson.is_recurring_instance 
-        ? lesson.id   // Use the base ID for recurring instances
-        : lesson.id;
-        
-      onCompleteSession(idToUse);
+      onCompleteSession(lesson.id);
       onClose();
     }
   };
