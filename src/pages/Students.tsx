@@ -38,7 +38,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -52,21 +51,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import EditStudentForm from '@/components/students/EditStudentForm';
 import ViewStudentProfile from '@/components/students/ViewStudentProfile';
-
-// Define Student interface
-interface Student {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  parent_first_name?: string;
-  parent_last_name?: string;
-  student_id?: string;
-  subjects?: string;
-  status: 'active' | 'inactive';
-  created_at?: string;
-}
+import { Student } from '@/components/students/ViewStudentProfile'; // Import the Student interface
 
 // Define form schema for adding new students
 const formSchema = z.object({
@@ -133,8 +118,31 @@ const Students = () => {
 
       if (error) throw error;
       
-      setStudents(data as Student[]);
-      setFilteredStudents(data as Student[]);
+      // Transform the data to match the Student interface
+      const formattedStudents: Student[] = data.map((student: any) => ({
+        id: student.id,
+        name: `${student.first_name} ${student.last_name}`,
+        email: student.email || '',
+        phone: student.phone || '',
+        subjects: student.subjects || '',
+        status: (student.status as 'active' | 'inactive') || 'active',
+        joinedDate: student.created_at 
+          ? new Date(student.created_at).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            }) 
+          : undefined,
+        first_name: student.first_name || '',
+        last_name: student.last_name || '',
+        parent_first_name: student.parent_first_name || '',
+        parent_last_name: student.parent_last_name || '',
+        student_id: student.student_id,
+        created_at: student.created_at
+      }));
+      
+      setStudents(formattedStudents);
+      setFilteredStudents(formattedStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to load students. Please try again.');
@@ -158,7 +166,7 @@ const Students = () => {
           student.first_name.toLowerCase().includes(query) ||
           student.last_name.toLowerCase().includes(query) ||
           student.email.toLowerCase().includes(query) ||
-          (student.subjects && student.subjects.toLowerCase().includes(query))
+          (typeof student.subjects === 'string' && student.subjects.toLowerCase().includes(query))
       );
       setFilteredStudents(filtered);
     }
@@ -171,7 +179,7 @@ const Students = () => {
         .filter((subject: string) => subject !== '')
         .join(',');
       
-      // Define status as 'active' with literal type
+      // Define status as 'active' with proper typing
       const studentStatus: 'active' | 'inactive' = 'active';
       
       const newStudent = {
@@ -214,7 +222,7 @@ const Students = () => {
     setIsViewDialogOpen(true);
   };
 
-  const handleStudentUpdated = (updatedStudent: any) => {
+  const handleStudentUpdated = (updatedStudent: Student) => {
     fetchStudents();
     setIsEditDialogOpen(false);
   };
@@ -293,12 +301,18 @@ const Students = () => {
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <div className="flex flex-wrap gap-1">
-                            {student.subjects ? 
+                            {typeof student.subjects === 'string' && student.subjects ? 
                               student.subjects.split(',').map((subject, index) => (
                                 <Badge key={index} variant="outline" className="text-xs">
                                   {subject.trim()}
                                 </Badge>
                               )) : 
+                              Array.isArray(student.subjects) && student.subjects.length > 0 ?
+                              student.subjects.map((subject, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {subject}
+                                </Badge>
+                              )) :
                               <span className="text-muted-foreground text-sm">None</span>
                             }
                           </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,26 +21,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Student {
-  id: string | number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  parent_first_name?: string;
-  parent_last_name?: string;
-  student_id?: string;
-  subjects?: string | string[];
-  status: 'active' | 'inactive';
-  created_at?: string;
-}
+import { Student } from './ViewStudentProfile'; // Import the Student interface
 
 interface EditStudentFormProps {
   student: Student;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (updatedStudent: any) => void;
+  onUpdate: (updatedStudent: Student) => void;
 }
 
 const formSchema = z.object({
@@ -129,10 +115,13 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         status: values.status,
       };
 
+      // Fix: Ensure we're using the correct type for the ID when used as a number
+      const studentId = typeof student.id === 'string' ? parseInt(student.id, 10) : student.id;
+
       const { data, error } = await supabase
         .from('students')
         .update(updatedStudentData)
-        .eq('id', student.id)
+        .eq('id', studentId)
         .select();
 
       if (error) {
@@ -140,13 +129,14 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
       }
 
       if (data && data[0]) {
-        const updatedStudent = {
-          id: String(data[0].id),
+        // Prepare the updated student object with consistent types
+        const updatedStudent: Student = {
+          id: data[0].id,
           name: `${data[0].first_name} ${data[0].last_name}`,
           email: data[0].email || '',
           phone: data[0].phone || '',
           subjects: data[0].subjects ? data[0].subjects.split(',').map((subject: string) => subject.trim()) : [],
-          status: data[0].status || 'active',
+          status: data[0].status as 'active' | 'inactive' || 'active',
           joinedDate: new Date(data[0].created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -156,7 +146,8 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           last_name: data[0].last_name || '',
           parent_first_name: data[0].parent_first_name || '',
           parent_last_name: data[0].parent_last_name || '',
-          student_id: data[0].student_id
+          student_id: data[0].student_id,
+          created_at: data[0].created_at
         };
         onUpdate(updatedStudent);
         toast.success("Student details updated successfully");

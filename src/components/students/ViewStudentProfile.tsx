@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -8,7 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 
-interface Student {
+// Updated Student interface to be consistent across files
+export interface Student {
   id: string | number;
   name?: string;
   email: string;
