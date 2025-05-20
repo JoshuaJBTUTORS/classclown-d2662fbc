@@ -92,7 +92,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   const [loading, setLoading] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [isGroup, setIsGroup] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false); // Add state to control Command component visibility
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -144,6 +145,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       form.reset();
       setSelectedStudents([]);
       setIsGroup(false);
+      setCommandOpen(false);
+      setIsPopoverOpen(false);
     }
   }, [isOpen, form]);
 
@@ -162,7 +165,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     });
     
     return () => subscription.unsubscribe();
-  }, [form, selectedStudents, form.watch]);
+  }, [form, selectedStudents]);
 
   const handleStudentSelect = (student: Student) => {
     if (!isGroup && selectedStudents.length > 0) {
@@ -255,7 +258,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={() => {
+      setCommandOpen(false);
+      onClose();
+    }}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add New Lesson</DialogTitle>
@@ -370,7 +376,16 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       </Badge>
                     ))}
                   </div>
-                  <Popover open={commandOpen} onOpenChange={setCommandOpen}>
+                  <Popover 
+                    open={isPopoverOpen} 
+                    onOpenChange={(open) => {
+                      setIsPopoverOpen(open);
+                      // Only set commandOpen when popover is open
+                      if (open) {
+                        setCommandOpen(true);
+                      }
+                    }}
+                  >
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -378,46 +393,45 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                           role="combobox"
                           className="justify-between w-full"
                           disabled={!isGroup && selectedStudents.length > 0}
-                          onClick={() => setCommandOpen(true)}
+                          onClick={() => setIsPopoverOpen(true)}
                         >
                           {isGroup ? "Add students" : (selectedStudents.length === 0 ? "Select student" : "Change student")}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="p-0" side="bottom" align="start">
-                      {/* Only render the Command component when the popover is open */}
-                      {commandOpen && (
-                        <Command>
-                          <CommandInput placeholder="Search students..." />
-                          <CommandEmpty>No students found.</CommandEmpty>
-                          <CommandGroup className="max-h-48 overflow-auto">
-                            {students.map((student) => {
-                              const isSelected = selectedStudents.some(s => s.id === student.id);
-                              return (
-                                <CommandItem
-                                  key={student.id}
-                                  value={student.id.toString()}
-                                  onSelect={() => {
-                                    handleStudentSelect(student);
-                                    if (!isGroup) {
-                                      setCommandOpen(false);
-                                    }
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      isSelected ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {student.first_name} {student.last_name}
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
-                        </Command>
-                      )}
+                    <PopoverContent className="p-0 w-[300px]" side="bottom" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search students..." />
+                        <CommandEmpty>No students found.</CommandEmpty>
+                        <CommandGroup className="max-h-48 overflow-auto">
+                          {students && students.length > 0 ? students.map((student) => {
+                            const isSelected = selectedStudents.some(s => s.id === student.id);
+                            return (
+                              <CommandItem
+                                key={student.id}
+                                value={student.id.toString()}
+                                onSelect={() => {
+                                  handleStudentSelect(student);
+                                  if (!isGroup) {
+                                    setIsPopoverOpen(false);
+                                  }
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    isSelected ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {student.first_name} {student.last_name}
+                              </CommandItem>
+                            );
+                          }) : (
+                            <div className="py-2 px-2 text-sm">Loading students...</div>
+                          )}
+                        </CommandGroup>
+                      </Command>
                     </PopoverContent>
                   </Popover>
                   {form.formState.errors.students?.message && (
