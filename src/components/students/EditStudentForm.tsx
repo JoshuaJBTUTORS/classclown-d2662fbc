@@ -50,7 +50,7 @@ const formSchema = z.object({
   subjects: z.string().min(2, {
     message: "Subjects must be at least 2 characters.",
   }),
-  status: z.string(),
+  status: z.enum(['active', 'inactive']),
 });
 
 const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onClose, onUpdate }) => {

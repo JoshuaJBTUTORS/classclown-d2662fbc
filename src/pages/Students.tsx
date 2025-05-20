@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -126,6 +125,7 @@ const Students = () => {
     fetchStudents();
   }, [user]);
 
+  // Add student function
   const handleAddStudent = async (data: any) => {
     if (!user) {
       toast({
@@ -152,7 +152,7 @@ const Students = () => {
         parent_last_name: data.parentLastName,
         student_id: data.studentId || null,
         subjects: subjectsString,
-        status: 'active' as const, // Using 'as const' to ensure it's typed correctly
+        status: 'active' as 'active', // Explicitly type as 'active' literal
         created_at: new Date().toISOString(),
         // No need to set user_id as RLS will handle it via auth.uid()
       };

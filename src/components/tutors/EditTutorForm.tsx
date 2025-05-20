@@ -78,7 +78,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   bio: z.string().optional(),
   specialities: z.array(z.string()).optional(),
-  status: z.enum(['active', 'inactive']),
+  status: z.enum(['active', 'inactive', 'pending']),
 });
 
 type FormData = z.infer<typeof formSchema>;
