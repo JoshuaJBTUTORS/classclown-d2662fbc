@@ -354,33 +354,52 @@ const Calendar = () => {
     // You would need to pass the lesson data to the form
   };
 
-  // Add a new function to handle lesson deletion
-  const handleDeleteLesson = async (lessonId: string) => {
+  // Update the handleDeleteLesson function to handle recurring lessons
+  const handleDeleteLesson = async (lessonId: string, deleteAllFuture: boolean = false) => {
     try {
       // Check if the lesson is a recurring instance (has a dash in the ID)
       const isRecurringInstance = lessonId.includes('-');
       
-      if (isRecurringInstance) {
-        // For recurring instances, we notify the user that this is just a visual representation
-        toast.info("This is a recurring lesson instance. To delete the series, edit the original lesson.");
+      if (isRecurringInstance && !deleteAllFuture) {
+        // For recurring instances without "delete all future", we just remove it visually
+        // since it's just a visual representation
+        setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
+        toast.success('Lesson instance removed');
         return;
       }
       
-      // Delete the lesson from the database
-      const { error } = await supabase
-        .from('lessons')
-        .delete()
-        .eq('id', lessonId);
+      if (deleteAllFuture) {
+        // For "delete all future" on a recurring lesson
+        const originalId = isRecurringInstance ? lessonId.split('-')[0] : lessonId;
+        
+        // Delete the lesson from the database
+        const { error } = await supabase
+          .from('lessons')
+          .delete()
+          .eq('id', originalId);
 
-      if (error) throw error;
-      
-      // Update the lessons state to remove the deleted lesson
-      setLessons(prev => prev.filter(lesson => 
-        // Remove the specific lesson and any of its recurring instances
-        lesson.id !== lessonId && !lesson.id.startsWith(`${lessonId}-`))
-      );
-      
-      toast.success('Lesson deleted successfully');
+        if (error) throw error;
+        
+        // Update the lessons state to remove the original and all its instances
+        setLessons(prev => prev.filter(lesson => {
+          // Remove the specific lesson and any of its recurring instances
+          return !lesson.id.startsWith(`${originalId}`);
+        }));
+        
+        toast.success('All future lessons deleted successfully');
+      } else {
+        // Regular delete for a non-recurring lesson
+        const { error } = await supabase
+          .from('lessons')
+          .delete()
+          .eq('id', lessonId);
+
+        if (error) throw error;
+        
+        // Update the lessons state
+        setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
+        toast.success('Lesson deleted successfully');
+      }
     } catch (error) {
       console.error('Error deleting lesson:', error);
       toast.error('Failed to delete lesson');

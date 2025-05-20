@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Lesson } from '@/types/lesson';
@@ -8,13 +8,15 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { Check, Clock, BookOpen, Edit, Trash2 } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   lessonId: string | null;
   onSave?: (lesson: Lesson) => void;
-  onDelete?: (lessonId: string) => void;
+  onDelete?: (lessonId: string, deleteAllFuture?: boolean) => void;
   onCompleteSession?: (lessonId: string) => void;
 }
 
@@ -30,14 +32,117 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteOption, setDeleteOption] = useState<'single' | 'all'>('single');
+  const [originalLessonId, setOriginalLessonId] = useState<string | null>(null);
+  const [isRecurringInstance, setIsRecurringInstance] = useState(false);
 
   useEffect(() => {
     if (lessonId && isOpen) {
-      fetchLessonDetails(lessonId);
+      // Check if this is a recurring instance by looking for a dash in the ID
+      if (lessonId.includes('-')) {
+        const parts = lessonId.split('-');
+        const baseId = parts[0];
+        setOriginalLessonId(baseId);
+        setIsRecurringInstance(true);
+        
+        // For recurring instances, fetch the original lesson first
+        fetchOriginalLessonThenRender(baseId, lessonId);
+      } else {
+        setOriginalLessonId(lessonId);
+        setIsRecurringInstance(false);
+        fetchLessonDetails(lessonId);
+      }
     } else {
       setLesson(null);
+      setIsRecurringInstance(false);
+      setOriginalLessonId(null);
     }
   }, [lessonId, isOpen]);
+
+  const fetchOriginalLessonThenRender = async (originalId: string, instanceId: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select(`
+          *,
+          tutor:tutors(id, first_name, last_name),
+          lesson_students!inner(
+            student:students(id, first_name, last_name)
+          )
+        `)
+        .eq('id', originalId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching original lesson:", error);
+        // If we can't fetch the original, try to use the instance data from the calendar
+        renderRecurringInstance(instanceId);
+        return;
+      }
+
+      // Transform the data
+      if (data) {
+        const students = data.lesson_students.map((ls: any) => ls.student);
+        const originalLesson = {
+          ...data,
+          students,
+          lesson_students: undefined
+        };
+        
+        // Now, modify this with the instance-specific data
+        renderRecurringInstanceFromOriginal(originalLesson, instanceId);
+      }
+    } catch (error) {
+      console.error('Error in fetchOriginalLessonThenRender:', error);
+      toast.error('Failed to load lesson details');
+      setIsLoading(false);
+    }
+  };
+
+  const renderRecurringInstanceFromOriginal = (originalLesson: Lesson, instanceId: string) => {
+    // Extract the date part from the instance ID
+    const datePart = instanceId.split('-').slice(1).join('-');
+    
+    try {
+      // Parse the date from the ID
+      const instanceDate = parseISO(datePart);
+      
+      // Create a copy of the original lesson with the instance date
+      const instanceLesson: Lesson = {
+        ...originalLesson,
+        id: instanceId,
+        start_time: format(instanceDate, "yyyy-MM-dd") + originalLesson.start_time.substring(10),
+        end_time: format(instanceDate, "yyyy-MM-dd") + originalLesson.end_time.substring(10),
+        is_recurring_instance: true
+      };
+      
+      setLesson(instanceLesson);
+    } catch (error) {
+      console.error('Error parsing instance date:', error);
+      toast.error('Failed to process recurring lesson data');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const renderRecurringInstance = (instanceId: string) => {
+    // This is a fallback if we can't get the original lesson
+    // We'll just display the minimal info we have
+    setLesson({
+      id: instanceId,
+      title: "Recurring Lesson",
+      description: "This is a recurring lesson instance. Some details may not be available.",
+      start_time: "",
+      end_time: "",
+      is_group: false,
+      status: "scheduled",
+      tutor_id: "",
+      is_recurring: true,
+      is_recurring_instance: true
+    });
+    setIsLoading(false);
+  };
 
   const fetchLessonDetails = async (id: string) => {
     setIsLoading(true);
@@ -80,7 +185,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const confirmDeleteLesson = () => {
     if (lesson && onDelete) {
-      onDelete(lesson.id);
+      // If it's a recurring instance and "all future" is selected, pass the original ID
+      if (isRecurringInstance && deleteOption === 'all' && originalLessonId) {
+        onDelete(originalLessonId, true);
+      } else {
+        // Otherwise pass the current lesson ID (could be original or instance)
+        onDelete(lesson.id, deleteOption === 'all');
+      }
       setIsDeleteConfirmOpen(false);
       onClose();
     }
@@ -92,7 +203,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const handleCompleteSession = () => {
     if (lesson && onCompleteSession) {
-      onCompleteSession(lesson.id);
+      // For recurring instances, we need to use the original lesson ID
+      const completionId = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
+      onCompleteSession(completionId);
       onClose();
     }
   };
@@ -118,6 +231,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Lesson Details</DialogTitle>
+            <DialogDescription>
+              View and manage lesson information
+            </DialogDescription>
           </DialogHeader>
           
           {isLoading ? (
@@ -134,7 +250,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               </div>
               <div>
                 <h3 className="font-medium">Date & Time</h3>
-                <p>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')} - {format(parseISO(lesson.end_time), 'h:mm a')}</p>
+                <p>
+                  {lesson.start_time ? 
+                    `${format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')} - ${format(parseISO(lesson.end_time), 'h:mm a')}` : 
+                    'Time information not available'
+                  }
+                </p>
               </div>
               <div>
                 <h3 className="font-medium">Tutor</h3>
@@ -150,11 +271,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   </ul>
                 ) : <p>No students assigned</p>}
               </div>
-              {lesson.is_recurring && (
+              {(lesson.is_recurring || lesson.is_recurring_instance) && (
                 <div>
                   <h3 className="font-medium">Recurrence</h3>
                   <p>
-                    This is a recurring {lesson.recurrence_interval || 'weekly'} lesson 
+                    This is {lesson.is_recurring_instance ? 'part of a' : 'a'} recurring {lesson.recurrence_interval || 'weekly'} lesson 
                     {lesson.recurrence_end_date ? ` until ${format(parseISO(lesson.recurrence_end_date), 'MMM d, yyyy')}` : ''}
                   </p>
                 </div>
@@ -240,7 +361,21 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the session "{lesson?.title}". This action cannot be undone.
+              This will permanently delete the session "{lesson?.title}".
+              {(lesson?.is_recurring || lesson?.is_recurring_instance) && (
+                <div className="mt-4">
+                  <RadioGroup value={deleteOption} onValueChange={(value) => setDeleteOption(value as 'single' | 'all')}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <RadioGroupItem value="single" id="single" />
+                      <Label htmlFor="single">Delete only this instance</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="all" id="all" />
+                      <Label htmlFor="all">Delete this and all future instances</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -256,7 +391,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         <AssignHomeworkDialog
           isOpen={isAssigningHomework}
           onClose={() => setIsAssigningHomework(false)}
-          preSelectedLessonId={lesson.id}
+          preSelectedLessonId={isRecurringInstance && originalLessonId ? originalLessonId : lesson.id}
         />
       )}
     </>
