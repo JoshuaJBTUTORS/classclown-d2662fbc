@@ -270,7 +270,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Lesson Details</DialogTitle>
             <DialogDescription>
@@ -335,19 +335,21 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             <div className="py-6 text-center">No lesson data available</div>
           )}
           
-          <div className="flex justify-between mt-4">
-            {onDelete && lesson && (
-              <Button 
-                variant="destructive" 
-                onClick={handleDeleteLesson}
-                className="flex items-center gap-1"
-                size="sm"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            )}
-            <div className="flex gap-2 ml-auto">
+          <div className="flex flex-wrap justify-between gap-2 mt-4">
+            <div>
+              {onDelete && lesson && (
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDeleteLesson}
+                  className="flex items-center gap-1"
+                  size="sm"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 justify-end">
               {lesson && (
                 <Button
                   className="flex items-center gap-1"
@@ -375,10 +377,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   className="flex items-center gap-1" 
                   onClick={handleCompleteSession}
                   variant="default"
-                  size="lg"
+                  size="sm"
                 >
                   <Check className="h-4 w-4" />
-                  Complete Session
+                  Complete
                 </Button>
               )}
               {lesson && lesson.status === 'completed' && (
@@ -386,12 +388,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   className="flex items-center gap-1" 
                   variant="outline"
                   disabled
+                  size="sm"
                 >
                   <Clock className="h-4 w-4" />
                   Completed
                 </Button>
               )}
-              <Button variant="outline" onClick={onClose}>Close</Button>
+              <Button variant="outline" onClick={onClose} size="sm">Close</Button>
             </div>
           </div>
         </DialogContent>
