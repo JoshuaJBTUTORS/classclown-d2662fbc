@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 import StudentForm from '@/components/forms/StudentForm';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Student {
   id: string;
@@ -52,8 +53,8 @@ const Students = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSupabaseReady, setIsSupabaseReady] = useState(isSupabaseConfigured());
-
+  const { user } = useAuth();
+  
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -63,13 +64,11 @@ const Students = () => {
     const fetchStudents = async () => {
       setIsLoading(true);
       
-      // Check if Supabase is properly configured
-      if (!isSupabaseReady || !supabase) {
-        console.error('Supabase is not configured properly. Please set the environment variables.');
+      if (!user) {
         setIsLoading(false);
         toast({
-          title: "Configuration Error",
-          description: "Supabase is not configured. Please connect to Supabase first.",
+          title: "Authentication Required",
+          description: "Please log in to view students.",
           variant: "destructive",
         });
         return;
@@ -91,7 +90,7 @@ const Students = () => {
           name: `${student.first_name} ${student.last_name}`,
           email: student.email,
           phone: student.phone || '',
-          subjects: student.subjects || [],
+          subjects: student.subjects ? student.subjects.split(',').map(subject => subject.trim()) : [],
           status: student.status || 'active',
           joinedDate: new Date(student.created_at).toLocaleDateString('en-US', {
             month: 'short',
@@ -119,25 +118,25 @@ const Students = () => {
     };
 
     fetchStudents();
-  }, [isSupabaseReady]);
+  }, [user]);
 
   const handleAddStudent = async (data: any) => {
-    // Check if Supabase is properly configured
-    if (!isSupabaseReady || !supabase) {
+    if (!user) {
       toast({
-        title: "Configuration Error",
-        description: "Supabase is not configured. Please connect to Supabase first.",
+        title: "Authentication Required",
+        description: "Please log in to add students.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Convert comma-separated subjects to array
-      const subjectsArray = data.subjects
+      // Convert comma-separated subjects to string (Supabase expecting string, not array)
+      const subjectsString = data.subjects
         .split(',')
         .map((subject: string) => subject.trim())
-        .filter((subject: string) => subject !== '');
+        .filter((subject: string) => subject !== '')
+        .join(',');
       
       const newStudent = {
         first_name: data.firstName,
@@ -146,9 +145,10 @@ const Students = () => {
         parent_first_name: data.parentFirstName,
         parent_last_name: data.parentLastName,
         student_id: data.studentId || null,
-        subjects: subjectsArray,
+        subjects: subjectsString,
         status: 'active',
         created_at: new Date().toISOString(),
+        // No need to set user_id as RLS will handle it via auth.uid()
       };
       
       // Add to Supabase
@@ -166,8 +166,8 @@ const Students = () => {
           id: studentRecord.id,
           name: `${studentRecord.first_name} ${studentRecord.last_name}`,
           email: studentRecord.email,
-          phone: '',
-          subjects: studentRecord.subjects || [],
+          phone: studentRecord.phone || '',
+          subjects: studentRecord.subjects ? studentRecord.subjects.split(',') : [],
           status: studentRecord.status,
           joinedDate: new Date(studentRecord.created_at).toLocaleDateString('en-US', {
             month: 'short',
@@ -190,11 +190,11 @@ const Students = () => {
           description: "Student has been added successfully",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding student:', error);
       toast({
         title: "Error",
-        description: "Failed to add student",
+        description: error.message || "Failed to add student",
         variant: "destructive",
       });
     }
@@ -263,16 +263,12 @@ const Students = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <span className="ml-2">Loading students...</span>
                 </div>
-              ) : !isSupabaseReady ? (
+              ) : !user ? (
                 <div className="flex flex-col justify-center items-center p-8 text-center">
                   <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Supabase Configuration Required</h3>
+                  <h3 className="text-lg font-semibold mb-2">Authentication Required</h3>
                   <p className="text-muted-foreground mb-4 max-w-md">
-                    Please connect your project to Supabase using the green Supabase button in the top right corner.
-                    This will allow you to store and manage your students data.
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    After connecting, you'll need to create a 'students' table with appropriate columns.
+                    Please log in to view and manage students. You need to be authenticated to access this feature.
                   </p>
                 </div>
               ) : (
