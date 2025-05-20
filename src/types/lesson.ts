@@ -32,4 +32,5 @@ export interface Lesson {
     description?: string | null;
   };
   homework_assigned?: boolean;
+  color?: string; // Added color property to fix TypeScript error
 }
