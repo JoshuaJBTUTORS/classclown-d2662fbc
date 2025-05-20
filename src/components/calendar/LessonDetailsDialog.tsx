@@ -113,9 +113,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         });
       }
 
-      // Combine everything
+      // Combine everything, ensuring the proper typing for status
+      const status = lessonData.status as 'scheduled' | 'completed' | 'cancelled';
+      
       setLesson({
         ...lessonData,
+        status,
         tutor: tutorData,
         students: students
       });

@@ -1,8 +1,8 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -17,188 +17,176 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Student {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  subjects: string[];
-  parent_first_name: string;
-  parent_last_name: string;
-  student_id?: string;
-  status: 'active' | 'inactive';
-}
-
-// Define form schema
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  parentFirstName: z.string().min(1, "Parent's first name is required"),
-  parentLastName: z.string().min(1, "Parent's last name is required"),
-  studentId: z.string().optional(),
-  subjects: z.string().min(1, "At least one subject is required"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
 interface EditStudentFormProps {
-  student: Student | null;
+  student: any;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (updatedStudent: Student) => void;
+  onUpdate: (updatedStudent: any) => void;
 }
 
+const formSchema = z.object({
+  firstName: z.string().min(2, {
+    message: "First name must be at least 2 characters.",
+  }),
+  lastName: z.string().min(2, {
+    message: "Last name must be at least 2 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  parentFirstName: z.string().min(2, {
+    message: "Parent's first name must be at least 2 characters.",
+  }),
+  parentLastName: z.string().min(2, {
+    message: "Parent's last name must be at least 2 characters.",
+  }),
+  studentId: z.string().optional(),
+  subjects: z.string().min(2, {
+    message: "Subjects must be at least 2 characters.",
+  }),
+  status: z.string(),
+});
+
 const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onClose, onUpdate }) => {
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
-  const form = useForm<FormValues>({
+  const [loading, setLoading] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: student ? {
-      firstName: student.first_name,
-      lastName: student.last_name,
-      email: student.email,
-      phone: student.phone || '',
-      parentFirstName: student.parent_first_name,
-      parentLastName: student.parent_last_name,
-      studentId: student.student_id || '',
-      subjects: student.subjects.join(', '),
-    } : {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      parentFirstName: '',
-      parentLastName: '',
-      studentId: '',
-      subjects: '',
+    defaultValues: {
+      firstName: student?.first_name || "",
+      lastName: student?.last_name || "",
+      email: student?.email || "",
+      parentFirstName: student?.parent_first_name || "",
+      parentLastName: student?.parent_last_name || "",
+      studentId: student?.student_id || "",
+      subjects: student?.subjects?.join(', ') || "",
+      status: student?.status || "active",
     },
   });
-  
-  // Reset form when student changes
-  React.useEffect(() => {
+
+  useEffect(() => {
     if (student) {
       form.reset({
-        firstName: student.first_name,
-        lastName: student.last_name,
-        email: student.email,
-        phone: student.phone || '',
-        parentFirstName: student.parent_first_name,
-        parentLastName: student.parent_last_name,
-        studentId: student.student_id || '',
-        subjects: student.subjects.join(', '),
+        firstName: student.first_name || "",
+        lastName: student.last_name || "",
+        email: student.email || "",
+        parentFirstName: student.parent_first_name || "",
+        parentLastName: student.parent_last_name || "",
+        studentId: student.student_id || "",
+        subjects: student.subjects?.join(', ') || "",
+        status: student.status || "active",
       });
     }
   }, [student, form]);
-  
-  if (!student) return null;
-  
-  const handleSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
-    
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
     try {
-      // Convert comma-separated subjects to string
-      const subjectsString = data.subjects
+      const subjectsString = values.subjects
         .split(',')
-        .map(subject => subject.trim())
-        .filter(subject => subject !== '')
+        .map((subject: string) => subject.trim())
+        .filter((subject: string) => subject !== '')
         .join(',');
-        
-      const updatedStudent = {
-        first_name: data.firstName,
-        last_name: data.lastName,
-        email: data.email,
-        phone: data.phone || null,
-        parent_first_name: data.parentFirstName,
-        parent_last_name: data.parentLastName,
-        student_id: data.studentId || null,
+
+      const updatedStudentData = {
+        first_name: values.firstName,
+        last_name: values.lastName,
+        email: values.email,
+        parent_first_name: values.parentFirstName,
+        parent_last_name: values.parentLastName,
+        student_id: values.studentId,
         subjects: subjectsString,
+        status: values.status,
       };
-      
-      // Update in Supabase
-      const { error } = await supabase
+
+      const { data, error } = await supabase
         .from('students')
-        .update(updatedStudent)
-        .eq('id', student.id);
-        
-      if (error) throw error;
-      
-      // Create the updated student object for the UI
-      const updatedStudentForUI = {
-        ...student,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        name: `${data.firstName} ${data.lastName}`,
-        email: data.email,
-        phone: data.phone || '',
-        parent_first_name: data.parentFirstName,
-        parent_last_name: data.parentLastName,
-        student_id: data.studentId || '',
-        subjects: data.subjects.split(',').map(subject => subject.trim()).filter(subject => subject !== ''),
-      };
-      
-      onUpdate(updatedStudentForUI);
-      onClose();
-      
-      toast({
-        title: "Success",
-        description: "Student information has been updated",
-      });
+        .update(updatedStudentData)
+        .eq('id', student.id)
+        .select();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data && data[0]) {
+        const updatedStudent = {
+          id: String(data[0].id),
+          name: `${data[0].first_name} ${data[0].last_name}`,
+          email: data[0].email || '',
+          phone: data[0].phone || '',
+          subjects: data[0].subjects ? data[0].subjects.split(',').map((subject: string) => subject.trim()) : [],
+          status: data[0].status || 'active',
+          joinedDate: new Date(data[0].created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          first_name: data[0].first_name || '',
+          last_name: data[0].last_name || '',
+          parent_first_name: data[0].parent_first_name || '',
+          parent_last_name: data[0].parent_last_name || '',
+          student_id: data[0].student_id
+        };
+        onUpdate(updatedStudent);
+        toast({
+          title: "Success",
+          description: "Student details updated successfully",
+        });
+        onClose();
+      } else {
+        throw new Error("Failed to update student details");
+      }
     } catch (error: any) {
-      console.error('Error updating student:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update student",
+        description: error.message || "Failed to update student details",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Edit Student</DialogTitle>
+          <DialogTitle>Edit Student Details</DialogTitle>
           <DialogDescription>
-            Update {student.name}'s information below
+            Update the student's information as needed.
           </DialogDescription>
         </DialogHeader>
-        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name *</FormLabel>
+                    <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="First name" {...field} />
+                      <Input placeholder="First Name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name *</FormLabel>
+                    <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Last name" {...field} />
+                      <Input placeholder="Last Name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -211,23 +199,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Address *</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="student@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Phone number" {...field} />
+                    <Input placeholder="Email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -240,22 +214,23 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
                 name="parentFirstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Parent's First Name *</FormLabel>
+                    <FormLabel>Parent's First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Parent first name" {...field} />
+                      <Input placeholder="Parent's First Name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="parentLastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Parent's Last Name *</FormLabel>
+                    <FormLabel>Parent's Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Parent last name" {...field} />
+                      <Input placeholder="Parent's Last Name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -268,7 +243,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               name="studentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Student ID (Optional)</FormLabel>
+                  <FormLabel>Student ID</FormLabel>
                   <FormControl>
                     <Input placeholder="Student ID" {...field} />
                   </FormControl>
@@ -282,32 +257,40 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               name="subjects"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subjects *</FormLabel>
+                  <FormLabel>Subjects</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Mathematics, Physics, Chemistry (comma separated)" 
-                      {...field} 
-                    />
+                    <Input placeholder="Subjects (comma-separated)" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <div className="flex justify-end space-x-2 pt-2">
-              <Button 
-                variant="outline" 
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Status" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end space-x-2">
+              <Button
                 type="button"
+                variant="outline"
                 onClick={onClose}
+                disabled={loading}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit"
-                disabled={isSubmitting}
-              >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Student
+              <Button type="submit" disabled={loading}>
+                {loading ? "Updating..." : "Update Student"}
               </Button>
             </div>
           </form>

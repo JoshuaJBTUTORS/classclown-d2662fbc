@@ -1,17 +1,19 @@
-
-import React from 'react';
-import { z } from 'zod';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X } from 'lucide-react';
+import * as z from 'zod';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -22,7 +24,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -31,22 +32,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 
 interface Tutor {
   id: string;
   first_name: string;
   last_name: string;
-  name?: string;
   email: string;
-  phone: string | null;
-  specialities: string[];
-  status: 'active' | 'inactive' | 'pending';
-  rating: number | null;
-  title?: string | null;
-  bio?: string | null;
-  education?: string | null;
-  joined_date: string;
+  phone?: string;
+  bio?: string;
+  specialities?: string[];
+  status: 'active' | 'inactive';
 }
 
 interface EditTutorFormProps {
@@ -56,106 +64,149 @@ interface EditTutorFormProps {
   onUpdate: (tutor: Tutor) => void;
 }
 
-const tutorFormSchema = z.object({
+const formSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().nullable(),
-  title: z.string().nullable(),
-  status: z.enum(['active', 'inactive', 'pending']),
-  specialities: z.string(),
-  bio: z.string().nullable(),
-  education: z.string().nullable(),
-  rating: z.number().min(0).max(5).nullable()
+  phone: z.string().optional(),
+  bio: z.string().optional(),
+  specialities: z.array(z.string()).optional(),
+  status: z.enum(['active', 'inactive']),
 });
 
-type TutorFormValues = z.infer<typeof tutorFormSchema>;
+type FormData = z.infer<typeof formSchema>;
+
+const specialitiesList = [
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English Literature",
+  "History",
+  "Geography",
+  "Computer Science",
+  "Foreign Languages",
+  "Music",
+  "Art",
+  "Physical Education",
+  "Economics",
+  "Business Studies",
+  "Psychology",
+  "Sociology",
+  "Philosophy",
+  "Religious Studies",
+  "Drama",
+  "Media Studies",
+];
 
 const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
-  if (!tutor) return null;
-  
-  const form = useForm<TutorFormValues>({
-    resolver: zodResolver(tutorFormSchema),
+  const [loading, setLoading] = useState(false);
+  const [selectedSpecialities, setSelectedSpecialities] = useState<string[]>([]);
+  const [specialitiesOpen, setSpecialitiesOpen] = useState(false);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      first_name: tutor.first_name,
-      last_name: tutor.last_name,
-      email: tutor.email,
-      phone: tutor.phone || '',
-      title: tutor.title || '',
-      status: tutor.status,
-      specialities: tutor.specialities ? tutor.specialities.join(', ') : '',
-      bio: tutor.bio || '',
-      education: tutor.education || '',
-      rating: tutor.rating
-    }
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
+      bio: "",
+      specialities: [],
+      status: 'active' as const,
+    },
   });
 
-  const { formState } = form;
-  const { isSubmitting } = formState;
-
-  const onSubmit = async (values: TutorFormValues) => {
-    try {
-      // Convert specialities to array
-      const specialitiesArray = values.specialities 
-        ? values.specialities.split(',').map(s => s.trim()).filter(s => s) 
-        : [];
+  // Set form values when tutor changes
+  useEffect(() => {
+    if (tutor) {
+      form.reset({
+        first_name: tutor.first_name,
+        last_name: tutor.last_name,
+        email: tutor.email,
+        phone: tutor.phone || "",
+        bio: tutor.bio || "",
+        specialities: tutor.specialities || [],
+        status: tutor.status,
+      });
       
-      // Update tutor in Supabase
-      const { data, error } = await supabase
+      setSelectedSpecialities(tutor.specialities || []);
+    }
+  }, [tutor, form]);
+
+  const onSubmit = async (data: FormData) => {
+    if (!tutor) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
         .from('tutors')
         .update({
-          first_name: values.first_name,
-          last_name: values.last_name,
-          email: values.email,
-          phone: values.phone,
-          title: values.title,
-          status: values.status,
-          specialities: specialitiesArray,
-          bio: values.bio,
-          education: values.education,
-          rating: values.rating
+          first_name: data.first_name,
+          last_name: data.last_name,
+          email: data.email,
+          phone: data.phone,
+          bio: data.bio,
+          specialities: data.specialities,
+          status: data.status,
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', tutor.id)
-        .select('*')
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      // Format the updated tutor for the UI
+        .eq('id', tutor.id);
+        
+      if (error) throw error;
+      
+      // Update the tutor in the parent component
       const updatedTutor: Tutor = {
-        ...data,
-        name: `${data.title ? data.title + ' ' : ''}${data.first_name} ${data.last_name}`,
-        specialities: data.specialities || [],
-        joined_date: new Date(data.joined_date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })
+        ...tutor,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        phone: data.phone,
+        bio: data.bio,
+        specialities: data.specialities,
+        status: data.status,
       };
-
+      
       onUpdate(updatedTutor);
       onClose();
-    } catch (error) {
-      console.error("Error updating tutor:", error);
-      // Handle error (could add toast notification here)
+      toast.success("Tutor updated successfully");
+    } catch (error: any) {
+      console.error('Error updating tutor:', error);
+      toast.error(error.message || "Failed to update tutor");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const toggleSpeciality = (speciality: string) => {
+    const isSelected = selectedSpecialities.includes(speciality);
+    
+    let updated: string[];
+    if (isSelected) {
+      updated = selectedSpecialities.filter(s => s !== speciality);
+    } else {
+      updated = [...selectedSpecialities, speciality];
+    }
+    
+    setSelectedSpecialities(updated);
+    form.setValue('specialities', updated);
+  };
+
+  const removeSpeciality = (speciality: string) => {
+    const updated = selectedSpecialities.filter(s => s !== speciality);
+    setSelectedSpecialities(updated);
+    form.setValue('specialities', updated);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Edit Tutor</DialogTitle>
-          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
+          <DialogTitle>Edit Tutor</DialogTitle>
         </DialogHeader>
-
+        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -164,13 +215,13 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="John" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               <FormField
                 control={form.control}
                 name="last_name"
@@ -178,14 +229,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -194,13 +245,13 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <Input type="email" placeholder="john.doe@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               <FormField
                 control={form.control}
                 name="phone"
@@ -208,117 +259,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input placeholder="(123) 456-7890" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="rating"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rating (0-5)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        max="5"
-                        step="0.1"
-                        {...field}
-                        value={field.value === null ? '' : field.value}
-                        onChange={(e) => {
-                          const value = e.target.value === '' ? null : parseFloat(e.target.value);
-                          field.onChange(value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="education"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Education</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="specialities"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Specialities (comma-separated)</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {field.value && field.value.split(',').map((speciality, i) => (
-                      speciality.trim() && (
-                        <Badge key={i} variant="secondary" className="rounded-sm">
-                          {speciality.trim()}
-                        </Badge>
-                      )
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            
             <FormField
               control={form.control}
               name="bio"
@@ -327,8 +275,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormLabel>Bio</FormLabel>
                   <FormControl>
                     <Textarea 
-                      className="min-h-[100px]"
-                      {...field}
+                      placeholder="Brief description of the tutor's background and experience..." 
+                      className="min-h-[100px]" 
+                      {...field} 
                       value={field.value || ''}
                     />
                   </FormControl>
@@ -336,13 +285,116 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 </FormItem>
               )}
             />
-
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+            
+            <FormField
+              control={form.control}
+              name="specialities"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Specialities</FormLabel>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedSpecialities.map((speciality) => (
+                      <Badge 
+                        key={speciality} 
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        {speciality}
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-4 w-4 p-0 hover:bg-transparent"
+                          onClick={() => removeSpeciality(speciality)}
+                        >
+                          <X className="h-3 w-3" />
+                          <span className="sr-only">Remove</span>
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <Popover open={specialitiesOpen} onOpenChange={setSpecialitiesOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="justify-between w-full"
+                        >
+                          {selectedSpecialities.length > 0
+                            ? `${selectedSpecialities.length} selected`
+                            : "Select specialities"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0">
+                      <Command>
+                        <CommandInput placeholder="Search specialities..." />
+                        <CommandEmpty>No specialities found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {specialitiesList.map((speciality) => {
+                            const isSelected = selectedSpecialities.includes(speciality);
+                            return (
+                              <CommandItem
+                                key={speciality}
+                                value={speciality}
+                                onSelect={() => toggleSpeciality(speciality)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    isSelected ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {speciality}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
+                Cancel
               </Button>
-            </div>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Updating..." : "Update Tutor"}
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

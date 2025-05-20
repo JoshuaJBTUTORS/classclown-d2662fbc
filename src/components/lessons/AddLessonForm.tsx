@@ -381,11 +381,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="p-0">
+                    <PopoverContent className="p-0" side="bottom" align="start">
                       <Command>
                         <CommandInput placeholder="Search students..." />
                         <CommandEmpty>No students found.</CommandEmpty>
-                        <CommandGroup>
+                        <CommandGroup className="max-h-48 overflow-auto">
                           {students.map((student) => {
                             const isSelected = selectedStudents.some(s => s.id === student.id);
                             return (

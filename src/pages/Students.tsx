@@ -97,7 +97,7 @@ const Students = () => {
           email: student.email || '',
           phone: student.phone || '',
           subjects: student.subjects ? student.subjects.split(',').map((subject: string) => subject.trim()) : [],
-          status: student.status || 'active',
+          status: (student.status || 'active') as 'active' | 'inactive',
           joinedDate: new Date(student.created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
