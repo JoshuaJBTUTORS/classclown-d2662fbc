@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addMonths } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -355,6 +354,39 @@ const Calendar = () => {
     // You would need to pass the lesson data to the form
   };
 
+  // Add a new function to handle lesson deletion
+  const handleDeleteLesson = async (lessonId: string) => {
+    try {
+      // Check if the lesson is a recurring instance (has a dash in the ID)
+      const isRecurringInstance = lessonId.includes('-');
+      
+      if (isRecurringInstance) {
+        // For recurring instances, we notify the user that this is just a visual representation
+        toast.info("This is a recurring lesson instance. To delete the series, edit the original lesson.");
+        return;
+      }
+      
+      // Delete the lesson from the database
+      const { error } = await supabase
+        .from('lessons')
+        .delete()
+        .eq('id', lessonId);
+
+      if (error) throw error;
+      
+      // Update the lessons state to remove the deleted lesson
+      setLessons(prev => prev.filter(lesson => 
+        // Remove the specific lesson and any of its recurring instances
+        lesson.id !== lessonId && !lesson.id.startsWith(`${lessonId}-`))
+      );
+      
+      toast.success('Lesson deleted successfully');
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+      toast.error('Failed to delete lesson');
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} />
@@ -580,6 +612,7 @@ const Calendar = () => {
           startCompletionFlow(lessonId);
         }}
         onSave={handleEditLesson}
+        onDelete={handleDeleteLesson}
       />
 
       {/* Assign Homework Dialog (Part of completion flow) */}

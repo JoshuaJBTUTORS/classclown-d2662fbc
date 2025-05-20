@@ -1,12 +1,12 @@
-
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check, Clock, BookOpen, Edit } from 'lucide-react';
+import { Check, Clock, BookOpen, Edit, Trash2 } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 
 interface LessonDetailsDialogProps {
@@ -29,6 +29,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (lessonId && isOpen) {
@@ -74,10 +75,19 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
 
   const handleDeleteLesson = () => {
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteLesson = () => {
     if (lesson && onDelete) {
       onDelete(lesson.id);
+      setIsDeleteConfirmOpen(false);
       onClose();
     }
+  };
+
+  const cancelDeleteLesson = () => {
+    setIsDeleteConfirmOpen(false);
   };
 
   const handleCompleteSession = () => {
@@ -103,121 +113,144 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Lesson Details</DialogTitle>
-        </DialogHeader>
-        
-        {isLoading ? (
-          <div className="py-6 text-center">Loading lesson details...</div>
-        ) : lesson ? (
-          <div className="grid gap-4 py-4">
-            <div>
-              <h3 className="font-medium">Title</h3>
-              <p>{lesson.title}</p>
-            </div>
-            <div>
-              <h3 className="font-medium">Description</h3>
-              <p>{lesson.description || 'No description provided'}</p>
-            </div>
-            <div>
-              <h3 className="font-medium">Date & Time</h3>
-              <p>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')} - {format(parseISO(lesson.end_time), 'h:mm a')}</p>
-            </div>
-            <div>
-              <h3 className="font-medium">Tutor</h3>
-              <p>{lesson.tutor ? `${lesson.tutor.first_name} ${lesson.tutor.last_name}` : 'Not assigned'}</p>
-            </div>
-            <div>
-              <h3 className="font-medium">Students</h3>
-              {lesson.students && lesson.students.length > 0 ? (
-                <ul className="list-disc pl-5">
-                  {lesson.students.map(student => (
-                    <li key={student.id}>{student.first_name} {student.last_name}</li>
-                  ))}
-                </ul>
-              ) : <p>No students assigned</p>}
-            </div>
-            {lesson.is_recurring && (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Lesson Details</DialogTitle>
+          </DialogHeader>
+          
+          {isLoading ? (
+            <div className="py-6 text-center">Loading lesson details...</div>
+          ) : lesson ? (
+            <div className="grid gap-4 py-4">
               <div>
-                <h3 className="font-medium">Recurrence</h3>
-                <p>
-                  This is a recurring {lesson.recurrence_interval || 'weekly'} lesson 
-                  {lesson.recurrence_end_date ? ` until ${format(parseISO(lesson.recurrence_end_date), 'MMM d, yyyy')}` : ''}
-                </p>
+                <h3 className="font-medium">Title</h3>
+                <p>{lesson.title}</p>
               </div>
-            )}
-            <div className="pt-2">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${lesson.status === 'completed' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
-                <span className="text-sm font-medium">
-                  Status: {lesson.status === 'completed' ? 'Completed' : 'Scheduled'}
-                </span>
+              <div>
+                <h3 className="font-medium">Description</h3>
+                <p>{lesson.description || 'No description provided'}</p>
+              </div>
+              <div>
+                <h3 className="font-medium">Date & Time</h3>
+                <p>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')} - {format(parseISO(lesson.end_time), 'h:mm a')}</p>
+              </div>
+              <div>
+                <h3 className="font-medium">Tutor</h3>
+                <p>{lesson.tutor ? `${lesson.tutor.first_name} ${lesson.tutor.last_name}` : 'Not assigned'}</p>
+              </div>
+              <div>
+                <h3 className="font-medium">Students</h3>
+                {lesson.students && lesson.students.length > 0 ? (
+                  <ul className="list-disc pl-5">
+                    {lesson.students.map(student => (
+                      <li key={student.id}>{student.first_name} {student.last_name}</li>
+                    ))}
+                  </ul>
+                ) : <p>No students assigned</p>}
+              </div>
+              {lesson.is_recurring && (
+                <div>
+                  <h3 className="font-medium">Recurrence</h3>
+                  <p>
+                    This is a recurring {lesson.recurrence_interval || 'weekly'} lesson 
+                    {lesson.recurrence_end_date ? ` until ${format(parseISO(lesson.recurrence_end_date), 'MMM d, yyyy')}` : ''}
+                  </p>
+                </div>
+              )}
+              <div className="pt-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${lesson.status === 'completed' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                  <span className="text-sm font-medium">
+                    Status: {lesson.status === 'completed' ? 'Completed' : 'Scheduled'}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="py-6 text-center">No lesson data available</div>
-        )}
-        
-        <div className="flex justify-between mt-4">
-          {onDelete && lesson && (
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteLesson}
-            >
-              Delete
-            </Button>
+          ) : (
+            <div className="py-6 text-center">No lesson data available</div>
           )}
-          <div className="flex gap-2 ml-auto">
-            {lesson && (
-              <Button
+          
+          <div className="flex justify-between mt-4">
+            {onDelete && lesson && (
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteLesson}
                 className="flex items-center gap-1"
-                onClick={handleAssignHomework}
-                variant="outline"
                 size="sm"
               >
-                <BookOpen className="h-4 w-4" />
-                Assign Homework
+                <Trash2 className="h-4 w-4" />
+                Delete
               </Button>
             )}
-            {lesson && onSave && (
-              <Button 
-                onClick={handleEditLesson} 
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Edit className="h-4 w-4" />
-                Edit
-              </Button>
-            )}
-            {lesson && lesson.status !== 'completed' && onCompleteSession && (
-              <Button 
-                className="flex items-center gap-1" 
-                onClick={handleCompleteSession}
-                variant="default"
-                size="lg"
-              >
-                <Check className="h-4 w-4" />
-                Complete Session
-              </Button>
-            )}
-            {lesson && lesson.status === 'completed' && (
-              <Button 
-                className="flex items-center gap-1" 
-                variant="outline"
-                disabled
-              >
-                <Clock className="h-4 w-4" />
-                Completed
-              </Button>
-            )}
-            <Button variant="outline" onClick={onClose}>Close</Button>
+            <div className="flex gap-2 ml-auto">
+              {lesson && (
+                <Button
+                  className="flex items-center gap-1"
+                  onClick={handleAssignHomework}
+                  variant="outline"
+                  size="sm"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Assign Homework
+                </Button>
+              )}
+              {lesson && onSave && (
+                <Button 
+                  onClick={handleEditLesson} 
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+              {lesson && lesson.status !== 'completed' && onCompleteSession && (
+                <Button 
+                  className="flex items-center gap-1" 
+                  onClick={handleCompleteSession}
+                  variant="default"
+                  size="lg"
+                >
+                  <Check className="h-4 w-4" />
+                  Complete Session
+                </Button>
+              )}
+              {lesson && lesson.status === 'completed' && (
+                <Button 
+                  className="flex items-center gap-1" 
+                  variant="outline"
+                  disabled
+                >
+                  <Clock className="h-4 w-4" />
+                  Completed
+                </Button>
+              )}
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            </div>
           </div>
-        </div>
-      </DialogContent>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the session "{lesson?.title}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteLesson}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteLesson} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {lesson && (
         <AssignHomeworkDialog
@@ -226,7 +259,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           preSelectedLessonId={lesson.id}
         />
       )}
-    </Dialog>
+    </>
   );
 };
 
