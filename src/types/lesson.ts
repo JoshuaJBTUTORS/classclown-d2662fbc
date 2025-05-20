@@ -34,7 +34,4 @@ export interface Lesson {
   homework_assigned?: boolean;
   color?: string;
   is_recurring_instance?: boolean;
-  // Add lesson_students to the type but mark it as potentially undefined
-  // since we transform it into the students array
-  lesson_students?: any;
 }
