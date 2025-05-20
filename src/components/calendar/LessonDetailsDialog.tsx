@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -39,6 +40,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   useEffect(() => {
     if (lessonId && isOpen) {
       console.log("Opening lesson details for ID:", lessonId);
+      setLesson(null); // Reset lesson data
+      
       // Check if this is a recurring instance by looking for a dash in the ID
       if (lessonId.includes('-')) {
         const parts = lessonId.split('-');
@@ -46,8 +49,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         setOriginalLessonId(baseId);
         setIsRecurringInstance(true);
         
-        // For recurring instances, fetch the original lesson and create a display instance
-        fetchRecurringInstanceData(baseId, lessonId);
+        // For recurring instances, fetch the original lesson and create an instance
+        fetchRecurringInstance(baseId, lessonId);
       } else {
         setOriginalLessonId(lessonId);
         setIsRecurringInstance(false);
@@ -60,10 +63,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   }, [lessonId, isOpen]);
 
-  const fetchRecurringInstanceData = async (originalId: string, instanceId: string) => {
+  const fetchRecurringInstance = async (originalId: string, instanceId: string) => {
     setIsLoading(true);
     try {
-      // Get the original lesson data from the database
+      console.log("Fetching recurring instance data for original ID:", originalId, "and instance ID:", instanceId);
+      
+      // Get the original lesson data
       const { data, error } = await supabase
         .from('lessons')
         .select(`
@@ -79,60 +84,60 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       if (error) {
         console.error("Error fetching original lesson:", error);
-        // Fall back to a minimal representation
-        createGenericRecurringInstance(instanceId);
+        // Create a placeholder lesson if we can't fetch the original
+        createPlaceholderLesson(instanceId);
+        return;
+      }
+
+      if (!data) {
+        console.error("No data returned for original lesson");
+        createPlaceholderLesson(instanceId);
         return;
       }
 
       // Extract the date part from the instance ID
       const datePart = instanceId.split('-').slice(1).join('-');
       
-      try {
-        // Parse the date from the ID
-        const instanceDate = parseISO(datePart);
-        
-        // Transform students data
-        const students = data.lesson_students?.map((ls: any) => ({
-          id: ls.student.id,
-          first_name: ls.student.first_name,
-          last_name: ls.student.last_name,
-          attendance_status: ls.attendance_status || 'pending'
-        })) || [];
-        
-        // Get the time part from the original lesson
-        const startDate = parseISO(data.start_time);
-        const endDate = parseISO(data.end_time);
-        
-        // Create the instance lesson with the correct date
-        const instanceLesson: Lesson = {
-          ...data,
-          id: instanceId,
-          start_time: format(instanceDate, "yyyy-MM-dd") + 
-                      format(startDate, "'T'HH:mm:ss"),
-          end_time: format(instanceDate, "yyyy-MM-dd") + 
-                   format(endDate, "'T'HH:mm:ss"),
-          is_recurring_instance: true,
-          students,
-          // Remove the lesson_students property as it's not in the Lesson type
-          // This is what was causing the error
-        };
-        
-        setLesson(instanceLesson);
-      } catch (error) {
-        console.error('Error processing instance date:', error);
-        createGenericRecurringInstance(instanceId);
-      }
+      // Parse the date from the ID
+      const instanceDate = parseISO(datePart);
+      
+      // Transform students data
+      const students = data.lesson_students?.map((ls: any) => ({
+        id: ls.student.id,
+        first_name: ls.student.first_name,
+        last_name: ls.student.last_name,
+        attendance_status: ls.attendance_status || 'pending'
+      })) || [];
+      
+      // Get the time part from the original lesson
+      const startDate = parseISO(data.start_time);
+      const endDate = parseISO(data.end_time);
+      
+      // Create the instance lesson with the correct date
+      const instanceLesson: Lesson = {
+        ...data,
+        id: instanceId,
+        start_time: format(instanceDate, "yyyy-MM-dd") + 
+                    format(startDate, "'T'HH:mm:ss"),
+        end_time: format(instanceDate, "yyyy-MM-dd") + 
+                  format(endDate, "'T'HH:mm:ss"),
+        is_recurring_instance: true,
+        students
+      };
+      
+      console.log("Created instance lesson:", instanceLesson);
+      setLesson(instanceLesson);
     } catch (error) {
-      console.error('Error in fetchRecurringInstanceData:', error);
-      createGenericRecurringInstance(instanceId);
+      console.error('Error in fetchRecurringInstance:', error);
+      createPlaceholderLesson(instanceId);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const createGenericRecurringInstance = (instanceId: string) => {
-    // Create a generic placeholder for recurring instances we can't fully reconstruct
-    setLesson({
+  const createPlaceholderLesson = (instanceId: string) => {
+    // Create a generic placeholder for instances we can't fully reconstruct
+    const placeholderLesson: Lesson = {
       id: instanceId,
       title: "Recurring Lesson",
       description: "This is a recurring lesson instance. Some details may not be available.",
@@ -144,12 +149,17 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       is_recurring: true,
       is_recurring_instance: true,
       recurrence_interval: "weekly"
-    });
+    };
+    
+    setLesson(placeholderLesson);
+    console.log("Using placeholder lesson data:", placeholderLesson);
   };
 
   const fetchLessonDetails = async (id: string) => {
     setIsLoading(true);
     try {
+      console.log("Fetching regular lesson details for ID:", id);
+      
       const { data, error } = await supabase
         .from('lessons')
         .select(`
@@ -163,27 +173,35 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching lesson details:', error);
+        toast.error('Failed to load lesson details');
+        return;
+      }
+
+      if (!data) {
+        console.error('No data returned for lesson details');
+        toast.error('Lesson not found');
+        return;
+      }
 
       // Transform the data
-      if (data) {
-        const students = data.lesson_students.map((ls: any) => ({
-          id: ls.student.id,
-          first_name: ls.student.first_name,
-          last_name: ls.student.last_name,
-          attendance_status: ls.attendance_status || 'pending'
-        }));
+      const students = data.lesson_students?.map((ls: any) => ({
+        id: ls.student.id,
+        first_name: ls.student.first_name,
+        last_name: ls.student.last_name,
+        attendance_status: ls.attendance_status || 'pending'
+      })) || [];
         
-        const processedLesson = {
-          ...data,
-          students,
-          // Don't include lesson_students in the processed lesson as it's not in the Lesson type
-        };
-        
-        setLesson(processedLesson);
-      }
+      const processedLesson: Lesson = {
+        ...data,
+        students
+      };
+      
+      console.log("Fetched and processed lesson:", processedLesson);
+      setLesson(processedLesson);
     } catch (error) {
-      console.error('Error fetching lesson details:', error);
+      console.error('Error in fetchLessonDetails:', error);
       toast.error('Failed to load lesson details');
     } finally {
       setIsLoading(false);
