@@ -36,7 +36,7 @@ const ViewStudentProfile: React.FC<ViewStudentProfileProps> = ({ student, isOpen
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">{student.name}'s Profile</DialogTitle>
+          <DialogTitle className="text-xl font-bold">{student.first_name} {student.last_name}'s Profile</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-6 py-4">

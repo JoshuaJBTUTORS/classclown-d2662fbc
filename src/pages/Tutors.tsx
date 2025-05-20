@@ -20,7 +20,10 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, MoreHorizontal, Filter } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Filter, Eye, Pencil } from 'lucide-react';
+import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
+import EditTutorForm from '@/components/tutors/EditTutorForm';
+import { toast } from '@/hooks/use-toast';
 
 interface Tutor {
   id: string;
@@ -31,6 +34,11 @@ interface Tutor {
   status: 'active' | 'inactive' | 'pending';
   rating: number;
   joinedDate: string;
+  first_name?: string;
+  last_name?: string;
+  title?: string;
+  bio?: string;
+  education?: string;
 }
 
 const tutors: Tutor[] = [
@@ -43,6 +51,11 @@ const tutors: Tutor[] = [
     status: 'active',
     rating: 4.9,
     joinedDate: 'Jan 10, 2024',
+    first_name: 'Emma',
+    last_name: 'Wilson',
+    title: 'Doctor',
+    bio: 'Dr. Wilson has over 10 years of teaching experience in advanced mathematics and physics. She specializes in helping students prepare for university entrance exams and competitions.',
+    education: 'PhD in Theoretical Physics, MIT (2014)'
   },
   {
     id: '2',
@@ -53,6 +66,8 @@ const tutors: Tutor[] = [
     status: 'active',
     rating: 4.8,
     joinedDate: 'Feb 15, 2024',
+    title: 'Professor',
+    bio: 'Professor Brown has taught at university level for 15 years and now helps high school students excel in science subjects.'
   },
   {
     id: '3',
@@ -62,7 +77,7 @@ const tutors: Tutor[] = [
     specialities: ['Chemistry', 'Biology'],
     status: 'pending',
     rating: 4.5,
-    joinedDate: 'Apr 3, 2025',
+    joinedDate: 'Apr 3, 2025'
   },
   {
     id: '4',
@@ -72,7 +87,7 @@ const tutors: Tutor[] = [
     specialities: ['English Literature', 'History'],
     status: 'active',
     rating: 4.7,
-    joinedDate: 'Oct 20, 2024',
+    joinedDate: 'Oct 20, 2024'
   },
   {
     id: '5',
@@ -83,6 +98,7 @@ const tutors: Tutor[] = [
     status: 'inactive',
     rating: 4.3,
     joinedDate: 'Dec 5, 2024',
+    education: 'PhD in Biology, Stanford University (2016)'
   },
 ];
 
@@ -108,9 +124,36 @@ const generateStars = (rating: number) => {
 
 const Tutors = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [tutorsList, setTutorsList] = useState<Tutor[]>(tutors);
+  const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
+  const [viewProfileOpen, setViewProfileOpen] = useState(false);
+  const [editTutorOpen, setEditTutorOpen] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleViewProfile = (tutor: Tutor) => {
+    setSelectedTutor(tutor);
+    setViewProfileOpen(true);
+  };
+
+  const handleEditTutor = (tutor: Tutor) => {
+    setSelectedTutor(tutor);
+    setEditTutorOpen(true);
+  };
+
+  const handleTutorUpdate = (updatedTutor: Tutor) => {
+    setTutorsList(prevTutors => 
+      prevTutors.map(tutor => 
+        tutor.id === updatedTutor.id ? updatedTutor : tutor
+      )
+    );
+    
+    toast({
+      title: "Tutor updated",
+      description: `${updatedTutor.name}'s information has been updated successfully.`,
+    });
   };
 
   return (
@@ -167,7 +210,7 @@ const Tutors = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tutors.map((tutor) => (
+                  {tutorsList.map((tutor) => (
                     <TableRow key={tutor.id}>
                       <TableCell className="font-medium">{tutor.name}</TableCell>
                       <TableCell>
@@ -210,8 +253,14 @@ const Tutors = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Profile</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewProfile(tutor)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditTutor(tutor)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit Details
+                            </DropdownMenuItem>
                             <DropdownMenuItem>Assign Classes</DropdownMenuItem>
                             <DropdownMenuItem>View Schedule</DropdownMenuItem>
                             <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
@@ -226,7 +275,7 @@ const Tutors = () => {
             
             <div className="flex items-center justify-between px-4 py-3 border-t">
               <div className="text-sm text-muted-foreground">
-                Showing <strong>5</strong> of <strong>24</strong> tutors
+                Showing <strong>{tutorsList.length}</strong> of <strong>24</strong> tutors
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" disabled>Previous</Button>
@@ -236,6 +285,21 @@ const Tutors = () => {
           </div>
         </main>
       </div>
+      
+      {/* View Tutor Profile Dialog */}
+      <ViewTutorProfile 
+        tutor={selectedTutor} 
+        isOpen={viewProfileOpen} 
+        onClose={() => setViewProfileOpen(false)} 
+      />
+      
+      {/* Edit Tutor Dialog */}
+      <EditTutorForm 
+        tutor={selectedTutor} 
+        isOpen={editTutorOpen} 
+        onClose={() => setEditTutorOpen(false)}
+        onUpdate={handleTutorUpdate}
+      />
     </div>
   );
 };
