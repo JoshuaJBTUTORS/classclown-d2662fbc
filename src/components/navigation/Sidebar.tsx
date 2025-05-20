@@ -54,11 +54,11 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         <div className="flex items-center gap-2">
           <img
             src="/tutorhub-logo.svg"
-            alt="TutorHub Logo"
+            alt="ClassClown Logo"
             className="h-8 w-8"
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/32?text=TH' }}
+            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/32?text=CC' }}
           />
-          <span className="font-bold text-lg text-primary">TutorHub</span>
+          <span className="font-bold text-lg text-primary">ClassClown</span>
         </div>
       </div>
       <div className="flex-1 overflow-auto py-4">

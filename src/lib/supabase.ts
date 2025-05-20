@@ -1,18 +1,13 @@
 
-import { createClient } from '@supabase/supabase-js';
+// This file is deprecated and should not be used.
+// Import the Supabase client from @/integrations/supabase/client instead.
 
-// Get environment variables with fallbacks for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 // Export a function to check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return supabaseUrl !== '' && supabaseAnonKey !== '';
+  return true; // We now use the auto-generated client which is always configured
 };
 
-// Create a single supabase client for interacting with your database
-// Only create the client if the required values are available
-export const supabase = isSupabaseConfigured() 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
-
+// Re-export the client from the integrations folder
+export const supabase = supabaseClient;

@@ -22,7 +22,7 @@ const Index = () => {
         <main className="flex-1 p-4 md:p-6">
           <PageTitle 
             title="Dashboard" 
-            subtitle="Welcome to TutorHub CRM - Your tuition service management platform."
+            subtitle="Welcome to ClassClown - Your tuition service management platform."
           />
           <div className="space-y-6">
             <DashboardMetrics />
