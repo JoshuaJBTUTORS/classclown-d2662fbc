@@ -46,22 +46,22 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const fetchLessonDetails = async (id: string) => {
     setIsLoading(true);
     try {
-      // For recurring instances (ID format: original-id-yyyy-MM-dd), extract the original ID
+      // For recurring instances, extract the original ID properly
       const isRecurringInstance = id.includes('-');
-      const originalId = isRecurringInstance ? id.split('-')[0] : id;
       
-      console.log(`Fetching lesson details for ID: ${id}, originalId: ${originalId}`);
+      // Important fix: Use the full ID, not just the first part
+      console.log(`Fetching lesson details for ID: ${id}`);
       
       const { data, error } = await supabase
         .from('lessons')
         .select(`
           *,
           tutor:tutors(id, first_name, last_name),
-          lesson_students!inner(
+          lesson_students(
             student:students(id, first_name, last_name)
           )
         `)
-        .eq('id', originalId)
+        .eq('id', isRecurringInstance ? id.split('-')[0] : id)
         .single();
 
       if (error) throw error;
@@ -102,8 +102,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const confirmDeleteLesson = () => {
     if (lesson && onDelete) {
-      const idToDelete = lesson.is_recurring_instance && lesson.original_id 
-        ? lesson.original_id 
+      // For recurring instances, use the correct ID for deletion
+      const idToDelete = lesson.is_recurring_instance 
+        ? lesson.id   // Use the base ID for recurring instances
         : lesson.id;
       
       onDelete(idToDelete, deleteRecurringOption === 'all');
@@ -118,9 +119,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const handleCompleteSession = () => {
     if (lesson && onCompleteSession) {
-      const idToUse = lesson.is_recurring_instance && lesson.original_id 
-        ? lesson.original_id 
+      // For recurring instances, use the correct ID for completion
+      const idToUse = lesson.is_recurring_instance 
+        ? lesson.id   // Use the base ID for recurring instances
         : lesson.id;
+        
       onCompleteSession(idToUse);
       onClose();
     }
