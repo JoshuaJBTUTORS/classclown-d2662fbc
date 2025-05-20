@@ -97,7 +97,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       title: editingHomework?.title || "",
       description: editingHomework?.description || "",
       lesson_id: preSelectedLessonId || editingHomework?.lesson_id || "",
-      due_date: editingHomework?.due_date,
+      due_date: editingHomework?.due_date ? new Date(editingHomework.due_date) : undefined,
       attachment: undefined,
     },
   });
@@ -422,6 +422,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                         selected={field.value}
                         onSelect={field.onChange}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
