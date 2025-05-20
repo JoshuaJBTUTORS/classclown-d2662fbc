@@ -152,7 +152,7 @@ const Students = () => {
         parent_last_name: data.parentLastName,
         student_id: data.studentId || null,
         subjects: subjectsString,
-        status: 'active',
+        status: 'active' as const, // Using 'as const' to ensure it's typed correctly
         created_at: new Date().toISOString(),
         // No need to set user_id as RLS will handle it via auth.uid()
       };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -27,11 +26,12 @@ import AddTutorForm from '@/components/tutors/AddTutorForm';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+// Updated Tutor interface to include all necessary properties
 interface Tutor {
   id: string;
   first_name: string;
   last_name: string;
-  name?: string; // For display purposes
+  name?: string;
   email: string;
   phone: string | null;
   specialities: string[];

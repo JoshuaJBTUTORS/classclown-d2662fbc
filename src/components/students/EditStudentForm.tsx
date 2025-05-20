@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -134,20 +135,13 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           student_id: data[0].student_id
         };
         onUpdate(updatedStudent);
-        toast({
-          title: "Success",
-          description: "Student details updated successfully",
-        });
+        toast.success("Student details updated successfully");
         onClose();
       } else {
         throw new Error("Failed to update student details");
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update student details",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to update student details");
     } finally {
       setLoading(false);
     }

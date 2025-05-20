@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,15 +47,21 @@ import {
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 
+// Update this interface to match the one in Tutors.tsx
 interface Tutor {
   id: string;
   first_name: string;
   last_name: string;
+  name?: string;
   email: string;
-  phone?: string;
-  bio?: string;
+  phone?: string | null;
+  bio?: string | null;
   specialities?: string[];
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending';
+  title?: string | null;
+  education?: string | null;
+  rating?: number | null;
+  joined_date?: string;
 }
 
 interface EditTutorFormProps {
