@@ -92,6 +92,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   const [loading, setLoading] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [isGroup, setIsGroup] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false); // Add state to control Command component visibility
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -132,8 +133,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       }
     };
 
-    fetchTutorsAndStudents();
-  }, []);
+    if (isOpen) {
+      fetchTutorsAndStudents();
+    }
+  }, [isOpen]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -367,7 +370,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       </Badge>
                     ))}
                   </div>
-                  <Popover>
+                  <Popover open={commandOpen} onOpenChange={setCommandOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -375,6 +378,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                           role="combobox"
                           className="justify-between w-full"
                           disabled={!isGroup && selectedStudents.length > 0}
+                          onClick={() => setCommandOpen(true)}
                         >
                           {isGroup ? "Add students" : (selectedStudents.length === 0 ? "Select student" : "Change student")}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -382,30 +386,38 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="p-0" side="bottom" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search students..." />
-                        <CommandEmpty>No students found.</CommandEmpty>
-                        <CommandGroup className="max-h-48 overflow-auto">
-                          {students.map((student) => {
-                            const isSelected = selectedStudents.some(s => s.id === student.id);
-                            return (
-                              <CommandItem
-                                key={student.id}
-                                value={student.id.toString()}
-                                onSelect={() => handleStudentSelect(student)}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    isSelected ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {student.first_name} {student.last_name}
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      </Command>
+                      {/* Only render the Command component when the popover is open */}
+                      {commandOpen && (
+                        <Command>
+                          <CommandInput placeholder="Search students..." />
+                          <CommandEmpty>No students found.</CommandEmpty>
+                          <CommandGroup className="max-h-48 overflow-auto">
+                            {students.map((student) => {
+                              const isSelected = selectedStudents.some(s => s.id === student.id);
+                              return (
+                                <CommandItem
+                                  key={student.id}
+                                  value={student.id.toString()}
+                                  onSelect={() => {
+                                    handleStudentSelect(student);
+                                    if (!isGroup) {
+                                      setCommandOpen(false);
+                                    }
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      isSelected ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {student.first_name} {student.last_name}
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </Command>
+                      )}
                     </PopoverContent>
                   </Popover>
                   {form.formState.errors.students?.message && (
