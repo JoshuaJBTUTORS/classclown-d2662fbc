@@ -6,24 +6,38 @@ import PageTitle from '@/components/ui/PageTitle';
 import HomeworkManager from '@/components/homework/HomeworkManager';
 import StudentHomeworkView from '@/components/homework/StudentHomeworkView';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { UserCog } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Homework: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userRole, setUserRole] = useState<'tutor' | 'student' | null>(null);
   const [studentId, setStudentId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // For demonstration purposes, we'll detect role based on the user's email
     // In a real app, this would be based on proper authentication
-    const checkUserRole = async () => {
+    checkUserRole();
+  }, []);
+
+  const checkUserRole = async () => {
+    setIsLoading(true);
+    try {
+      console.log("Checking user role...");
       // Check if user is a tutor
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
         .select('id')
         .limit(1);
       
+      console.log("Tutor check result:", { tutorData, tutorError });
+      
       if (!tutorError && tutorData && tutorData.length > 0) {
+        console.log("Setting user as tutor");
         setUserRole('tutor');
+        setIsLoading(false);
         return;
       }
 
@@ -33,18 +47,57 @@ const Homework: React.FC = () => {
         .select('id')
         .limit(1);
       
+      console.log("Student check result:", { studentData, studentError });
+      
       if (!studentError && studentData && studentData.length > 0) {
+        console.log("Setting user as student");
         setUserRole('student');
         setStudentId(studentData[0].id);
+        setIsLoading(false);
         return;
       }
 
       // Default to tutor role if no match is found
+      console.log("No role match found, defaulting to tutor");
       setUserRole('tutor');
-    };
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error checking user role:", error);
+      setUserRole('tutor'); // Default to tutor on error
+      setIsLoading(false);
+    }
+  };
 
-    checkUserRole();
-  }, []);
+  const handleRoleSwitch = async () => {
+    if (userRole === 'tutor') {
+      try {
+        // Switch to student - check if we have any student data
+        const { data, error } = await supabase
+          .from('students')
+          .select('id')
+          .limit(1);
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          setUserRole('student');
+          setStudentId(data[0].id);
+          toast.success('Switched to Student view');
+        } else {
+          toast.error('No student data available for testing');
+        }
+      } catch (error) {
+        console.error("Error switching to student role:", error);
+        toast.error('Failed to switch roles');
+      }
+    } else {
+      // Switch to tutor
+      setUserRole('tutor');
+      toast.success('Switched to Tutor view');
+    }
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -64,9 +117,23 @@ const Homework: React.FC = () => {
                 : "View and submit your homework assignments"}
               className="mb-4 md:mb-0"
             />
+            
+            {/* Role switcher for testing */}
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 mb-4 md:mb-0" 
+              onClick={handleRoleSwitch}
+            >
+              <UserCog className="h-4 w-4" />
+              {userRole === 'tutor' 
+                ? 'Switch to Student View' 
+                : 'Switch to Tutor View'}
+            </Button>
           </div>
 
-          {userRole === 'tutor' ? (
+          {isLoading ? (
+            <div className="py-10 text-center">Loading...</div>
+          ) : userRole === 'tutor' ? (
             <HomeworkManager />
           ) : studentId ? (
             <StudentHomeworkView studentId={studentId} />
