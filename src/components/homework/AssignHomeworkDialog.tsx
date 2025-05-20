@@ -186,38 +186,6 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
     }
   };
 
-  // Helper function to ensure the homework bucket exists
-  const ensureHomeworkBucketExists = async () => {
-    try {
-      // First check if the bucket exists
-      const { data: buckets, error: listError } = await supabase
-        .storage
-        .listBuckets();
-      
-      if (listError) throw listError;
-      
-      // Check if the homework bucket exists
-      const homeworkBucket = buckets.find(bucket => bucket.name === 'homework');
-      
-      if (!homeworkBucket) {
-        // Create the bucket if it doesn't exist
-        const { error: createError } = await supabase.storage.createBucket('homework', {
-          public: true,
-          fileSizeLimit: 10485760 // 10MB
-        });
-        
-        if (createError) throw createError;
-        
-        console.log("Created homework bucket successfully");
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error ensuring homework bucket exists:", error);
-      return false;
-    }
-  }
-
   const onSubmit = async (data: FormData) => {
     console.log("Submitting homework data:", data);
     setLoading(true);
@@ -228,37 +196,38 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       
       // Upload file if provided
       if (data.attachment) {
-        // Ensure the homework bucket exists
-        const bucketExists = await ensureHomeworkBucketExists();
-        
-        if (!bucketExists) {
-          throw new Error("Could not create storage bucket for homework attachments");
-        }
-        
         const fileExt = data.attachment.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `${fileName}`;
         
-        // Upload the file to Supabase Storage
-        const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('homework')
-          .upload(filePath, data.attachment, {
-            cacheControl: '3600',
-            upsert: false,
-          });
+        try {
+          // Upload the file to Supabase Storage
+          const { error: uploadError, data: uploadData } = await supabase.storage
+            .from('homework')
+            .upload(filePath, data.attachment, {
+              cacheControl: '3600',
+              upsert: false,
+            });
 
-        if (uploadError) {
-          console.error("File upload error:", uploadError);
-          throw uploadError;
+          if (uploadError) {
+            console.error("File upload error:", uploadError);
+            throw uploadError;
+          }
+          
+          // Get the public URL of the uploaded file
+          const { data: urlData } = supabase.storage
+            .from('homework')
+            .getPublicUrl(filePath);
+          
+          attachmentUrl = urlData.publicUrl;
+          attachmentType = fileExt;
+          console.log("File uploaded successfully:", attachmentUrl);
+        } catch (uploadError) {
+          console.error("Error during file upload:", uploadError);
+          toast.error("Failed to upload file. Please try again.");
+          setLoading(false);
+          return;
         }
-        
-        // Get the public URL of the uploaded file
-        const { data: urlData } = supabase.storage
-          .from('homework')
-          .getPublicUrl(filePath);
-        
-        attachmentUrl = urlData.publicUrl;
-        attachmentType = fileExt;
       }
 
       // Prepare the homework data

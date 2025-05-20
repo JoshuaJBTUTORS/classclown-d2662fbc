@@ -30,6 +30,9 @@ export interface Lesson {
     id: string;
     title: string;
     description?: string | null;
+    due_date?: string | null;
+    attachment_url?: string | null;
+    attachment_type?: string | null;
   };
   homework_assigned?: boolean;
   color?: string;

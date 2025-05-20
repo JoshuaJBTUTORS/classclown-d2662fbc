@@ -73,6 +73,7 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
   const [submissionText, setSubmissionText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fileUploadError, setFileUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (studentId) {
@@ -150,8 +151,14 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileUploadError(null);
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        setFileUploadError("File size exceeds 10MB limit");
+        return;
+      }
       setSelectedFile(file);
     }
   };
@@ -159,7 +166,13 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
   const handleSubmitHomework = async () => {
     if (!selectedHomework) return;
     
+    if (!submissionText && !selectedFile) {
+      toast.error("Please add text or attach a file before submitting");
+      return;
+    }
+    
     setIsSubmitting(true);
+    setFileUploadError(null);
     
     try {
       let attachmentUrl = null;
@@ -167,35 +180,35 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
       // Upload file if provided
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `submissions/${fileName}`;
+        const fileName = `submissions/${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         
-        // Check if the homework bucket exists
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        if (bucketError) {
-          console.error('Error checking buckets:', bucketError);
-          const { data, error } = await supabase.storage.createBucket('homework', {
-            public: true
-          });
-          if (error) throw error;
-        }
-        
-        // Upload the file to Supabase Storage
-        const { error: uploadError } = await supabase.storage
-          .from('homework')
-          .upload(filePath, selectedFile, {
-            cacheControl: '3600',
-            upsert: false,
-          });
+        try {
+          // Upload the file to Supabase Storage
+          const { error: uploadError } = await supabase.storage
+            .from('homework')
+            .upload(fileName, selectedFile, {
+              cacheControl: '3600',
+              upsert: false,
+            });
 
-        if (uploadError) throw uploadError;
-        
-        // Get the public URL of the uploaded file
-        const { data: urlData } = supabase.storage
-          .from('homework')
-          .getPublicUrl(filePath);
-        
-        attachmentUrl = urlData.publicUrl;
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            setFileUploadError("Failed to upload file. Please try again.");
+            throw uploadError;
+          }
+          
+          // Get the public URL of the uploaded file
+          const { data: urlData } = supabase.storage
+            .from('homework')
+            .getPublicUrl(fileName);
+          
+          attachmentUrl = urlData.publicUrl;
+          console.log("File uploaded successfully:", attachmentUrl);
+        } catch (uploadError) {
+          console.error('Error during file upload:', uploadError);
+          setFileUploadError("Failed to upload file. Please try again.");
+          throw uploadError;
+        }
       }
 
       // Create the submission
@@ -204,7 +217,8 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         student_id: studentId,
         submission_text: submissionText || null,
         attachment_url: attachmentUrl,
-        status: 'submitted'
+        status: 'submitted',
+        submitted_at: new Date().toISOString()
       };
 
       const { error } = await supabase
@@ -222,7 +236,9 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
       setSelectedFile(null);
     } catch (error) {
       console.error('Error submitting homework:', error);
-      toast.error('Failed to submit homework. Please try again.');
+      if (!fileUploadError) {
+        toast.error('Failed to submit homework. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -319,6 +335,8 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                       className="w-full"
                       onClick={() => {
                         setSelectedHomework(homework);
+                        setSubmissionText('');
+                        setSelectedFile(null);
                         setIsSubmitDialogOpen(true);
                       }}
                     >
@@ -410,6 +428,14 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                     <p className="text-xs text-muted-foreground">
                       Upload your completed homework (PDF, Word document, etc.)
                     </p>
+                    {selectedFile && (
+                      <p className="text-xs text-green-600">
+                        Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)}MB)
+                      </p>
+                    )}
+                    {fileUploadError && (
+                      <p className="text-xs text-red-500">{fileUploadError}</p>
+                    )}
                   </div>
                 </div>
               </div>
