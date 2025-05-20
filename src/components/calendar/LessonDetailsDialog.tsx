@@ -6,7 +6,7 @@ import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check, Clock, BookOpen } from 'lucide-react';
+import { Check, Clock, BookOpen, Edit } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 
 interface LessonDetailsDialogProps {
@@ -93,6 +93,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
+  const handleEditLesson = () => {
+    if (lesson && onSave) {
+      onSave(lesson);
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -175,6 +182,17 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 Assign Homework
               </Button>
             )}
+            {lesson && onSave && (
+              <Button 
+                onClick={handleEditLesson} 
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
             {lesson && lesson.status !== 'completed' && onCompleteSession && (
               <Button 
                 className="flex items-center gap-1" 
@@ -194,11 +212,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               >
                 <Clock className="h-4 w-4" />
                 Completed
-              </Button>
-            )}
-            {onSave && lesson && (
-              <Button onClick={() => onSave(lesson)}>
-                Edit
               </Button>
             )}
             <Button variant="outline" onClick={onClose}>Close</Button>

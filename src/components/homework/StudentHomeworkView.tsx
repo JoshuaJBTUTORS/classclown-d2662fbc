@@ -32,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 
 interface StudentHomeworkProps {
@@ -169,6 +170,16 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `submissions/${fileName}`;
         
+        // Check if the homework bucket exists
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        if (bucketError) {
+          console.error('Error checking buckets:', bucketError);
+          const { data, error } = await supabase.storage.createBucket('homework', {
+            public: true
+          });
+          if (error) throw error;
+        }
+        
         // Upload the file to Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from('homework')
@@ -276,16 +287,32 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                 </CardContent>
                 <CardFooter className="flex justify-between pt-0">
                   {hasSubmission ? (
-                    <Button
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
-                        setSelectedHomework(homework);
-                        setIsViewSubmissionOpen(true);
-                      }}
-                    >
-                      View Submission
-                    </Button>
+                    <div className="flex w-full gap-2">
+                      <Button
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => {
+                          setSelectedHomework(homework);
+                          setIsViewSubmissionOpen(true);
+                        }}
+                      >
+                        View Submission
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setSelectedHomework(homework);
+                          // Pre-fill with existing submission data
+                          if (homework.submission) {
+                            setSubmissionText(homework.submission.submission_text || '');
+                            setSelectedFile(null);
+                          }
+                          setIsSubmitDialogOpen(true);
+                        }}
+                      >
+                        Update
+                      </Button>
+                    </div>
                   ) : (
                     <Button 
                       variant={isOverdue ? "destructive" : "default"}
@@ -317,6 +344,9 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Submit Homework</DialogTitle>
+            <DialogDescription>
+              Complete your homework assignment and submit it for review.
+            </DialogDescription>
           </DialogHeader>
           
           {selectedHomework && (
@@ -419,6 +449,9 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Your Submission</DialogTitle>
+            <DialogDescription>
+              Review your homework submission and teacher feedback.
+            </DialogDescription>
           </DialogHeader>
           
           {selectedHomework?.submission && (
@@ -490,6 +523,19 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
               onClick={() => setIsViewSubmissionOpen(false)}
             >
               Close
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                setIsViewSubmissionOpen(false);
+                if (selectedHomework && selectedHomework.submission) {
+                  setSubmissionText(selectedHomework.submission.submission_text || '');
+                  setSelectedFile(null);
+                }
+                setIsSubmitDialogOpen(true);
+              }}
+            >
+              Update Submission
             </Button>
           </DialogFooter>
         </DialogContent>

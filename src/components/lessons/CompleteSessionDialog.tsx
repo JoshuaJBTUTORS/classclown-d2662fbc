@@ -197,7 +197,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         onSuccess();
       }
       
-      // Close the dialog - fixing the issue by ensuring this runs
+      // Close the dialog - ensure this runs by calling it directly
       onClose();
     } catch (error) {
       console.error('Error completing session:', error);

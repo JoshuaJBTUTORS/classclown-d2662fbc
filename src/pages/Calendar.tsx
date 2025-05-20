@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { format, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addMonths } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -23,7 +24,8 @@ import {
   Plus, 
   Users,
   Calendar as CalendarIcon,
-  Check
+  Check,
+  Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,7 +88,10 @@ const Calendar = () => {
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isAssignHomeworkOpen, setIsAssignHomeworkOpen] = useState(false);
   const [tutorFilter, setTutorFilter] = useState<string>("all");
+  const [studentFilter, setStudentFilter] = useState<string>("all");
+  const [sessionTypeFilter, setSessionTypeFilter] = useState<string>("all");
   const [tutors, setTutors] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // New state for tracking completion flow
@@ -119,8 +124,9 @@ const Calendar = () => {
 
   useEffect(() => {
     fetchTutors();
+    fetchStudents();
     fetchLessons();
-  }, [currentDate, tutorFilter]);
+  }, [currentDate, tutorFilter, studentFilter, sessionTypeFilter]);
 
   const fetchTutors = async () => {
     try {
@@ -137,11 +143,27 @@ const Calendar = () => {
     }
   };
 
+  const fetchStudents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, first_name, last_name')
+        .neq('status', 'inactive');
+
+      if (error) throw error;
+      setStudents(data || []);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      toast.error('Failed to load students');
+    }
+  };
+
   const fetchLessons = async () => {
     setIsLoading(true);
     try {
       const startDate = format(weekStart, 'yyyy-MM-dd');
       const endDate = format(weekEnd, 'yyyy-MM-dd 23:59:59');
+      const threeMonthsLater = format(addMonths(weekEnd, 3), 'yyyy-MM-dd 23:59:59');
 
       // Create a query to fetch lessons within the date range
       let query = supabase
@@ -149,12 +171,12 @@ const Calendar = () => {
         .select(`
           *,
           tutor:tutors(id, first_name, last_name),
-          lesson_students!inner(
+          lesson_students(
             student:students(id, first_name, last_name),
             attendance_status
           )
         `)
-        .gte('start_time', startDate)
+        .or(`start_time.gte.${startDate},recurrence_end_date.gte.${startDate}`)
         .lte('start_time', endDate);
 
       // Apply tutor filter if selected
@@ -162,19 +184,87 @@ const Calendar = () => {
         query = query.eq('tutor_id', tutorFilter);
       }
 
+      // Apply session type filter
+      if (sessionTypeFilter !== "all") {
+        const isGroup = sessionTypeFilter === "group";
+        query = query.eq('is_group', isGroup);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
+      
+      // Start with the regular lessons
+      let processedLessons = data ? [...data] : [];
+      
+      // Handle recurring lessons
+      const recurringLessons = data ? data.filter(lesson => lesson.is_recurring) : [];
+      for (const lesson of recurringLessons) {
+        // Generate recurring instances for future weeks
+        const originalDate = parseISO(lesson.start_time);
+        const originalEndDate = parseISO(lesson.end_time);
+        const duration = originalEndDate.getTime() - originalDate.getTime(); // in milliseconds
+        
+        // Create instances for the next 3 months
+        let currentInstance = addWeeks(originalDate, 1); // Start from next week
+        const recurrenceEndDate = lesson.recurrence_end_date 
+          ? parseISO(lesson.recurrence_end_date) 
+          : addMonths(originalDate, 3); // Default to 3 months
+
+        while (currentInstance <= recurrenceEndDate) {
+          // Check if this instance falls within our current view
+          if (
+            currentInstance >= weekStart && 
+            currentInstance <= weekEnd
+          ) {
+            const instanceEndTime = new Date(currentInstance.getTime() + duration);
+            
+            // Create a copy of the lesson with updated dates
+            const instanceLesson = {
+              ...lesson,
+              id: `${lesson.id}-${format(currentInstance, 'yyyy-MM-dd')}`, // Create a unique ID
+              start_time: format(currentInstance, "yyyy-MM-dd'T'HH:mm:ss"),
+              end_time: format(instanceEndTime, "yyyy-MM-dd'T'HH:mm:ss"),
+              is_recurring_instance: true, // Flag to identify as a generated instance
+            };
+            
+            processedLessons.push(instanceLesson);
+          }
+          
+          // Move to the next instance based on recurrence interval
+          if (lesson.recurrence_interval === 'daily') {
+            currentInstance = addWeeks(currentInstance, 1); // Daily within the same week structure
+          } else if (lesson.recurrence_interval === 'weekly') {
+            currentInstance = addWeeks(currentInstance, 1);
+          } else if (lesson.recurrence_interval === 'biweekly') {
+            currentInstance = addWeeks(currentInstance, 2);
+          } else if (lesson.recurrence_interval === 'monthly') {
+            currentInstance = addMonths(currentInstance, 1);
+          } else {
+            // Default to weekly if interval is not specified
+            currentInstance = addWeeks(currentInstance, 1);
+          }
+        }
+      }
+
+      // Apply student filter if selected (need to filter after processing recurring lessons)
+      if (studentFilter !== "all") {
+        const studentId = parseInt(studentFilter);
+        processedLessons = processedLessons.filter(lesson => {
+          const students = lesson.lesson_students?.map((ls: any) => ls.student.id);
+          return students?.includes(studentId);
+        });
+      }
 
       // Process the data to transform it into the format we need
-      const processedLessons = data.map(lesson => {
+      const finalLessons = processedLessons.map(lesson => {
         // Extract students from the nested structure
-        const students = lesson.lesson_students.map((ls: any) => ({
+        const students = lesson.lesson_students?.map((ls: any) => ({
           id: ls.student.id,
           first_name: ls.student.first_name,
           last_name: ls.student.last_name,
           attendance_status: ls.attendance_status || 'pending'
-        }));
+        })) || [];
         
         // Calculate the color based on the lesson title
         const color = getColorForLesson(lesson.title);
@@ -188,7 +278,7 @@ const Calendar = () => {
         };
       });
 
-      setLessons(processedLessons);
+      setLessons(finalLessons);
     } catch (error) {
       console.error('Error fetching lessons:', error);
       toast.error('Failed to load lessons');
@@ -259,6 +349,12 @@ const Calendar = () => {
     return lessons.filter(lesson => getDayFromDate(lesson.start_time) === day);
   };
 
+  const handleEditLesson = (lesson: Lesson) => {
+    // Implement editing functionality
+    setIsAddingLesson(true);
+    // You would need to pass the lesson data to the form
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} />
@@ -290,10 +386,10 @@ const Calendar = () => {
                   </Button>
                   <Button variant="outline" size="sm" onClick={goToToday}>Today</Button>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <Select value={tutorFilter} onValueChange={setTutorFilter}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Filter by tutor" />
                       </SelectTrigger>
                       <SelectContent>
@@ -303,6 +399,33 @@ const Calendar = () => {
                             {tutor.first_name} {tutor.last_name}
                           </SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={studentFilter} onValueChange={setStudentFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Filter by student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Students</SelectItem>
+                        {students.map((student) => (
+                          <SelectItem key={student.id} value={student.id.toString()}>
+                            {student.first_name} {student.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={sessionTypeFilter} onValueChange={setSessionTypeFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Session type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sessions</SelectItem>
+                        <SelectItem value="individual">1-on-1 Sessions</SelectItem>
+                        <SelectItem value="group">Group Sessions</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -369,11 +492,12 @@ const Calendar = () => {
                         {/* Lessons for this day */}
                         {getLessonsForDay(format(date, 'EEE')).map(lesson => {
                           const { top, height } = getLessonPosition(lesson);
-                            
+                          const isRecurringInstance = lesson.is_recurring_instance;
+
                           return (
                             <div 
                               key={lesson.id}
-                              className={`absolute left-1 right-1 rounded-md p-2 border ${lesson.color || 'bg-blue-100 border-blue-300 text-blue-800'} overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+                              className={`absolute left-1 right-1 rounded-md p-2 border ${lesson.color || 'bg-blue-100 border-blue-300 text-blue-800'} overflow-hidden cursor-pointer hover:opacity-90 transition-opacity ${isRecurringInstance ? 'border-dashed' : ''}`}
                               style={{
                                 top: `${top}px`,
                                 height: `${height}px`,
@@ -381,7 +505,19 @@ const Calendar = () => {
                               onClick={() => openLessonDetails(lesson.id)}
                             >
                               <div className="font-medium text-sm truncate flex justify-between items-center">
-                                <span>{lesson.title}</span>
+                                <span>
+                                  {lesson.title}
+                                  {lesson.is_recurring && !isRecurringInstance && (
+                                    <span className="ml-1 text-xs bg-blue-200 text-blue-800 px-1 rounded">
+                                      Recurring
+                                    </span>
+                                  )}
+                                  {isRecurringInstance && (
+                                    <span className="ml-1 text-xs bg-blue-200 text-blue-800 px-1 rounded">
+                                      Series
+                                    </span>
+                                  )}
+                                </span>
                                 {lesson.status === 'completed' ? (
                                   <Check className="h-4 w-4 text-green-600 bg-white rounded-full p-0.5" />
                                 ) : (
@@ -396,16 +532,20 @@ const Calendar = () => {
                                   </Button>
                                 )}
                               </div>
-                              {lesson.students && lesson.students.length > 0 && (
-                                <div className="flex items-center gap-1 text-xs mt-1">
+                              <div className="flex items-center gap-1 text-xs mt-1">
+                                {lesson.is_group ? (
                                   <Users className="h-3 w-3" />
-                                  <div className="truncate">
-                                    {lesson.students.length > 1 
-                                      ? `${lesson.students.length} Students` 
-                                      : lesson.students[0]?.first_name + ' ' + lesson.students[0]?.last_name}
-                                  </div>
+                                ) : (
+                                  <span className="h-3 w-3">👤</span>
+                                )}
+                                <div className="truncate">
+                                  {lesson.students && lesson.students.length > 1 
+                                    ? `${lesson.students.length} Students` 
+                                    : lesson.students && lesson.students[0]
+                                      ? `${lesson.students[0].first_name} ${lesson.students[0].last_name}`
+                                      : 'No students'}
                                 </div>
-                              )}
+                              </div>
                               <div className="text-xs">
                                 {format(parseISO(lesson.start_time), 'h:mm a')} - 
                                 {format(parseISO(lesson.end_time), 'h:mm a')}
@@ -439,6 +579,7 @@ const Calendar = () => {
           setIsLessonDetailsOpen(false);
           startCompletionFlow(lessonId);
         }}
+        onSave={handleEditLesson}
       />
 
       {/* Assign Homework Dialog (Part of completion flow) */}
