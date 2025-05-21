@@ -16,6 +16,10 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
+interface SidebarProps {
+  isOpen?: boolean;
+}
+
 interface NavItem {
   name: string;
   path: string;
@@ -23,7 +27,7 @@ interface NavItem {
   roles?: string[];
 }
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const { pathname } = useLocation();
   const { user, profile, signOut } = useAuth();
   const { organization } = useOrganization();
@@ -78,13 +82,17 @@ const Sidebar: React.FC = () => {
     },
   ];
 
-  // Get user roles from profile if available
+  // Check if profile exists and has roles property before accessing
   const userRoles = profile?.roles?.map(role => role.role) || [];
 
   const filteredNavItems = navItems.filter(item => {
     if (!item.roles) return true;
     return userRoles.some(role => item.roles?.includes(role));
   });
+
+  if (!isOpen) {
+    return null; // Don't render if sidebar is closed
+  }
 
   return (
     <div className="flex flex-col h-full bg-gray-50 border-r w-60">
