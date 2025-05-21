@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -36,6 +37,7 @@ const Calendar = () => {
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
+  const calendarRef = useRef<FullCalendar | null>(null);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
     setIsLoading(true);
@@ -52,6 +54,7 @@ const Calendar = () => {
             student:students(id, first_name, last_name)
           )
         `)
+        .eq('organization_id', organization?.id)
         .gte('start_time', `${startDate}T00:00:00`)
         .lte('start_time', `${endDate}T23:59:59`);
 
@@ -118,7 +121,7 @@ const Calendar = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [organization?.id]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -152,8 +155,9 @@ const Calendar = () => {
   const handleAddLessonSuccess = () => {
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
-    const calendarApi = document.querySelector('full-calendar')?.getApi();
-    if (calendarApi) {
+    
+    if (calendarRef.current) {
+      const apiInstance = calendarRef.current.getApi();
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
       fetchLessons(start, end);
@@ -164,6 +168,7 @@ const Calendar = () => {
       end.setMonth(end.getMonth() + 2);
       fetchLessons(start, end);
     }
+    
     toast.success('Lesson added successfully!');
   };
 
@@ -320,6 +325,7 @@ const Calendar = () => {
               ) : (
                 <div className="h-[600px]">
                   <FullCalendar
+                    ref={calendarRef}
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     headerToolbar={false}
                     initialView={calendarView}

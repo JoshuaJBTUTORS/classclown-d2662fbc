@@ -107,6 +107,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const { data, error } = await supabase
         .from('tutors')
         .select('*')
+        .eq('organization_id', organization?.id)
         .eq('status', 'active');
         
       if (error) throw error;
@@ -123,6 +124,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const { data, error } = await supabase
         .from('students')
         .select('*')
+        .eq('organization_id', organization?.id)
         .eq('status', 'active');
         
       if (error) throw error;
@@ -196,7 +198,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const lessonStudentsData = values.studentIds.map(studentId => ({
         lesson_id: lesson.id,
         student_id: studentId,
-        attendance_status: 'pending'
+        attendance_status: 'pending',
+        organization_id: organization?.id || null
       }));
       
       const { error: studentsError } = await supabase
