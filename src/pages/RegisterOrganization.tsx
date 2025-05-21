@@ -85,9 +85,17 @@ const RegisterOrganization = () => {
         return;
       }
 
-      // Check if email is already in use
-      const { error: emailCheckError } = await supabase.auth.admin.getUserByEmail(data.email);
-      if (!emailCheckError) { // No error means user was found
+      // Check if email is already in use by trying to sign in
+      // We'll use a different approach instead of getUserByEmail
+      const { data: emailCheck, error: emailCheckError } = await supabase.auth.signInWithOtp({
+        email: data.email,
+        options: {
+          shouldCreateUser: false
+        }
+      });
+
+      if (!emailCheckError) {
+        // No error means the email exists (or OTP was sent which means it's a valid email)
         form.setError('email', {
           type: 'manual',
           message: 'This email is already registered',
