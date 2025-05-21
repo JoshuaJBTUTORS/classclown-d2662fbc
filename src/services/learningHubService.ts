@@ -11,7 +11,7 @@ export const learningHubService = {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return data as Course[] || [];
   },
 
   async getCourseById(courseId: string): Promise<Course | null> {
@@ -22,10 +22,10 @@ export const learningHubService = {
       .single();
     
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as Course | null;
   },
 
-  async createCourse(course: Partial<Course>): Promise<Course> {
+  async createCourse(course: Partial<Course> & { title: string }): Promise<Course> {
     const { data, error } = await supabase
       .from('courses')
       .insert([course])
@@ -33,7 +33,7 @@ export const learningHubService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as Course;
   },
 
   async updateCourse(courseId: string, updates: Partial<Course>): Promise<Course> {
@@ -45,7 +45,7 @@ export const learningHubService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as Course;
   },
 
   async deleteCourse(courseId: string): Promise<void> {
@@ -66,10 +66,10 @@ export const learningHubService = {
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data || [];
+    return data as CourseModule[] || [];
   },
 
-  async createModule(module: Partial<CourseModule>): Promise<CourseModule> {
+  async createModule(module: Partial<CourseModule> & { course_id: string; title: string; position: number }): Promise<CourseModule> {
     const { data, error } = await supabase
       .from('course_modules')
       .insert([module])
@@ -77,7 +77,7 @@ export const learningHubService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as CourseModule;
   },
 
   async updateModule(moduleId: string, updates: Partial<CourseModule>): Promise<CourseModule> {
@@ -89,7 +89,7 @@ export const learningHubService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as CourseModule;
   },
 
   async deleteModule(moduleId: string): Promise<void> {
@@ -110,7 +110,7 @@ export const learningHubService = {
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data || [];
+    return data as CourseLesson[] || [];
   },
 
   async getLessonById(lessonId: string): Promise<CourseLesson | null> {
@@ -121,10 +121,15 @@ export const learningHubService = {
       .single();
     
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as CourseLesson | null;
   },
 
-  async createLesson(lesson: Partial<CourseLesson>): Promise<CourseLesson> {
+  async createLesson(lesson: Partial<CourseLesson> & { 
+    module_id: string; 
+    title: string; 
+    content_type: 'video' | 'pdf' | 'text' | 'quiz';
+    position: number 
+  }): Promise<CourseLesson> {
     const { data, error } = await supabase
       .from('course_lessons')
       .insert([lesson])
@@ -132,7 +137,7 @@ export const learningHubService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as CourseLesson;
   },
 
   async updateLesson(lessonId: string, updates: Partial<CourseLesson>): Promise<CourseLesson> {
@@ -144,7 +149,7 @@ export const learningHubService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as CourseLesson;
   },
 
   async deleteLesson(lessonId: string): Promise<void> {
@@ -166,7 +171,7 @@ export const learningHubService = {
       .single();
     
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as StudentProgress | null;
   },
 
   async getAllStudentProgress(studentId: number): Promise<StudentProgress[]> {
@@ -176,13 +181,13 @@ export const learningHubService = {
       .eq('student_id', studentId);
     
     if (error) throw error;
-    return data || [];
+    return data as StudentProgress[] || [];
   },
 
-  async updateStudentProgress(progressData: Partial<StudentProgress>): Promise<StudentProgress> {
+  async updateStudentProgress(progressData: Partial<StudentProgress> & { student_id: number; lesson_id: string }): Promise<StudentProgress> {
     // If a record exists, update it; otherwise, insert a new record
-    const { studentId, lessonId } = progressData as { studentId: number, lessonId: string };
-    const existingProgress = await this.getStudentProgress(studentId, lessonId);
+    const { student_id, lesson_id } = progressData;
+    const existingProgress = await this.getStudentProgress(student_id, lesson_id);
     
     if (existingProgress) {
       const { data, error } = await supabase
@@ -193,7 +198,7 @@ export const learningHubService = {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as StudentProgress;
     } else {
       const { data, error } = await supabase
         .from('student_progress')
@@ -202,7 +207,7 @@ export const learningHubService = {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as StudentProgress;
     }
   }
 };

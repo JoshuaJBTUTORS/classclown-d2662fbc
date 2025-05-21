@@ -30,7 +30,9 @@ const LearningHub: React.FC = () => {
     }
   };
 
-  const isAdmin = profile?.roles?.some(role => ['admin', 'owner', 'tutor'].includes(role.role));
+  // Check if user has admin privileges
+  const userRoles = profile?.roles?.map(role => role.role) || [];
+  const isAdmin = userRoles.some(role => ['admin', 'owner', 'tutor'].includes(role));
 
   return (
     <div className="container py-8">

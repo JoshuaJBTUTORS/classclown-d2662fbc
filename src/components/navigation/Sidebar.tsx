@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Home,
@@ -77,9 +78,12 @@ const Sidebar: React.FC = () => {
     },
   ];
 
+  // Get user roles from profile if available
+  const userRoles = profile?.roles?.map(role => role.role) || [];
+
   const filteredNavItems = navItems.filter(item => {
     if (!item.roles) return true;
-    return profile?.roles?.some(role => item.roles?.includes(role.role));
+    return userRoles.some(role => item.roles?.includes(role));
   });
 
   return (
