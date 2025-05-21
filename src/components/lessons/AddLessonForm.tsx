@@ -193,7 +193,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   };
 
   useEffect(() => {
+    console.log('AddLessonForm - Dialog open state:', isOpen);
     if (isOpen) {
+      console.log('AddLessonForm - Dialog opened, fetching data');
       fetchTutors();
       fetchStudents();
     }
@@ -244,8 +246,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     setSelectedStudents([]);
   };
 
+  // Improved form submission with better state management and error handling
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log('AddLessonForm - Form submission started');
+    console.log('AddLessonForm - Form submission started with values:', values);
     try {
       setIsLoading(true);
       setLoadingMessage('Creating lesson...');
@@ -264,11 +267,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         title: values.title,
         description: values.description || '',
         tutor_id: values.tutorId,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
+        start_time: new Date(values.date.setHours(
+          parseInt(values.startTime.split(':')[0], 10),
+          parseInt(values.startTime.split(':')[1], 10)
+        )).toISOString(),
+        end_time: new Date(values.date.setHours(
+          parseInt(values.endTime.split(':')[0], 10),
+          parseInt(values.endTime.split(':')[1], 10)
+        )).toISOString(),
         status: 'scheduled',
         is_group: values.isGroup,
         is_recurring: values.isRecurring,
+        recurrence_interval: values.isRecurring ? values.recurrenceInterval : null,
+        recurrence_end_date: values.isRecurring && values.recurrenceEndDate 
+          ? values.recurrenceEndDate.toISOString() 
+          : null,
         organization_id: organization?.id || null
       };
 
@@ -285,7 +298,27 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       // Create the lesson
       const { data: lesson, error: lessonError } = await supabase
         .from('lessons')
-        .insert(lessonData)
+        .insert({
+          title: values.title,
+          description: values.description || '',
+          tutor_id: values.tutorId,
+          start_time: new Date(values.date.setHours(
+            parseInt(values.startTime.split(':')[0], 10),
+            parseInt(values.startTime.split(':')[1], 10)
+          )).toISOString(),
+          end_time: new Date(values.date.setHours(
+            parseInt(values.endTime.split(':')[0], 10),
+            parseInt(values.endTime.split(':')[1], 10)
+          )).toISOString(),
+          status: 'scheduled',
+          is_group: values.isGroup,
+          is_recurring: values.isRecurring,
+          recurrence_interval: values.isRecurring ? values.recurrenceInterval : null,
+          recurrence_end_date: values.isRecurring && values.recurrenceEndDate 
+            ? values.recurrenceEndDate.toISOString() 
+            : null,
+          organization_id: organization?.id || null
+        })
         .select('id')
         .single();
       
@@ -336,8 +369,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       console.log('AddLessonForm - All operations successful, calling onSuccess callback');
       setIsLoading(false);
       
-      // CRITICAL CHANGE: Only call onSuccess, which will in turn close the dialog from the parent
-      // Let the parent component handle the dialog state
+      // Call onSuccess callback, which will close the dialog from parent
       onSuccess();
       
     } catch (error) {
@@ -356,7 +388,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       open={isOpen} 
       onOpenChange={(open) => {
         console.log('AddLessonForm - Dialog onOpenChange triggered:', { open, current: isOpen });
-        if (!open && open !== isOpen) {
+        if (!open) {
           console.log('AddLessonForm - Dialog closing via onOpenChange');
           resetForm();
           onClose();
@@ -702,6 +734,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                 type="button" 
                 variant="outline" 
                 onClick={() => {
+                  console.log('AddLessonForm - Cancel button clicked');
                   resetForm();
                   onClose();
                 }}

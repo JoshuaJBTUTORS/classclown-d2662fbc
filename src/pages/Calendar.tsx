@@ -42,10 +42,13 @@ const Calendar = () => {
   const calendarRef = useRef<FullCalendarComponent | null>(null);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
+    console.log("Calendar - fetchLessons called with:", { start, end });
     setIsLoading(true);
     try {
       const startDate = format(start, "yyyy-MM-dd");
       const endDate = format(end, "yyyy-MM-dd");
+      
+      console.log("Calendar - Fetching lessons from", startDate, "to", endDate);
 
       const { data, error } = await supabase
         .from('lessons')
@@ -61,6 +64,8 @@ const Calendar = () => {
         .lte('start_time', `${endDate}T23:59:59`);
 
       if (error) throw error;
+      
+      console.log("Calendar - Fetched lessons:", data.length);
 
       // Transform the data for FullCalendar
       const events = data.map(lesson => {
@@ -118,7 +123,7 @@ const Calendar = () => {
 
       setLessons(events);
     } catch (error) {
-      console.error('Error fetching lessons:', error);
+      console.error('Calendar - Error fetching lessons:', error);
       toast.error('Failed to load lessons');
     } finally {
       setIsLoading(false);
@@ -155,50 +160,51 @@ const Calendar = () => {
   };
 
   const forceCalendarRefresh = useCallback(() => {
-    console.log("Calendar - Forcing calendar refresh started");
+    console.log("Calendar - forceCalendarRefresh called");
     
-    // Force a refresh of the calendar using the ref
-    if (calendarRef.current) {
-      const apiInstance = calendarRef.current.getApi();
-      console.log("Calendar - Calendar API instance found, refreshing events");
-      
-      // Use a try-catch to handle any potential errors during refresh
-      try {
+    try {
+      // Force a refresh of the calendar using the ref
+      if (calendarRef.current) {
+        const apiInstance = calendarRef.current.getApi();
+        console.log("Calendar - Calendar API instance found");
+        
+        // Refetch events through the FullCalendar API
         apiInstance.refetchEvents();
         console.log("Calendar - Calendar events refetch initiated");
-      } catch (error) {
-        console.error("Calendar - Error refreshing calendar events:", error);
+      } else {
+        console.warn("Calendar - Calendar ref not available for refresh");
       }
       
-      // Also fetch new data to update our local state
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
-      fetchLessons(start, end);
-    } else {
-      console.warn("Calendar - Calendar ref not available for refresh");
-      // Fallback if ref isn't available
+      // Always fetch new data to update our local state, regardless of the ref
+      console.log("Calendar - Fetching fresh data");
       const start = new Date();
       start.setMonth(start.getMonth() - 1);
+      
       const end = new Date();
       end.setMonth(end.getMonth() + 2);
+      
+      console.log("Calendar - Calling fetchLessons with date range:", { start, end });
       fetchLessons(start, end);
+    } catch (error) {
+      console.error("Calendar - Error in forceCalendarRefresh:", error);
     }
-  }, [currentDate, fetchLessons]);
+  }, [fetchLessons]);
 
   const handleAddLessonSuccess = useCallback(() => {
-    console.log("Calendar - Add lesson success callback triggered");
+    console.log("Calendar - handleAddLessonSuccess called");
     
-    // First close the dialog, this is critical
+    // Close the dialog first to improve perceived performance
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
     
-    // Then refresh the calendar with a significant delay to ensure the database has updated
+    // Add a deliberate delay before refreshing the calendar
+    // This ensures the database has time to complete the transaction
     console.log("Calendar - Setting timeout for refresh");
     setTimeout(() => {
-      console.log("Calendar - Executing delayed calendar refresh after lesson add");
+      console.log("Calendar - Executing delayed calendar refresh");
       forceCalendarRefresh();
       toast.success('Lesson added successfully!');
-    }, 1000); // Increased timeout to ensure database operations complete
+    }, 1500); // Increased timeout to ensure database operations complete
   }, [forceCalendarRefresh]);
 
   const handleEditLessonSuccess = () => {
@@ -317,6 +323,7 @@ const Calendar = () => {
       ? endOfMonth(currentDate)
       : new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 14);
 
+    console.log("Calendar - Initial fetchLessons called from useEffect", { start, end });
     fetchLessons(start, end);
   }, [fetchLessons, currentDate, calendarView, organization?.id]);
 
@@ -408,11 +415,11 @@ const Calendar = () => {
         </main>
       </div>
 
-      {/* Add Lesson Dialog */}
+      {/* Improved AddLessonForm implementation with better dialog control */}
       <AddLessonForm
         isOpen={isAddingLesson}
         onClose={() => {
-          console.log("Calendar - Closing add lesson dialog from Calendar component");
+          console.log("Calendar - Closing add lesson dialog explicitly");
           setIsAddingLesson(false);
           setSelectedTimeSlot(null);
         }}
