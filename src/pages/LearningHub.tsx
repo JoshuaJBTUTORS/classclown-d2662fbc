@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/ui/PageTitle';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LearningHub: React.FC = () => {
@@ -34,6 +35,18 @@ const LearningHub: React.FC = () => {
 
   return (
     <div className="container py-8">
+      <div className="flex items-center mb-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate(-1)} 
+          className="mr-2"
+        >
+          <ChevronLeft className="mr-1" />
+          Back
+        </Button>
+      </div>
+      
       <div className="flex justify-between items-center mb-6">
         <PageTitle title="Learning Hub" subtitle="Access educational resources and courses" />
         
