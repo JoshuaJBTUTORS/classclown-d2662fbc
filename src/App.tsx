@@ -13,6 +13,7 @@ import Calendar from './pages/Calendar';
 import Lessons from './pages/Lessons';
 import Homework from './pages/Homework';
 import Unauthorized from './pages/Unauthorized';
+import Invite from './pages/Invite';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Initialize QueryClient
@@ -26,6 +27,7 @@ function App() {
           {/* Public routes */}
           <Route path="/auth" element={<ProtectedRoute requireAuth={false}><Auth /></ProtectedRoute>} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="/invite" element={<Invite />} />
           
           {/* Protected routes - require authentication */}
           <Route element={<ProtectedRoute />}>

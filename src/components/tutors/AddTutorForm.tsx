@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +25,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Mail } from 'lucide-react';
 
 interface AddTutorFormProps {
   isOpen: boolean;
@@ -38,6 +42,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   specialities: z.string().optional(),
   about: z.string().optional(),
+  sendInvite: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -54,6 +59,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       phone: "",
       specialities: "",
       about: "",
+      sendInvite: false,
     },
   });
 
@@ -67,7 +73,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         .map(s => s.trim())
         .filter(s => s !== '');
 
-      const { error } = await supabase
+      const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
         .insert({
           first_name: data.firstName,
@@ -77,16 +83,50 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           specialities: specialitiesArray,
           about: data.about,
           status: 'active', // Set default status
+        })
+        .select()
+        .single();
+
+      if (tutorError) throw tutorError;
+
+      if (data.sendInvite) {
+        const { error: inviteError } = await supabase.functions.invoke('send-tutor-invite', {
+          body: {
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            tutorId: tutorData.id
+          }
         });
 
-      if (error) throw error;
+        if (inviteError) {
+          toast({
+            title: "Tutor created successfully",
+            description: "However, there was an issue sending the invitation email.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Tutor created successfully",
+            description: "An invitation email has been sent to the tutor.",
+          });
+        }
+      } else {
+        toast({
+          title: "Tutor created successfully",
+          description: "The tutor has been added to the system.",
+        });
+      }
 
-      toast.success('Tutor created successfully!');
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating tutor:', error);
-      toast.error('Failed to create tutor. Please try again.');
+      toast({
+        title: "Failed to create tutor",
+        description: error.message || "Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -188,6 +228,29 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="sendInvite"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox 
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Send invitation email
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      The tutor will receive an email with instructions to create an account.
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button
@@ -198,8 +261,13 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Tutor"}
+              <Button type="submit" disabled={loading} className="flex items-center gap-2">
+                {loading ? "Creating..." : form.watch("sendInvite") ? (
+                  <>
+                    <Mail className="h-4 w-4" />
+                    Create & Invite Tutor
+                  </>
+                ) : "Create Tutor"}
               </Button>
             </DialogFooter>
           </form>
