@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { z } from 'zod';
@@ -36,13 +37,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Check } from 'lucide-react';
+import { CalendarIcon, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
 import { Student } from '@/types/student';
 import { Lesson } from '@/types/lesson';
-import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface EditLessonFormProps {
   isOpen: boolean;
@@ -61,18 +61,23 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
   const [students, setStudents] = useState<Student[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('');
-  const { organization } = useOrganization();
+  const [loadingStep, setLoadingStep] = useState<string>('');
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+  const [isFetchingData, setIsFetchingData] = useState(false);
   
   const formSchema = z.object({
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
     tutorId: z.string().min(1, { message: "Tutor is required" }),
-    studentIds: z.array(z.number()).min(1, { message: "At least one student is required" }),
     date: z.date({ required_error: "Date is required" }),
     startTime: z.string().min(1, { message: "Start time is required" }),
     endTime: z.string().min(1, { message: "End time is required" }),
     isGroup: z.boolean().default(false),
+  }).refine(data => {
+    return !data.isGroup || (data.isGroup && selectedStudents.length > 0);
+  }, {
+    message: "Select at least one student for group sessions",
+    path: ["studentIds"],
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -81,7 +86,6 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       title: "",
       description: "",
       tutorId: "",
-      studentIds: [],
       date: new Date(),
       startTime: "",
       endTime: "",
@@ -89,10 +93,22 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
     },
   });
 
+  // Fetch lesson details when the modal is opened
+  useEffect(() => {
+    if (isOpen && lessonId) {
+      fetchLessonDetails();
+      fetchTutors();
+      fetchStudents();
+    }
+  }, [isOpen, lessonId]);
+
+  // Fetch lesson details
   const fetchLessonDetails = async () => {
     if (!lessonId) return;
     
     setIsLoading(true);
+    setLoadingStep('Loading lesson details...');
+    
     try {
       const { data, error } = await supabase
         .from('lessons')
@@ -117,18 +133,20 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       const endDate = parseISO(data.end_time);
       const endHours = format(endDate, 'HH:mm');
       
-      // Get student IDs and ensure they are numbers
+      // Get student IDs from lesson_students
       const studentIds = data.lesson_students.map((ls: any) => {
-        // Convert string IDs to numbers
+        // Convert string IDs to numbers if needed
         return typeof ls.student.id === 'string' ? parseInt(ls.student.id, 10) : ls.student.id;
       });
+      
+      // Set selected students for the multi-select
+      setSelectedStudents(studentIds);
       
       // Set form values
       form.reset({
         title: data.title,
         description: data.description || '',
         tutorId: data.tutor_id,
-        studentIds: studentIds,
         date: startDate,
         startTime: startHours,
         endTime: endHours,
@@ -143,75 +161,53 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
     }
   };
 
+  // Fetch tutors
   const fetchTutors = async () => {
+    setIsFetchingData(true);
     try {
       const { data, error } = await supabase
         .from('tutors')
         .select('*')
+        .eq('status', 'active')
         .order('last_name', { ascending: true });
 
-      if (error) {
-        throw error;
-      }
-
-      // Update the mapping to ensure compatibility with the Tutor type
-      const formattedTutors: Tutor[] = data.map((tutor) => ({
-        id: tutor.id,
-        first_name: tutor.first_name,
-        last_name: tutor.last_name,
-        email: tutor.email,
-        phone: tutor.phone,
-        bio: tutor.bio,
-        specialities: tutor.specialities || [],
-        status: (tutor.status as 'active' | 'inactive' | 'pending'),
-        title: tutor.title,
-        rating: tutor.rating,
-        education: tutor.education,
-        joined_date: tutor.joined_date ? new Date(tutor.joined_date).toLocaleDateString() : undefined,
-        created_at: tutor.created_at,
-        organization_id: tutor.organization_id
-      }));
-
-      setTutors(formattedTutors);
+      if (error) throw error;
+      setTutors(data || []);
     } catch (error) {
       console.error('Error fetching tutors:', error);
-      toast.error('Failed to load tutors. Please try again.');
+      toast.error('Failed to load tutors');
+    } finally {
+      setIsFetchingData(false);
     }
   };
 
+  // Fetch students
   const fetchStudents = async () => {
+    setIsFetchingData(true);
     try {
       const { data, error } = await supabase
         .from('students')
         .select('*')
-        .eq('organization_id', organization?.id)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .order('last_name', { ascending: true });
         
       if (error) throw error;
-      
       setStudents(data || []);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to load students');
+    } finally {
+      setIsFetchingData(false);
     }
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchTutors();
-      fetchStudents();
-      if (lessonId) {
-        fetchLessonDetails();
-      }
-    }
-  }, [isOpen, lessonId]);
-
+  // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!lessonId) return;
     
     try {
       setIsLoading(true);
-      setLoadingMessage('Updating lesson...');
+      setLoadingStep('Updating lesson...');
       
       // Format the date and times into ISO strings
       const startTime = new Date(values.date);
@@ -229,8 +225,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
         tutor_id: values.tutorId,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
-        is_group: values.isGroup,
-        organization_id: organization?.id || null
+        is_group: values.isGroup
       };
       
       // Update the lesson
@@ -241,7 +236,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       
       if (lessonError) throw lessonError;
       
-      setLoadingMessage('Updating students...');
+      setLoadingStep('Updating students...');
       
       // Delete existing lesson_students entries
       const { error: deleteError } = await supabase
@@ -252,11 +247,9 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       if (deleteError) throw deleteError;
       
       // Add updated students to the lesson
-      const lessonStudentsData = values.studentIds.map(studentId => ({
+      const lessonStudentsData = selectedStudents.map(studentId => ({
         lesson_id: lessonId,
-        student_id: studentId,
-        attendance_status: 'pending',
-        organization_id: organization?.id || null
+        student_id: studentId
       }));
       
       const { error: studentsError } = await supabase
@@ -275,26 +268,22 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
     }
   };
   
-  const handleMultiSelect = (selectedId: number) => {
-    const currentSelectedIds = form.getValues('studentIds');
-    let newSelectedIds;
-    
-    if (currentSelectedIds.includes(selectedId)) {
-      // Remove the ID if it's already selected
-      newSelectedIds = currentSelectedIds.filter(id => id !== selectedId);
-    } else {
-      // Add the ID if it's not selected
-      newSelectedIds = [...currentSelectedIds, selectedId];
-    }
-    
-    form.setValue('studentIds', newSelectedIds);
+  // Handle student selection for multi-select
+  const handleStudentSelect = (studentId: number) => {
+    setSelectedStudents(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
+      if (!open && !isLoading) onClose();
     }}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Lesson</DialogTitle>
           <DialogDescription>
@@ -305,7 +294,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
         {isLoading && !form.formState.isSubmitting ? (
           <div className="flex justify-center items-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2">Loading lesson details...</span>
+            <span className="ml-2">{loadingStep}</span>
           </div>
         ) : (
           <Form {...form}>
@@ -351,7 +340,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                       <FormLabel>Tutor</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -390,7 +379,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
               
               <FormField
                 control={form.control}
-                name="studentIds"
+                name="isGroup"
                 render={() => (
                   <FormItem>
                     <FormLabel>Students</FormLabel>
@@ -408,12 +397,12 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                             <div
                               key={student.id}
                               className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                              onClick={() => handleMultiSelect(studentId)}
+                              onClick={() => handleStudentSelect(studentId)}
                             >
                               <div className={`w-4 h-4 border rounded flex items-center justify-center
-                                ${form.getValues('studentIds').includes(studentId) ? 'bg-primary border-primary' : 'border-gray-300'}`}
+                                ${selectedStudents.includes(studentId) ? 'bg-primary border-primary' : 'border-gray-300'}`}
                               >
-                                {form.getValues('studentIds').includes(studentId) && (
+                                {selectedStudents.includes(studentId) && (
                                   <Check className="h-3 w-3 text-white" />
                                 )}
                               </div>
@@ -423,8 +412,8 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                         })
                       )}
                     </div>
-                    {form.formState.errors.studentIds && (
-                      <p className="text-sm font-medium text-destructive">{form.formState.errors.studentIds.message}</p>
+                    {selectedStudents.length === 0 && form.getValues('isGroup') && (
+                      <p className="text-sm font-medium text-destructive">Select at least one student for group sessions</p>
                     )}
                   </FormItem>
                 )}
@@ -497,9 +486,16 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
               </div>
               
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? loadingMessage : 'Update Lesson'}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {loadingStep}
+                    </>
+                  ) : 'Update Lesson'}
                 </Button>
               </DialogFooter>
             </form>
