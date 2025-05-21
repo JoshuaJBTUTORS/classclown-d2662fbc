@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      google_calendar_credentials: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          expiry_date: number
+          id: string
+          organization_id: string
+          refresh_token: string
+          scope: string
+          token_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          expiry_date: number
+          id?: string
+          organization_id: string
+          refresh_token: string
+          scope: string
+          token_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          expiry_date?: number
+          id?: string
+          organization_id?: string
+          refresh_token?: string
+          scope?: string
+          token_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_calendar_credentials_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homework: {
         Row: {
           attachment_type: string | null
@@ -219,6 +263,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           end_time: string
+          google_event_id: string | null
           id: string
           is_group: boolean
           is_recurring: boolean
@@ -231,12 +276,15 @@ export type Database = {
           title: string
           tutor_id: string
           updated_at: string | null
+          video_conference_link: string | null
+          video_conference_provider: string | null
         }
         Insert: {
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
           end_time: string
+          google_event_id?: string | null
           id?: string
           is_group?: boolean
           is_recurring?: boolean
@@ -249,12 +297,15 @@ export type Database = {
           title: string
           tutor_id: string
           updated_at?: string | null
+          video_conference_link?: string | null
+          video_conference_provider?: string | null
         }
         Update: {
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
           end_time?: string
+          google_event_id?: string | null
           id?: string
           is_group?: boolean
           is_recurring?: boolean
@@ -267,6 +318,8 @@ export type Database = {
           title?: string
           tutor_id?: string
           updated_at?: string | null
+          video_conference_link?: string | null
+          video_conference_provider?: string | null
         }
         Relationships: [
           {
@@ -318,6 +371,9 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
+          google_calendar_enabled: boolean | null
+          google_calendar_id: string | null
+          google_calendar_sync_enabled: boolean | null
           id: string
           logo_url: string | null
           name: string
@@ -328,6 +384,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          google_calendar_enabled?: boolean | null
+          google_calendar_id?: string | null
+          google_calendar_sync_enabled?: boolean | null
           id?: string
           logo_url?: string | null
           name: string
@@ -338,6 +397,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          google_calendar_enabled?: boolean | null
+          google_calendar_id?: string | null
+          google_calendar_sync_enabled?: boolean | null
           id?: string
           logo_url?: string | null
           name?: string
