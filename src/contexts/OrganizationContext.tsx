@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -16,35 +17,15 @@ interface OrganizationContextType {
   isLoading: boolean;
   error: Error | null;
   refreshOrganization: () => Promise<void>;
-  currentSubdomain: string | null;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [currentSubdomain, setCurrentSubdomain] = useState<string | null>(null);
-
-  // Extract subdomain from the current hostname
-  useEffect(() => {
-    const hostname = window.location.hostname;
-    // Skip for localhost or direct IP access during development
-    if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      setCurrentSubdomain(null);
-      return;
-    }
-
-    // Extract subdomain from hostname (e.g., 'school' from 'school.example.com')
-    const parts = hostname.split('.');
-    if (parts.length > 2) {
-      setCurrentSubdomain(parts[0]);
-    } else {
-      setCurrentSubdomain(null);
-    }
-  }, []);
 
   const fetchOrganization = async () => {
     try {
@@ -55,38 +36,16 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return;
       }
 
-      let query = supabase.from('organizations').select('*');
-      
-      // If profile has organization_id, use that first
-      if (profile?.organization_id) {
-        query = query.eq('id', profile.organization_id);
-      } 
-      // If not, but we have a subdomain, try to find by subdomain
-      else if (currentSubdomain) {
-        query = query.eq('subdomain', currentSubdomain);
-      }
-      // Otherwise, try to find through user_roles table
-      else {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (roleData?.organization_id) {
-          query = query.eq('id', roleData.organization_id);
-        } else {
-          setOrganization(null);
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      const { data, error: fetchError } = await query.single();
+      // In the single organization model, we'll just fetch the first organization
+      const { data, error: fetchError } = await supabase
+        .from('organizations')
+        .select('*')
+        .limit(1)
+        .single();
       
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
-          // No organization found - this is fine, just set to null
+          console.log('No organization found. This is expected for first-time setup.');
           setOrganization(null);
         } else {
           console.error('Error fetching organization:', fetchError);
@@ -103,10 +62,10 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  // Fetch organization when user or subdomain changes
+  // Fetch organization when user changes
   useEffect(() => {
     fetchOrganization();
-  }, [user, profile, currentSubdomain]);
+  }, [user]);
 
   const refreshOrganization = async () => {
     await fetchOrganization();
@@ -116,8 +75,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     organization,
     isLoading,
     error,
-    refreshOrganization,
-    currentSubdomain
+    refreshOrganization
   };
 
   return <OrganizationContext.Provider value={value}>{children}</OrganizationContext.Provider>;

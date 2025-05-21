@@ -9,49 +9,123 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      google_calendar_credentials: {
+      course_lessons: {
         Row: {
-          access_token: string
+          content_text: string | null
+          content_type: string
+          content_url: string | null
           created_at: string | null
-          expiry_date: number
+          description: string | null
+          duration_minutes: number | null
           id: string
-          organization_id: string
-          refresh_token: string
-          scope: string
-          token_type: string
+          module_id: string
+          position: number
+          title: string
           updated_at: string | null
         }
         Insert: {
-          access_token: string
+          content_text?: string | null
+          content_type: string
+          content_url?: string | null
           created_at?: string | null
-          expiry_date: number
+          description?: string | null
+          duration_minutes?: number | null
           id?: string
-          organization_id: string
-          refresh_token: string
-          scope: string
-          token_type: string
+          module_id: string
+          position: number
+          title: string
           updated_at?: string | null
         }
         Update: {
-          access_token?: string
+          content_text?: string | null
+          content_type?: string
+          content_url?: string | null
           created_at?: string | null
-          expiry_date?: number
+          description?: string | null
+          duration_minutes?: number | null
           id?: string
-          organization_id?: string
-          refresh_token?: string
-          scope?: string
-          token_type?: string
+          module_id?: string
+          position?: number
+          title?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "google_calendar_credentials_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: "course_lessons_module_id_fkey"
+            columns: ["module_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "course_modules"
             referencedColumns: ["id"]
           },
         ]
+      }
+      course_modules: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          position: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          position: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       homework: {
         Row: {
@@ -263,7 +337,6 @@ export type Database = {
           created_at: string | null
           description: string | null
           end_time: string
-          google_event_id: string | null
           id: string
           is_group: boolean
           is_recurring: boolean
@@ -276,15 +349,12 @@ export type Database = {
           title: string
           tutor_id: string
           updated_at: string | null
-          video_conference_link: string | null
-          video_conference_provider: string | null
         }
         Insert: {
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
           end_time: string
-          google_event_id?: string | null
           id?: string
           is_group?: boolean
           is_recurring?: boolean
@@ -297,15 +367,12 @@ export type Database = {
           title: string
           tutor_id: string
           updated_at?: string | null
-          video_conference_link?: string | null
-          video_conference_provider?: string | null
         }
         Update: {
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
           end_time?: string
-          google_event_id?: string | null
           id?: string
           is_group?: boolean
           is_recurring?: boolean
@@ -318,8 +385,6 @@ export type Database = {
           title?: string
           tutor_id?: string
           updated_at?: string | null
-          video_conference_link?: string | null
-          video_conference_provider?: string | null
         }
         Relationships: [
           {
@@ -371,9 +436,6 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
-          google_calendar_enabled: boolean | null
-          google_calendar_id: string | null
-          google_calendar_sync_enabled: boolean | null
           id: string
           logo_url: string | null
           name: string
@@ -384,9 +446,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          google_calendar_enabled?: boolean | null
-          google_calendar_id?: string | null
-          google_calendar_sync_enabled?: boolean | null
           id?: string
           logo_url?: string | null
           name: string
@@ -397,9 +456,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          google_calendar_enabled?: boolean | null
-          google_calendar_id?: string | null
-          google_calendar_sync_enabled?: boolean | null
           id?: string
           logo_url?: string | null
           name?: string
@@ -444,6 +500,57 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_progress: {
+        Row: {
+          completed_at: string | null
+          completion_percentage: number | null
+          created_at: string | null
+          id: string
+          last_accessed_at: string | null
+          lesson_id: string | null
+          status: string
+          student_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          lesson_id?: string | null
+          status?: string
+          student_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          lesson_id?: string | null
+          status?: string
+          student_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_progress_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
