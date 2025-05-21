@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, isAdmin, isTutor, isOwner } = useAuth();
   
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses'],
@@ -30,16 +29,15 @@ const LearningHub: React.FC = () => {
     }
   };
 
-  // Check if user has admin privileges
-  const userRoles = profile?.roles?.map(role => role.role) || [];
-  const isAdmin = userRoles.some(role => ['admin', 'owner', 'tutor'].includes(role));
+  // Use the helper functions from AuthContext instead of checking roles directly
+  const hasAdminPrivileges = isAdmin || isOwner || isTutor;
 
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
         <PageTitle title="Learning Hub" subtitle="Access educational resources and courses" />
         
-        {isAdmin && (
+        {hasAdminPrivileges && (
           <Button onClick={() => navigate('/learning-hub/create')}>
             Create New Course
           </Button>
@@ -72,11 +70,11 @@ const LearningHub: React.FC = () => {
           <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium mb-2">No courses available</h3>
           <p className="text-gray-500 mb-6">
-            {isAdmin 
+            {hasAdminPrivileges 
               ? "Create your first course by clicking the button above." 
               : "Check back later for new courses."}
           </p>
-          {isAdmin && (
+          {hasAdminPrivileges && (
             <Button onClick={() => navigate('/learning-hub/create')}>
               Create Your First Course
             </Button>
@@ -118,7 +116,7 @@ const LearningHub: React.FC = () => {
                   onClick={() => navigate(`/learning-hub/course/${course.id}`)} 
                   className="w-full"
                   variant={course.status === 'published' ? "default" : "outline"}
-                  disabled={course.status !== 'published' && !isAdmin}
+                  disabled={course.status !== 'published' && !hasAdminPrivileges}
                 >
                   {course.status === 'published' ? "Start Learning" : "Preview Course"}
                 </Button>

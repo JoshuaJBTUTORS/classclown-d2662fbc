@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Home,
@@ -29,7 +28,7 @@ interface NavItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const { pathname } = useLocation();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, userRole } = useAuth();
   const { organization } = useOrganization();
   const navigate = useNavigate();
 
@@ -82,8 +81,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     },
   ];
 
-  // Check if profile exists and has roles property before accessing
-  const userRoles = profile?.roles?.map(role => role.role) || [];
+  // Instead of accessing profile.roles directly, use the userRole from the auth context
+  // or the userRoles array that's computed from the AuthContext
+  const userRoles = userRole ? [userRole] : [];
 
   const filteredNavItems = navItems.filter(item => {
     if (!item.roles) return true;
