@@ -68,8 +68,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   const [isFetchingTutors, setIsFetchingTutors] = useState(false);
   const [isFetchingStudents, setIsFetchingStudents] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [isGroupSession, setIsGroupSession] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const { organization } = useOrganization();
   
+  // Modified schema to handle multiple students for group sessions
   const formSchema = z.object({
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
@@ -105,6 +108,17 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       recurrenceInterval: 'weekly',
     },
   });
+
+  // Watch for changes to the isGroup field and update state
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'isGroup') {
+        setIsGroupSession(value.isGroup as boolean);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
   const fetchTutors = async () => {
     setIsFetchingTutors(true);
@@ -191,6 +205,25 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     setIsRecurring(recurring);
   }, [form.watch('isRecurring')]);
 
+  // Handle selecting multiple students for group sessions
+  const handleStudentSelect = (studentId: number) => {
+    const currentStudentId = form.getValues('studentId');
+    
+    if (isGroupSession) {
+      // For group sessions, manage selected students array
+      if (selectedStudents.includes(studentId)) {
+        // If already selected, deselect it
+        setSelectedStudents(selectedStudents.filter(id => id !== studentId));
+      } else {
+        // If not selected, add it to selected students
+        setSelectedStudents([...selectedStudents, studentId]);
+      }
+    } else {
+      // For individual sessions, just set the student ID in the form
+      form.setValue('studentId', studentId);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
@@ -235,25 +268,46 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       
       if (lessonError) throw lessonError;
       
-      setLoadingMessage('Adding student to lesson...');
+      setLoadingMessage('Adding students to lesson...');
       
-      // Add student to the lesson
-      const lessonStudentData = {
-        lesson_id: lesson.id,
-        student_id: values.studentId,
-        attendance_status: 'pending',
-        organization_id: organization?.id || null
-      };
-      
-      const { error: studentError } = await supabase
-        .from('lesson_students')
-        .insert(lessonStudentData);
-      
-      if (studentError) throw studentError;
+      // For group sessions, add multiple students
+      if (values.isGroup && selectedStudents.length > 0) {
+        const studentPromises = selectedStudents.map(async (studentId) => {
+          const lessonStudentData = {
+            lesson_id: lesson.id,
+            student_id: studentId,
+            attendance_status: 'pending',
+            organization_id: organization?.id || null
+          };
+          
+          return supabase.from('lesson_students').insert(lessonStudentData);
+        });
+        
+        await Promise.all(studentPromises);
+      } else {
+        // Add single student to the lesson
+        const lessonStudentData = {
+          lesson_id: lesson.id,
+          student_id: values.studentId,
+          attendance_status: 'pending',
+          organization_id: organization?.id || null
+        };
+        
+        const { error: studentError } = await supabase
+          .from('lesson_students')
+          .insert(lessonStudentData);
+        
+        if (studentError) throw studentError;
+      }
       
       setIsLoading(false);
-      onSuccess();
-      toast.success('Lesson created successfully');
+      
+      // Close the dialog with a small delay to ensure proper state update
+      setTimeout(() => {
+        toast.success('Lesson created successfully');
+        onSuccess();
+      }, 300);
+      
     } catch (error) {
       console.error('Error creating lesson:', error);
       toast.error('Failed to create lesson');
@@ -350,7 +404,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                 name="isGroup"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 space-x-2 space-y-0">
-                    <FormLabel className="cursor-pointer">Group Session</FormLabel>
+                    <div>
+                      <FormLabel className="cursor-pointer">Group Session</FormLabel>
+                      <p className="text-xs text-muted-foreground">Enable to select multiple students</p>
+                    </div>
                     <FormControl>
                       <Switch
                         checked={field.value}
@@ -367,19 +424,41 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               name="studentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Student</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={isFetchingStudents ? "Loading students..." : "Select a student"} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
+                  <FormLabel>{isGroupSession ? "Students" : "Student"}</FormLabel>
+                  
+                  {!isGroupSession ? (
+                    // Single student select dropdown
+                    <Select 
+                      onValueChange={(value) => field.onChange(parseInt(value))} 
+                      value={field.value.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={isFetchingStudents ? "Loading students..." : "Select a student"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isFetchingStudents ? (
+                          <div className="flex items-center justify-center p-2">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <span>Loading students...</span>
+                          </div>
+                        ) : students.length === 0 ? (
+                          <div className="p-2 text-center text-muted-foreground">No students available</div>
+                        ) : (
+                          students.map((student) => (
+                            <SelectItem key={student.id} value={student.id.toString()}>
+                              {student.first_name} {student.last_name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    // Multi-student selection for group sessions
+                    <div className="border rounded-md p-2 max-h-[200px] overflow-y-auto">
                       {isFetchingStudents ? (
-                        <div className="flex items-center justify-center p-2">
+                        <div className="flex items-center justify-center p-4">
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           <span>Loading students...</span>
                         </div>
@@ -387,13 +466,23 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                         <div className="p-2 text-center text-muted-foreground">No students available</div>
                       ) : (
                         students.map((student) => (
-                          <SelectItem key={student.id} value={student.id.toString()}>
-                            {student.first_name} {student.last_name}
-                          </SelectItem>
+                          <div 
+                            key={student.id} 
+                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer mb-1 ${
+                              selectedStudents.includes(student.id) ? 'bg-primary-50 border border-primary' : 'hover:bg-gray-100'
+                            }`}
+                            onClick={() => handleStudentSelect(student.id)}
+                          >
+                            <span>{student.first_name} {student.last_name}</span>
+                            {selectedStudents.includes(student.id) && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
                         ))
                       )}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
+                  
                   <FormMessage />
                 </FormItem>
               )}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
@@ -35,6 +36,7 @@ const Calendar = () => {
   } | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
+  const [isSettingHomework, setIsSettingHomework] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
   // Fixed: Use the proper type for the calendar ref
@@ -157,12 +159,17 @@ const Calendar = () => {
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
     
+    // Force a refresh of the calendar using the ref
     if (calendarRef.current) {
       const apiInstance = calendarRef.current.getApi();
+      apiInstance.refetchEvents(); // This will force the calendar to refresh its events
+      
+      // Also fetch new data to update our local state
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
       fetchLessons(start, end);
     } else {
+      // Fallback if ref isn't available
       const start = new Date();
       start.setMonth(start.getMonth() - 1);
       const end = new Date();
@@ -176,6 +183,13 @@ const Calendar = () => {
   const handleEditLessonSuccess = () => {
     setIsEditingLesson(false);
     setSelectedLessonId(null);
+    
+    // Force a refresh of the calendar using the ref
+    if (calendarRef.current) {
+      const apiInstance = calendarRef.current.getApi();
+      apiInstance.refetchEvents();
+    }
+    
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
     fetchLessons(start, end);
@@ -225,6 +239,12 @@ const Calendar = () => {
       setSelectedLessonId(null);
       setIsLessonDetailsOpen(false);
       
+      // Force refresh the calendar
+      if (calendarRef.current) {
+        const apiInstance = calendarRef.current.getApi();
+        apiInstance.refetchEvents();
+      }
+      
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
       fetchLessons(start, end);
@@ -249,12 +269,26 @@ const Calendar = () => {
   const handleCompleteSession = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setIsLessonDetailsOpen(false);
+    // First set homework, then move to complete session
+    setIsSettingHomework(true);
+  };
+
+  const handleHomeworkSuccess = () => {
+    // After setting homework, move to the attendance and feedback step
+    setIsSettingHomework(false);
     setIsCompleteSessionOpen(true);
   };
 
   const handleCompleteSessionSuccess = () => {
     setIsCompleteSessionOpen(false);
     setSelectedLessonId(null);
+    
+    // Force refresh the calendar
+    if (calendarRef.current) {
+      const apiInstance = calendarRef.current.getApi();
+      apiInstance.refetchEvents();
+    }
+    
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
     fetchLessons(start, end);
@@ -389,12 +423,22 @@ const Calendar = () => {
         onCompleteSession={handleCompleteSession}
       />
 
-      {/* Complete Session Dialog */}
+      {/* Set Homework Dialog (first step of completion flow) */}
+      <CompleteSessionDialog
+        lessonId={selectedLessonId}
+        isOpen={isSettingHomework}
+        onClose={() => setIsSettingHomework(false)}
+        onSuccess={handleHomeworkSuccess}
+        skipHomeworkStep={false}
+      />
+
+      {/* Complete Session Dialog (second step of completion flow) */}
       <CompleteSessionDialog
         lessonId={selectedLessonId}
         isOpen={isCompleteSessionOpen}
         onClose={() => setIsCompleteSessionOpen(false)}
         onSuccess={handleCompleteSessionSuccess}
+        skipHomeworkStep={true}
       />
     </div>
   );

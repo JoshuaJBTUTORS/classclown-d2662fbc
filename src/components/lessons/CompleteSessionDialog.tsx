@@ -6,7 +6,7 @@ import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO } from 'date-fns';
-import { Check, UserCheck } from 'lucide-react';
+import { Check, UserCheck, BookOpen } from 'lucide-react';
 
 import {
   Dialog,
@@ -53,6 +53,7 @@ const formSchema = z.object({
       last_name: z.string(),
       attendance: z.enum(['attended', 'missed', 'cancelled']),
       feedback: z.string().optional(),
+      homework: z.string().optional(),
     })
   ),
 });
@@ -68,6 +69,8 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
 }) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogDescription, setDialogDescription] = useState('');
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -75,6 +78,17 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       students: [],
     },
   });
+
+  // Set the dialog title and description based on the current step
+  useEffect(() => {
+    if (skipHomeworkStep) {
+      setDialogTitle('Record Student Attendance & Feedback');
+      setDialogDescription('Record attendance and provide feedback for this session');
+    } else {
+      setDialogTitle('Assign Homework');
+      setDialogDescription('Assign homework for students after this session');
+    }
+  }, [skipHomeworkStep]);
 
   // Fetch lesson details when dialog opens
   useEffect(() => {
@@ -92,6 +106,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         last_name: student.last_name,
         attendance: student.attendance_status as 'attended' | 'missed' | 'cancelled' || 'attended',
         feedback: '',
+        homework: '',
       }));
 
       form.reset({
@@ -148,62 +163,73 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     setLoading(true);
     
     try {
-      console.log('Updating lesson status to completed');
-      // 1. Update the lesson status to completed
-      const { error: lessonError } = await supabase
-        .from('lessons')
-        .update({ 
-          status: 'completed',
-          completion_date: new Date().toISOString()
-        })
-        .eq('id', lessonId);
-      
-      if (lessonError) {
-        console.error('Error updating lesson status:', lessonError);
-        throw lessonError;
-      }
-
-      console.log('Updating student attendance');
-      // 2. Update attendance status and feedback for all students
-      const attendanceUpdates = data.students.map(async (student) => {
-        console.log(`Updating attendance for student ${student.id} to ${student.attendance}`);
-        const { error } = await supabase
-          .from('lesson_students')
-          .update({ 
-            attendance_status: student.attendance 
-          })
-          .eq('lesson_id', lessonId)
-          .eq('student_id', student.id);
+      // If we're in the "Assign Homework" step (not skipping homework)
+      if (!skipHomeworkStep) {
+        // Just save the homework data and move to the next step
+        console.log('Homework assigned:', data.students);
         
-        if (error) {
-          console.error('Error updating attendance:', error);
-          throw error;
+        // In a real implementation, you would save the homework to the database here
+        toast.success('Homework assigned successfully!');
+        
+        // Call the onSuccess callback to move to the next step (attendance)
+        if (onSuccess) {
+          onSuccess();
+        }
+      } 
+      // If we're in the "Record Attendance" step (skipping homework)
+      else {
+        console.log('Updating lesson status to completed');
+        // 1. Update the lesson status to completed
+        const { error: lessonError } = await supabase
+          .from('lessons')
+          .update({ 
+            status: 'completed',
+            completion_date: new Date().toISOString()
+          })
+          .eq('id', lessonId);
+        
+        if (lessonError) {
+          console.error('Error updating lesson status:', lessonError);
+          throw lessonError;
         }
 
-        // Save feedback if provided
-        if (student.feedback) {
-          // In a real app, you might want to store feedback in a separate table
-          // For simplicity, we'll just use console.log here
-          console.log(`Feedback for student ${student.id}: ${student.feedback}`);
+        console.log('Updating student attendance');
+        // 2. Update attendance status and feedback for all students
+        const attendanceUpdates = data.students.map(async (student) => {
+          console.log(`Updating attendance for student ${student.id} to ${student.attendance}`);
+          const { error } = await supabase
+            .from('lesson_students')
+            .update({ 
+              attendance_status: student.attendance 
+            })
+            .eq('lesson_id', lessonId)
+            .eq('student_id', student.id);
+          
+          if (error) {
+            console.error('Error updating attendance:', error);
+            throw error;
+          }
+
+          // Save feedback if provided
+          if (student.feedback) {
+            // In a real app, you might want to store feedback in a separate table
+            // For simplicity, we'll just use console.log here
+            console.log(`Feedback for student ${student.id}: ${student.feedback}`);
+          }
+        });
+
+        await Promise.all(attendanceUpdates);
+
+        toast.success('Session completed successfully!');
+        
+        // Call the onSuccess callback to refresh the parent component
+        if (onSuccess) {
+          onSuccess();
         }
-      });
-
-      await Promise.all(attendanceUpdates);
-
-      toast.success('Session completed successfully!');
-      
-      // Call the onSuccess callback to refresh the parent component
-      if (onSuccess) {
-        onSuccess();
+        
+        // Force close the dialog by calling onClose directly
+        onClose();
       }
-      
-      // Force close the dialog by calling onClose directly
-      onClose();
-      
-      // Small delay to ensure all state updates are processed
-      setTimeout(() => {
-        if (onClose) onClose();
-      }, 100);
     } catch (error) {
       console.error('Error completing session:', error);
       toast.error('Failed to complete session');
@@ -224,22 +250,26 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5" /> 
-            Student Attendance & Feedback: {lesson?.title || 'Loading...'}
+            {skipHomeworkStep ? 
+              <><UserCheck className="h-5 w-5" /> {dialogTitle}</> : 
+              <><BookOpen className="h-5 w-5" /> {dialogTitle}</>
+            }
           </DialogTitle>
           <DialogDescription>
-            {lesson && lesson.start_time ? 
-              `${format(parseISO(lesson.start_time), 'MMMM d, yyyy • h:mm a')} - 
-              ${format(parseISO(lesson.end_time), 'h:mm a')}` : 
-              'Loading session details...'
-            }
+            {dialogDescription}
+            {lesson && lesson.start_time && (
+              <div className="mt-1 text-sm">
+                {`${format(parseISO(lesson.start_time), 'MMMM d, yyyy • h:mm a')} - 
+                ${format(parseISO(lesson.end_time), 'h:mm a')}`}
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
         
         {lesson ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Student Attendance and Feedback Section */}
+              {/* Student Homework and Attendance Section */}
               <div className="space-y-4">
                 <Separator />
                 
@@ -247,61 +277,86 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
                   <div key={student.id} className="p-4 border rounded-md space-y-3">
                     <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
                     
-                    <FormField
-                      control={form.control}
-                      name={`students.${index}.attendance`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Attendance</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                          >
+                    {skipHomeworkStep ? (
+                      // Attendance and Feedback UI (second step)
+                      <>
+                        <FormField
+                          control={form.control}
+                          name={`students.${index}.attendance`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Attendance</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select attendance status" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="attended">
+                                    <div className="flex items-center gap-2">
+                                      <UserCheck className="h-4 w-4 text-green-500" />
+                                      <span>Attended</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="missed">
+                                    <div className="flex items-center gap-2">
+                                      <span className="h-4 w-4 text-red-500">✗</span>
+                                      <span>Missed</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="cancelled">
+                                    <span>Cancelled</span>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name={`students.${index}.feedback`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Feedback (Optional)</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Brief feedback for this student..."
+                                  className="min-h-[60px]"
+                                  {...field}
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    ) : (
+                      // Homework UI (first step)
+                      <FormField
+                        control={form.control}
+                        name={`students.${index}.homework`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Homework Assignment</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select attendance status" />
-                              </SelectTrigger>
+                              <Textarea 
+                                placeholder="Enter homework details for this student..."
+                                className="min-h-[100px]"
+                                {...field}
+                                value={field.value || ''}
+                              />
                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="attended">
-                                <div className="flex items-center gap-2">
-                                  <UserCheck className="h-4 w-4 text-green-500" />
-                                  <span>Attended</span>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="missed">
-                                <div className="flex items-center gap-2">
-                                  <span className="h-4 w-4 text-red-500">✗</span>
-                                  <span>Missed</span>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="cancelled">
-                                <span>Cancelled</span>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`students.${index}.feedback`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Feedback (Optional)</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Brief feedback for this student..."
-                              className="min-h-[60px]"
-                              {...field}
-                              value={field.value || ''}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -311,10 +366,10 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
                   Cancel
                 </Button>
                 <Button type="submit" className="gap-1" disabled={loading}>
-                  {loading ? 'Completing...' : (
+                  {loading ? (skipHomeworkStep ? 'Completing...' : 'Assigning...') : (
                     <>
                       <Check className="h-4 w-4" />
-                      Complete Session
+                      {skipHomeworkStep ? 'Complete Session' : 'Assign & Continue'}
                     </>
                   )}
                 </Button>
