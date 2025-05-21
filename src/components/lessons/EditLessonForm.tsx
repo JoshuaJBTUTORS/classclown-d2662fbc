@@ -118,8 +118,11 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       const endDate = parseISO(data.end_time);
       const endHours = format(endDate, 'HH:mm');
       
-      // Get student IDs
-      const studentIds = data.lesson_students.map((ls: any) => ls.student.id);
+      // Get student IDs and ensure they are numbers
+      const studentIds = data.lesson_students.map((ls: any) => {
+        // Convert string IDs to numbers
+        return typeof ls.student.id === 'string' ? parseInt(ls.student.id, 10) : ls.student.id;
+      });
       
       // Set form values
       form.reset({
@@ -195,11 +198,11 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       // Format the date and times into ISO strings
       const startTime = new Date(values.date);
       const [startHours, startMinutes] = values.startTime.split(':');
-      startTime.setHours(parseInt(startHours), parseInt(startMinutes));
+      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
 
       const endTime = new Date(values.date);
       const [endHours, endMinutes] = values.endTime.split(':');
-      endTime.setHours(parseInt(endHours), parseInt(endMinutes));
+      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
 
       // Update the lesson data
       const lessonData = {
@@ -377,22 +380,29 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                       {students.length === 0 ? (
                         <p className="text-sm text-muted-foreground py-2 px-1">No students available</p>
                       ) : (
-                        students.map((student) => (
-                          <div
-                            key={student.id}
-                            className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                            onClick={() => handleMultiSelect(student.id)}
-                          >
-                            <div className={`w-4 h-4 border rounded flex items-center justify-center
-                              ${form.getValues('studentIds').includes(student.id) ? 'bg-primary border-primary' : 'border-gray-300'}`}
+                        students.map((student) => {
+                          // Convert ID to number for comparison
+                          const studentId = typeof student.id === 'string' 
+                            ? parseInt(student.id, 10) 
+                            : student.id;
+                            
+                          return (
+                            <div
+                              key={student.id}
+                              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                              onClick={() => handleMultiSelect(studentId)}
                             >
-                              {form.getValues('studentIds').includes(student.id) && (
-                                <Check className="h-3 w-3 text-white" />
-                              )}
+                              <div className={`w-4 h-4 border rounded flex items-center justify-center
+                                ${form.getValues('studentIds').includes(studentId) ? 'bg-primary border-primary' : 'border-gray-300'}`}
+                              >
+                                {form.getValues('studentIds').includes(studentId) && (
+                                  <Check className="h-3 w-3 text-white" />
+                                )}
+                              </div>
+                              <span>{student.first_name} {student.last_name}</span>
                             </div>
-                            <span>{student.first_name} {student.last_name}</span>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                     {form.formState.errors.studentIds && (

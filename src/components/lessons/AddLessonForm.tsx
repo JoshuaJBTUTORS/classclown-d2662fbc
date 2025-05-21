@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, addHours, parseISO } from 'date-fns';
 import { z } from 'zod';
@@ -232,11 +231,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       // Format the date and times into ISO strings
       const startTime = new Date(values.date);
       const [startHours, startMinutes] = values.startTime.split(':');
-      startTime.setHours(parseInt(startHours), parseInt(startMinutes));
+      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
 
       const endTime = new Date(values.date);
       const [endHours, endMinutes] = values.endTime.split(':');
-      endTime.setHours(parseInt(endHours), parseInt(endMinutes));
+      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
 
       // Add the organization_id to the lesson data
       const lessonData = {
@@ -429,7 +428,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                   {!isGroupSession ? (
                     // Single student select dropdown
                     <Select 
-                      onValueChange={(value) => field.onChange(parseInt(value))} 
+                      onValueChange={(value) => field.onChange(parseInt(value, 10))} 
                       value={field.value.toString()}
                     >
                       <FormControl>
@@ -465,20 +464,27 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                       ) : students.length === 0 ? (
                         <div className="p-2 text-center text-muted-foreground">No students available</div>
                       ) : (
-                        students.map((student) => (
-                          <div 
-                            key={student.id} 
-                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer mb-1 ${
-                              selectedStudents.includes(student.id) ? 'bg-primary-50 border border-primary' : 'hover:bg-gray-100'
-                            }`}
-                            onClick={() => handleStudentSelect(student.id)}
-                          >
-                            <span>{student.first_name} {student.last_name}</span>
-                            {selectedStudents.includes(student.id) && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                        ))
+                        students.map((student) => {
+                          // Convert student ID to number if it's a string
+                          const studentId = typeof student.id === 'string' 
+                            ? parseInt(student.id, 10) 
+                            : student.id;
+                            
+                          return (
+                            <div 
+                              key={student.id} 
+                              className={`flex items-center justify-between p-2 rounded-md cursor-pointer mb-1 ${
+                                selectedStudents.includes(studentId) ? 'bg-primary-50 border border-primary' : 'hover:bg-gray-100'
+                              }`}
+                              onClick={() => handleStudentSelect(studentId)}
+                            >
+                              <span>{student.first_name} {student.last_name}</span>
+                              {selectedStudents.includes(studentId) && (
+                                <Check className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   )}
