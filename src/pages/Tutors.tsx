@@ -4,6 +4,7 @@ import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { 
   Table, 
   TableBody, 
@@ -66,6 +67,7 @@ const generateStars = (rating: number | null) => {
 };
 
 const Tutors = () => {
+  const { organization } = useOrganization();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tutorsList, setTutorsList] = useState<Tutor[]>([]);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
@@ -83,10 +85,17 @@ const Tutors = () => {
   const fetchTutors = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tutors')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      // Filter by organization if we have one
+      if (organization?.id) {
+        query = query.eq('organization_id', organization.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;

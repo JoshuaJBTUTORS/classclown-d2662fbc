@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,6 +61,7 @@ interface Tutor {
   education?: string | null;
   rating?: number | null;
   joined_date?: string;
+  organization_id?: string;
 }
 
 interface EditTutorFormProps {
@@ -157,6 +157,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
           specialities: data.specialities,
           status: data.status,
           updated_at: new Date().toISOString(),
+          organization_id: tutor.organization_id
         })
         .eq('id', tutor.id);
         
@@ -172,6 +173,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         bio: data.bio,
         specialities: data.specialities,
         status: data.status,
+        organization_id: tutor.organization_id
       };
       
       onUpdate(updatedTutor);

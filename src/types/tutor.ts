@@ -9,7 +9,13 @@ export interface Tutor {
   hourly_rate?: number;
   status: string;
   subjects?: string[];
+  specialities?: string[];
   organization_id?: string;
   created_at?: string;
   updated_at?: string;
+  title?: string;
+  name?: string;
+  rating?: number;
+  joined_date?: string;
+  education?: string;
 }

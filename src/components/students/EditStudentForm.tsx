@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -113,6 +114,8 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         student_id: values.studentId,
         subjects: subjectsString,
         status: values.status,
+        // Preserve the organization_id if it exists
+        organization_id: student.organization_id
       };
 
       // Fix: Ensure we're using the correct type for the ID when used as a number

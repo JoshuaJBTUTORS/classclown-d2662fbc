@@ -11,4 +11,10 @@ export interface Student {
   organization_id?: string;
   created_at?: string;
   updated_at?: string;
+  parent_first_name?: string;
+  parent_last_name?: string;
+  subjects?: string;
+  student_id?: string;
+  name?: string;
+  joinedDate?: string;
 }

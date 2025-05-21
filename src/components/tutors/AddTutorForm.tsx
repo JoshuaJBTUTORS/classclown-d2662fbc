@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,7 @@ type FormData = z.infer<typeof formSchema>;
 
 const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const { organization } = useOrganization();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -81,7 +82,8 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           phone: data.phone,
           specialities: specialitiesArray,
           bio: data.bio, // Changed from 'about' to 'bio' to match the database schema
-          status: 'active', // Set default status
+          status: 'active',
+          organization_id: organization?.id || null // Add organization_id 
         })
         .select()
         .single();
