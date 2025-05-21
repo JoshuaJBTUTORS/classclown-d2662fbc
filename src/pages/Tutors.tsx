@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useOrganization } from '@/contexts/OrganizationContext';
 import { 
   Table, 
   TableBody, 
@@ -26,23 +26,7 @@ import EditTutorForm from '@/components/tutors/EditTutorForm';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-// Updated Tutor interface to include all necessary properties
-interface Tutor {
-  id: string;
-  first_name: string;
-  last_name: string;
-  name?: string;
-  email: string;
-  phone: string | null;
-  specialities: string[];
-  status: 'active' | 'inactive' | 'pending';
-  rating: number | null;
-  title?: string | null;
-  bio?: string | null;
-  education?: string | null;
-  joined_date: string;
-}
+import type { Tutor } from '@/types/tutor';
 
 const generateStars = (rating: number | null) => {
   if (rating === null) return '☆☆☆☆☆';
@@ -67,7 +51,6 @@ const generateStars = (rating: number | null) => {
 };
 
 const Tutors = () => {
-  const { organization } = useOrganization();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tutorsList, setTutorsList] = useState<Tutor[]>([]);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
@@ -90,10 +73,7 @@ const Tutors = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      // Filter by organization if we have one
-      if (organization?.id) {
-        query = query.eq('organization_id', organization.id);
-      }
+      // No organization filtering anymore
 
       const { data, error } = await query;
 
@@ -116,6 +96,7 @@ const Tutors = () => {
 
       setTutorsList(formattedTutors);
     } catch (error: any) {
+      console.error('Error fetching tutors:', error);
       toast({
         title: "Failed to load tutors",
         description: error.message || "Something went wrong. Please try again.",

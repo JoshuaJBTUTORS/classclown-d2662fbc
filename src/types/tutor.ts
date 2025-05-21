@@ -4,18 +4,18 @@ export interface Tutor {
   first_name: string;
   last_name: string;
   email: string;
-  phone?: string;
-  bio?: string;
+  phone?: string | null;
+  bio?: string | null;
   hourly_rate?: number;
-  status: string;
+  status: 'active' | 'inactive' | 'pending';
   subjects?: string[];
   specialities?: string[];
-  organization_id?: string;
+  organization_id?: string | null;
   created_at?: string;
   updated_at?: string;
-  title?: string;
+  title?: string | null;
   name?: string;
-  rating?: number;
+  rating?: number | null;
   joined_date?: string;
-  education?: string;
+  education?: string | null;
 }
