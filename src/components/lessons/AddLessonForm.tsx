@@ -223,6 +223,26 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     }
   };
 
+  const resetForm = () => {
+    form.reset({
+      title: "",
+      description: "",
+      tutorId: "",
+      studentId: 0,
+      date: preselectedTime ? preselectedTime.start : new Date(),
+      startTime: preselectedTime 
+        ? format(preselectedTime.start, "HH:mm") 
+        : format(new Date().setMinutes(0), "HH:mm"),
+      endTime: preselectedTime 
+        ? format(preselectedTime.end, "HH:mm") 
+        : format(addHours(new Date().setMinutes(0), 1), "HH:mm"),
+      isGroup: false,
+      isRecurring: false,
+      recurrenceInterval: 'weekly',
+    });
+    setSelectedStudents([]);
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
@@ -299,17 +319,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         if (studentError) throw studentError;
       }
       
+      // Reset loading state
       setIsLoading(false);
       
-      // Clear form data
-      form.reset();
-      setSelectedStudents([]);
-      
-      // Notify success and close form
-      toast.success('Lesson created successfully');
-      
-      // Explicitly close the dialog and call the success callback
-      onClose();
+      // Only call onSuccess here and let the parent component handle dialog closing
+      // This ensures proper coordination between dialog state and calendar refresh
       onSuccess();
       
     } catch (error) {
@@ -320,14 +334,15 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        onClose();
-        // Reset form on close
-        form.reset();
-        setSelectedStudents([]);
-      }
-    }}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) {
+          resetForm();
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Lesson</DialogTitle>
@@ -663,7 +678,17 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
             )}
             
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  resetForm();
+                  onClose();
+                }}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>

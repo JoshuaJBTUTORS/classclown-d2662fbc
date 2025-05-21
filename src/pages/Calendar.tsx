@@ -154,10 +154,12 @@ const Calendar = () => {
     setCalendarView(view);
   };
 
-  const forceCalendarRefresh = () => {
+  const forceCalendarRefresh = useCallback(() => {
+    console.log("Forcing calendar refresh");
     // Force a refresh of the calendar using the ref
     if (calendarRef.current) {
       const apiInstance = calendarRef.current.getApi();
+      console.log("Calendar API instance found, refreshing events");
       apiInstance.refetchEvents(); // This will force the calendar to refresh its events
       
       // Also fetch new data to update our local state
@@ -165,6 +167,7 @@ const Calendar = () => {
       const end = endOfMonth(currentDate);
       fetchLessons(start, end);
     } else {
+      console.warn("Calendar ref not available for refresh");
       // Fallback if ref isn't available
       const start = new Date();
       start.setMonth(start.getMonth() - 1);
@@ -172,18 +175,21 @@ const Calendar = () => {
       end.setMonth(end.getMonth() + 2);
       fetchLessons(start, end);
     }
-  };
+  }, [currentDate]);
 
-  const handleAddLessonSuccess = () => {
+  const handleAddLessonSuccess = useCallback(() => {
+    console.log("Add lesson success callback triggered");
+    // First close the dialog
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
     
-    // Force refresh the calendar immediately
-    forceCalendarRefresh();
-    
-    // Add a success message
-    toast.success('Lesson added successfully!');
-  };
+    // Then refresh the calendar with a small delay to ensure the database has updated
+    setTimeout(() => {
+      console.log("Executing delayed calendar refresh");
+      forceCalendarRefresh();
+      toast.success('Lesson added successfully!');
+    }, 500);
+  }, [forceCalendarRefresh]);
 
   const handleEditLessonSuccess = () => {
     setIsEditingLesson(false);
@@ -392,6 +398,7 @@ const Calendar = () => {
       <AddLessonForm
         isOpen={isAddingLesson}
         onClose={() => {
+          console.log("Closing add lesson dialog from Calendar component");
           setIsAddingLesson(false);
           setSelectedTimeSlot(null);
         }}
