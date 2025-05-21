@@ -86,12 +86,10 @@ const Invite = () => {
       }
 
       try {
-        // Fetch invitation details using rpc function with explicit typing
-        const { data, error: inviteError } = await supabase
-          .rpc('get_invitation_by_token', { token_param: token }) as { 
-            data: InvitationData | null; 
-            error: Error | null; 
-          };
+        // Use the POST method to call the function instead of rpc()
+        const { data, error: inviteError } = await supabase.functions.invoke('get-invitation-by-token', {
+          body: { token },
+        });
 
         if (inviteError || !data) {
           throw new Error('Invalid or expired invitation');
@@ -141,11 +139,12 @@ const Invite = () => {
       
       if (signUpError) throw signUpError;
       
-      // Mark invitation as accepted using rpc function with explicit typing
-      await supabase.rpc('accept_invitation', { token_param: token }) as unknown as { 
-        data: boolean; 
-        error: Error | null; 
-      };
+      // Use POST method for the accept-invitation function
+      const { error: acceptError } = await supabase.functions.invoke('accept-invitation', {
+        body: { token },
+      });
+
+      if (acceptError) throw acceptError;
       
       toast({
         title: "Account created successfully!",
