@@ -40,7 +40,7 @@ const formSchema = z.object({
   email: z.string().email({ message: "Invalid email format." }),
   phone: z.string().optional(),
   specialities: z.string().optional(),
-  about: z.string().optional(),
+  bio: z.string().optional(),
   sendInvite: z.boolean().default(false),
 });
 
@@ -57,7 +57,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       email: "",
       phone: "",
       specialities: "",
-      about: "",
+      bio: "",
       sendInvite: false,
     },
   });
@@ -80,7 +80,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           email: data.email,
           phone: data.phone,
           specialities: specialitiesArray,
-          about: data.about,
+          bio: data.bio, // Changed from 'about' to 'bio' to match the database schema
           status: 'active', // Set default status
         })
         .select()
@@ -215,10 +215,10 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
 
             <FormField
               control={form.control}
-              name="about"
+              name="bio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>About (Optional)</FormLabel>
+                  <FormLabel>Bio (Optional)</FormLabel>
                   <FormControl>
                     <Textarea placeholder="A brief description about the tutor..." className="min-h-[100px]" {...field} />
                   </FormControl>
