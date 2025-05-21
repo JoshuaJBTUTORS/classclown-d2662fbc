@@ -39,6 +39,20 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Define the type for our invitation data from RPC
+interface InvitationData {
+  id: string;
+  email: string;
+  role: string;
+  entity_id?: string;
+  expires_at: string;
+  created_at: string;
+  accepted_at: string | null;
+  organization_name?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 const Invite = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -72,9 +86,12 @@ const Invite = () => {
       }
 
       try {
-        // Fetch invitation details using rpc function to bypass types
+        // Fetch invitation details using rpc function with explicit typing
         const { data, error: inviteError } = await supabase
-          .rpc('get_invitation_by_token', { token_param: token });
+          .rpc('get_invitation_by_token', { token_param: token }) as { 
+            data: InvitationData | null; 
+            error: Error | null; 
+          };
 
         if (inviteError || !data) {
           throw new Error('Invalid or expired invitation');
@@ -124,9 +141,11 @@ const Invite = () => {
       
       if (signUpError) throw signUpError;
       
-      // Mark invitation as accepted using rpc function
-      await supabase
-        .rpc('accept_invitation', { token_param: token });
+      // Mark invitation as accepted using rpc function with explicit typing
+      await supabase.rpc('accept_invitation', { token_param: token }) as unknown as { 
+        data: boolean; 
+        error: Error | null; 
+      };
       
       toast({
         title: "Account created successfully!",
