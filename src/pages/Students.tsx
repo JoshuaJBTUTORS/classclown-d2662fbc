@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -33,7 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import EditStudentForm from '@/components/students/EditStudentForm';
 import ViewStudentProfile from '@/components/students/ViewStudentProfile';
-import { Student } from '@/components/students/ViewStudentProfile'; 
+import { Student } from '@/types/student'; // Import the Student type from our shared types file
 import AddStudentForm from '@/components/students/AddStudentForm';
 
 const Students = () => {

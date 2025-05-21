@@ -72,7 +72,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
       parentLastName: student?.parent_last_name || "",
       studentId: student?.student_id || "",
       subjects: subjectsString,
-      status: student?.status || "active",
+      status: (student?.status === 'active' || student?.status === 'inactive' 
+              ? student.status 
+              : "active") as 'active' | 'inactive',
     },
   });
 
@@ -91,7 +93,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         parentLastName: student.parent_last_name || "",
         studentId: student.student_id || "",
         subjects: subjectsValue,
-        status: student.status || "active",
+        status: (student.status === 'active' || student.status === 'inactive' 
+                ? student.status 
+                : "active") as 'active' | 'inactive',
       });
     }
   }, [student, form]);
@@ -138,8 +142,8 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           name: `${data[0].first_name} ${data[0].last_name}`,
           email: data[0].email || '',
           phone: data[0].phone || '',
-          subjects: data[0].subjects ? data[0].subjects.split(',').map((subject: string) => subject.trim()) : [],
-          status: data[0].status as 'active' | 'inactive' || 'active',
+          subjects: data[0].subjects || '',  // Keep as string to match database
+          status: data[0].status || 'active',
           joinedDate: new Date(data[0].created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -150,7 +154,8 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           parent_first_name: data[0].parent_first_name || '',
           parent_last_name: data[0].parent_last_name || '',
           student_id: data[0].student_id,
-          created_at: data[0].created_at
+          created_at: data[0].created_at,
+          organization_id: data[0].organization_id
         };
         onUpdate(updatedStudent);
         toast.success("Student details updated successfully");

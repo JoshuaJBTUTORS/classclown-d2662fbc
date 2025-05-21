@@ -1,19 +1,19 @@
 
 export interface Student {
-  id: number;
+  id: number | string;
   first_name: string;
   last_name: string;
   email: string;
   phone?: string;
   grade?: string;
   notes?: string;
-  status: string;
+  status: 'active' | 'inactive' | string;
   organization_id?: string;
   created_at?: string;
   updated_at?: string;
   parent_first_name?: string;
   parent_last_name?: string;
-  subjects?: string;
+  subjects?: string | string[];
   student_id?: string;
   name?: string;
   joinedDate?: string;
