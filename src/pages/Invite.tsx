@@ -72,20 +72,9 @@ const Invite = () => {
       }
 
       try {
-        // Fetch invitation details
+        // Fetch invitation details using rpc function to bypass types
         const { data, error: inviteError } = await supabase
-          .from('invitations')
-          .select(`
-            email,
-            role,
-            entity_id,
-            created_at,
-            expires_at,
-            tutors!left(first_name, last_name),
-            organization_settings!left(organization_name)
-          `)
-          .eq('token', token)
-          .single();
+          .rpc('get_invitation_by_token', { token_param: token });
 
         if (inviteError || !data) {
           throw new Error('Invalid or expired invitation');
@@ -99,9 +88,9 @@ const Invite = () => {
         setInvitation({
           email: data.email,
           role: data.role,
-          organization_name: data.organization_settings?.organization_name,
-          first_name: data.tutors?.first_name,
-          last_name: data.tutors?.last_name,
+          organization_name: data.organization_name,
+          first_name: data.first_name,
+          last_name: data.last_name,
         });
       } catch (err: any) {
         console.error('Error verifying invitation:', err);
@@ -135,11 +124,9 @@ const Invite = () => {
       
       if (signUpError) throw signUpError;
       
-      // Mark invitation as accepted
+      // Mark invitation as accepted using rpc function
       await supabase
-        .from('invitations')
-        .update({ accepted_at: new Date().toISOString() })
-        .eq('token', token);
+        .rpc('accept_invitation', { token_param: token });
       
       toast({
         title: "Account created successfully!",

@@ -107,6 +107,42 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          email: string
+          entity_id: string | null
+          expires_at: string
+          id: string
+          role: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          email: string
+          entity_id?: string | null
+          expires_at: string
+          id?: string
+          role: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          entity_id?: string | null
+          expires_at?: string
+          id?: string
+          role?: string
+          token?: string
+        }
+        Relationships: []
+      }
       lesson_students: {
         Row: {
           attendance_status: string | null
@@ -207,6 +243,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organization_settings: {
+        Row: {
+          created_at: string
+          domain_name: string | null
+          id: string
+          logo_url: string | null
+          organization_name: string
+          primary_color: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain_name?: string | null
+          id?: string
+          logo_url?: string | null
+          organization_name: string
+          primary_color?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain_name?: string | null
+          id?: string
+          logo_url?: string | null
+          organization_name?: string
+          primary_color?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

@@ -28,7 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Mail } from 'lucide-react';
 
-interface AddTutorFormProps {
+interface AddStudentFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -37,16 +37,17 @@ interface AddTutorFormProps {
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email format." }),
+  email: z.string().email({ message: "Invalid email format." }).optional(),
   phone: z.string().optional(),
-  specialities: z.string().optional(),
-  about: z.string().optional(),
+  parentFirstName: z.string().optional(),
+  parentLastName: z.string().optional(),
+  subjects: z.string().optional(),
   sendInvite: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess }) => {
+const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormData>({
@@ -56,8 +57,9 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       lastName: "",
       email: "",
       phone: "",
-      specialities: "",
-      about: "",
+      parentFirstName: "",
+      parentLastName: "",
+      subjects: "",
       sendInvite: false,
     },
   });
@@ -66,62 +68,61 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     setLoading(true);
 
     try {
-      // Convert comma-separated specialities to an array
-      const specialitiesArray = data.specialities
-        ?.split(',')
-        .map(s => s.trim())
-        .filter(s => s !== '');
+      if (data.sendInvite && !data.email) {
+        throw new Error("Email is required when sending an invitation");
+      }
 
-      const { data: tutorData, error: tutorError } = await supabase
-        .from('tutors')
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
         .insert({
           first_name: data.firstName,
           last_name: data.lastName,
-          email: data.email,
-          phone: data.phone,
-          specialities: specialitiesArray,
-          about: data.about,
-          status: 'active', // Set default status
+          email: data.email || null,
+          phone: data.phone || null,
+          parent_first_name: data.parentFirstName || null,
+          parent_last_name: data.parentLastName || null,
+          subjects: data.subjects || null,
+          status: 'active',
         })
         .select()
         .single();
 
-      if (tutorError) throw tutorError;
+      if (studentError) throw studentError;
 
-      if (data.sendInvite) {
-        const { error: inviteError } = await supabase.functions.invoke('send-tutor-invite', {
+      if (data.sendInvite && data.email) {
+        const { error: inviteError } = await supabase.functions.invoke('send-student-invite', {
           body: {
             email: data.email,
             firstName: data.firstName,
             lastName: data.lastName,
-            tutorId: tutorData.id
+            studentId: studentData.id.toString()
           }
         });
 
         if (inviteError) {
           toast({
-            title: "Tutor created successfully",
+            title: "Student created successfully",
             description: "However, there was an issue sending the invitation email."
           });
         } else {
           toast({
-            title: "Tutor created successfully",
-            description: "An invitation email has been sent to the tutor."
+            title: "Student created successfully",
+            description: "An invitation email has been sent to the student."
           });
         }
       } else {
         toast({
-          title: "Tutor created successfully",
-          description: "The tutor has been added to the system."
+          title: "Student created successfully",
+          description: "The student has been added to the system."
         });
       }
 
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      console.error('Error creating tutor:', error);
+      console.error('Error creating student:', error);
       toast({
-        title: "Failed to create tutor",
+        title: "Failed to create student",
         description: error.message || "Please try again.",
         variant: "destructive"
       });
@@ -134,9 +135,9 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add New Tutor</DialogTitle>
+          <DialogTitle>Add New Student</DialogTitle>
           <DialogDescription>
-            Enter the tutor's details below to add them to the system.
+            Enter the student's details below to add them to the system.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -149,7 +150,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} />
+                      <Input placeholder="Jane" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -163,7 +164,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Doe" {...field} />
+                      <Input placeholder="Smith" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -176,9 +177,9 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email {form.watch("sendInvite") && "(Required for invitation)"}</FormLabel>
                   <FormControl>
-                    <Input placeholder="john.doe@example.com" type="email" {...field} />
+                    <Input placeholder="jane.smith@example.com" type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,28 +200,44 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="specialities"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Specialities (Comma-separated)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Math, Science, English" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="parentFirstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parent First Name (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="parentLastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parent Last Name (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Smith" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
-              name="about"
+              name="subjects"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>About (Optional)</FormLabel>
+                  <FormLabel>Subjects (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="A brief description about the tutor..." className="min-h-[100px]" {...field} />
+                    <Textarea placeholder="Math, Physics, Chemistry" className="min-h-[60px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -243,7 +260,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                       Send invitation email
                     </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      The tutor will receive an email with instructions to create an account.
+                      The student will receive an email with instructions to create an account.
                     </p>
                   </div>
                 </FormItem>
@@ -263,9 +280,9 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                 {loading ? "Creating..." : form.watch("sendInvite") ? (
                   <>
                     <Mail className="h-4 w-4" />
-                    Create & Invite Tutor
+                    Create & Invite Student
                   </>
-                ) : "Create Tutor"}
+                ) : "Create Student"}
               </Button>
             </DialogFooter>
           </form>
@@ -275,4 +292,4 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
   );
 };
 
-export default AddTutorForm;
+export default AddStudentForm;
