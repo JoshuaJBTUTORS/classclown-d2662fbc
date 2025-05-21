@@ -6,11 +6,16 @@ export const googleCalendarService = {
   async createEvent(lessonId: string, organizationId: string): Promise<boolean> {
     try {
       const { data: userData } = await supabase.auth.getUser();
+      const token = userData.session?.access_token;
+      
+      if (!token) {
+        throw new Error("No auth token available");
+      }
       
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${userData.session?.access_token}`
+          'Authorization': `Bearer ${token}`
         },
         body: {
           operation: 'create',
@@ -30,11 +35,16 @@ export const googleCalendarService = {
   async updateEvent(lessonId: string, organizationId: string): Promise<boolean> {
     try {
       const { data: userData } = await supabase.auth.getUser();
+      const token = userData.session?.access_token;
+      
+      if (!token) {
+        throw new Error("No auth token available");
+      }
       
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${userData.session?.access_token}`
+          'Authorization': `Bearer ${token}`
         },
         body: {
           operation: 'update',
@@ -54,11 +64,16 @@ export const googleCalendarService = {
   async deleteEvent(lessonId: string, organizationId: string): Promise<boolean> {
     try {
       const { data: userData } = await supabase.auth.getUser();
+      const token = userData.session?.access_token;
+      
+      if (!token) {
+        throw new Error("No auth token available");
+      }
       
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${userData.session?.access_token}`
+          'Authorization': `Bearer ${token}`
         },
         body: {
           operation: 'delete',

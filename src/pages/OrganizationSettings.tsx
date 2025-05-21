@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +9,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
+import IntegrationsTab from '@/components/settings/IntegrationsTab';
 
 import {
   Form,
@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
   organizationName: z.string().min(2, 'Organization name must be at least 2 characters'),
@@ -39,6 +40,7 @@ const OrganizationSettings = () => {
   const { organization, refreshOrganization } = useOrganization();
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('general');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -138,113 +140,131 @@ const OrganizationSettings = () => {
             title="Organization Settings" 
             subtitle="Manage your organization details and preferences"
           />
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-              <CardDescription>
-                Update your organization profile and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="organizationName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Organization Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="primaryColor"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Primary Color</FormLabel>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="h-8 w-8 rounded-full border"
-                              style={{ backgroundColor: field.value }}
-                            />
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="logoUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Logo URL</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="https://..." />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {isOwner && (
-                    <>
-                      <Separator className="my-6" />
-                      
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-medium">Advanced Settings</h3>
-                        <p className="text-sm text-muted-foreground">
-                          These settings are only available to organization owners
-                        </p>
-                      </div>
-
+          
+          <Tabs 
+            defaultValue="general" 
+            value={activeTab} 
+            onValueChange={setActiveTab}
+            className="mt-6"
+          >
+            <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-grid md:grid-cols-2">
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="general" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>General Settings</CardTitle>
+                  <CardDescription>
+                    Update your organization profile and preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <FormField
                         control={form.control}
-                        name="domainName"
+                        name="organizationName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Custom Domain</FormLabel>
+                            <FormLabel>Organization Name</FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="https://yourdomain.com" 
-                                disabled={!isOwner}
-                              />
+                              <Input {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      <div className="bg-amber-50 p-4 rounded border border-amber-200">
-                        <p className="text-sm text-amber-800">
-                          <strong>Note:</strong> Custom domain setup requires DNS configuration.
-                          Contact support for assistance with setting up your custom domain.
-                        </p>
-                      </div>
-                    </>
-                  )}
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="primaryColor"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Primary Color</FormLabel>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-8 w-8 rounded-full border"
+                                  style={{ backgroundColor: field.value }}
+                                />
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                        <FormField
+                          control={form.control}
+                          name="logoUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Logo URL</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="https://..." />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {isOwner && (
+                        <>
+                          <Separator className="my-6" />
+                          
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-medium">Advanced Settings</h3>
+                            <p className="text-sm text-muted-foreground">
+                              These settings are only available to organization owners
+                            </p>
+                          </div>
+
+                          <FormField
+                            control={form.control}
+                            name="domainName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Custom Domain</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="https://yourdomain.com" 
+                                    disabled={!isOwner}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="bg-amber-50 p-4 rounded border border-amber-200">
+                            <p className="text-sm text-amber-800">
+                              <strong>Note:</strong> Custom domain setup requires DNS configuration.
+                              Contact support for assistance with setting up your custom domain.
+                            </p>
+                          </div>
+                        </>
+                      )}
+
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="integrations" className="mt-4">
+              <IntegrationsTab />
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
     </div>

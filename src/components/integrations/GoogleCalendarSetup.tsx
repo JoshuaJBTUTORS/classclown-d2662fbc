@@ -33,11 +33,16 @@ const GoogleCalendarSetup: React.FC = () => {
     setIsCreatingTable(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
+      const token = userData.session?.access_token;
+      
+      if (!token) {
+        throw new Error("No auth token available");
+      }
       
       const { data, error } = await supabase.functions.invoke('create-oauth-states-table', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${userData.session?.access_token}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -76,12 +81,17 @@ const GoogleCalendarSetup: React.FC = () => {
       
       // Get the current user session
       const { data: userData } = await supabase.auth.getUser();
+      const token = userData.session?.access_token;
+      
+      if (!token) {
+        throw new Error("No auth token available");
+      }
       
       // Call the edge function to start OAuth flow
       const { data, error } = await supabase.functions.invoke('google-oauth', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${userData.session?.access_token}`
+          'Authorization': `Bearer ${token}`
         },
         body: {
           action: 'authorize',
