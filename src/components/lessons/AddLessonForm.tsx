@@ -74,7 +74,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
     tutorId: z.string().min(1, { message: "Tutor is required" }),
-    studentIds: z.array(z.number()).min(1, { message: "At least one student is required" }),
+    studentId: z.number().or(z.string().transform(s => parseInt(s, 10))).refine(val => val > 0, {
+      message: "Student is required"
+    }),
     date: z.date({ required_error: "Date is required" }),
     startTime: z.string().min(1, { message: "Start time is required" }),
     endTime: z.string().min(1, { message: "End time is required" }),
@@ -90,7 +92,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       title: "",
       description: "",
       tutorId: "",
-      studentIds: [],
+      studentId: 0,
       date: preselectedTime ? preselectedTime.start : new Date(),
       startTime: preselectedTime 
         ? format(preselectedTime.start, "HH:mm") 
@@ -233,21 +235,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       
       if (lessonError) throw lessonError;
       
-      setLoadingMessage('Adding students to lesson...');
+      setLoadingMessage('Adding student to lesson...');
       
-      // Add students to the lesson
-      const lessonStudentsData = values.studentIds.map(studentId => ({
+      // Add student to the lesson
+      const lessonStudentData = {
         lesson_id: lesson.id,
-        student_id: studentId,
+        student_id: values.studentId,
         attendance_status: 'pending',
         organization_id: organization?.id || null
-      }));
+      };
       
-      const { error: studentsError } = await supabase
+      const { error: studentError } = await supabase
         .from('lesson_students')
-        .insert(lessonStudentsData);
+        .insert(lessonStudentData);
       
-      if (studentsError) throw studentsError;
+      if (studentError) throw studentError;
       
       setIsLoading(false);
       onSuccess();
@@ -257,21 +259,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       toast.error('Failed to create lesson');
       setIsLoading(false);
     }
-  };
-  
-  const handleMultiSelect = (selectedId: number) => {
-    const currentSelectedIds = form.getValues('studentIds');
-    let newSelectedIds;
-    
-    if (currentSelectedIds.includes(selectedId)) {
-      // Remove the ID if it's already selected
-      newSelectedIds = currentSelectedIds.filter(id => id !== selectedId);
-    } else {
-      // Add the ID if it's not selected
-      newSelectedIds = [...currentSelectedIds, selectedId];
-    }
-    
-    form.setValue('studentIds', newSelectedIds);
   };
 
   return (
@@ -362,8 +349,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                 control={form.control}
                 name="isGroup"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 h-[42px] space-x-2 space-y-0">
-                    <FormLabel className="m-0">Group Session</FormLabel>
+                  <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 space-x-2 space-y-0">
+                    <FormLabel className="cursor-pointer">Group Session</FormLabel>
                     <FormControl>
                       <Switch
                         checked={field.value}
@@ -377,40 +364,37 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
             
             <FormField
               control={form.control}
-              name="studentIds"
-              render={() => (
+              name="studentId"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Students</FormLabel>
-                  <div className="border rounded-md p-2 max-h-48 overflow-y-auto">
-                    {isFetchingStudents ? (
-                      <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        <span>Loading students...</span>
-                      </div>
-                    ) : students.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-2 px-1">No students available</p>
-                    ) : (
-                      students.map((student) => (
-                        <div
-                          key={student.id}
-                          className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                          onClick={() => handleMultiSelect(student.id)}
-                        >
-                          <div className={`w-4 h-4 border rounded flex items-center justify-center
-                            ${form.getValues('studentIds').includes(student.id) ? 'bg-primary border-primary' : 'border-gray-300'}`}
-                          >
-                            {form.getValues('studentIds').includes(student.id) && (
-                              <Check className="h-3 w-3 text-white" />
-                            )}
-                          </div>
-                          <span>{student.first_name} {student.last_name}</span>
+                  <FormLabel>Student</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={isFetchingStudents ? "Loading students..." : "Select a student"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {isFetchingStudents ? (
+                        <div className="flex items-center justify-center p-2">
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <span>Loading students...</span>
                         </div>
-                      ))
-                    )}
-                  </div>
-                  {form.formState.errors.studentIds && (
-                    <p className="text-sm font-medium text-destructive">{form.formState.errors.studentIds.message}</p>
-                  )}
+                      ) : students.length === 0 ? (
+                        <div className="p-2 text-center text-muted-foreground">No students available</div>
+                      ) : (
+                        students.map((student) => (
+                          <SelectItem key={student.id} value={student.id.toString()}>
+                            {student.first_name} {student.last_name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
