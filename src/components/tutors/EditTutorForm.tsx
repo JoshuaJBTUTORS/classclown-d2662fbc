@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Tutor } from '@/types/tutor';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -45,24 +46,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-
-// Update this interface to match the one in Tutors.tsx
-interface Tutor {
-  id: string;
-  first_name: string;
-  last_name: string;
-  name?: string;
-  email: string;
-  phone?: string | null;
-  bio?: string | null;
-  specialities?: string[];
-  status: 'active' | 'inactive' | 'pending';
-  title?: string | null;
-  education?: string | null;
-  rating?: number | null;
-  joined_date?: string;
-  organization_id?: string;
-}
 
 interface EditTutorFormProps {
   tutor: Tutor | null;

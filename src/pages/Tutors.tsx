@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -72,8 +71,6 @@ const Tutors = () => {
         .from('tutors')
         .select('*')
         .order('created_at', { ascending: false });
-      
-      // No organization filtering anymore
 
       const { data, error } = await query;
 

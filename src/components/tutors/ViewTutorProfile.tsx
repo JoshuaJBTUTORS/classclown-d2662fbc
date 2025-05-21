@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -7,22 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-
-interface Tutor {
-  id: string;
-  first_name: string;
-  last_name: string;
-  name?: string;
-  email: string;
-  phone: string | null;
-  specialities: string[];
-  status: 'active' | 'inactive' | 'pending';
-  rating: number | null;
-  title?: string | null;
-  bio?: string | null;
-  education?: string | null;
-  joined_date: string;
-}
+import { Tutor } from '@/types/tutor';
 
 interface ViewTutorProfileProps {
   tutor: Tutor | null;
