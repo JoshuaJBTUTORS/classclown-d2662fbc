@@ -1,126 +1,103 @@
 import React from 'react';
-import {
-  Home,
-  Calendar,
-  Users,
-  User,
-  Settings,
-  Book,
-} from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, Users, Calendar, ListChecks, Settings } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+  const location = useLocation();
+  const { isAdmin, isTutor } = useAuth();
+
   const sidebarClass = isOpen ? 'w-64' : 'w-20';
+  const linkClass =
+    'flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors';
+  const activeLinkClass = 'bg-gray-100 text-primary';
+
+  const isActive = (pathname: string) => {
+    return location.pathname === pathname;
+  };
 
   return (
     <div
-      className={`fixed top-0 left-0 h-full bg-white border-r shadow-sm transition-width duration-300 ease-in-out ${sidebarClass} z-50`}
+      className={`fixed top-0 left-0 h-full bg-white border-r shadow-sm transition-width duration-300 ease-in-out z-50 ${sidebarClass}`}
     >
-      <div className="flex flex-col h-full">
-        <div className="p-4">
-          <h1 className={`text-2xl font-bold transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-            Tutor App
-          </h1>
-        </div>
-
-        <nav className="flex-1 px-2 py-4">
-          <ul>
-            <li className="mb-1">
-              <NavLink
-                to="/"
-                className={({ isActive }) =>
-                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
-                }
-              >
-                <Home className="mr-2 h-4 w-4" />
-                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                  Dashboard
-                </span>
-              </NavLink>
-            </li>
-            <li className="mb-1">
-              <NavLink
-                to="/calendar"
-                className={({ isActive }) =>
-                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
-                }
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                  Calendar
-                </span>
-              </NavLink>
-            </li>
-            <li className="mb-1">
-              <NavLink
-                to="/lessons"
-                className={({ isActive }) =>
-                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
-                }
-              >
-                <Book className="mr-2 h-4 w-4" />
-                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                  Lessons
-                </span>
-              </NavLink>
-            </li>
-            <li className="mb-1">
-              <NavLink
-                to="/homework"
-                className={({ isActive }) =>
-                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
-                }
-              >
-                <Book className="mr-2 h-4 w-4" />
-                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                  Homework
-                </span>
-              </NavLink>
-            </li>
-            <li className="mb-1">
-              <NavLink
+      <div className="h-full px-3 py-4 overflow-y-auto bg-white">
+        <ul className="space-y-2 font-medium">
+          <li>
+            <Link
+              to="/"
+              className={`${linkClass} ${isActive('/') ? activeLinkClass : ''}`}
+            >
+              <Home className="h-5 w-5 mr-2" />
+              <span>Dashboard</span>
+            </Link>
+          </li>
+          {isAdmin && (
+            <li>
+              <Link
                 to="/students"
-                className={({ isActive }) =>
-                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
-                }
+                className={`${linkClass} ${isActive('/students') ? activeLinkClass : ''}`}
               >
-                <Users className="mr-2 h-4 w-4" />
-                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                  Students
-                </span>
-              </NavLink>
+                <Users className="h-5 w-5 mr-2" />
+                <span>Students</span>
+              </Link>
             </li>
-            <li className="mb-1">
-              <NavLink
-                to="/tutors"
-                className={({ isActive }) =>
-                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${isActive ? 'bg-gray-100 font-medium' : ''}`
-                }
+          )}
+          {(isAdmin || isTutor) && (
+            <>
+              <li>
+                <Link
+                  to="/tutors"
+                  className={`${linkClass} ${isActive('/tutors') ? activeLinkClass : ''}`}
+                >
+                  <Users className="h-5 w-5 mr-2" />
+                  <span>Tutors</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/calendar"
+                  className={`${linkClass} ${isActive('/calendar') ? activeLinkClass : ''}`}
+                >
+                  <Calendar className="h-5 w-5 mr-2" />
+                  <span>Calendar</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/lessons"
+                  className={`${linkClass} ${isActive('/lessons') ? activeLinkClass : ''}`}
+                >
+                  <ListChecks className="h-5 w-5 mr-2" />
+                  <span>Lessons</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/homework"
+                  className={`${linkClass} ${isActive('/homework') ? activeLinkClass : ''}`}
+                >
+                  <ListChecks className="h-5 w-5 mr-2" />
+                  <span>Homework</span>
+                </Link>
+              </li>
+            </>
+          )}
+          {isAdmin && (
+            <li>
+              <Link
+                to="/organization/settings"
+                className={`${linkClass} ${isActive('/organization/settings') ? activeLinkClass : ''}`}
               >
-                <User className="mr-2 h-4 w-4" />
-                <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                  Tutors
-                </span>
-              </NavLink>
+                <Settings className="h-5 w-5" />
+                <span>Organization Settings</span>
+              </Link>
             </li>
-          </ul>
-        </nav>
-
-        <div className="p-4">
-          <NavLink
-            to="/settings"
-            className={`flex items-center p-2 rounded-md hover:bg-gray-100`}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            <span className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-              Settings
-            </span>
-          </NavLink>
-        </div>
+          )}
+        </ul>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+  organization_id: string | null;
 }
 
 interface AuthContextType {
@@ -24,7 +25,13 @@ interface AuthContextType {
   isTutor: boolean;
   isStudent: boolean;
   isParent: boolean;
-  signUp: (email: string, password: string, metadata?: { first_name?: string, last_name?: string, role?: AppRole }) => Promise<void>;
+  signUp: (email: string, password: string, metadata?: { 
+    first_name?: string, 
+    last_name?: string, 
+    role?: AppRole,
+    organization_name?: string,
+    subdomain?: string
+  }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -145,7 +152,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (
     email: string, 
     password: string, 
-    metadata?: { first_name?: string, last_name?: string, role?: AppRole }
+    metadata?: { 
+      first_name?: string, 
+      last_name?: string, 
+      role?: AppRole,
+      organization_name?: string,
+      subdomain?: string
+    }
   ) => {
     try {
       // Clean up existing state
