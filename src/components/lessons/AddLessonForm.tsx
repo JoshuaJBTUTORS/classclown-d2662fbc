@@ -274,7 +274,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         const studentPromises = selectedStudents.map(async (studentId) => {
           const lessonStudentData = {
             lesson_id: lesson.id,
-            student_id: studentId,
+            student_id: parseInt(studentId.toString(), 10),
             attendance_status: 'pending',
             organization_id: organization?.id || null
           };
@@ -287,7 +287,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         // Add single student to the lesson
         const lessonStudentData = {
           lesson_id: lesson.id,
-          student_id: values.studentId,
+          student_id: parseInt(values.studentId.toString(), 10),
           attendance_status: 'pending',
           organization_id: organization?.id || null
         };
@@ -301,11 +301,16 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       
       setIsLoading(false);
       
-      // Close the dialog with a small delay to ensure proper state update
-      setTimeout(() => {
-        toast.success('Lesson created successfully');
-        onSuccess();
-      }, 300);
+      // Clear form data
+      form.reset();
+      setSelectedStudents([]);
+      
+      // Notify success and close form
+      toast.success('Lesson created successfully');
+      
+      // Explicitly close the dialog and call the success callback
+      onClose();
+      onSuccess();
       
     } catch (error) {
       console.error('Error creating lesson:', error);
@@ -316,7 +321,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
+      if (!open) {
+        onClose();
+        // Reset form on close
+        form.reset();
+        setSelectedStudents([]);
+      }
     }}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>

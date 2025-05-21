@@ -178,11 +178,11 @@ const Calendar = () => {
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
     
-    // Add a small delay to ensure that the database operation is complete
-    setTimeout(() => {
-      forceCalendarRefresh();
-      toast.success('Lesson added successfully!');
-    }, 300);
+    // Force refresh the calendar immediately
+    forceCalendarRefresh();
+    
+    // Add a success message
+    toast.success('Lesson added successfully!');
   };
 
   const handleEditLessonSuccess = () => {
