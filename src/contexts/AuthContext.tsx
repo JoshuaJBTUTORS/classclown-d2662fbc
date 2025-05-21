@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +32,9 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata?: { 
     first_name?: string, 
     last_name?: string, 
-    role?: AppRole
+    role?: AppRole,
+    organization_name?: string,
+    subdomain?: string
   }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -160,7 +161,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     metadata?: { 
       first_name?: string, 
       last_name?: string, 
-      role?: AppRole
+      role?: AppRole,
+      organization_name?: string,
+      subdomain?: string
     }
   ) => {
     try {
