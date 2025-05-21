@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
@@ -37,7 +36,7 @@ const Calendar = () => {
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
-  const calendarRef = useRef<FullCalendar | null>(null);
+  const calendarRef = useRef<typeof FullCalendar>(null);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
     setIsLoading(true);
