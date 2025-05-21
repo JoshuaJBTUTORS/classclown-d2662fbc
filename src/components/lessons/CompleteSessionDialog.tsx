@@ -71,6 +71,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogDescription, setDialogDescription] = useState('');
+  const [homeworkData, setHomeworkData] = useState<FormData | null>(null);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -97,23 +98,28 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     }
   }, [isOpen, lessonId]);
 
-  // Initialize form values when lesson data is loaded
+  // Initialize form values when lesson data is loaded or when step changes
   useEffect(() => {
     if (lesson && lesson.students) {
-      const studentData = lesson.students.map(student => ({
-        id: student.id,
-        first_name: student.first_name,
-        last_name: student.last_name,
-        attendance: student.attendance_status as 'attended' | 'missed' | 'cancelled' || 'attended',
-        feedback: '',
-        homework: '',
-      }));
+      const studentData = lesson.students.map(student => {
+        // If we have stored homework data and we're in the attendance step, use it
+        const homeworkText = homeworkData?.students.find(s => s.id === student.id)?.homework || '';
+        
+        return {
+          id: student.id,
+          first_name: student.first_name,
+          last_name: student.last_name,
+          attendance: student.attendance_status as 'attended' | 'missed' | 'cancelled' || 'attended',
+          feedback: '',
+          homework: homeworkText,
+        };
+      });
 
       form.reset({
         students: studentData,
       });
     }
-  }, [lesson, form]);
+  }, [lesson, form, homeworkData, skipHomeworkStep]);
 
   const fetchLessonDetails = async (id: string) => {
     try {
@@ -144,8 +150,6 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       const transformedLesson: Lesson = {
         ...lessonData,
         students,
-        // Remove the original nested structure from our state
-        // We don't actually have lesson_students in our Lesson interface
       };
 
       setLesson(transformedLesson);
@@ -165,10 +169,11 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     try {
       // If we're in the "Assign Homework" step (not skipping homework)
       if (!skipHomeworkStep) {
-        // Just save the homework data and move to the next step
         console.log('Homework assigned:', data.students);
         
-        // In a real implementation, you would save the homework to the database here
+        // Store homework data for the next step
+        setHomeworkData(data);
+        
         toast.success('Homework assigned successfully!');
         
         // Call the onSuccess callback to move to the next step (attendance)
@@ -210,10 +215,29 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
             throw error;
           }
 
-          // Save feedback if provided
+          // Add the homework to the homework table if it was provided
+          if (student.homework) {
+            try {
+              const { error: homeworkError } = await supabase
+                .from('homework')
+                .insert({
+                  lesson_id: lessonId,
+                  title: `${lesson.title} Homework - ${student.first_name} ${student.last_name}`,
+                  description: student.homework,
+                });
+              
+              if (homeworkError) {
+                console.error('Error adding homework:', homeworkError);
+                throw homeworkError;
+              }
+            } catch (homeworkError) {
+              console.error('Error saving homework:', homeworkError);
+              // We don't want to fail the whole process if just the homework fails
+            }
+          }
+
+          // Save feedback if provided (in a real app, you might want to store this in a separate table)
           if (student.feedback) {
-            // In a real app, you might want to store feedback in a separate table
-            // For simplicity, we'll just use console.log here
             console.log(`Feedback for student ${student.id}: ${student.feedback}`);
           }
         });
@@ -346,7 +370,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
                             <FormLabel>Homework Assignment</FormLabel>
                             <FormControl>
                               <Textarea 
-                                placeholder="Enter homework details for this student..."
+                                placeholder={`Enter homework details for ${lesson.title}...`}
                                 className="min-h-[100px]"
                                 {...field}
                                 value={field.value || ''}

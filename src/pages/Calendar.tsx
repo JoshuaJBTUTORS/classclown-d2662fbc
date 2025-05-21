@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
@@ -155,10 +154,7 @@ const Calendar = () => {
     setCalendarView(view);
   };
 
-  const handleAddLessonSuccess = () => {
-    setIsAddingLesson(false);
-    setSelectedTimeSlot(null);
-    
+  const forceCalendarRefresh = () => {
     // Force a refresh of the calendar using the ref
     if (calendarRef.current) {
       const apiInstance = calendarRef.current.getApi();
@@ -176,24 +172,28 @@ const Calendar = () => {
       end.setMonth(end.getMonth() + 2);
       fetchLessons(start, end);
     }
+  };
+
+  const handleAddLessonSuccess = () => {
+    setIsAddingLesson(false);
+    setSelectedTimeSlot(null);
     
-    toast.success('Lesson added successfully!');
+    // Add a small delay to ensure that the database operation is complete
+    setTimeout(() => {
+      forceCalendarRefresh();
+      toast.success('Lesson added successfully!');
+    }, 300);
   };
 
   const handleEditLessonSuccess = () => {
     setIsEditingLesson(false);
     setSelectedLessonId(null);
     
-    // Force a refresh of the calendar using the ref
-    if (calendarRef.current) {
-      const apiInstance = calendarRef.current.getApi();
-      apiInstance.refetchEvents();
-    }
-    
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
-    fetchLessons(start, end);
-    toast.success('Lesson updated successfully!');
+    // Add a small delay to ensure that the database operation is complete
+    setTimeout(() => {
+      forceCalendarRefresh();
+      toast.success('Lesson updated successfully!');
+    }, 300);
   };
 
   const handleDeleteLesson = async (lessonId: string, deleteAllFuture?: boolean) => {
@@ -271,9 +271,11 @@ const Calendar = () => {
     setIsLessonDetailsOpen(false);
     // First set homework, then move to complete session
     setIsSettingHomework(true);
+    setIsCompleteSessionOpen(false); // Make sure the attendance dialog is closed
   };
 
   const handleHomeworkSuccess = () => {
+    console.log('Homework assigned successfully, moving to attendance step');
     // After setting homework, move to the attendance and feedback step
     setIsSettingHomework(false);
     setIsCompleteSessionOpen(true);
@@ -283,16 +285,11 @@ const Calendar = () => {
     setIsCompleteSessionOpen(false);
     setSelectedLessonId(null);
     
-    // Force refresh the calendar
-    if (calendarRef.current) {
-      const apiInstance = calendarRef.current.getApi();
-      apiInstance.refetchEvents();
-    }
-    
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
-    fetchLessons(start, end);
-    toast.success('Session completed successfully!');
+    // Add a small delay to ensure that database operations complete
+    setTimeout(() => {
+      forceCalendarRefresh();
+      toast.success('Session completed successfully!');
+    }, 300);
   };
 
   useEffect(() => {
