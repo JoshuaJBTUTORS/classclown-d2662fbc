@@ -1,16 +1,6 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './AuthContext';
-
-interface Organization {
-  id: string;
-  name: string;
-  subdomain: string;
-  logo_url: string | null;
-  primary_color: string | null;
-  status: string;
-}
+import React, { createContext, useContext } from 'react';
+import { Organization } from '@/types/organization';
 
 interface OrganizationContextType {
   organization: Organization | null;
@@ -22,59 +12,25 @@ interface OrganizationContextType {
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchOrganization = async () => {
-    try {
-      setIsLoading(true);
-      
-      if (!user) {
-        setOrganization(null);
-        return;
-      }
-
-      // In the single organization model, we'll just fetch the first organization
-      const { data, error: fetchError } = await supabase
-        .from('organizations')
-        .select('*')
-        .limit(1)
-        .single();
-      
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          console.log('No organization found. This is expected for first-time setup.');
-          setOrganization(null);
-        } else {
-          console.error('Error fetching organization:', fetchError);
-          setError(new Error(fetchError.message));
-        }
-      } else {
-        setOrganization(data);
-      }
-    } catch (err) {
-      console.error('Error in fetchOrganization:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch organization'));
-    } finally {
-      setIsLoading(false);
-    }
+  // We'll provide a simplified organization object to ensure backward compatibility
+  const defaultOrganization: Organization = {
+    id: '1',
+    name: 'JB Tutors',
+    subdomain: 'jbtutors',
+    logo_url: null,
+    primary_color: '#4f46e5',
+    status: 'active'
   };
 
-  // Fetch organization when user changes
-  useEffect(() => {
-    fetchOrganization();
-  }, [user]);
-
   const refreshOrganization = async () => {
-    await fetchOrganization();
+    // This is a no-op function in the simplified version
+    console.log('Organization refresh requested (no-op in simplified version)');
   };
 
   const value = {
-    organization,
-    isLoading,
-    error,
+    organization: defaultOrganization,
+    isLoading: false,
+    error: null,
     refreshOrganization
   };
 

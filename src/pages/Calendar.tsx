@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import ViewOptions from '@/components/calendar/ViewOptions';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
-import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Calendar = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -38,7 +38,7 @@ const Calendar = () => {
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isSettingHomework, setIsSettingHomework] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { organization } = useOrganization();
+  const { user } = useAuth();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
@@ -59,7 +59,6 @@ const Calendar = () => {
             student:students(id, first_name, last_name)
           )
         `)
-        .eq('organization_id', organization?.id)
         .gte('start_time', `${startDate}T00:00:00`)
         .lte('start_time', `${endDate}T23:59:59`);
 
@@ -125,7 +124,7 @@ const Calendar = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [organization?.id]);
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -295,7 +294,7 @@ const Calendar = () => {
 
     console.log("Calendar - Initial fetchLessons called from useEffect", { start, end });
     fetchLessons(start, end);
-  }, [fetchLessons, currentDate, calendarView, organization?.id]);
+  }, [fetchLessons, currentDate, calendarView]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">

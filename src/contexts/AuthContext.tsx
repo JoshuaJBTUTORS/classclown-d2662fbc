@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,13 +12,11 @@ interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  organization_id: string | null;
 }
 
 interface UserRole {
   role: AppRole;
   user_id: string;
-  organization_id?: string;
   is_primary?: boolean;
 }
 
@@ -34,9 +33,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata?: { 
     first_name?: string, 
     last_name?: string, 
-    role?: AppRole,
-    organization_name?: string,
-    subdomain?: string
+    role?: AppRole
   }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -163,9 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     metadata?: { 
       first_name?: string, 
       last_name?: string, 
-      role?: AppRole,
-      organization_name?: string,
-      subdomain?: string
+      role?: AppRole
     }
   ) => {
     try {

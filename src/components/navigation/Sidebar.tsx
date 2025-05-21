@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Home,
@@ -11,7 +12,6 @@ import {
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrganization } from '@/contexts/OrganizationContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -29,7 +29,6 @@ interface NavItem {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const { pathname } = useLocation();
   const { user, profile, signOut, userRole } = useAuth();
-  const { organization } = useOrganization();
   const navigate = useNavigate();
 
   const navItems: NavItem[] = [
@@ -53,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     {
       name: 'Homework',
       path: '/homework',
-      icon: BookOpen, // Changed to BookOpen
+      icon: BookOpen,
       roles: ['admin', 'owner', 'tutor'],
     },
     {
@@ -98,15 +97,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     <div className="flex flex-col h-full bg-gray-50 border-r w-60">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
-          {organization?.logo_url ? (
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={organization.logo_url} alt={organization.name} />
-              <AvatarFallback>{organization.name.substring(0, 2)}</AvatarFallback>
-            </Avatar>
-          ) : (
-            <Home className="w-6 h-6" />
-          )}
-          <span className="font-bold">{organization?.name || 'JB Tutors'}</span>
+          <Home className="w-6 h-6" />
+          <span className="font-bold">JB Tutors</span>
         </div>
 
         <DropdownMenu>
