@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -6,11 +7,32 @@ import { cn } from "@/lib/utils"
 
 const Dialog = DialogPrimitive.Root
 
-const DialogTrigger = DialogPrimitive.Trigger
+// Enhanced DialogTrigger with better state handling
+const DialogTrigger = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Trigger>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Trigger
+    ref={ref}
+    className={cn(className)}
+    {...props}
+  />
+))
+DialogTrigger.displayName = DialogPrimitive.Trigger.displayName
 
 const DialogPortal = DialogPrimitive.Portal
 
-const DialogClose = DialogPrimitive.Close
+const DialogClose = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Close
+    ref={ref}
+    className={cn(className)}
+    {...props}
+  />
+))
+DialogClose.displayName = DialogPrimitive.Close.displayName
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -39,6 +61,10 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
         className
       )}
+      onCloseAutoFocus={(event) => {
+        // Prevent focus issues when dialog closes
+        event.preventDefault();
+      }}
       {...props}
     >
       {children}
