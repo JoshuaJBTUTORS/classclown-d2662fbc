@@ -36,7 +36,8 @@ const Calendar = () => {
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
-  const calendarRef = useRef<FullCalendar>(null);
+  // Here's the fix: use React.RefObject with FullCalendarInstance type
+  const calendarRef = useRef<React.ElementRef<typeof FullCalendar>>(null);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
     setIsLoading(true);
