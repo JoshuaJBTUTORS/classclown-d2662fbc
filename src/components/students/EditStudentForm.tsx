@@ -22,7 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Student } from './ViewStudentProfile'; // Import the Student interface
+import { Student } from '@/types/student'; // Import the Student interface from our shared type definition
 
 interface EditStudentFormProps {
   student: Student;

@@ -6,23 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-
-// Updated Student interface to be consistent across files
-export interface Student {
-  id: string | number;
-  name?: string;
-  email: string;
-  phone?: string;
-  subjects: string[] | string;
-  status: 'active' | 'inactive';
-  joinedDate?: string;
-  first_name: string;
-  last_name: string;
-  parent_first_name?: string;
-  parent_last_name?: string;
-  student_id?: string;
-  created_at?: string;
-}
+import { Student } from '@/types/student'; // Import the shared Student type
 
 interface ViewStudentProfileProps {
   student: Student | null;
