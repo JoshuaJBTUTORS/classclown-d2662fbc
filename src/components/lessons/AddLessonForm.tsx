@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addHours } from 'date-fns';
 import { z } from 'zod';
@@ -168,26 +167,38 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   }, [form.watch]);
 
   const fetchTutors = async () => {
-    setIsFetchingTutors(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('tutors')
         .select('*')
-        .eq('status', 'active');
-      
-      if (organization?.id) {
-        query = query.eq('organization_id', organization.id);
+        .order('last_name', { ascending: true });
+
+      if (error) {
+        throw error;
       }
-        
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      setTutors(data || []);
+
+      // Update the mapping to ensure compatibility with the Tutor type
+      const formattedTutors: Tutor[] = data.map((tutor) => ({
+        id: tutor.id,
+        first_name: tutor.first_name,
+        last_name: tutor.last_name,
+        email: tutor.email,
+        phone: tutor.phone,
+        bio: tutor.bio,
+        specialities: tutor.specialities || [],
+        status: (tutor.status as 'active' | 'inactive' | 'pending'),
+        title: tutor.title,
+        rating: tutor.rating,
+        education: tutor.education,
+        joined_date: tutor.joined_date ? new Date(tutor.joined_date).toLocaleDateString() : undefined,
+        created_at: tutor.created_at,
+        organization_id: tutor.organization_id
+      }));
+
+      setTutors(formattedTutors);
     } catch (error) {
       console.error('Error fetching tutors:', error);
-      toast.error('Failed to load tutors');
-    } finally {
-      setIsFetchingTutors(false);
+      toast.error('Failed to load tutors. Please try again.');
     }
   };
 

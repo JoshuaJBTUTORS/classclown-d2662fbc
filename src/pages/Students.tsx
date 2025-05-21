@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -7,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   Card,
   CardContent,
@@ -47,7 +45,6 @@ const Students = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { organization } = useOrganization();
 
   // Fetch students from Supabase
   const fetchStudents = async () => {
@@ -58,11 +55,6 @@ const Students = () => {
         .select('*')
         .order('last_name', { ascending: true });
       
-      // Filter by organization if we have one
-      if (organization?.id) {
-        query = query.eq('organization_id', organization.id);
-      }
-
       const { data, error } = await query;
 
       if (error) throw error;
