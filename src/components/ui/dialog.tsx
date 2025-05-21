@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -24,15 +23,49 @@ const DialogPortal = DialogPrimitive.Portal
 
 const DialogClose = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Close>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Close
-    ref={ref}
-    className={cn(className)}
-    {...props}
-  />
-))
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close> & {
+    forceClose?: boolean;
+  }
+>(({ className, forceClose, ...props }, ref) => {
+  const closeRef = React.useRef<HTMLButtonElement>(null);
+  
+  // If forceClose is true, trigger the close button click
+  React.useEffect(() => {
+    if (forceClose && closeRef.current) {
+      closeRef.current.click();
+    }
+  }, [forceClose]);
+
+  return (
+    <DialogPrimitive.Close
+      ref={(node) => {
+        // Merge the refs
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref) {
+          ref.current = node;
+        }
+        closeRef.current = node;
+      }}
+      className={cn(className)}
+      {...props}
+    />
+  );
+})
 DialogClose.displayName = DialogPrimitive.Close.displayName
+
+// Export a helper to force close any dialog
+export const useDialogClose = () => {
+  const closeRef = React.useRef<HTMLButtonElement>(null);
+  
+  const closeDialog = React.useCallback(() => {
+    if (closeRef.current) {
+      closeRef.current.click();
+    }
+  }, []);
+  
+  return { closeRef, closeDialog };
+};
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,

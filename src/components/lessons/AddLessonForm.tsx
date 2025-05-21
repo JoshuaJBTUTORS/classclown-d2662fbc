@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addHours, parseISO } from 'date-fns';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -15,7 +14,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose
+  DialogClose,
+  useDialogClose
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -73,7 +73,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0); // Used to force form reset
+  const [shouldForceClose, setShouldForceClose] = useState(false);
   const { organization } = useOrganization();
+  
+  // Use our custom hook for reliable dialog closing
+  const { closeRef, closeDialog } = useDialogClose();
   
   // Synchronized dialog open state with prop
   useEffect(() => {
@@ -155,6 +159,19 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     
     return () => subscription.unsubscribe();
   }, [form.watch]);
+
+  // Create an effect that forces the dialog to close when shouldForceClose is true
+  useEffect(() => {
+    if (shouldForceClose) {
+      console.log('AddLessonForm - Force closing dialog via ref...');
+      closeDialog();
+      
+      // Reset the flag after triggering close
+      setTimeout(() => {
+        setShouldForceClose(false);
+      }, 100);
+    }
+  }, [shouldForceClose, closeDialog]);
 
   // Fetch tutors and students when dialog opens
   useEffect(() => {
@@ -283,12 +300,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     setSelectedStudents([]);
   }, [form, preselectedTime]);
 
-  // Improved form submission with better state management and error handling
+  // Enhanced form submission with improved closing mechanism
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log('AddLessonForm - Form submission started with values:', values);
-    
-    // Create a flag to track if we completed successfully
-    let submissionSuccessful = false;
     
     try {
       setIsLoading(true);
@@ -378,16 +392,20 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       }
       
       console.log('AddLessonForm - All operations successful');
-      submissionSuccessful = true;
       setIsLoading(false);
       
-      // Clean up and close the dialog before callback to parent
-      console.log('AddLessonForm - Setting dialog state to false');
-      setDialogOpen(false);
+      // Force close the dialog immediately
+      console.log('AddLessonForm - Setting shouldForceClose to true');
+      setShouldForceClose(true);
       
-      // Call onSuccess callback after a short delay to ensure dialog state sync
+      // Manually reset dialog state and call onSuccess
+      console.log('AddLessonForm - Force closing dialog and calling onClose');
+      setDialogOpen(false);
+
+      // Call onSuccess after a short delay to ensure state changes propagate
       setTimeout(() => {
         console.log('AddLessonForm - Calling onSuccess callback');
+        onClose();
         onSuccess();
       }, 100);
       
@@ -429,6 +447,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
             Create a new tutoring session by filling out the details below.
           </DialogDescription>
         </DialogHeader>
+        
+        {/* Hidden DialogClose component with ref for programmatic closing */}
+        <DialogClose ref={closeRef} className="hidden" />
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -764,6 +785,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                   console.log('AddLessonForm - Cancel button clicked');
                   resetForm();
                   setDialogOpen(false);
+                  closeDialog(); // Use our new programmatic close
                   onClose();
                 }}
                 disabled={isLoading}

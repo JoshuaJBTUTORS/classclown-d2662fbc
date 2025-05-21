@@ -39,6 +39,7 @@ const Calendar = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
+  const justAddedLesson = useRef(false);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
     console.log("Calendar - fetchLessons called with:", { start, end });
@@ -158,14 +159,12 @@ const Calendar = () => {
   const forceCalendarRefresh = useCallback(() => {
     console.log("Calendar - forceCalendarRefresh called");
     
-    // First, try refreshing via the calendar ref API
-    let refRefreshSuccess = false;
     try {
+      // Try refreshing via the calendar ref API
       if (calendarRef.current) {
         const apiInstance = calendarRef.current.getApi();
         console.log("Calendar - Calendar API instance found, refreshing events");
         apiInstance.refetchEvents();
-        refRefreshSuccess = true;
       } else {
         console.warn("Calendar - Calendar ref not available for refresh");
       }
@@ -192,7 +191,10 @@ const Calendar = () => {
   const handleAddLessonSuccess = useCallback(() => {
     console.log("Calendar - handleAddLessonSuccess called - PROCESSING START");
     
-    // First, update UI state to improve perceived performance
+    // Set the ref to indicate a lesson was just added
+    justAddedLesson.current = true;
+    
+    // Reset all form-related state
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
     
@@ -204,6 +206,11 @@ const Calendar = () => {
       forceCalendarRefresh();
       toast.success('Lesson added successfully!');
       console.log("Calendar - handleAddLessonSuccess COMPLETE");
+      
+      // Reset the flag after using it
+      setTimeout(() => {
+        justAddedLesson.current = false;
+      }, 500);
     }, 2000); // Increased timeout for better reliability
   }, [forceCalendarRefresh]);
 
@@ -314,6 +321,16 @@ const Calendar = () => {
     }, 300);
   };
 
+  const handleAddLessonClose = useCallback(() => {
+    console.log("Calendar - handleAddLessonClose called");
+    
+    // Only reset state if we're not in the success path (to avoid state conflicts)
+    if (!justAddedLesson.current) {
+      setIsAddingLesson(false);
+      setSelectedTimeSlot(null);
+    }
+  }, []);
+
   useEffect(() => {
     const start = calendarView === 'dayGridMonth' 
       ? startOfMonth(currentDate)
@@ -418,11 +435,7 @@ const Calendar = () => {
       {/* Improved AddLessonForm implementation with better dialog control */}
       <AddLessonForm
         isOpen={isAddingLesson}
-        onClose={() => {
-          console.log("Calendar - Closing add lesson dialog explicitly");
-          setIsAddingLesson(false);
-          setSelectedTimeSlot(null);
-        }}
+        onClose={handleAddLessonClose}
         onSuccess={handleAddLessonSuccess}
         preselectedTime={selectedTimeSlot}
       />
