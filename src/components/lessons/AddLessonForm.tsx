@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Check } from 'lucide-react';
+import { CalendarIcon, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
@@ -65,6 +65,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [isFetchingTutors, setIsFetchingTutors] = useState(false);
+  const [isFetchingStudents, setIsFetchingStudents] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const { organization } = useOrganization();
   
@@ -103,36 +105,75 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   });
 
   const fetchTutors = async () => {
+    setIsFetchingTutors(true);
     try {
-      const { data, error } = await supabase
+      // First try to get tutors filtered by organization
+      let query = supabase
         .from('tutors')
         .select('*')
-        .eq('organization_id', organization?.id)
         .eq('status', 'active');
+      
+      if (organization?.id) {
+        query = query.eq('organization_id', organization.id);
+      }
         
+      const { data, error } = await query;
+      
       if (error) throw error;
       
-      setTutors(data || []);
+      if (data && data.length > 0) {
+        setTutors(data);
+      } else if (organization?.id) {
+        // If no tutors found with organization filter, try getting all active tutors
+        const { data: allTutors, error: allTutorsError } = await supabase
+          .from('tutors')
+          .select('*')
+          .eq('status', 'active');
+          
+        if (allTutorsError) throw allTutorsError;
+        
+        setTutors(allTutors || []);
+      }
     } catch (error) {
       console.error('Error fetching tutors:', error);
       toast.error('Failed to load tutors');
+    } finally {
+      setIsFetchingTutors(false);
     }
   };
 
   const fetchStudents = async () => {
+    setIsFetchingStudents(true);
     try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('organization_id', organization?.id)
-        .eq('status', 'active');
+      // First try to get students filtered by organization
+      let query = supabase.from('students').select('*').eq('status', 'active');
+      
+      if (organization?.id) {
+        query = query.eq('organization_id', organization.id);
+      }
         
+      const { data, error } = await query;
+      
       if (error) throw error;
       
-      setStudents(data || []);
+      if (data && data.length > 0) {
+        setStudents(data);
+      } else if (organization?.id) {
+        // If no students found with organization filter, try getting all active students
+        const { data: allStudents, error: allStudentsError } = await supabase
+          .from('students')
+          .select('*')
+          .eq('status', 'active');
+          
+        if (allStudentsError) throw allStudentsError;
+        
+        setStudents(allStudents || []);
+      }
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to load students');
+    } finally {
+      setIsFetchingStudents(false);
     }
   };
 
@@ -141,7 +182,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       fetchTutors();
       fetchStudents();
     }
-  }, [isOpen]);
+  }, [isOpen, organization?.id]);
 
   useEffect(() => {
     const recurring = form.watch('isRecurring');
@@ -210,6 +251,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       
       setIsLoading(false);
       onSuccess();
+      toast.success('Lesson created successfully');
     } catch (error) {
       console.error('Error creating lesson:', error);
       toast.error('Failed to create lesson');
@@ -236,7 +278,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Lesson</DialogTitle>
           <DialogDescription>
@@ -291,15 +333,24 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a tutor" />
+                          <SelectValue placeholder={isFetchingTutors ? "Loading tutors..." : "Select a tutor"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {tutors.map((tutor) => (
-                          <SelectItem key={tutor.id} value={tutor.id}>
-                            {tutor.first_name} {tutor.last_name}
-                          </SelectItem>
-                        ))}
+                        {isFetchingTutors ? (
+                          <div className="flex items-center justify-center p-2">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <span>Loading tutors...</span>
+                          </div>
+                        ) : tutors.length === 0 ? (
+                          <div className="p-2 text-center text-muted-foreground">No tutors available</div>
+                        ) : (
+                          tutors.map((tutor) => (
+                            <SelectItem key={tutor.id} value={tutor.id}>
+                              {tutor.first_name} {tutor.last_name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -311,8 +362,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                 control={form.control}
                 name="isGroup"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
-                    <FormLabel>Group Session</FormLabel>
+                  <FormItem className="flex flex-row items-center justify-between rounded-md border p-3 h-[42px] space-x-2 space-y-0">
+                    <FormLabel className="m-0">Group Session</FormLabel>
                     <FormControl>
                       <Switch
                         checked={field.value}
@@ -331,7 +382,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                 <FormItem>
                   <FormLabel>Students</FormLabel>
                   <div className="border rounded-md p-2 max-h-48 overflow-y-auto">
-                    {students.length === 0 ? (
+                    {isFetchingStudents ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span>Loading students...</span>
+                      </div>
+                    ) : students.length === 0 ? (
                       <p className="text-sm text-muted-foreground py-2 px-1">No students available</p>
                     ) : (
                       students.map((student) => (
@@ -520,7 +576,14 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? loadingMessage : 'Create Lesson'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {loadingMessage}
+                  </>
+                ) : (
+                  'Create Lesson'
+                )}
               </Button>
             </DialogFooter>
           </form>
