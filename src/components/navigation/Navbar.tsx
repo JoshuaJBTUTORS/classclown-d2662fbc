@@ -1,22 +1,25 @@
 
 import React from 'react';
-import { Bell, ChevronDown, LogOut, Search, Menu } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Search, Menu, Settings, User, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
 
 interface NavbarProps {
   toggleSidebar: () => void;
 }
 
 export default function Navbar({ toggleSidebar }: NavbarProps) {
-  const { user, signOut } = useAuth();
+  const { user, profile, userRole, signOut } = useAuth();
   
   const handleSignOut = async () => {
     await signOut();
@@ -24,14 +27,36 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
 
   // Get user initials for avatar
   const getUserInitials = () => {
-    if (!user) return 'CC'; // Default to ClassClown User
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
     
-    const email = user.email || '';
-    if (email) {
-      return email.substring(0, 2).toUpperCase();
+    if (user?.email) {
+      return user.email.substring(0, 2).toUpperCase();
     }
     
     return 'CC';
+  };
+
+  // Get display name
+  const getDisplayName = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
+    }
+    
+    return user?.email || 'User';
+  };
+
+  // Get role badge color
+  const getRoleBadgeVariant = () => {
+    switch(userRole) {
+      case 'owner': return 'default';
+      case 'admin': return 'secondary';
+      case 'tutor': return 'outline';
+      case 'student': return 'destructive';
+      case 'parent': return 'blue';
+      default: return 'outline';
+    }
   };
 
   return (
@@ -71,16 +96,37 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
                     {getUserInitials()}
                   </div>
                   <div className="hidden md:block text-start">
-                    <div className="text-sm font-medium">{user.email}</div>
-                    <div className="text-xs text-muted-foreground">User</div>
+                    <div className="text-sm font-medium">{getDisplayName()}</div>
+                    <div className="text-xs flex items-center gap-1">
+                      <span className="text-muted-foreground">
+                        {userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User'}
+                      </span>
+                      {userRole && (
+                        <Badge variant={getRoleBadgeVariant()} className="text-[10px] py-0 h-4">
+                          {userRole}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Help</DropdownMenuItem>
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Help
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout

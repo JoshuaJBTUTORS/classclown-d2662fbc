@@ -5,10 +5,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
+export type AppRole = 'owner' | 'admin' | 'tutor' | 'student' | 'parent';
+
+interface UserProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signUp: (email: string, password: string, metadata?: { first_name?: string, last_name?: string }) => Promise<void>;
+  profile: UserProfile | null;
+  userRole: AppRole | null;
+  isAdmin: boolean;
+  isOwner: boolean;
+  isTutor: boolean;
+  isStudent: boolean;
+  isParent: boolean;
+  signUp: (email: string, password: string, metadata?: { first_name?: string, last_name?: string, role?: AppRole }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -19,6 +35,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -40,36 +58,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Fetch user profile and role
+  const fetchUserData = async (userId: string) => {
+    try {
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      // Fetch primary role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('is_primary', true)
+        .maybeSingle();
+
+      if (roleError) throw roleError;
+
+      if (profileData) {
+        setProfile(profileData);
+      }
+
+      if (roleData) {
+        setUserRole(roleData.role as AppRole);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, newSession) => {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
         
         // Defer data fetching to prevent deadlocks
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && newSession?.user) {
           setTimeout(() => {
+            fetchUserData(newSession.user.id);
             toast({
               title: "Signed in successfully",
-              description: `Welcome ${session?.user?.email || 'back'}!`,
+              description: `Welcome ${newSession.user.email || 'back'}!`,
             });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          setUserRole(null);
           setTimeout(() => {
             toast({
               title: "Signed out",
               description: "You have been signed out.",
             });
           }, 0);
+        } else if (event === 'USER_UPDATED' && newSession?.user) {
+          setTimeout(() => {
+            fetchUserData(newSession.user.id);
+          }, 0);
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
+      
+      if (existingSession?.user) {
+        fetchUserData(existingSession.user.id);
+      }
+      
       setLoading(false);
     });
 
@@ -78,7 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, metadata?: { first_name?: string, last_name?: string }) => {
+  const signUp = async (
+    email: string, 
+    password: string, 
+    metadata?: { first_name?: string, last_name?: string, role?: AppRole }
+  ) => {
     try {
       // Clean up existing state
       cleanupAuthState();
@@ -156,6 +224,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Attempt global sign out
       await supabase.auth.signOut({ scope: 'global' });
       
+      // Reset local state
+      setProfile(null);
+      setUserRole(null);
+      
       // Force page reload for a clean state
       navigate('/auth');
       
@@ -168,9 +240,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Role-based helper functions
+  const isAdmin = userRole === 'admin' || userRole === 'owner';
+  const isOwner = userRole === 'owner';
+  const isTutor = userRole === 'tutor';
+  const isStudent = userRole === 'student';
+  const isParent = userRole === 'parent';
+
   const value = {
     user,
     session,
+    profile,
+    userRole,
+    isAdmin,
+    isOwner,
+    isTutor,
+    isStudent,
+    isParent,
     signUp,
     signIn,
     signOut,

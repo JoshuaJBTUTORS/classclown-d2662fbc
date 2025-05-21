@@ -2,13 +2,20 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { AppRole } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children?: React.ReactNode;
+  allowedRoles?: AppRole[];
+  requireAuth?: boolean;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+export default function ProtectedRoute({ 
+  children, 
+  allowedRoles = [], 
+  requireAuth = true 
+}: ProtectedRouteProps) {
+  const { user, userRole, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -22,10 +29,20 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user) {
-    // Redirect to the login page if not authenticated,
-    // but save the current location they were trying to access
+  // If authentication is required but user is not logged in
+  if (requireAuth && !user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // If specific roles are required, check if user has one of them
+  if (allowedRoles.length > 0 && userRole && !allowedRoles.includes(userRole)) {
+    // User is authenticated but doesn't have the required role
+    return <Navigate to="/unauthorized" state={{ from: location }} replace />;
+  }
+
+  // If user is already logged in and tries to access auth page, redirect to home
+  if (!requireAuth && user) {
+    return <Navigate to="/" replace />;
   }
 
   // If there are children, render them, otherwise render the outlet
