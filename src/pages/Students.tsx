@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -30,57 +31,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Checkbox } from '@/components/ui/checkbox';
 import EditStudentForm from '@/components/students/EditStudentForm';
 import ViewStudentProfile from '@/components/students/ViewStudentProfile';
-import { Student } from '@/components/students/ViewStudentProfile'; // Import the Student interface
-
-// Define form schema for adding new students
-const formSchema = z.object({
-  firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
-  lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().optional(),
-  parentFirstName: z.string().optional(),
-  parentLastName: z.string().optional(),
-  studentId: z.string().optional(),
-  subjects: z.array(z.string()).default([]),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-const availableSubjects = [
-  'Mathematics',
-  'Science',
-  'English',
-  'History',
-  'Geography',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Computer Science',
-  'Foreign Languages',
-  'Music',
-  'Art',
-];
+import { Student } from '@/components/students/ViewStudentProfile'; 
+import AddStudentForm from '@/components/students/AddStudentForm';
 
 const Students = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -92,20 +46,6 @@ const Students = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      parentFirstName: "",
-      parentLastName: "",
-      studentId: "",
-      subjects: [],
-    },
-  });
 
   // Fetch students from Supabase
   const fetchStudents = async () => {
@@ -171,46 +111,6 @@ const Students = () => {
       setFilteredStudents(filtered);
     }
   }, [searchQuery, students]);
-
-  const handleAddStudent = async (data: FormData) => {
-    try {
-      // Convert subjects array to comma-separated string
-      const subjectsString = data.subjects
-        .filter((subject: string) => subject !== '')
-        .join(',');
-      
-      // Define status as 'active' with proper typing
-      const studentStatus: 'active' | 'inactive' = 'active';
-      
-      const newStudent = {
-        first_name: data.firstName,
-        last_name: data.lastName,
-        email: data.email,
-        phone: data.phone || null,
-        parent_first_name: data.parentFirstName,
-        parent_last_name: data.parentLastName,
-        student_id: data.studentId || null,
-        subjects: subjectsString,
-        status: studentStatus,
-        created_at: new Date().toISOString(),
-        // No need to set user_id as RLS will handle it via auth.uid()
-      };
-
-      const { error } = await supabase
-        .from('students')
-        .insert([newStudent]);
-
-      if (error) throw error;
-
-      toast.success('Student added successfully!');
-      form.reset();
-      setIsAddDialogOpen(false);
-      fetchStudents();
-    } catch (error) {
-      console.error('Error adding student:', error);
-      toast.error('Failed to add student. Please try again.');
-    }
-  };
 
   const handleEditClick = (student: Student) => {
     setSelectedStudent(student);
@@ -356,177 +256,12 @@ const Students = () => {
         </main>
       </div>
 
-      {/* Add Student Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Add New Student</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleAddStudent)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="john.doe@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+1 (555) 123-4567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="parentFirstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Parent's First Name (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Jane" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="parentLastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Parent's Last Name (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="studentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Student ID (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ST12345" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="subjects"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-2">
-                      <FormLabel>Subjects</FormLabel>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      {availableSubjects.map((subject) => (
-                        <FormField
-                          key={subject}
-                          control={form.control}
-                          name="subjects"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={subject}
-                                className="flex flex-row items-start space-x-2 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(subject)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...field.value, subject])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== subject
-                                            )
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="text-sm font-normal">
-                                  {subject}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsAddDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Add Student</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      {/* Use the AddStudentForm component */}
+      <AddStudentForm
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSuccess={fetchStudents}
+      />
 
       {/* Edit Student Dialog */}
       {selectedStudent && (
