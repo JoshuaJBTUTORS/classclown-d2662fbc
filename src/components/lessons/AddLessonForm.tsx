@@ -224,6 +224,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   };
 
   const resetForm = () => {
+    console.log('AddLessonForm - Resetting form');
     form.reset({
       title: "",
       description: "",
@@ -244,6 +245,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('AddLessonForm - Form submission started');
     try {
       setIsLoading(true);
       setLoadingMessage('Creating lesson...');
@@ -278,6 +280,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         });
       }
       
+      console.log('AddLessonForm - Creating lesson with data:', lessonData);
+      
       // Create the lesson
       const { data: lesson, error: lessonError } = await supabase
         .from('lessons')
@@ -285,12 +289,17 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         .select('id')
         .single();
       
-      if (lessonError) throw lessonError;
+      if (lessonError) {
+        console.error('AddLessonForm - Error creating lesson:', lessonError);
+        throw lessonError;
+      }
       
+      console.log('AddLessonForm - Lesson created successfully:', lesson);
       setLoadingMessage('Adding students to lesson...');
       
       // For group sessions, add multiple students
       if (values.isGroup && selectedStudents.length > 0) {
+        console.log('AddLessonForm - Adding multiple students to group lesson');
         const studentPromises = selectedStudents.map(async (studentId) => {
           const lessonStudentData = {
             lesson_id: lesson.id,
@@ -305,6 +314,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         await Promise.all(studentPromises);
       } else {
         // Add single student to the lesson
+        console.log('AddLessonForm - Adding single student to lesson');
         const lessonStudentData = {
           lesson_id: lesson.id,
           student_id: parseInt(values.studentId.toString(), 10),
@@ -316,14 +326,18 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
           .from('lesson_students')
           .insert(lessonStudentData);
         
-        if (studentError) throw studentError;
+        if (studentError) {
+          console.error('AddLessonForm - Error adding student to lesson:', studentError);
+          throw studentError;
+        }
       }
       
-      // Reset loading state
+      // Reset form and loading state
+      console.log('AddLessonForm - All operations successful, calling onSuccess callback');
       setIsLoading(false);
       
-      // Only call onSuccess here and let the parent component handle dialog closing
-      // This ensures proper coordination between dialog state and calendar refresh
+      // CRITICAL CHANGE: Only call onSuccess, which will in turn close the dialog from the parent
+      // Let the parent component handle the dialog state
       onSuccess();
       
     } catch (error) {
@@ -333,11 +347,17 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     }
   };
 
+  useEffect(() => {
+    console.log('AddLessonForm - Dialog open state changed:', isOpen);
+  }, [isOpen]);
+  
   return (
     <Dialog 
       open={isOpen} 
       onOpenChange={(open) => {
-        if (!open) {
+        console.log('AddLessonForm - Dialog onOpenChange triggered:', { open, current: isOpen });
+        if (!open && open !== isOpen) {
+          console.log('AddLessonForm - Dialog closing via onOpenChange');
           resetForm();
           onClose();
         }

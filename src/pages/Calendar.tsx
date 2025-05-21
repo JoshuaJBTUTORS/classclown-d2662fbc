@@ -155,19 +155,27 @@ const Calendar = () => {
   };
 
   const forceCalendarRefresh = useCallback(() => {
-    console.log("Forcing calendar refresh");
+    console.log("Calendar - Forcing calendar refresh started");
+    
     // Force a refresh of the calendar using the ref
     if (calendarRef.current) {
       const apiInstance = calendarRef.current.getApi();
-      console.log("Calendar API instance found, refreshing events");
-      apiInstance.refetchEvents(); // This will force the calendar to refresh its events
+      console.log("Calendar - Calendar API instance found, refreshing events");
+      
+      // Use a try-catch to handle any potential errors during refresh
+      try {
+        apiInstance.refetchEvents();
+        console.log("Calendar - Calendar events refetch initiated");
+      } catch (error) {
+        console.error("Calendar - Error refreshing calendar events:", error);
+      }
       
       // Also fetch new data to update our local state
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
       fetchLessons(start, end);
     } else {
-      console.warn("Calendar ref not available for refresh");
+      console.warn("Calendar - Calendar ref not available for refresh");
       // Fallback if ref isn't available
       const start = new Date();
       start.setMonth(start.getMonth() - 1);
@@ -175,20 +183,22 @@ const Calendar = () => {
       end.setMonth(end.getMonth() + 2);
       fetchLessons(start, end);
     }
-  }, [currentDate]);
+  }, [currentDate, fetchLessons]);
 
   const handleAddLessonSuccess = useCallback(() => {
-    console.log("Add lesson success callback triggered");
-    // First close the dialog
+    console.log("Calendar - Add lesson success callback triggered");
+    
+    // First close the dialog, this is critical
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
     
-    // Then refresh the calendar with a small delay to ensure the database has updated
+    // Then refresh the calendar with a significant delay to ensure the database has updated
+    console.log("Calendar - Setting timeout for refresh");
     setTimeout(() => {
-      console.log("Executing delayed calendar refresh");
+      console.log("Calendar - Executing delayed calendar refresh after lesson add");
       forceCalendarRefresh();
       toast.success('Lesson added successfully!');
-    }, 500);
+    }, 1000); // Increased timeout to ensure database operations complete
   }, [forceCalendarRefresh]);
 
   const handleEditLessonSuccess = () => {
@@ -310,6 +320,10 @@ const Calendar = () => {
     fetchLessons(start, end);
   }, [fetchLessons, currentDate, calendarView, organization?.id]);
 
+  useEffect(() => {
+    console.log("Calendar - isAddingLesson state changed:", isAddingLesson);
+  }, [isAddingLesson]);
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} />
@@ -398,7 +412,7 @@ const Calendar = () => {
       <AddLessonForm
         isOpen={isAddingLesson}
         onClose={() => {
-          console.log("Closing add lesson dialog from Calendar component");
+          console.log("Calendar - Closing add lesson dialog from Calendar component");
           setIsAddingLesson(false);
           setSelectedTimeSlot(null);
         }}

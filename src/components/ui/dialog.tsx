@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -40,7 +41,7 @@ const DialogContent = React.forwardRef<
         className
       )}
       onEscapeKeyDown={(e) => {
-        // Prevent escape key from closing dialog if we want to keep it controlled
+        // Only prevent escape key behavior if explicitly requested
         if (props.onPointerDownOutside === e.preventDefault) {
           e.preventDefault()
         }
