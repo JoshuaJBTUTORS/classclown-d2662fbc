@@ -1,4 +1,5 @@
 
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -57,74 +58,108 @@ serve(async (req) => {
       );
     }
     
-    // SQL for creating invitation functions
+    // First check if the lesson_students table has an organization_id column
+    const checkColumnSQL = `
+    SELECT EXISTS (
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'lesson_students' AND column_name = 'organization_id'
+    );
+    `;
+    
+    const { data: columnCheck, error: columnCheckError } = await supabase.rpc('pg_query', { query_text: checkColumnSQL });
+    
+    if (columnCheckError) {
+      throw new Error(`Error checking for column existence: ${columnCheckError.message}`);
+    }
+    
+    // If the column doesn't exist, add it
+    if (!columnCheck[0].exists) {
+      console.log("Adding organization_id column to lesson_students");
+      const addColumnSQL = `
+      ALTER TABLE public.lesson_students
+      ADD COLUMN organization_id UUID REFERENCES public.organizations(id);
+      `;
+      
+      const { error: addColumnError } = await supabase.rpc('pg_query', { query_text: addColumnSQL });
+      
+      if (addColumnError) {
+        throw new Error(`Error adding column: ${addColumnError.message}`);
+      }
+    }
+    
+    // SQL for adding/updating organization constraints and migrating existing data
     const sql = `
-    -- Create RPC function to fetch invitation details by token
-    CREATE OR REPLACE FUNCTION public.get_invitation_by_token(token_param TEXT)
-    RETURNS json AS $$
-    DECLARE
-      result json;
-    BEGIN
-      WITH invite_data AS (
-        SELECT 
-          i.*,
-          os.organization_name,
-          CASE
-            WHEN i.role = 'tutor' THEN (
-              SELECT json_build_object('first_name', t.first_name, 'last_name', t.last_name)
-              FROM tutors t
-              WHERE t.id::text = i.entity_id
-            )
-            WHEN i.role = 'student' THEN (
-              SELECT json_build_object('first_name', s.first_name, 'last_name', s.last_name)
-              FROM students s
-              WHERE s.id::text = i.entity_id
-            )
-            ELSE NULL
-          END AS entity_data
-        FROM
-          public.invitations i
-        LEFT JOIN
-          public.organization_settings os ON true
-        WHERE
-          i.token = token_param
-          AND (i.expires_at > NOW() OR i.accepted_at IS NOT NULL)
-      )
-      SELECT 
-        json_build_object(
-          'id', id,
-          'email', email,
-          'role', role,
-          'entity_id', entity_id,
-          'expires_at', expires_at,
-          'created_at', created_at,
-          'accepted_at', accepted_at,
-          'organization_name', organization_name,
-          'first_name', COALESCE((entity_data->>'first_name')::text, ''),
-          'last_name', COALESCE((entity_data->>'last_name')::text, '')
-        ) INTO result
-      FROM invite_data;
-
-      RETURN result;
-    END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-    -- Create RPC function to mark invitation as accepted
-    CREATE OR REPLACE FUNCTION public.accept_invitation(token_param TEXT)
-    RETURNS boolean AS $$
-    DECLARE
-      updated_rows int;
-    BEGIN
-      UPDATE public.invitations
-      SET accepted_at = NOW()
-      WHERE token = token_param
-      AND accepted_at IS NULL
-      AND expires_at > NOW();
-
-      GET DIAGNOSTICS updated_rows = ROW_COUNT;
-      RETURN updated_rows > 0;
-    END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    -- Enable Row Level Security for lessons table (if not already enabled)
+    ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
+    
+    -- Create organization-based RLS policy for lessons
+    DROP POLICY IF EXISTS "Users can only view lessons from their organization" ON public.lessons;
+    CREATE POLICY "Users can only view lessons from their organization" 
+    ON public.lessons
+    FOR SELECT 
+    USING (organization_id = public.get_current_user_organization() OR organization_id IS NULL);
+    
+    DROP POLICY IF EXISTS "Users can only insert lessons into their organization" ON public.lessons;
+    CREATE POLICY "Users can only insert lessons into their organization" 
+    ON public.lessons
+    FOR INSERT 
+    WITH CHECK (organization_id = public.get_current_user_organization());
+    
+    DROP POLICY IF EXISTS "Users can only update lessons from their organization" ON public.lessons;
+    CREATE POLICY "Users can only update lessons from their organization" 
+    ON public.lessons
+    FOR UPDATE 
+    USING (organization_id = public.get_current_user_organization() OR organization_id IS NULL);
+    
+    DROP POLICY IF EXISTS "Users can only delete lessons from their organization" ON public.lessons;
+    CREATE POLICY "Users can only delete lessons from their organization" 
+    ON public.lessons
+    FOR DELETE 
+    USING (organization_id = public.get_current_user_organization() OR organization_id IS NULL);
+    
+    -- Migrate existing lessons data to assign organization_id
+    -- This will set organization_id based on the tutor's organization
+    UPDATE public.lessons
+    SET organization_id = tutors.organization_id
+    FROM public.tutors
+    WHERE lessons.tutor_id = tutors.id
+    AND lessons.organization_id IS NULL;
+    
+    -- Update lesson_students data to match the lesson's organization
+    UPDATE public.lesson_students
+    SET organization_id = lessons.organization_id
+    FROM public.lessons
+    WHERE lesson_students.lesson_id = lessons.id
+    AND lesson_students.organization_id IS NULL;
+    
+    -- Enable Row Level Security for lesson_students table
+    ALTER TABLE public.lesson_students ENABLE ROW LEVEL SECURITY;
+    
+    -- Create organization-based RLS policy for lesson_students
+    DROP POLICY IF EXISTS "Users can only view lesson_students from their organization" ON public.lesson_students;
+    CREATE POLICY "Users can only view lesson_students from their organization" 
+    ON public.lesson_students
+    FOR SELECT 
+    USING (organization_id = public.get_current_user_organization() OR organization_id IS NULL);
+    
+    DROP POLICY IF EXISTS "Users can only insert lesson_students into their organization" ON public.lesson_students;
+    CREATE POLICY "Users can only insert lesson_students into their organization" 
+    ON public.lesson_students
+    FOR INSERT 
+    WITH CHECK (organization_id = public.get_current_user_organization());
+    
+    DROP POLICY IF EXISTS "Users can only update lesson_students from their organization" ON public.lesson_students;
+    CREATE POLICY "Users can only update lesson_students from their organization" 
+    ON public.lesson_students
+    FOR UPDATE 
+    USING (organization_id = public.get_current_user_organization() OR organization_id IS NULL);
+    
+    DROP POLICY IF EXISTS "Users can only delete lesson_students from their organization" ON public.lesson_students;
+    CREATE POLICY "Users can only delete lesson_students from their organization" 
+    ON public.lesson_students
+    FOR DELETE 
+    USING (organization_id = public.get_current_user_organization() OR organization_id IS NULL);
     `;
 
     // Execute the migration

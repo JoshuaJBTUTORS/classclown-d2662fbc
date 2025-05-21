@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -42,6 +41,7 @@ import AddLessonForm from '@/components/lessons/AddLessonForm';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import { Lesson } from '@/types/lesson';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 const Lessons = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -54,10 +54,11 @@ const Lessons = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const { organization } = useOrganization();
 
   useEffect(() => {
     fetchLessons();
-  }, []);
+  }, [organization]);
 
   useEffect(() => {
     // Apply filters when lessons, search query or status filter changes
