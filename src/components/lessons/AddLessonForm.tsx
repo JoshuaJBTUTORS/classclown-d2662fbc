@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, addHours, parseISO } from 'date-fns';
+import { format, addHours } from 'date-fns';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,8 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose,
-  useDialogClose
+  DialogClose
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -71,30 +71,16 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [isGroupSession, setIsGroupSession] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [formResetKey, setFormResetKey] = useState(0); // Used to force form reset
-  const [shouldForceClose, setShouldForceClose] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { organization } = useOrganization();
   
-  // Use our custom hook for reliable dialog closing
-  const { closeRef, closeDialog } = useDialogClose();
-  
-  // Synchronized dialog open state with prop
-  useEffect(() => {
-    console.log('AddLessonForm - isOpen prop changed:', isOpen);
-    if (isOpen !== dialogOpen) {
-      console.log('AddLessonForm - Syncing dialogOpen state with prop:', isOpen);
-      setDialogOpen(isOpen);
-    }
-  }, [isOpen, dialogOpen]);
-  
-  // Modified schema to handle multiple students for group sessions
+  // Schema with validation for multiple students in group sessions
   const formSchema = z.object({
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
     tutorId: z.string().min(1, { message: "Tutor is required" }),
-    studentId: z.number().or(z.string().transform(s => parseInt(s, 10))).refine(val => val > 0, {
-      message: "Student is required"
+    studentId: z.number().or(z.string().transform(s => parseInt(s, 10))).refine(val => !isGroupSession || val === 0, {
+      message: "Individual student is only required for non-group sessions"
     }),
     date: z.date({ required_error: "Date is required" }),
     startTime: z.string().min(1, { message: "Start time is required" }),
@@ -103,6 +89,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     isRecurring: z.boolean().default(false),
     recurrenceInterval: z.enum(['daily', 'weekly', 'monthly']).optional(),
     recurrenceEndDate: z.date().optional(),
+  }).refine((data) => {
+    // For group sessions, require at least one selected student
+    return !data.isGroup || (data.isGroup && selectedStudents.length > 0);
+  }, {
+    message: "Select at least one student for group sessions",
+    path: ["studentId"],
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -125,10 +117,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     },
   });
 
-  // Force form reset when the key changes
+  // Reset form when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      console.log('AddLessonForm - Resetting form with new key:', formResetKey);
+      console.log("AddLessonForm - Dialog opened, resetting form");
+      
+      // Initialize form with default values
       form.reset({
         title: "",
         description: "",
@@ -145,49 +139,33 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         isRecurring: false,
         recurrenceInterval: 'weekly',
       });
+      
+      // Clear any previously selected students
       setSelectedStudents([]);
+      setIsGroupSession(false);
+      
+      // Fetch data
+      fetchTutors();
+      fetchStudents();
     }
-  }, [formResetKey, isOpen, preselectedTime, form]);
+  }, [isOpen, preselectedTime, form]);
 
-  // Watch for changes to the isGroup field and update state
+  // Watch for changes to the isGroup field
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'isGroup') {
-        setIsGroupSession(value.isGroup as boolean);
+        setIsGroupSession(!!value.isGroup);
+        if (!value.isGroup) {
+          setSelectedStudents([]);
+        }
+      }
+      if (name === 'isRecurring') {
+        setIsRecurring(!!value.isRecurring);
       }
     });
     
     return () => subscription.unsubscribe();
   }, [form.watch]);
-
-  // Create an effect that forces the dialog to close when shouldForceClose is true
-  useEffect(() => {
-    if (shouldForceClose) {
-      console.log('AddLessonForm - Force closing dialog via ref...');
-      closeDialog();
-      
-      // Reset the flag after triggering close
-      setTimeout(() => {
-        setShouldForceClose(false);
-      }, 100);
-    }
-  }, [shouldForceClose, closeDialog]);
-
-  // Fetch tutors and students when dialog opens
-  useEffect(() => {
-    console.log('AddLessonForm - Dialog open state:', dialogOpen);
-    if (dialogOpen) {
-      console.log('AddLessonForm - Dialog opened, fetching data');
-      fetchTutors();
-      fetchStudents();
-    }
-  }, [dialogOpen]);
-
-  // Watch isRecurring changes
-  useEffect(() => {
-    const recurring = form.watch('isRecurring');
-    setIsRecurring(recurring);
-  }, [form.watch('isRecurring')]);
 
   const fetchTutors = async () => {
     setIsFetchingTutors(true);
@@ -204,19 +182,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const { data, error } = await query;
       
       if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setTutors(data);
-      } else if (organization?.id) {
-        const { data: allTutors, error: allTutorsError } = await supabase
-          .from('tutors')
-          .select('*')
-          .eq('status', 'active');
-          
-        if (allTutorsError) throw allTutorsError;
-        
-        setTutors(allTutors || []);
-      }
+      setTutors(data || []);
     } catch (error) {
       console.error('Error fetching tutors:', error);
       toast.error('Failed to load tutors');
@@ -237,19 +203,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const { data, error } = await query;
       
       if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setStudents(data);
-      } else if (organization?.id) {
-        const { data: allStudents, error: allStudentsError } = await supabase
-          .from('students')
-          .select('*')
-          .eq('status', 'active');
-          
-        if (allStudentsError) throw allStudentsError;
-        
-        setStudents(allStudents || []);
-      }
+      setStudents(data || []);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to load students');
@@ -260,26 +214,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
 
   // Handle selecting multiple students for group sessions
   const handleStudentSelect = (studentId: number) => {
-    const currentStudentId = form.getValues('studentId');
-    
     if (isGroupSession) {
-      if (selectedStudents.includes(studentId)) {
-        setSelectedStudents(selectedStudents.filter(id => id !== studentId));
-      } else {
-        setSelectedStudents([...selectedStudents, studentId]);
-      }
+      setSelectedStudents(prev => {
+        if (prev.includes(studentId)) {
+          return prev.filter(id => id !== studentId);
+        } else {
+          return [...prev, studentId];
+        }
+      });
     } else {
       form.setValue('studentId', studentId);
     }
   };
 
+  // Reset form function
   const resetForm = useCallback(() => {
-    console.log('AddLessonForm - Resetting form');
-    
-    // Use a new key to force complete form reset
-    setFormResetKey(prev => prev + 1);
-    
-    // Also manually reset values as backup
     form.reset({
       title: "",
       description: "",
@@ -296,14 +245,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       isRecurring: false,
       recurrenceInterval: 'weekly',
     });
-    
     setSelectedStudents([]);
+    setIsGroupSession(false);
   }, [form, preselectedTime]);
 
-  // Enhanced form submission with improved closing mechanism
+  // Form submission with improved cleanup
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log('AddLessonForm - Form submission started with values:', values);
-    
     try {
       setIsLoading(true);
       setLoadingMessage('Creating lesson...');
@@ -316,9 +263,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const endTime = new Date(values.date);
       const [endHours, endMinutes] = values.endTime.split(':');
       endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
-
-      console.log('AddLessonForm - Creating lesson with start/end:', 
-        { start: startTime.toISOString(), end: endTime.toISOString() });
       
       // Create the lesson
       const { data: lesson, error: lessonError } = await supabase
@@ -341,39 +285,28 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         .select('id')
         .single();
       
-      if (lessonError) {
-        console.error('AddLessonForm - Error creating lesson:', lessonError);
-        throw lessonError;
-      }
+      if (lessonError) throw lessonError;
       
-      console.log('AddLessonForm - Lesson created successfully:', lesson);
       setLoadingMessage('Adding students to lesson...');
       
       // For group sessions, add multiple students
       if (values.isGroup && selectedStudents.length > 0) {
-        console.log('AddLessonForm - Adding multiple students to group lesson:', selectedStudents);
-        
-        // Use Promise.all for parallel processing of all student additions
-        const studentResults = await Promise.all(selectedStudents.map(async (studentId) => {
-          const lessonStudentData = {
-            lesson_id: lesson.id,
-            student_id: parseInt(studentId.toString(), 10),
-            attendance_status: 'pending',
-            organization_id: organization?.id || null
-          };
-          
-          return supabase.from('lesson_students').insert(lessonStudentData);
+        // Create array of lesson_students objects
+        const lessonStudentsData = selectedStudents.map(studentId => ({
+          lesson_id: lesson.id,
+          student_id: parseInt(studentId.toString(), 10),
+          attendance_status: 'pending',
+          organization_id: organization?.id || null
         }));
         
-        // Check if any of the student additions failed
-        const failedStudents = studentResults.filter(result => result.error);
-        if (failedStudents.length > 0) {
-          console.error('AddLessonForm - Some students failed to be added:', failedStudents);
-          throw new Error('Failed to add all students to lesson');
-        }
+        // Insert all students at once
+        const { error: studentsError } = await supabase
+          .from('lesson_students')
+          .insert(lessonStudentsData);
+        
+        if (studentsError) throw studentsError;
       } else {
         // Add single student to the lesson
-        console.log('AddLessonForm - Adding single student to lesson:', values.studentId);
         const lessonStudentData = {
           lesson_id: lesson.id,
           student_id: parseInt(values.studentId.toString(), 10),
@@ -385,50 +318,42 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
           .from('lesson_students')
           .insert(lessonStudentData);
         
-        if (studentError) {
-          console.error('AddLessonForm - Error adding student to lesson:', studentError);
-          throw studentError;
-        }
+        if (studentError) throw studentError;
       }
       
-      console.log('AddLessonForm - All operations successful');
+      // Success! Close the dialog and reset form
       setIsLoading(false);
+      toast.success('Lesson created successfully');
       
-      // Force close the dialog immediately
-      console.log('AddLessonForm - Setting shouldForceClose to true');
-      setShouldForceClose(true);
+      // Use closeButtonRef to programmatically close the dialog
+      resetForm();
+      onClose(); // First call onClose to update parent component state
       
-      // Manually reset dialog state and call onSuccess
-      console.log('AddLessonForm - Force closing dialog and calling onClose');
-      setDialogOpen(false);
-
-      // Call onSuccess after a short delay to ensure state changes propagate
+      // Give a small delay before calling onSuccess to ensure clean state
       setTimeout(() => {
-        console.log('AddLessonForm - Calling onSuccess callback');
-        onClose();
-        onSuccess();
+        onSuccess(); // Then call onSuccess to trigger calendar refresh
       }, 100);
-      
     } catch (error) {
       console.error('Error creating lesson:', error);
       toast.error('Failed to create lesson');
       setIsLoading(false);
     }
   };
+
+  // Close handler with cleanup
+  const handleClose = () => {
+    if (!isLoading) {
+      resetForm();
+      onClose();
+    }
+  };
   
   return (
     <Dialog 
-      open={dialogOpen} 
+      open={isOpen} 
       onOpenChange={(open) => {
-        console.log('AddLessonForm - Dialog onOpenChange triggered:', { open, current: dialogOpen });
-        if (!open) {
-          // Only if we're closing
-          console.log('AddLessonForm - Dialog closing, resetting form');
-          resetForm();
-          setDialogOpen(false);
-          onClose();
-        } else {
-          setDialogOpen(true);
+        if (!open && !isLoading) {
+          handleClose();
         }
       }}
     >
@@ -448,8 +373,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        {/* Hidden DialogClose component with ref for programmatic closing */}
-        <DialogClose ref={closeRef} className="hidden" />
+        <DialogClose ref={closeButtonRef} className="hidden" />
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -494,7 +418,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                     <FormLabel>Tutor</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -543,18 +467,68 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               />
             </div>
             
-            <FormField
-              control={form.control}
-              name="studentId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isGroupSession ? "Students" : "Student"}</FormLabel>
-                  
-                  {!isGroupSession ? (
-                    // Single student select dropdown
+            {isGroupSession ? (
+              <FormField
+                control={form.control}
+                name="studentId"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Students (select multiple)</FormLabel>
+                    <div className="border rounded-md p-2 max-h-[200px] overflow-y-auto bg-white">
+                      {isFetchingStudents ? (
+                        <div className="flex items-center justify-center p-4">
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <span>Loading students...</span>
+                        </div>
+                      ) : students.length === 0 ? (
+                        <div className="p-2 text-center text-muted-foreground">No students available</div>
+                      ) : (
+                        students.map((student) => {
+                          // Convert student ID to number if it's a string
+                          const studentId = typeof student.id === 'string' 
+                            ? parseInt(student.id, 10) 
+                            : student.id;
+                            
+                          return (
+                            <div 
+                              key={student.id} 
+                              className={`flex items-center justify-between p-2 rounded-md cursor-pointer mb-1 ${
+                                selectedStudents.includes(studentId) ? 'bg-primary/10 border border-primary/30' : 'hover:bg-gray-100'
+                              }`}
+                              onClick={() => handleStudentSelect(studentId)}
+                            >
+                              <span>{student.first_name} {student.last_name}</span>
+                              {selectedStudents.includes(studentId) && (
+                                <Check className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    {selectedStudents.length === 0 && form.formState.errors.studentId && (
+                      <p className="text-sm font-medium text-destructive mt-2">
+                        Select at least one student for group sessions
+                      </p>
+                    )}
+                    {selectedStudents.length > 0 && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''} selected
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name="studentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Student</FormLabel>
                     <Select 
                       onValueChange={(value) => field.onChange(parseInt(value, 10))} 
-                      value={field.value.toString()}
+                      value={field.value ? field.value.toString() : ""}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -578,46 +552,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                         )}
                       </SelectContent>
                     </Select>
-                  ) : (
-                    // Multi-student selection for group sessions
-                    <div className="border rounded-md p-2 max-h-[200px] overflow-y-auto">
-                      {isFetchingStudents ? (
-                        <div className="flex items-center justify-center p-4">
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          <span>Loading students...</span>
-                        </div>
-                      ) : students.length === 0 ? (
-                        <div className="p-2 text-center text-muted-foreground">No students available</div>
-                      ) : (
-                        students.map((student) => {
-                          // Convert student ID to number if it's a string
-                          const studentId = typeof student.id === 'string' 
-                            ? parseInt(student.id, 10) 
-                            : student.id;
-                            
-                          return (
-                            <div 
-                              key={student.id} 
-                              className={`flex items-center justify-between p-2 rounded-md cursor-pointer mb-1 ${
-                                selectedStudents.includes(studentId) ? 'bg-primary-50 border border-primary' : 'hover:bg-gray-100'
-                              }`}
-                              onClick={() => handleStudentSelect(studentId)}
-                            >
-                              <span>{student.first_name} {student.last_name}</span>
-                              {selectedStudents.includes(studentId) && (
-                                <Check className="h-4 w-4 text-primary" />
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-                  
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField
@@ -716,7 +655,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                           className="flex flex-col space-y-1"
                         >
                           <div className="flex items-center space-x-2">
@@ -781,13 +720,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => {
-                  console.log('AddLessonForm - Cancel button clicked');
-                  resetForm();
-                  setDialogOpen(false);
-                  closeDialog(); // Use our new programmatic close
-                  onClose();
-                }}
+                onClick={handleClose}
                 disabled={isLoading}
               >
                 Cancel

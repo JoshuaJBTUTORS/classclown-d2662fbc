@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
@@ -39,7 +40,6 @@ const Calendar = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
-  const justAddedLesson = useRef(false);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
     console.log("Calendar - fetchLessons called with:", { start, end });
@@ -159,60 +159,35 @@ const Calendar = () => {
   const forceCalendarRefresh = useCallback(() => {
     console.log("Calendar - forceCalendarRefresh called");
     
-    try {
-      // Try refreshing via the calendar ref API
-      if (calendarRef.current) {
+    // Refresh via calendar API if available
+    if (calendarRef.current) {
+      try {
         const apiInstance = calendarRef.current.getApi();
-        console.log("Calendar - Calendar API instance found, refreshing events");
+        console.log("Calendar - Refreshing events via calendar API");
         apiInstance.refetchEvents();
-      } else {
-        console.warn("Calendar - Calendar ref not available for refresh");
+      } catch (error) {
+        console.error("Calendar - Error using calendar API:", error);
       }
-    } catch (error) {
-      console.error("Calendar - Error using calendar ref for refresh:", error);
     }
     
-    // Always fetch new data as a backup, using a more comprehensive date range
-    try {
-      const start = new Date();
-      start.setMonth(start.getMonth() - 1);
-      
-      const end = new Date();
-      end.setMonth(end.getMonth() + 3); // Extended time range for better coverage
-      
-      console.log("Calendar - Calling fetchLessons with extended date range");
-      fetchLessons(start, end);
-    } catch (error) {
-      console.error("Calendar - Error in backup fetchLessons:", error);
-      toast.error("Error refreshing calendar. Please try again.");
-    }
-  }, [fetchLessons]);
+    // Also fetch new data as a backup
+    const start = startOfMonth(currentDate);
+    const end = endOfMonth(currentDate);
+    console.log("Calendar - Backup fetch of lessons");
+    fetchLessons(start, end);
+  }, [fetchLessons, currentDate]);
 
-  const handleAddLessonSuccess = useCallback(() => {
-    console.log("Calendar - handleAddLessonSuccess called - PROCESSING START");
-    
-    // Set the ref to indicate a lesson was just added
-    justAddedLesson.current = true;
-    
-    // Reset all form-related state
+  const handleAddLessonSuccess = () => {
+    console.log("Calendar - Lesson added successfully");
     setIsAddingLesson(false);
     setSelectedTimeSlot(null);
     
-    console.log("Calendar - Dialog states reset, scheduling calendar refresh");
-    
-    // Use a longer timeout to ensure database transaction completes
+    // Force refresh calendar events
     setTimeout(() => {
-      console.log("Calendar - Executing delayed calendar refresh");
       forceCalendarRefresh();
       toast.success('Lesson added successfully!');
-      console.log("Calendar - handleAddLessonSuccess COMPLETE");
-      
-      // Reset the flag after using it
-      setTimeout(() => {
-        justAddedLesson.current = false;
-      }, 500);
-    }, 2000); // Increased timeout for better reliability
-  }, [forceCalendarRefresh]);
+    }, 500);
+  };
 
   const handleEditLessonSuccess = () => {
     setIsEditingLesson(false);
@@ -269,24 +244,12 @@ const Calendar = () => {
       setIsLessonDetailsOpen(false);
       
       // Force refresh the calendar
-      if (calendarRef.current) {
-        const apiInstance = calendarRef.current.getApi();
-        apiInstance.refetchEvents();
-      }
-      
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
-      fetchLessons(start, end);
+      forceCalendarRefresh();
       toast.success('Lesson deleted successfully');
     } catch (error) {
       console.error('Error deleting lesson:', error);
       toast.error('Failed to delete lesson');
     }
-  };
-
-  const handleViewLessonDetails = (lessonId: string) => {
-    setSelectedLessonId(lessonId);
-    setIsLessonDetailsOpen(true);
   };
 
   const handleEditLesson = (lesson: Lesson) => {
@@ -321,16 +284,6 @@ const Calendar = () => {
     }, 300);
   };
 
-  const handleAddLessonClose = useCallback(() => {
-    console.log("Calendar - handleAddLessonClose called");
-    
-    // Only reset state if we're not in the success path (to avoid state conflicts)
-    if (!justAddedLesson.current) {
-      setIsAddingLesson(false);
-      setSelectedTimeSlot(null);
-    }
-  }, []);
-
   useEffect(() => {
     const start = calendarView === 'dayGridMonth' 
       ? startOfMonth(currentDate)
@@ -343,10 +296,6 @@ const Calendar = () => {
     console.log("Calendar - Initial fetchLessons called from useEffect", { start, end });
     fetchLessons(start, end);
   }, [fetchLessons, currentDate, calendarView, organization?.id]);
-
-  useEffect(() => {
-    console.log("Calendar - isAddingLesson state changed:", isAddingLesson);
-  }, [isAddingLesson]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -432,10 +381,10 @@ const Calendar = () => {
         </main>
       </div>
 
-      {/* Improved AddLessonForm implementation with better dialog control */}
+      {/* Add Lesson Form */}
       <AddLessonForm
         isOpen={isAddingLesson}
-        onClose={handleAddLessonClose}
+        onClose={() => setIsAddingLesson(false)}
         onSuccess={handleAddLessonSuccess}
         preselectedTime={selectedTimeSlot}
       />
