@@ -1,6 +1,6 @@
 
 declare module '@fullcalendar/react' {
-  import { ComponentType } from 'react';
+  import { ComponentType, RefObject } from 'react';
   
   export interface FullCalendarProps {
     plugins?: any[];
@@ -29,11 +29,26 @@ declare module '@fullcalendar/react' {
       minute: string;
       meridiem: string;
     };
-    ref?: any;
-    getApi?: () => any;
+  }
+
+  export interface FullCalendarInstance {
+    getApi: () => {
+      render: () => void;
+      today: () => void;
+      prev: () => void;
+      next: () => void;
+      gotoDate: (date: Date | string) => void;
+      incrementDate: (duration: any) => void;
+      getDate: () => Date;
+      changeView: (viewName: string) => void;
+      getView: () => any;
+      refetchEvents: () => void;
+      updateSize: () => void;
+      [key: string]: any;
+    };
   }
   
-  const FullCalendar: ComponentType<FullCalendarProps>;
+  const FullCalendar: ComponentType<FullCalendarProps> & { prototype: FullCalendarInstance };
   export default FullCalendar;
 }
 
