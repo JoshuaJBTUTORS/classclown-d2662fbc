@@ -197,8 +197,13 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         onSuccess();
       }
       
-      // Close the dialog - ensure this runs by calling it directly
+      // Force close the dialog by calling onClose directly
       onClose();
+      
+      // Small delay to ensure all state updates are processed
+      setTimeout(() => {
+        if (onClose) onClose();
+      }, 100);
     } catch (error) {
       console.error('Error completing session:', error);
       toast.error('Failed to complete session');
@@ -208,7 +213,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
   };
 
   // If dialog isn't open or no lesson data, don't render
-  if (!isOpen || !lesson) {
+  if (!isOpen) {
     return null;
   }
 
@@ -220,98 +225,105 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5" /> 
-            Student Attendance & Feedback: {lesson.title}
+            Student Attendance & Feedback: {lesson?.title || 'Loading...'}
           </DialogTitle>
           <DialogDescription>
-            {format(parseISO(lesson.start_time), 'MMMM d, yyyy • h:mm a')} - 
-            {format(parseISO(lesson.end_time), 'h:mm a')}
+            {lesson && lesson.start_time ? 
+              `${format(parseISO(lesson.start_time), 'MMMM d, yyyy • h:mm a')} - 
+              ${format(parseISO(lesson.end_time), 'h:mm a')}` : 
+              'Loading session details...'
+            }
           </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Student Attendance and Feedback Section */}
-            <div className="space-y-4">
-              <Separator />
-              
-              {form.getValues().students.map((student, index) => (
-                <div key={student.id} className="p-4 border rounded-md space-y-3">
-                  <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
-                  
-                  <FormField
-                    control={form.control}
-                    name={`students.${index}.attendance`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Attendance</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
+        {lesson ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Student Attendance and Feedback Section */}
+              <div className="space-y-4">
+                <Separator />
+                
+                {form.getValues().students.map((student, index) => (
+                  <div key={student.id} className="p-4 border rounded-md space-y-3">
+                    <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
+                    
+                    <FormField
+                      control={form.control}
+                      name={`students.${index}.attendance`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Attendance</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select attendance status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="attended">
+                                <div className="flex items-center gap-2">
+                                  <UserCheck className="h-4 w-4 text-green-500" />
+                                  <span>Attended</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="missed">
+                                <div className="flex items-center gap-2">
+                                  <span className="h-4 w-4 text-red-500">✗</span>
+                                  <span>Missed</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="cancelled">
+                                <span>Cancelled</span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name={`students.${index}.feedback`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Feedback (Optional)</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select attendance status" />
-                            </SelectTrigger>
+                            <Textarea 
+                              placeholder="Brief feedback for this student..."
+                              className="min-h-[60px]"
+                              {...field}
+                              value={field.value || ''}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="attended">
-                              <div className="flex items-center gap-2">
-                                <UserCheck className="h-4 w-4 text-green-500" />
-                                <span>Attended</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="missed">
-                              <div className="flex items-center gap-2">
-                                <span className="h-4 w-4 text-red-500">✗</span>
-                                <span>Missed</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="cancelled">
-                              <span>Cancelled</span>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name={`students.${index}.feedback`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Feedback (Optional)</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Brief feedback for this student..."
-                            className="min-h-[60px]"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              ))}
-            </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ))}
+              </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                Cancel
-              </Button>
-              <Button type="submit" className="gap-1" disabled={loading}>
-                {loading ? 'Completing...' : (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Complete Session
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="gap-1" disabled={loading}>
+                  {loading ? 'Completing...' : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Complete Session
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        ) : (
+          <div className="py-6 text-center">Loading lesson details...</div>
+        )}
       </DialogContent>
     </Dialog>
   );

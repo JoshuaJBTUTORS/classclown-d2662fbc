@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -314,15 +313,31 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     if (lesson && onCompleteSession) {
       // For recurring instances, we need to use the original lesson ID
       const completionId = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
-      onCompleteSession(completionId);
+      
+      // Close this dialog first, then call the completion handler
       onClose();
+      // Small delay to ensure the dialog is closed first
+      setTimeout(() => {
+        if (onCompleteSession) {
+          onCompleteSession(completionId);
+        }
+      }, 100);
     }
   };
   
   const handleAssignHomework = () => {
     if (lesson) {
-      setIsAssigningHomework(true);
+      // First close this dialog, then open the homework assignment dialog
+      onClose();
+      // Small delay to ensure the dialog is closed first
+      setTimeout(() => {
+        setIsAssigningHomework(true);
+      }, 100);
     }
+  };
+
+  const handleHomeworkDialogClose = () => {
+    setIsAssigningHomework(false);
   };
 
   const handleEditLesson = () => {
@@ -336,7 +351,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!open) onClose();
+      }}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Lesson Details</DialogTitle>
@@ -574,10 +591,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Only render AssignHomeworkDialog when isAssigningHomework is true */}
       {lesson && (
         <AssignHomeworkDialog
           isOpen={isAssigningHomework}
-          onClose={() => setIsAssigningHomework(false)}
+          onClose={handleHomeworkDialogClose}
           preSelectedLessonId={isRecurringInstance && originalLessonId ? originalLessonId : lesson.id}
         />
       )}
