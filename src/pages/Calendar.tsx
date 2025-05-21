@@ -5,6 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { EventClickArg, DateSelectArg } from '@fullcalendar/core';
+import { FullCalendarComponent } from '@fullcalendar/react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import { Button } from '@/components/ui/button';
@@ -36,8 +37,8 @@ const Calendar = () => {
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
-  // Here's the fix: use React.RefObject with FullCalendarInstance type
-  const calendarRef = useRef<React.ElementRef<typeof FullCalendar>>(null);
+  // Fixed: Use the proper type for the calendar ref
+  const calendarRef = useRef<FullCalendarComponent | null>(null);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
     setIsLoading(true);
