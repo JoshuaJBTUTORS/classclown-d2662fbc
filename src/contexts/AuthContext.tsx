@@ -39,6 +39,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Clean up auth state helper
+const cleanupAuthState = () => {
+  // Remove standard auth tokens
+  localStorage.removeItem('supabase.auth.token');
+  // Remove all Supabase auth keys from localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+  // Remove from sessionStorage if in use
+  Object.keys(sessionStorage || {}).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -46,24 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  // Clean up auth state helper
-  const cleanupAuthState = () => {
-    // Remove standard auth tokens
-    localStorage.removeItem('supabase.auth.token');
-    // Remove all Supabase auth keys from localStorage
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-    // Remove from sessionStorage if in use
-    Object.keys(sessionStorage || {}).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        sessionStorage.removeItem(key);
-      }
-    });
-  };
 
   // Fetch user profile and role
   const fetchUserData = async (userId: string) => {
@@ -103,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log("Auth state change event:", event);
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      console.log("Checking for existing session:", existingSession?.user?.email || "None");
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
       
@@ -168,16 +170,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
+        console.log("Error during pre-signup signout:", err);
         // Continue even if this fails
       }
       
-      const { error } = await supabase.auth.signUp({ 
+      console.log("Starting signup with metadata:", metadata);
+      const { error, data } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-          data: metadata
+          data: metadata,
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
+      
+      console.log("Signup response:", { error, data });
       
       if (error) {
         throw error;
@@ -189,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
     } catch (error: any) {
+      console.error("Registration error details:", error);
       toast({
         title: "Error creating account",
         description: error.message || "Failed to create account",
@@ -208,18 +216,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         // Continue even if this fails
+        console.log("Error during pre-signin signout:", err);
       }
       
+      console.log("Attempting to sign in:", email);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         throw error;
       }
       
+      console.log("Sign-in successful, navigating to home");
       // Force page reload for a clean state
       navigate('/');
       
     } catch (error: any) {
+      console.error("Sign-in error:", error);
       toast({
         title: "Error signing in",
         description: error.message || "Failed to sign in",
@@ -245,6 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       navigate('/auth');
       
     } catch (error: any) {
+      console.error("Sign-out error:", error);
       toast({
         title: "Error signing out",
         description: error.message || "Failed to sign out",

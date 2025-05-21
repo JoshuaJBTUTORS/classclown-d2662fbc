@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface FormInputs {
   email: string;
@@ -25,28 +27,37 @@ interface FormInputs {
 }
 
 const Auth = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [error, setError] = useState<string | null>(null);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormInputs>();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleSignIn = async (data: FormInputs) => {
     setIsLoading(true);
+    setError(null);
     try {
       await signIn(data.email, data.password);
-      navigate('/');
+      // Will be redirected by the useEffect
     } catch (error: any) {
       console.error('Login error:', error);
-      // Toast notification is shown by AuthContext
-    } finally {
+      setError(error.message || 'Failed to sign in');
       setIsLoading(false);
     }
   };
 
   const handleSignUp = async (data: FormInputs) => {
     setIsLoading(true);
+    setError(null);
     try {
       await signUp(data.email, data.password, {
         first_name: data.firstName,
@@ -55,15 +66,16 @@ const Auth = () => {
       
       // Stay on the login tab after signup
       setActiveTab('login');
+      reset();
       
       toast({
         title: "Account created",
         description: "Please check your email for the confirmation link, then log in.",
       });
+      setIsLoading(false);
     } catch (error: any) {
       console.error('Signup error:', error);
-      // Toast notification is shown by AuthContext
-    } finally {
+      setError(error.message || 'Failed to create account');
       setIsLoading(false);
     }
   };
@@ -82,6 +94,14 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Login</TabsTrigger>
