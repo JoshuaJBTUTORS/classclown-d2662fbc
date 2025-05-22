@@ -1,54 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, isValid, isSameDay } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, isValid, isSameDay, isAfter } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { EventClickArg, DateSelectArg, DatesSetArg } from '@fullcalendar/core';
 import { FullCalendarComponent } from '@fullcalendar/react';
-import Navbar from '@/components/navigation/Navbar';
-import Sidebar from '@/components/navigation/Sidebar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
-import AddLessonForm from '@/components/lessons/AddLessonForm';
-import EditLessonForm from '@/components/lessons/EditLessonForm';
-import { Lesson } from '@/types/lesson';
-import { Student } from '@/types/student';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { AlertCircle, ChevronLeft, ChevronRight, Plus, Filter, Check, RefreshCw } from 'lucide-react';
-import ViewOptions from '@/components/calendar/ViewOptions';
-import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Checkbox
-} from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-const MAX_RECURRING_INSTANCES = 30; // Limit recurring instances to prevent timeouts
-const LOADING_TIMEOUT = 8000; // 8 seconds timeout
 
 interface CalendarEvent {
   id: string;
@@ -67,6 +24,11 @@ interface CalendarEvent {
     isRecurringInstance?: boolean;
   };
 }
+
+// Set a maximum date range for recurring events to avoid performance issues
+const MAX_RECURRING_INSTANCES = 30; // Keep existing limit for instances per recurring lesson
+const MAX_RECURRING_MONTHS = 6; // Maximum number of months to look ahead for recurring events
+const LOADING_TIMEOUT = 8000; // 8 seconds timeout
 
 const CalendarPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -98,7 +60,6 @@ const CalendarPage = () => {
   const [retryCount, setRetryCount] = useState(0);
   const loadingTimeoutRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { user } = useAuth();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
   const calendarKey = useRef(`calendar-${Date.now()}`).current;
   
@@ -245,13 +206,20 @@ const CalendarPage = () => {
       if (recurrenceEndDate && recurrenceEndDate < viewStart) {
         return instances;
       }
+
+      // IMPORTANT CHANGE: Limit the end date to be maximum 6 months from now
+      const maxEndDate = addMonths(new Date(), MAX_RECURRING_MONTHS);
+      const effectiveEndDate = isAfter(maxEndDate, viewEnd) ? viewEnd : maxEndDate;
+      
+      if (effectiveEndDate < viewStart) {
+        return instances; // No need to calculate if the effective end date is before view start
+      }
       
       const durationMs = endDateOriginal.getTime() - startDateOriginal.getTime();
       const interval = lesson.recurrence_interval;
       let instanceCount = 0;
       
       // Generate a limited set of dates based on recurrence pattern
-      // This is more efficient than generating all dates in the interval
       const generateRecurringDates = (): Date[] => {
         const dates: Date[] = [];
         let currentDate: Date;
@@ -302,8 +270,8 @@ const CalendarPage = () => {
           }
         }
         
-        // Generate dates based on pattern until end of view
-        while (currentDate <= viewEnd && instanceCount < MAX_RECURRING_INSTANCES) {
+        // Generate dates based on pattern until end of view OR max end date
+        while (currentDate <= effectiveEndDate && instanceCount < MAX_RECURRING_INSTANCES) {
           // Skip if we've passed the recurrence end date
           if (recurrenceEndDate && currentDate > recurrenceEndDate) {
             break;
@@ -448,7 +416,10 @@ const CalendarPage = () => {
       // Also fetch recurring lessons - but limit to a smaller window
       let recurringData: Lesson[] = [];
       try {
-        // Fetch only recurring lessons that haven't ended
+        // Add restriction on the query to only fetch recurring lessons with start dates within the MAX_RECURRING_MONTHS
+        const sixMonthsAgo = format(subMonths(new Date(), 1), "yyyy-MM-dd");
+        
+        // Fetch only recurring lessons that started within the last month or haven't ended
         const { data: recData, error: recurringError } = await supabase
           .from('lessons')
           .select(`
@@ -459,6 +430,7 @@ const CalendarPage = () => {
             )
           `)
           .eq('is_recurring', true)
+          .gte('start_time', sixMonthsAgo) // Only get recurring lessons from the last month
           .or(`recurrence_end_date.gte.${startDate},recurrence_end_date.is.null`)
           .order('start_time', { ascending: true });
           
