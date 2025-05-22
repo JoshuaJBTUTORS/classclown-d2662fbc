@@ -1,91 +1,51 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { DateSelectArg, EventClickArg, DatesSetArg } from '@fullcalendar/core';
-
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
-import AddLessonForm from '@/components/lessons/AddLessonForm';
-import CalendarHeader from '@/components/calendar/CalendarHeader';
-import CalendarDisplay from '@/components/calendar/CalendarDisplay';
+import { supabase } from '@/integrations/supabase/client';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { useCalendarData } from '@/hooks/useCalendarData';
 
 const CalendarPage = () => {
-  // Simple UI state
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [calendarView, setCalendarView] = useState('dayGridMonth');
-  const [isAddingLesson, setIsAddingLesson] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
-    start: Date;
-    end: Date;
-  } | null>(null);
-  
-  // Use simplified hook
-  const { 
-    events, 
-    isLoading, 
-    loadingError, 
-    setIsLoading,
-    fetchEvents 
-  } = useCalendarData();
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize calendar with basic data
   useEffect(() => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
-    console.log("Calendar - Initial data load", { 
-      start: start.toISOString(), 
-      end: end.toISOString() 
-    });
-    
-    fetchEvents(start, end);
-  }, [fetchEvents]);
+    const fetchEvents = async () => {
+      try {
+        console.log("Fetching lessons from Supabase");
+        const { data, error } = await supabase
+          .from('lessons')
+          .select('*');
 
-  // Basic event handlers
-  const handleDateSelect = (selectInfo: DateSelectArg) => {
-    setSelectedTimeSlot({
-      start: selectInfo.start,
-      end: selectInfo.end,
-    });
-    setIsAddingLesson(true);
-  };
+        if (error) throw error;
 
-  const handleEventClick = (clickInfo: EventClickArg) => {
-    toast.info(`Clicked on: ${clickInfo.event.title}`);
-  };
+        console.log("Lessons fetched:", data);
+        
+        // Transform to calendar events format
+        const calendarEvents = (data || []).map(lesson => ({
+          id: lesson.id,
+          title: lesson.title,
+          start: lesson.start_time,
+          end: lesson.end_time,
+        }));
 
-  const handleCalendarDatesSet = useCallback((arg: DatesSetArg) => {
-    console.log("Calendar - datesSet event triggered", {
-      viewType: arg.view.type,
-      start: arg.start,
-      end: arg.end
-    });
-    
-    setCalendarView(arg.view.type);
-    fetchEvents(arg.start, arg.end);
-  }, [fetchEvents]);
+        setEvents(calendarEvents);
+      } catch (error) {
+        console.error('Error fetching lessons:', error);
+        toast.error('Failed to load lessons');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleAddLessonSuccess = () => {
-    setIsAddingLesson(false);
-    setSelectedTimeSlot(null);
-    toast.success('Lesson added successfully!');
-    
-    // Refresh calendar
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    fetchEvents(start, end);
-  };
-
-  const handleRetry = () => {
-    setIsLoading(true);
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    fetchEvents(start, end);
-  };
+    fetchEvents();
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -97,28 +57,36 @@ const CalendarPage = () => {
       <div className="flex flex-col flex-1">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
-          <CalendarHeader onAddLesson={() => setIsAddingLesson(true)} />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
+          </div>
 
-          <CalendarDisplay 
-            isLoading={isLoading}
-            loadingError={loadingError}
-            calendarView={calendarView}
-            events={events}
-            onSelectDate={handleDateSelect}
-            onEventClick={handleEventClick}
-            onDatesSet={handleCalendarDatesSet}
-            onRetry={handleRetry}
-          />
+          <Card>
+            <CardContent className="pt-6">
+              {isLoading ? (
+                <div className="h-[600px] flex items-center justify-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"></div>
+                  <p className="ml-2">Loading calendar...</p>
+                </div>
+              ) : (
+                <div className="h-[600px]">
+                  <FullCalendar
+                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                    initialView="dayGridMonth"
+                    events={events}
+                    height="100%"
+                    headerToolbar={{
+                      left: 'prev,next today',
+                      center: 'title',
+                      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    }}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </main>
       </div>
-
-      {/* Add Lesson Form */}
-      <AddLessonForm
-        isOpen={isAddingLesson}
-        onClose={() => setIsAddingLesson(false)}
-        onSuccess={handleAddLessonSuccess}
-        preselectedTime={selectedTimeSlot}
-      />
     </div>
   );
 };

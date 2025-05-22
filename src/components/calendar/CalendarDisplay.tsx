@@ -4,69 +4,32 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { DateSelectArg, EventClickArg, DatesSetArg } from '@fullcalendar/core';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface CalendarDisplayProps {
   isLoading: boolean;
-  loadingError: string | null;
-  calendarView: string;
   events: any[];
-  onSelectDate: (selectInfo: DateSelectArg) => void;
-  onEventClick: (clickInfo: EventClickArg) => void;
-  onDatesSet: (arg: DatesSetArg) => void;
-  onRetry: () => void;
 }
 
 const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   isLoading,
-  loadingError,
-  calendarView,
-  events,
-  onSelectDate,
-  onEventClick,
-  onDatesSet,
-  onRetry
+  events
 }) => {
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle>Lessons Schedule</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         {isLoading ? (
           <div className="h-[600px] flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"></div>
-              <p className="mt-2">Loading calendar...</p>
-            </div>
-          </div>
-        ) : loadingError ? (
-          <div className="h-[600px] flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <p className="text-red-500 mb-2">{loadingError}</p>
-              <Button onClick={onRetry}>Retry</Button>
-            </div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"></div>
+            <p className="ml-2">Loading calendar...</p>
           </div>
         ) : (
-          <div className="h-[600px] relative">
+          <div className="h-[600px]">
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView={calendarView}
+              initialView="dayGridMonth"
               events={events}
-              selectable={true}
-              selectMirror={true}
-              dayMaxEvents={3}
-              weekends={true}
-              select={onSelectDate}
-              eventClick={onEventClick}
-              datesSet={onDatesSet}
               height="100%"
-              allDaySlot={false}
-              slotDuration="00:30:00"
-              slotLabelInterval="01:00"
-              expandRows={true}
               headerToolbar={{
                 left: 'prev,next today',
                 center: 'title',
