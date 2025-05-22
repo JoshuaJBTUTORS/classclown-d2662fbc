@@ -55,6 +55,7 @@ declare module '@fullcalendar/react' {
       meridiem: string;
     };
     ref?: React.Ref<FullCalendarComponent>;
+    key?: string; // Added key property
   }
 
   export interface FullCalendarComponent {
