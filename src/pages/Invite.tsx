@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -184,7 +185,7 @@ const Invite = () => {
               <img 
                 src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
                 alt="Class Clown Logo" 
-                className="h-16 w-auto"
+                className="h-24 w-auto"
               />
             </div>
             <CardTitle className="text-red-500">Invalid Invitation</CardTitle>
@@ -206,7 +207,7 @@ const Invite = () => {
             <img 
               src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
               alt="Class Clown Logo" 
-              className="h-16 w-auto"
+              className="h-24 w-auto"
             />
           </div>
           <CardTitle>Complete Your Registration</CardTitle>
