@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, isValid, isSameDay, isAfter } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
@@ -6,6 +7,36 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { EventClickArg, DateSelectArg, DatesSetArg } from '@fullcalendar/core';
 import { FullCalendarComponent } from '@fullcalendar/react';
+import Sidebar from '@/components/navigation/Sidebar';
+import Navbar from '@/components/navigation/Navbar';
+import { toast } from "sonner";
+
+// Additional imports that seem to be used in the file
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Plus,
+  RefreshCw
+} from 'lucide-react';
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from '@/lib/supabase';
+
+// Component imports for lesson management
+import AddLessonForm from '@/components/lessons/AddLessonForm';
+import EditLessonForm from '@/components/lessons/EditLessonForm';
+import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
+import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import ViewOptions from '@/components/calendar/ViewOptions';
 
 interface CalendarEvent {
   id: string;
@@ -23,6 +54,14 @@ interface CalendarEvent {
     isRecurring?: boolean;
     isRecurringInstance?: boolean;
   };
+}
+
+interface Student {
+  id: number;
+  first_name: string;
+  last_name: string;
+  parent_first_name?: string;
+  parent_last_name?: string;
 }
 
 // Set a maximum date range for recurring events to avoid performance issues
