@@ -107,21 +107,17 @@ export const TutorAvailability: React.FC<TutorAvailabilityProps> = ({ value, onC
             <div className="w-full sm:w-auto flex flex-wrap gap-3">
               <div>
                 <FormLabel className="text-xs">Start Time</FormLabel>
-                <input
-                  type="time"
+                <TimeInput
                   value={slot.startTime}
                   onChange={(e) => updateSlot(slot.id, 'startTime', e.target.value)}
-                  className="flex h-9 w-[120px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
               
               <div>
                 <FormLabel className="text-xs">End Time</FormLabel>
-                <input
-                  type="time"
+                <TimeInput
                   value={slot.endTime}
                   onChange={(e) => updateSlot(slot.id, 'endTime', e.target.value)}
-                  className="flex h-9 w-[120px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
             </div>
