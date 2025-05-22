@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Calendar,
@@ -100,38 +99,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
 
   return (
     <div className="flex flex-col h-full bg-white border-r w-64">
-      <div className="flex items-center justify-between p-5 border-b border-gray-100">
-        <div className="flex items-center justify-center w-full">
-          <img 
-            src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
-            alt="Class Clown Logo" 
-            className="h-30 w-auto" // Increased size by 1.5 (from h-20 to h-30)
-          />
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Avatar className="w-8 h-8 border-2 border-[#e94b7f]/20">
-              {profile?.avatar_url ? (
-                <AvatarImage src={profile.avatar_url} alt={profile.first_name} />
-              ) : (
-                <AvatarFallback className="bg-[#e94b7f]/10 text-foreground">{profile?.first_name?.substring(0, 2) || '?'}</AvatarFallback>
-              )}
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="font-playfair">{profile?.first_name} {profile?.last_name}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/organization/settings')} className="cursor-pointer">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="flex items-center justify-center p-5 border-b border-gray-100">
+        <img 
+          src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
+          alt="Class Clown Logo" 
+          className="h-30 w-auto" // Increased size by 1.5 (from h-20 to h-30)
+        />
       </div>
 
       <nav className="flex-1 p-4 overflow-y-auto">
