@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -46,6 +47,10 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AvailabilityManager from './AvailabilityManager';
+import TimeOffRequestForm from './TimeOffRequestForm';
+import TimeOffRequestsList from './TimeOffRequestsList';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
@@ -94,6 +99,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   const [loading, setLoading] = useState(false);
   const [selectedSpecialities, setSelectedSpecialities] = useState<string[]>([]);
   const [specialitiesOpen, setSpecialitiesOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
+  const availabilityManagerRef = useRef<{ saveAvailabilities: () => Promise<boolean> } | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -147,6 +154,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         
       if (error) throw error;
       
+      // Save availability if on that tab
+      if (activeTab === 'availability' && availabilityManagerRef.current) {
+        const availabilitySaved = await availabilityManagerRef.current.saveAvailabilities();
+        if (!availabilitySaved) {
+          throw new Error("Failed to save tutor availability");
+        }
+      }
+      
       // Update the tutor in the parent component
       const updatedTutor: Tutor = {
         ...tutor,
@@ -191,205 +206,246 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     form.setValue('specialities', updated);
   };
 
+  const handleTimeOffSuccess = () => {
+    toast.success("Time off request submitted successfully");
+    setActiveTab('timeoff');
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Tutor</DialogTitle>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="first_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="last_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="john.doe@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="(123) 456-7890" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <FormField
-              control={form.control}
-              name="bio"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bio</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Brief description of the tutor's background and experience..." 
-                      className="min-h-[100px]" 
-                      {...field} 
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="specialities"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Specialities</FormLabel>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedSpecialities.map((speciality) => (
-                      <Badge 
-                        key={speciality} 
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
-                        {speciality}
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-4 w-4 p-0 hover:bg-transparent"
-                          onClick={() => removeSpeciality(speciality)}
-                        >
-                          <X className="h-3 w-3" />
-                          <span className="sr-only">Remove</span>
-                        </Button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Popover open={specialitiesOpen} onOpenChange={setSpecialitiesOpen}>
-                    <PopoverTrigger asChild>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="availability">Availability</TabsTrigger>
+            <TabsTrigger value="timeoff">Time Off</TabsTrigger>
+          </TabsList>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <TabsContent value="details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="first_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="last_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="john.doe@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(123) 456-7890" {...field} value={field.value || ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio</FormLabel>
                       <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className="justify-between w-full"
-                        >
-                          {selectedSpecialities.length > 0
-                            ? `${selectedSpecialities.length} selected`
-                            : "Select specialities"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
+                        <Textarea 
+                          placeholder="Brief description of the tutor's background and experience..." 
+                          className="min-h-[100px]" 
+                          {...field} 
+                          value={field.value || ''}
+                        />
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0">
-                      <Command>
-                        <CommandInput placeholder="Search specialities..." />
-                        <CommandEmpty>No specialities found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto">
-                          {specialitiesList.map((speciality) => {
-                            const isSelected = selectedSpecialities.includes(speciality);
-                            return (
-                              <CommandItem
-                                key={speciality}
-                                value={speciality}
-                                onSelect={() => toggleSpeciality(speciality)}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    isSelected ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {speciality}
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Updating..." : "Update Tutor"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="specialities"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Specialities</FormLabel>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {selectedSpecialities.map((speciality) => (
+                          <Badge 
+                            key={speciality} 
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            {speciality}
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-4 w-4 p-0 hover:bg-transparent"
+                              onClick={() => removeSpeciality(speciality)}
+                            >
+                              <X className="h-3 w-3" />
+                              <span className="sr-only">Remove</span>
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                      <Popover open={specialitiesOpen} onOpenChange={setSpecialitiesOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className="justify-between w-full"
+                            >
+                              {selectedSpecialities.length > 0
+                                ? `${selectedSpecialities.length} selected`
+                                : "Select specialities"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0">
+                          <Command>
+                            <CommandInput placeholder="Search specialities..." />
+                            <CommandEmpty>No specialities found.</CommandEmpty>
+                            <CommandGroup className="max-h-64 overflow-auto">
+                              {specialitiesList.map((speciality) => {
+                                const isSelected = selectedSpecialities.includes(speciality);
+                                return (
+                                  <CommandItem
+                                    key={speciality}
+                                    value={speciality}
+                                    onSelect={() => toggleSpeciality(speciality)}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        isSelected ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {speciality}
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+              
+              <TabsContent value="availability">
+                {tutor && (
+                  <AvailabilityManager 
+                    tutorId={tutor.id} 
+                    ref={(ref) => {
+                      availabilityManagerRef.current = ref;
+                    }}
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="timeoff" className="space-y-8">
+                {tutor && (
+                  <>
+                    <TimeOffRequestForm 
+                      tutorId={tutor.id} 
+                      onSuccess={handleTimeOffSuccess}
+                    />
+                    
+                    <TimeOffRequestsList 
+                      tutorId={tutor.id} 
+                    />
+                  </>
+                )}
+              </TabsContent>
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Updating..." : "Update Tutor"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
