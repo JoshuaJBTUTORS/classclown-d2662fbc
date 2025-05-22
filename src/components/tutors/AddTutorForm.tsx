@@ -71,7 +71,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       specialities: "",
       bio: "",
       sendInvite: false,
-      availability: [],
+      availability: [] as AvailabilitySlot[], // Explicitly typed to match AvailabilitySlot[]
     },
   });
 
