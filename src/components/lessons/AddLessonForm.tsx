@@ -173,6 +173,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         .order('last_name', { ascending: true });
 
       if (tutorsError) throw tutorsError;
+      // Now we have a more flexible status field in our Tutor type
       setTutors(tutorsData || []);
 
       // Fetch active students

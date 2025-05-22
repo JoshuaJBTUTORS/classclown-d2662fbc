@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { z } from 'zod';
@@ -172,6 +171,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
         .order('last_name', { ascending: true });
 
       if (error) throw error;
+      // Now we have a more flexible status field in our Tutor type
       setTutors(data || []);
     } catch (error) {
       console.error('Error fetching tutors:', error);
