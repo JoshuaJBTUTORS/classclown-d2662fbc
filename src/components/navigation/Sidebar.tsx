@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Calendar,
@@ -14,6 +13,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import TransparentLogo from '@/components/ui/TransparentLogo';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -102,20 +102,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     <div className="flex flex-col h-full bg-white border-r w-64">
       <div className="flex items-center justify-between p-5 border-b border-gray-100">
         <div className="flex items-center justify-center w-full">
-          <img 
-            src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
-            alt="Class Clown Logo" 
-            className="h-20 w-auto"
-          />
+          <TransparentLogo className="h-20 w-auto" />
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <Avatar className="w-8 h-8 border-2 border-[#e94b7f]/20">
+            <Avatar className="w-8 h-8 border-2 border-primary/20">
               {profile?.avatar_url ? (
                 <AvatarImage src={profile.avatar_url} alt={profile.first_name} />
               ) : (
-                <AvatarFallback className="bg-[#e94b7f]/10 text-foreground">{profile?.first_name?.substring(0, 2) || '?'}</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-foreground">{profile?.first_name?.substring(0, 2) || '?'}</AvatarFallback>
               )}
             </Avatar>
           </DropdownMenuTrigger>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Bell, ChevronDown, LogOut, Search, Menu, Settings, User, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import TransparentLogo from '@/components/ui/TransparentLogo';
 
 interface NavbarProps {
   toggleSidebar: () => void;
@@ -67,11 +67,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
           <span className="sr-only">Toggle sidebar</span>
         </Button>
         <div className="flex items-center gap-2 md:hidden">
-          <img 
-            src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
-            alt="Class Clown Logo" 
-            className="h-16 w-auto"
-          />
+          <TransparentLogo className="h-16 w-auto" />
         </div>
         <div className="ml-auto flex items-center gap-4">
           <form className="hidden md:flex relative">

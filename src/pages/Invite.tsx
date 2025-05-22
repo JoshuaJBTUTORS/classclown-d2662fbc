@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -6,6 +5,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import TransparentLogo from '@/components/ui/TransparentLogo';
 
 import {
   Card,
@@ -182,11 +182,7 @@ const Invite = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <img 
-                src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
-                alt="Class Clown Logo" 
-                className="h-24 w-auto"
-              />
+              <TransparentLogo className="h-24 w-auto" />
             </div>
             <CardTitle className="text-red-500">Invalid Invitation</CardTitle>
             <CardDescription>{error}</CardDescription>
@@ -204,11 +200,7 @@ const Invite = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
-              alt="Class Clown Logo" 
-              className="h-24 w-auto"
-            />
+            <TransparentLogo className="h-24 w-auto" />
           </div>
           <CardTitle>Complete Your Registration</CardTitle>
           <CardDescription>
