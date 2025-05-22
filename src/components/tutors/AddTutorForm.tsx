@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,6 +35,14 @@ interface AddTutorFormProps {
   onSuccess?: () => void;
 }
 
+// Define the AvailabilitySlot type to match what's expected
+interface AvailabilitySlot {
+  id: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
@@ -42,6 +51,12 @@ const formSchema = z.object({
   specialities: z.string().optional(),
   bio: z.string().optional(),
   sendInvite: z.boolean().default(false),
+  availability: z.array(z.object({
+    id: z.string(),
+    day: z.string(),
+    startTime: z.string(),
+    endTime: z.string()
+  })).default([])
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -49,6 +64,9 @@ type FormData = z.infer<typeof formSchema>;
 const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const { organization } = useOrganization();
+
+  // Create properly typed empty availability array
+  const emptyAvailabilityArray: AvailabilitySlot[] = [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -60,6 +78,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       specialities: "",
       bio: "",
       sendInvite: false,
+      availability: emptyAvailabilityArray
     },
   });
 
@@ -136,7 +155,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add New Tutor</DialogTitle>
+          <DialogTitle className="text-2xl font-playfair">Add New Tutor</DialogTitle>
           <DialogDescription>
             Enter the tutor's details below to add them to the system.
           </DialogDescription>

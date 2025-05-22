@@ -100,56 +100,74 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 border-r w-60">
-      <div className="flex items-center justify-between p-4 border-b">
+    <div className="flex flex-col h-full bg-sidebar border-r w-64">
+      <div className="flex items-center justify-between p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
-          <Home className="w-6 h-6" />
-          <span className="font-bold">JB Tutors</span>
+          <div className="bg-primary h-8 w-8 rounded-md flex items-center justify-center">
+            <Home className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <span className="font-playfair text-lg font-semibold text-primary">Class Clown</span>
+            <p className="text-xs text-muted-foreground">Built by JB Tutors</p>
+          </div>
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <Avatar className="w-8 h-8">
+            <Avatar className="w-8 h-8 border-2 border-primary/20">
               {profile?.avatar_url ? (
                 <AvatarImage src={profile.avatar_url} alt={profile.first_name} />
               ) : (
-                <AvatarFallback>{profile?.first_name?.substring(0, 2) || '?'}</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary">{profile?.first_name?.substring(0, 2) || '?'}</AvatarFallback>
               )}
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{profile?.first_name} {profile?.last_name}</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-playfair">{profile?.first_name} {profile?.last_name}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/organization/settings')}>
+            <DropdownMenuItem onClick={() => navigate('/organization/settings')} className="cursor-pointer">
+              <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => signOut()}>
+            <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
               Logout
-              <LogOut className="ml-auto h-4 w-4" />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <ul className="space-y-1">
           {filteredNavItems.map((item) => (
             <li key={item.name}>
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center p-2 rounded-md hover:bg-gray-100 ${
-                    isActive ? 'bg-gray-100 font-medium' : ''
+                  `flex items-center p-3 rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                    isActive ? 'bg-primary/10 text-primary font-medium' : 'text-sidebar-foreground'
                   }`
                 }
               >
-                <item.icon className="w-4 h-4 mr-2" />
-                {item.name}
+                <item.icon className="w-5 h-5 mr-3" />
+                <span className="font-medium">{item.name}</span>
               </NavLink>
             </li>
           ))}
         </ul>
       </nav>
+
+      <div className="p-4 border-t border-sidebar-border">
+        <div className="bg-accent/50 rounded-lg p-4">
+          <h4 className="font-playfair font-medium mb-1">Need help?</h4>
+          <p className="text-xs text-muted-foreground mb-3">Contact our support team for assistance.</p>
+          <button 
+            className="w-full bg-primary text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Contact Support
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

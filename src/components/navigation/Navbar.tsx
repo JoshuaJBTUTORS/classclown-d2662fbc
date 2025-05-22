@@ -54,7 +54,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
       case 'admin': return 'secondary';
       case 'tutor': return 'outline';
       case 'student': return 'destructive';
-      case 'parent': return 'blue';
+      case 'parent': return 'outline';
       default: return 'outline';
     }
   };
@@ -67,31 +67,30 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
           <span className="sr-only">Toggle sidebar</span>
         </Button>
         <div className="flex items-center gap-2 md:hidden">
-          <img
-            src="/classclown-logo.svg"
-            alt="ClassClown Logo"
-            className="h-8 w-8"
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/32?text=CC' }}
-          />
-          <span className="font-bold text-lg text-primary">ClassClown</span>
+          <div className="bg-primary h-8 w-8 rounded-md flex items-center justify-center">
+            <span className="text-white font-bold">CC</span>
+          </div>
+          <div>
+            <span className="font-playfair text-lg font-semibold text-primary">Class Clown</span>
+          </div>
         </div>
         <div className="ml-auto flex items-center gap-4">
           <form className="hidden md:flex relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search..."
-              className="w-[200px] lg:w-[300px] pl-8"
+              className="w-[200px] lg:w-[300px] pl-8 rounded-full border-gray-200 focus-visible:ring-primary"
             />
           </form>
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon" className="relative rounded-full text-muted-foreground">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
           </Button>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
+                <Button variant="ghost" className="flex items-center gap-2 rounded-full px-2 py-1.5">
                   <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
                     {getUserInitials()}
                   </div>
@@ -108,33 +107,33 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
                       )}
                     </div>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel className="font-playfair">My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
                   <HelpCircle className="h-4 w-4 mr-2" />
                   Help
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="rounded-full">
               <a href="/auth">Login</a>
             </Button>
           )}
