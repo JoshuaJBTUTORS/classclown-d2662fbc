@@ -20,6 +20,17 @@ const CalendarPage = () => {
       <div className="flex flex-col flex-1">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
+          {/* Custom CSS for recurring events */}
+          <style jsx>{`
+            :global(.recurring-event) {
+              border-left: 3px solid #9333ea !important;
+            }
+            :global(.recurring-instance) {
+              border-left: 3px dashed #9333ea !important;
+              opacity: 0.85;
+            }
+          `}</style>
+          
           <CalendarHeader />
           <CalendarDisplay isLoading={isLoading} events={events} />
         </main>
