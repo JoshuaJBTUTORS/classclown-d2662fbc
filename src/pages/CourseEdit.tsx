@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
@@ -45,18 +45,22 @@ const CourseEdit: React.FC = () => {
   } = useQuery({
     queryKey: ['course', courseId],
     queryFn: () => learningHubService.getCourseById(courseId!),
-    onSuccess: (data) => {
-      setCourseData({
-        title: data.title,
-        description: data.description || '',
-        subject: data.subject || '',
-        difficulty_level: data.difficulty_level || '',
-        cover_image_url: data.cover_image_url || '',
-        status: data.status
-      });
-    },
     enabled: !!courseId,
   });
+
+  // Effect to set the form data when course data loads
+  useEffect(() => {
+    if (course) {
+      setCourseData({
+        title: course.title,
+        description: course.description || '',
+        subject: course.subject || '',
+        difficulty_level: course.difficulty_level || '',
+        cover_image_url: course.cover_image_url || '',
+        status: course.status
+      });
+    }
+  }, [course]);
 
   // Update course mutation
   const updateCourseMutation = useMutation({

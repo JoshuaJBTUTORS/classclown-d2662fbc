@@ -10,15 +10,20 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ContentViewerProps {
   lesson: CourseLesson;
+  isLoading?: boolean; // Add isLoading as an optional prop
 }
 
-const ContentViewer: React.FC<ContentViewerProps> = ({ lesson }) => {
+const ContentViewer: React.FC<ContentViewerProps> = ({ lesson, isLoading = false }) => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // This renders the appropriate content based on content_type
   const renderContent = () => {
+    if (isLoading) {
+      return <div className="p-8 text-center">Loading content...</div>;
+    }
+    
     switch (lesson.content_type) {
       case 'video':
         return <VideoEmbed src={lesson.content_url || ''} title={lesson.title} />;
