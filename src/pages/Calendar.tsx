@@ -4,7 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { EventClickArg, DateSelectArg } from '@fullcalendar/core';
+import { EventClickArg, DateSelectArg, DatesSetArg } from '@fullcalendar/core';
 import { FullCalendarComponent } from '@fullcalendar/react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -67,6 +67,10 @@ const CalendarPage = () => {
   const [filteredParentId, setFilteredParentId] = useState<string | null>(null);
   const [parentsList, setParentsList] = useState<{id: string, name: string}[]>([]);
   const [showRecurringLessons, setShowRecurringLessons] = useState(true);
+  const [visibleDateRange, setVisibleDateRange] = useState<{start: Date, end: Date}>({
+    start: new Date(),
+    end: new Date()
+  });
   const { user } = useAuth();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
 
@@ -111,14 +115,16 @@ const CalendarPage = () => {
   }, []);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
-    console.log("Calendar - fetchLessons called with:", { start, end });
+    console.log("Calendar - fetchLessons called with:", { 
+      start: format(start, "yyyy-MM-dd"),
+      end: format(end, "yyyy-MM-dd")
+    });
+    
     setIsLoading(true);
     try {
       const startDate = format(start, "yyyy-MM-dd");
       const endDate = format(end, "yyyy-MM-dd");
       
-      console.log("Calendar - Fetching lessons from", startDate, "to", endDate);
-
       // Main query for scheduled lessons
       const { data, error } = await supabase
         .from('lessons')
@@ -134,7 +140,7 @@ const CalendarPage = () => {
 
       if (error) throw error;
       
-      console.log("Calendar - Fetched lessons:", data.length);
+      console.log("Calendar - Fetched lessons:", data?.length);
 
       // Also fetch recurring lessons that might extend beyond the current view
       const { data: recurringData, error: recurringError } = await supabase
@@ -340,6 +346,29 @@ const CalendarPage = () => {
     setSelectedLessonId(clickInfo.event.id);
     setIsLessonDetailsOpen(true);
   };
+  
+  const handleDatesSet = (info: DatesSetArg) => {
+    const newVisibleRange = {
+      start: info.start,
+      end: info.end
+    };
+    
+    console.log("Calendar - DatesSet event triggered:", {
+      view: info.view.type,
+      start: format(info.start, "yyyy-MM-dd"),
+      end: format(info.end, "yyyy-MM-dd"),
+      currentDate: format(info.view.currentStart, "yyyy-MM-dd")
+    });
+    
+    // Update current date from the calendar's view
+    setCurrentDate(info.view.currentStart);
+    
+    // Update visible date range
+    setVisibleDateRange(newVisibleRange);
+    
+    // Fetch lessons for the new date range
+    fetchLessons(info.start, info.end);
+  };
 
   // Get a formatted display for the current date based on the view
   const getDateDisplay = () => {
@@ -357,61 +386,30 @@ const CalendarPage = () => {
 
   // Navigate backward (previous day, week, or month)
   const handleNavigatePrevious = () => {
-    setCurrentDate(prevDate => {
-      let newDate;
-      if (calendarView === 'dayGridMonth') {
-        newDate = subMonths(prevDate, 1);
-      } else if (calendarView === 'timeGridWeek') {
-        newDate = subWeeks(prevDate, 1);
-      } else {
-        newDate = subDays(prevDate, 1);
+    if (calendarRef.current) {
+      try {
+        const apiInstance = calendarRef.current.getApi();
+        apiInstance.prev();
+      } catch (error) {
+        console.error("Error navigating backward:", error);
       }
-      
-      // Use the FullCalendar API to navigate
-      if (calendarRef.current) {
-        try {
-          const apiInstance = calendarRef.current.getApi();
-          apiInstance.prev();
-        } catch (error) {
-          console.error("Error navigating backward:", error);
-        }
-      }
-      
-      return newDate;
-    });
+    }
   };
 
   // Navigate forward (next day, week, or month)
   const handleNavigateNext = () => {
-    setCurrentDate(prevDate => {
-      let newDate;
-      if (calendarView === 'dayGridMonth') {
-        newDate = addMonths(prevDate, 1);
-      } else if (calendarView === 'timeGridWeek') {
-        newDate = addWeeks(prevDate, 1);
-      } else {
-        newDate = addDays(prevDate, 1);
+    if (calendarRef.current) {
+      try {
+        const apiInstance = calendarRef.current.getApi();
+        apiInstance.next();
+      } catch (error) {
+        console.error("Error navigating forward:", error);
       }
-      
-      // Use the FullCalendar API to navigate
-      if (calendarRef.current) {
-        try {
-          const apiInstance = calendarRef.current.getApi();
-          apiInstance.next();
-        } catch (error) {
-          console.error("Error navigating forward:", error);
-        }
-      }
-      
-      return newDate;
-    });
+    }
   };
 
   // Navigate to today
   const handleNavigateToToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    
     if (calendarRef.current) {
       try {
         const apiInstance = calendarRef.current.getApi();
@@ -449,17 +447,22 @@ const CalendarPage = () => {
         const apiInstance = calendarRef.current.getApi();
         console.log("Calendar - Refreshing events via calendar API");
         apiInstance.refetchEvents();
+        
+        // Get the visible range directly from the calendar
+        const view = apiInstance.view;
+        const visibleStart = view.activeStart;
+        const visibleEnd = view.activeEnd;
+        
+        // Fetch lessons for the current visible range
+        fetchLessons(visibleStart, visibleEnd);
       } catch (error) {
         console.error("Calendar - Error using calendar API:", error);
+        
+        // Fallback to the current visible range
+        fetchLessons(visibleDateRange.start, visibleDateRange.end);
       }
     }
-    
-    // Also fetch new data as a backup
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
-    console.log("Calendar - Backup fetch of lessons");
-    fetchLessons(start, end);
-  }, [fetchLessons, currentDate]);
+  }, [fetchLessons, visibleDateRange]);
 
   const handleAddLessonSuccess = () => {
     console.log("Calendar - Lesson added successfully");
@@ -573,63 +576,6 @@ const CalendarPage = () => {
     setFilteredParentId(null);
     forceCalendarRefresh();
   };
-
-  // Update the calendar when currentDate changes
-  useEffect(() => {
-    if (calendarRef.current) {
-      try {
-        const apiInstance = calendarRef.current.getApi();
-        console.log("Calendar - Navigating to date:", currentDate);
-        apiInstance.gotoDate(currentDate);
-      } catch (error) {
-        console.error("Calendar - Error navigating to date:", error);
-      }
-    }
-  }, [currentDate]);
-
-  // Handle events when the calendar view changes programmatically
-  useEffect(() => {
-    if (calendarRef.current) {
-      const apiInstance = calendarRef.current.getApi();
-      
-      const handleDatesSet = (arg: any) => {
-        // Update currentDate state to match the calendar's current date
-        setCurrentDate(arg.view.currentStart);
-      };
-      
-      // Add event listener
-      apiInstance.on('datesSet', handleDatesSet);
-      
-      // Cleanup
-      return () => {
-        apiInstance.off('datesSet', handleDatesSet);
-      };
-    }
-  }, [calendarRef.current]);
-
-  // Fetch lessons based on the current view and date
-  useEffect(() => {
-    // Calculate the appropriate date range based on the current view
-    let start: Date, end: Date;
-    
-    if (calendarView === 'dayGridMonth') {
-      start = startOfMonth(currentDate);
-      end = endOfMonth(currentDate);
-    } else if (calendarView === 'timeGridWeek') {
-      // For week view, get the start and end of the current week with a buffer
-      start = startOfWeek(currentDate);
-      start = subDays(start, 7); // Add a week buffer before
-      end = endOfWeek(currentDate);
-      end = addDays(end, 7); // Add a week buffer after
-    } else {
-      // For day view or any other view
-      start = subDays(currentDate, 1); // One day before
-      end = addDays(currentDate, 1); // One day after
-    }
-
-    console.log("Calendar - Initial fetchLessons called from useEffect", { start, end, view: calendarView });
-    fetchLessons(start, end);
-  }, [fetchLessons, currentDate, calendarView, filteredStudentId, filteredParentId, showRecurringLessons]);
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
@@ -781,6 +727,7 @@ const CalendarPage = () => {
                     weekends={true}
                     select={handleDateSelect}
                     eventClick={handleEventClick}
+                    datesSet={handleDatesSet}
                     height="100%"
                     allDaySlot={false}
                     slotDuration="00:30:00"

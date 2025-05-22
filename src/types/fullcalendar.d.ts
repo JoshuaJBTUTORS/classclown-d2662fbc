@@ -32,6 +32,7 @@ declare module '@fullcalendar/react' {
     weekends?: boolean;
     select?: (info: any) => void;
     eventClick?: (info: any) => void;
+    datesSet?: (info: any) => void;
     height?: string | number;
     allDaySlot?: boolean;
     slotDuration?: string;
@@ -92,5 +93,20 @@ declare module '@fullcalendar/core' {
     el: HTMLElement;
     jsEvent: MouseEvent;
     view: any;
+  }
+  
+  export interface DatesSetArg {
+    start: Date;
+    end: Date;
+    startStr: string;
+    endStr: string;
+    view: {
+      type: string;
+      title: string;
+      activeStart: Date;
+      activeEnd: Date;
+      currentStart: Date;
+      currentEnd: Date;
+    };
   }
 }
