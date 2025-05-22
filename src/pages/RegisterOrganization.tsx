@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -6,7 +7,6 @@ import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import TransparentLogo from '@/components/ui/TransparentLogo';
 
 import {
   Form,
@@ -154,7 +154,11 @@ const RegisterOrganization = () => {
       <Card className="w-full max-w-2xl shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <TransparentLogo className="h-16 w-auto" />
+            <img 
+              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              alt="Class Clown Logo" 
+              className="h-16 w-auto"
+            />
           </div>
           <CardTitle className="text-2xl font-bold">Register Your Organization</CardTitle>
           <CardDescription>

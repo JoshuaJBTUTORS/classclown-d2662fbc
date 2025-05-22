@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +18,6 @@ import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import TransparentLogo from '@/components/ui/TransparentLogo';
 
 interface FormInputs {
   email: string;
@@ -89,7 +89,11 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <TransparentLogo className="h-24 w-auto" />
+            <img 
+              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              alt="Class Clown Logo" 
+              className="h-24 w-auto"
+            />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Tutor Management Platform</CardTitle>
           <CardDescription className="text-center">
