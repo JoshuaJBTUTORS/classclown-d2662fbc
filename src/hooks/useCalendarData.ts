@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, format, parseISO, startOfDay, isWithinInterval } from 'date-fns';
-import { TimeOffRequest } from '@/types/availability';
+import { TimeOffRequest, TimeOffStatus } from '@/types/availability';
 
 export const useCalendarData = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -30,7 +29,13 @@ export const useCalendarData = () => {
         
         if (timeOffError) throw timeOffError;
         
-        setTimeOffPeriods(timeOffData || []);
+        // Use type assertion to ensure the data is properly typed
+        const typedTimeOffData = (timeOffData || []).map((item: any) => ({
+          ...item,
+          status: item.status as TimeOffStatus
+        })) as TimeOffRequest[];
+        
+        setTimeOffPeriods(typedTimeOffData);
         
         // Process regular lessons
         const calendarEvents = (lessonsData || []).map(lesson => ({
@@ -48,7 +53,7 @@ export const useCalendarData = () => {
         }));
 
         // Process time-off periods for calendar display
-        const timeOffEvents = (timeOffData || []).map((timeOff: TimeOffRequest) => ({
+        const timeOffEvents = typedTimeOffData.map((timeOff: TimeOffRequest) => ({
           id: `timeoff-${timeOff.id}`,
           title: `Time Off: ${timeOff.reason || 'No reason provided'}`,
           start: timeOff.start_date,
@@ -67,7 +72,7 @@ export const useCalendarData = () => {
         const recurringEvents = [];
         for (const lesson of lessonsData || []) {
           if (lesson.is_recurring && lesson.recurrence_interval) {
-            const lessonRecurringEvents = generateRecurringEvents(lesson, timeOffData || []);
+            const lessonRecurringEvents = generateRecurringEvents(lesson, typedTimeOffData);
             recurringEvents.push(...lessonRecurringEvents);
           }
         }
@@ -97,7 +102,7 @@ export const useCalendarData = () => {
   };
 
   // Function to generate recurring events
-  const generateRecurringEvents = (lesson, timeOffPeriods) => {
+  const generateRecurringEvents = (lesson: any, timeOffPeriods: TimeOffRequest[]) => {
     const events = [];
     const startDate = parseISO(lesson.start_time);
     const endDate = parseISO(lesson.end_time);
