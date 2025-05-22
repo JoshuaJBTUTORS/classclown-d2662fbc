@@ -1,267 +1,292 @@
 
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { DayOfWeek, TutorAvailability } from '@/types/availability';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { X, Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { useOrganization } from '@/contexts/OrganizationContext';
+import { Plus, Trash2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { TutorAvailability, DayOfWeek, weekDays, displayWeekDays } from '@/types/availability';
+import { Tutor } from '@/types/tutor';
 
 interface AvailabilityManagerProps {
-  tutorId: string;
-  isDisabled?: boolean;
+  tutor: Tutor;
+  isEditable?: boolean;
 }
 
-const dayOptions: { label: string; value: DayOfWeek }[] = [
-  { label: 'Monday', value: 'monday' },
-  { label: 'Tuesday', value: 'tuesday' },
-  { label: 'Wednesday', value: 'wednesday' },
-  { label: 'Thursday', value: 'thursday' },
-  { label: 'Friday', value: 'friday' },
-  { label: 'Saturday', value: 'saturday' },
-  { label: 'Sunday', value: 'sunday' },
-];
+interface TimeSlot {
+  day: DayOfWeek;
+  startTime: string;
+  endTime: string;
+  id?: string;
+}
 
-// Use forwardRef to expose functions to parent components
-const AvailabilityManager = forwardRef<
-  { saveAvailabilities: () => Promise<boolean> },
-  AvailabilityManagerProps
->(({ tutorId, isDisabled = false }, ref) => {
-  const [availabilities, setAvailabilities] = useState<TutorAvailability[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { organization } = useOrganization();
-  
+const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ tutor, isEditable = true }) => {
+  const [availabilities, setAvailabilities] = useState<TimeSlot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
-    if (tutorId) {
-      fetchAvailability();
-    } else {
-      // For new tutors, start with an empty slot
-      setAvailabilities([
-        {
-          id: 'new-' + Date.now(),
-          tutor_id: '',
-          day_of_week: 'monday',
-          start_time: '09:00',
-          end_time: '17:00',
-        } as TutorAvailability
-      ]);
-    }
-  }, [tutorId]);
-
-  // Expose the saveAvailabilities function to parent components
-  useImperativeHandle(ref, () => ({
-    saveAvailabilities
-  }));
+    fetchAvailability();
+  }, [tutor.id]);
 
   const fetchAvailability = async () => {
-    setLoading(true);
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('tutor_availability')
         .select('*')
-        .eq('tutor_id', tutorId);
+        .eq('tutor_id', tutor.id);
 
       if (error) throw error;
 
-      const typedData = data as TutorAvailability[];
-      setAvailabilities(typedData.length > 0 ? typedData : [
-        {
-          id: 'new-' + Date.now(),
-          tutor_id: tutorId,
-          day_of_week: 'monday' as DayOfWeek,
-          start_time: '09:00',
-          end_time: '17:00',
-        }
-      ]);
+      const formattedData = data.map((item: TutorAvailability) => ({
+        day: item.day_of_week,
+        startTime: item.start_time.substring(0, 5), // Format time as HH:MM
+        endTime: item.end_time.substring(0, 5), // Format time as HH:MM
+        id: item.id
+      }));
+
+      setAvailabilities(formattedData);
     } catch (error: any) {
       console.error('Error fetching tutor availability:', error);
-      toast.error('Failed to load availability');
+      toast.error('Failed to load availability data');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const addAvailability = () => {
+  const addTimeSlot = () => {
     setAvailabilities([
       ...availabilities,
-      {
-        id: 'new-' + Date.now(),
-        tutor_id: tutorId,
-        day_of_week: 'monday' as DayOfWeek,
-        start_time: '09:00',
-        end_time: '17:00',
-      }
+      { day: 'monday', startTime: '09:00', endTime: '17:00' }
     ]);
   };
 
-  const removeAvailability = (index: number) => {
-    if (availabilities.length === 1) {
-      toast.error('Tutor must have at least one availability slot');
-      return;
+  const removeTimeSlot = (index: number) => {
+    const updatedSlots = [...availabilities];
+    const removedSlot = updatedSlots.splice(index, 1)[0];
+
+    // If this slot has an ID, delete it from the database
+    if (removedSlot.id) {
+      deleteTimeSlot(removedSlot.id);
     }
-    
-    const newAvailabilities = [...availabilities];
-    newAvailabilities.splice(index, 1);
-    setAvailabilities(newAvailabilities);
+
+    setAvailabilities(updatedSlots);
   };
 
-  const updateAvailability = (index: number, field: keyof TutorAvailability, value: any) => {
-    const newAvailabilities = [...availabilities];
-    newAvailabilities[index] = {
-      ...newAvailabilities[index],
-      [field]: value
-    };
-    setAvailabilities(newAvailabilities);
+  const deleteTimeSlot = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('tutor_availability')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error deleting time slot:', error);
+      toast.error('Failed to delete time slot');
+    }
   };
 
-  const validateAvailabilities = () => {
-    for (const avail of availabilities) {
-      if (!avail.day_of_week || !avail.start_time || !avail.end_time) {
-        return false;
-      }
-      
-      // Check if end time is after start time
-      if (avail.start_time >= avail.end_time) {
-        return false;
-      }
-    }
-    return true;
+  const handleDayChange = (value: DayOfWeek, index: number) => {
+    const updatedSlots = [...availabilities];
+    updatedSlots[index].day = value;
+    setAvailabilities(updatedSlots);
   };
 
-  const saveAvailabilities = async () => {
-    if (!validateAvailabilities()) {
-      toast.error('Please check all availability slots. End time must be after start time.');
-      return false;
-    }
+  const handleTimeChange = (field: 'startTime' | 'endTime', value: string, index: number) => {
+    const updatedSlots = [...availabilities];
+    updatedSlots[index][field] = value;
+    setAvailabilities(updatedSlots);
+  };
+
+  const saveAvailability = async () => {
+    if (!isEditable) return;
 
     try {
-      // Process each availability
-      for (const avail of availabilities) {
-        const isNew = avail.id.startsWith('new-');
-        
-        if (isNew) {
-          // Insert new availability
-          const { error } = await supabase
-            .from('tutor_availability')
-            .insert({
-              tutor_id: tutorId,
-              day_of_week: avail.day_of_week,
-              start_time: avail.start_time,
-              end_time: avail.end_time,
-              organization_id: organization?.id
-            });
-          
-          if (error) throw error;
-        } else {
-          // Update existing availability
-          const { error } = await supabase
-            .from('tutor_availability')
-            .update({
-              day_of_week: avail.day_of_week,
-              start_time: avail.start_time,
-              end_time: avail.end_time,
-              organization_id: organization?.id
-            })
-            .eq('id', avail.id);
-          
-          if (error) throw error;
+      setIsSaving(true);
+
+      // Validate time slots
+      for (const slot of availabilities) {
+        if (slot.startTime >= slot.endTime) {
+          toast.error('End time must be after start time');
+          return;
         }
       }
+
+      // Process existing slots with IDs
+      const existingSlots = availabilities.filter(slot => slot.id);
       
-      toast.success('Availability updated successfully');
-      return true;
+      // Process new slots without IDs
+      const newSlots = availabilities.filter(slot => !slot.id);
+
+      // Update existing slots
+      for (const slot of existingSlots) {
+        const { error } = await supabase
+          .from('tutor_availability')
+          .update({
+            day_of_week: slot.day,
+            start_time: slot.startTime,
+            end_time: slot.endTime,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', slot.id);
+
+        if (error) throw error;
+      }
+
+      // Add new slots
+      if (newSlots.length > 0) {
+        const { error } = await supabase
+          .from('tutor_availability')
+          .insert(
+            newSlots.map(slot => ({
+              tutor_id: tutor.id,
+              day_of_week: slot.day,
+              start_time: slot.startTime,
+              end_time: slot.endTime,
+              organization_id: tutor.organization_id
+            }))
+          );
+
+        if (error) throw error;
+      }
+
+      toast.success('Availability saved successfully');
+      fetchAvailability(); // Refresh data
     } catch (error: any) {
       console.error('Error saving availability:', error);
       toast.error('Failed to save availability');
-      return false;
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium">Weekly Availability</h3>
-        <p className="text-sm text-muted-foreground">Set the tutor's regular weekly schedule.</p>
-      </div>
+    <Card className="border-border/40 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-xl">Weekly Availability</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center p-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <>
+            {availabilities.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <p>No availability set up yet.</p>
+                {isEditable && (
+                  <Button 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={addTimeSlot}
+                  >
+                    Add Time Slot
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {availabilities.map((slot, index) => (
+                  <div key={index} className="flex flex-wrap items-center gap-3 pb-4">
+                    <div className="w-full md:w-auto">
+                      <Select
+                        value={slot.day}
+                        onValueChange={(value) => handleDayChange(value as DayOfWeek, index)}
+                        disabled={!isEditable}
+                      >
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Select day" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {weekDays.map((day) => (
+                            <SelectItem key={day} value={day}>
+                              {displayWeekDays[day]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground mb-1">Start</span>
+                        <input
+                          type="time"
+                          value={slot.startTime}
+                          onChange={(e) => handleTimeChange('startTime', e.target.value, index)}
+                          className="px-3 py-1 rounded-md border border-input bg-background"
+                          disabled={!isEditable}
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground mb-1">End</span>
+                        <input
+                          type="time"
+                          value={slot.endTime}
+                          onChange={(e) => handleTimeChange('endTime', e.target.value, index)}
+                          className="px-3 py-1 rounded-md border border-input bg-background"
+                          disabled={!isEditable}
+                        />
+                      </div>
+                    </div>
 
-      {availabilities.map((avail, index) => (
-        <div key={avail.id} className="grid grid-cols-12 gap-2 items-center border p-3 rounded-md">
-          <div className="col-span-4">
-            <Label htmlFor={`day-${index}`}>Day</Label>
-            <Select
-              disabled={isDisabled}
-              value={avail.day_of_week}
-              onValueChange={(value) => updateAvailability(index, 'day_of_week', value as DayOfWeek)}
-            >
-              <SelectTrigger id={`day-${index}`}>
-                <SelectValue placeholder="Select day" />
-              </SelectTrigger>
-              <SelectContent>
-                {dayOptions.map(day => (
-                  <SelectItem key={day.value} value={day.value}>
-                    {day.label}
-                  </SelectItem>
+                    {isEditable && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeTimeSlot(index)}
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 ml-auto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    
+                    {index < availabilities.length - 1 && (
+                      <Separator className="w-full mt-2" />
+                    )}
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="col-span-3">
-            <Label htmlFor={`start-${index}`}>Start Time</Label>
-            <Input
-              disabled={isDisabled}
-              id={`start-${index}`}
-              type="time"
-              value={avail.start_time}
-              onChange={(e) => updateAvailability(index, 'start_time', e.target.value)}
-            />
-          </div>
-          
-          <div className="col-span-3">
-            <Label htmlFor={`end-${index}`}>End Time</Label>
-            <Input
-              disabled={isDisabled}
-              id={`end-${index}`}
-              type="time"
-              value={avail.end_time}
-              onChange={(e) => updateAvailability(index, 'end_time', e.target.value)}
-            />
-          </div>
-          
-          <div className="col-span-2 flex justify-center items-end pt-3">
-            <Button
-              disabled={isDisabled || availabilities.length === 1}
-              variant="ghost"
-              size="icon"
-              onClick={() => removeAvailability(index)}
-              className="h-9 w-9"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      ))}
 
-      <div className="flex justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addAvailability}
-          disabled={isDisabled}
-          className="flex items-center gap-1"
-        >
-          <Plus className="h-4 w-4" />
-          Add Time Slot
-        </Button>
-      </div>
-    </div>
+                {isEditable && (
+                  <div className="flex justify-between pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={addTimeSlot}
+                      className="flex items-center gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Time Slot
+                    </Button>
+                    
+                    <Button
+                      onClick={saveAvailability}
+                      disabled={isSaving}
+                      className="ml-auto"
+                      size="sm"
+                    >
+                      {isSaving ? 'Saving...' : 'Save Availability'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
-});
-
-AvailabilityManager.displayName = 'AvailabilityManager';
+};
 
 export default AvailabilityManager;

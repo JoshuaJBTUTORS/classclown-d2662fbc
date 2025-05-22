@@ -1,22 +1,12 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
-import { Tutor } from '@/types/tutor';
-
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -24,211 +14,145 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AvailabilityManager from './AvailabilityManager';
-import TimeOffRequestForm from './TimeOffRequestForm';
-import TimeOffRequestsList from './TimeOffRequestsList';
+import { supabase } from '@/integrations/supabase/client';
+import { Tutor } from '@/types/tutor';
+import TutorAvailabilityTab from './TutorAvailabilityTab';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (tutor: Tutor) => void;
+  onUpdate: (updatedTutor: Tutor) => void;
 }
 
-// Update the schema to use string instead of enum for status
 const formSchema = z.object({
-  first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
-  last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  title: z.string().optional(),
+  email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   bio: z.string().optional(),
-  specialities: z.array(z.string()).optional(),
-  status: z.string(), // Changed from enum to string to match our updated Tutor type
+  education: z.string().optional(),
+  specialities: z.string().optional(),
+  status: z.string(),
 });
 
-type FormData = z.infer<typeof formSchema>;
-
-const specialitiesList = [
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "English Literature",
-  "History",
-  "Geography",
-  "Computer Science",
-  "Foreign Languages",
-  "Music",
-  "Art",
-  "Physical Education",
-  "Economics",
-  "Business Studies",
-  "Psychology",
-  "Sociology",
-  "Philosophy",
-  "Religious Studies",
-  "Drama",
-  "Media Studies",
-];
-
-const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
-  const [loading, setLoading] = useState(false);
-  const [selectedSpecialities, setSelectedSpecialities] = useState<string[]>([]);
-  const [specialitiesOpen, setSpecialitiesOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('details');
-  const availabilityManagerRef = useRef<{ saveAvailabilities: () => Promise<boolean> } | null>(null);
-
-  const form = useForm<FormData>({
+const EditTutorForm: React.FC<EditTutorFormProps> = ({ 
+  tutor, 
+  isOpen, 
+  onClose,
+  onUpdate
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      bio: "",
-      specialities: [],
-      status: 'active',
+      first_name: tutor?.first_name || '',
+      last_name: tutor?.last_name || '',
+      title: tutor?.title || '',
+      email: tutor?.email || '',
+      phone: tutor?.phone || '',
+      bio: tutor?.bio || '',
+      education: tutor?.education || '',
+      specialities: tutor?.specialities ? tutor.specialities.join(', ') : '',
+      status: tutor?.status || 'active',
     },
   });
 
-  // Set form values when tutor changes
-  useEffect(() => {
-    if (tutor) {
-      form.reset({
-        first_name: tutor.first_name,
-        last_name: tutor.last_name,
-        email: tutor.email,
-        phone: tutor.phone || "",
-        bio: tutor.bio || "",
-        specialities: tutor.specialities || [],
-        status: tutor.status,
-      });
-      
-      setSelectedSpecialities(tutor.specialities || []);
-    }
-  }, [tutor, form]);
-
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!tutor) return;
     
-    setLoading(true);
     try {
+      setIsSubmitting(true);
+      
+      // Process specialities into an array
+      const specialitiesArray = values.specialities
+        ? values.specialities.split(',').map(item => item.trim()).filter(Boolean)
+        : [];
+      
+      const updatedTutor = {
+        ...tutor,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        title: values.title,
+        email: values.email,
+        phone: values.phone,
+        bio: values.bio,
+        education: values.education,
+        specialities: specialitiesArray,
+        status: values.status,
+      };
+      
       const { error } = await supabase
         .from('tutors')
         .update({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          phone: data.phone,
-          bio: data.bio,
-          specialities: data.specialities,
-          status: data.status,
-          updated_at: new Date().toISOString(),
-          organization_id: tutor.organization_id
+          first_name: values.first_name,
+          last_name: values.last_name,
+          title: values.title,
+          email: values.email,
+          phone: values.phone,
+          bio: values.bio,
+          education: values.education,
+          specialities: specialitiesArray,
+          status: values.status,
         })
         .eq('id', tutor.id);
-        
+      
       if (error) throw error;
       
-      // Save availability if on that tab
-      if (activeTab === 'availability' && availabilityManagerRef.current) {
-        const availabilitySaved = await availabilityManagerRef.current.saveAvailabilities();
-        if (!availabilitySaved) {
-          throw new Error("Failed to save tutor availability");
-        }
-      }
-      
-      // Update the tutor in the parent component
-      const updatedTutor: Tutor = {
-        ...tutor,
-        first_name: data.first_name,
-        last_name: data.last_name,
-        email: data.email,
-        phone: data.phone,
-        bio: data.bio,
-        specialities: data.specialities,
-        status: data.status,
-        organization_id: tutor.organization_id
-      };
-      
+      // Send the updated tutor back to the parent component
       onUpdate(updatedTutor);
       onClose();
-      toast.success("Tutor updated successfully");
     } catch (error: any) {
       console.error('Error updating tutor:', error);
-      toast.error(error.message || "Failed to update tutor");
+      toast.error('Failed to update tutor');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const toggleSpeciality = (speciality: string) => {
-    const isSelected = selectedSpecialities.includes(speciality);
-    
-    let updated: string[];
-    if (isSelected) {
-      updated = selectedSpecialities.filter(s => s !== speciality);
-    } else {
-      updated = [...selectedSpecialities, speciality];
-    }
-    
-    setSelectedSpecialities(updated);
-    form.setValue('specialities', updated);
-  };
-
-  const removeSpeciality = (speciality: string) => {
-    const updated = selectedSpecialities.filter(s => s !== speciality);
-    setSelectedSpecialities(updated);
-    form.setValue('specialities', updated);
-  };
-
-  const handleTimeOffSuccess = () => {
-    toast.success("Time off request submitted successfully");
-    setActiveTab('timeoff');
-  };
+  if (!tutor) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Tutor</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Edit {tutor.first_name} {tutor.last_name}'s Profile</DialogTitle>
         </DialogHeader>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="details">Details</TabsTrigger>
+        <Tabs defaultValue="details" className="mt-2">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Profile Details</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
-            <TabsTrigger value="timeoff">Time Off</TabsTrigger>
           </TabsList>
           
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <TabsContent value="details">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="details" className="pt-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Dr., Prof., Mr., Mrs." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <FormField
                     control={form.control}
                     name="first_name"
@@ -236,7 +160,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                       <FormItem>
                         <FormLabel>First Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="John" {...field} />
+                          <Input required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -250,7 +174,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                       <FormItem>
                         <FormLabel>Last Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Doe" {...field} />
+                          <Input required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -266,7 +190,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="john.doe@example.com" {...field} />
+                          <Input type="email" required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -278,9 +202,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input placeholder="(123) 456-7890" {...field} value={field.value || ''} />
+                          <Input type="tel" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -290,16 +214,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 
                 <FormField
                   control={form.control}
-                  name="bio"
+                  name="specialities"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bio</FormLabel>
+                      <FormLabel>Specialities</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Brief description of the tutor's background and experience..." 
-                          className="min-h-[100px]" 
+                        <Input 
+                          placeholder="e.g. Mathematics, Physics, Chemistry (comma-separated)" 
                           {...field} 
-                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -309,73 +231,34 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 
                 <FormField
                   control={form.control}
-                  name="specialities"
-                  render={() => (
+                  name="education"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Specialities</FormLabel>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {selectedSpecialities.map((speciality) => (
-                          <Badge 
-                            key={speciality} 
-                            variant="secondary"
-                            className="flex items-center gap-1"
-                          >
-                            {speciality}
-                            <Button 
-                              type="button" 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-4 w-4 p-0 hover:bg-transparent"
-                              onClick={() => removeSpeciality(speciality)}
-                            >
-                              <X className="h-3 w-3" />
-                              <span className="sr-only">Remove</span>
-                            </Button>
-                          </Badge>
-                        ))}
-                      </div>
-                      <Popover open={specialitiesOpen} onOpenChange={setSpecialitiesOpen}>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className="justify-between w-full"
-                            >
-                              {selectedSpecialities.length > 0
-                                ? `${selectedSpecialities.length} selected`
-                                : "Select specialities"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0">
-                          <Command>
-                            <CommandInput placeholder="Search specialities..." />
-                            <CommandEmpty>No specialities found.</CommandEmpty>
-                            <CommandGroup className="max-h-64 overflow-auto">
-                              {specialitiesList.map((speciality) => {
-                                const isSelected = selectedSpecialities.includes(speciality);
-                                return (
-                                  <CommandItem
-                                    key={speciality}
-                                    value={speciality}
-                                    onSelect={() => toggleSpeciality(speciality)}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        isSelected ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {speciality}
-                                  </CommandItem>
-                                );
-                              })}
-                            </CommandGroup>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                      <FormLabel>Education</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g. PhD in Mathematics, University of Cambridge" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Biography</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Enter tutor bio here..." 
+                          rows={4}
+                          {...field} 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -387,64 +270,43 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <select
+                          className="w-full rounded-md border border-input bg-background px-3 py-2"
+                          {...field}
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="pending">Pending</option>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </TabsContent>
-              
-              <TabsContent value="availability">
-                {tutor && (
-                  <AvailabilityManager 
-                    tutorId={tutor.id} 
-                    ref={(ref) => {
-                      availabilityManagerRef.current = ref;
-                    }}
-                  />
-                )}
-              </TabsContent>
-              
-              <TabsContent value="timeoff" className="space-y-8">
-                {tutor && (
-                  <>
-                    <TimeOffRequestForm 
-                      tutorId={tutor.id} 
-                      onSuccess={handleTimeOffSuccess}
-                    />
-                    
-                    <TimeOffRequestsList 
-                      tutorId={tutor.id} 
-                    />
-                  </>
-                )}
-              </TabsContent>
-              
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={loading}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Updating..." : "Update Tutor"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+          
+          <TabsContent value="availability" className="pt-4">
+            <TutorAvailabilityTab tutor={tutor} isEditable={true} />
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
