@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
+import React, { useState, useEffect } from 'react';
+import { FormLabel } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { TimeInput } from '@/components/ui/time-input';
@@ -31,10 +31,17 @@ const DAYS_OF_WEEK = [
 export const TutorAvailability: React.FC<TutorAvailabilityProps> = ({ value, onChange }) => {
   const [slots, setSlots] = useState<AvailabilitySlot[]>(value || []);
 
+  // Sync with parent component when value changes
+  useEffect(() => {
+    if (value !== slots) {
+      setSlots(value);
+    }
+  }, [value]);
+
   const addSlot = () => {
     const newSlot: AvailabilitySlot = {
       id: crypto.randomUUID(),
-      day: '',
+      day: 'monday', // Default to Monday
       startTime: '09:00',
       endTime: '17:00',
     };
