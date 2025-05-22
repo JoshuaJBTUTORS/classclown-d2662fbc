@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { DayOfWeek, TutorAvailability } from '@/types/availability';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,11 @@ const dayOptions: { label: string; value: DayOfWeek }[] = [
   { label: 'Sunday', value: 'sunday' },
 ];
 
-const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ tutorId, isDisabled = false }) => {
+// Use forwardRef to expose functions to parent components
+const AvailabilityManager = forwardRef<
+  { saveAvailabilities: () => Promise<boolean> },
+  AvailabilityManagerProps
+>(({ tutorId, isDisabled = false }, ref) => {
   const [availabilities, setAvailabilities] = useState<TutorAvailability[]>([]);
   const [loading, setLoading] = useState(false);
   const { organization } = useOrganization();
@@ -46,6 +50,11 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ tutorId, isDi
       ]);
     }
   }, [tutorId]);
+
+  // Expose the saveAvailabilities function to parent components
+  useImperativeHandle(ref, () => ({
+    saveAvailabilities
+  }));
 
   const fetchAvailability = async () => {
     setLoading(true);
@@ -251,6 +260,8 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ tutorId, isDi
       </div>
     </div>
   );
-};
+});
+
+AvailabilityManager.displayName = 'AvailabilityManager';
 
 export default AvailabilityManager;
