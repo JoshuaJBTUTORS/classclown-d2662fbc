@@ -10,6 +10,7 @@ import { FullCalendarComponent } from '@fullcalendar/react';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import { toast } from "sonner";
+import { Lesson } from '@/types/lesson';
 
 // Additional imports that seem to be used in the file
 import {
