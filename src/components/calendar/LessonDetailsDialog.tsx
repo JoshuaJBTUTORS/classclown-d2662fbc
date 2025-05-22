@@ -18,6 +18,7 @@ interface LessonDetailsDialogProps {
   onSave?: (lesson: Lesson) => void;
   onDelete?: (lessonId: string, deleteAllFuture?: boolean) => void;
   onCompleteSession?: (lessonId: string) => void;
+  onAssignHomework?: (lessonId: string, lessonData: any) => void;
 }
 
 // This regex pattern matches the format we generate for recurring lessons: UUID-YYYY-MM-DD
@@ -29,11 +30,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   lessonId,
   onSave,
   onDelete,
-  onCompleteSession
+  onCompleteSession,
+  onAssignHomework
 }) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteOption, setDeleteOption] = useState<'single' | 'all'>('single');
   const [originalLessonId, setOriginalLessonId] = useState<string | null>(null);
@@ -334,18 +335,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
   
-  // FIXED: Modified to set isAssigningHomework first, then close the dialog without delay
+  // Modified to delegate to parent component via onAssignHomework prop
   const handleCompleteLesson = () => {
-    if (lesson) {
-      // First set the homework dialog flag to true
-      setIsAssigningHomework(true);
-      // Then close this dialog without delay
-      onClose();
+    if (lesson && onAssignHomework) {
+      const lessonIdToUse = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
+      // Call the parent handler with the lesson ID and preloaded data
+      onAssignHomework(lessonIdToUse, preloadedLessonData);
     }
-  };
-
-  const handleHomeworkDialogClose = () => {
-    setIsAssigningHomework(false);
   };
 
   const handleEditLesson = () => {
@@ -452,8 +448,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               )}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
-              {/* Changed button text from "Assign Homework" to "Complete Lesson" */}
-              {lesson && (
+              {lesson && onAssignHomework && (
                 <Button
                   className="flex items-center gap-1"
                   onClick={handleCompleteLesson}
@@ -599,16 +594,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Optimized: Pass the preloaded lesson data to AssignHomeworkDialog */}
-      {lesson && (
-        <AssignHomeworkDialog
-          isOpen={isAssigningHomework}
-          onClose={handleHomeworkDialogClose}
-          preSelectedLessonId={isRecurringInstance && originalLessonId ? originalLessonId : lesson.id}
-          preloadedLessonData={preloadedLessonData} // Pass preloaded data for performance
-        />
-      )}
     </>
   );
 };

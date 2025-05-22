@@ -6,6 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardContent } from '@/components/ui/card';
 import LessonDetailsDialog from './LessonDetailsDialog';
+import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 
 interface CalendarDisplayProps {
   isLoading: boolean;
@@ -18,6 +19,10 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  // New state for homework dialog
+  const [isAssigningHomework, setIsAssigningHomework] = useState(false);
+  const [homeworkLessonId, setHomeworkLessonId] = useState<string | null>(null);
+  const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
 
   const handleEventClick = (info: any) => {
     setSelectedLessonId(info.event.id);
@@ -27,6 +32,22 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   const handleDetailsClose = () => {
     setIsDetailsOpen(false);
     setSelectedLessonId(null);
+  };
+
+  // New handler for opening homework assignment dialog
+  const handleAssignHomework = (lessonId: string, lessonData: any) => {
+    setHomeworkLessonId(lessonId);
+    setPreloadedLessonData(lessonData);
+    setIsAssigningHomework(true);
+    // Close details dialog
+    setIsDetailsOpen(false);
+  };
+
+  // New handler for closing homework dialog
+  const handleHomeworkDialogClose = () => {
+    setIsAssigningHomework(false);
+    setHomeworkLessonId(null);
+    setPreloadedLessonData(null);
   };
 
   return (
@@ -95,11 +116,20 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           </div>
         )}
 
-        {/* Lesson Details Dialog */}
+        {/* Lesson Details Dialog with new onAssignHomework prop */}
         <LessonDetailsDialog
           isOpen={isDetailsOpen}
           onClose={handleDetailsClose}
           lessonId={selectedLessonId}
+          onAssignHomework={handleAssignHomework}
+        />
+
+        {/* Moved AssignHomeworkDialog here */}
+        <AssignHomeworkDialog
+          isOpen={isAssigningHomework}
+          onClose={handleHomeworkDialogClose}
+          preSelectedLessonId={homeworkLessonId}
+          preloadedLessonData={preloadedLessonData}
         />
       </CardContent>
     </Card>
