@@ -43,28 +43,6 @@ export const useCalendarData = () => {
           }
         }
 
-        // Fetch tutor availability
-        const { data: availabilityData, error: availabilityError } = await supabase
-          .from('tutor_availability')
-          .select(`
-            id, 
-            day_of_week, 
-            start_time, 
-            end_time,
-            tutors (
-              first_name,
-              last_name
-            )
-          `);
-
-        if (availabilityError) {
-          console.error('Error fetching tutor availability:', availabilityError);
-        } else if (availabilityData) {
-          // Add availability as calendar events with a different style
-          const availabilityEvents = generateAvailabilityEvents(availabilityData);
-          calendarEvents.push(...availabilityEvents);
-        }
-
         setEvents(calendarEvents);
       } catch (error) {
         console.error('Error fetching lessons:', error);
@@ -76,75 +54,6 @@ export const useCalendarData = () => {
 
     fetchEvents();
   }, []);
-
-  // Function to generate availability events
-  const generateAvailabilityEvents = (availabilityData: any[]) => {
-    const availabilityEvents = [];
-    const daysOfWeek = {
-      'monday': 1,
-      'tuesday': 2,
-      'wednesday': 3,
-      'thursday': 4,
-      'friday': 5,
-      'saturday': 6,
-      'sunday': 0
-    };
-    
-    // Get current date and start of week
-    const today = new Date();
-    const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    
-    for (const slot of availabilityData) {
-      const slotDayOfWeek = daysOfWeek[slot.day_of_week as keyof typeof daysOfWeek];
-      if (slotDayOfWeek === undefined) continue;
-      
-      // Calculate days to add to get to the desired day of week
-      const daysToAdd = (slotDayOfWeek - currentDayOfWeek + 7) % 7;
-      const slotDate = addDays(today, daysToAdd);
-      
-      // Format the date string for the event
-      const dateStr = format(slotDate, 'yyyy-MM-dd');
-      
-      // Create the availability event
-      availabilityEvents.push({
-        id: `availability-${slot.id}`,
-        title: `${slot.tutors?.first_name} ${slot.tutors?.last_name} - Available`,
-        start: `${dateStr}T${slot.start_time}`,
-        end: `${dateStr}T${slot.end_time}`,
-        backgroundColor: 'rgba(74, 222, 128, 0.2)', // Light green
-        borderColor: 'rgb(74, 222, 128)',
-        textColor: 'rgb(22, 101, 52)',
-        display: 'block',
-        extendedProps: {
-          isAvailability: true,
-          tutorId: slot.tutor_id
-        }
-      });
-      
-      // Also add events for next 4 weeks
-      for (let week = 1; week <= 4; week++) {
-        const futureDate = addDays(slotDate, week * 7);
-        const futureDateStr = format(futureDate, 'yyyy-MM-dd');
-        
-        availabilityEvents.push({
-          id: `availability-${slot.id}-week${week}`,
-          title: `${slot.tutors?.first_name} ${slot.tutors?.last_name} - Available`,
-          start: `${futureDateStr}T${slot.start_time}`,
-          end: `${futureDateStr}T${slot.end_time}`,
-          backgroundColor: 'rgba(74, 222, 128, 0.2)', // Light green
-          borderColor: 'rgb(74, 222, 128)',
-          textColor: 'rgb(22, 101, 52)',
-          display: 'block',
-          extendedProps: {
-            isAvailability: true,
-            tutorId: slot.tutor_id
-          }
-        });
-      }
-    }
-    
-    return availabilityEvents;
-  };
 
   // Function to generate recurring events
   const generateRecurringEvents = (lesson) => {
