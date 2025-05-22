@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -335,15 +334,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
   
-  // Changed from handleAssignHomework to handleCompleteLesson to match the new button text
+  // FIXED: Modified to set isAssigningHomework first, then close the dialog without delay
   const handleCompleteLesson = () => {
     if (lesson) {
-      // First close this dialog, then open the homework assignment dialog
+      // First set the homework dialog flag to true
+      setIsAssigningHomework(true);
+      // Then close this dialog without delay
       onClose();
-      // Small delay to ensure the dialog is closed first and pass the preloaded data
-      setTimeout(() => {
-        setIsAssigningHomework(true);
-      }, 100);
     }
   };
 
