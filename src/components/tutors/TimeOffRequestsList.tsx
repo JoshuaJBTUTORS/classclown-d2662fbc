@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { TimeOffRequest } from '@/types/availability';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { TimeOffRequest } from '@/types/availability';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { toast } from 'sonner';
 
 interface TimeOffRequestsListProps {
   tutorId: string;
@@ -13,15 +13,16 @@ interface TimeOffRequestsListProps {
 
 const TimeOffRequestsList: React.FC<TimeOffRequestsListProps> = ({ tutorId }) => {
   const [requests, setRequests] = useState<TimeOffRequest[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { organization } = useOrganization();
 
   useEffect(() => {
-    if (tutorId) {
-      fetchTimeOffRequests();
-    }
+    fetchTimeOffRequests();
   }, [tutorId]);
 
   const fetchTimeOffRequests = async () => {
+    if (!tutorId) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -31,7 +32,6 @@ const TimeOffRequestsList: React.FC<TimeOffRequestsListProps> = ({ tutorId }) =>
         .order('start_date', { ascending: false });
 
       if (error) throw error;
-
       setRequests(data as TimeOffRequest[]);
     } catch (error: any) {
       console.error('Error fetching time off requests:', error);
@@ -41,55 +41,46 @@ const TimeOffRequestsList: React.FC<TimeOffRequestsListProps> = ({ tutorId }) =>
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getBadgeVariant = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge variant="success">Approved</Badge>;
+        return 'success';
       case 'rejected':
-        return <Badge variant="destructive">Rejected</Badge>;
-      case 'pending':
+        return 'destructive';
       default:
-        return <Badge variant="outline">Pending</Badge>;
+        return 'outline';
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-4">Loading time off requests...</div>;
-  }
-
-  if (requests.length === 0) {
-    return <div className="text-center py-4 text-muted-foreground">No time off requests found.</div>;
-  }
-
   return (
     <div className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium">Time Off Requests</h3>
-        <p className="text-sm text-muted-foreground">Previous and upcoming time off requests.</p>
-      </div>
-
-      <div className="space-y-3">
-        {requests.map((request) => (
-          <Card key={request.id}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-base">
-                  {format(parseISO(request.start_date), 'MMM d, yyyy')} - {format(parseISO(request.end_date), 'MMM d, yyyy')}
-                </CardTitle>
-                {getStatusBadge(request.status)}
+      <h3 className="text-lg font-medium">Time Off History</h3>
+      
+      {loading ? (
+        <div className="text-center py-4">Loading...</div>
+      ) : requests.length === 0 ? (
+        <div className="text-muted-foreground text-center py-4">No time off requests found.</div>
+      ) : (
+        <div className="space-y-2">
+          {requests.map((request) => (
+            <div key={request.id} className="border rounded-md p-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-medium">
+                    {format(new Date(request.start_date), 'MMM d, yyyy')} - {format(new Date(request.end_date), 'MMM d, yyyy')}
+                  </div>
+                  {request.reason && (
+                    <div className="text-sm text-muted-foreground mt-1">{request.reason}</div>
+                  )}
+                </div>
+                <Badge variant={getBadgeVariant(request.status)} className="capitalize">
+                  {request.status}
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {request.reason || 'No reason provided'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Requested on {format(parseISO(request.created_at || new Date().toISOString()), 'MMM d, yyyy')}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

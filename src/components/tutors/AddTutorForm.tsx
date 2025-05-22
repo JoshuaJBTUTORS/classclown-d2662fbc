@@ -277,9 +277,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               <TabsContent value="availability">
                 <AvailabilityManager 
                   tutorId="" 
-                  ref={(ref) => {
-                    availabilityManagerRef.current = ref;
-                  }}
+                  ref={availabilityManagerRef}
                 />
               </TabsContent>
               
