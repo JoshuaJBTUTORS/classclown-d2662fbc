@@ -19,17 +19,12 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  // State for homework dialog
+  // New state for homework dialog
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [homeworkLessonId, setHomeworkLessonId] = useState<string | null>(null);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
 
   const handleEventClick = (info: any) => {
-    // Don't open detail dialog for time-off events
-    if (info.event.extendedProps.isTimeOff) {
-      return;
-    }
-    
     setSelectedLessonId(info.event.id);
     setIsDetailsOpen(true);
   };
@@ -39,7 +34,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setSelectedLessonId(null);
   };
 
-  // Handler for opening homework assignment dialog
+  // New handler for opening homework assignment dialog
   const handleAssignHomework = (lessonId: string, lessonData: any) => {
     setHomeworkLessonId(lessonId);
     setPreloadedLessonData(lessonData);
@@ -48,7 +43,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setIsDetailsOpen(false);
   };
 
-  // Handler for closing homework dialog
+  // New handler for closing homework dialog
   const handleHomeworkDialogClose = () => {
     setIsAssigningHomework(false);
     setHomeworkLessonId(null);
@@ -86,27 +81,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 if (info.event.extendedProps.isRecurringInstance) {
                   classes.push('recurring-instance');
                 }
-                // Add special styling for time-off events
-                if (info.event.extendedProps.isTimeOff) {
-                  classes.push('time-off-event');
-                }
                 return classes;
               }}
               eventContent={(eventInfo) => {
-                // For time-off events, display differently
-                if (eventInfo.event.extendedProps.isTimeOff) {
-                  return (
-                    <div className="fc-event-main-frame p-1 text-red-800 bg-red-100 bg-opacity-70 rounded border-red-300 border">
-                      <div className="fc-event-title-container flex items-center gap-1">
-                        <div className="fc-event-title text-sm font-medium">
-                          {eventInfo.event.title}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                
-                // For regular events
                 return (
                   <div className="fc-event-main-frame p-1">
                     <div className="fc-event-title-container flex items-center gap-1">
@@ -139,7 +116,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           </div>
         )}
 
-        {/* Lesson Details Dialog with onAssignHomework prop */}
+        {/* Lesson Details Dialog with new onAssignHomework prop */}
         <LessonDetailsDialog
           isOpen={isDetailsOpen}
           onClose={handleDetailsClose}
@@ -147,7 +124,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           onAssignHomework={handleAssignHomework}
         />
 
-        {/* AssignHomeworkDialog */}
+        {/* Moved AssignHomeworkDialog here */}
         <AssignHomeworkDialog
           isOpen={isAssigningHomework}
           onClose={handleHomeworkDialogClose}
