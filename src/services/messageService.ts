@@ -2,9 +2,16 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/message';
 
+// This service needs database tables that don't exist yet
+// It will be enabled after the tables are created
+
 export const messageService = {
-  // Conversation methods
+  // Conversation methods - These will be uncommented after the database tables are created
   getConversations: async (): Promise<Conversation[]> => {
+    // Placeholder until database tables are created
+    return [];
+    
+    /* 
     // This fetches conversations the current user is part of
     const { data: user } = await supabase.auth.getUser();
     
@@ -24,9 +31,14 @@ export const messageService = {
     
     if (error) throw error;
     return data as unknown as Conversation[];
+    */
   },
 
   getConversationById: async (id: string): Promise<Conversation> => {
+    // Placeholder until database tables are created
+    throw new Error('Database tables not yet created');
+    
+    /*
     const { data, error } = await supabase
       .from('conversations')
       .select(`
@@ -41,9 +53,14 @@ export const messageService = {
     
     if (error) throw error;
     return data as unknown as Conversation;
+    */
   },
 
   createConversation: async (userIds: string[], title?: string): Promise<Conversation> => {
+    // Placeholder until database tables are created
+    throw new Error('Database tables not yet created');
+    
+    /*
     // Get current user
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
@@ -65,10 +82,15 @@ export const messageService = {
     
     if (error) throw error;
     return data as unknown as Conversation;
+    */
   },
 
   // Message methods
   getMessages: async (conversationId: string): Promise<Message[]> => {
+    // Placeholder until database tables are created
+    return [];
+    
+    /*
     const { data, error } = await supabase
       .from('messages')
       .select(`
@@ -80,9 +102,14 @@ export const messageService = {
     
     if (error) throw error;
     return data as unknown as Message[];
+    */
   },
 
   sendMessage: async (conversationId: string, content: string, attachmentUrl?: string, attachmentType?: string): Promise<Message> => {
+    // Placeholder until database tables are created
+    throw new Error('Database tables not yet created');
+    
+    /*
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
     
@@ -110,9 +137,14 @@ export const messageService = {
       .eq('id', conversationId);
     
     return data as unknown as Message;
+    */
   },
 
   markAsRead: async (conversationId: string): Promise<void> => {
+    // Placeholder until database tables are created
+    return;
+    
+    /*
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
     
@@ -124,10 +156,15 @@ export const messageService = {
       .eq('user_id', userData.user.id);
     
     if (error) throw error;
+    */
   },
 
   // Helper to get the count of unread messages
   getUnreadMessageCount: async (): Promise<number> => {
+    // Placeholder until database tables are created
+    return 0;
+    
+    /*
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
     
@@ -139,5 +176,6 @@ export const messageService = {
     
     if (error) throw error;
     return count || 0;
+    */
   }
 };

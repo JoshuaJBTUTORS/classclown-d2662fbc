@@ -26,14 +26,21 @@ export const learningHubService = {
   },
 
   createCourse: async (course: Partial<Course>): Promise<Course> => {
-    // Ensure title is included, as it's required by the database
+    // Make sure the title is explicitly checked for
     if (!course.title) {
       throw new Error('Course title is required');
     }
     
+    const courseToInsert = {
+      title: course.title,
+      description: course.description,
+      cover_image_url: course.cover_image_url,
+      status: course.status || 'draft'
+    };
+    
     const { data, error } = await supabase
       .from('courses')
-      .insert(course)
+      .insert(courseToInsert)
       .select()
       .single();
     
@@ -78,14 +85,21 @@ export const learningHubService = {
   },
 
   createModule: async (module: Partial<CourseModule>): Promise<CourseModule> => {
-    // Ensure required fields are included
+    // Make sure required fields are explicitly checked for
     if (!module.title || !module.course_id || module.position === undefined) {
       throw new Error('Module title, course_id and position are required');
     }
     
+    const moduleToInsert = {
+      title: module.title,
+      description: module.description,
+      course_id: module.course_id,
+      position: module.position
+    };
+    
     const { data, error } = await supabase
       .from('course_modules')
-      .insert(module)
+      .insert(moduleToInsert)
       .select()
       .single();
     
@@ -116,14 +130,25 @@ export const learningHubService = {
 
   // Lesson methods
   createLesson: async (lesson: Partial<CourseLesson>): Promise<CourseLesson> => {
-    // Ensure required fields are included
+    // Make sure required fields are explicitly checked for
     if (!lesson.title || !lesson.module_id || !lesson.content_type || lesson.position === undefined) {
       throw new Error('Lesson title, module_id, content_type, and position are required');
     }
     
+    const lessonToInsert = {
+      title: lesson.title,
+      description: lesson.description,
+      module_id: lesson.module_id,
+      content_type: lesson.content_type,
+      content_url: lesson.content_url,
+      content_text: lesson.content_text,
+      position: lesson.position,
+      duration_minutes: lesson.duration_minutes
+    };
+    
     const { data, error } = await supabase
       .from('course_lessons')
-      .insert(lesson)
+      .insert(lessonToInsert)
       .select()
       .single();
     

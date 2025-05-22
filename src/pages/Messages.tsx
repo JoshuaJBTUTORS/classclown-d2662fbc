@@ -11,10 +11,12 @@ import PageTitle from '@/components/ui/PageTitle';
 import { useAuth } from '@/contexts/AuthContext';
 import { messageService } from '@/services/messageService';
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const Messages: React.FC = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { toast } = useToast();
   
   // Fetch conversations
   const { data: conversations, isLoading, error } = useQuery({
@@ -74,12 +76,24 @@ const Messages: React.FC = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  const handleNewMessageClick = () => {
+    // Show a toast message to inform the user that the messaging system isn't fully implemented yet
+    toast({
+      title: "Coming Soon",
+      description: "The messaging system is currently being set up.",
+      variant: "default",
+    });
+    
+    // We won't navigate yet since the tables don't exist
+    // navigate('/messages/new');
+  };
+
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
         <PageTitle title="Messages" subtitle="Communicate with students and tutors" />
         
-        <Button onClick={() => navigate('/messages/new')}>
+        <Button onClick={handleNewMessageClick}>
           <Plus className="w-4 h-4 mr-2" />
           New Message
         </Button>
@@ -113,57 +127,16 @@ const Messages: React.FC = () => {
             Refresh
           </Button>
         </div>
-      ) : conversations?.length === 0 ? (
+      ) : (
         <div className="text-center p-12 border rounded-lg bg-gray-50">
           <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium mb-2">No messages yet</h3>
+          <h3 className="text-lg font-medium mb-2">Coming Soon</h3>
           <p className="text-gray-500 mb-6">
-            Start a conversation with a student or tutor
+            The messaging system is currently being set up. Check back soon!
           </p>
-          <Button onClick={() => navigate('/messages/new')}>
-            Start a New Conversation
+          <Button onClick={handleNewMessageClick} variant="outline">
+            Learn More
           </Button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {conversations?.map((conversation: any) => (
-            <Card 
-              key={conversation.id}
-              className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/messages/${conversation.id}`)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    {conversation.is_group ? (
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        <Users className="h-5 w-5" />
-                      </AvatarFallback>
-                    ) : getConversationAvatar(conversation) ? (
-                      <AvatarImage src={getConversationAvatar(conversation)} alt={getConversationName(conversation)} />
-                    ) : (
-                      <AvatarFallback>
-                        {getConversationInitials(conversation)}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">
-                      {getConversationName(conversation)}
-                    </h4>
-                    <p className="text-sm text-gray-500 truncate">
-                      {conversation.last_message?.content || 'No messages yet'}
-                    </p>
-                  </div>
-                  <div className="text-xs text-gray-500 whitespace-nowrap">
-                    {conversation.last_message_at && 
-                      formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })
-                    }
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       )}
     </div>
