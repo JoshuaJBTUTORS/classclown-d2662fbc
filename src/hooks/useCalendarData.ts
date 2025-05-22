@@ -2,26 +2,38 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { addDays, format, parseISO, startOfDay } from 'date-fns';
+import { addDays, format, parseISO, startOfDay, isWithinInterval } from 'date-fns';
+import { TimeOffRequest } from '@/types/availability';
 
 export const useCalendarData = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeOffPeriods, setTimeOffPeriods] = useState<TimeOffRequest[]>([]);
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
-        console.log("Fetching lessons from Supabase");
-        const { data, error } = await supabase
+        setIsLoading(true);
+        
+        // Fetch lessons
+        const { data: lessonsData, error: lessonsError } = await supabase
           .from('lessons')
           .select('*');
 
-        if (error) throw error;
-
-        console.log("Lessons fetched:", data);
+        if (lessonsError) throw lessonsError;
+        
+        // Fetch approved time-off periods
+        const { data: timeOffData, error: timeOffError } = await supabase
+          .from('tutor_time_off')
+          .select('*')
+          .eq('status', 'approved');
+        
+        if (timeOffError) throw timeOffError;
+        
+        setTimeOffPeriods(timeOffData || []);
         
         // Process regular lessons
-        const calendarEvents = (data || []).map(lesson => ({
+        const calendarEvents = (lessonsData || []).map(lesson => ({
           id: lesson.id,
           title: lesson.title,
           start: lesson.start_time,
@@ -30,33 +42,62 @@ export const useCalendarData = () => {
             isRecurring: lesson.is_recurring,
             recurrenceInterval: lesson.recurrence_interval,
             recurrenceEndDate: lesson.recurrence_end_date,
-            description: lesson.description
+            description: lesson.description,
+            tutorId: lesson.tutor_id
           }
+        }));
+
+        // Process time-off periods for calendar display
+        const timeOffEvents = (timeOffData || []).map((timeOff: TimeOffRequest) => ({
+          id: `timeoff-${timeOff.id}`,
+          title: `Time Off: ${timeOff.reason || 'No reason provided'}`,
+          start: timeOff.start_date,
+          end: timeOff.end_date,
+          allDay: true,
+          extendedProps: {
+            isTimeOff: true,
+            tutorId: timeOff.tutor_id
+          },
+          display: 'background',
+          backgroundColor: 'rgba(255, 0, 0, 0.2)',
+          borderColor: 'transparent'
         }));
 
         // Process recurring lessons
         const recurringEvents = [];
-        for (const lesson of data || []) {
+        for (const lesson of lessonsData || []) {
           if (lesson.is_recurring && lesson.recurrence_interval) {
-            const recurringEvents = generateRecurringEvents(lesson);
-            calendarEvents.push(...recurringEvents);
+            const lessonRecurringEvents = generateRecurringEvents(lesson, timeOffData || []);
+            recurringEvents.push(...lessonRecurringEvents);
           }
         }
 
-        setEvents(calendarEvents);
+        setEvents([...calendarEvents, ...recurringEvents, ...timeOffEvents]);
       } catch (error) {
-        console.error('Error fetching lessons:', error);
-        toast.error('Failed to load lessons');
+        console.error('Error fetching calendar data:', error);
+        toast.error('Failed to load calendar data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchEvents();
+    fetchData();
   }, []);
 
+  // Function to check if a date is within an approved time-off period
+  const isDateInTimeOffPeriod = (date: Date, tutorId: string, timeOffPeriods: TimeOffRequest[]) => {
+    return timeOffPeriods.some(period => {
+      if (period.tutor_id !== tutorId) return false;
+      
+      const startDate = new Date(period.start_date);
+      const endDate = new Date(period.end_date);
+      
+      return isWithinInterval(date, { start: startDate, end: endDate });
+    });
+  };
+
   // Function to generate recurring events
-  const generateRecurringEvents = (lesson) => {
+  const generateRecurringEvents = (lesson, timeOffPeriods) => {
     const events = [];
     const startDate = parseISO(lesson.start_time);
     const endDate = parseISO(lesson.end_time);
@@ -76,6 +117,25 @@ export const useCalendarData = () => {
         const instanceStartDate = new Date(currentDate);
         const instanceEndDate = new Date(instanceStartDate.getTime() + durationMs);
         
+        // Skip this instance if it falls within a time-off period for this tutor
+        if (isDateInTimeOffPeriod(instanceStartDate, lesson.tutor_id, timeOffPeriods)) {
+          // Increment the date based on recurrence interval
+          if (lesson.recurrence_interval === 'daily') {
+            currentDate = addDays(currentDate, 1);
+          } else if (lesson.recurrence_interval === 'weekly') {
+            currentDate = addDays(currentDate, 7);
+          } else if (lesson.recurrence_interval === 'biweekly') {
+            currentDate = addDays(currentDate, 14);
+          } else if (lesson.recurrence_interval === 'monthly') {
+            // This is a simplification - a more accurate implementation would account for month lengths
+            currentDate = addDays(currentDate, 30);
+          } else {
+            // Default to weekly if interval is not recognized
+            currentDate = addDays(currentDate, 7);
+          }
+          continue;
+        }
+        
         // Create a unique ID for this instance by combining the original ID with the date
         const instanceId = `${lesson.id}-${format(currentDate, 'yyyy-MM-dd')}`;
         
@@ -87,7 +147,8 @@ export const useCalendarData = () => {
           extendedProps: {
             isRecurringInstance: true,
             originalLessonId: lesson.id,
-            description: lesson.description
+            description: lesson.description,
+            tutorId: lesson.tutor_id
           },
           // Add a slightly different styling for recurring instances
           className: 'recurring-instance'
@@ -115,6 +176,7 @@ export const useCalendarData = () => {
 
   return {
     events,
-    isLoading
+    isLoading,
+    timeOffPeriods
   };
 };
