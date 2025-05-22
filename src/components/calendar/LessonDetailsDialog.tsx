@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -41,6 +42,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [hasHomework, setHasHomework] = useState(false);
   const [homeworkDeleteOption, setHomeworkDeleteOption] = useState<'delete' | 'cancel'>('delete');
   const [isHomeworkDeleteConfirmOpen, setIsHomeworkDeleteConfirmOpen] = useState(false);
+  // New state for preloaded lesson data to improve performance
+  const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
 
   // Function to check if the ID is a recurring instance ID using our specific format
   const isRecurringInstanceId = (id: string): boolean => {
@@ -77,6 +80,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       setIsRecurringInstance(false);
       setOriginalLessonId(null);
       setHasHomework(false);
+      setPreloadedLessonData(null); // Clear preloaded data
     }
   }, [lessonId, isOpen]);
 
@@ -134,6 +138,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         createPlaceholderLesson(instanceId);
         return;
       }
+
+      // Store this data for faster loading when completing a session
+      setPreloadedLessonData(data);
 
       // Extract the date part from the instance ID (format is uuid-YYYY-MM-DD)
       const dateParts = instanceId.split('-');
@@ -226,6 +233,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         toast.error('Lesson not found');
         return;
       }
+      
+      // Store this data for faster loading when completing a session
+      setPreloadedLessonData(data);
 
       // Transform the data
       const students = data.lesson_students?.map((ls: any) => ({
@@ -325,11 +335,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
   
-  const handleAssignHomework = () => {
+  // Changed from handleAssignHomework to handleCompleteLesson to match the new button text
+  const handleCompleteLesson = () => {
     if (lesson) {
       // First close this dialog, then open the homework assignment dialog
       onClose();
-      // Small delay to ensure the dialog is closed first
+      // Small delay to ensure the dialog is closed first and pass the preloaded data
       setTimeout(() => {
         setIsAssigningHomework(true);
       }, 100);
@@ -444,15 +455,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               )}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
+              {/* Changed button text from "Assign Homework" to "Complete Lesson" */}
               {lesson && (
                 <Button
                   className="flex items-center gap-1"
-                  onClick={handleAssignHomework}
+                  onClick={handleCompleteLesson}
                   variant="outline"
                   size="sm"
                 >
-                  <BookOpen className="h-4 w-4" />
-                  Assign Homework
+                  <Check className="h-4 w-4" />
+                  Complete Lesson
                 </Button>
               )}
               {lesson && onSave && (
@@ -591,12 +603,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Only render AssignHomeworkDialog when isAssigningHomework is true */}
+      {/* Optimized: Pass the preloaded lesson data to AssignHomeworkDialog */}
       {lesson && (
         <AssignHomeworkDialog
           isOpen={isAssigningHomework}
           onClose={handleHomeworkDialogClose}
           preSelectedLessonId={isRecurringInstance && originalLessonId ? originalLessonId : lesson.id}
+          preloadedLessonData={preloadedLessonData} // Pass preloaded data for performance
         />
       )}
     </>
