@@ -51,6 +51,8 @@ export interface Lesson {
       parent_last_name?: string;
     };
   }[];
+  // New property to cache recurring instances to improve performance
+  cached_recurring_instances?: CalendarEvent[];
 }
 
 export interface HomeworkSubmission {
@@ -63,4 +65,24 @@ export interface HomeworkSubmission {
   grade: string | null;
   feedback: string | null;
   submitted_at: string;
+}
+
+// New interface to improve type safety in the calendar component
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  backgroundColor: string;
+  borderColor: string;
+  textColor: string;
+  extendedProps: {
+    description?: string;
+    status: string;
+    tutor?: any;
+    students?: any[];
+    isRecurring?: boolean;
+    isRecurringInstance?: boolean;
+    sourceId?: string; // Original lesson ID for recurring instances
+  };
 }

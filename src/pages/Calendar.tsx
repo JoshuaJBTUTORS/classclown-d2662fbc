@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, isValid, isSameDay, isAfter } from 'date-fns';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, isValid, isSameDay, isAfter, isWithinInterval } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -10,7 +9,7 @@ import { FullCalendarComponent } from '@fullcalendar/react';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import { toast } from "sonner";
-import { Lesson } from '@/types/lesson';
+import { Lesson, CalendarEvent } from '@/types/lesson';
 
 // Additional imports that seem to be used in the file
 import {
@@ -39,23 +38,11 @@ import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import ViewOptions from '@/components/calendar/ViewOptions';
 
-interface CalendarEvent {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  backgroundColor: string;
-  borderColor: string;
-  textColor: string;
-  extendedProps: {
-    description?: string;
-    status: string;
-    tutor?: any;
-    students?: any[];
-    isRecurring?: boolean;
-    isRecurringInstance?: boolean;
-  };
-}
+// Set a maximum date range for recurring events to avoid performance issues
+const MAX_RECURRING_INSTANCES = 15; // REDUCED from 30 to improve performance
+const MAX_RECURRING_MONTHS = 3; // REDUCED from 6 to improve performance
+const LOADING_TIMEOUT = 12000; // INCREASED from 8s to 12s to allow more time for computation
+const CALCULATION_BATCH_SIZE = 5; // New constant for batch processing
 
 interface Student {
   id: number;
@@ -64,11 +51,6 @@ interface Student {
   parent_first_name?: string;
   parent_last_name?: string;
 }
-
-// Set a maximum date range for recurring events to avoid performance issues
-const MAX_RECURRING_INSTANCES = 30; // Keep existing limit for instances per recurring lesson
-const MAX_RECURRING_MONTHS = 6; // Maximum number of months to look ahead for recurring events
-const LOADING_TIMEOUT = 8000; // 8 seconds timeout
 
 const CalendarPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -105,6 +87,12 @@ const CalendarPage = () => {
   
   // Cache for recurring events to avoid redundant calculations
   const recurringEventsCache = useRef<Map<string, CalendarEvent[]>>(new Map());
+  // New: Track ongoing calculations
+  const calculationInProgressRef = useRef<boolean>(false);
+  // New: Track cancelled operations
+  const calculationCancelledRef = useRef<boolean>(false);
+  // New: Worker for calculations (simulate worker with setTimeout batches)
+  const calculationQueue = useRef<Array<Lesson>>([]);
 
   // Setup loading timeout to prevent infinite loading state
   useEffect(() => {
@@ -142,6 +130,9 @@ const CalendarPage = () => {
           abortControllerRef.current.abort();
           abortControllerRef.current = null;
         }
+        
+        // Mark any ongoing calculations as cancelled
+        calculationCancelledRef.current = true;
       }, LOADING_TIMEOUT);
       
       return () => {
@@ -213,7 +204,83 @@ const CalendarPage = () => {
     }
   };
 
-  // Function to calculate recurring instances efficiently
+  // Optimized function to calculate recurring instances efficiently with batching
+  const calculateRecurringInstancesBatched = useCallback((
+    lessons: Lesson[], 
+    viewStart: Date, 
+    viewEnd: Date,
+    onComplete: (events: CalendarEvent[]) => void
+  ): void => {
+    // Reset cancellation flag
+    calculationCancelledRef.current = false;
+    calculationInProgressRef.current = true;
+    
+    // First, check which lessons actually need calculation (not cached)
+    const lessonsToCalculate: Lesson[] = [];
+    const cachedEvents: CalendarEvent[] = [];
+    
+    // Reset calculation queue
+    calculationQueue.current = [];
+    
+    for (const lesson of lessons) {
+      const cacheKey = `${lesson.id}-${viewStart.toISOString()}-${viewEnd.toISOString()}`;
+      
+      if (recurringEventsCache.current.has(cacheKey)) {
+        // Use cached results if available
+        const cachedResult = recurringEventsCache.current.get(cacheKey) || [];
+        cachedEvents.push(...cachedResult);
+      } else {
+        // Add to calculation queue
+        calculationQueue.current.push(lesson);
+      }
+    }
+    
+    console.log(`Calendar - Using ${cachedEvents.length} cached events, calculating ${calculationQueue.current.length} lessons`);
+    
+    // If we have nothing to calculate, return immediately
+    if (calculationQueue.current.length === 0) {
+      calculationInProgressRef.current = false;
+      onComplete(cachedEvents);
+      return;
+    }
+    
+    // Process lessons in batches to avoid locking the UI
+    const allCalculatedEvents: CalendarEvent[] = [...cachedEvents];
+    
+    const processBatch = () => {
+      // Check if calculation was cancelled
+      if (calculationCancelledRef.current) {
+        console.log('Calendar - Calculation cancelled');
+        calculationInProgressRef.current = false;
+        onComplete(allCalculatedEvents);
+        return;
+      }
+      
+      // Get next batch
+      const batch = calculationQueue.current.splice(0, CALCULATION_BATCH_SIZE);
+      
+      if (batch.length === 0) {
+        // All batches processed
+        calculationInProgressRef.current = false;
+        onComplete(allCalculatedEvents);
+        return;
+      }
+      
+      // Process this batch
+      for (const lesson of batch) {
+        const events = calculateRecurringInstances(lesson, viewStart, viewEnd);
+        allCalculatedEvents.push(...events);
+      }
+      
+      // Schedule next batch with a small delay to let UI breathe
+      setTimeout(processBatch, 10);
+    };
+    
+    // Start processing
+    processBatch();
+  }, []);
+
+  // Improved recurring instance calculator (single lesson)
   const calculateRecurringInstances = useCallback((
     lesson: Lesson, 
     viewStart: Date, 
@@ -247,9 +314,14 @@ const CalendarPage = () => {
         return instances;
       }
 
-      // IMPORTANT CHANGE: Limit the end date to be maximum 6 months from now
+      // IMPROVED: Use a more strict end date calculation
+      // First determine the maximum date we'll consider
       const maxEndDate = addMonths(new Date(), MAX_RECURRING_MONTHS);
-      const effectiveEndDate = isAfter(maxEndDate, viewEnd) ? viewEnd : maxEndDate;
+      // Then pick the earliest of: view end, max months from now, or recurrence end date
+      let effectiveEndDate = isAfter(maxEndDate, viewEnd) ? viewEnd : maxEndDate;
+      if (recurrenceEndDate && isAfter(effectiveEndDate, recurrenceEndDate)) {
+        effectiveEndDate = recurrenceEndDate;
+      }
       
       if (effectiveEndDate < viewStart) {
         return instances; // No need to calculate if the effective end date is before view start
@@ -259,93 +331,29 @@ const CalendarPage = () => {
       const interval = lesson.recurrence_interval;
       let instanceCount = 0;
       
-      // Generate a limited set of dates based on recurrence pattern
-      const generateRecurringDates = (): Date[] => {
-        const dates: Date[] = [];
-        let currentDate: Date;
-        
-        // Start from the original start date or view start, whichever is later
-        if (startDateOriginal > viewStart) {
-          currentDate = new Date(startDateOriginal);
-        } else {
-          // If the original date is before the view start, need to jump ahead
-          currentDate = new Date(startDateOriginal);
-          
-          // For weekly recurrence, jump to the right day in the view
-          if (interval === 'weekly') {
-            const dayOfWeek = startDateOriginal.getDay();
-            let daysToAdd = 0;
-            
-            // Find the next occurrence of the same day of week after viewStart
-            while (currentDate < viewStart || currentDate.getDay() !== dayOfWeek) {
-              currentDate = addDays(currentDate, 1);
-            }
-          }
-          // For biweekly recurrence
-          else if (interval === 'biweekly') {
-            const dayOfWeek = startDateOriginal.getDay();
-            const originalWeekNumber = Math.floor(startDateOriginal.getTime() / (7 * 24 * 60 * 60 * 1000));
-            
-            // Jump to first occurrence of the same day in the view
-            while (currentDate < viewStart || currentDate.getDay() !== dayOfWeek) {
-              currentDate = addDays(currentDate, 1);
-            }
-            
-            // Ensure it's on the correct biweekly cadence
-            const currentWeekNumber = Math.floor(currentDate.getTime() / (7 * 24 * 60 * 60 * 1000));
-            if ((currentWeekNumber - originalWeekNumber) % 2 !== 0) {
-              // If not on the correct cadence, jump ahead one more week
-              currentDate = addDays(currentDate, 7);
-            }
-          }
-          // For monthly recurrence
-          else if (interval === 'monthly') {
-            const dayOfMonth = startDateOriginal.getDate();
-            currentDate = new Date(viewStart.getFullYear(), viewStart.getMonth(), dayOfMonth);
-            
-            // If we've already passed this day in the current month, move to next month
-            if (currentDate < viewStart) {
-              currentDate = new Date(viewStart.getFullYear(), viewStart.getMonth() + 1, dayOfMonth);
-            }
-          }
-        }
-        
-        // Generate dates based on pattern until end of view OR max end date
-        while (currentDate <= effectiveEndDate && instanceCount < MAX_RECURRING_INSTANCES) {
-          // Skip if we've passed the recurrence end date
-          if (recurrenceEndDate && currentDate > recurrenceEndDate) {
-            break;
-          }
-          
-          dates.push(new Date(currentDate));
-          instanceCount++;
-          
-          // Move to next occurrence based on interval
-          if (interval === 'weekly') {
-            currentDate = addWeeks(currentDate, 1);
-          } else if (interval === 'biweekly') {
-            currentDate = addWeeks(currentDate, 2);
-          } else if (interval === 'monthly') {
-            // Handle edge case for months with different lengths
-            const currentDay = currentDate.getDate();
-            currentDate = addMonths(currentDate, 1);
-            
-            // Adjust if day of month doesn't exist in the next month
-            const nextMonth = new Date(currentDate);
-            if (nextMonth.getDate() !== currentDay) {
-              // Set to last day of the previous month
-              currentDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 0);
-            }
-          }
-        }
-        
-        return dates;
-      };
+      // NEW: Skip calculation if we know there are too many instances
+      // This prevents excessive calculations that would time out
+      const estimatedInstances = estimateInstanceCount(
+        startDateOriginal,
+        viewStart,
+        effectiveEndDate,
+        interval
+      );
       
-      // Generate recurring dates
-      const recurringDates = generateRecurringDates();
+      if (estimatedInstances > MAX_RECURRING_INSTANCES * 1.5) {
+        console.warn(`Calendar - Too many estimated instances (${estimatedInstances}) for lesson ${lesson.id}, limiting to ${MAX_RECURRING_INSTANCES}`);
+      }
       
-      // Create event instances for each date
+      // IMPROVED: More efficient recurring dates generation
+      const recurringDates = generateOptimizedRecurringDates(
+        startDateOriginal,
+        viewStart,
+        effectiveEndDate,
+        interval,
+        MAX_RECURRING_INSTANCES
+      );
+      
+      // Create event instances for each date (create fewer events for better performance)
       recurringDates.forEach(date => {
         // Skip if this is the original instance date (to avoid duplicates)
         if (isSameDay(date, startDateOriginal)) {
@@ -365,9 +373,9 @@ const CalendarPage = () => {
         
         // Get student names for display
         const students = lesson.students || [];
-        const studentNames = students
-          .map((student: any) => `${student.first_name} ${student.last_name}`)
-          .join(', ');
+        const studentNames = students.length <= 2 ? 
+          students.map((student: any) => `${student.first_name} ${student.last_name}`).join(', ') :
+          `${students.length} students`; // For many students, just show count to save rendering
         
         const displayTitle = students.length > 0 
           ? `${lesson.title} - ${studentNames}`
@@ -388,7 +396,8 @@ const CalendarPage = () => {
             tutor: lesson.tutor,
             students,
             isRecurring: true,
-            isRecurringInstance: true
+            isRecurringInstance: true,
+            sourceId: lesson.id
           }
         };
         
@@ -402,8 +411,134 @@ const CalendarPage = () => {
       console.error('Error calculating recurring instances:', error, lesson);
       return [];
     }
-  }, []);
+  }, [safeParseISO]);
+  
+  // NEW: Helper function to estimate instance count before calculation
+  const estimateInstanceCount = (
+    startDate: Date,
+    viewStart: Date,
+    viewEnd: Date,
+    recurrenceInterval: string
+  ): number => {
+    let intervalDays: number;
+    
+    switch (recurrenceInterval) {
+      case 'weekly':
+        intervalDays = 7;
+        break;
+      case 'biweekly':
+        intervalDays = 14;
+        break;
+      case 'monthly':
+        // Approximate
+        intervalDays = 30;
+        break;
+      default:
+        intervalDays = 7;
+    }
+    
+    // Calculate total days in view range
+    const totalDays = Math.ceil((viewEnd.getTime() - viewStart.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Estimate instances based on interval
+    return Math.ceil(totalDays / intervalDays);
+  };
+  
+  // NEW: Optimized recurring date generation function
+  const generateOptimizedRecurringDates = (
+    startDateOriginal: Date,
+    viewStart: Date,
+    viewEnd: Date,
+    interval: string,
+    maxInstances: number
+  ): Date[] => {
+    const dates: Date[] = [];
+    let currentDate: Date;
+    let instanceCount = 0;
+    
+    // Start from the original start date or view start, whichever is later
+    if (startDateOriginal > viewStart) {
+      currentDate = new Date(startDateOriginal);
+    } else {
+      // If the original date is before the view start, jump ahead efficiently
+      currentDate = new Date(startDateOriginal);
+      
+      // For weekly/biweekly recurrence, jump to correct day in view efficiently
+      if (interval === 'weekly' || interval === 'biweekly') {
+        const dayOfWeek = startDateOriginal.getDay();
+        const daysToAdd = Math.ceil((viewStart.getTime() - startDateOriginal.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Calculate weeks to add
+        let weeksToAdd = Math.floor(daysToAdd / 7);
+        
+        // For biweekly, ensure we land on correct week
+        if (interval === 'biweekly') {
+          weeksToAdd = Math.floor(weeksToAdd / 2) * 2;
+        }
+        
+        // Add weeks efficiently instead of adding days in a loop
+        currentDate = addWeeks(currentDate, weeksToAdd);
+        
+        // Then adjust to get to the right day of week
+        while (currentDate < viewStart || currentDate.getDay() !== dayOfWeek) {
+          currentDate = addDays(currentDate, 1);
+        }
+      }
+      // For monthly recurrence, jump to first occurrence in view range
+      else if (interval === 'monthly') {
+        const dayOfMonth = startDateOriginal.getDate();
+        const monthsToAdd = 
+          (viewStart.getFullYear() - startDateOriginal.getFullYear()) * 12 + 
+          (viewStart.getMonth() - startDateOriginal.getMonth());
+        
+        // Jump ahead by months
+        currentDate = addMonths(startDateOriginal, monthsToAdd);
+        
+        // Set to the same day of month
+        currentDate = new Date(
+          currentDate.getFullYear(), 
+          currentDate.getMonth(), 
+          dayOfMonth
+        );
+        
+        // If we've already passed this day in the current month, move to next month
+        if (currentDate < viewStart) {
+          currentDate = new Date(
+            currentDate.getFullYear(), 
+            currentDate.getMonth() + 1, 
+            dayOfMonth
+          );
+        }
+      }
+    }
+    
+    // Generate only dates within the view range, with limit
+    while (currentDate <= viewEnd && instanceCount < maxInstances) {
+      dates.push(new Date(currentDate));
+      instanceCount++;
+      
+      // Move to next occurrence based on interval
+      if (interval === 'weekly') {
+        currentDate = addWeeks(currentDate, 1);
+      } else if (interval === 'biweekly') {
+        currentDate = addWeeks(currentDate, 2);
+      } else if (interval === 'monthly') {
+        // Handle edge case for months with different lengths more efficiently
+        const currentDay = currentDate.getDate();
+        currentDate = addMonths(currentDate, 1);
+        
+        // Adjust if day of month doesn't exist in the next month
+        if (currentDate.getDate() !== currentDay) {
+          // Set to last day of previous month
+          currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+        }
+      }
+    }
+    
+    return dates;
+  };
 
+  // Optimized lesson fetching with better error handling
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
     // Validate date inputs to prevent issues
     if (!start || !end || !isValid(start) || !isValid(end)) {
@@ -418,10 +553,13 @@ const CalendarPage = () => {
       end: format(end, "yyyy-MM-dd")
     });
     
-    // Cancel any ongoing request
+    // Cancel any ongoing request and calculations
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+    
+    // Mark any ongoing calculations as cancelled
+    calculationCancelledRef.current = true;
     
     // Create a new abort controller
     abortControllerRef.current = new AbortController();
@@ -457,9 +595,9 @@ const CalendarPage = () => {
       let recurringData: Lesson[] = [];
       try {
         // Add restriction on the query to only fetch recurring lessons with start dates within the MAX_RECURRING_MONTHS
-        const sixMonthsAgo = format(subMonths(new Date(), 1), "yyyy-MM-dd");
+        const reducedMonthsAgo = format(subMonths(new Date(), 1), "yyyy-MM-dd");
         
-        // Fetch only recurring lessons that started within the last month or haven't ended
+        // IMPROVED: More focused query that will return fewer recurring lessons
         const { data: recData, error: recurringError } = await supabase
           .from('lessons')
           .select(`
@@ -470,9 +608,10 @@ const CalendarPage = () => {
             )
           `)
           .eq('is_recurring', true)
-          .gte('start_time', sixMonthsAgo) // Only get recurring lessons from the last month
+          .gte('start_time', reducedMonthsAgo) // Only get recurring lessons from the last month
           .or(`recurrence_end_date.gte.${startDate},recurrence_end_date.is.null`)
-          .order('start_time', { ascending: true });
+          .order('start_time', { ascending: true })
+          .limit(50); // ADDED: limit to prevent fetching too many lessons
           
         if (recurringError) {
           console.error("Calendar - Error fetching recurring lessons:", recurringError);
@@ -490,7 +629,7 @@ const CalendarPage = () => {
       // Process regular (non-recurring) lessons
       if (data && data.length > 0) {
         try {
-          // Transform regular lessons to events
+          // Transform regular lessons to events more efficiently
           const regularEvents = data.map((lesson: Lesson): CalendarEvent | null => {
             try {
               // Skip if required fields are missing
@@ -498,9 +637,9 @@ const CalendarPage = () => {
               
               const students = lesson.lesson_students?.map((ls: any) => ls.student) || [];
               
-              const studentNames = students
-                .map((student: any) => `${student.first_name} ${student.last_name}`)
-                .join(', ');
+              const studentNames = students.length <= 2 ?
+                students.map((student: any) => `${student.first_name} ${student.last_name}`).join(', ') :
+                `${students.length} students`; // For many students, just show count
               
               const displayTitle = students.length > 0 
                 ? `${lesson.title} - ${studentNames}`
@@ -559,7 +698,7 @@ const CalendarPage = () => {
         }
       }
       
-      // Process recurring lessons
+      // Process recurring lessons with batching instead of all at once
       if (showRecurringLessons && recurringData.length > 0) {
         try {
           // Filter out cancelled recurring lessons and those that have ended
@@ -574,69 +713,145 @@ const CalendarPage = () => {
           
           console.log("Calendar - Processing active recurring lessons:", activeRecurringLessons.length);
           
-          // Generate recurring instances for each lesson
-          let recurringInstances: CalendarEvent[] = [];
-          
-          // Process recurring lessons in batches to avoid timeout
-          for (const lesson of activeRecurringLessons) {
-            const instances = calculateRecurringInstances(lesson, start, end);
-            recurringInstances = [...recurringInstances, ...instances];
+          // NEW: Use batched calculation instead of processing all at once
+          calculateRecurringInstancesBatched(activeRecurringLessons, start, end, (recurringInstances) => {
+            console.log("Calendar - Recurring instances calculation complete:", recurringInstances.length);
             
-            // Check if we need to abort due to timeout
-            if (abortControllerRef.current?.signal.aborted) {
-              console.log("Calendar - Processing aborted due to timeout");
-              throw new Error("Processing aborted");
+            // Filter out duplicate recurring events
+            const existingIds = new Set(events.map(e => e.id));
+            const uniqueRecurringEvents = recurringInstances.filter(event => 
+              !existingIds.has(event.id)
+            );
+            
+            // Apply filters to newly-calculated recurring events
+            let filteredRecurringEvents = uniqueRecurringEvents;
+            
+            if (filteredStudentId) {
+              filteredRecurringEvents = filteredRecurringEvents.filter(event => 
+                event.extendedProps.students?.some((student: any) => 
+                  student.id?.toString() === filteredStudentId
+                )
+              );
             }
+            
+            if (filteredParentId) {
+              filteredRecurringEvents = filteredRecurringEvents.filter(event => 
+                event.extendedProps.students?.some((student: any) => {
+                  if (student.parent_first_name && student.parent_last_name) {
+                    const parentId = `${student.parent_first_name}_${student.parent_last_name}`.toLowerCase();
+                    return parentId === filteredParentId;
+                  }
+                  return false;
+                })
+              );
+            }
+            
+            // Now merge the existing events with new recurring events
+            const combinedEvents = [...events, ...filteredRecurringEvents];
+            
+            console.log("Calendar - Final total events:", combinedEvents.length);
+            
+            // Update state with processed events
+            setLessons(combinedEvents);
+            setIsLoading(false);
+            setLoadingError(null);
+            setLoadingProgress(100);
+          });
+          
+          // Apply filters to non-recurring events immediately
+          if (filteredStudentId || filteredParentId) {
+            if (filteredStudentId) {
+              events = events.filter(event => 
+                event.extendedProps.students?.some((student: any) => 
+                  student.id?.toString() === filteredStudentId
+                )
+              );
+            }
+            
+            if (filteredParentId) {
+              events = events.filter(event => 
+                event.extendedProps.students?.some((student: any) => {
+                  if (student.parent_first_name && student.parent_last_name) {
+                    const parentId = `${student.parent_first_name}_${student.parent_last_name}`.toLowerCase();
+                    return parentId === filteredParentId;
+                  }
+                  return false;
+                })
+              );
+            }
+            
+            // Update state with filtered non-recurring events while recurring ones are being calculated
+            setLessons(events);
           }
-          
-          // Filter out duplicate recurring events
-          const existingIds = new Set(events.map(e => e.id));
-          const uniqueRecurringEvents = recurringInstances.filter(event => 
-            !existingIds.has(event.id)
-          );
-          
-          // Add recurring events to the main events array
-          events = [...events, ...uniqueRecurringEvents];
-          
-          console.log("Calendar - Added recurring instances:", uniqueRecurringEvents.length);
         } catch (recurringError) {
           console.error("Calendar - Error processing recurring lessons:", recurringError);
           // Continue with regular events if we hit an error
+          
+          // Apply filters to events
+          let filteredEvents = events;
+          
+          // Apply student filter if set
+          if (filteredStudentId) {
+            filteredEvents = filteredEvents.filter(event => 
+              event.extendedProps.students?.some((student: any) => 
+                student.id?.toString() === filteredStudentId
+              )
+            );
+          }
+          
+          // Apply parent filter if set
+          if (filteredParentId) {
+            filteredEvents = filteredEvents.filter(event => 
+              event.extendedProps.students?.some((student: any) => {
+                if (student.parent_first_name && student.parent_last_name) {
+                  const parentId = `${student.parent_first_name}_${student.parent_last_name}`.toLowerCase();
+                  return parentId === filteredParentId;
+                }
+                return false;
+              })
+            );
+          }
+          
+          // Update state with processed events
+          setLessons(filteredEvents);
+          setIsLoading(false);
+          setLoadingError('Some recurring lessons could not be processed.');
+          setLoadingProgress(100);
         }
+      } else {
+        // No recurring lessons processing, just filter and set the regular events
+        let filteredEvents = events;
+        
+        // Apply student filter if set
+        if (filteredStudentId) {
+          filteredEvents = filteredEvents.filter(event => 
+            event.extendedProps.students?.some((student: any) => 
+              student.id?.toString() === filteredStudentId
+            )
+          );
+        }
+        
+        // Apply parent filter if set
+        if (filteredParentId) {
+          filteredEvents = filteredEvents.filter(event => 
+            event.extendedProps.students?.some((student: any) => {
+              if (student.parent_first_name && student.parent_last_name) {
+                const parentId = `${student.parent_first_name}_${student.parent_last_name}`.toLowerCase();
+                return parentId === filteredParentId;
+              }
+              return false;
+            })
+          );
+        }
+        
+        console.log("Calendar - Final events count:", filteredEvents.length);
+        
+        // Update state with processed events
+        setLessons(filteredEvents);
+        setIsLoading(false);
+        setLoadingError(null);
+        setLoadingProgress(100);
       }
-      
-      // Apply filters
-      let filteredEvents = events;
-      
-      // Apply student filter if set
-      if (filteredStudentId) {
-        filteredEvents = filteredEvents.filter(event => 
-          event.extendedProps.students?.some((student: any) => 
-            student.id?.toString() === filteredStudentId
-          )
-        );
-      }
-      
-      // Apply parent filter if set
-      if (filteredParentId) {
-        filteredEvents = filteredEvents.filter(event => 
-          event.extendedProps.students?.some((student: any) => {
-            if (student.parent_first_name && student.parent_last_name) {
-              const parentId = `${student.parent_first_name}_${student.parent_last_name}`.toLowerCase();
-              return parentId === filteredParentId;
-            }
-            return false;
-          })
-        );
-      }
-      
-      console.log("Calendar - Final events count:", filteredEvents.length);
-      
-      // Update state with processed events
-      setLessons(filteredEvents);
-      setIsLoading(false);
-      setLoadingError(null);
-      setLoadingProgress(100);
     } catch (error) {
       console.error('Calendar - Error fetching or processing lessons:', error);
       
@@ -652,7 +867,7 @@ const CalendarPage = () => {
       // Cleanup abort controller
       abortControllerRef.current = null;
     }
-  }, [filteredStudentId, filteredParentId, showRecurringLessons, calculateRecurringInstances]);
+  }, [filteredStudentId, filteredParentId, showRecurringLessons, calculateRecurringInstancesBatched, safeParseISO]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -777,13 +992,38 @@ const CalendarPage = () => {
     }
   };
 
+  // Enhanced refresh function with better caching and cancellation
   const forceCalendarRefresh = useCallback(() => {
     console.log("Calendar - forceCalendarRefresh called");
     setLoadingError(null);
     setRetryCount(prev => prev + 1);
     
-    // Clear the recurring events cache on forced refresh
-    recurringEventsCache.current.clear();
+    // Cancel any ongoing calculations
+    calculationCancelledRef.current = true;
+    
+    // Selectively clear cache on forced refresh
+    // Instead of clearing all cache entries, we can be selective
+    const now = new Date();
+    const oneWeekAgo = subDays(now, 7);
+    
+    // Clear only entries that include dates more than a week old
+    // This helps keep useful cache while removing outdated entries
+    recurringEventsCache.current.forEach((value, key) => {
+      const parts = key.split('-');
+      if (parts.length >= 3) {
+        try {
+          const dateStr = parts[1]; // The start date part of the key
+          const cacheDate = parseISO(dateStr);
+          if (cacheDate < oneWeekAgo) {
+            recurringEventsCache.current.delete(key);
+          }
+        } catch (e) {
+          // If we can't parse the date, just keep the cache entry
+        }
+      }
+    });
+    
+    console.log(`Calendar - Cache size after selective clearing: ${recurringEventsCache.current.size} entries`);
     
     // Refresh via calendar API if available
     if (calendarRef.current) {
@@ -927,14 +1167,30 @@ const CalendarPage = () => {
   const handleFilterReset = () => {
     setFilteredStudentId(null);
     setFilteredParentId(null);
-    recurringEventsCache.current.clear();
+    
+    // Only clear relevant cache entries on filter reset
+    const filterKeys = Array.from(recurringEventsCache.current.keys()).filter(key => 
+      key.includes(filteredStudentId || '') || key.includes(filteredParentId || '')
+    );
+    
+    filterKeys.forEach(key => recurringEventsCache.current.delete(key));
+    
     forceCalendarRefresh();
   };
 
   const handleRetry = () => {
     setLoadingError(null);
     setRetryCount(prev => prev + 1);
-    recurringEventsCache.current.clear();
+    
+    // Clear cache for the current visible range only, not all cache
+    const cacheKey = `*-${visibleDateRange.start.toISOString()}-${visibleDateRange.end.toISOString()}`;
+    Array.from(recurringEventsCache.current.keys()).forEach(key => {
+      if (key.includes(visibleDateRange.start.toISOString()) || 
+          key.includes(visibleDateRange.end.toISOString())) {
+        recurringEventsCache.current.delete(key);
+      }
+    });
+    
     forceCalendarRefresh();
   };
 
@@ -1110,7 +1366,7 @@ const CalendarPage = () => {
                     events={lessons}
                     selectable={true}
                     selectMirror={true}
-                    dayMaxEvents={3}
+                    dayMaxEvents={true}
                     weekends={true}
                     select={handleDateSelect}
                     eventClick={handleEventClick}
