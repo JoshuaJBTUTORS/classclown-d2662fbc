@@ -35,16 +35,18 @@ const CourseDetail: React.FC = () => {
     queryKey: ['course-modules', courseId],
     queryFn: () => learningHubService.getCourseModules(courseId!),
     enabled: !!courseId,
-    onSuccess: (data) => {
-      if (data && data.length > 0 && !activeModuleId) {
-        setActiveModuleId(data[0].id);
-        
-        if (data[0].lessons && data[0].lessons.length > 0) {
-          setActiveLessonId(data[0].lessons[0].id);
-        }
+  });
+
+  // Set initial active module and lesson when data loads
+  React.useEffect(() => {
+    if (modules && modules.length > 0 && !activeModuleId) {
+      setActiveModuleId(modules[0].id);
+      
+      if (modules[0].lessons && modules[0].lessons.length > 0) {
+        setActiveLessonId(modules[0].lessons[0].id);
       }
     }
-  });
+  }, [modules, activeModuleId]);
 
   // Handle module selection
   const handleModuleSelect = (moduleId: string) => {
@@ -168,10 +170,8 @@ const CourseDetail: React.FC = () => {
         <div className="md:col-span-1">
           <CourseSidebar 
             modules={modules || []}
-            activeModuleId={activeModuleId}
-            activeLessonId={activeLessonId}
-            onModuleSelect={handleModuleSelect}
-            onLessonSelect={handleLessonSelect}
+            onSelectLesson={lesson => setActiveLessonId(lesson.id)}
+            currentLessonId={activeLessonId || undefined}
           />
         </div>
         
@@ -180,7 +180,7 @@ const CourseDetail: React.FC = () => {
           {activeLesson ? (
             <ContentViewer 
               lesson={activeLesson} 
-              moduleTitle={activeModule?.title || ''} 
+              isLoading={false}
             />
           ) : (
             <div className="flex flex-col items-center justify-center h-[400px] bg-gray-50 border rounded-lg">

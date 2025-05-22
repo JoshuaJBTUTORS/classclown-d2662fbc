@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,7 +20,6 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   currentLessonId,
   isAdmin = false
 }) => {
-  const navigate = useNavigate();
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>(
     // Default to expanding all modules
     modules.reduce((acc, module) => ({ ...acc, [module.id]: true }), {})
@@ -41,7 +39,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   };
 
   return (
-    <div className="w-full h-full flex flex-col border-r">
+    <div className="w-full h-full flex flex-col border rounded-md">
       <div className="p-4 border-b">
         <h3 className="font-medium">Course Content</h3>
       </div>
@@ -57,7 +55,6 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                   variant="outline" 
                   size="sm" 
                   className="mt-2"
-                  onClick={() => navigate('/learning-hub/edit')}
                 >
                   Add Content
                 </Button>

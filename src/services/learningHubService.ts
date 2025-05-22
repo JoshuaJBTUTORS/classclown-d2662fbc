@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Course, CourseModule, CourseLesson, QuizQuestion, QuizOption } from '@/types/course';
+import { Course, CourseModule, CourseLesson } from '@/types/course';
 
 export const learningHubService = {
   // Course methods
@@ -26,9 +26,14 @@ export const learningHubService = {
   },
 
   createCourse: async (course: Partial<Course>): Promise<Course> => {
+    // Ensure title is included, as it's required by the database
+    if (!course.title) {
+      throw new Error('Course title is required');
+    }
+    
     const { data, error } = await supabase
       .from('courses')
-      .insert([course])
+      .insert(course)
       .select()
       .single();
     
@@ -73,9 +78,14 @@ export const learningHubService = {
   },
 
   createModule: async (module: Partial<CourseModule>): Promise<CourseModule> => {
+    // Ensure required fields are included
+    if (!module.title || !module.course_id || module.position === undefined) {
+      throw new Error('Module title, course_id and position are required');
+    }
+    
     const { data, error } = await supabase
       .from('course_modules')
-      .insert([module])
+      .insert(module)
       .select()
       .single();
     
@@ -106,9 +116,14 @@ export const learningHubService = {
 
   // Lesson methods
   createLesson: async (lesson: Partial<CourseLesson>): Promise<CourseLesson> => {
+    // Ensure required fields are included
+    if (!lesson.title || !lesson.module_id || !lesson.content_type || lesson.position === undefined) {
+      throw new Error('Lesson title, module_id, content_type, and position are required');
+    }
+    
     const { data, error } = await supabase
       .from('course_lessons')
-      .insert([lesson])
+      .insert(lesson)
       .select()
       .single();
     
@@ -131,86 +146,6 @@ export const learningHubService = {
   deleteLesson: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('course_lessons')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-  },
-
-  // Quiz methods
-  getQuizQuestions: async (lessonId: string): Promise<QuizQuestion[]> => {
-    const { data, error } = await supabase
-      .from('quiz_questions')
-      .select(`
-        *,
-        options:quiz_options(*)
-      `)
-      .eq('lesson_id', lessonId)
-      .order('position', { ascending: true });
-    
-    if (error) throw error;
-    return data as unknown as QuizQuestion[];
-  },
-
-  createQuizQuestion: async (question: Partial<QuizQuestion>): Promise<QuizQuestion> => {
-    const { data, error } = await supabase
-      .from('quiz_questions')
-      .insert([question])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as QuizQuestion;
-  },
-
-  updateQuizQuestion: async (id: string, question: Partial<QuizQuestion>): Promise<QuizQuestion> => {
-    const { data, error } = await supabase
-      .from('quiz_questions')
-      .update(question)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as QuizQuestion;
-  },
-
-  deleteQuizQuestion: async (id: string): Promise<void> => {
-    const { error } = await supabase
-      .from('quiz_questions')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-  },
-
-  // Quiz Options methods
-  createQuizOption: async (option: Partial<QuizOption>): Promise<QuizOption> => {
-    const { data, error } = await supabase
-      .from('quiz_options')
-      .insert([option])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as QuizOption;
-  },
-
-  updateQuizOption: async (id: string, option: Partial<QuizOption>): Promise<QuizOption> => {
-    const { data, error } = await supabase
-      .from('quiz_options')
-      .update(option)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as QuizOption;
-  },
-
-  deleteQuizOption: async (id: string): Promise<void> => {
-    const { error } = await supabase
-      .from('quiz_options')
       .delete()
       .eq('id', id);
     
