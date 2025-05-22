@@ -42,6 +42,15 @@ export interface Lesson {
     first_name: string;
     last_name: string;
   };
+  lesson_students?: {
+    student: {
+      id: number;
+      first_name: string;
+      last_name: string;
+      parent_first_name?: string;
+      parent_last_name?: string;
+    };
+  }[];
 }
 
 export interface HomeworkSubmission {
