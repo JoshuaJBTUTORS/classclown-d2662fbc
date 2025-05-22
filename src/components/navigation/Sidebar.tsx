@@ -111,11 +111,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
 
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <Avatar className="w-8 h-8 border-2 border-[#9FE2BF]/20">
+            <Avatar className="w-8 h-8 border-2 border-[#e94b7f]/20">
               {profile?.avatar_url ? (
                 <AvatarImage src={profile.avatar_url} alt={profile.first_name} />
               ) : (
-                <AvatarFallback className="bg-[#9FE2BF]/10 text-foreground">{profile?.first_name?.substring(0, 2) || '?'}</AvatarFallback>
+                <AvatarFallback className="bg-[#e94b7f]/10 text-foreground">{profile?.first_name?.substring(0, 2) || '?'}</AvatarFallback>
               )}
             </Avatar>
           </DropdownMenuTrigger>
@@ -142,11 +142,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                 to={item.path}
                 className={({ isActive }) =>
                   `flex items-center p-3 rounded-md transition-colors hover:bg-gray-50 ${
-                    isActive ? 'bg-[#9FE2BF]/10 text-foreground font-medium' : 'text-foreground'
+                    isActive ? 'bg-[#e94b7f]/10 text-foreground font-medium' : 'text-foreground'
                   }`
                 }
               >
-                <item.icon className={`w-5 h-5 mr-3 ${pathname === item.path ? 'text-[#9FE2BF]' : 'text-gray-500'}`} />
+                <item.icon className={`w-5 h-5 mr-3 ${pathname === item.path ? 'text-[#e94b7f]' : 'text-gray-500'}`} />
                 <span className="font-medium">{item.name}</span>
               </NavLink>
             </li>
@@ -155,11 +155,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       </nav>
 
       <div className="p-4 border-t border-gray-100">
-        <div className="bg-[#9FE2BF]/5 rounded-lg p-4">
+        <div className="bg-[#e94b7f]/5 rounded-lg p-4">
           <h4 className="font-playfair font-medium mb-1">Need help?</h4>
           <p className="text-xs text-muted-foreground mb-3">Contact our support team for assistance.</p>
           <button 
-            className="w-full bg-white border border-[#9FE2BF]/30 text-foreground py-2 px-4 rounded-md text-sm font-medium hover:bg-[#9FE2BF]/10 transition-colors"
+            className="w-full bg-white border border-[#e94b7f]/30 text-foreground py-2 px-4 rounded-md text-sm font-medium hover:bg-[#e94b7f]/10 transition-colors"
           >
             Contact Support
           </button>
