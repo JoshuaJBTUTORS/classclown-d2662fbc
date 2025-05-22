@@ -8,74 +8,74 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 138 10% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 138 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 138 10% 15%;
 
-    /* Updated primary color to a teal/blue-green */
-    --primary: 187 75% 40%;
-    --primary-foreground: 210 40% 98%;
+    /* Updated primary color to light green (#CEFAD0) */
+    --primary: 132 80% 90%;
+    --primary-foreground: 138 70% 15%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 132 30% 96%;
+    --secondary-foreground: 138 30% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 132 20% 96%;
+    --muted-foreground: 138 10% 45%;
 
-    --accent: 187 75% 94%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 132 70% 94%;
+    --accent-foreground: 138 70% 20%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 187 75% 40%;
+    --border: 132 20% 90%;
+    --input: 132 20% 90%;
+    --ring: 132 80% 80%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 187 75% 98%;
-    --sidebar-foreground: 187 30% 15%;
-    --sidebar-primary: 187 75% 40%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 187 75% 94%;
-    --sidebar-accent-foreground: 187 30% 15%;
-    --sidebar-border: 187 30% 90%;
-    --sidebar-ring: 187 75% 40%;
+    --sidebar-background: 132 80% 98%;
+    --sidebar-foreground: 138 30% 20%;
+    --sidebar-primary: 132 80% 85%;
+    --sidebar-primary-foreground: 138 70% 15%;
+    --sidebar-accent: 132 70% 90%;
+    --sidebar-accent-foreground: 138 30% 15%;
+    --sidebar-border: 132 30% 90%;
+    --sidebar-ring: 132 80% 80%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 138 20% 8%;
+    --foreground: 132 50% 90%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 138 20% 10%;
+    --card-foreground: 132 50% 90%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 138 20% 10%;
+    --popover-foreground: 132 50% 90%;
 
-    --primary: 187 75% 40%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 132 80% 80%;
+    --primary-foreground: 138 70% 15%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 138 20% 20%;
+    --secondary-foreground: 132 50% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 138 20% 20%;
+    --muted-foreground: 138 10% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 138 20% 25%;
+    --accent-foreground: 132 50% 90%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 187 75% 40%;
+    --border: 138 20% 25%;
+    --input: 138 20% 25%;
+    --ring: 132 80% 70%;
   }
 }
 
@@ -94,17 +94,17 @@
   }
 }
 
-/* Sidebar styling */
+/* Sidebar styling with updated color scheme */
 .sidebar-item-active {
-  @apply bg-primary/10 text-primary font-medium;
+  @apply bg-primary/30 text-primary-foreground font-medium;
 }
 
-/* Dashboard card with improved styling */
+/* Dashboard card with premium styling */
 .dashboard-card {
-  @apply bg-white rounded-lg shadow-sm border border-border p-4 transition-all hover:shadow-md;
+  @apply bg-white rounded-lg shadow-md border border-border p-4 transition-all hover:shadow-lg;
 }
 
-/* Custom button hover effects */
+/* Custom button hover effects for a premium feel */
 .btn-hover-effect {
   @apply transition-all duration-300 hover:translate-y-[-2px] hover:shadow-md;
 }
@@ -114,8 +114,7 @@
   @apply relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:after:w-full;
 }
 
-/* Card hover effects */
+/* Card hover effects with premium appearance */
 .card-hover {
-  @apply transition-all duration-300 hover:shadow-lg hover:border-primary/20;
+  @apply transition-all duration-300 hover:shadow-xl hover:border-primary/30;
 }
-
