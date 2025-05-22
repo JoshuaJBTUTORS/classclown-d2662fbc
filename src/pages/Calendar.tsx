@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, eachDayOfInterval, addDays } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
@@ -152,11 +153,11 @@ const CalendarPage = () => {
       if (recurringError) throw recurringError;
       
       // Combine regular and recurring lessons
-      let allLessons = data || [];
+      let allLessons = (data || []) as Lesson[];
       
       // If showRecurringLessons is true, add recurring instances
       if (showRecurringLessons && recurringData) {
-        const recurringLessons = recurringData.filter(lesson => {
+        const recurringLessons = (recurringData.filter(lesson => {
           // Filter out recurring lessons that are in the past or have ended
           if (!lesson.is_recurring || lesson.status === 'cancelled') return false;
           
@@ -167,7 +168,7 @@ const CalendarPage = () => {
           }
           
           return true;
-        });
+        })) as Lesson[];
         
         // Generate instances for each recurring lesson
         recurringLessons.forEach(lesson => {
@@ -231,7 +232,7 @@ const CalendarPage = () => {
                 start_time: format(newStartDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
                 end_time: format(newEndDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
                 is_recurring_instance: true
-              };
+              } as Lesson;
               
               allLessons.push(recurringInstance);
             }
@@ -242,14 +243,14 @@ const CalendarPage = () => {
       // Apply student filter if set
       if (filteredStudentId) {
         allLessons = allLessons.filter(lesson => 
-          lesson.lesson_students.some((ls: any) => ls.student.id.toString() === filteredStudentId)
+          lesson.lesson_students?.some((ls: any) => ls.student.id.toString() === filteredStudentId)
         );
       }
       
       // Apply parent filter if set
       if (filteredParentId) {
         allLessons = allLessons.filter(lesson => 
-          lesson.lesson_students.some((ls: any) => {
+          lesson.lesson_students?.some((ls: any) => {
             const student = ls.student;
             if (student && student.parent_first_name && student.parent_last_name) {
               const parentId = `${student.parent_first_name}_${student.parent_last_name}`.toLowerCase();
