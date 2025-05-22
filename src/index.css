@@ -16,7 +16,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 138 10% 15%;
 
-    /* Updated primary color to light green (#CEFAD0) */
+    /* Light green as an accent color */
     --primary: 132 80% 90%;
     --primary-foreground: 138 70% 15%;
 
@@ -38,13 +38,14 @@
 
     --radius: 0.75rem;
 
-    --sidebar-background: 132 80% 98%;
+    /* Sidebar updated to white background with subtle green accents */
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 138 30% 20%;
-    --sidebar-primary: 132 80% 85%;
+    --sidebar-primary: 132 80% 90%;
     --sidebar-primary-foreground: 138 70% 15%;
-    --sidebar-accent: 132 70% 90%;
+    --sidebar-accent: 132 70% 94%;
     --sidebar-accent-foreground: 138 30% 15%;
-    --sidebar-border: 132 30% 90%;
+    --sidebar-border: 132 20% 90%;
     --sidebar-ring: 132 80% 80%;
   }
 
@@ -94,9 +95,9 @@
   }
 }
 
-/* Sidebar styling with updated color scheme */
+/* Sidebar styling with white background and subtle green accents */
 .sidebar-item-active {
-  @apply bg-primary/30 text-primary-foreground font-medium;
+  @apply bg-primary/20 text-primary-foreground font-medium;
 }
 
 /* Dashboard card with premium styling */

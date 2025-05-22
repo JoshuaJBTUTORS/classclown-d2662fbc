@@ -15,7 +15,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-white">
       <Sidebar isOpen={sidebarOpen} />
       <div className="flex flex-col flex-1 lg:pl-0">
         <Navbar toggleSidebar={toggleSidebar} />
@@ -27,28 +27,28 @@ const Index = () => {
           <div className="space-y-6">
             <DashboardMetrics />
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <Card className="lg:col-span-2 card-hover border border-border/40 shadow-md">
+              <Card className="lg:col-span-2 card-hover border border-gray-100 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="font-playfair text-xl">Weekly Activity</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-muted/10 rounded-md">
+                <CardContent className="h-[300px] flex items-center justify-center bg-gray-50/50 rounded-md">
                   <p className="text-muted-foreground text-sm">Activity chart will be shown here</p>
                 </CardContent>
               </Card>
-              <Card className="card-hover border border-border/40 shadow-md">
+              <Card className="card-hover border border-gray-100 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="font-playfair text-xl">Student Distribution</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-muted/10 rounded-md">
+                <CardContent className="h-[300px] flex items-center justify-center bg-gray-50/50 rounded-md">
                   <p className="text-muted-foreground text-sm">Distribution chart will be shown here</p>
                 </CardContent>
               </Card>
               <UpcomingSessions />
-              <Card className="lg:col-span-2 card-hover border border-border/40 shadow-md">
+              <Card className="lg:col-span-2 card-hover border border-gray-100 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="font-playfair text-xl">Recent Activities</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-muted/10 rounded-md">
+                <CardContent className="h-[300px] flex items-center justify-center bg-gray-50/50 rounded-md">
                   <p className="text-muted-foreground text-sm">Activity log will be shown here</p>
                 </CardContent>
               </Card>
