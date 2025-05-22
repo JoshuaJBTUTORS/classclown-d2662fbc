@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,6 +55,7 @@ interface EditTutorFormProps {
   onUpdate: (tutor: Tutor) => void;
 }
 
+// Update the schema to use string instead of enum for status
 const formSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
@@ -61,7 +63,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   bio: z.string().optional(),
   specialities: z.array(z.string()).optional(),
-  status: z.enum(['active', 'inactive', 'pending']),
+  status: z.string(), // Changed from enum to string to match our updated Tutor type
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -103,7 +105,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       phone: "",
       bio: "",
       specialities: [],
-      status: 'active' as const,
+      status: 'active',
     },
   });
 
