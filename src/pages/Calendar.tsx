@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, isValid } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -17,7 +17,7 @@ import { Lesson } from '@/types/lesson';
 import { Student } from '@/types/student';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Plus, Filter, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Filter, Check, RefreshCw } from 'lucide-react';
 import ViewOptions from '@/components/calendar/ViewOptions';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -71,8 +71,38 @@ const CalendarPage = () => {
     start: new Date(),
     end: new Date()
   });
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const loadingTimeoutRef = useRef<number | null>(null);
   const { user } = useAuth();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
+
+  // Setup loading timeout to prevent infinite loading state
+  useEffect(() => {
+    if (isLoading) {
+      // Clear any existing timeout
+      if (loadingTimeoutRef.current) {
+        window.clearTimeout(loadingTimeoutRef.current);
+      }
+      
+      // Set a new timeout that will reset the loading state after 10 seconds
+      loadingTimeoutRef.current = window.setTimeout(() => {
+        console.error('Calendar - Loading timeout exceeded, forcing reset');
+        setIsLoading(false);
+        setLoadingError('Calendar data loading timed out. Please try refreshing.');
+      }, 10000);
+    } else if (loadingTimeoutRef.current) {
+      // If not loading, clear the timeout
+      window.clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+    
+    // Clean up timeout on component unmount
+    return () => {
+      if (loadingTimeoutRef.current) {
+        window.clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [isLoading]);
 
   // Fetch students for filters
   useEffect(() => {
@@ -115,12 +145,22 @@ const CalendarPage = () => {
   }, []);
 
   const fetchLessons = useCallback(async (start: Date, end: Date) => {
+    // Validate date inputs to prevent issues
+    if (!start || !end || !isValid(start) || !isValid(end)) {
+      console.error('Calendar - Invalid date range:', { start, end });
+      setIsLoading(false);
+      setLoadingError('Invalid date range. Please try refreshing.');
+      return;
+    }
+    
     console.log("Calendar - fetchLessons called with:", { 
       start: format(start, "yyyy-MM-dd"),
       end: format(end, "yyyy-MM-dd")
     });
     
     setIsLoading(true);
+    setLoadingError(null);
+    
     try {
       const startDate = format(start, "yyyy-MM-dd");
       const endDate = format(end, "yyyy-MM-dd");
@@ -138,117 +178,185 @@ const CalendarPage = () => {
         .gte('start_time', `${startDate}T00:00:00`)
         .lte('start_time', `${endDate}T23:59:59`);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Calendar - Error fetching regular lessons:", error);
+        throw error;
+      }
       
       console.log("Calendar - Fetched lessons:", data?.length);
 
       // Also fetch recurring lessons that might extend beyond the current view
-      const { data: recurringData, error: recurringError } = await supabase
-        .from('lessons')
-        .select(`
-          *,
-          tutor:tutors(id, first_name, last_name),
-          lesson_students(
-            student:students(id, first_name, last_name, parent_first_name, parent_last_name)
-          )
-        `)
-        .eq('is_recurring', true)
-        .gte('start_time', `${format(new Date(start.getFullYear(), start.getMonth() - 1, 1), "yyyy-MM-dd")}T00:00:00`);
-        
-      if (recurringError) throw recurringError;
+      let recurringData: any[] = [];
+      try {
+        const { data: recData, error: recurringError } = await supabase
+          .from('lessons')
+          .select(`
+            *,
+            tutor:tutors(id, first_name, last_name),
+            lesson_students(
+              student:students(id, first_name, last_name, parent_first_name, parent_last_name)
+            )
+          `)
+          .eq('is_recurring', true)
+          .gte('start_time', `${format(new Date(start.getFullYear(), start.getMonth() - 1, 1), "yyyy-MM-dd")}T00:00:00`);
+          
+        if (recurringError) {
+          console.error("Calendar - Error fetching recurring lessons:", recurringError);
+        } else {
+          recurringData = recData || [];
+        }
+      } catch (recError) {
+        console.error("Calendar - Exception in recurring lessons fetch:", recError);
+        // Continue with regular lessons even if recurring fails
+      }
       
       // Combine regular and recurring lessons
       let allLessons = (data || []) as Lesson[];
       
       // If showRecurringLessons is true, add recurring instances
-      if (showRecurringLessons && recurringData) {
-        const recurringLessons = (recurringData.filter(lesson => {
-          // Filter out recurring lessons that are in the past or have ended
-          if (!lesson.is_recurring || lesson.status === 'cancelled') return false;
-          
-          // Check if this recurring lesson's end date is in the future or null
-          if (lesson.recurrence_end_date) {
-            const endDateParsed = parseISO(lesson.recurrence_end_date);
-            if (endDateParsed < start) return false;
-          }
-          
-          return true;
-        })) as Lesson[];
-        
-        // Generate instances for each recurring lesson
-        recurringLessons.forEach(lesson => {
-          if (!lesson.recurrence_interval) return;
-          
-          // Generate instances based on recurrence_interval
-          const interval = lesson.recurrence_interval;
-          const startDateOriginal = parseISO(lesson.start_time);
-          const endDateOriginal = parseISO(lesson.end_time);
-          const durationMs = endDateOriginal.getTime() - startDateOriginal.getTime();
-          
-          // Get all dates in the current calendar view
-          const datesInView = eachDayOfInterval({ start, end });
-          
-          datesInView.forEach(date => {
-            // For weekly recurrence, check if this is the correct day of week
-            if (interval === 'weekly') {
-              if (date.getDay() !== startDateOriginal.getDay()) return;
-            } 
-            // For biweekly (fortnightly) recurrence
-            else if (interval === 'biweekly') {
-              if (date.getDay() !== startDateOriginal.getDay()) return;
-              
-              // Check if this is the correct biweekly cadence
-              const weeksDiff = Math.floor((date.getTime() - startDateOriginal.getTime()) / (7 * 24 * 60 * 60 * 1000));
-              if (weeksDiff % 2 !== 0) return;
-            }
-            // For monthly recurrence, check if this is the correct day of month
-            else if (interval === 'monthly') {
-              if (date.getDate() !== startDateOriginal.getDate()) return;
+      if (showRecurringLessons && recurringData.length > 0) {
+        try {
+          const recurringLessons = (recurringData.filter(lesson => {
+            // Filter out recurring lessons that are in the past or have ended
+            if (!lesson.is_recurring || lesson.status === 'cancelled') return false;
+            
+            // Check if this recurring lesson's end date is in the future or null
+            if (lesson.recurrence_end_date) {
+              try {
+                const endDateParsed = parseISO(lesson.recurrence_end_date);
+                if (endDateParsed < start) return false;
+              } catch (parseError) {
+                console.error("Calendar - Error parsing recurrence_end_date:", parseError);
+                return false;
+              }
             }
             
-            // Skip dates that are before the original start date
-            if (date < startDateOriginal) return;
+            return true;
+          })) as Lesson[];
+          
+          // Generate instances for each recurring lesson
+          recurringLessons.forEach(lesson => {
+            if (!lesson.recurrence_interval) return;
             
-            // Skip if we've passed the recurrence end date
-            if (lesson.recurrence_end_date && date > parseISO(lesson.recurrence_end_date)) return;
-            
-            // Check if this date already exists in regular lessons (to avoid duplicates)
-            const formattedDate = format(date, 'yyyy-MM-dd');
-            const exists = data.some(l => 
-              format(parseISO(l.start_time), 'yyyy-MM-dd') === formattedDate && 
-              l.title === lesson.title
-            );
-            
-            if (!exists) {
-              // Create a new instance with the correct date but keeping the original time
-              const newStartDate = new Date(date);
-              newStartDate.setHours(startDateOriginal.getHours());
-              newStartDate.setMinutes(startDateOriginal.getMinutes());
-              newStartDate.setSeconds(0);
+            try {
+              // Generate instances based on recurrence_interval
+              const interval = lesson.recurrence_interval;
               
-              const newEndDate = new Date(newStartDate.getTime() + durationMs);
+              // Parse dates with validation
+              let startDateOriginal: Date;
+              let endDateOriginal: Date;
               
-              // Create a unique ID for this recurring instance
-              const instanceId = `${lesson.id}-${format(date, 'yyyy-MM-dd')}`;
+              try {
+                startDateOriginal = parseISO(lesson.start_time);
+                endDateOriginal = parseISO(lesson.end_time);
+                
+                if (!isValid(startDateOriginal) || !isValid(endDateOriginal)) {
+                  console.error("Calendar - Invalid dates in lesson:", lesson.id);
+                  return;
+                }
+              } catch (parseError) {
+                console.error("Calendar - Error parsing lesson dates:", parseError);
+                return;
+              }
               
-              const recurringInstance = {
-                ...lesson,
-                id: instanceId,
-                start_time: format(newStartDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
-                end_time: format(newEndDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
-                is_recurring_instance: true
-              } as Lesson;
+              const durationMs = endDateOriginal.getTime() - startDateOriginal.getTime();
               
-              allLessons.push(recurringInstance);
+              // Make sure the date range is valid before using eachDayOfInterval
+              if (start > end) {
+                console.error("Calendar - Invalid date range for interval:", { start, end });
+                return;
+              }
+              
+              // Get all dates in the current calendar view
+              let datesInView: Date[] = [];
+              try {
+                datesInView = eachDayOfInterval({ start, end });
+              } catch (intervalError) {
+                console.error("Calendar - Error in eachDayOfInterval:", intervalError);
+                return;
+              }
+              
+              datesInView.forEach(date => {
+                try {
+                  // For weekly recurrence, check if this is the correct day of week
+                  if (interval === 'weekly') {
+                    if (date.getDay() !== startDateOriginal.getDay()) return;
+                  } 
+                  // For biweekly (fortnightly) recurrence
+                  else if (interval === 'biweekly') {
+                    if (date.getDay() !== startDateOriginal.getDay()) return;
+                    
+                    // Check if this is the correct biweekly cadence
+                    const weeksDiff = Math.floor((date.getTime() - startDateOriginal.getTime()) / (7 * 24 * 60 * 60 * 1000));
+                    if (weeksDiff % 2 !== 0) return;
+                  }
+                  // For monthly recurrence, check if this is the correct day of month
+                  else if (interval === 'monthly') {
+                    if (date.getDate() !== startDateOriginal.getDate()) return;
+                  }
+                  
+                  // Skip dates that are before the original start date
+                  if (date < startDateOriginal) return;
+                  
+                  // Skip if we've passed the recurrence end date
+                  if (lesson.recurrence_end_date) {
+                    const recEndDate = parseISO(lesson.recurrence_end_date);
+                    if (isValid(recEndDate) && date > recEndDate) return;
+                  }
+                  
+                  // Check if this date already exists in regular lessons (to avoid duplicates)
+                  const formattedDate = format(date, 'yyyy-MM-dd');
+                  const exists = data.some(l => {
+                    try {
+                      return format(parseISO(l.start_time), 'yyyy-MM-dd') === formattedDate && 
+                        l.title === lesson.title;
+                    } catch (e) {
+                      return false;
+                    }
+                  });
+                  
+                  if (!exists) {
+                    // Create a new instance with the correct date but keeping the original time
+                    const newStartDate = new Date(date);
+                    newStartDate.setHours(startDateOriginal.getHours());
+                    newStartDate.setMinutes(startDateOriginal.getMinutes());
+                    newStartDate.setSeconds(0);
+                    
+                    const newEndDate = new Date(newStartDate.getTime() + durationMs);
+                    
+                    // Create a unique ID for this recurring instance
+                    const instanceId = `${lesson.id}-${format(date, 'yyyy-MM-dd')}`;
+                    
+                    const recurringInstance = {
+                      ...lesson,
+                      id: instanceId,
+                      start_time: format(newStartDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
+                      end_time: format(newEndDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
+                      is_recurring_instance: true
+                    } as Lesson;
+                    
+                    allLessons.push(recurringInstance);
+                  }
+                } catch (dateProcessingError) {
+                  console.error("Calendar - Error processing date in recurring lessons:", dateProcessingError);
+                  // Skip this date and continue with others
+                }
+              });
+            } catch (recurringProcessingError) {
+              console.error("Calendar - Error processing recurring lesson:", recurringProcessingError, lesson);
+              // Skip this recurring lesson and continue with others
             }
           });
-        });
+        } catch (recurringError) {
+          console.error("Calendar - Error processing recurring lessons:", recurringError);
+          // Continue with regular lessons even if recurring processing fails
+        }
       }
       
       // Apply student filter if set
       if (filteredStudentId) {
         allLessons = allLessons.filter(lesson => 
-          lesson.lesson_students?.some((ls: any) => ls.student.id.toString() === filteredStudentId)
+          lesson.lesson_students?.some((ls: any) => ls.student?.id?.toString() === filteredStudentId)
         );
       }
       
@@ -268,62 +376,69 @@ const CalendarPage = () => {
 
       // Transform the data for FullCalendar
       const events = allLessons.map(lesson => {
-        const students = lesson.lesson_students?.map((ls: any) => ls.student) || [];
-        
-        const studentNames = students
-          .map((student: any) => `${student.first_name} ${student.last_name}`)
-          .join(', ');
-        
-        const displayTitle = students.length > 0 
-          ? `${lesson.title} - ${studentNames}`
-          : lesson.title;
-        
-        let backgroundColor;
-        let borderColor;
-        
-        switch (lesson.status) {
-          case 'completed':
-            backgroundColor = 'rgba(34, 197, 94, 0.2)';
-            borderColor = 'rgb(34, 197, 94)';
-            break;
-          case 'cancelled':
-            backgroundColor = 'rgba(239, 68, 68, 0.2)';
-            borderColor = 'rgb(239, 68, 68)';
-            break;
-          default:
-            backgroundColor = 'rgba(59, 130, 246, 0.2)';
-            borderColor = 'rgb(59, 130, 246)';
-        }
+        try {
+          const students = lesson.lesson_students?.map((ls: any) => ls.student) || [];
+          
+          const studentNames = students
+            .map((student: any) => `${student.first_name} ${student.last_name}`)
+            .join(', ');
+          
+          const displayTitle = students.length > 0 
+            ? `${lesson.title} - ${studentNames}`
+            : lesson.title;
+          
+          let backgroundColor;
+          let borderColor;
+          
+          switch (lesson.status) {
+            case 'completed':
+              backgroundColor = 'rgba(34, 197, 94, 0.2)';
+              borderColor = 'rgb(34, 197, 94)';
+              break;
+            case 'cancelled':
+              backgroundColor = 'rgba(239, 68, 68, 0.2)';
+              borderColor = 'rgb(239, 68, 68)';
+              break;
+            default:
+              backgroundColor = 'rgba(59, 130, 246, 0.2)';
+              borderColor = 'rgb(59, 130, 246)';
+          }
 
-        if (lesson.is_recurring || lesson.is_recurring_instance) {
-          borderColor = 'rgb(168, 85, 247)';
-          if (lesson.is_recurring_instance) {
-            backgroundColor = 'rgba(168, 85, 247, 0.15)';
+          if (lesson.is_recurring || lesson.is_recurring_instance) {
+            borderColor = 'rgb(168, 85, 247)';
+            if (lesson.is_recurring_instance) {
+              backgroundColor = 'rgba(168, 85, 247, 0.15)';
+            }
           }
+          
+          return {
+            id: lesson.id,
+            title: displayTitle,
+            start: lesson.start_time,
+            end: lesson.end_time,
+            backgroundColor,
+            borderColor,
+            textColor: 'black',
+            extendedProps: {
+              description: lesson.description,
+              status: lesson.status,
+              tutor: lesson.tutor,
+              students,
+              isRecurring: lesson.is_recurring,
+              isRecurringInstance: lesson.is_recurring_instance
+            }
+          };
+        } catch (eventError) {
+          console.error("Calendar - Error processing event:", eventError, lesson);
+          // Skip this event if there's an error
+          return null;
         }
-        
-        return {
-          id: lesson.id,
-          title: displayTitle,
-          start: lesson.start_time,
-          end: lesson.end_time,
-          backgroundColor,
-          borderColor,
-          textColor: 'black',
-          extendedProps: {
-            description: lesson.description,
-            status: lesson.status,
-            tutor: lesson.tutor,
-            students,
-            isRecurring: lesson.is_recurring,
-            isRecurringInstance: lesson.is_recurring_instance
-          }
-        };
-      });
+      }).filter(Boolean); // Filter out any null events from errors
 
       setLessons(events);
     } catch (error) {
       console.error('Calendar - Error fetching lessons:', error);
+      setLoadingError('Failed to load lessons. Please try again.');
       toast.error('Failed to load lessons');
     } finally {
       setIsLoading(false);
@@ -372,15 +487,20 @@ const CalendarPage = () => {
 
   // Get a formatted display for the current date based on the view
   const getDateDisplay = () => {
-    if (calendarView === 'dayGridMonth') {
-      return format(currentDate, 'MMMM yyyy');
-    } else if (calendarView === 'timeGridWeek') {
-      // Start of the week that contains the current date
-      const weekStart = startOfWeek(currentDate);
-      return `Week of ${format(weekStart, 'MMMM d, yyyy')}`;
-    } else {
-      // For day view
-      return format(currentDate, 'MMMM d, yyyy');
+    try {
+      if (calendarView === 'dayGridMonth') {
+        return format(currentDate, 'MMMM yyyy');
+      } else if (calendarView === 'timeGridWeek') {
+        // Start of the week that contains the current date
+        const weekStart = startOfWeek(currentDate);
+        return `Week of ${format(weekStart, 'MMMM d, yyyy')}`;
+      } else {
+        // For day view
+        return format(currentDate, 'MMMM d, yyyy');
+      }
+    } catch (error) {
+      console.error("Error formatting date display:", error);
+      return "Calendar View";
     }
   };
 
@@ -392,6 +512,7 @@ const CalendarPage = () => {
         apiInstance.prev();
       } catch (error) {
         console.error("Error navigating backward:", error);
+        toast.error("Navigation failed. Please try again.");
       }
     }
   };
@@ -404,6 +525,7 @@ const CalendarPage = () => {
         apiInstance.next();
       } catch (error) {
         console.error("Error navigating forward:", error);
+        toast.error("Navigation failed. Please try again.");
       }
     }
   };
@@ -416,6 +538,7 @@ const CalendarPage = () => {
         apiInstance.today();
       } catch (error) {
         console.error("Error navigating to today:", error);
+        toast.error("Navigation failed. Please try again.");
       }
     }
   };
@@ -434,12 +557,14 @@ const CalendarPage = () => {
         apiInstance.gotoDate(dateToKeep);
       } catch (error) {
         console.error("Error changing calendar view:", error);
+        toast.error("Failed to change view. Please try again.");
       }
     }
   };
 
   const forceCalendarRefresh = useCallback(() => {
     console.log("Calendar - forceCalendarRefresh called");
+    setLoadingError(null);
     
     // Refresh via calendar API if available
     if (calendarRef.current) {
@@ -453,14 +578,24 @@ const CalendarPage = () => {
         const visibleStart = view.activeStart;
         const visibleEnd = view.activeEnd;
         
-        // Fetch lessons for the current visible range
-        fetchLessons(visibleStart, visibleEnd);
+        // Validate dates before fetching
+        if (isValid(visibleStart) && isValid(visibleEnd)) {
+          // Fetch lessons for the current visible range
+          fetchLessons(visibleStart, visibleEnd);
+        } else {
+          console.error("Calendar - Invalid visible range from API:", { visibleStart, visibleEnd });
+          // Fallback to the current visible range
+          fetchLessons(visibleDateRange.start, visibleDateRange.end);
+        }
       } catch (error) {
         console.error("Calendar - Error using calendar API:", error);
         
         // Fallback to the current visible range
         fetchLessons(visibleDateRange.start, visibleDateRange.end);
       }
+    } else {
+      // If calendar ref isn't available, use the stored date range
+      fetchLessons(visibleDateRange.start, visibleDateRange.end);
     }
   }, [fetchLessons, visibleDateRange]);
 
@@ -574,6 +709,11 @@ const CalendarPage = () => {
   const handleFilterReset = () => {
     setFilteredStudentId(null);
     setFilteredParentId(null);
+    forceCalendarRefresh();
+  };
+
+  const handleRetry = () => {
+    setLoadingError(null);
     forceCalendarRefresh();
   };
 
@@ -711,6 +851,16 @@ const CalendarPage = () => {
                   <div className="text-center">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
                     <p className="mt-2">Loading calendar...</p>
+                  </div>
+                </div>
+              ) : loadingError ? (
+                <div className="h-[600px] flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <p className="text-red-500">{loadingError}</p>
+                    <Button onClick={handleRetry} variant="outline" className="flex items-center gap-2">
+                      <RefreshCw className="h-4 w-4" />
+                      Retry Loading
+                    </Button>
                   </div>
                 </div>
               ) : (

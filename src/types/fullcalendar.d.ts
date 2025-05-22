@@ -14,6 +14,15 @@ declare module '@fullcalendar/react' {
     getView: () => any;
     refetchEvents: () => void;
     updateSize: () => void;
+    view: {
+      activeStart: Date;
+      activeEnd: Date;
+      calendar: any;
+      type: string;
+      title: string;
+      currentStart: Date;
+      currentEnd: Date;
+    };
     [key: string]: any;
   }
 
