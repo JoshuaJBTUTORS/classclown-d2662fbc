@@ -102,8 +102,10 @@ export type Database = {
           cover_image_url: string | null
           created_at: string | null
           description: string | null
+          difficulty_level: string | null
           id: string
           status: string
+          subject: string | null
           title: string
           updated_at: string | null
         }
@@ -111,8 +113,10 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
+          difficulty_level?: string | null
           id?: string
           status?: string
+          subject?: string | null
           title: string
           updated_at?: string | null
         }
@@ -120,8 +124,10 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
+          difficulty_level?: string | null
           id?: string
           status?: string
+          subject?: string | null
           title?: string
           updated_at?: string | null
         }

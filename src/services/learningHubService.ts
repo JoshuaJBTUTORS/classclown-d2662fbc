@@ -35,6 +35,8 @@ export const learningHubService = {
       title: course.title,
       description: course.description,
       cover_image_url: course.cover_image_url,
+      subject: course.subject,
+      difficulty_level: course.difficulty_level,
       status: course.status || 'draft'
     };
     
