@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, isValid } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -62,6 +62,7 @@ const CalendarPage = () => {
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isSettingHomework, setIsSettingHomework] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudentId, setFilteredStudentId] = useState<string | null>(null);
   const [filteredParentId, setFilteredParentId] = useState<string | null>(null);
@@ -73,6 +74,29 @@ const CalendarPage = () => {
   // Add flag to prevent reacting to programmatic calendar changes
   const isUpdatingFromState = useRef(false);
   const calendarApiInitialized = useRef(false);
+  const loadingTimeoutRef = useRef<number | null>(null);
+
+  // Add a loading timeout to exit loading state after a reasonable time
+  useEffect(() => {
+    // Set a loading timeout of 8 seconds
+    if (isLoading) {
+      console.log("Calendar - Setting up loading timeout");
+      loadingTimeoutRef.current = window.setTimeout(() => {
+        console.log("Calendar - Loading timeout triggered");
+        setIsLoading(false);
+        setLoadingError("Loading timed out. Please try refreshing the page.");
+        toast.error("Calendar loading timed out. Please try refreshing the page.");
+      }, 8000);
+    }
+
+    // Clear timeout when component unmounts or loading is done
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    };
+  }, [isLoading]);
 
   // Fetch students for filters
   useEffect(() => {
@@ -114,12 +138,45 @@ const CalendarPage = () => {
     fetchStudents();
   }, []);
 
-  const fetchLessons = useCallback(async (start: Date, end: Date) => {
-    console.log("Calendar - fetchLessons called with:", { start, end });
-    setIsLoading(true);
+  // Safety function to ensure dates are valid before formatting
+  const safeFormatDate = (date: Date | string, formatString: string): string => {
     try {
-      const startDate = format(start, "yyyy-MM-dd");
-      const endDate = format(end, "yyyy-MM-dd");
+      let dateObj: Date;
+      
+      if (typeof date === 'string') {
+        dateObj = parseISO(date);
+      } else {
+        dateObj = date;
+      }
+      
+      if (!isValid(dateObj)) {
+        console.error("Invalid date object:", date);
+        return "Invalid date";
+      }
+      
+      return format(dateObj, formatString);
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Error formatting date";
+    }
+  };
+
+  const fetchLessons = useCallback(async (start: Date, end: Date) => {
+    console.log("Calendar - fetchLessons called with:", { 
+      start: start.toISOString(), 
+      end: end.toISOString() 
+    });
+    
+    setIsLoading(true);
+    setLoadingError(null);
+    
+    try {
+      if (!isValid(start) || !isValid(end)) {
+        throw new Error("Invalid date range provided to fetchLessons");
+      }
+      
+      const startDate = safeFormatDate(start, "yyyy-MM-dd");
+      const endDate = safeFormatDate(end, "yyyy-MM-dd");
       
       console.log("Calendar - Fetching lessons from", startDate, "to", endDate);
 
@@ -138,7 +195,7 @@ const CalendarPage = () => {
 
       if (error) throw error;
       
-      console.log("Calendar - Fetched lessons:", data.length);
+      console.log("Calendar - Fetched lessons:", data?.length);
 
       // Also fetch recurring lessons that might extend beyond the current view
       const { data: recurringData, error: recurringError } = await supabase
@@ -151,7 +208,7 @@ const CalendarPage = () => {
           )
         `)
         .eq('is_recurring', true)
-        .gte('start_time', `${format(new Date(start.getFullYear(), start.getMonth() - 1, 1), "yyyy-MM-dd")}T00:00:00`);
+        .gte('start_time', `${safeFormatDate(new Date(start.getFullYear(), start.getMonth() - 1, 1), "yyyy-MM-dd")}T00:00:00`);
         
       if (recurringError) throw recurringError;
       
@@ -166,8 +223,13 @@ const CalendarPage = () => {
           
           // Check if this recurring lesson's end date is in the future or null
           if (lesson.recurrence_end_date) {
-            const endDateParsed = parseISO(lesson.recurrence_end_date);
-            if (endDateParsed < start) return false;
+            try {
+              const endDateParsed = parseISO(lesson.recurrence_end_date);
+              if (endDateParsed < start) return false;
+            } catch (error) {
+              console.error("Error parsing recurrence_end_date:", error);
+              return false;
+            }
           }
           
           return true;
@@ -177,76 +239,100 @@ const CalendarPage = () => {
         recurringLessons.forEach(lesson => {
           if (!lesson.recurrence_interval) return;
           
-          // Generate instances based on recurrence_interval
-          const interval = lesson.recurrence_interval;
-          const startDateOriginal = parseISO(lesson.start_time);
-          const endDateOriginal = parseISO(lesson.end_time);
-          const durationMs = endDateOriginal.getTime() - startDateOriginal.getTime();
-          
-          // Get all dates in the current calendar view
-          const datesInView = eachDayOfInterval({ start, end });
-          
-          datesInView.forEach(date => {
-            // For weekly recurrence, check if this is the correct day of week
-            if (interval === 'weekly') {
-              if (date.getDay() !== startDateOriginal.getDay()) return;
-            } 
-            // For biweekly (fortnightly) recurrence
-            else if (interval === 'biweekly') {
-              if (date.getDay() !== startDateOriginal.getDay()) return;
-              
-              // Check if this is the correct biweekly cadence
-              const weeksDiff = Math.floor((date.getTime() - startDateOriginal.getTime()) / (7 * 24 * 60 * 60 * 1000));
-              if (weeksDiff % 2 !== 0) return;
-            }
-            // For monthly recurrence, check if this is the correct day of month
-            else if (interval === 'monthly') {
-              if (date.getDate() !== startDateOriginal.getDate()) return;
+          try {
+            // Generate instances based on recurrence_interval
+            const interval = lesson.recurrence_interval;
+            const startDateOriginal = parseISO(lesson.start_time);
+            const endDateOriginal = parseISO(lesson.end_time);
+            
+            if (!isValid(startDateOriginal) || !isValid(endDateOriginal)) {
+              console.error("Invalid original date in recurring lesson:", lesson);
+              return;
             }
             
-            // Skip dates that are before the original start date
-            if (date < startDateOriginal) return;
+            const durationMs = endDateOriginal.getTime() - startDateOriginal.getTime();
             
-            // Skip if we've passed the recurrence end date
-            if (lesson.recurrence_end_date && date > parseISO(lesson.recurrence_end_date)) return;
+            // Get all dates in the current calendar view
+            const datesInView = eachDayOfInterval({ start, end });
             
-            // Check if this date already exists in regular lessons (to avoid duplicates)
-            const formattedDate = format(date, 'yyyy-MM-dd');
-            const exists = data.some(l => 
-              format(parseISO(l.start_time), 'yyyy-MM-dd') === formattedDate && 
-              l.title === lesson.title
-            );
-            
-            if (!exists) {
-              // Create a new instance with the correct date but keeping the original time
-              const newStartDate = new Date(date);
-              newStartDate.setHours(startDateOriginal.getHours());
-              newStartDate.setMinutes(startDateOriginal.getMinutes());
-              newStartDate.setSeconds(0);
-              
-              const newEndDate = new Date(newStartDate.getTime() + durationMs);
-              
-              // Create a unique ID for this recurring instance
-              const instanceId = `${lesson.id}-${format(date, 'yyyy-MM-dd')}`;
-              
-              const recurringInstance = {
-                ...lesson,
-                id: instanceId,
-                start_time: format(newStartDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
-                end_time: format(newEndDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
-                is_recurring_instance: true
-              } as Lesson;
-              
-              allLessons.push(recurringInstance);
-            }
-          });
+            datesInView.forEach(date => {
+              try {
+                // For weekly recurrence, check if this is the correct day of week
+                if (interval === 'weekly') {
+                  if (date.getDay() !== startDateOriginal.getDay()) return;
+                } 
+                // For biweekly (fortnightly) recurrence
+                else if (interval === 'biweekly') {
+                  if (date.getDay() !== startDateOriginal.getDay()) return;
+                  
+                  // Check if this is the correct biweekly cadence
+                  const weeksDiff = Math.floor((date.getTime() - startDateOriginal.getTime()) / (7 * 24 * 60 * 60 * 1000));
+                  if (weeksDiff % 2 !== 0) return;
+                }
+                // For monthly recurrence, check if this is the correct day of month
+                else if (interval === 'monthly') {
+                  if (date.getDate() !== startDateOriginal.getDate()) return;
+                }
+                
+                // Skip dates that are before the original start date
+                if (date < startDateOriginal) return;
+                
+                // Skip if we've passed the recurrence end date
+                if (lesson.recurrence_end_date && date > parseISO(lesson.recurrence_end_date)) return;
+                
+                // Check if this date already exists in regular lessons (to avoid duplicates)
+                const formattedDate = safeFormatDate(date, 'yyyy-MM-dd');
+                const exists = data.some(l => {
+                  try {
+                    return safeFormatDate(parseISO(l.start_time), 'yyyy-MM-dd') === formattedDate && 
+                           l.title === lesson.title;
+                  } catch (err) {
+                    console.error("Error checking for existing lesson:", err);
+                    return false;
+                  }
+                });
+                
+                if (!exists) {
+                  // Create a new instance with the correct date but keeping the original time
+                  const newStartDate = new Date(date);
+                  newStartDate.setHours(startDateOriginal.getHours());
+                  newStartDate.setMinutes(startDateOriginal.getMinutes());
+                  newStartDate.setSeconds(0);
+                  
+                  if (!isValid(newStartDate)) {
+                    console.error("Invalid new start date created for recurring instance");
+                    return;
+                  }
+                  
+                  const newEndDate = new Date(newStartDate.getTime() + durationMs);
+                  
+                  // Create a unique ID for this recurring instance
+                  const instanceId = `${lesson.id}-${safeFormatDate(date, 'yyyy-MM-dd')}`;
+                  
+                  const recurringInstance = {
+                    ...lesson,
+                    id: instanceId,
+                    start_time: safeFormatDate(newStartDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
+                    end_time: safeFormatDate(newEndDate, 'yyyy-MM-dd\'T\'HH:mm:ss'),
+                    is_recurring_instance: true
+                  } as Lesson;
+                  
+                  allLessons.push(recurringInstance);
+                }
+              } catch (dateError) {
+                console.error("Error processing date in recurring instance:", dateError);
+              }
+            });
+          } catch (lessonError) {
+            console.error("Error processing recurring lesson:", lessonError, lesson);
+          }
         });
       }
       
       // Apply student filter if set
       if (filteredStudentId) {
         allLessons = allLessons.filter(lesson => 
-          lesson.lesson_students?.some((ls: any) => ls.student.id.toString() === filteredStudentId)
+          lesson.lesson_students?.some((ls: any) => ls.student?.id?.toString() === filteredStudentId)
         );
       }
       
@@ -266,64 +352,77 @@ const CalendarPage = () => {
 
       // Transform the data for FullCalendar
       const events = allLessons.map(lesson => {
-        const students = lesson.lesson_students?.map((ls: any) => ls.student) || [];
-        
-        const studentNames = students
-          .map((student: any) => `${student.first_name} ${student.last_name}`)
-          .join(', ');
-        
-        const displayTitle = students.length > 0 
-          ? `${lesson.title} - ${studentNames}`
-          : lesson.title;
-        
-        let backgroundColor;
-        let borderColor;
-        
-        switch (lesson.status) {
-          case 'completed':
-            backgroundColor = 'rgba(34, 197, 94, 0.2)';
-            borderColor = 'rgb(34, 197, 94)';
-            break;
-          case 'cancelled':
-            backgroundColor = 'rgba(239, 68, 68, 0.2)';
-            borderColor = 'rgb(239, 68, 68)';
-            break;
-          default:
-            backgroundColor = 'rgba(59, 130, 246, 0.2)';
-            borderColor = 'rgb(59, 130, 246)';
-        }
+        try {
+          const students = lesson.lesson_students?.map((ls: any) => ls.student) || [];
+          
+          const studentNames = students
+            .map((student: any) => `${student?.first_name || ''} ${student?.last_name || ''}`)
+            .filter(name => name.trim() !== '')
+            .join(', ');
+          
+          const displayTitle = students.length > 0 
+            ? `${lesson.title} - ${studentNames}`
+            : lesson.title;
+          
+          let backgroundColor;
+          let borderColor;
+          
+          switch (lesson.status) {
+            case 'completed':
+              backgroundColor = 'rgba(34, 197, 94, 0.2)';
+              borderColor = 'rgb(34, 197, 94)';
+              break;
+            case 'cancelled':
+              backgroundColor = 'rgba(239, 68, 68, 0.2)';
+              borderColor = 'rgb(239, 68, 68)';
+              break;
+            default:
+              backgroundColor = 'rgba(59, 130, 246, 0.2)';
+              borderColor = 'rgb(59, 130, 246)';
+          }
 
-        if (lesson.is_recurring || lesson.is_recurring_instance) {
-          borderColor = 'rgb(168, 85, 247)';
-          if (lesson.is_recurring_instance) {
-            backgroundColor = 'rgba(168, 85, 247, 0.15)';
+          if (lesson.is_recurring || lesson.is_recurring_instance) {
+            borderColor = 'rgb(168, 85, 247)';
+            if (lesson.is_recurring_instance) {
+              backgroundColor = 'rgba(168, 85, 247, 0.15)';
+            }
           }
+          
+          return {
+            id: lesson.id,
+            title: displayTitle,
+            start: lesson.start_time,
+            end: lesson.end_time,
+            backgroundColor,
+            borderColor,
+            textColor: 'black',
+            extendedProps: {
+              description: lesson.description,
+              status: lesson.status,
+              tutor: lesson.tutor,
+              students,
+              isRecurring: lesson.is_recurring,
+              isRecurringInstance: lesson.is_recurring_instance
+            }
+          };
+        } catch (eventError) {
+          console.error("Error transforming lesson to event:", eventError, lesson);
+          return null;
         }
-        
-        return {
-          id: lesson.id,
-          title: displayTitle,
-          start: lesson.start_time,
-          end: lesson.end_time,
-          backgroundColor,
-          borderColor,
-          textColor: 'black',
-          extendedProps: {
-            description: lesson.description,
-            status: lesson.status,
-            tutor: lesson.tutor,
-            students,
-            isRecurring: lesson.is_recurring,
-            isRecurringInstance: lesson.is_recurring_instance
-          }
-        };
-      });
+      }).filter(event => event !== null);
 
       setLessons(events);
+      setIsLoading(false);
+      
+      // Clear the loading timeout if data loaded successfully
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     } catch (error) {
       console.error('Calendar - Error fetching lessons:', error);
       toast.error('Failed to load lessons');
-    } finally {
+      setLoadingError('Failed to load lessons. Please refresh the page.');
       setIsLoading(false);
     }
   }, [filteredStudentId, filteredParentId, showRecurringLessons]);
@@ -347,20 +446,26 @@ const CalendarPage = () => {
 
   // Get a formatted display for the current date based on the view
   const getDateDisplay = () => {
-    if (calendarView === 'dayGridMonth') {
-      return format(currentDate, 'MMMM yyyy');
-    } else if (calendarView === 'timeGridWeek') {
-      // Start of the week that contains the current date
-      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start week on Monday (1)
-      return `Week of ${format(weekStart, 'MMMM d, yyyy')}`;
-    } else {
-      // For day view
-      return format(currentDate, 'MMMM d, yyyy');
+    try {
+      if (calendarView === 'dayGridMonth') {
+        return safeFormatDate(currentDate, 'MMMM yyyy');
+      } else if (calendarView === 'timeGridWeek') {
+        // Start of the week that contains the current date
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start week on Monday (1)
+        return `Week of ${safeFormatDate(weekStart, 'MMMM d, yyyy')}`;
+      } else {
+        // For day view
+        return safeFormatDate(currentDate, 'MMMM d, yyyy');
+      }
+    } catch (error) {
+      console.error("Error formatting date display:", error);
+      return "Error displaying date";
     }
   };
 
   // Navigate backward (previous day, week, or month)
   const handleNavigatePrevious = () => {
+    console.log("Calendar - Navigate previous");
     if (calendarRef.current) {
       try {
         const apiInstance = calendarRef.current.getApi();
@@ -368,12 +473,14 @@ const CalendarPage = () => {
         // The datesSet event will update currentDate
       } catch (error) {
         console.error("Error navigating backward:", error);
+        toast.error("Error navigating calendar");
       }
     }
   };
 
   // Navigate forward (next day, week, or month)
   const handleNavigateNext = () => {
+    console.log("Calendar - Navigate next");
     if (calendarRef.current) {
       try {
         const apiInstance = calendarRef.current.getApi();
@@ -381,12 +488,14 @@ const CalendarPage = () => {
         // The datesSet event will update currentDate
       } catch (error) {
         console.error("Error navigating forward:", error);
+        toast.error("Error navigating calendar");
       }
     }
   };
 
   // Navigate to today
   const handleNavigateToToday = () => {
+    console.log("Calendar - Navigate to today");
     if (calendarRef.current) {
       try {
         const apiInstance = calendarRef.current.getApi();
@@ -394,11 +503,13 @@ const CalendarPage = () => {
         // The datesSet event will update currentDate
       } catch (error) {
         console.error("Error navigating to today:", error);
+        toast.error("Error navigating calendar");
       }
     }
   };
 
   const handleViewChange = (view: string) => {
+    console.log("Calendar - View change:", view);
     if (calendarRef.current) {
       try {
         const apiInstance = calendarRef.current.getApi();
@@ -408,6 +519,7 @@ const CalendarPage = () => {
         isUpdatingFromState.current = false;
       } catch (error) {
         console.error("Error changing calendar view:", error);
+        toast.error("Error changing calendar view");
       }
     } else {
       setCalendarView(view);
@@ -425,9 +537,16 @@ const CalendarPage = () => {
         apiInstance.refetchEvents();
       } catch (error) {
         console.error("Calendar - Error using calendar API:", error);
+        
+        // Fallback method if API fails
+        if (calendarRef.current) {
+          const api = calendarRef.current.getApi();
+          const currentView = api.view;
+          fetchLessons(currentView.activeStart, currentView.activeEnd);
+        }
       }
     }
-  }, []);
+  }, [fetchLessons]);
 
   const handleAddLessonSuccess = () => {
     console.log("Calendar - Lesson added successfully");
@@ -544,8 +663,17 @@ const CalendarPage = () => {
 
   // Handle calendar initialization and datesSet event
   const handleCalendarDatesSet = useCallback((arg: any) => {
+    console.log("Calendar - datesSet event triggered", {
+      viewType: arg.view.type,
+      start: arg.start,
+      end: arg.end
+    });
+    
     // Avoid infinite loop by checking if this is triggered by our own state updates
-    if (isUpdatingFromState.current) return;
+    if (isUpdatingFromState.current) {
+      console.log("Calendar - Skipping datesSet handler due to programmatic update");
+      return;
+    }
     
     // Update our state to match the calendar's current date
     setCurrentDate(arg.view.activeStart);
@@ -567,27 +695,61 @@ const CalendarPage = () => {
       end = addDays(arg.end, 1);
     }
     
-    console.log(`Calendar view changed: ${viewType}`, { start, end });
+    console.log(`Calendar view changed: ${viewType}`, { 
+      start: start.toISOString(), 
+      end: end.toISOString() 
+    });
+    
+    fetchLessons(start, end);
+  }, [fetchLessons]);
+
+  // Setup effect for initial calendar data loading
+  useEffect(() => {
+    console.log("Calendar - Initial mounting effect");
+    // Initial data load using current date and view
+    const now = new Date();
+    let start: Date, end: Date;
+    
+    if (calendarView === 'dayGridMonth') {
+      start = startOfMonth(now);
+      end = endOfMonth(now);
+    } else if (calendarView === 'timeGridWeek') {
+      start = startOfWeek(now, { weekStartsOn: 1 });  // Start week on Monday
+      end = endOfWeek(now, { weekStartsOn: 1 });
+    } else {
+      // Day view - just use today
+      start = now;
+      end = now;
+    }
+    
+    // Add buffer days to ensure we get enough data
+    start = subDays(start, 7);
+    end = addDays(end, 7);
+    
+    console.log("Calendar - Initial data load", { 
+      start: start.toISOString(), 
+      end: end.toISOString() 
+    });
+    
     fetchLessons(start, end);
   }, [fetchLessons]);
 
   // Setup effect to handle calendar initialization
   useEffect(() => {
-    if (calendarRef.current && !calendarApiInitialized.current) {
-      const apiInstance = calendarRef.current.getApi();
-      
-      // Just mark as initialized - the datesSet event will handle initial fetch
-      calendarApiInitialized.current = true;
-      
-      // Initial manual trigger of datesSet to ensure we have the correct data
-      const viewInfo = apiInstance.view;
-      handleCalendarDatesSet({
-        view: viewInfo,
-        start: viewInfo.activeStart,
-        end: viewInfo.activeEnd
-      });
-    }
-  }, [calendarRef.current, handleCalendarDatesSet]);
+    const initializeCalendar = () => {
+      if (calendarRef.current && !calendarApiInitialized.current) {
+        console.log("Calendar - Initializing calendar API");
+        calendarApiInitialized.current = true;
+      }
+    };
+    
+    // Small delay to ensure the DOM is ready
+    const timeoutId = setTimeout(initializeCalendar, 100);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
@@ -725,8 +887,23 @@ const CalendarPage = () => {
                     <p className="mt-2">Loading calendar...</p>
                   </div>
                 </div>
+              ) : loadingError ? (
+                <div className="h-[600px] flex items-center justify-center">
+                  <div className="text-center max-w-md">
+                    <p className="text-red-500 mb-2">{loadingError}</p>
+                    <Button 
+                      onClick={() => {
+                        setIsLoading(true);
+                        setLoadingError(null);
+                        forceCalendarRefresh();
+                      }}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                <div className="h-[600px]">
+                <div className="h-[600px] relative">
                   <FullCalendar
                     ref={calendarRef}
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}

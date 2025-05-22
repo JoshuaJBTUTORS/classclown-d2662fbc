@@ -95,4 +95,19 @@ declare module '@fullcalendar/core' {
     jsEvent: MouseEvent;
     view: any;
   }
+  
+  export interface DatesSetArg {
+    start: Date;
+    end: Date;
+    startStr: string;
+    endStr: string;
+    view: {
+      type: string;
+      title: string;
+      activeStart: Date;
+      activeEnd: Date;
+      currentStart: Date;
+      currentEnd: Date;
+    };
+  }
 }
