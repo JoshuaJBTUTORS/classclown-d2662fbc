@@ -1,52 +1,31 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, parseISO, startOfMonth, endOfMonth, addDays, subDays, startOfWeek, endOfWeek, isValid } from 'date-fns';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import { EventClickArg, DateSelectArg, DatesSetArg } from '@fullcalendar/core';
+import { format, startOfMonth, endOfMonth, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { DateSelectArg, EventClickArg, DatesSetArg } from '@fullcalendar/core';
 import { FullCalendarComponent } from '@fullcalendar/react';
 
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
+import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import CalendarHeader from '@/components/calendar/CalendarHeader';
+import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import { Lesson } from '@/types/lesson';
 import { Student } from '@/types/student';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Plus, Filter, Check } from 'lucide-react';
-import ViewOptions from '@/components/calendar/ViewOptions';
-import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import { useCalendarData } from '@/hooks/useCalendarData';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Checkbox
-} from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 
 const CalendarPage = () => {
-  // State variables
+  // State for sidebar and UI
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarView, setCalendarView] = useState('timeGridWeek');
-  const [lessons, setLessons] = useState<any[]>([]);
+  
+  // State for lesson management
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
   const [isEditingLesson, setIsEditingLesson] = useState(false);
@@ -57,60 +36,25 @@ const CalendarPage = () => {
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
   const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [isSettingHomework, setIsSettingHomework] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
+  
+  // State for filters
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudentId, setFilteredStudentId] = useState<string | null>(null);
   const [filteredParentId, setFilteredParentId] = useState<string | null>(null);
   const [parentsList, setParentsList] = useState<{id: string, name: string}[]>([]);
-  const [showRecurringLessons, setShowRecurringLessons] = useState(true);
   
   const { user } = useAuth();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
-  const loadingTimeoutRef = useRef<number | null>(null);
-
-  // Safety function for date formatting
-  const safeFormatDate = (date: Date | string, formatString: string): string => {
-    try {
-      let dateObj: Date;
-      
-      if (typeof date === 'string') {
-        dateObj = parseISO(date);
-      } else {
-        dateObj = date;
-      }
-      
-      if (!isValid(dateObj)) {
-        console.error("Invalid date object:", date);
-        return "Invalid date";
-      }
-      
-      return format(dateObj, formatString);
-    } catch (error) {
-      console.error("Date formatting error:", error);
-      return "Error formatting date";
-    }
-  };
-
-  // Set a loading timeout to exit loading state after a reasonable time
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Calendar - Setting up loading timeout");
-      loadingTimeoutRef.current = window.setTimeout(() => {
-        console.log("Calendar - Loading timeout triggered");
-        setIsLoading(false);
-        setLoadingError("Loading timed out. Please try refreshing the page.");
-        toast.error("Calendar loading timed out. Please try refreshing the page.");
-      }, 8000);
-    }
-
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
-    };
-  }, [isLoading]);
+  
+  // Use the custom hook for calendar data
+  const { 
+    lessons, 
+    isLoading, 
+    loadingError, 
+    setIsLoading, 
+    setLoadingError,
+    fetchLessons 
+  } = useCalendarData();
 
   // Fetch students for filters
   useEffect(() => {
@@ -151,111 +95,6 @@ const CalendarPage = () => {
     fetchStudents();
   }, []);
 
-  // Main function to fetch lessons data
-  const fetchLessons = useCallback(async (start: Date, end: Date) => {
-    console.log("Calendar - fetchLessons called with:", { 
-      start: start.toISOString(), 
-      end: end.toISOString() 
-    });
-    
-    setIsLoading(true);
-    setLoadingError(null);
-    
-    try {
-      if (!isValid(start) || !isValid(end)) {
-        throw new Error("Invalid date range provided to fetchLessons");
-      }
-      
-      const startDate = safeFormatDate(start, "yyyy-MM-dd");
-      const endDate = safeFormatDate(end, "yyyy-MM-dd");
-      
-      console.log("Calendar - Fetching lessons from", startDate, "to", endDate);
-
-      // Main query for scheduled lessons
-      const { data, error } = await supabase
-        .from('lessons')
-        .select(`
-          *,
-          tutor:tutors(id, first_name, last_name),
-          lesson_students(
-            student:students(id, first_name, last_name, parent_first_name, parent_last_name)
-          )
-        `)
-        .gte('start_time', `${startDate}T00:00:00`)
-        .lte('start_time', `${endDate}T23:59:59`);
-
-      if (error) throw error;
-      
-      // Transform the data for FullCalendar
-      const events = (data || []).map(lesson => {
-        try {
-          const students = lesson.lesson_students?.map((ls: any) => ls.student) || [];
-          
-          const studentNames = students
-            .map((student: any) => `${student?.first_name || ''} ${student?.last_name || ''}`)
-            .filter(name => name.trim() !== '')
-            .join(', ');
-          
-          const displayTitle = students.length > 0 
-            ? `${lesson.title} - ${studentNames}`
-            : lesson.title;
-          
-          let backgroundColor;
-          let borderColor;
-          
-          switch (lesson.status) {
-            case 'completed':
-              backgroundColor = 'rgba(34, 197, 94, 0.2)';
-              borderColor = 'rgb(34, 197, 94)';
-              break;
-            case 'cancelled':
-              backgroundColor = 'rgba(239, 68, 68, 0.2)';
-              borderColor = 'rgb(239, 68, 68)';
-              break;
-            default:
-              backgroundColor = 'rgba(59, 130, 246, 0.2)';
-              borderColor = 'rgb(59, 130, 246)';
-          }
-          
-          return {
-            id: lesson.id,
-            title: displayTitle,
-            start: lesson.start_time,
-            end: lesson.end_time,
-            backgroundColor,
-            borderColor,
-            textColor: 'black',
-            extendedProps: {
-              description: lesson.description,
-              status: lesson.status,
-              tutor: lesson.tutor,
-              students,
-              isRecurring: lesson.is_recurring
-            }
-          };
-        } catch (eventError) {
-          console.error("Error transforming lesson to event:", eventError, lesson);
-          return null;
-        }
-      }).filter(event => event !== null);
-
-      setLessons(events);
-      
-      // Clear the loading timeout if data loaded successfully
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
-      
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Calendar - Error fetching lessons:', error);
-      toast.error('Failed to load lessons');
-      setLoadingError('Failed to load lessons. Please refresh the page.');
-      setIsLoading(false);
-    }
-  }, [filteredStudentId, filteredParentId]);
-
   // Handle date selection
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     setSelectedTimeSlot({
@@ -269,25 +108,6 @@ const CalendarPage = () => {
   const handleEventClick = (clickInfo: EventClickArg) => {
     setSelectedLessonId(clickInfo.event.id);
     setIsLessonDetailsOpen(true);
-  };
-
-  // Get a formatted display for the current date based on the view
-  const getDateDisplay = () => {
-    try {
-      if (calendarView === 'dayGridMonth') {
-        return safeFormatDate(currentDate, 'MMMM yyyy');
-      } else if (calendarView === 'timeGridWeek') {
-        // Start of the week that contains the current date
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start week on Monday (1)
-        return `Week of ${safeFormatDate(weekStart, 'MMMM d, yyyy')}`;
-      } else {
-        // For day view
-        return safeFormatDate(currentDate, 'MMMM d, yyyy');
-      }
-    } catch (error) {
-      console.error("Error formatting date display:", error);
-      return "Error displaying date";
-    }
   };
 
   // Navigate backward (previous day, week, or month)
@@ -351,6 +171,10 @@ const CalendarPage = () => {
       try {
         const apiInstance = calendarRef.current.getApi();
         apiInstance.refetchEvents();
+        
+        // Also refetch the data
+        const view = apiInstance.view;
+        fetchLessons(view.activeStart, view.activeEnd, filteredStudentId, filteredParentId);
       } catch (error) {
         console.error("Calendar - Error using calendar API:", error);
         
@@ -358,11 +182,31 @@ const CalendarPage = () => {
         if (calendarRef.current) {
           const api = calendarRef.current.getApi();
           const currentView = api.view;
-          fetchLessons(currentView.activeStart, currentView.activeEnd);
+          fetchLessons(currentView.activeStart, currentView.activeEnd, filteredStudentId, filteredParentId);
         }
       }
     }
-  }, [fetchLessons]);
+  }, [fetchLessons, filteredStudentId, filteredParentId]);
+
+  // Handle filter changes
+  const handleFilterChange = (studentId: string | null, parentId: string | null) => {
+    setFilteredStudentId(studentId);
+    setFilteredParentId(parentId);
+    
+    // Refresh calendar with new filters
+    setTimeout(() => {
+      forceCalendarRefresh();
+    }, 100);
+  };
+
+  // Handle filter reset
+  const handleFilterReset = () => {
+    setFilteredStudentId(null);
+    setFilteredParentId(null);
+    setTimeout(() => {
+      forceCalendarRefresh();
+    }, 100);
+  };
 
   // Handle calendar initialization and datesSet event
   const handleCalendarDatesSet = useCallback((arg: DatesSetArg) => {
@@ -392,8 +236,9 @@ const CalendarPage = () => {
       end = addDays(arg.end, 1);
     }
     
-    fetchLessons(start, end);
-  }, [fetchLessons]);
+    // Fetch lessons with current filters
+    fetchLessons(start, end, filteredStudentId, filteredParentId);
+  }, [fetchLessons, filteredStudentId, filteredParentId]);
 
   // Initial load of calendar data
   useEffect(() => {
@@ -421,8 +266,8 @@ const CalendarPage = () => {
       end: end.toISOString() 
     });
     
-    fetchLessons(start, end);
-  }, [fetchLessons]);
+    fetchLessons(start, end, filteredStudentId, filteredParentId);
+  }, [fetchLessons, filteredStudentId, filteredParentId]);
 
   // Event handlers for lesson management
   const handleAddLessonSuccess = () => {
@@ -475,7 +320,6 @@ const CalendarPage = () => {
     setSelectedLessonId(lessonId);
     setIsLessonDetailsOpen(false);
     setIsSettingHomework(true);
-    setIsCompleteSessionOpen(false);
   };
 
   const handleHomeworkSuccess = () => {
@@ -493,9 +337,9 @@ const CalendarPage = () => {
     }, 300);
   };
 
-  const handleFilterReset = () => {
-    setFilteredStudentId(null);
-    setFilteredParentId(null);
+  const handleRetry = () => {
+    setIsLoading(true);
+    setLoadingError(null);
     forceCalendarRefresh();
   };
 
@@ -509,173 +353,33 @@ const CalendarPage = () => {
       <div className="flex flex-col flex-1">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div className="flex items-center mb-4 md:mb-0">
-              <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
-            </div>
-            <div className="flex items-center flex-wrap gap-2">
-              <div className="flex items-center mr-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2" size="sm">
-                      <Filter className="h-4 w-4" />
-                      Filters
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-sm">Filter Options</h4>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="student-filter">Filter by Student</Label>
-                        <Select
-                          value={filteredStudentId || "none"}
-                          onValueChange={(value) => {
-                            setFilteredStudentId(value === "none" ? null : value);
-                          }}
-                        >
-                          <SelectTrigger id="student-filter">
-                            <SelectValue placeholder="Select a student" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">All Students</SelectItem>
-                            {students.map((student) => (
-                              <SelectItem key={student.id} value={student.id.toString()}>
-                                {student.first_name} {student.last_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="parent-filter">Filter by Parent</Label>
-                        <Select
-                          value={filteredParentId || "none"}
-                          onValueChange={(value) => {
-                            setFilteredParentId(value === "none" ? null : value);
-                          }}
-                        >
-                          <SelectTrigger id="parent-filter">
-                            <SelectValue placeholder="Select a parent" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">All Parents</SelectItem>
-                            {parentsList.map((parent) => (
-                              <SelectItem key={parent.id} value={parent.id}>
-                                {parent.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="flex justify-end">
-                        <Button onClick={handleFilterReset} variant="outline" size="sm">
-                          Reset Filters
-                        </Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <ViewOptions currentView={calendarView} onViewChange={handleViewChange} />
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleNavigatePrevious}
-                  title={`Previous ${calendarView === 'dayGridMonth' ? 'Month' : calendarView === 'timeGridWeek' ? 'Week' : 'Day'}`}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNavigateToToday}
-                  className="text-xs"
-                >
-                  Today
-                </Button>
-                <div className="text-sm font-medium min-w-[140px] text-center">
-                  {getDateDisplay()}
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleNavigateNext}
-                  title={`Next ${calendarView === 'dayGridMonth' ? 'Month' : calendarView === 'timeGridWeek' ? 'Week' : 'Day'}`}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <Button className="flex items-center gap-2" onClick={() => setIsAddingLesson(true)}>
-                <Plus className="h-4 w-4" />
-                New Lesson
-              </Button>
-            </div>
-          </div>
+          <CalendarHeader 
+            currentDate={currentDate}
+            calendarView={calendarView}
+            onViewChange={handleViewChange}
+            onNavigatePrevious={handleNavigatePrevious}
+            onNavigateNext={handleNavigateNext}
+            onNavigateToday={handleNavigateToToday}
+            onAddLesson={() => setIsAddingLesson(true)}
+            students={students}
+            filteredStudentId={filteredStudentId}
+            filteredParentId={filteredParentId}
+            parentsList={parentsList}
+            onFilterChange={handleFilterChange}
+            onFilterReset={handleFilterReset}
+          />
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Lessons Schedule</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-[600px] flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-                    <p className="mt-2">Loading calendar...</p>
-                  </div>
-                </div>
-              ) : loadingError ? (
-                <div className="h-[600px] flex items-center justify-center">
-                  <div className="text-center max-w-md">
-                    <p className="text-red-500 mb-2">{loadingError}</p>
-                    <Button 
-                      onClick={() => {
-                        setIsLoading(true);
-                        setLoadingError(null);
-                        forceCalendarRefresh();
-                      }}
-                    >
-                      Retry
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-[600px] relative">
-                  <FullCalendar
-                    ref={calendarRef}
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                    headerToolbar={false}
-                    initialView={calendarView}
-                    events={lessons}
-                    selectable={true}
-                    selectMirror={true}
-                    dayMaxEvents={3}
-                    weekends={true}
-                    select={handleDateSelect}
-                    eventClick={handleEventClick}
-                    datesSet={handleCalendarDatesSet}
-                    height="100%"
-                    allDaySlot={false}
-                    slotDuration="00:30:00"
-                    slotLabelInterval="01:00"
-                    expandRows={true}
-                    stickyHeaderDates={true}
-                    nowIndicator={true}
-                    firstDay={1} 
-                    eventTimeFormat={{
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      meridiem: 'short'
-                    }}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <CalendarDisplay 
+            isLoading={isLoading}
+            loadingError={loadingError}
+            calendarView={calendarView}
+            lessons={lessons}
+            onSelectDate={handleDateSelect}
+            onEventClick={handleEventClick}
+            onDatesSet={handleCalendarDatesSet}
+            onRetry={handleRetry}
+            calendarRef={calendarRef}
+          />
         </main>
       </div>
 
