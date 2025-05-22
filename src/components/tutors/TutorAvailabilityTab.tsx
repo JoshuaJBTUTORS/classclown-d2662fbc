@@ -25,21 +25,14 @@ const TutorAvailabilityTab: React.FC<TutorAvailabilityTabProps> = ({
   };
 
   return (
-    <Tabs defaultValue="weekly" className="w-full">
+    <Tabs defaultValue="availability" className="w-full">
       <TabsList className="grid grid-cols-2 mb-4">
-        <TabsTrigger value="weekly">Weekly Schedule</TabsTrigger>
-        <TabsTrigger value="time-off">Time Off Requests</TabsTrigger>
+        <TabsTrigger value="availability">Weekly Availability</TabsTrigger>
+        <TabsTrigger value="time-off">Time Off</TabsTrigger>
       </TabsList>
       
-      <TabsContent value="weekly">
-        <Card className="border-border/40 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl">Weekly Availability</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AvailabilityManager tutor={tutor} isEditable={isEditable} />
-          </CardContent>
-        </Card>
+      <TabsContent value="availability">
+        <AvailabilityManager tutor={tutor} isEditable={isEditable} />
       </TabsContent>
       
       <TabsContent value="time-off">

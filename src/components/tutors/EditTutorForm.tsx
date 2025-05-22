@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -24,9 +25,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { Tutor } from '@/types/tutor';
 import TutorAvailabilityTab from './TutorAvailabilityTab';
-import AvailabilityManager from './AvailabilityManager';
-import TimeOffRequestForm from './TimeOffRequestForm';
-import TimeOffRequestsList from './TimeOffRequestsList';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
@@ -113,7 +111,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({
       
       // Send the updated tutor back to the parent component
       onUpdate(updatedTutor);
-      toast.success('Tutor profile updated successfully');
+      onClose();
     } catch (error: any) {
       console.error('Error updating tutor:', error);
       toast.error('Failed to update tutor');
@@ -132,10 +130,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({
         </DialogHeader>
         
         <Tabs defaultValue="details" className="mt-2">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="details">Profile Details</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
-            <TabsTrigger value="time-off">Time Off</TabsTrigger>
           </TabsList>
           
           <TabsContent value="details" className="pt-4">
@@ -308,36 +305,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({
           </TabsContent>
           
           <TabsContent value="availability" className="pt-4">
-            <div className="mb-4">
-              <h3 className="text-lg font-medium">Weekly Schedule</h3>
-              <p className="text-sm text-muted-foreground">Configure when this tutor is regularly available for lessons.</p>
-            </div>
-            <AvailabilityManager tutor={tutor} isEditable={true} />
-          </TabsContent>
-          
-          <TabsContent value="time-off" className="pt-4">
-            <div className="mb-4">
-              <h3 className="text-lg font-medium">Time Off Management</h3>
-              <p className="text-sm text-muted-foreground">Manage vacation days and other time off requests.</p>
-            </div>
-            
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-lg font-medium mb-2">Request Time Off</h4>
-                <TimeOffRequestForm 
-                  tutor={tutor} 
-                  onRequestSubmitted={() => {}} 
-                />
-              </div>
-              
-              <div>
-                <h4 className="text-lg font-medium mb-3">Time Off History</h4>
-                <TimeOffRequestsList 
-                  tutor={tutor} 
-                  isAdmin={false}
-                />
-              </div>
-            </div>
+            <TutorAvailabilityTab tutor={tutor} isEditable={true} />
           </TabsContent>
         </Tabs>
       </DialogContent>

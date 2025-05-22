@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,9 +27,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Mail } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tutor } from '@/types/tutor';
-import AvailabilityManager from './AvailabilityManager';
 
 interface AddTutorFormProps {
   isOpen: boolean;
@@ -52,8 +48,6 @@ type FormData = z.infer<typeof formSchema>;
 
 const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [currentTab, setCurrentTab] = useState('details');
-  const [newTutor, setNewTutor] = useState<Tutor | null>(null);
   const { organization } = useOrganization();
 
   const form = useForm<FormData>({
@@ -87,22 +81,15 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           email: data.email,
           phone: data.phone,
           specialities: specialitiesArray,
-          bio: data.bio,
+          bio: data.bio, // Changed from 'about' to 'bio' to match the database schema
           status: 'active',
-          organization_id: organization?.id || null
+          organization_id: organization?.id || null // Add organization_id 
         })
         .select()
         .single();
 
       if (tutorError) throw tutorError;
 
-      // Store the newly created tutor for the availability tab
-      setNewTutor(tutorData);
-      
-      // Switch to availability tab after successful creation
-      setCurrentTab('availability');
-
-      // Only finish the process if we're not setting availability
       if (data.sendInvite) {
         const { error: inviteError } = await supabase.functions.invoke('send-tutor-invite', {
           body: {
@@ -127,9 +114,12 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       } else {
         toast({
           title: "Tutor created successfully",
-          description: "You can now set their availability."
+          description: "The tutor has been added to the system."
         });
       }
+
+      onSuccess?.();
+      onClose();
     } catch (error: any) {
       console.error('Error creating tutor:', error);
       toast({
@@ -137,189 +127,151 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         description: error.message || "Please try again.",
         variant: "destructive"
       });
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleFinish = () => {
-    onSuccess?.();
-    onClose();
-    // Reset form and state
-    form.reset();
-    setNewTutor(null);
-    setCurrentTab('details');
-    setLoading(false);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add New Tutor</DialogTitle>
           <DialogDescription>
             Enter the tutor's details below to add them to the system.
           </DialogDescription>
         </DialogHeader>
-        
-        <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="details">Profile Details</TabsTrigger>
-            <TabsTrigger value="availability" disabled={!newTutor}>Availability</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="details">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="john.doe@example.com" type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="john.doe@example.com" type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="123-456-7890" type="tel" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123-456-7890" type="tel" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <FormField
-                  control={form.control}
-                  name="specialities"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Specialities (Comma-separated)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Math, Science, English" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="specialities"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Specialities (Comma-separated)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Math, Science, English" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="A brief description about the tutor..." className="min-h-[100px]" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="sendInvite"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Send invitation email
-                        </FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          The tutor will receive an email with instructions to create an account.
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bio (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="A brief description about the tutor..." className="min-h-[100px]" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="sendInvite"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox 
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Send invitation email
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      The tutor will receive an email with instructions to create an account.
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
 
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onClose}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={loading} className="flex items-center gap-2">
-                    {loading ? "Creating..." : form.watch("sendInvite") ? (
-                      <>
-                        <Mail className="h-4 w-4" />
-                        Create & Invite Tutor
-                      </>
-                    ) : "Create Tutor"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </TabsContent>
-          
-          <TabsContent value="availability">
-            {newTutor && (
-              <>
-                <div className="mb-4">
-                  <h3 className="text-lg font-medium">Set Initial Availability</h3>
-                  <p className="text-sm text-muted-foreground">Define when this tutor is available for lessons.</p>
-                </div>
-                
-                <AvailabilityManager tutor={newTutor} isEditable={true} />
-                
-                <div className="flex justify-end mt-4">
-                  <Button onClick={handleFinish}>
-                    Finish
-                  </Button>
-                </div>
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} className="flex items-center gap-2">
+                {loading ? "Creating..." : form.watch("sendInvite") ? (
+                  <>
+                    <Mail className="h-4 w-4" />
+                    Create & Invite Tutor
+                  </>
+                ) : "Create Tutor"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

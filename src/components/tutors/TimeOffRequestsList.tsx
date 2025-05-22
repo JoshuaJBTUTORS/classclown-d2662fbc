@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,13 +41,7 @@ const TimeOffRequestsList: React.FC<TimeOffRequestsListProps> = ({
       
       if (error) throw error;
       
-      // Use type assertion to ensure the data is properly typed
-      const typedData = (data || []).map((item: any) => ({
-        ...item,
-        status: item.status as TimeOffStatus
-      })) as TimeOffRequest[];
-      
-      setRequests(typedData);
+      setRequests(data || []);
     } catch (error: any) {
       console.error('Error fetching time-off requests:', error);
       toast.error('Failed to load time-off requests');

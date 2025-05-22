@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,9 +47,8 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ tutor, isEdit
 
       if (error) throw error;
 
-      // Add type assertion to ensure the data is properly typed
-      const formattedData = (data || []).map((item: any) => ({
-        day: item.day_of_week as DayOfWeek,
+      const formattedData = data.map((item: TutorAvailability) => ({
+        day: item.day_of_week,
         startTime: item.start_time.substring(0, 5), // Format time as HH:MM
         endTime: item.end_time.substring(0, 5), // Format time as HH:MM
         id: item.id
