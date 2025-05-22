@@ -16,67 +16,67 @@
     --popover: 0 0% 100%;
     --popover-foreground: 138 10% 15%;
 
-    /* Light green as an accent color */
-    --primary: 132 80% 90%;
-    --primary-foreground: 138 70% 15%;
+    /* Main color changed to #9FE2BF */
+    --primary: 152 57% 75%;
+    --primary-foreground: 152 70% 15%;
 
-    --secondary: 132 30% 96%;
-    --secondary-foreground: 138 30% 20%;
+    --secondary: 152 30% 96%;
+    --secondary-foreground: 152 30% 20%;
 
-    --muted: 132 20% 96%;
-    --muted-foreground: 138 10% 45%;
+    --muted: 152 20% 96%;
+    --muted-foreground: 152 10% 45%;
 
-    --accent: 132 70% 94%;
-    --accent-foreground: 138 70% 20%;
+    --accent: 152 70% 94%;
+    --accent-foreground: 152 70% 20%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 132 20% 90%;
-    --input: 132 20% 90%;
-    --ring: 132 80% 80%;
+    --border: 152 20% 90%;
+    --input: 152 20% 90%;
+    --ring: 152 80% 80%;
 
     --radius: 0.75rem;
 
-    /* Sidebar updated to white background with subtle green accents */
+    /* Sidebar updated with the new color */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 138 30% 20%;
-    --sidebar-primary: 132 80% 90%;
-    --sidebar-primary-foreground: 138 70% 15%;
-    --sidebar-accent: 132 70% 94%;
-    --sidebar-accent-foreground: 138 30% 15%;
-    --sidebar-border: 132 20% 90%;
-    --sidebar-ring: 132 80% 80%;
+    --sidebar-foreground: 152 30% 20%;
+    --sidebar-primary: 152 57% 75%;
+    --sidebar-primary-foreground: 152 70% 15%;
+    --sidebar-accent: 152 70% 94%;
+    --sidebar-accent-foreground: 152 30% 15%;
+    --sidebar-border: 152 20% 90%;
+    --sidebar-ring: 152 80% 80%;
   }
 
   .dark {
-    --background: 138 20% 8%;
-    --foreground: 132 50% 90%;
+    --background: 152 20% 8%;
+    --foreground: 152 50% 90%;
 
-    --card: 138 20% 10%;
-    --card-foreground: 132 50% 90%;
+    --card: 152 20% 10%;
+    --card-foreground: 152 50% 90%;
 
-    --popover: 138 20% 10%;
-    --popover-foreground: 132 50% 90%;
+    --popover: 152 20% 10%;
+    --popover-foreground: 152 50% 90%;
 
-    --primary: 132 80% 80%;
-    --primary-foreground: 138 70% 15%;
+    --primary: 152 57% 75%;
+    --primary-foreground: 152 70% 15%;
 
-    --secondary: 138 20% 20%;
-    --secondary-foreground: 132 50% 90%;
+    --secondary: 152 20% 20%;
+    --secondary-foreground: 152 50% 90%;
 
-    --muted: 138 20% 20%;
-    --muted-foreground: 138 10% 70%;
+    --muted: 152 20% 20%;
+    --muted-foreground: 152 10% 70%;
 
-    --accent: 138 20% 25%;
-    --accent-foreground: 132 50% 90%;
+    --accent: 152 20% 25%;
+    --accent-foreground: 152 50% 90%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 138 20% 25%;
-    --input: 138 20% 25%;
-    --ring: 132 80% 70%;
+    --border: 152 20% 25%;
+    --input: 152 20% 25%;
+    --ring: 152 80% 70%;
   }
 }
 
@@ -95,7 +95,7 @@
   }
 }
 
-/* Sidebar styling with white background and subtle green accents */
+/* Sidebar styling with white background and the new color accents */
 .sidebar-item-active {
   @apply bg-primary/20 text-primary-foreground font-medium;
 }

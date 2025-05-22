@@ -41,13 +41,14 @@ const CalendarPage = () => {
               }
               
               .fc .fc-button-primary {
-                background-color: hsl(var(--primary));
-                border-color: hsl(var(--primary));
+                background-color: #9FE2BF;
+                border-color: #9FE2BF;
+                color: #143325;
               }
               
               .fc .fc-button-primary:hover {
-                background-color: hsl(var(--primary) / 0.9);
-                border-color: hsl(var(--primary) / 0.9);
+                background-color: rgba(159, 226, 191, 0.9);
+                border-color: rgba(159, 226, 191, 0.9);
               }
               
               .fc .fc-daygrid-day-top {
@@ -63,15 +64,15 @@ const CalendarPage = () => {
               .fc-theme-standard .fc-scrollgrid {
                 border-radius: 0.5rem;
                 overflow: hidden;
-                border-color: hsl(var(--border) / 0.3);
+                border-color: rgba(159, 226, 191, 0.3);
               }
               
               .fc-theme-standard td, .fc-theme-standard th {
-                border-color: hsl(var(--border) / 0.3);
+                border-color: rgba(159, 226, 191, 0.3);
               }
               
               .fc .fc-daygrid-day.fc-day-today {
-                background-color: hsl(var(--primary) / 0.1);
+                background-color: rgba(159, 226, 191, 0.1);
               }
               
               .calendar-event {
@@ -85,11 +86,11 @@ const CalendarPage = () => {
               }
               
               .recurring-event {
-                border-left-color: #9333ea !important;
+                border-left-color: #9FE2BF !important;
               }
               
               .recurring-instance {
-                border-left-color: #9333ea !important;
+                border-left-color: #9FE2BF !important;
                 opacity: 0.85;
                 border-left-style: dashed !important;
               }

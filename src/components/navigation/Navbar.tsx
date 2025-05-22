@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Bell, ChevronDown, LogOut, Search, Menu, Settings, User, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -79,18 +78,18 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
             <Input
               type="search"
               placeholder="Search..."
-              className="w-[200px] lg:w-[300px] pl-8 rounded-full border-gray-200 focus-visible:ring-primary"
+              className="w-[200px] lg:w-[300px] pl-8 rounded-full border-gray-200 focus-visible:ring-[#9FE2BF]"
             />
           </form>
           <Button variant="ghost" size="icon" className="relative rounded-full text-muted-foreground">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-[#9FE2BF] rounded-full"></span>
           </Button>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 rounded-full px-2 py-1.5">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
+                  <div className="w-8 h-8 rounded-full bg-[#9FE2BF]/10 text-[#9FE2BF] flex items-center justify-center font-medium">
                     {getUserInitials()}
                   </div>
                   <div className="hidden md:block text-start">
