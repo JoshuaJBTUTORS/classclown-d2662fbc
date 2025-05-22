@@ -30,15 +30,15 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
+    <Card className="border border-border/30 shadow-sm overflow-hidden rounded-xl">
+      <CardContent className="pt-6 px-4 md:px-6">
         {isLoading ? (
           <div className="h-[600px] flex items-center justify-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"></div>
-            <p className="ml-2">Loading calendar...</p>
+            <p className="ml-2 text-muted-foreground">Loading calendar...</p>
           </div>
         ) : (
-          <div className="h-[600px]">
+          <div className="h-[600px] calendar-container">
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
@@ -51,29 +51,45 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               }}
               eventClick={handleEventClick}
               eventClassNames={(info) => {
+                let classes = ['calendar-event', 'rounded-md', 'border-l-4', 'shadow-sm', 'transition-all', 'hover:shadow-md'];
+                
                 // Add special styling for recurring events
                 if (info.event.extendedProps.isRecurring) {
-                  return ['recurring-event'];
+                  classes.push('recurring-event');
                 }
                 if (info.event.extendedProps.isRecurringInstance) {
-                  return ['recurring-instance'];
+                  classes.push('recurring-instance');
                 }
-                return [];
+                return classes;
               }}
               eventContent={(eventInfo) => {
                 return (
-                  <div className="fc-event-main-frame">
-                    <div className="fc-event-title-container">
-                      <div className="fc-event-title">
+                  <div className="fc-event-main-frame p-1">
+                    <div className="fc-event-title-container flex items-center gap-1">
+                      <div className="fc-event-title text-sm font-medium">
                         {eventInfo.event.title}
                         {(eventInfo.event.extendedProps.isRecurring || 
                           eventInfo.event.extendedProps.isRecurringInstance) && (
-                          <span className="ml-1">🔄</span>
+                          <span className="inline-flex items-center justify-center ml-1 text-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                              <path d="M21 12a9 9 0 0 0-9-9 9 9 0 0 0-9 9"></path>
+                              <path d="M3 12h.01M21 12h.01M12 21v.01"></path>
+                              <path d="m9 3 3 3 3-3M3 9l3 3-3 3"></path>
+                              <path d="M21 9-3 3 3 3"></path>
+                              <path d="M9 21l3-3 3 3"></path>
+                            </svg>
+                          </span>
                         )}
                       </div>
                     </div>
                   </div>
                 );
+              }}
+              dayMaxEvents={true}
+              eventTimeFormat={{
+                hour: '2-digit',
+                minute: '2-digit',
+                meridiem: 'short'
               }}
             />
           </div>

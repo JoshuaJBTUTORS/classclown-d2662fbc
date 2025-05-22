@@ -23,12 +23,81 @@ const CalendarPage = () => {
           {/* Custom CSS for recurring events */}
           <style>
             {`
-              .recurring-event {
-                border-left: 3px solid #9333ea !important;
+              .fc .fc-toolbar {
+                margin-bottom: 1.5rem;
               }
+              
+              .fc .fc-toolbar-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+              }
+              
+              .fc .fc-button {
+                border-radius: 0.375rem;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+                font-weight: 500;
+                transition: all 0.15s ease;
+              }
+              
+              .fc .fc-button-primary {
+                background-color: hsl(var(--primary));
+                border-color: hsl(var(--primary));
+              }
+              
+              .fc .fc-button-primary:hover {
+                background-color: hsl(var(--primary) / 0.9);
+                border-color: hsl(var(--primary) / 0.9);
+              }
+              
+              .fc .fc-daygrid-day-top {
+                padding: 0.25rem;
+                justify-content: center;
+              }
+              
+              .fc .fc-col-header-cell-cushion {
+                font-weight: 500;
+                padding: 0.75rem 0;
+              }
+              
+              .fc-theme-standard .fc-scrollgrid {
+                border-radius: 0.5rem;
+                overflow: hidden;
+                border-color: hsl(var(--border) / 0.3);
+              }
+              
+              .fc-theme-standard td, .fc-theme-standard th {
+                border-color: hsl(var(--border) / 0.3);
+              }
+              
+              .fc .fc-daygrid-day.fc-day-today {
+                background-color: hsl(var(--primary) / 0.1);
+              }
+              
+              .calendar-event {
+                margin: 2px 0;
+                border: none !important;
+                padding: 2px;
+              }
+              
+              .fc-event-main {
+                padding: 2px 4px;
+              }
+              
+              .recurring-event {
+                border-left-color: #9333ea !important;
+              }
+              
               .recurring-instance {
-                border-left: 3px dashed #9333ea !important;
+                border-left-color: #9333ea !important;
                 opacity: 0.85;
+                border-left-style: dashed !important;
+              }
+              
+              .fc .fc-daygrid-day-number,
+              .fc .fc-col-header-cell-cushion {
+                color: hsl(var(--foreground));
+                text-decoration: none !important;
               }
             `}
           </style>
