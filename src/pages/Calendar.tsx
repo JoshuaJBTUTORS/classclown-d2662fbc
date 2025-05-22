@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, eachDayOfInterval, addDays } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
@@ -527,16 +526,16 @@ const CalendarPage = () => {
                       <div className="space-y-2">
                         <Label htmlFor="student-filter">Filter by Student</Label>
                         <Select
-                          value={filteredStudentId || ''}
+                          value={filteredStudentId || "none"}
                           onValueChange={(value) => {
-                            setFilteredStudentId(value || null);
+                            setFilteredStudentId(value === "none" ? null : value);
                           }}
                         >
                           <SelectTrigger id="student-filter">
                             <SelectValue placeholder="Select a student" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Students</SelectItem>
+                            <SelectItem value="none">All Students</SelectItem>
                             {students.map((student) => (
                               <SelectItem key={student.id} value={student.id.toString()}>
                                 {student.first_name} {student.last_name}
@@ -549,16 +548,16 @@ const CalendarPage = () => {
                       <div className="space-y-2">
                         <Label htmlFor="parent-filter">Filter by Parent</Label>
                         <Select
-                          value={filteredParentId || ''}
+                          value={filteredParentId || "none"}
                           onValueChange={(value) => {
-                            setFilteredParentId(value || null);
+                            setFilteredParentId(value === "none" ? null : value);
                           }}
                         >
                           <SelectTrigger id="parent-filter">
                             <SelectValue placeholder="Select a parent" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Parents</SelectItem>
+                            <SelectItem value="none">All Parents</SelectItem>
                             {parentsList.map((parent) => (
                               <SelectItem key={parent.id} value={parent.id}>
                                 {parent.name}
