@@ -351,6 +351,17 @@ const CalendarPage = () => {
 
   const handleViewChange = (view: string) => {
     setCalendarView(view);
+    
+    // When changing view, ensure the calendar stays on the current date
+    if (calendarRef.current) {
+      try {
+        const apiInstance = calendarRef.current.getApi();
+        apiInstance.changeView(view);
+        apiInstance.gotoDate(currentDate);
+      } catch (error) {
+        console.error("Error changing calendar view:", error);
+      }
+    }
   };
 
   const forceCalendarRefresh = useCallback(() => {
@@ -487,16 +498,42 @@ const CalendarPage = () => {
     forceCalendarRefresh();
   };
 
+  // Update the calendar when currentDate changes
   useEffect(() => {
-    const start = calendarView === 'dayGridMonth' 
-      ? startOfMonth(currentDate)
-      : new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7);
-    
-    const end = calendarView === 'dayGridMonth'
-      ? endOfMonth(currentDate)
-      : new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 14);
+    if (calendarRef.current) {
+      try {
+        const apiInstance = calendarRef.current.getApi();
+        console.log("Calendar - Navigating to date:", currentDate);
+        apiInstance.gotoDate(currentDate);
+      } catch (error) {
+        console.error("Calendar - Error navigating to date:", error);
+      }
+    }
+  }, [currentDate]);
 
-    console.log("Calendar - Initial fetchLessons called from useEffect", { start, end });
+  // Fetch lessons based on the current view and date
+  useEffect(() => {
+    // Calculate the appropriate date range based on the current view
+    let start: Date, end: Date;
+    
+    if (calendarView === 'dayGridMonth') {
+      start = startOfMonth(currentDate);
+      end = endOfMonth(currentDate);
+    } else if (calendarView === 'timeGridWeek') {
+      // For week view, get 7 days before and after the current date to ensure all events are loaded
+      start = new Date(currentDate);
+      start.setDate(start.getDate() - 7);
+      end = new Date(currentDate);
+      end.setDate(end.getDate() + 7);
+    } else {
+      // For day view or any other view
+      start = new Date(currentDate);
+      start.setDate(start.getDate() - 1);
+      end = new Date(currentDate);
+      end.setDate(end.getDate() + 1);
+    }
+
+    console.log("Calendar - Initial fetchLessons called from useEffect", { start, end, view: calendarView });
     fetchLessons(start, end);
   }, [fetchLessons, currentDate, calendarView, filteredStudentId, filteredParentId, showRecurringLessons]);
 
