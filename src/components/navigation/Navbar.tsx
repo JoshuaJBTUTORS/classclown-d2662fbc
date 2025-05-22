@@ -70,7 +70,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
           <img 
             src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
             alt="Class Clown Logo" 
-            className="h-8 w-auto"
+            className="h-12 w-auto"
           />
         </div>
         <div className="ml-auto flex items-center gap-4">

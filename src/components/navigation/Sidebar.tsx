@@ -101,11 +101,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   return (
     <div className="flex flex-col h-full bg-white border-r w-64">
       <div className="flex items-center justify-between p-5 border-b border-gray-100">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center">
           <img 
             src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
             alt="Class Clown Logo" 
-            className="h-10 w-auto"
+            className="h-14 w-auto"
           />
         </div>
 

@@ -15,7 +15,7 @@ const CalendarPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans">
+    <div className="flex min-h-screen bg-white font-sans">
       <Sidebar isOpen={sidebarOpen} />
       <div className="flex flex-col flex-1">
         <Navbar toggleSidebar={toggleSidebar} />
