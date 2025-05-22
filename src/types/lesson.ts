@@ -37,6 +37,11 @@ export interface Lesson {
   homework_assigned?: boolean;
   color?: string;
   is_recurring_instance?: boolean;
+  parent?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export interface HomeworkSubmission {
