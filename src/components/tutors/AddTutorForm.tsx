@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -61,6 +60,9 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
   const [loading, setLoading] = useState(false);
   const { organization } = useOrganization();
 
+  // Define a properly typed empty array for availability
+  const emptyAvailabilityArray: AvailabilitySlot[] = [];
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -71,7 +73,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       specialities: "",
       bio: "",
       sendInvite: false,
-      availability: [] as AvailabilitySlot[],
+      availability: emptyAvailabilityArray,
     },
   });
 
