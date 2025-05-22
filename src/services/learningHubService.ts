@@ -1,31 +1,31 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
+import { Course, CourseModule, CourseLesson, QuizQuestion, QuizOption } from '@/types/course';
 
 export const learningHubService = {
   // Course methods
-  async getCourses(): Promise<Course[]> {
+  getCourses: async (): Promise<Course[]> => {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data as Course[] || [];
+    return data as Course[];
   },
 
-  async getCourseById(courseId: string): Promise<Course | null> {
+  getCourseById: async (id: string): Promise<Course> => {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
-      .eq('id', courseId)
+      .eq('id', id)
       .single();
     
-    if (error && error.code !== 'PGRST116') throw error;
-    return data as Course | null;
+    if (error) throw error;
+    return data as Course;
   },
 
-  async createCourse(course: Partial<Course> & { title: string }): Promise<Course> {
+  createCourse: async (course: Partial<Course>): Promise<Course> => {
     const { data, error } = await supabase
       .from('courses')
       .insert([course])
@@ -36,11 +36,11 @@ export const learningHubService = {
     return data as Course;
   },
 
-  async updateCourse(courseId: string, updates: Partial<Course>): Promise<Course> {
+  updateCourse: async (id: string, course: Partial<Course>): Promise<Course> => {
     const { data, error } = await supabase
       .from('courses')
-      .update(updates)
-      .eq('id', courseId)
+      .update(course)
+      .eq('id', id)
       .select()
       .single();
     
@@ -48,28 +48,31 @@ export const learningHubService = {
     return data as Course;
   },
 
-  async deleteCourse(courseId: string): Promise<void> {
+  deleteCourse: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('courses')
       .delete()
-      .eq('id', courseId);
+      .eq('id', id);
     
     if (error) throw error;
   },
 
   // Module methods
-  async getModulesByCourseId(courseId: string): Promise<CourseModule[]> {
+  getCourseModules: async (courseId: string): Promise<CourseModule[]> => {
     const { data, error } = await supabase
       .from('course_modules')
-      .select('*')
+      .select(`
+        *,
+        lessons:course_lessons(*)
+      `)
       .eq('course_id', courseId)
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data as CourseModule[] || [];
+    return data as CourseModule[];
   },
 
-  async createModule(module: Partial<CourseModule> & { course_id: string; title: string; position: number }): Promise<CourseModule> {
+  createModule: async (module: Partial<CourseModule>): Promise<CourseModule> => {
     const { data, error } = await supabase
       .from('course_modules')
       .insert([module])
@@ -80,11 +83,11 @@ export const learningHubService = {
     return data as CourseModule;
   },
 
-  async updateModule(moduleId: string, updates: Partial<CourseModule>): Promise<CourseModule> {
+  updateModule: async (id: string, module: Partial<CourseModule>): Promise<CourseModule> => {
     const { data, error } = await supabase
       .from('course_modules')
-      .update(updates)
-      .eq('id', moduleId)
+      .update(module)
+      .eq('id', id)
       .select()
       .single();
     
@@ -92,44 +95,17 @@ export const learningHubService = {
     return data as CourseModule;
   },
 
-  async deleteModule(moduleId: string): Promise<void> {
+  deleteModule: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('course_modules')
       .delete()
-      .eq('id', moduleId);
+      .eq('id', id);
     
     if (error) throw error;
   },
 
   // Lesson methods
-  async getLessonsByModuleId(moduleId: string): Promise<CourseLesson[]> {
-    const { data, error } = await supabase
-      .from('course_lessons')
-      .select('*')
-      .eq('module_id', moduleId)
-      .order('position', { ascending: true });
-    
-    if (error) throw error;
-    return data as CourseLesson[] || [];
-  },
-
-  async getLessonById(lessonId: string): Promise<CourseLesson | null> {
-    const { data, error } = await supabase
-      .from('course_lessons')
-      .select('*')
-      .eq('id', lessonId)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') throw error;
-    return data as CourseLesson | null;
-  },
-
-  async createLesson(lesson: Partial<CourseLesson> & { 
-    module_id: string; 
-    title: string; 
-    content_type: 'video' | 'pdf' | 'text' | 'quiz';
-    position: number 
-  }): Promise<CourseLesson> {
+  createLesson: async (lesson: Partial<CourseLesson>): Promise<CourseLesson> => {
     const { data, error } = await supabase
       .from('course_lessons')
       .insert([lesson])
@@ -140,11 +116,11 @@ export const learningHubService = {
     return data as CourseLesson;
   },
 
-  async updateLesson(lessonId: string, updates: Partial<CourseLesson>): Promise<CourseLesson> {
+  updateLesson: async (id: string, lesson: Partial<CourseLesson>): Promise<CourseLesson> => {
     const { data, error } = await supabase
       .from('course_lessons')
-      .update(updates)
-      .eq('id', lessonId)
+      .update(lesson)
+      .eq('id', id)
       .select()
       .single();
     
@@ -152,62 +128,92 @@ export const learningHubService = {
     return data as CourseLesson;
   },
 
-  async deleteLesson(lessonId: string): Promise<void> {
+  deleteLesson: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('course_lessons')
       .delete()
-      .eq('id', lessonId);
+      .eq('id', id);
     
     if (error) throw error;
   },
 
-  // Student Progress methods
-  async getStudentProgress(studentId: number, lessonId: string): Promise<StudentProgress | null> {
+  // Quiz methods
+  getQuizQuestions: async (lessonId: string): Promise<QuizQuestion[]> => {
     const { data, error } = await supabase
-      .from('student_progress')
-      .select('*')
-      .eq('student_id', studentId)
+      .from('quiz_questions')
+      .select(`
+        *,
+        options:quiz_options(*)
+      `)
       .eq('lesson_id', lessonId)
+      .order('position', { ascending: true });
+    
+    if (error) throw error;
+    return data as unknown as QuizQuestion[];
+  },
+
+  createQuizQuestion: async (question: Partial<QuizQuestion>): Promise<QuizQuestion> => {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .insert([question])
+      .select()
       .single();
     
-    if (error && error.code !== 'PGRST116') throw error;
-    return data as StudentProgress | null;
+    if (error) throw error;
+    return data as QuizQuestion;
   },
 
-  async getAllStudentProgress(studentId: number): Promise<StudentProgress[]> {
+  updateQuizQuestion: async (id: string, question: Partial<QuizQuestion>): Promise<QuizQuestion> => {
     const { data, error } = await supabase
-      .from('student_progress')
-      .select('*')
-      .eq('student_id', studentId);
+      .from('quiz_questions')
+      .update(question)
+      .eq('id', id)
+      .select()
+      .single();
     
     if (error) throw error;
-    return data as StudentProgress[] || [];
+    return data as QuizQuestion;
   },
 
-  async updateStudentProgress(progressData: Partial<StudentProgress> & { student_id: number; lesson_id: string }): Promise<StudentProgress> {
-    // If a record exists, update it; otherwise, insert a new record
-    const { student_id, lesson_id } = progressData;
-    const existingProgress = await this.getStudentProgress(student_id, lesson_id);
+  deleteQuizQuestion: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('quiz_questions')
+      .delete()
+      .eq('id', id);
     
-    if (existingProgress) {
-      const { data, error } = await supabase
-        .from('student_progress')
-        .update(progressData)
-        .eq('id', existingProgress.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as StudentProgress;
-    } else {
-      const { data, error } = await supabase
-        .from('student_progress')
-        .insert([progressData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as StudentProgress;
-    }
+    if (error) throw error;
+  },
+
+  // Quiz Options methods
+  createQuizOption: async (option: Partial<QuizOption>): Promise<QuizOption> => {
+    const { data, error } = await supabase
+      .from('quiz_options')
+      .insert([option])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as QuizOption;
+  },
+
+  updateQuizOption: async (id: string, option: Partial<QuizOption>): Promise<QuizOption> => {
+    const { data, error } = await supabase
+      .from('quiz_options')
+      .update(option)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as QuizOption;
+  },
+
+  deleteQuizOption: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('quiz_options')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   }
 };

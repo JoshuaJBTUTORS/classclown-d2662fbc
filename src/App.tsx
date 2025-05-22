@@ -17,6 +17,12 @@ import Calendar from './pages/Calendar';
 import Lessons from './pages/Lessons';
 import Homework from './pages/Homework';
 import LearningHub from './pages/LearningHub';
+import CourseDetail from './pages/CourseDetail';
+import CourseCreate from './pages/CourseCreate';
+import CourseEdit from './pages/CourseEdit';
+import Messages from './pages/Messages';
+import MessageDetail from './pages/MessageDetail';
+import NewMessage from './pages/NewMessage';
 import Unauthorized from './pages/Unauthorized';
 import Invite from './pages/Invite';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -57,6 +63,18 @@ function App() {
 
                 {/* Learning Hub routes - accessible to all authenticated users */}
                 <Route path="/learning-hub" element={<LearningHub />} />
+                <Route path="/learning-hub/course/:courseId" element={<CourseDetail />} />
+                
+                {/* Course management routes - restricted to admin/owner/tutor */}
+                <Route element={<ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']} />}>
+                  <Route path="/learning-hub/create" element={<CourseCreate />} />
+                  <Route path="/learning-hub/course/:courseId/edit" element={<CourseEdit />} />
+                </Route>
+                
+                {/* Messaging routes - accessible to all authenticated users */}
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/messages/:conversationId" element={<MessageDetail />} />
+                <Route path="/messages/new" element={<NewMessage />} />
               </Route>
               
               {/* Catch-all route */}
