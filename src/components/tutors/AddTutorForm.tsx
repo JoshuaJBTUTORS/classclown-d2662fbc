@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +27,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { TutorAvailability, AvailabilitySlot } from './TutorAvailability';
 import { Mail } from 'lucide-react';
 
 interface AddTutorFormProps {
@@ -42,6 +45,14 @@ const formSchema = z.object({
   specialities: z.string().optional(),
   bio: z.string().optional(),
   sendInvite: z.boolean().default(false),
+  availability: z.array(
+    z.object({
+      id: z.string(),
+      day: z.string().min(1, "Day is required"),
+      startTime: z.string(),
+      endTime: z.string(),
+    })
+  ).default([]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -60,6 +71,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       specialities: "",
       bio: "",
       sendInvite: false,
+      availability: [],
     },
   });
 
@@ -73,6 +85,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         .map(s => s.trim())
         .filter(s => s !== '');
 
+      // 1. Insert tutor
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
         .insert({
@@ -81,15 +94,40 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           email: data.email,
           phone: data.phone,
           specialities: specialitiesArray,
-          bio: data.bio, // Changed from 'about' to 'bio' to match the database schema
+          bio: data.bio,
           status: 'active',
-          organization_id: organization?.id || null // Add organization_id 
+          organization_id: organization?.id || null
         })
         .select()
         .single();
 
       if (tutorError) throw tutorError;
 
+      // 2. Insert availability slots
+      if (data.availability.length > 0) {
+        const availabilityData = data.availability.map(slot => ({
+          tutor_id: tutorData.id,
+          day_of_week: slot.day,
+          start_time: slot.startTime,
+          end_time: slot.endTime,
+          organization_id: organization?.id || null
+        }));
+
+        const { error: availabilityError } = await supabase
+          .from('tutor_availability')
+          .insert(availabilityData);
+
+        if (availabilityError) {
+          console.error('Error saving tutor availability:', availabilityError);
+          toast({
+            title: "Warning",
+            description: "Tutor created but availability could not be saved.",
+            variant: "destructive"
+          });
+        }
+      }
+
+      // 3. Send invite if requested
       if (data.sendInvite) {
         const { error: inviteError } = await supabase.functions.invoke('send-tutor-invite', {
           body: {
@@ -134,7 +172,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Tutor</DialogTitle>
           <DialogDescription>
@@ -228,6 +266,26 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                 </FormItem>
               )}
             />
+
+            <Separator className="my-4" />
+            
+            <FormField
+              control={form.control}
+              name="availability"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <TutorAvailability 
+                      value={field.value} 
+                      onChange={field.onChange} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <Separator className="my-4" />
             
             <FormField
               control={form.control}
