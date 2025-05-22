@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -25,6 +24,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { Tutor } from '@/types/tutor';
 import TutorAvailabilityTab from './TutorAvailabilityTab';
+import AvailabilityManager from './AvailabilityManager';
+import TimeOffRequestForm from './TimeOffRequestForm';
+import TimeOffRequestsList from './TimeOffRequestsList';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
