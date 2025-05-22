@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,6 +56,7 @@ interface AssignHomeworkDialogProps {
     attachment_type?: string;
   };
   preSelectedLessonId?: string;
+  preloadedLessonData?: any; // Add the new prop here
 }
 
 interface Lesson {
@@ -79,7 +81,8 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   onClose, 
   onSuccess, 
   editingHomework,
-  preSelectedLessonId
+  preSelectedLessonId,
+  preloadedLessonData
 }) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(false);
@@ -105,12 +108,29 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   useEffect(() => {
     if (preSelectedLessonId) {
       form.setValue('lesson_id', preSelectedLessonId);
-      fetchPreSelectedLesson(preSelectedLessonId);
+      
+      // If we have preloaded data, use it instead of fetching again
+      if (preloadedLessonData && preloadedLessonData.id === preSelectedLessonId) {
+        const data = preloadedLessonData;
+        setPreSelectedLesson({
+          id: data.id,
+          title: data.title,
+          tutor_first_name: data.tutor.first_name,
+          tutor_last_name: data.tutor.last_name
+        });
+      } else {
+        fetchPreSelectedLesson(preSelectedLessonId);
+      }
     }
-  }, [preSelectedLessonId, form]);
+  }, [preSelectedLessonId, form, preloadedLessonData]);
 
   // Fetch pre-selected lesson details
   const fetchPreSelectedLesson = async (lessonId: string) => {
+    // Skip fetch if we already have the preloaded data
+    if (preloadedLessonData && preloadedLessonData.id === lessonId) {
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('lessons')
@@ -140,14 +160,18 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   // Fetch lessons on component mount
   useEffect(() => {
     if (isOpen) {
-      fetchLessons();
+      // If we have a preSelectedLessonId and preloadedLessonData, we don't need to fetch all lessons immediately
+      // This improves initial load time
+      if (!(preSelectedLessonId && preloadedLessonData)) {
+        fetchLessons();
+      }
 
       if (editingHomework?.attachment_url) {
         setExistingAttachmentUrl(editingHomework.attachment_url);
         setExistingAttachmentType(editingHomework.attachment_type || null);
       }
     }
-  }, [isOpen, editingHomework]);
+  }, [isOpen, editingHomework, preSelectedLessonId, preloadedLessonData]);
 
   const fetchLessons = async () => {
     try {
