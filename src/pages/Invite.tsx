@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -183,9 +182,9 @@ const Invite = () => {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <img 
-                src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
+                src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
                 alt="Class Clown Logo" 
-                className="h-36 w-auto" // Increased size by 1.5 (from h-24 to h-36)
+                className="h-36 w-auto" 
               />
             </div>
             <CardTitle className="text-red-500">Invalid Invitation</CardTitle>
@@ -205,9 +204,9 @@ const Invite = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
+              src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
               alt="Class Clown Logo" 
-              className="h-36 w-auto" // Increased size by 1.5 (from h-24 to h-36)
+              className="h-36 w-auto" 
             />
           </div>
           <CardTitle>Complete Your Registration</CardTitle>

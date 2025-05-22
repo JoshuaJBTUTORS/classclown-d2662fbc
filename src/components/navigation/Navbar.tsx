@@ -68,9 +68,9 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
         </Button>
         <div className="flex items-center gap-2 md:hidden">
           <img 
-            src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
+            src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
             alt="Class Clown Logo" 
-            className="h-24 w-auto" // Increased size by 1.5 (from h-16 to h-24)
+            className="h-24 w-auto" 
           />
         </div>
         <div className="ml-auto flex items-center gap-4">
