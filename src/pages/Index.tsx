@@ -15,7 +15,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} />
       <div className="flex flex-col flex-1 lg:pl-0">
         <Navbar toggleSidebar={toggleSidebar} />
@@ -31,7 +31,7 @@ const Index = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="font-playfair text-xl">Weekly Activity</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gray-50/50 rounded-md">
+                <CardContent className="h-[300px] flex items-center justify-center bg-muted/50 rounded-md">
                   <p className="text-muted-foreground text-sm">Activity chart will be shown here</p>
                 </CardContent>
               </Card>
@@ -39,7 +39,7 @@ const Index = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="font-playfair text-xl">Student Distribution</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gray-50/50 rounded-md">
+                <CardContent className="h-[300px] flex items-center justify-center bg-muted/50 rounded-md">
                   <p className="text-muted-foreground text-sm">Distribution chart will be shown here</p>
                 </CardContent>
               </Card>
@@ -48,7 +48,7 @@ const Index = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="font-playfair text-xl">Recent Activities</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gray-50/50 rounded-md">
+                <CardContent className="h-[300px] flex items-center justify-center bg-muted/50 rounded-md">
                   <p className="text-muted-foreground text-sm">Activity log will be shown here</p>
                 </CardContent>
               </Card>

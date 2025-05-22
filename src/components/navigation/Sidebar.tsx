@@ -99,7 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white border-r w-64">
+    <div className="flex flex-col h-full bg-background border-r w-64">
       <div className="flex items-center justify-center p-5 border-b border-gray-100">
         <img 
           src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
@@ -133,7 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
           <h4 className="font-playfair font-medium mb-1">Need help?</h4>
           <p className="text-xs text-muted-foreground mb-3">Contact our support team for assistance.</p>
           <button 
-            className="w-full bg-white border border-[#e94b7f]/30 text-foreground py-2 px-4 rounded-md text-sm font-medium hover:bg-[#e94b7f]/10 transition-colors"
+            className="w-full bg-background border border-[#e94b7f]/30 text-foreground py-2 px-4 rounded-md text-sm font-medium hover:bg-[#e94b7f]/10 transition-colors"
           >
             Contact Support
           </button>

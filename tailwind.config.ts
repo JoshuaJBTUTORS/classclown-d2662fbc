@@ -24,6 +24,7 @@ export default {
 				sans: ['Inter', 'sans-serif']
 			},
 			colors: {
+				'logo-white': 'hsl(0, 0%, 98%)', // Adding custom logo-white color
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

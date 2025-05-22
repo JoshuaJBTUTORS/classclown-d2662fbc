@@ -7,13 +7,13 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 98%; /* Slightly off-white to match logo */
     --foreground: 208 75% 21%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 98%; /* Matching the background */
     --card-foreground: 208 75% 21%;
 
-    --popover: 0 0% 100%;
+    --popover: 0 0% 98%; /* Matching the background */
     --popover-foreground: 208 75% 21%;
 
     /* Primary color: Pink/Fuchsia */
@@ -42,7 +42,7 @@
     --radius: 0.75rem;
 
     /* Sidebar colors */
-    --sidebar-background: 0 0% 100%;
+    --sidebar-background: 0 0% 98%; /* Matching the main background */
     --sidebar-foreground: 208 75% 21%;
     --sidebar-primary: 342 77% 60%;
     --sidebar-primary-foreground: 342 70% 15%;
