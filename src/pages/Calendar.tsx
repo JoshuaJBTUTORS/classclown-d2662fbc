@@ -69,6 +69,10 @@ const CalendarPage = () => {
   const [showRecurringLessons, setShowRecurringLessons] = useState(true);
   const { user } = useAuth();
   const calendarRef = useRef<FullCalendarComponent | null>(null);
+  
+  // Add flag to prevent reacting to programmatic calendar changes
+  const isUpdatingFromState = useRef(false);
+  const calendarApiInitialized = useRef(false);
 
   // Fetch students for filters
   useEffect(() => {
@@ -347,7 +351,7 @@ const CalendarPage = () => {
       return format(currentDate, 'MMMM yyyy');
     } else if (calendarView === 'timeGridWeek') {
       // Start of the week that contains the current date
-      const weekStart = startOfWeek(currentDate);
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start week on Monday (1)
       return `Week of ${format(weekStart, 'MMMM d, yyyy')}`;
     } else {
       // For day view
@@ -357,65 +361,37 @@ const CalendarPage = () => {
 
   // Navigate backward (previous day, week, or month)
   const handleNavigatePrevious = () => {
-    setCurrentDate(prevDate => {
-      let newDate;
-      if (calendarView === 'dayGridMonth') {
-        newDate = subMonths(prevDate, 1);
-      } else if (calendarView === 'timeGridWeek') {
-        newDate = subWeeks(prevDate, 1);
-      } else {
-        newDate = subDays(prevDate, 1);
+    if (calendarRef.current) {
+      try {
+        const apiInstance = calendarRef.current.getApi();
+        apiInstance.prev();
+        // The datesSet event will update currentDate
+      } catch (error) {
+        console.error("Error navigating backward:", error);
       }
-      
-      // Use the FullCalendar API to navigate
-      if (calendarRef.current) {
-        try {
-          const apiInstance = calendarRef.current.getApi();
-          apiInstance.prev();
-        } catch (error) {
-          console.error("Error navigating backward:", error);
-        }
-      }
-      
-      return newDate;
-    });
+    }
   };
 
   // Navigate forward (next day, week, or month)
   const handleNavigateNext = () => {
-    setCurrentDate(prevDate => {
-      let newDate;
-      if (calendarView === 'dayGridMonth') {
-        newDate = addMonths(prevDate, 1);
-      } else if (calendarView === 'timeGridWeek') {
-        newDate = addWeeks(prevDate, 1);
-      } else {
-        newDate = addDays(prevDate, 1);
+    if (calendarRef.current) {
+      try {
+        const apiInstance = calendarRef.current.getApi();
+        apiInstance.next();
+        // The datesSet event will update currentDate
+      } catch (error) {
+        console.error("Error navigating forward:", error);
       }
-      
-      // Use the FullCalendar API to navigate
-      if (calendarRef.current) {
-        try {
-          const apiInstance = calendarRef.current.getApi();
-          apiInstance.next();
-        } catch (error) {
-          console.error("Error navigating forward:", error);
-        }
-      }
-      
-      return newDate;
-    });
+    }
   };
 
   // Navigate to today
   const handleNavigateToToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    
     if (calendarRef.current) {
       try {
         const apiInstance = calendarRef.current.getApi();
         apiInstance.today();
+        // The datesSet event will update currentDate
       } catch (error) {
         console.error("Error navigating to today:", error);
       }
@@ -423,20 +399,18 @@ const CalendarPage = () => {
   };
 
   const handleViewChange = (view: string) => {
-    // Get the current date before changing the view
-    const dateToKeep = currentDate;
-    
-    setCalendarView(view);
-    
-    // When changing view, ensure the calendar stays on the current date
     if (calendarRef.current) {
       try {
         const apiInstance = calendarRef.current.getApi();
+        isUpdatingFromState.current = true;
         apiInstance.changeView(view);
-        apiInstance.gotoDate(dateToKeep);
+        setCalendarView(view);
+        isUpdatingFromState.current = false;
       } catch (error) {
         console.error("Error changing calendar view:", error);
       }
+    } else {
+      setCalendarView(view);
     }
   };
 
@@ -453,13 +427,7 @@ const CalendarPage = () => {
         console.error("Calendar - Error using calendar API:", error);
       }
     }
-    
-    // Also fetch new data as a backup
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
-    console.log("Calendar - Backup fetch of lessons");
-    fetchLessons(start, end);
-  }, [fetchLessons, currentDate]);
+  }, []);
 
   const handleAddLessonSuccess = () => {
     console.log("Calendar - Lesson added successfully");
@@ -574,62 +542,52 @@ const CalendarPage = () => {
     forceCalendarRefresh();
   };
 
-  // Update the calendar when currentDate changes
-  useEffect(() => {
-    if (calendarRef.current) {
-      try {
-        const apiInstance = calendarRef.current.getApi();
-        console.log("Calendar - Navigating to date:", currentDate);
-        apiInstance.gotoDate(currentDate);
-      } catch (error) {
-        console.error("Calendar - Error navigating to date:", error);
-      }
-    }
-  }, [currentDate]);
-
-  // Handle events when the calendar view changes programmatically
-  useEffect(() => {
-    if (calendarRef.current) {
-      const apiInstance = calendarRef.current.getApi();
-      
-      const handleDatesSet = (arg: any) => {
-        // Update currentDate state to match the calendar's current date
-        setCurrentDate(arg.view.currentStart);
-      };
-      
-      // Add event listener
-      apiInstance.on('datesSet', handleDatesSet);
-      
-      // Cleanup
-      return () => {
-        apiInstance.off('datesSet', handleDatesSet);
-      };
-    }
-  }, [calendarRef.current]);
-
-  // Fetch lessons based on the current view and date
-  useEffect(() => {
+  // Handle calendar initialization and datesSet event
+  const handleCalendarDatesSet = useCallback((arg: any) => {
+    // Avoid infinite loop by checking if this is triggered by our own state updates
+    if (isUpdatingFromState.current) return;
+    
+    // Update our state to match the calendar's current date
+    setCurrentDate(arg.view.activeStart);
+    
     // Calculate the appropriate date range based on the current view
     let start: Date, end: Date;
+    const viewType = arg.view.type;
     
-    if (calendarView === 'dayGridMonth') {
-      start = startOfMonth(currentDate);
-      end = endOfMonth(currentDate);
-    } else if (calendarView === 'timeGridWeek') {
-      // For week view, get the start and end of the current week with a buffer
-      start = startOfWeek(currentDate);
-      start = subDays(start, 7); // Add a week buffer before
-      end = endOfWeek(currentDate);
-      end = addDays(end, 7); // Add a week buffer after
+    if (viewType === 'dayGridMonth') {
+      start = startOfMonth(arg.start);
+      end = endOfMonth(arg.end);
+    } else if (viewType === 'timeGridWeek') {
+      // For week view, get the start and end with buffer
+      start = subDays(arg.start, 7); 
+      end = addDays(arg.end, 7);
     } else {
-      // For day view or any other view
-      start = subDays(currentDate, 1); // One day before
-      end = addDays(currentDate, 1); // One day after
+      // For day view
+      start = subDays(arg.start, 1);
+      end = addDays(arg.end, 1);
     }
-
-    console.log("Calendar - Initial fetchLessons called from useEffect", { start, end, view: calendarView });
+    
+    console.log(`Calendar view changed: ${viewType}`, { start, end });
     fetchLessons(start, end);
-  }, [fetchLessons, currentDate, calendarView, filteredStudentId, filteredParentId, showRecurringLessons]);
+  }, [fetchLessons]);
+
+  // Setup effect to handle calendar initialization
+  useEffect(() => {
+    if (calendarRef.current && !calendarApiInitialized.current) {
+      const apiInstance = calendarRef.current.getApi();
+      
+      // Just mark as initialized - the datesSet event will handle initial fetch
+      calendarApiInitialized.current = true;
+      
+      // Initial manual trigger of datesSet to ensure we have the correct data
+      const viewInfo = apiInstance.view;
+      handleCalendarDatesSet({
+        view: viewInfo,
+        start: viewInfo.activeStart,
+        end: viewInfo.activeEnd
+      });
+    }
+  }, [calendarRef.current, handleCalendarDatesSet]);
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
@@ -781,6 +739,7 @@ const CalendarPage = () => {
                     weekends={true}
                     select={handleDateSelect}
                     eventClick={handleEventClick}
+                    datesSet={handleCalendarDatesSet}
                     height="100%"
                     allDaySlot={false}
                     slotDuration="00:30:00"
@@ -788,6 +747,7 @@ const CalendarPage = () => {
                     expandRows={true}
                     stickyHeaderDates={true}
                     nowIndicator={true}
+                    firstDay={1} 
                     eventTimeFormat={{
                       hour: '2-digit',
                       minute: '2-digit',

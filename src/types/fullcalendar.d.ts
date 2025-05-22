@@ -32,6 +32,7 @@ declare module '@fullcalendar/react' {
     weekends?: boolean;
     select?: (info: any) => void;
     eventClick?: (info: any) => void;
+    datesSet?: (info: any) => void;
     height?: string | number;
     allDaySlot?: boolean;
     slotDuration?: string;
@@ -39,6 +40,7 @@ declare module '@fullcalendar/react' {
     expandRows?: boolean;
     stickyHeaderDates?: boolean;
     nowIndicator?: boolean;
+    firstDay?: number;
     eventTimeFormat?: {
       hour: string;
       minute: string;
