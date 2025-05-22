@@ -103,9 +103,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       <div className="flex items-center justify-between p-5 border-b border-gray-100">
         <div className="flex items-center justify-center w-full">
           <img 
-            src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+            src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
             alt="Class Clown Logo" 
-            className="h-20 w-auto"
+            className="h-30 w-auto" // Increased size by 1.5 (from h-20 to h-30)
           />
         </div>
 

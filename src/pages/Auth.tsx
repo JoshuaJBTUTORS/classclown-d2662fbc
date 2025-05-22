@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,9 +89,9 @@ const Auth = () => {
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
               alt="Class Clown Logo" 
-              className="h-24 w-auto"
+              className="h-36 w-auto"
             />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Tutor Management Platform</CardTitle>

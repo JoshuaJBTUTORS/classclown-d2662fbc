@@ -155,9 +155,9 @@ const RegisterOrganization = () => {
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
               alt="Class Clown Logo" 
-              className="h-16 w-auto"
+              className="h-24 w-auto" // Increased size by 1.5 (from h-16 to h-24)
             />
           </div>
           <CardTitle className="text-2xl font-bold">Register Your Organization</CardTitle>

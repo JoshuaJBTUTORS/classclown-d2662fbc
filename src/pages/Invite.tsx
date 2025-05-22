@@ -183,9 +183,9 @@ const Invite = () => {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <img 
-                src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+                src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
                 alt="Class Clown Logo" 
-                className="h-24 w-auto"
+                className="h-36 w-auto" // Increased size by 1.5 (from h-24 to h-36)
               />
             </div>
             <CardTitle className="text-red-500">Invalid Invitation</CardTitle>
@@ -205,9 +205,9 @@ const Invite = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              src="/lovable-uploads/af4a18ea-d028-4c57-82c8-690fb641331a.png" 
               alt="Class Clown Logo" 
-              className="h-24 w-auto"
+              className="h-36 w-auto" // Increased size by 1.5 (from h-24 to h-36)
             />
           </div>
           <CardTitle>Complete Your Registration</CardTitle>
