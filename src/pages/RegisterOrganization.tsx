@@ -153,6 +153,13 @@ const RegisterOrganization = () => {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-2xl shadow-lg">
         <CardHeader className="space-y-1">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              alt="Class Clown Logo" 
+              className="h-16 w-auto"
+            />
+          </div>
           <CardTitle className="text-2xl font-bold">Register Your Organization</CardTitle>
           <CardDescription>
             Create a new tutoring organization and get your own personalized domain.

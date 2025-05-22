@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -181,6 +180,13 @@ const Invite = () => {
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+                alt="Class Clown Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
             <CardTitle className="text-red-500">Invalid Invitation</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
@@ -196,6 +202,13 @@ const Invite = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              alt="Class Clown Logo" 
+              className="h-16 w-auto"
+            />
+          </div>
           <CardTitle>Complete Your Registration</CardTitle>
           <CardDescription>
             Welcome to {invitation?.organization_name || "our tutoring platform"}! You've been 
