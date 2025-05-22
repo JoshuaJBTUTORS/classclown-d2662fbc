@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, eachDayOfInterval, addDays } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, addDays, addWeeks, eachDayOfInterval, subDays, subWeeks, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -341,15 +341,91 @@ const CalendarPage = () => {
     setIsLessonDetailsOpen(true);
   };
 
-  const handlePreviousMonth = () => {
-    setCurrentDate(prevDate => addMonths(prevDate, -1));
+  // Get a formatted display for the current date based on the view
+  const getDateDisplay = () => {
+    if (calendarView === 'dayGridMonth') {
+      return format(currentDate, 'MMMM yyyy');
+    } else if (calendarView === 'timeGridWeek') {
+      // Start of the week that contains the current date
+      const weekStart = startOfWeek(currentDate);
+      return `Week of ${format(weekStart, 'MMMM d, yyyy')}`;
+    } else {
+      // For day view
+      return format(currentDate, 'MMMM d, yyyy');
+    }
   };
 
-  const handleNextMonth = () => {
-    setCurrentDate(prevDate => addMonths(prevDate, 1));
+  // Navigate backward (previous day, week, or month)
+  const handleNavigatePrevious = () => {
+    setCurrentDate(prevDate => {
+      let newDate;
+      if (calendarView === 'dayGridMonth') {
+        newDate = subMonths(prevDate, 1);
+      } else if (calendarView === 'timeGridWeek') {
+        newDate = subWeeks(prevDate, 1);
+      } else {
+        newDate = subDays(prevDate, 1);
+      }
+      
+      // Use the FullCalendar API to navigate
+      if (calendarRef.current) {
+        try {
+          const apiInstance = calendarRef.current.getApi();
+          apiInstance.prev();
+        } catch (error) {
+          console.error("Error navigating backward:", error);
+        }
+      }
+      
+      return newDate;
+    });
+  };
+
+  // Navigate forward (next day, week, or month)
+  const handleNavigateNext = () => {
+    setCurrentDate(prevDate => {
+      let newDate;
+      if (calendarView === 'dayGridMonth') {
+        newDate = addMonths(prevDate, 1);
+      } else if (calendarView === 'timeGridWeek') {
+        newDate = addWeeks(prevDate, 1);
+      } else {
+        newDate = addDays(prevDate, 1);
+      }
+      
+      // Use the FullCalendar API to navigate
+      if (calendarRef.current) {
+        try {
+          const apiInstance = calendarRef.current.getApi();
+          apiInstance.next();
+        } catch (error) {
+          console.error("Error navigating forward:", error);
+        }
+      }
+      
+      return newDate;
+    });
+  };
+
+  // Navigate to today
+  const handleNavigateToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    
+    if (calendarRef.current) {
+      try {
+        const apiInstance = calendarRef.current.getApi();
+        apiInstance.today();
+      } catch (error) {
+        console.error("Error navigating to today:", error);
+      }
+    }
   };
 
   const handleViewChange = (view: string) => {
+    // Get the current date before changing the view
+    const dateToKeep = currentDate;
+    
     setCalendarView(view);
     
     // When changing view, ensure the calendar stays on the current date
@@ -357,7 +433,7 @@ const CalendarPage = () => {
       try {
         const apiInstance = calendarRef.current.getApi();
         apiInstance.changeView(view);
-        apiInstance.gotoDate(currentDate);
+        apiInstance.gotoDate(dateToKeep);
       } catch (error) {
         console.error("Error changing calendar view:", error);
       }
@@ -511,6 +587,26 @@ const CalendarPage = () => {
     }
   }, [currentDate]);
 
+  // Handle events when the calendar view changes programmatically
+  useEffect(() => {
+    if (calendarRef.current) {
+      const apiInstance = calendarRef.current.getApi();
+      
+      const handleDatesSet = (arg: any) => {
+        // Update currentDate state to match the calendar's current date
+        setCurrentDate(arg.view.currentStart);
+      };
+      
+      // Add event listener
+      apiInstance.on('datesSet', handleDatesSet);
+      
+      // Cleanup
+      return () => {
+        apiInstance.off('datesSet', handleDatesSet);
+      };
+    }
+  }, [calendarRef.current]);
+
   // Fetch lessons based on the current view and date
   useEffect(() => {
     // Calculate the appropriate date range based on the current view
@@ -520,17 +616,15 @@ const CalendarPage = () => {
       start = startOfMonth(currentDate);
       end = endOfMonth(currentDate);
     } else if (calendarView === 'timeGridWeek') {
-      // For week view, get 7 days before and after the current date to ensure all events are loaded
-      start = new Date(currentDate);
-      start.setDate(start.getDate() - 7);
-      end = new Date(currentDate);
-      end.setDate(end.getDate() + 7);
+      // For week view, get the start and end of the current week with a buffer
+      start = startOfWeek(currentDate);
+      start = subDays(start, 7); // Add a week buffer before
+      end = endOfWeek(currentDate);
+      end = addDays(end, 7); // Add a week buffer after
     } else {
       // For day view or any other view
-      start = new Date(currentDate);
-      start.setDate(start.getDate() - 1);
-      end = new Date(currentDate);
-      end.setDate(end.getDate() + 1);
+      start = subDays(currentDate, 1); // One day before
+      end = addDays(currentDate, 1); // One day after
     }
 
     console.log("Calendar - Initial fetchLessons called from useEffect", { start, end, view: calendarView });
@@ -629,17 +723,27 @@ const CalendarPage = () => {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={handlePreviousMonth}
+                  onClick={handleNavigatePrevious}
+                  title={`Previous ${calendarView === 'dayGridMonth' ? 'Month' : calendarView === 'timeGridWeek' ? 'Week' : 'Day'}`}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <div className="text-sm font-medium min-w-[100px] text-center">
-                  {format(currentDate, 'MMMM yyyy')}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNavigateToToday}
+                  className="text-xs"
+                >
+                  Today
+                </Button>
+                <div className="text-sm font-medium min-w-[140px] text-center">
+                  {getDateDisplay()}
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={handleNextMonth}
+                  onClick={handleNavigateNext}
+                  title={`Next ${calendarView === 'dayGridMonth' ? 'Month' : calendarView === 'timeGridWeek' ? 'Week' : 'Day'}`}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
