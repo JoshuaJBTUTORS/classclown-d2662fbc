@@ -32,6 +32,8 @@ declare module '@fullcalendar/react' {
     weekends?: boolean;
     select?: (info: any) => void;
     eventClick?: (info: any) => void;
+    eventClassNames?: (info: any) => string[];
+    eventContent?: (eventInfo: any) => JSX.Element;
     datesSet?: (info: any) => void;
     height?: string | number;
     allDaySlot?: boolean;
