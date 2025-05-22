@@ -1,7 +1,6 @@
 
 import React from 'react';
 import {
-  Home,
   Calendar,
   BookOpen,
   Users,
@@ -103,13 +102,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     <div className="flex flex-col h-full bg-white border-r w-64">
       <div className="flex items-center justify-between p-5 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div className="bg-primary h-8 w-8 rounded-md flex items-center justify-center">
-            <Home className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <span className="font-playfair text-lg font-semibold text-foreground">Class Clown</span>
-            <p className="text-xs text-muted-foreground">Built by JB Tutors</p>
-          </div>
+          <img 
+            src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+            alt="Class Clown Logo" 
+            className="h-10 w-auto"
+          />
         </div>
 
         <DropdownMenu>

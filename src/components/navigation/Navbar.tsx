@@ -67,12 +67,11 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
           <span className="sr-only">Toggle sidebar</span>
         </Button>
         <div className="flex items-center gap-2 md:hidden">
-          <div className="bg-primary h-8 w-8 rounded-md flex items-center justify-center">
-            <span className="text-white font-bold">CC</span>
-          </div>
-          <div>
-            <span className="font-playfair text-lg font-semibold text-primary">Class Clown</span>
-          </div>
+          <img 
+            src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+            alt="Class Clown Logo" 
+            className="h-8 w-auto"
+          />
         </div>
         <div className="ml-auto flex items-center gap-4">
           <form className="hidden md:flex relative">
