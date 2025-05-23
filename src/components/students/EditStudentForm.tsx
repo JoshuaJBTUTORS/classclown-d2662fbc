@@ -117,9 +117,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         parent_last_name: values.parentLastName,
         student_id: values.studentId,
         subjects: subjectsString,
-        status: values.status,
-        // Preserve the organization_id if it exists
-        organization_id: student.organization_id
+        status: values.status
       };
 
       // Fix: Ensure we're using the correct type for the ID when used as a number
@@ -154,8 +152,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           parent_first_name: data[0].parent_first_name || '',
           parent_last_name: data[0].parent_last_name || '',
           student_id: data[0].student_id,
-          created_at: data[0].created_at,
-          organization_id: data[0].organization_id
+          created_at: data[0].created_at
         };
         onUpdate(updatedStudent);
         toast.success("Student details updated successfully");

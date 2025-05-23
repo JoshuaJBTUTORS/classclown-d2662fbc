@@ -12,7 +12,7 @@ interface OrganizationContextType {
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // We'll provide a simplified organization object to ensure backward compatibility
+  // We'll provide a simplified organization object for backwards compatibility
   const defaultOrganization: Organization = {
     id: '1',
     name: 'JB Tutors',
@@ -23,7 +23,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const refreshOrganization = async () => {
-    // This is a no-op function in the simplified version
+    // No-op function in simplified version
     console.log('Organization refresh requested (no-op in simplified version)');
   };
 
