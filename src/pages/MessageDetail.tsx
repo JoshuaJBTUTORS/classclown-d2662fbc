@@ -16,10 +16,22 @@ import { formatDistanceToNow } from 'date-fns';
 const MessageDetail: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, userRole } = useAuth();
   const [newMessage, setNewMessage] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Redirect if user is a student (not allowed to message)
+  useEffect(() => {
+    if (userRole === 'student' || userRole === 'parent') {
+      toast({
+        title: "Access denied",
+        description: "Messaging is only available for tutors and administrators.",
+        variant: "destructive"
+      });
+      navigate('/');
+    }
+  }, [userRole, navigate, toast]);
   
   // Fetch conversation details
   const { 
@@ -29,7 +41,7 @@ const MessageDetail: React.FC = () => {
   } = useQuery({
     queryKey: ['conversation', conversationId],
     queryFn: () => conversationId ? messageService.getConversationById(conversationId) : Promise.reject('No conversation ID'),
-    enabled: !!conversationId && !!profile?.id,
+    enabled: !!conversationId && !!profile?.id && !['student', 'parent'].includes(userRole || ''),
   });
   
   // Fetch messages
@@ -40,17 +52,17 @@ const MessageDetail: React.FC = () => {
   } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => conversationId ? messageService.getMessages(conversationId) : Promise.reject('No conversation ID'),
-    enabled: !!conversationId && !!profile?.id,
+    enabled: !!conversationId && !!profile?.id && !['student', 'parent'].includes(userRole || ''),
   });
   
   // Mark conversation as read when viewing
   useEffect(() => {
-    if (conversationId && profile?.id) {
+    if (conversationId && profile?.id && !['student', 'parent'].includes(userRole || '')) {
       messageService.markAsRead(conversationId).catch((error) => {
         console.error("Error marking conversation as read:", error);
       });
     }
-  }, [conversationId, profile?.id]);
+  }, [conversationId, profile?.id, userRole]);
   
   // Send message mutation
   const sendMessageMutation = useMutation({
@@ -100,6 +112,10 @@ const MessageDetail: React.FC = () => {
   
   const isLoading = conversationLoading || messagesLoading;
   const error = conversationError || messagesError;
+
+  if (userRole === 'student' || userRole === 'parent') {
+    return null;
+  }
 
   if (isLoading) {
     return (

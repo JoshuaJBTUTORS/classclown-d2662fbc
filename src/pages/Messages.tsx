@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,14 +15,26 @@ import { useToast } from '@/hooks/use-toast';
 
 const Messages: React.FC = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, userRole } = useAuth();
   const { toast } = useToast();
+  
+  // Redirect if user is a student (not allowed to message)
+  useEffect(() => {
+    if (userRole === 'student' || userRole === 'parent') {
+      toast({
+        title: "Access denied",
+        description: "Messaging is only available for tutors and administrators.",
+        variant: "destructive"
+      });
+      navigate('/');
+    }
+  }, [userRole, navigate, toast]);
   
   // Fetch conversations
   const { data: conversations, isLoading, error } = useQuery({
     queryKey: ['conversations'],
     queryFn: messageService.getConversations,
-    enabled: !!profile?.id,
+    enabled: !!profile?.id && !['student', 'parent'].includes(userRole || ''),
   });
 
   // Function to get conversation title/name
@@ -79,11 +91,22 @@ const Messages: React.FC = () => {
   const handleNewMessageClick = () => {
     navigate('/messages/new');
   };
+  
+  if (userRole === 'student' || userRole === 'parent') {
+    return null; // Don't render anything if student somehow reaches this page
+  }
 
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
-        <PageTitle title="Messages" subtitle="Communicate with students and tutors" />
+        <PageTitle 
+          title="Messages" 
+          subtitle={
+            userRole === 'tutor' 
+              ? "Communicate with administrators"
+              : "Communicate with tutors"
+          } 
+        />
         
         <Button onClick={handleNewMessageClick}>
           <Plus className="w-4 h-4 mr-2" />
@@ -167,7 +190,9 @@ const Messages: React.FC = () => {
           <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium mb-2">No messages yet</h3>
           <p className="text-gray-500 mb-6">
-            Start a conversation with students or tutors
+            {userRole === 'tutor' 
+              ? "Start a conversation with administrators" 
+              : "Start a conversation with tutors"}
           </p>
           <Button onClick={handleNewMessageClick}>
             <Plus className="w-4 h-4 mr-2" />

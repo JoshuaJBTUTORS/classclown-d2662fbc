@@ -25,21 +25,20 @@ interface Recipient {
 const NewMessage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, userRole, isAdmin, isOwner } = useAuth();
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [selectedRecipients, setSelectedRecipients] = useState<Recipient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [message, setMessage] = useState('');
   
-  // Fetch potential recipients (users in the same organization)
+  // Fetch potential recipients based on role restrictions
   const { data: allUsers, isLoading } = useQuery({
     queryKey: ['message-recipients'],
     queryFn: async () => {
       // Check if profile exists and has organization data
       if (!profile) return [];
       
-      // Fetch profiles with their roles
-      const { data, error } = await supabase
+      let query = supabase
         .from('profiles')
         .select(`
           id,
@@ -50,6 +49,17 @@ const NewMessage: React.FC = () => {
         `)
         .eq('organization_id', profile.organization_id || '')
         .neq('id', profile.id); // Exclude current user
+      
+      // Apply role-based filtering
+      if (isAdmin || isOwner) {
+        // Admins and owners can only message tutors
+        query = query.eq('user_roles.role', 'tutor');
+      } else if (userRole === 'tutor') {
+        // Tutors can only message admins and owners
+        query = query.in('user_roles.role', ['admin', 'owner']);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -62,7 +72,7 @@ const NewMessage: React.FC = () => {
         role: user.user_roles?.[0]?.role || 'unknown'
       }));
     },
-    enabled: !!profile
+    enabled: !!profile && (isAdmin || isOwner || userRole === 'tutor')
   });
   
   // Filter recipients based on search term
@@ -152,16 +162,28 @@ const NewMessage: React.FC = () => {
         return 'Admin';
       case 'tutor':
         return 'Tutor';
-      case 'student':
-        return 'Student';
-      case 'parent':
-        return 'Parent';
       case 'owner':
         return 'Owner';
       default:
         return 'User';
     }
   };
+
+  // Redirect if user is a student (not allowed to message)
+  useEffect(() => {
+    if (userRole === 'student' || userRole === 'parent') {
+      toast({
+        title: "Access denied",
+        description: "Messaging is only available for tutors and administrators.",
+        variant: "destructive"
+      });
+      navigate('/');
+    }
+  }, [userRole, navigate, toast]);
+
+  if (userRole === 'student' || userRole === 'parent') {
+    return null; // Don't render anything if student somehow reaches this page
+  }
 
   return (
     <div className="container py-8">
@@ -184,14 +206,20 @@ const NewMessage: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="recipients">Recipients</Label>
+              <Label htmlFor="recipients">
+                {isAdmin || isOwner 
+                  ? "Select Tutors" 
+                  : userRole === 'tutor' 
+                    ? "Select Administrators"
+                    : "Recipients"}
+              </Label>
               <div className="flex items-center gap-2 border rounded-md p-2">
                 <Search className="h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search users..."
+                  placeholder={isAdmin || isOwner ? "Search tutors..." : "Search administrators..."}
                   className="border-none shadow-none focus-visible:ring-0"
                 />
               </div>

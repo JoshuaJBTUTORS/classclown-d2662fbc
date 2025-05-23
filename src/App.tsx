@@ -59,6 +59,11 @@ function App() {
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/lessons" element={<Lessons />} />
                   <Route path="/homework" element={<Homework />} />
+                  
+                  {/* Messaging routes - restricted to admins, owners and tutors */}
+                  <Route path="/messages" element={<Messages />} />
+                  <Route path="/messages/:conversationId" element={<MessageDetail />} />
+                  <Route path="/messages/new" element={<NewMessage />} />
                 </Route>
 
                 {/* Learning Hub routes - accessible to all authenticated users */}
@@ -70,11 +75,6 @@ function App() {
                   <Route path="/learning-hub/create" element={<CourseCreate />} />
                   <Route path="/learning-hub/course/:courseId/edit" element={<CourseEdit />} />
                 </Route>
-                
-                {/* Messaging routes - accessible to all authenticated users */}
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/messages/:conversationId" element={<MessageDetail />} />
-                <Route path="/messages/new" element={<NewMessage />} />
               </Route>
               
               {/* Catch-all route */}

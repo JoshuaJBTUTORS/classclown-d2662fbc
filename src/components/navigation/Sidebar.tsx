@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Calendar,
@@ -64,6 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       name: 'Messages',
       path: '/messages',
       icon: MessageSquare,
+      roles: ['admin', 'owner', 'tutor'], // Restrict to admin, owner, and tutor roles
     },
     {
       name: 'Students',
