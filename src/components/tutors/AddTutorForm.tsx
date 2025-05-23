@@ -255,7 +255,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           });
         }
       } else if (data.createAccount) {
-        // Create user account with default password
+        // Create user account with default password and proper metadata
         const { data: userData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
           password: DEFAULT_PASSWORD,
@@ -263,7 +263,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
             data: {
               first_name: data.firstName,
               last_name: data.lastName,
-              role: 'tutor',
+              role: 'tutor', // This is important for the trigger
             }
           }
         });
@@ -275,11 +275,21 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
             variant: "destructive"
           });
         } else if (userData && userData.user) {
-          // Wait a moment for the trigger to potentially work
+          // Wait a moment for the trigger to work
           setTimeout(async () => {
-            // Fallback: create profile and role manually if the trigger didn't do it
-            await createProfileAndRole(userData.user!.id, data.firstName, data.lastName);
-          }, 1000);
+            // Double-check that the trigger worked
+            const { data: profileCheck } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', userData.user!.id)
+              .maybeSingle();
+              
+            // If no profile, create one manually as fallback
+            if (!profileCheck) {
+              await createProfileAndRole(userData.user!.id, data.firstName, data.lastName);
+              console.log('Created profile and role manually as fallback');
+            }
+          }, 1500);
           
           toast({
             title: "Tutor created successfully",
