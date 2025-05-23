@@ -5,10 +5,17 @@ import Sidebar from '@/components/navigation/Sidebar';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import { useCalendarData } from '@/hooks/useCalendarData';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CalendarPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { events, isLoading } = useCalendarData();
+  const { user, userRole } = useAuth();
+  
+  const { events, isLoading } = useCalendarData({
+    userRole,
+    userEmail: user?.email || null,
+    isAuthenticated: !!user
+  });
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

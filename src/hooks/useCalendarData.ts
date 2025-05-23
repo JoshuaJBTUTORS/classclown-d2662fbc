@@ -3,18 +3,100 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
+import { AppRole } from '@/contexts/AuthContext';
 
-export const useCalendarData = () => {
+interface UseCalendarDataProps {
+  userRole: AppRole | null;
+  userEmail: string | null;
+  isAuthenticated: boolean;
+}
+
+export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCalendarDataProps) => {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvents = async () => {
+      if (!isAuthenticated || !userRole || !userEmail) {
+        setEvents([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        console.log("Fetching lessons from Supabase");
-        const { data, error } = await supabase
-          .from('lessons')
-          .select('*');
+        console.log("Fetching lessons from Supabase for role:", userRole);
+        let query;
+
+        if (userRole === 'student') {
+          // Students only see lessons they are enrolled in
+          const { data: studentData, error: studentError } = await supabase
+            .from('students')
+            .select('id')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+          if (studentError) {
+            console.error('Error fetching student data:', studentError);
+            toast.error('Failed to load student data');
+            setIsLoading(false);
+            return;
+          }
+
+          if (!studentData) {
+            console.log('No student record found for email:', userEmail);
+            setEvents([]);
+            setIsLoading(false);
+            return;
+          }
+
+          query = supabase
+            .from('lessons')
+            .select(`
+              *,
+              lesson_students!inner(student_id)
+            `)
+            .eq('lesson_students.student_id', studentData.id);
+
+        } else if (userRole === 'tutor') {
+          // Tutors only see lessons they are teaching
+          const { data: tutorData, error: tutorError } = await supabase
+            .from('tutors')
+            .select('id')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+          if (tutorError) {
+            console.error('Error fetching tutor data:', tutorError);
+            toast.error('Failed to load tutor data');
+            setIsLoading(false);
+            return;
+          }
+
+          if (!tutorData) {
+            console.log('No tutor record found for email:', userEmail);
+            setEvents([]);
+            setIsLoading(false);
+            return;
+          }
+
+          query = supabase
+            .from('lessons')
+            .select('*')
+            .eq('tutor_id', tutorData.id);
+
+        } else if (userRole === 'admin' || userRole === 'owner') {
+          // Admins and owners see all lessons
+          query = supabase
+            .from('lessons')
+            .select('*');
+        } else {
+          // Unknown role, show no lessons
+          setEvents([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -35,7 +117,6 @@ export const useCalendarData = () => {
         }));
 
         // Process recurring lessons
-        const recurringEvents = [];
         for (const lesson of data || []) {
           if (lesson.is_recurring && lesson.recurrence_interval) {
             const recurringEvents = generateRecurringEvents(lesson);
@@ -53,7 +134,7 @@ export const useCalendarData = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [userRole, userEmail, isAuthenticated]);
 
   // Function to generate recurring events
   const generateRecurringEvents = (lesson) => {
