@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, Settings } from 'lucide-react';
+import { Edit, PlusIcon, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import PageTitle from '@/components/ui/PageTitle';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
 import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
+import EditTutorForm from '@/components/tutors/EditTutorForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Tutor } from '@/types/tutor';
@@ -27,6 +28,7 @@ const Tutors = () => {
   const [isSettingUpTrigger, setIsSettingUpTrigger] = useState(false);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const [isViewTutorOpen, setIsViewTutorOpen] = useState(false);
+  const [isEditTutorOpen, setIsEditTutorOpen] = useState(false);
   const { isOwner } = useAuth();
 
   const fetchTutors = async () => {
@@ -83,6 +85,22 @@ const Tutors = () => {
     setIsViewTutorOpen(true);
   };
 
+  const handleEditTutor = (tutor: Tutor) => {
+    setSelectedTutor(tutor);
+    setIsEditTutorOpen(true);
+  };
+
+  const handleTutorUpdate = (updatedTutor: Tutor) => {
+    // Update the tutor in the local state
+    setTutors(prev => 
+      prev.map(tutor => 
+        tutor.id === updatedTutor.id ? updatedTutor : tutor
+      )
+    );
+    // Close the edit dialog
+    setIsEditTutorOpen(false);
+  };
+
   useEffect(() => {
     fetchTutors();
   }, []);
@@ -137,13 +155,23 @@ const Tutors = () => {
                   <TableCell>{tutor.email}</TableCell>
                   <TableCell>{tutor.specialities ? tutor.specialities.join(', ') : 'N/A'}</TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      onClick={() => handleViewTutor(tutor)}
-                    >
-                      View
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleEditTutor(tutor)}
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => handleViewTutor(tutor)}
+                      >
+                        View
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -165,6 +193,13 @@ const Tutors = () => {
         tutor={selectedTutor}
         isOpen={isViewTutorOpen}
         onClose={() => setIsViewTutorOpen(false)}
+      />
+
+      <EditTutorForm
+        tutor={selectedTutor}
+        isOpen={isEditTutorOpen}
+        onClose={() => setIsEditTutorOpen(false)}
+        onUpdate={handleTutorUpdate}
       />
     </div>
   );
