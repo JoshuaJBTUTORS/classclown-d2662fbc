@@ -1,20 +1,20 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/message';
 
-// Define an interface to represent participants with the userRole property
+// Define a more flexible interface that can handle Supabase error responses
 interface ParticipantWithRole {
   user_id: string;
   conversation_id: string;
   id: string;
   joined_at: string;
-  read_until?: string;
+  read_until?: string | null;
   user_profile?: {
     id: string;
     first_name?: string | null;
     last_name?: string | null;
     avatar_url?: string | null;
     organization_id?: string;
-  } | null;
+  } | { error: boolean } | null;
   userRole?: string | null;
 }
 
@@ -77,12 +77,11 @@ export const messageService = {
             .single();
             
           // Create a new object with all the original properties plus userRole
-          const participantWithRole: ParticipantWithRole = {
+          // Use type assertion to handle potential error responses
+          return {
             ...p,
             userRole: roleData?.role || null
-          };
-            
-          return participantWithRole;
+          } as ParticipantWithRole;
         }));
         
         return {
@@ -104,8 +103,8 @@ export const messageService = {
         
         // For 1:1, check if the other participant is admin/owner
         const otherParticipant = conv.participants?.find(
-          (p: ParticipantWithRole) => p.user_id !== userData.user.id
-        );
+          p => p.user_id !== userData.user.id
+        ) as ParticipantWithRole;
         
         return otherParticipant?.userRole === 'admin' || 
               otherParticipant?.userRole === 'owner';
@@ -118,8 +117,8 @@ export const messageService = {
         
         // For 1:1, check if the other participant is a tutor
         const otherParticipant = conv.participants?.find(
-          (p: ParticipantWithRole) => p.user_id !== userData.user.id
-        );
+          p => p.user_id !== userData.user.id
+        ) as ParticipantWithRole;
         
         return otherParticipant?.userRole === 'tutor';
       });
@@ -191,12 +190,10 @@ export const messageService = {
         .single();
           
       // Create a new object with all the original properties plus userRole
-      const participantWithRole: ParticipantWithRole = {
+      return {
         ...p,
         userRole: roleData?.role || null
-      };
-        
-      return participantWithRole;
+      } as ParticipantWithRole;
     }));
     
     const conversationWithRoles = {
@@ -208,8 +205,8 @@ export const messageService = {
     if (!conversation.is_group) {
       // Get the other participant
       const otherParticipant = conversationWithRoles.participants.find(
-        (p: ParticipantWithRole) => p.user_id !== userData.user.id
-      );
+        p => p.user_id !== userData.user.id
+      ) as ParticipantWithRole;
       
       const otherUserRole = otherParticipant?.userRole;
       
