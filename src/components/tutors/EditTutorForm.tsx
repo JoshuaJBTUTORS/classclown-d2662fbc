@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -224,7 +223,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
           bio: data.bio,
           specialities: data.specialities,
           status: data.status,
-          updated_at: new Date().toISOString(),
           organization_id: tutor.organization_id
         })
         .eq('id', tutor.id);
