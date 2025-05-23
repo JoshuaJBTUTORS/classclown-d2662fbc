@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -14,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { messageService } from '@/services/messageService';
 import { Conversation } from '@/types/message';
+import { PostgrestSingleResponse } from '@supabase/supabase-js';
 
 interface Recipient {
   id: string;
@@ -124,12 +124,17 @@ const NewMessage: React.FC = () => {
       // For a single recipient, use direct conversation
       if (selectedRecipients.length === 1) {
         const recipientId = selectedRecipients[0].id;
-        const conversationId = await supabase.rpc('get_or_create_direct_conversation', {
+        const response = await supabase.rpc('get_or_create_direct_conversation', {
           p_other_user_id: recipientId,
           p_first_message: message.trim()
         });
         
-        return conversationId;
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        
+        // Extract the conversation ID from the RPC response
+        return response.data as string;
       }
       
       // For multiple recipients, create a group chat
@@ -139,7 +144,9 @@ const NewMessage: React.FC = () => {
       
       // Send the first message
       await messageService.sendMessage(
-        typeof conversationData === 'string' ? conversationData : conversationData.id, 
+        typeof conversationData === 'object' && 'id' in conversationData 
+          ? conversationData.id 
+          : conversationData as string,
         message.trim()
       );
       
@@ -151,11 +158,25 @@ const NewMessage: React.FC = () => {
         description: "Your conversation has been created",
       });
       
-      // Extract the conversation ID correctly based on type
-      const conversationId = typeof conversationData === 'string' 
-        ? conversationData 
-        : conversationData.id;
-        
+      // Extract conversation ID correctly depending on the return type
+      let conversationId: string;
+      
+      if (typeof conversationData === 'string') {
+        // Direct string ID (from RPC function)
+        conversationId = conversationData;
+      } else if (typeof conversationData === 'object' && 'id' in conversationData) {
+        // Conversation object with id property
+        conversationId = conversationData.id;
+      } else {
+        console.error("Unexpected conversation data format:", conversationData);
+        toast({
+          title: "Error navigating to conversation",
+          description: "Could not determine conversation ID",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       navigate(`/messages/${conversationId}`);
     },
     onError: (error: any) => {
