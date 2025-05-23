@@ -133,14 +133,15 @@ export const messageService = {
     if (error) throw error;
   },
 
-  // Helper to get the count of unread messages
+  // Helper to get the count of unread messages - simplified type handling
   getUnreadMessageCount: async (): Promise<number> => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
     
+    // Simplified query to avoid complex type issues
     const { count, error } = await supabase
       .from('messages')
-      .select('id', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .eq('is_read', false)
       .neq('sender_id', userData.user.id);
     
