@@ -28,28 +28,30 @@
     <!-- End of HubSpot Embed Code -->
     
     <!-- HubSpot Chat Widget Customization -->
-    <script>
+    <script type="text/javascript">
       window.hsConversationsSettings = {
-        loadImmediately: true,
+        loadImmediately: false,  // Changed to false to avoid immediate loading conflicts
         inlineEmbedSelector: '#hubspot-messages-iframe-container',
-        backgroundImageUrl: '',
         position: 'right',
         businessUnitId: 26649552,
         disableAnimations: false,
         themeCustomizations: {
-          primaryColor: "#E63980", // Pink/Fuchsia to match your theme
+          primaryColor: "#E63980", 
           textColor: '#FFFFFF',
           actionColor: "#E63980",
           font: "'Inter', sans-serif"
         }
       };
       
-      // Add event listener for when HubSpot widget loads
-      window.addEventListener('message', function(event) {
-        if (event.data.type === 'hsConversationsOnReady') {
-          // You can add additional customization here if needed
-          console.log('HubSpot chat widget loaded and customized');
-        }
+      // Delay HubSpot widget initialization to avoid conflicts with app loading
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          // Enable HubSpot widget after app has initialized
+          if (window.HubSpotConversations) {
+            window.HubSpotConversations.widget.load();
+            console.log('HubSpot chat widget loaded and customized');
+          }
+        }, 2000); // 2-second delay to ensure application is fully loaded
       });
     </script>
     <!-- End HubSpot Chat Widget Customization -->
