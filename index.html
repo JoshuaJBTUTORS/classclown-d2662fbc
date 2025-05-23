@@ -27,35 +27,6 @@
     <script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/26649552.js"></script>
     <!-- End of HubSpot Embed Code -->
     
-    <!-- HubSpot Chat Widget Customization -->
-    <script type="text/javascript">
-      window.hsConversationsSettings = {
-        loadImmediately: false,  // Changed to false to avoid immediate loading conflicts
-        inlineEmbedSelector: '#hubspot-messages-iframe-container',
-        position: 'right',
-        businessUnitId: 26649552,
-        disableAnimations: false,
-        themeCustomizations: {
-          primaryColor: "#E63980", 
-          textColor: '#FFFFFF',
-          actionColor: "#E63980",
-          font: "'Inter', sans-serif"
-        }
-      };
-      
-      // Delay HubSpot widget initialization to avoid conflicts with app loading
-      document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-          // Enable HubSpot widget after app has initialized
-          if (window.HubSpotConversations) {
-            window.HubSpotConversations.widget.load();
-            console.log('HubSpot chat widget loaded and customized');
-          }
-        }, 2000); // 2-second delay to ensure application is fully loaded
-      });
-    </script>
-    <!-- End HubSpot Chat Widget Customization -->
-    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
