@@ -4,7 +4,6 @@ import {
   Calendar,
   BookOpen,
   Users,
-  Settings,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -70,12 +69,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       path: '/tutors',
       icon: Users,
       roles: ['admin', 'owner', 'tutor'],
-    },
-    {
-      name: 'Settings',
-      path: '/organization/settings',
-      icon: Settings,
-      roles: ['admin', 'owner'],
     },
   ];
 

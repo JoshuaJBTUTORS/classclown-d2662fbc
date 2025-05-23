@@ -9,68 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      conversation_participants: {
-        Row: {
-          conversation_id: string
-          id: string
-          joined_at: string
-          read_until: string | null
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          id?: string
-          joined_at?: string
-          read_until?: string | null
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          id?: string
-          joined_at?: string
-          read_until?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          created_at: string
-          created_by: string
-          id: string
-          is_group: boolean
-          last_message_at: string
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          is_group?: boolean
-          last_message_at?: string
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          is_group?: boolean
-          last_message_at?: string
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       course_lessons: {
         Row: {
           content_text: string | null
@@ -204,7 +142,6 @@ export type Database = {
           due_date: string | null
           id: string
           lesson_id: string
-          organization_id: string | null
           title: string
           updated_at: string | null
         }
@@ -216,7 +153,6 @@ export type Database = {
           due_date?: string | null
           id?: string
           lesson_id: string
-          organization_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -228,7 +164,6 @@ export type Database = {
           due_date?: string | null
           id?: string
           lesson_id?: string
-          organization_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -240,13 +175,6 @@ export type Database = {
             referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "homework_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
         ]
       }
       homework_submissions: {
@@ -256,7 +184,6 @@ export type Database = {
           grade: string | null
           homework_id: string
           id: string
-          organization_id: string | null
           status: string | null
           student_id: number
           submission_text: string | null
@@ -269,7 +196,6 @@ export type Database = {
           grade?: string | null
           homework_id: string
           id?: string
-          organization_id?: string | null
           status?: string | null
           student_id: number
           submission_text?: string | null
@@ -282,7 +208,6 @@ export type Database = {
           grade?: string | null
           homework_id?: string
           id?: string
-          organization_id?: string | null
           status?: string | null
           student_id?: number
           submission_text?: string | null
@@ -295,13 +220,6 @@ export type Database = {
             columns: ["homework_id"]
             isOneToOne: false
             referencedRelation: "homework"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "homework_submissions_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -322,7 +240,6 @@ export type Database = {
           entity_id: string | null
           expires_at: string
           id: string
-          organization_id: string | null
           role: string
           token: string
         }
@@ -334,7 +251,6 @@ export type Database = {
           entity_id?: string | null
           expires_at: string
           id?: string
-          organization_id?: string | null
           role: string
           token: string
         }
@@ -346,19 +262,10 @@ export type Database = {
           entity_id?: string | null
           expires_at?: string
           id?: string
-          organization_id?: string | null
           role?: string
           token?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       lesson_students: {
         Row: {
@@ -408,7 +315,6 @@ export type Database = {
           id: string
           is_group: boolean
           is_recurring: boolean
-          organization_id: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
           recurrence_interval: string | null
@@ -426,7 +332,6 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
-          organization_id?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -444,7 +349,6 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
-          organization_id?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -456,13 +360,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lessons_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lessons_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
@@ -471,142 +368,6 @@ export type Database = {
           },
         ]
       }
-      message_status: {
-        Row: {
-          id: string
-          is_read: boolean
-          message_id: string
-          read_at: string | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          is_read?: boolean
-          message_id: string
-          read_at?: string | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          is_read?: boolean
-          message_id?: string
-          read_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "message_status_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          attachment_type: string | null
-          attachment_url: string | null
-          content: string
-          conversation_id: string
-          created_at: string
-          deleted_at: string | null
-          id: string
-          sender_id: string
-        }
-        Insert: {
-          attachment_type?: string | null
-          attachment_url?: string | null
-          content: string
-          conversation_id: string
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          sender_id: string
-        }
-        Update: {
-          attachment_type?: string | null
-          attachment_url?: string | null
-          content?: string
-          conversation_id?: string
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_settings: {
-        Row: {
-          created_at: string
-          domain_name: string | null
-          id: string
-          logo_url: string | null
-          organization_name: string
-          primary_color: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          domain_name?: string | null
-          id?: string
-          logo_url?: string | null
-          organization_name: string
-          primary_color?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          domain_name?: string | null
-          id?: string
-          logo_url?: string | null
-          organization_name?: string
-          primary_color?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      organizations: {
-        Row: {
-          created_at: string
-          id: string
-          logo_url: string | null
-          name: string
-          primary_color: string | null
-          status: string
-          subdomain: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          logo_url?: string | null
-          name: string
-          primary_color?: string | null
-          status?: string
-          subdomain: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          logo_url?: string | null
-          name?: string
-          primary_color?: string | null
-          status?: string
-          subdomain?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -614,7 +375,6 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
-          organization_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -623,7 +383,6 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
-          organization_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -632,18 +391,9 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
-          organization_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       student_progress: {
         Row: {
@@ -703,7 +453,6 @@ export type Database = {
           first_name: string | null
           id: number
           last_name: string | null
-          organization_id: string | null
           parent_first_name: string | null
           parent_last_name: string | null
           phone: string | null
@@ -717,7 +466,6 @@ export type Database = {
           first_name?: string | null
           id?: number
           last_name?: string | null
-          organization_id?: string | null
           parent_first_name?: string | null
           parent_last_name?: string | null
           phone?: string | null
@@ -731,7 +479,6 @@ export type Database = {
           first_name?: string | null
           id?: number
           last_name?: string | null
-          organization_id?: string | null
           parent_first_name?: string | null
           parent_last_name?: string | null
           phone?: string | null
@@ -739,15 +486,7 @@ export type Database = {
           student_id?: string | null
           subjects?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "students_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tutor_availability: {
         Row: {
@@ -797,7 +536,6 @@ export type Database = {
           id: string
           joined_date: string | null
           last_name: string
-          organization_id: string | null
           phone: string | null
           rating: number | null
           specialities: string[] | null
@@ -813,7 +551,6 @@ export type Database = {
           id?: string
           joined_date?: string | null
           last_name: string
-          organization_id?: string | null
           phone?: string | null
           rating?: number | null
           specialities?: string[] | null
@@ -829,29 +566,19 @@ export type Database = {
           id?: string
           joined_date?: string | null
           last_name?: string
-          organization_id?: string | null
           phone?: string | null
           rating?: number | null
           specialities?: string[] | null
           status?: string
           title?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tutors_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_roles: {
         Row: {
           created_at: string | null
           id: string
           is_primary: boolean | null
-          organization_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -859,7 +586,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
-          organization_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -867,42 +593,16 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
-          organization_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      create_conversation: {
-        Args: {
-          p_title: string
-          p_user_ids: string[]
-          p_is_group: boolean
-          p_first_message: string
-        }
-        Returns: string
-      }
-      get_current_user_organization: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_or_create_direct_conversation: {
-        Args: { p_other_user_id: string; p_first_message?: string }
-        Returns: string
-      }
       get_primary_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
