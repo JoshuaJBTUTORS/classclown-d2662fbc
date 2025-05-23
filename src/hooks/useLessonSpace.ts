@@ -51,7 +51,7 @@ export const useLessonSpace = () => {
       };
     } catch (error) {
       console.error('Error creating room:', error);
-      toast.error('Failed to create online lesson room');
+      toast.error(`Failed to create online lesson room: ${error.message}`);
       return null;
     } finally {
       setIsCreatingRoom(false);
@@ -84,7 +84,7 @@ export const useLessonSpace = () => {
       return true;
     } catch (error) {
       console.error('Error deleting room:', error);
-      toast.error('Failed to delete online lesson room');
+      toast.error(`Failed to delete online lesson room: ${error.message}`);
       return false;
     } finally {
       setIsDeletingRoom(false);
@@ -110,7 +110,7 @@ export const useLessonSpace = () => {
       return true;
     } catch (error) {
       console.error('Error updating lesson:', error);
-      toast.error('Failed to update lesson with room details');
+      toast.error(`Failed to update lesson with room details: ${error.message}`);
       return false;
     }
   };

@@ -63,11 +63,11 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
   try {
     console.log("Creating Lesson Space room for lesson:", data.lessonId);
     
-    // Create room in Lesson Space
-    const roomResponse = await fetch("https://api.thelessonspace.com/v2/spaces/", {
+    // Create room in Lesson Space using correct API format
+    const roomResponse = await fetch("https://api.thelessonspace.com/v2/spaces", {
       method: "POST",
       headers: {
-        "Authorization": `Organisation ${lessonSpaceApiKey}`,
+        "Authorization": `Bearer ${lessonSpaceApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -86,14 +86,14 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 
     if (!roomResponse.ok) {
       const errorText = await roomResponse.text();
-      console.error("Lesson Space API error:", errorText);
+      console.error("Lesson Space API error:", roomResponse.status, errorText);
       throw new Error(`Failed to create room: ${roomResponse.status} ${errorText}`);
     }
 
     const roomData = await roomResponse.json();
     console.log("Created Lesson Space room:", roomData);
 
-    // Update the lesson with room details
+    // Update the lesson with room details using the correct response fields
     const { error: updateError } = await supabase
       .from("lessons")
       .update({
@@ -121,7 +121,10 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
   } catch (error) {
     console.error("Error creating Lesson Space room:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -148,7 +151,10 @@ async function updateLessonWithRoom(data: UpdateLessonRequest, supabase: any) {
   } catch (error) {
     console.error("Error updating lesson:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -160,11 +166,11 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
   try {
     console.log("Deleting Lesson Space room:", roomId);
     
-    // Delete room from Lesson Space
-    const deleteResponse = await fetch(`https://api.thelessonspace.com/v2/spaces/${roomId}/`, {
+    // Delete room from Lesson Space using correct API format
+    const deleteResponse = await fetch(`https://api.thelessonspace.com/v2/spaces/${roomId}`, {
       method: "DELETE",
       headers: {
-        "Authorization": `Organisation ${lessonSpaceApiKey}`,
+        "Authorization": `Bearer ${lessonSpaceApiKey}`,
       },
     });
 
@@ -192,7 +198,10 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
   } catch (error) {
     console.error("Error deleting room:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
