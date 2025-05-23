@@ -13,7 +13,14 @@ interface CreateRoomData {
 interface RoomData {
   roomId: string;
   roomUrl: string;
-  ownerUrl?: string;
+  teacherUrl?: string;
+  studentUrls?: Array<{
+    studentId: number;
+    url: string;
+    userId: number;
+  }>;
+  spaceId?: string;
+  sessionId?: string;
 }
 
 export const useLessonSpace = () => {
@@ -47,7 +54,10 @@ export const useLessonSpace = () => {
       return {
         roomId: result.roomId,
         roomUrl: result.roomUrl,
-        ownerUrl: result.ownerUrl
+        teacherUrl: result.teacherUrl,
+        studentUrls: result.studentUrls,
+        spaceId: result.spaceId,
+        sessionId: result.sessionId
       };
     } catch (error) {
       console.error('Error creating room:', error);

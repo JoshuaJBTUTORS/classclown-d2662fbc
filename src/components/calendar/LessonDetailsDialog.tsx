@@ -263,11 +263,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       });
 
       if (result) {
-        setLesson(prev => prev ? {
-          ...prev,
-          video_conference_link: result.roomUrl,
-          video_conference_provider: 'lesson_space'
-        } : null);
+        // Refresh lesson data to get the updated room information
+        if (isRecurringInstanceId(lesson.id)) {
+          const parts = lesson.id.split('-');
+          const baseId = parts.slice(0, 5).join('-');
+          await fetchRecurringInstance(baseId, lesson.id);
+        } else {
+          await fetchLessonDetails(lesson.id);
+        }
+        
+        toast.success('Online room created! Room details have been updated.');
       }
     } catch (error) {
       console.error('Error creating online room:', error);
@@ -404,19 +409,27 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 ) : <p>No students assigned</p>}
               </div>
 
-              {/* Video Conference Section */}
+              {/* Enhanced Video Conference Section */}
               {lesson.video_conference_link ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link}
                   provider={lesson.video_conference_provider}
                   className="mb-4"
+                  userRole="teacher" // Default to teacher view in admin interface
+                  isGroupLesson={lesson.is_group}
+                  studentCount={lesson.students?.length || 0}
                 />
               ) : (
                 <div className="border rounded-lg p-4 bg-gray-50">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-medium text-sm">Online Lesson Room</h3>
-                      <p className="text-sm text-muted-foreground">No online room created yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        {lesson.is_group 
+                          ? `No group room created yet (${lesson.students?.length || 0} students)`
+                          : 'No room created yet'
+                        }
+                      </p>
                     </div>
                     <Button
                       variant="outline"
@@ -433,7 +446,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       ) : (
                         <>
                           <Plus className="h-4 w-4" />
-                          Create Room
+                          {lesson.is_group ? 'Create Group Room' : 'Create Room'}
                         </>
                       )}
                     </Button>
