@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Calendar,
@@ -7,7 +8,6 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
-  MessageSquare,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,12 +58,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       name: 'Learning Hub',
       path: '/learning-hub',
       icon: BookOpen,
-    },
-    {
-      name: 'Messages',
-      path: '/messages',
-      icon: MessageSquare,
-      roles: ['admin', 'owner', 'tutor'], // Restrict to admin, owner, and tutor roles
     },
     {
       name: 'Students',

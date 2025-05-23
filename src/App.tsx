@@ -20,9 +20,6 @@ import LearningHub from './pages/LearningHub';
 import CourseDetail from './pages/CourseDetail';
 import CourseCreate from './pages/CourseCreate';
 import CourseEdit from './pages/CourseEdit';
-import Messages from './pages/Messages';
-import MessageDetail from './pages/MessageDetail';
-import NewMessage from './pages/NewMessage';
 import Unauthorized from './pages/Unauthorized';
 import Invite from './pages/Invite';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -59,11 +56,6 @@ function App() {
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/lessons" element={<Lessons />} />
                   <Route path="/homework" element={<Homework />} />
-                  
-                  {/* Messaging routes - restricted to admins, owners and tutors */}
-                  <Route path="/messages" element={<Messages />} />
-                  <Route path="/messages/:conversationId" element={<MessageDetail />} />
-                  <Route path="/messages/new" element={<NewMessage />} />
                 </Route>
 
                 {/* Learning Hub routes - accessible to all authenticated users */}
