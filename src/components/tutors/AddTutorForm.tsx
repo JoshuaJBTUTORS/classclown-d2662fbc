@@ -132,7 +132,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           toast({
             title: "Tutor created successfully",
             description: "However, there was an issue sending the invitation email.",
-            variant: "warning"
+            variant: "destructive"  // Changed from "warning" to "destructive"
           });
         } else {
           toast({
