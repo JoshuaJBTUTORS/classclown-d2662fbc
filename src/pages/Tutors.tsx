@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Edit, PlusIcon, Settings } from 'lucide-react';
+import { Edit, PlusIcon, Settings, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import PageTitle from '@/components/ui/PageTitle';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
 import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
 import EditTutorForm from '@/components/tutors/EditTutorForm';
+import DeleteTutorDialog from '@/components/tutors/DeleteTutorDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Tutor } from '@/types/tutor';
@@ -29,6 +30,7 @@ const Tutors = () => {
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const [isViewTutorOpen, setIsViewTutorOpen] = useState(false);
   const [isEditTutorOpen, setIsEditTutorOpen] = useState(false);
+  const [isDeleteTutorOpen, setIsDeleteTutorOpen] = useState(false);
   const { isOwner } = useAuth();
 
   const fetchTutors = async () => {
@@ -88,6 +90,11 @@ const Tutors = () => {
   const handleEditTutor = (tutor: Tutor) => {
     setSelectedTutor(tutor);
     setIsEditTutorOpen(true);
+  };
+
+  const handleDeleteTutor = (tutor: Tutor) => {
+    setSelectedTutor(tutor);
+    setIsDeleteTutorOpen(true);
   };
 
   const handleTutorUpdate = (updatedTutor: Tutor) => {
@@ -159,6 +166,15 @@ const Tutors = () => {
                       <Button 
                         variant="outline" 
                         size="sm" 
+                        onClick={() => handleDeleteTutor(tutor)}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
                         onClick={() => handleEditTutor(tutor)}
                       >
                         <Edit className="h-4 w-4" />
@@ -200,6 +216,13 @@ const Tutors = () => {
         isOpen={isEditTutorOpen}
         onClose={() => setIsEditTutorOpen(false)}
         onUpdate={handleTutorUpdate}
+      />
+
+      <DeleteTutorDialog
+        tutor={selectedTutor}
+        isOpen={isDeleteTutorOpen}
+        onClose={() => setIsDeleteTutorOpen(false)}
+        onDeleted={fetchTutors}
       />
     </div>
   );
