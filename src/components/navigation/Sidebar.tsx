@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Calendar,
@@ -20,7 +21,6 @@ interface NavItem {
   name: string;
   path: string;
   icon: React.ComponentType<any>;
-  roles?: string[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
@@ -28,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const { user, profile, signOut, userRole } = useAuth();
   const navigate = useNavigate();
 
+  // Removed role properties from the navItems array
   const navItems: NavItem[] = [
     {
       name: 'Dashboard',
@@ -38,19 +39,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       name: 'Calendar',
       path: '/calendar',
       icon: Calendar,
-      roles: ['admin', 'owner', 'tutor'],
     },
     {
       name: 'Lessons',
       path: '/lessons',
       icon: ListChecks,
-      roles: ['admin', 'owner', 'tutor'],
     },
     {
       name: 'Homework',
       path: '/homework',
       icon: BookOpen,
-      roles: ['admin', 'owner', 'tutor'],
     },
     {
       name: 'Learning Hub',
@@ -61,31 +59,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       name: 'Students',
       path: '/students',
       icon: Users,
-      roles: ['admin', 'owner'],
     },
     {
       name: 'Tutors',
       path: '/tutors',
       icon: Users,
-      roles: ['admin', 'owner', 'tutor'],
     },
   ];
-
-  // Change this logic to handle users without assigned roles
-  // If user is authenticated but doesn't have a role, show items without role restrictions
-  // or with 'student' role (assuming that's the default behavior we want)
-  const userRoles = userRole ? [userRole] : user ? ['student'] : [];
-
-  const filteredNavItems = navItems.filter(item => {
-    // If no roles specified for the menu item, show it to all authenticated users
-    if (!item.roles) return true;
-    
-    // If user has no specific role but is authenticated, show items that should be visible to students
-    if (userRoles.includes('student') && item.roles.includes('student')) return true;
-    
-    // Otherwise, check if the user's role gives access to this item
-    return userRoles.some(role => item.roles?.includes(role));
-  });
 
   if (!isOpen) {
     return null; // Don't render if sidebar is closed
@@ -103,7 +83,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
 
       <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-1">
-          {filteredNavItems.map((item) => (
+          {/* Display all navigation items without filtering */}
+          {navItems.map((item) => (
             <li key={item.name}>
               <NavLink
                 to={item.path}
