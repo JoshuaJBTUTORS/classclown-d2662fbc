@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -32,8 +33,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import EditStudentForm from '@/components/students/EditStudentForm';
 import ViewStudentProfile from '@/components/students/ViewStudentProfile';
-import { Student } from '@/types/student'; // Import the Student type from our shared types file
+import { Student } from '@/types/student'; 
 import AddStudentForm from '@/components/students/AddStudentForm';
+import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 
 const Students = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -44,6 +46,7 @@ const Students = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Fetch students from Supabase
@@ -121,6 +124,11 @@ const Students = () => {
   const handleViewClick = (student: Student) => {
     setSelectedStudent(student);
     setIsViewDialogOpen(true);
+  };
+  
+  const handleDeleteClick = (student: Student) => {
+    setSelectedStudent(student);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleStudentUpdated = (updatedStudent: Student) => {
@@ -241,6 +249,7 @@ const Students = () => {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteClick(student)}
                               >
                                 Delete Student
                               </DropdownMenuItem>
@@ -280,6 +289,16 @@ const Students = () => {
           student={selectedStudent}
           isOpen={isViewDialogOpen}
           onClose={() => setIsViewDialogOpen(false)}
+        />
+      )}
+      
+      {/* Delete Student Dialog */}
+      {selectedStudent && (
+        <DeleteStudentDialog
+          student={selectedStudent}
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onDeleted={fetchStudents}
         />
       )}
     </div>

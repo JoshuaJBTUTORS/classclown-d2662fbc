@@ -1,105 +1,105 @@
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+interface WebhookPayload {
+  type: string
+  table: string
+  record: {
+    id: string
+    [key: string]: any
+  }
+  schema: string
+  old_record: null | {
+    id: string
+    [key: string]: any
+  }
+}
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
   try {
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing Authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-      { 
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        } 
-      }
-    );
-
-    // Verify user is authenticated and has owner role
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    // Create a Supabase client with the service role key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
+    // Verify that the caller has the owner role
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Not authorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
-
-    // Check if the user is an owner
+    
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    
+    // Check if the user has the owner role
     const { data: roles, error: rolesError } = await supabase
       .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id);
-    
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('role', 'owner')
+      
     if (rolesError) {
-      return new Response(
-        JSON.stringify({ error: rolesError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: 'Error verifying role' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
-
-    const isOwner = roles?.some(r => r.role === 'owner');
-    if (!isOwner) {
-      return new Response(
-        JSON.stringify({ error: "Only owners can perform this action" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    
+    if (!roles || roles.length === 0) {
+      return new Response(JSON.stringify({ error: 'Only owners can create auth triggers' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
-
-    // Create trigger to call handle_new_user
-    const { error: triggerError } = await supabase.rpc('exec', { 
-      sql: `
-        DO $$
-        BEGIN
-          -- Check if trigger already exists
-          IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'on_auth_user_created') THEN
-            -- Create the trigger
-            CREATE TRIGGER on_auth_user_created
-              AFTER INSERT ON auth.users
-              FOR EACH ROW
-              EXECUTE PROCEDURE public.handle_new_user();
-              
-            RAISE NOTICE 'Trigger created successfully';
-          ELSE
-            RAISE NOTICE 'Trigger already exists';
-          END IF;
-        END $$;
-      `
-    });
-
+    
+    // Check if the trigger already exists
+    const { data: existingTrigger, error: triggerError } = await supabase
+      .rpc('check_trigger_exists', { trigger_name: 'on_auth_user_created' })
+    
     if (triggerError) {
-      throw triggerError;
+      return new Response(JSON.stringify({ error: 'Error checking for trigger', details: triggerError.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
-
+    
+    if (existingTrigger && existingTrigger.exists) {
+      return new Response(JSON.stringify({ message: 'Auth trigger already exists' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    
+    // Create the trigger
+    const { data, error } = await supabase.rpc('create_auth_user_trigger')
+    
+    if (error) {
+      return new Response(JSON.stringify({ error: 'Error creating trigger', details: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    
     return new Response(
-      JSON.stringify({ success: true, message: "Auth trigger created or verified successfully" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
-  } catch (error) {
-    console.error("Error in create-auth-trigger function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      JSON.stringify({ success: true, message: 'Auth trigger created successfully' }),
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
-});
+})
