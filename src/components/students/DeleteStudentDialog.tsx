@@ -32,7 +32,7 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
         const { error } = await supabase
           .from('students')
           .delete()
-          .eq('id', student.id);
+          .eq('id', typeof student.id === 'string' ? parseInt(student.id, 10) : student.id);
 
         if (error) throw error;
         
@@ -42,7 +42,7 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
         const { error } = await supabase
           .from('students')
           .update({ status: 'inactive' })
-          .eq('id', student.id);
+          .eq('id', typeof student.id === 'string' ? parseInt(student.id, 10) : student.id);
 
         if (error) throw error;
         
