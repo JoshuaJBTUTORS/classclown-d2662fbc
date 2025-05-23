@@ -98,6 +98,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (roleData) {
         setUserRole(roleData.role as AppRole);
+      } else if (user) {
+        // If no role found but user is authenticated, create a default 'student' role
+        console.log("No role found for user, creating default student role");
+        try {
+          const { error: insertError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: userId,
+              role: 'student',
+              is_primary: true
+            });
+            
+          if (!insertError) {
+            setUserRole('student');
+          } else {
+            console.error("Error creating default role:", insertError);
+          }
+        } catch (err) {
+          console.error("Failed to create default role:", err);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

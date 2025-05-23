@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Calendar,
@@ -72,12 +71,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     },
   ];
 
-  // Instead of accessing profile.roles directly, use the userRole from the auth context
-  // or the userRoles array that's computed from the AuthContext
-  const userRoles = userRole ? [userRole] : [];
+  // Change this logic to handle users without assigned roles
+  // If user is authenticated but doesn't have a role, show items without role restrictions
+  // or with 'student' role (assuming that's the default behavior we want)
+  const userRoles = userRole ? [userRole] : user ? ['student'] : [];
 
   const filteredNavItems = navItems.filter(item => {
+    // If no roles specified for the menu item, show it to all authenticated users
     if (!item.roles) return true;
+    
+    // If user has no specific role but is authenticated, show items that should be visible to students
+    if (userRoles.includes('student') && item.roles.includes('student')) return true;
+    
+    // Otherwise, check if the user's role gives access to this item
     return userRoles.some(role => item.roles?.includes(role));
   });
 
