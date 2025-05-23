@@ -132,18 +132,25 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     form.setValue('availability', updatedSlots);
   };
 
-  // Simplified function to create profile and role manually if needed
+  // Improved function to create profile and role with enhanced error handling
   const createProfileAndRole = async (userId: string, firstName: string, lastName: string) => {
     try {
+      console.log('Starting manual profile and role creation for user:', userId);
+      
       // Check if profile exists
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', userId)
         .maybeSingle();
         
+      if (profileCheckError) {
+        console.error('Error checking existing profile:', profileCheckError);
+      }
+        
       // Create profile if it doesn't exist
       if (!existingProfile) {
+        console.log('Profile does not exist, creating new profile');
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
@@ -154,19 +161,29 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           
         if (profileError) {
           console.error('Error creating profile:', profileError);
+          return false;
+        } else {
+          console.log('Profile created successfully');
         }
+      } else {
+        console.log('Profile already exists, skipping creation');
       }
       
       // Check if role exists
-      const { data: existingRole } = await supabase
+      const { data: existingRole, error: roleCheckError } = await supabase
         .from('user_roles')
         .select('id')
         .eq('user_id', userId)
         .eq('role', 'tutor')
         .maybeSingle();
         
+      if (roleCheckError) {
+        console.error('Error checking existing role:', roleCheckError);
+      }
+        
       // Create role if it doesn't exist
       if (!existingRole) {
+        console.log('Role does not exist, creating new role');
         const { error: roleError } = await supabase
           .from('user_roles')
           .insert({
@@ -177,12 +194,17 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           
         if (roleError) {
           console.error('Error creating role:', roleError);
+          return false;
+        } else {
+          console.log('Role created successfully');
         }
+      } else {
+        console.log('Role already exists, skipping creation');
       }
       
       return true;
     } catch (error) {
-      console.error('Error in createProfileAndRole:', error);
+      console.error('Unexpected error in createProfileAndRole:', error);
       return false;
     }
   };
@@ -256,6 +278,12 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         }
       } else if (data.createAccount) {
         // Create user account with default password and proper metadata
+        console.log('Creating user account with metadata:', {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          role: 'tutor'
+        });
+        
         const { data: userData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
           password: DEFAULT_PASSWORD,
@@ -269,25 +297,45 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         });
 
         if (signUpError) {
+          console.error('Error creating user account:', signUpError);
           toast({
             title: "Tutor created successfully",
             description: "However, there was an issue creating their account: " + signUpError.message,
             variant: "destructive"
           });
         } else if (userData && userData.user) {
+          console.log('User account created successfully, user ID:', userData.user.id);
+          
           // Wait a moment for the trigger to work
           setTimeout(async () => {
             // Double-check that the trigger worked
-            const { data: profileCheck } = await supabase
+            const { data: profileCheck, error: profileCheckError } = await supabase
               .from('profiles')
               .select('id')
               .eq('id', userData.user!.id)
               .maybeSingle();
               
+            if (profileCheckError) {
+              console.error('Error checking profile:', profileCheckError);
+            }
+              
             // If no profile, create one manually as fallback
             if (!profileCheck) {
-              await createProfileAndRole(userData.user!.id, data.firstName, data.lastName);
-              console.log('Created profile and role manually as fallback');
+              console.log('No profile found after 1.5s, using fallback mechanism');
+              const success = await createProfileAndRole(userData.user!.id, data.firstName, data.lastName);
+              
+              if (success) {
+                console.log('Profile and role created manually as fallback');
+              } else {
+                console.error('Failed to create profile and role manually');
+                toast({
+                  title: "Account created but profile setup failed",
+                  description: "The account was created but there was a problem setting up the user profile. Please check the user in Supabase.",
+                  variant: "destructive"
+                });
+              }
+            } else {
+              console.log('Profile found, trigger worked successfully');
             }
           }, 1500);
           
