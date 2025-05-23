@@ -18,4 +18,13 @@ export interface Tutor {
   rating?: number | null;
   joined_date?: string;
   education?: string | null;
+  availability?: AvailabilitySlot[];
+}
+
+export interface AvailabilitySlot {
+  id: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  tutor_id?: string;
 }

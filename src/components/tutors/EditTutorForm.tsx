@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,8 +6,9 @@ import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
-import { Tutor } from '@/types/tutor';
+import { Check, ChevronsUpDown, X, Plus, Clock } from 'lucide-react';
+import { Tutor, AvailabilitySlot } from '@/types/tutor';
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +65,13 @@ const formSchema = z.object({
   bio: z.string().optional(),
   specialities: z.array(z.string()).optional(),
   status: z.string(), // Changed from enum to string to match our updated Tutor type
+  availability: z.array(z.object({
+    id: z.string(),
+    day_of_week: z.string(),
+    start_time: z.string(),
+    end_time: z.string(),
+    tutor_id: z.string().optional()
+  })).optional()
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -90,10 +99,22 @@ const specialitiesList = [
   "Media Studies",
 ];
 
+const daysOfWeek = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday'
+];
+
 const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [selectedSpecialities, setSelectedSpecialities] = useState<string[]>([]);
   const [specialitiesOpen, setSpecialitiesOpen] = useState(false);
+  const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
+  const [deletedAvailabilityIds, setDeletedAvailabilityIds] = useState<string[]>([]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -105,8 +126,36 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       bio: "",
       specialities: [],
       status: 'active',
+      availability: []
     },
   });
+
+  const fetchAvailability = async (tutorId: string) => {
+    if (!tutorId) return;
+
+    const { data, error } = await supabase
+      .from('tutor_availability')
+      .select('*')
+      .eq('tutor_id', tutorId);
+
+    if (error) {
+      console.error('Error fetching availability:', error);
+      return;
+    }
+
+    if (data) {
+      const formattedData = data.map(slot => ({
+        id: slot.id,
+        day_of_week: slot.day_of_week,
+        start_time: slot.start_time.substring(0, 5), // Format time to HH:MM
+        end_time: slot.end_time.substring(0, 5), // Format time to HH:MM
+        tutor_id: slot.tutor_id
+      }));
+
+      setAvailabilitySlots(formattedData);
+      form.setValue('availability', formattedData);
+    }
+  };
 
   // Set form values when tutor changes
   useEffect(() => {
@@ -119,11 +168,46 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         bio: tutor.bio || "",
         specialities: tutor.specialities || [],
         status: tutor.status,
+        availability: []
       });
       
       setSelectedSpecialities(tutor.specialities || []);
+      fetchAvailability(tutor.id);
     }
   }, [tutor, form]);
+
+  const addAvailabilitySlot = () => {
+    const newSlot: AvailabilitySlot = {
+      id: uuidv4(),
+      day_of_week: 'Monday',
+      start_time: '09:00',
+      end_time: '17:00'
+    };
+    
+    setAvailabilitySlots([...availabilitySlots, newSlot]);
+    form.setValue('availability', [...availabilitySlots, newSlot]);
+  };
+
+  const removeAvailabilitySlot = (id: string) => {
+    const slotToRemove = availabilitySlots.find(slot => slot.id === id);
+    
+    // If this is an existing slot from the database (has tutor_id), mark it for deletion
+    if (slotToRemove?.tutor_id) {
+      setDeletedAvailabilityIds([...deletedAvailabilityIds, id]);
+    }
+    
+    const updatedSlots = availabilitySlots.filter(slot => slot.id !== id);
+    setAvailabilitySlots(updatedSlots);
+    form.setValue('availability', updatedSlots);
+  };
+
+  const updateAvailabilitySlot = (id: string, field: keyof AvailabilitySlot, value: string) => {
+    const updatedSlots = availabilitySlots.map(slot => 
+      slot.id === id ? { ...slot, [field]: value } : slot
+    );
+    setAvailabilitySlots(updatedSlots);
+    form.setValue('availability', updatedSlots);
+  };
 
   const onSubmit = async (data: FormData) => {
     if (!tutor) return;
@@ -146,6 +230,48 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         .eq('id', tutor.id);
         
       if (error) throw error;
+
+      // Handle availability updates
+      if (data.availability && data.availability.length > 0) {
+        // 1. First delete any slots marked for deletion
+        if (deletedAvailabilityIds.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('tutor_availability')
+            .delete()
+            .in('id', deletedAvailabilityIds);
+            
+          if (deleteError) console.error('Error deleting availability slots:', deleteError);
+        }
+
+        // 2. Update or insert availability slots
+        for (const slot of data.availability) {
+          if (slot.tutor_id) {
+            // This is an existing slot, update it
+            const { error: updateError } = await supabase
+              .from('tutor_availability')
+              .update({
+                day_of_week: slot.day_of_week,
+                start_time: slot.start_time,
+                end_time: slot.end_time
+              })
+              .eq('id', slot.id);
+              
+            if (updateError) console.error('Error updating availability slot:', updateError);
+          } else {
+            // This is a new slot, insert it
+            const { error: insertError } = await supabase
+              .from('tutor_availability')
+              .insert({
+                tutor_id: tutor.id,
+                day_of_week: slot.day_of_week,
+                start_time: slot.start_time,
+                end_time: slot.end_time
+              });
+              
+            if (insertError) console.error('Error inserting availability slot:', insertError);
+          }
+        }
+      }
       
       // Update the tutor in the parent component
       const updatedTutor: Tutor = {
@@ -157,7 +283,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         bio: data.bio,
         specialities: data.specialities,
         status: data.status,
-        organization_id: tutor.organization_id
+        organization_id: tutor.organization_id,
+        availability: availabilitySlots
       };
       
       onUpdate(updatedTutor);
@@ -193,7 +320,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Tutor</DialogTitle>
         </DialogHeader>
@@ -278,6 +405,76 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 </FormItem>
               )}
             />
+
+            {/* Availability Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Availability Schedule</h3>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={addAvailabilitySlot}
+                  className="flex items-center gap-1"
+                >
+                  <Plus className="h-4 w-4" /> Add Time Slot
+                </Button>
+              </div>
+              
+              {availabilitySlots.length === 0 ? (
+                <div className="text-center py-4 border border-dashed rounded-md text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto opacity-50 mb-2" />
+                  <p>No availability schedules added yet.</p>
+                  <p className="text-sm">Click "Add Time Slot" to specify when this tutor is available.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {availabilitySlots.map((slot) => (
+                    <div key={slot.id} className="flex items-center gap-2 p-3 border rounded-md bg-muted/20">
+                      <div className="flex-1">
+                        <Select 
+                          value={slot.day_of_week} 
+                          onValueChange={(value) => updateAvailabilitySlot(slot.id, 'day_of_week', value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select day" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {daysOfWeek.map((day) => (
+                              <SelectItem key={day} value={day}>{day}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex-1">
+                        <Input 
+                          type="time" 
+                          value={slot.start_time} 
+                          onChange={(e) => updateAvailabilitySlot(slot.id, 'start_time', e.target.value)} 
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input 
+                          type="time" 
+                          value={slot.end_time} 
+                          onChange={(e) => updateAvailabilitySlot(slot.id, 'end_time', e.target.value)} 
+                        />
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => removeAvailabilitySlot(slot.id)}
+                        className="flex-shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             
             <FormField
               control={form.control}
