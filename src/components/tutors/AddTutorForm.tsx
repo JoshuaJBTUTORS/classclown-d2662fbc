@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -132,19 +133,24 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     form.setValue('availability', updatedSlots);
   };
 
-  // New function to ensure auth trigger is created
+  // New function to ensure auth trigger exists
   const ensureAuthTriggerExists = async () => {
     try {
-      // Check if trigger exists
-      const { data, error } = await supabase.rpc('check_trigger_exists', { trigger_name: 'on_auth_user_created' });
+      // Check if trigger exists using a raw query since we can't call RPC functions with custom names
+      const { data, error } = await supabase
+        .from('pg_trigger')
+        .select('tgname')
+        .eq('tgname', 'on_auth_user_created')
+        .maybeSingle();
       
       if (error) {
         console.error('Error checking trigger existence:', error);
         return false;
       }
       
-      // If trigger doesn't exist, create it
-      if (!data.exists) {
+      // If trigger doesn't exist, create it using a function provided in migrations
+      if (!data) {
+        // Execute a SQL statement to create the trigger
         const { error: createError } = await supabase.rpc('create_auth_user_trigger');
         if (createError) {
           console.error('Error creating auth trigger:', createError);
@@ -161,7 +167,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
   };
 
   // New function to create profile and role manually if needed
-  const createProfileAndRole = async (userId: string, firstName: string, lastName: string, role: string = 'tutor') => {
+  const createProfileAndRole = async (userId: string, firstName: string, lastName: string) => {
     try {
       // Check if profile exists
       const { data: existingProfile } = await supabase
@@ -190,7 +196,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         .from('user_roles')
         .select('id')
         .eq('user_id', userId)
-        .eq('role', role)
+        .eq('role', 'tutor')
         .maybeSingle();
         
       // Create role if it doesn't exist
@@ -199,7 +205,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           .from('user_roles')
           .insert({
             user_id: userId,
-            role: role,
+            role: 'tutor' as 'tutor' | 'owner' | 'admin' | 'student' | 'parent',
             is_primary: true
           });
           
@@ -309,7 +315,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           // Wait a moment for the trigger to potentially work
           setTimeout(async () => {
             // Fallback: create profile and role manually if the trigger didn't do it
-            await createProfileAndRole(userData.user!.id, data.firstName, data.lastName, 'tutor');
+            await createProfileAndRole(userData.user!.id, data.firstName, data.lastName);
           }, 1000);
           
           toast({
@@ -682,3 +688,4 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
 };
 
 export default AddTutorForm;
+
