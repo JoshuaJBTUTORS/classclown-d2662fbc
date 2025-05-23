@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/message';
 
@@ -133,17 +132,17 @@ export const messageService = {
     if (error) throw error;
   },
 
-  // Helper to get the count of unread messages - simplified type handling
+  // Helper to get the count of unread messages - fixed query to use message_status table
   getUnreadMessageCount: async (): Promise<number> => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('User not authenticated');
     
-    // Simplified query to avoid complex type issues
+    // Query message_status table for unread messages count
     const { count, error } = await supabase
-      .from('messages')
+      .from('message_status')
       .select('id', { count: 'exact', head: true })
-      .eq('is_read', false)
-      .neq('sender_id', userData.user.id);
+      .eq('user_id', userData.user.id)
+      .eq('is_read', false);
     
     if (error) throw error;
     return count || 0;
