@@ -16,7 +16,7 @@ interface Tutor {
 }
 
 interface DeleteTutorDialogProps {
-  tutor: Tutor;
+  tutor: Tutor | null;
   isOpen: boolean;
   onClose: () => void;
   onDeleted: () => void;
@@ -31,7 +31,14 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
   const [isHardDelete, setIsHardDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // If tutor is null, we should not render the dialog contents
+  if (!tutor && isOpen) {
+    return null;
+  }
+
   const handleDelete = async () => {
+    if (!tutor) return; // Safety check
+    
     setIsDeleting(true);
     try {
       if (isHardDelete) {
@@ -66,66 +73,72 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
     }
   };
 
+  // We only want to render the dialog content if we have a tutor
+  // This prevents accessing properties of null
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={isOpen && tutor !== null} onOpenChange={onClose}>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isHardDelete 
-              ? 'Permanently Delete Tutor' 
-              : 'Deactivate Tutor'}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {isHardDelete ? (
-              <>
-                <p className="mb-2 text-destructive font-semibold">
-                  This action cannot be undone.
-                </p>
-                <p>
-                  This will permanently delete {tutor.first_name} {tutor.last_name}'s 
-                  record and all associated data, including lesson history and availability.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="mb-2">
-                  This will mark {tutor.first_name} {tutor.last_name} as inactive. 
-                  The tutor will still appear in historical data but won't be available for new lessons.
-                </p>
-                <p>
-                  You can reactivate the tutor later if needed.
-                </p>
-              </>
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        
-        <div className="flex items-center space-x-2 my-4">
-          <Switch 
-            id="hard-delete-mode" 
-            checked={isHardDelete} 
-            onCheckedChange={setIsHardDelete}
-          />
-          <Label htmlFor="hard-delete-mode">Permanently delete all data</Label>
-        </div>
+        {tutor && (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {isHardDelete 
+                  ? 'Permanently Delete Tutor' 
+                  : 'Deactivate Tutor'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {isHardDelete ? (
+                  <>
+                    <p className="mb-2 text-destructive font-semibold">
+                      This action cannot be undone.
+                    </p>
+                    <p>
+                      This will permanently delete {tutor.first_name} {tutor.last_name}'s 
+                      record and all associated data, including lesson history and availability.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mb-2">
+                      This will mark {tutor.first_name} {tutor.last_name} as inactive. 
+                      The tutor will still appear in historical data but won't be available for new lessons.
+                    </p>
+                    <p>
+                      You can reactivate the tutor later if needed.
+                    </p>
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            
+            <div className="flex items-center space-x-2 my-4">
+              <Switch 
+                id="hard-delete-mode" 
+                checked={isHardDelete} 
+                onCheckedChange={setIsHardDelete}
+              />
+              <Label htmlFor="hard-delete-mode">Permanently delete all data</Label>
+            </div>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              handleDelete();
-            }}
-            className={isHardDelete ? "bg-destructive hover:bg-destructive/90" : ""}
-            disabled={isDeleting}
-          >
-            {isDeleting 
-              ? 'Processing...' 
-              : isHardDelete 
-                ? 'Yes, Delete Permanently' 
-                : 'Deactivate Tutor'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDelete();
+                }}
+                className={isHardDelete ? "bg-destructive hover:bg-destructive/90" : ""}
+                disabled={isDeleting}
+              >
+                {isDeleting 
+                  ? 'Processing...' 
+                  : isHardDelete 
+                    ? 'Yes, Delete Permanently' 
+                    : 'Deactivate Tutor'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );
