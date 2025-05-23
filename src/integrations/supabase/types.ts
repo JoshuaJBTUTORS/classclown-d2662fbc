@@ -315,6 +315,8 @@ export type Database = {
           id: string
           is_group: boolean
           is_recurring: boolean
+          lesson_space_room_id: string | null
+          lesson_space_room_url: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
           recurrence_interval: string | null
@@ -323,6 +325,8 @@ export type Database = {
           title: string
           tutor_id: string
           updated_at: string | null
+          video_conference_link: string | null
+          video_conference_provider: string | null
         }
         Insert: {
           completion_date?: string | null
@@ -332,6 +336,8 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
+          lesson_space_room_id?: string | null
+          lesson_space_room_url?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -340,6 +346,8 @@ export type Database = {
           title: string
           tutor_id: string
           updated_at?: string | null
+          video_conference_link?: string | null
+          video_conference_provider?: string | null
         }
         Update: {
           completion_date?: string | null
@@ -349,6 +357,8 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
+          lesson_space_room_id?: string | null
+          lesson_space_room_url?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -357,6 +367,8 @@ export type Database = {
           title?: string
           tutor_id?: string
           updated_at?: string | null
+          video_conference_link?: string | null
+          video_conference_provider?: string | null
         }
         Relationships: [
           {

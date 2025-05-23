@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -27,7 +26,7 @@ const CalendarPage = () => {
       <div className="flex flex-col flex-1">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
-          {/* Custom CSS for recurring events */}
+          {/* Custom CSS for recurring events and video conference indicators */}
           <style>
             {`
               .fc .fc-toolbar {
@@ -86,6 +85,7 @@ const CalendarPage = () => {
                 margin: 2px 0;
                 border: none !important;
                 padding: 2px;
+                position: relative;
               }
               
               .fc-event-main {
@@ -100,6 +100,19 @@ const CalendarPage = () => {
                 border-left-color: #f8c833 !important;
                 opacity: 0.85;
                 border-left-style: dashed !important;
+              }
+              
+              .video-conference-event {
+                position: relative;
+              }
+              
+              .video-conference-event::after {
+                content: "📹";
+                position: absolute;
+                top: 2px;
+                right: 4px;
+                font-size: 12px;
+                line-height: 1;
               }
               
               .fc .fc-daygrid-day-number,

@@ -6,10 +6,12 @@ import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
+import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { useLessonSpace } from '@/hooks/useLessonSpace';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -42,8 +44,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [hasHomework, setHasHomework] = useState(false);
   const [homeworkDeleteOption, setHomeworkDeleteOption] = useState<'delete' | 'cancel'>('delete');
   const [isHomeworkDeleteConfirmOpen, setIsHomeworkDeleteConfirmOpen] = useState(false);
-  // New state for preloaded lesson data to improve performance
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
+  
+  // Add Lesson Space integration
+  const { createRoom, isCreatingRoom } = useLessonSpace();
 
   // Function to check if the ID is a recurring instance ID using our specific format
   const isRecurringInstanceId = (id: string): boolean => {
@@ -53,26 +57,21 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   useEffect(() => {
     if (lessonId && isOpen) {
       console.log("Opening lesson details for ID:", lessonId);
-      setLesson(null); // Reset lesson data
-      setHasHomework(false); // Reset homework flag
+      setLesson(null);
+      setHasHomework(false);
       
-      // Check if this is a recurring instance by looking for our specific ID format
       if (isRecurringInstanceId(lessonId)) {
         const parts = lessonId.split('-');
-        // Extract the UUID part (first 5 segments with dashes)
         const baseId = parts.slice(0, 5).join('-');
         setOriginalLessonId(baseId);
         setIsRecurringInstance(true);
         
-        // For recurring instances, fetch the original lesson and create an instance
         fetchRecurringInstance(baseId, lessonId);
-        // Check if the original lesson has homework
         checkForHomework(baseId);
       } else {
         setOriginalLessonId(lessonId);
         setIsRecurringInstance(false);
         fetchLessonDetails(lessonId);
-        // Check if this lesson has homework
         checkForHomework(lessonId);
       }
     } else {
@@ -80,7 +79,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       setIsRecurringInstance(false);
       setOriginalLessonId(null);
       setHasHomework(false);
-      setPreloadedLessonData(null); // Clear preloaded data
+      setPreloadedLessonData(null);
     }
   }, [lessonId, isOpen]);
 
@@ -110,7 +109,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     try {
       console.log("Fetching recurring instance data for original ID:", originalId, "and instance ID:", instanceId);
       
-      // Get the original lesson data
       const { data, error } = await supabase
         .from('lessons')
         .select(`
@@ -127,7 +125,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       if (error) {
         console.error("Error fetching original lesson:", error);
         toast.error('Failed to load recurring lesson data');
-        // Create a placeholder lesson if we can't fetch the original
         createPlaceholderLesson(instanceId);
         return;
       }
@@ -139,17 +136,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         return;
       }
 
-      // Store this data for faster loading when completing a session
       setPreloadedLessonData(data);
 
-      // Extract the date part from the instance ID (format is uuid-YYYY-MM-DD)
       const dateParts = instanceId.split('-');
       const year = parseInt(dateParts[5], 10);
-      const month = parseInt(dateParts[6], 10) - 1; // JS months are 0-indexed
+      const month = parseInt(dateParts[6], 10) - 1;
       const day = parseInt(dateParts[7], 10);
       const instanceDate = new Date(year, month, day);
       
-      // Transform students data
       const students = data.lesson_students?.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
@@ -157,11 +151,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         attendance_status: ls.attendance_status || 'pending'
       })) || [];
       
-      // Get the time part from the original lesson
       const startDate = parseISO(data.start_time);
       const endDate = parseISO(data.end_time);
       
-      // Create the instance lesson with the correct date
       const instanceLesson: Lesson = {
         ...data,
         id: instanceId,
@@ -185,7 +177,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
 
   const createPlaceholderLesson = (instanceId: string) => {
-    // Create a generic placeholder for instances we can't fully reconstruct
     const placeholderLesson: Lesson = {
       id: instanceId,
       title: "Recurring Lesson",
@@ -234,10 +225,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         return;
       }
       
-      // Store this data for faster loading when completing a session
       setPreloadedLessonData(data);
 
-      // Transform the data
       const students = data.lesson_students?.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
@@ -260,12 +249,35 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
+  const handleCreateOnlineRoom = async () => {
+    if (!lesson) return;
+    
+    try {
+      const result = await createRoom({
+        lessonId: lesson.id,
+        title: lesson.title,
+        startTime: lesson.start_time,
+        duration: lesson.end_time ? 
+          Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60)) : 
+          60
+      });
+
+      if (result) {
+        setLesson(prev => prev ? {
+          ...prev,
+          video_conference_link: result.roomUrl,
+          video_conference_provider: 'lesson_space'
+        } : null);
+      }
+    } catch (error) {
+      console.error('Error creating online room:', error);
+    }
+  };
+
   const handleDeleteLesson = () => {
-    // If lesson has homework assigned, show special confirmation dialog
     if (hasHomework) {
       setIsHomeworkDeleteConfirmOpen(true);
     } else {
-      // If no homework, show regular delete confirmation
       setIsDeleteConfirmOpen(true);
     }
   };
@@ -274,9 +286,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     if (!lesson || !onDelete) return;
     
     try {
-      // If there is homework and user chose to delete it
       if (hasHomework && homeworkDeleteOption === 'delete') {
-        // Delete associated homework first
         const lessonIdToUse = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
         
         const { error: homeworkError } = await supabase
@@ -295,12 +305,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         console.log("Successfully deleted associated homework for lesson:", lessonIdToUse);
       }
 
-      // Now proceed with lesson deletion
-      // If it's a recurring instance and "all future" is selected, pass the original ID
       if (isRecurringInstance && deleteOption === 'all' && originalLessonId) {
         onDelete(originalLessonId, true);
       } else {
-        // Otherwise pass the current lesson ID (could be original or instance)
         onDelete(lesson.id, deleteOption === 'all');
       }
       
@@ -321,12 +328,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const handleCompleteSession = () => {
     if (lesson && onCompleteSession) {
-      // For recurring instances, we need to use the original lesson ID
       const completionId = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
       
-      // Close this dialog first, then call the completion handler
       onClose();
-      // Small delay to ensure the dialog is closed first
       setTimeout(() => {
         if (onCompleteSession) {
           onCompleteSession(completionId);
@@ -335,11 +339,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
   
-  // Modified to delegate to parent component via onAssignHomework prop
   const handleCompleteLesson = () => {
     if (lesson && onAssignHomework) {
       const lessonIdToUse = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
-      // Call the parent handler with the lesson ID and preloaded data
       onAssignHomework(lessonIdToUse, preloadedLessonData);
     }
   };
@@ -401,6 +403,44 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   </ul>
                 ) : <p>No students assigned</p>}
               </div>
+
+              {/* Video Conference Section */}
+              {lesson.video_conference_link ? (
+                <VideoConferenceLink 
+                  link={lesson.video_conference_link}
+                  provider={lesson.video_conference_provider}
+                  className="mb-4"
+                />
+              ) : (
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-sm">Online Lesson Room</h3>
+                      <p className="text-sm text-muted-foreground">No online room created yet</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateOnlineRoom}
+                      disabled={isCreatingRoom}
+                      className="flex items-center gap-2"
+                    >
+                      {isCreatingRoom ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          Create Room
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {(lesson.is_recurring || lesson.is_recurring_instance) && (
                 <div>
                   <h3 className="font-medium">Recurrence</h3>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,7 +27,6 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
         let query;
 
         if (userRole === 'student') {
-          // Students only see lessons they are enrolled in
           const { data: studentData, error: studentError } = await supabase
             .from('students')
             .select('id')
@@ -58,7 +56,6 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
             .eq('lesson_students.student_id', studentData.id);
 
         } else if (userRole === 'tutor') {
-          // Tutors only see lessons they are teaching
           const { data: tutorData, error: tutorError } = await supabase
             .from('tutors')
             .select('id')
@@ -85,12 +82,10 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
             .eq('tutor_id', tutorData.id);
 
         } else if (userRole === 'admin' || userRole === 'owner') {
-          // Admins and owners see all lessons
           query = supabase
             .from('lessons')
             .select('*');
         } else {
-          // Unknown role, show no lessons
           setEvents([]);
           setIsLoading(false);
           return;
@@ -103,18 +98,28 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
         console.log("Lessons fetched:", data);
         
         // Process regular lessons
-        const calendarEvents = (data || []).map(lesson => ({
-          id: lesson.id,
-          title: lesson.title,
-          start: lesson.start_time,
-          end: lesson.end_time,
-          extendedProps: {
-            isRecurring: lesson.is_recurring,
-            recurrenceInterval: lesson.recurrence_interval,
-            recurrenceEndDate: lesson.recurrence_end_date,
-            description: lesson.description
-          }
-        }));
+        const calendarEvents = (data || []).map(lesson => {
+          const hasVideoConference = lesson.video_conference_link || lesson.lesson_space_room_url;
+          const className = hasVideoConference ? 'calendar-event video-conference-event' : 'calendar-event';
+          
+          return {
+            id: lesson.id,
+            title: lesson.title,
+            start: lesson.start_time,
+            end: lesson.end_time,
+            className,
+            extendedProps: {
+              isRecurring: lesson.is_recurring,
+              recurrenceInterval: lesson.recurrence_interval,
+              recurrenceEndDate: lesson.recurrence_end_date,
+              description: lesson.description,
+              videoConferenceLink: lesson.video_conference_link,
+              videoConferenceProvider: lesson.video_conference_provider,
+              lessonSpaceRoomId: lesson.lesson_space_room_id,
+              lessonSpaceRoomUrl: lesson.lesson_space_room_url
+            }
+          };
+        });
 
         // Process recurring lessons
         for (const lesson of data || []) {
@@ -143,39 +148,42 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
     const endDate = parseISO(lesson.end_time);
     const recurrenceEndDate = lesson.recurrence_end_date 
       ? parseISO(lesson.recurrence_end_date) 
-      : addDays(startDate, 90); // Default to 3 months if no end date
+      : addDays(startDate, 90);
 
-    // Calculate duration in milliseconds
     const durationMs = endDate.getTime() - startDate.getTime();
+    const hasVideoConference = lesson.video_conference_link || lesson.lesson_space_room_url;
     
     let currentDate = startDate;
     
-    // Generate instances based on recurrence pattern
     while (currentDate <= recurrenceEndDate) {
-      // Skip the original date as it's already included
       if (format(currentDate, 'yyyy-MM-dd') !== format(startDate, 'yyyy-MM-dd')) {
         const instanceStartDate = new Date(currentDate);
         const instanceEndDate = new Date(instanceStartDate.getTime() + durationMs);
-        
-        // Create a unique ID for this instance by combining the original ID with the date
         const instanceId = `${lesson.id}-${format(currentDate, 'yyyy-MM-dd')}`;
+        
+        let className = 'recurring-instance';
+        if (hasVideoConference) {
+          className += ' video-conference-event';
+        }
         
         events.push({
           id: instanceId,
           title: lesson.title,
           start: instanceStartDate.toISOString(),
           end: instanceEndDate.toISOString(),
+          className,
           extendedProps: {
             isRecurringInstance: true,
             originalLessonId: lesson.id,
-            description: lesson.description
-          },
-          // Add a slightly different styling for recurring instances
-          className: 'recurring-instance'
+            description: lesson.description,
+            videoConferenceLink: lesson.video_conference_link,
+            videoConferenceProvider: lesson.video_conference_provider,
+            lessonSpaceRoomId: lesson.lesson_space_room_id,
+            lessonSpaceRoomUrl: lesson.lesson_space_room_url
+          }
         });
       }
       
-      // Increment the date based on recurrence interval
       if (lesson.recurrence_interval === 'daily') {
         currentDate = addDays(currentDate, 1);
       } else if (lesson.recurrence_interval === 'weekly') {
@@ -183,10 +191,8 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
       } else if (lesson.recurrence_interval === 'biweekly') {
         currentDate = addDays(currentDate, 14);
       } else if (lesson.recurrence_interval === 'monthly') {
-        // This is a simplification - a more accurate implementation would account for month lengths
         currentDate = addDays(currentDate, 30);
       } else {
-        // Default to weekly if interval is not recognized
         currentDate = addDays(currentDate, 7);
       }
     }

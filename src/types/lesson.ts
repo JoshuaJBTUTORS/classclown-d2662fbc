@@ -12,6 +12,11 @@ export interface Lesson {
   recurrence_interval?: string | null;
   recurrence_day?: string | null;
   recurrence_end_date?: string | null;
+  // Video conference fields
+  lesson_space_room_id?: string | null;
+  lesson_space_room_url?: string | null;
+  video_conference_provider?: string | null;
+  video_conference_link?: string | null;
   tutor?: {
     id: string;
     first_name: string;
