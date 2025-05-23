@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -38,39 +37,53 @@ const NewMessage: React.FC = () => {
       // Check if profile exists and has organization data
       if (!profile) return [];
       
-      let query = supabase
+      // We need to query profiles and roles separately, then join them in JS
+      // since Supabase doesn't have a direct relationship between them
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          avatar_url,
-          user_roles:user_roles(role)
-        `)
+        .select('id, first_name, last_name, avatar_url, organization_id')
         .eq('organization_id', profile.organization_id || '')
         .neq('id', profile.id); // Exclude current user
       
-      // Apply role-based filtering
-      if (isAdmin || isOwner) {
-        // Admins and owners can only message tutors
-        query = query.eq('user_roles.role', 'tutor');
-      } else if (userRole === 'tutor') {
-        // Tutors can only message admins and owners
-        query = query.in('user_roles.role', ['admin', 'owner']);
-      }
+      if (profilesError) throw profilesError;
       
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      // Transform the data to include role information
-      return data.map((user: any) => ({
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        avatar_url: user.avatar_url,
-        role: user.user_roles?.[0]?.role || 'unknown'
+      // Fetch all relevant roles and match with profiles
+      const results = await Promise.all(profilesData.map(async (userProfile) => {
+        const { data: userRoleData, error: userRoleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userProfile.id)
+          .eq('is_primary', true)
+          .single();
+        
+        // Skip users with role errors or missing roles
+        if (userRoleError) return null;
+        
+        const role = userRoleData?.role;
+        
+        // Apply role-based filtering
+        if (isAdmin || isOwner) {
+          // Admins and owners can only message tutors
+          if (role !== 'tutor') return null;
+        } else if (userRole === 'tutor') {
+          // Tutors can only message admins and owners
+          if (role !== 'admin' && role !== 'owner') return null;
+        } else {
+          // Other roles shouldn't see anyone
+          return null;
+        }
+        
+        return {
+          id: userProfile.id,
+          first_name: userProfile.first_name,
+          last_name: userProfile.last_name,
+          avatar_url: userProfile.avatar_url,
+          role: role || 'unknown'
+        };
       }));
+      
+      // Filter out any null entries from users we skipped
+      return results.filter(Boolean) as Recipient[];
     },
     enabled: !!profile && (isAdmin || isOwner || userRole === 'tutor')
   });
@@ -103,6 +116,9 @@ const NewMessage: React.FC = () => {
         throw new Error("Message cannot be empty");
       }
       
+      // Create a conversation with selected recipients
+      const userIds = selectedRecipients.map(r => r.id);
+      
       // For a single recipient, use direct conversation
       if (selectedRecipients.length === 1) {
         const recipientId = selectedRecipients[0].id;
@@ -115,17 +131,14 @@ const NewMessage: React.FC = () => {
       }
       
       // For multiple recipients, create a group chat
-      const userIds = selectedRecipients.map(r => r.id);
       const title = selectedRecipients.map(r => `${r.first_name || ''} ${r.last_name || ''}`).join(', ');
       
-      const conversationId = await supabase.rpc('create_conversation', {
-        p_title: title.substring(0, 50), // Limit title length
-        p_user_ids: userIds,
-        p_is_group: true,
-        p_first_message: message.trim()
-      });
+      const conversationId = await messageService.createConversation(userIds, title);
       
-      return conversationId;
+      // Send the first message
+      await messageService.sendMessage(conversationId.id || conversationId, message.trim());
+      
+      return conversationId.id || conversationId;
     },
     onSuccess: (conversationId) => {
       toast({

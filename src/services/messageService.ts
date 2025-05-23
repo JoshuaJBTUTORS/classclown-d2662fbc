@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/message';
 
@@ -43,43 +44,40 @@ export const messageService = {
     // Get all conversations where user is participant
     const { data, error } = await supabase
       .from('conversations')
-      .select(`
-        *,
-        participants:conversation_participants(
-          *,
-          user_profile:profiles(
-            id, 
-            first_name, 
-            last_name, 
-            avatar_url
-          )
-        )
-      `)
+      .select('*, participants:conversation_participants(id, user_id, read_until, joined_at)')
       .eq('participants.user_id', userData.user.id)
       .order('last_message_at', { ascending: false });
     
     if (error) throw error;
     
-    // Prepare data for processing
+    // For each conversation, fetch the participant profiles separately
+    // since the direct join relationship doesn't exist in the database
     let filteredData = data || [];
     
     // For each conversation, we'll enhance with role information and filter based on roles
     const enhancedData = await Promise.all(filteredData.map(async (conv) => {
-      // For each participant, get their role
+      // For each participant, get their role and profile
       if (conv.participants) {
         const participantsWithRoles = await Promise.all(conv.participants.map(async (p) => {
+          // Get the user's profile
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, avatar_url')
+            .eq('id', p.user_id)
+            .single();
+          
           // Get the user's role
-          const { data: roleData } = await supabase
+          const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', p.user_id)
             .eq('is_primary', true)
             .single();
             
-          // Create a new object with all the original properties plus userRole
-          // Use type assertion to handle potential error responses
+          // Create a new object with all the original properties plus userRole and profile
           return {
             ...p,
+            user_profile: profileError ? { error: true } : profileData,
             userRole: roleData?.role || null
           } as ParticipantWithRole;
         }));
@@ -153,18 +151,7 @@ export const messageService = {
     // Get the conversation
     const { data: conversation, error } = await supabase
       .from('conversations')
-      .select(`
-        *,
-        participants:conversation_participants(
-          *,
-          user_profile:profiles(
-            id, 
-            first_name, 
-            last_name, 
-            avatar_url
-          )
-        )
-      `)
+      .select('*, participants:conversation_participants(id, user_id, read_until, joined_at)')
       .eq('id', id)
       .single();
     
@@ -179,10 +166,17 @@ export const messageService = {
       throw new Error('You do not have permission to view this conversation');
     }
     
-    // To check role-based restrictions, we need to fetch roles for participants
+    // Fetch profiles for all participants
     const participantsWithRoles = await Promise.all(conversation.participants.map(async (p) => {
+      // Get the participant's profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url')
+        .eq('id', p.user_id)
+        .single();
+      
       // For participants, fetch their role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', p.user_id)
@@ -192,6 +186,7 @@ export const messageService = {
       // Create a new object with all the original properties plus userRole
       return {
         ...p,
+        user_profile: profileError ? { error: true } : profileData,
         userRole: roleData?.role || null
       } as ParticipantWithRole;
     }));
@@ -327,19 +322,32 @@ export const messageService = {
       throw new Error('You do not have permission to view these messages');
     }
     
+    // Get the messages
     const { data, error } = await supabase
       .from('messages')
-      .select(`
-        *,
-        sender_profile:profiles(id, first_name, last_name, avatar_url)
-      `)
+      .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
     
     if (error) throw error;
     
+    // For each message, fetch the sender profile separately
+    const messagesWithProfiles = await Promise.all(data.map(async (message) => {
+      // Get the sender's profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url')
+        .eq('id', message.sender_id)
+        .single();
+      
+      return {
+        ...message,
+        sender_profile: profileError ? null : profileData
+      };
+    }));
+    
     // Convert to unknown first to avoid TypeScript errors with deep types
-    return (data as unknown) as Message[];
+    return messagesWithProfiles as unknown as Message[];
   },
 
   sendMessage: async (conversationId: string, content: string, attachmentUrl?: string, attachmentType?: string): Promise<Message> => {
@@ -370,10 +378,7 @@ export const messageService = {
         attachment_url: attachmentUrl,
         attachment_type: attachmentType
       })
-      .select(`
-        *,
-        sender_profile:profiles(id, first_name, last_name, avatar_url)
-      `)
+      .select()
       .single();
     
     if (error) throw error;
@@ -384,8 +389,18 @@ export const messageService = {
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId);
     
+    // Fetch the sender profile
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, avatar_url')
+      .eq('id', userData.user.id)
+      .single();
+    
     // Convert to unknown first to avoid TypeScript errors with deep types
-    return (data as unknown) as Message;
+    return {
+      ...data,
+      sender_profile: profileError ? null : profileData
+    } as unknown as Message;
   },
 
   markAsRead: async (conversationId: string): Promise<void> => {
