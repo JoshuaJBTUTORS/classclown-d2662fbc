@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -133,40 +132,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     form.setValue('availability', updatedSlots);
   };
 
-  // New function to ensure auth trigger exists
-  const ensureAuthTriggerExists = async () => {
-    try {
-      // Check if trigger exists using a raw query since we can't call RPC functions with custom names
-      const { data, error } = await supabase
-        .from('pg_trigger')
-        .select('tgname')
-        .eq('tgname', 'on_auth_user_created')
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error checking trigger existence:', error);
-        return false;
-      }
-      
-      // If trigger doesn't exist, create it using a function provided in migrations
-      if (!data) {
-        // Execute a SQL statement to create the trigger
-        const { error: createError } = await supabase.rpc('create_auth_user_trigger');
-        if (createError) {
-          console.error('Error creating auth trigger:', createError);
-          return false;
-        }
-        console.log('Auth trigger created successfully');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error in ensureAuthTriggerExists:', error);
-      return false;
-    }
-  };
-
-  // New function to create profile and role manually if needed
+  // Simplified function to create profile and role manually if needed
   const createProfileAndRole = async (userId: string, firstName: string, lastName: string) => {
     try {
       // Check if profile exists
@@ -224,9 +190,6 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      // Try to ensure the auth trigger exists (silently)
-      await ensureAuthTriggerExists();
-      
       // Insert tutor into tutors table
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
@@ -521,7 +484,6 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               )}
             />
 
-            {/* Availability Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Availability Schedule</h3>
@@ -688,4 +650,3 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
 };
 
 export default AddTutorForm;
-
