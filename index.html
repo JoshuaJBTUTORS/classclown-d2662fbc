@@ -27,6 +27,33 @@
     <script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/26649552.js"></script>
     <!-- End of HubSpot Embed Code -->
     
+    <!-- HubSpot Chat Widget Customization -->
+    <script>
+      window.hsConversationsSettings = {
+        loadImmediately: true,
+        inlineEmbedSelector: '#hubspot-messages-iframe-container',
+        backgroundImageUrl: '',
+        position: 'right',
+        businessUnitId: 26649552,
+        disableAnimations: false,
+        themeCustomizations: {
+          primaryColor: "#E63980", // Pink/Fuchsia to match your theme
+          textColor: '#FFFFFF',
+          actionColor: "#E63980",
+          font: "'Inter', sans-serif"
+        }
+      };
+      
+      // Add event listener for when HubSpot widget loads
+      window.addEventListener('message', function(event) {
+        if (event.data.type === 'hsConversationsOnReady') {
+          // You can add additional customization here if needed
+          console.log('HubSpot chat widget loaded and customized');
+        }
+      });
+    </script>
+    <!-- End HubSpot Chat Widget Customization -->
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
