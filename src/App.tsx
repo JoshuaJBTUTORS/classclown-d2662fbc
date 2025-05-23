@@ -20,6 +20,7 @@ import CourseCreate from './pages/CourseCreate';
 import CourseEdit from './pages/CourseEdit';
 import Unauthorized from './pages/Unauthorized';
 import Invite from './pages/Invite';
+import CreateAdmin from './pages/CreateAdmin';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Initialize QueryClient
@@ -41,20 +42,25 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<Index />} />
                 
+                {/* Owner only routes */}
+                <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
+                  <Route path="/create-admin" element={<CreateAdmin />} />
+                </Route>
+                
                 {/* Admin/Owner only routes */}
                 <Route element={<ProtectedRoute allowedRoles={['admin', 'owner']} />}>
                   <Route path="/students" element={<Students />} />
+                  <Route path="/tutors" element={<Tutors />} />
                 </Route>
                 
                 {/* Admin/Owner/Tutor routes */}
                 <Route element={<ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']} />}>
-                  <Route path="/tutors" element={<Tutors />} />
-                  <Route path="/calendar" element={<Calendar />} />
                   <Route path="/lessons" element={<Lessons />} />
-                  <Route path="/homework" element={<Homework />} />
                 </Route>
-
-                {/* Learning Hub routes - accessible to all authenticated users */}
+                
+                {/* Accessible to all authenticated users */}
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/homework" element={<Homework />} />
                 <Route path="/learning-hub" element={<LearningHub />} />
                 <Route path="/learning-hub/course/:courseId" element={<CourseDetail />} />
                 

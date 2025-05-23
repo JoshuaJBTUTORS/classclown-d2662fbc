@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,9 +44,12 @@ const formSchema = z.object({
   parentLastName: z.string().optional(),
   subjects: z.string().optional(),
   sendInvite: z.boolean().default(false),
+  createAccount: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+const DEFAULT_PASSWORD = 'jbtutors123!';
 
 const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -62,6 +66,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
       parentLastName: "",
       subjects: "",
       sendInvite: false,
+      createAccount: false,
     },
   });
 
@@ -69,8 +74,8 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
     setLoading(true);
 
     try {
-      if (data.sendInvite && !data.email) {
-        throw new Error("Email is required when sending an invitation");
+      if ((data.sendInvite || data.createAccount) && !data.email) {
+        throw new Error("Email is required when sending an invitation or creating an account");
       }
 
       const { data: studentData, error: studentError } = await supabase
@@ -84,7 +89,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
           parent_last_name: data.parentLastName || null,
           subjects: data.subjects || null,
           status: 'active',
-          organization_id: organization?.id || null // Add organization_id
+          organization_id: organization?.id || null 
         })
         .select()
         .single();
@@ -110,6 +115,32 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
           toast({
             title: "Student created successfully",
             description: "An invitation email has been sent to the student."
+          });
+        }
+      } else if (data.createAccount && data.email) {
+        // Create user account with default password
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: DEFAULT_PASSWORD,
+          options: {
+            data: {
+              first_name: data.firstName,
+              last_name: data.lastName,
+              role: 'student',
+            }
+          }
+        });
+
+        if (signUpError) {
+          toast({
+            title: "Student created successfully",
+            description: "However, there was an issue creating their account: " + signUpError.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Student created successfully",
+            description: `Account created with default password: ${DEFAULT_PASSWORD}`,
           });
         }
       } else {
@@ -179,7 +210,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email {form.watch("sendInvite") && "(Required for invitation)"}</FormLabel>
+                  <FormLabel>Email {(form.watch("sendInvite") || form.watch("createAccount")) && "(Required)"}</FormLabel>
                   <FormControl>
                     <Input placeholder="jane.smith@example.com" type="email" {...field} />
                   </FormControl>
@@ -245,29 +276,64 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
                 </FormItem>
               )}
             />
-            
-            <FormField
-              control={form.control}
-              name="sendInvite"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox 
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Send invitation email
-                    </FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      The student will receive an email with instructions to create an account.
-                    </p>
-                  </div>
-                </FormItem>
-              )}
-            />
+
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="createAccount"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (checked) {
+                            form.setValue("sendInvite", false);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Create account immediately
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        The student account will be created with the default password: <strong>{DEFAULT_PASSWORD}</strong>
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="sendInvite"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (checked) {
+                            form.setValue("createAccount", false);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Send invitation email
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        The student will receive an email with instructions to create an account.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <DialogFooter>
               <Button
@@ -279,7 +345,11 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
                 Cancel
               </Button>
               <Button type="submit" disabled={loading} className="flex items-center gap-2">
-                {loading ? "Creating..." : form.watch("sendInvite") ? (
+                {loading ? "Creating..." : form.watch("createAccount") ? (
+                  <>
+                    Create Student & Account
+                  </>
+                ) : form.watch("sendInvite") ? (
                   <>
                     <Mail className="h-4 w-4" />
                     Create & Invite Student

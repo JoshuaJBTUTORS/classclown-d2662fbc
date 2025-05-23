@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Calendar,
@@ -21,6 +20,7 @@ interface NavItem {
   name: string;
   path: string;
   icon: React.ComponentType<any>;
+  allowedRoles?: string[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
@@ -28,44 +28,59 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const { user, profile, signOut, userRole } = useAuth();
   const navigate = useNavigate();
 
-  // Removed role properties from the navItems array
   const navItems: NavItem[] = [
     {
       name: 'Dashboard',
       path: '/',
       icon: LayoutDashboard,
+      // Dashboard accessible to all roles
     },
     {
       name: 'Calendar',
       path: '/calendar',
       icon: Calendar,
+      // Calendar accessible to all roles
     },
     {
       name: 'Lessons',
       path: '/lessons',
       icon: ListChecks,
+      allowedRoles: ['owner', 'admin', 'tutor'],
     },
     {
       name: 'Homework',
       path: '/homework',
       icon: BookOpen,
+      // Homework accessible to all roles
     },
     {
       name: 'Learning Hub',
       path: '/learning-hub',
       icon: BookOpen,
+      // Learning hub accessible to all roles
     },
     {
       name: 'Students',
       path: '/students',
       icon: Users,
+      allowedRoles: ['owner', 'admin'],
     },
     {
       name: 'Tutors',
       path: '/tutors',
       icon: Users,
+      allowedRoles: ['owner', 'admin'],
     },
   ];
+
+  // Filter navigation items based on user role
+  const filteredNavItems = navItems.filter(item => {
+    // If no allowedRoles specified, show to all authenticated users
+    if (!item.allowedRoles) return true;
+    
+    // Otherwise check if user role is allowed
+    return item.allowedRoles.includes(userRole || '');
+  });
 
   if (!isOpen) {
     return null; // Don't render if sidebar is closed
@@ -83,8 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
 
       <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-1">
-          {/* Display all navigation items without filtering */}
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <li key={item.name}>
               <NavLink
                 to={item.path}
