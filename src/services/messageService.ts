@@ -18,6 +18,11 @@ export const messageService = {
       
     if (userRoleError) throw userRoleError;
     
+    // If user is student or parent, they shouldn't see any conversations
+    if (userRoleData?.role === 'student' || userRoleData?.role === 'parent') {
+      return [];
+    }
+    
     // Get all conversations where user is participant
     const { data, error } = await supabase
       .from('conversations')
@@ -38,29 +43,15 @@ export const messageService = {
     
     if (error) throw error;
     
-    // To get the role of each participant, we need a separate query
-    // since we can't directly join from conversation_participants to user_roles
+    // Prepare data for processing
     let filteredData = data || [];
     
-    // If user is student or parent, they shouldn't see any conversations
-    if (userRoleData?.role === 'student' || userRoleData?.role === 'parent') {
-      return [];
-    }
-    
-    // For each conversation, we'll check if it meets our role requirements
+    // For each conversation, we'll enhance with role information and filter based on roles
     const enhancedData = await Promise.all(filteredData.map(async (conv) => {
       // For each participant, get their role
       if (conv.participants) {
         const participantsWithRoles = await Promise.all(conv.participants.map(async (p) => {
-          if (p.user_id === userData.user.id) {
-            // Current user, we already know the role
-            return {
-              ...p,
-              user_role: userRoleData?.role
-            };
-          }
-          
-          // For other participants, fetch their role
+          // Get the user's role
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
@@ -70,7 +61,8 @@ export const messageService = {
             
           return {
             ...p,
-            user_role: roleData?.role
+            // Add role information as a separate property
+            userRole: roleData?.role || null
           };
         }));
         
@@ -82,11 +74,13 @@ export const messageService = {
       return conv;
     }));
     
-    // Now we can filter based on role restrictions
+    // Now filter based on role restrictions
+    let roleFilteredConversations;
+    
     if (userRoleData?.role === 'tutor') {
       // Tutors should only see conversations with admins/owners
-      return enhancedData.filter((conv) => {
-        // Allow group conversations (handled by createConversation)
+      roleFilteredConversations = enhancedData.filter((conv) => {
+        // Allow group conversations 
         if (conv.is_group) return true;
         
         // For 1:1, check if the other participant is admin/owner
@@ -94,13 +88,13 @@ export const messageService = {
           p => p.user_id !== userData.user.id
         );
         
-        return otherParticipant?.user_role === 'admin' || 
-               otherParticipant?.user_role === 'owner';
+        return otherParticipant?.userRole === 'admin' || 
+              otherParticipant?.userRole === 'owner';
       });
     } else if (userRoleData?.role === 'admin' || userRoleData?.role === 'owner') {
       // Admins/owners should only see conversations with tutors
-      return enhancedData.filter((conv) => {
-        // Allow group conversations (handled by createConversation)
+      roleFilteredConversations = enhancedData.filter((conv) => {
+        // Allow group conversations
         if (conv.is_group) return true;
         
         // For 1:1, check if the other participant is a tutor
@@ -108,12 +102,14 @@ export const messageService = {
           p => p.user_id !== userData.user.id
         );
         
-        return otherParticipant?.user_role === 'tutor';
+        return otherParticipant?.userRole === 'tutor';
       });
+    } else {
+      roleFilteredConversations = [];
     }
     
-    // Convert to unknown first to avoid TypeScript errors with deep types
-    return (enhancedData as unknown) as Conversation[];
+    // Cast to Conversation[] type to satisfy TypeScript
+    return roleFilteredConversations as unknown as Conversation[];
   },
 
   getConversationById: async (id: string): Promise<Conversation> => {
@@ -167,7 +163,7 @@ export const messageService = {
     
     // To check role-based restrictions, we need to fetch roles for participants
     const participantsWithRoles = await Promise.all(conversation.participants.map(async (p) => {
-      // For other participants, fetch their role
+      // For participants, fetch their role
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -177,7 +173,7 @@ export const messageService = {
           
       return {
         ...p,
-        user_role: roleData?.role
+        userRole: roleData?.role || null
       };
     }));
     
@@ -193,7 +189,7 @@ export const messageService = {
         (p) => p.user_id !== userData.user.id
       );
       
-      const otherUserRole = otherParticipant?.user_role;
+      const otherUserRole = otherParticipant?.userRole;
       
       if (userRoleData?.role === 'tutor') {
         // Tutors can only chat with admins/owners
@@ -208,8 +204,8 @@ export const messageService = {
       }
     }
     
-    // Convert to unknown first to avoid TypeScript errors with deep types
-    return (conversationWithRoles as unknown) as Conversation;
+    // Cast to Conversation type to satisfy TypeScript
+    return conversationWithRoles as unknown as Conversation;
   },
 
   createConversation: async (userIds: string[], title?: string): Promise<Conversation> => {
