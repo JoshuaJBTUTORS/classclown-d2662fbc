@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Edit, PlusIcon, Settings, Trash2 } from 'lucide-react';
+import { Edit, PlusIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import PageTitle from '@/components/ui/PageTitle';
@@ -13,9 +14,7 @@ import { Tutor } from '@/types/tutor';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -25,7 +24,6 @@ const Tutors = () => {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddTutorOpen, setIsAddTutorOpen] = useState(false);
-  const [isSettingUpTrigger, setIsSettingUpTrigger] = useState(false);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const [isViewTutorOpen, setIsViewTutorOpen] = useState(false);
   const [isEditTutorOpen, setIsEditTutorOpen] = useState(false);
@@ -52,32 +50,6 @@ const Tutors = () => {
       }
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const initializeAuthTrigger = async () => {
-    try {
-      setIsSettingUpTrigger(true);
-      const { data, error } = await supabase.functions.invoke('create-auth-trigger');
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: "Auth trigger initialized",
-        description: "The auth trigger has been set up successfully. New users will now automatically receive roles.",
-      });
-      
-    } catch (error: any) {
-      console.error('Error setting up auth trigger:', error);
-      toast({
-        title: "Error setting up auth trigger",
-        description: error.message || "An error occurred while setting up the auth trigger.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSettingUpTrigger(false);
     }
   };
 
@@ -116,18 +88,6 @@ const Tutors = () => {
       <div className="flex justify-between items-center mb-6">
         <PageTitle>Tutors</PageTitle>
         <div className="flex gap-2">
-          {isOwner && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={initializeAuthTrigger}
-              disabled={isSettingUpTrigger}
-              className="flex items-center gap-1"
-            >
-              <Settings className="h-4 w-4" />
-              {isSettingUpTrigger ? "Setting up..." : "Initialize Auth Trigger"}
-            </Button>
-          )}
           <Button 
             onClick={() => setIsAddTutorOpen(true)}
             className="flex items-center gap-1"

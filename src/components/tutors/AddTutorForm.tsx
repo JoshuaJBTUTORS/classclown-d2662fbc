@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -133,9 +132,95 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     form.setValue('availability', updatedSlots);
   };
 
+  // New function to ensure auth trigger is created
+  const ensureAuthTriggerExists = async () => {
+    try {
+      // Check if trigger exists
+      const { data, error } = await supabase.rpc('check_trigger_exists', { trigger_name: 'on_auth_user_created' });
+      
+      if (error) {
+        console.error('Error checking trigger existence:', error);
+        return false;
+      }
+      
+      // If trigger doesn't exist, create it
+      if (!data.exists) {
+        const { error: createError } = await supabase.rpc('create_auth_user_trigger');
+        if (createError) {
+          console.error('Error creating auth trigger:', createError);
+          return false;
+        }
+        console.log('Auth trigger created successfully');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in ensureAuthTriggerExists:', error);
+      return false;
+    }
+  };
+
+  // New function to create profile and role manually if needed
+  const createProfileAndRole = async (userId: string, firstName: string, lastName: string, role: string = 'tutor') => {
+    try {
+      // Check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      // Create profile if it doesn't exist
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            first_name: firstName,
+            last_name: lastName
+          });
+          
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+      }
+      
+      // Check if role exists
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('role', role)
+        .maybeSingle();
+        
+      // Create role if it doesn't exist
+      if (!existingRole) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: role,
+            is_primary: true
+          });
+          
+        if (roleError) {
+          console.error('Error creating role:', roleError);
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in createProfileAndRole:', error);
+      return false;
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
+      // Try to ensure the auth trigger exists (silently)
+      await ensureAuthTriggerExists();
+      
       // Insert tutor into tutors table
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
@@ -202,7 +287,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         }
       } else if (data.createAccount) {
         // Create user account with default password
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: userData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
           password: DEFAULT_PASSWORD,
           options: {
@@ -220,7 +305,13 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
             description: "However, there was an issue creating their account: " + signUpError.message,
             variant: "destructive"
           });
-        } else {
+        } else if (userData && userData.user) {
+          // Wait a moment for the trigger to potentially work
+          setTimeout(async () => {
+            // Fallback: create profile and role manually if the trigger didn't do it
+            await createProfileAndRole(userData.user!.id, data.firstName, data.lastName, 'tutor');
+          }, 1000);
+          
           toast({
             title: "Tutor created successfully",
             description: `Account created with default password: ${DEFAULT_PASSWORD}`,
