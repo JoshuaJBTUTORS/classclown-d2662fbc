@@ -42,6 +42,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
 import { Student } from '@/types/student';
+import { useLessonSpace } from '@/hooks/useLessonSpace';
 
 interface AddLessonFormProps {
   isOpen: boolean;
@@ -67,6 +68,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [isFetchingData, setIsFetchingData] = useState(false);
+  
+  // Lesson Space integration
+  const { createRoom, isCreatingRoom } = useLessonSpace();
   
   // Form schema with validation
   const formSchema = z.object({
@@ -207,7 +211,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     }
   };
 
-  // Form submission
+  // Form submission with automatic Lesson Space room creation
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
@@ -221,7 +225,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const [endHours, endMinutes] = values.endTime.split(':');
       endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
       
-      // Create the lesson
+      // Create the lesson first
       const { data: lesson, error: lessonError } = await supabase
         .from('lessons')
         .insert({
@@ -242,6 +246,24 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         .single();
       
       if (lessonError) throw lessonError;
+
+      // Automatically create Lesson Space room
+      console.log("Creating Lesson Space room for new lesson:", lesson.id);
+      const duration = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+      
+      const roomResult = await createRoom({
+        lessonId: lesson.id,
+        title: values.title,
+        startTime: startTime.toISOString(),
+        duration: duration
+      });
+
+      if (!roomResult) {
+        console.warn("Failed to create Lesson Space room, but lesson was created successfully");
+        toast.error('Lesson created but failed to create online room');
+      } else {
+        console.log("Successfully created Lesson Space room:", roomResult);
+      }
       
       // For group sessions, add multiple students
       if (values.isGroup && selectedStudents.length > 0) {
@@ -271,7 +293,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       
       // Success! Close the dialog and reset form
       setIsLoading(false);
-      toast.success('Lesson created successfully');
+      toast.success('Lesson created successfully with online room!');
       onClose();
       onSuccess();
     } catch (error) {
@@ -294,7 +316,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         <DialogHeader>
           <DialogTitle>Add New Lesson</DialogTitle>
           <DialogDescription>
-            Create a new tutoring session by filling out the details below.
+            Create a new tutoring session. An online room will be automatically created.
           </DialogDescription>
         </DialogHeader>
         
@@ -408,7 +430,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                         <div className="p-2 text-center text-muted-foreground">No students available</div>
                       ) : (
                         students.map((student) => {
-                          // Convert student ID to number if it's a string
                           const studentId = typeof student.id === 'string' 
                             ? parseInt(student.id, 10) 
                             : student.id;
@@ -470,7 +491,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                           <div className="p-2 text-center text-muted-foreground">No students available</div>
                         ) : (
                           students.map((student) => {
-                            // Convert student ID to number if it's a string
                             const studentId = typeof student.id === 'string' 
                               ? parseInt(student.id, 10) 
                               : student.id;
@@ -651,15 +671,15 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                 type="button" 
                 variant="outline" 
                 onClick={onClose}
-                disabled={isLoading}
+                disabled={isLoading || isCreatingRoom}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading || isFetchingData}>
-                {isLoading ? (
+              <Button type="submit" disabled={isLoading || isFetchingData || isCreatingRoom}>
+                {isLoading || isCreatingRoom ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating lesson...
+                    {isCreatingRoom ? 'Creating room...' : 'Creating lesson...'}
                   </>
                 ) : (
                   'Create Lesson'

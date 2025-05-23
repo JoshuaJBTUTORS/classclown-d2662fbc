@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Video, ExternalLink, Clipboard, CheckCircle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface VideoConferenceLinkProps {
@@ -13,7 +13,6 @@ interface VideoConferenceLinkProps {
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ link, provider, className }) => {
-  const { toast } = useToast();
   const [copied, setCopied] = React.useState(false);
 
   if (!link) return null;
@@ -21,12 +20,22 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ link, provide
   const copyToClipboard = () => {
     navigator.clipboard.writeText(link);
     setCopied(true);
-    toast({
-      title: "Link Copied",
-      description: "Video conference link copied to clipboard",
-    });
+    toast.success("Link copied to clipboard");
     
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getProviderName = () => {
+    switch (provider) {
+      case 'lesson_space':
+        return 'Lesson Space';
+      case 'google_meet':
+        return 'Google Meet';
+      case 'zoom':
+        return 'Zoom';
+      default:
+        return 'Video Conference';
+    }
   };
 
   return (
@@ -34,9 +43,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ link, provide
       <div className="flex flex-col space-y-3">
         <div className="flex items-center">
           <Video className="h-5 w-5 text-blue-500 mr-2" />
-          <h3 className="text-sm font-medium">
-            {provider === 'google_meet' ? 'Google Meet' : 'Video Conference'}
-          </h3>
+          <h3 className="text-sm font-medium">{getProviderName()}</h3>
         </div>
         
         <div className="flex gap-2">
@@ -46,7 +53,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ link, provide
             className="flex-1"
           >
             <ExternalLink className="h-4 w-4 mr-2" />
-            Join Meeting
+            Join Lesson
           </Button>
           
           <Button 
