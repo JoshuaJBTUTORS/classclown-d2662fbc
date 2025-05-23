@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -12,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { messageService } from '@/services/messageService';
+import { Conversation } from '@/types/message';
 
 interface Recipient {
   id: string;
@@ -133,18 +135,27 @@ const NewMessage: React.FC = () => {
       // For multiple recipients, create a group chat
       const title = selectedRecipients.map(r => `${r.first_name || ''} ${r.last_name || ''}`).join(', ');
       
-      const conversationId = await messageService.createConversation(userIds, title);
+      const conversationData = await messageService.createConversation(userIds, title);
       
       // Send the first message
-      await messageService.sendMessage(conversationId.id || conversationId, message.trim());
+      await messageService.sendMessage(
+        typeof conversationData === 'string' ? conversationData : conversationData.id, 
+        message.trim()
+      );
       
-      return conversationId.id || conversationId;
+      return conversationData;
     },
-    onSuccess: (conversationId) => {
+    onSuccess: (conversationData) => {
       toast({
         title: "Message sent",
         description: "Your conversation has been created",
       });
+      
+      // Extract the conversation ID correctly based on type
+      const conversationId = typeof conversationData === 'string' 
+        ? conversationData 
+        : conversationData.id;
+        
       navigate(`/messages/${conversationId}`);
     },
     onError: (error: any) => {
