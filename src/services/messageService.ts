@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/message';
 
@@ -22,8 +23,8 @@ export const messageService = {
     
     if (error) throw error;
     
-    // Use type assertion instead of unknown to avoid excessive depth
-    return data as Conversation[];
+    // Convert to unknown first to avoid TypeScript errors with deep types
+    return (data as unknown) as Conversation[];
   },
 
   getConversationById: async (id: string): Promise<Conversation> => {
@@ -41,8 +42,8 @@ export const messageService = {
     
     if (error) throw error;
     
-    // Use type assertion instead of unknown to avoid excessive depth
-    return data as Conversation;
+    // Convert to unknown first to avoid TypeScript errors with deep types
+    return (data as unknown) as Conversation;
   },
 
   createConversation: async (userIds: string[], title?: string): Promise<Conversation> => {
@@ -67,7 +68,7 @@ export const messageService = {
       });
     
     if (error) throw error;
-    return data as unknown as Conversation;
+    return (data as unknown) as Conversation;
   },
 
   // Message methods
@@ -83,8 +84,8 @@ export const messageService = {
     
     if (error) throw error;
     
-    // Use type assertion instead of unknown to avoid excessive depth
-    return data as Message[];
+    // Convert to unknown first to avoid TypeScript errors with deep types
+    return (data as unknown) as Message[];
   },
 
   sendMessage: async (conversationId: string, content: string, attachmentUrl?: string, attachmentType?: string): Promise<Message> => {
@@ -114,7 +115,8 @@ export const messageService = {
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId);
     
-    return data as unknown as Message;
+    // Convert to unknown first to avoid TypeScript errors with deep types
+    return (data as unknown) as Message;
   },
 
   markAsRead: async (conversationId: string): Promise<void> => {

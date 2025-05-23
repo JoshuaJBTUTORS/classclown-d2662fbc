@@ -19,11 +19,11 @@ export interface ConversationParticipant {
   read_until?: string;
   user_profile?: {
     id: string;
-    first_name?: string;
-    last_name?: string;
-    avatar_url?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    avatar_url?: string | null;
     organization_id?: string;
-  };
+  } | null;
 }
 
 export interface Message {
@@ -32,15 +32,15 @@ export interface Message {
   sender_id: string;
   content: string;
   created_at: string;
-  attachment_url?: string;
-  attachment_type?: string;
-  deleted_at?: string;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  deleted_at?: string | null;
   sender_profile?: {
     id: string;
-    first_name?: string;
-    last_name?: string;
-    avatar_url?: string;
-  };
+    first_name?: string | null;
+    last_name?: string | null;
+    avatar_url?: string | null;
+  } | null;
 }
 
 export interface MessageStatus {
@@ -48,5 +48,5 @@ export interface MessageStatus {
   message_id: string;
   user_id: string;
   is_read: boolean;
-  read_at?: string;
+  read_at?: string | null;
 }
