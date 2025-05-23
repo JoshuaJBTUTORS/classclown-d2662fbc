@@ -22,6 +22,7 @@ export interface ConversationParticipant {
     first_name?: string;
     last_name?: string;
     avatar_url?: string;
+    organization_id?: string;
   };
 }
 

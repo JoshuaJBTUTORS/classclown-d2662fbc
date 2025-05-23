@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/message';
 
@@ -22,7 +21,9 @@ export const messageService = {
       .order('last_message_at', { ascending: false });
     
     if (error) throw error;
-    return data as unknown as Conversation[];
+    
+    // Use type assertion instead of unknown to avoid excessive depth
+    return data as Conversation[];
   },
 
   getConversationById: async (id: string): Promise<Conversation> => {
@@ -39,7 +40,9 @@ export const messageService = {
       .single();
     
     if (error) throw error;
-    return data as unknown as Conversation;
+    
+    // Use type assertion instead of unknown to avoid excessive depth
+    return data as Conversation;
   },
 
   createConversation: async (userIds: string[], title?: string): Promise<Conversation> => {
@@ -79,7 +82,9 @@ export const messageService = {
       .order('created_at', { ascending: true });
     
     if (error) throw error;
-    return data as unknown as Message[];
+    
+    // Use type assertion instead of unknown to avoid excessive depth
+    return data as Message[];
   },
 
   sendMessage: async (conversationId: string, content: string, attachmentUrl?: string, attachmentType?: string): Promise<Message> => {

@@ -35,7 +35,8 @@ const NewMessage: React.FC = () => {
   const { data: allUsers, isLoading } = useQuery({
     queryKey: ['message-recipients'],
     queryFn: async () => {
-      if (!profile?.organization_id) return [];
+      // Check if profile exists and has organization data
+      if (!profile) return [];
       
       // Fetch profiles with their roles
       const { data, error } = await supabase
@@ -47,7 +48,7 @@ const NewMessage: React.FC = () => {
           avatar_url,
           user_roles:user_roles(role)
         `)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', profile.organization_id || '')
         .neq('id', profile.id); // Exclude current user
       
       if (error) throw error;
@@ -61,7 +62,7 @@ const NewMessage: React.FC = () => {
         role: user.user_roles?.[0]?.role || 'unknown'
       }));
     },
-    enabled: !!profile?.organization_id
+    enabled: !!profile
   });
   
   // Filter recipients based on search term
