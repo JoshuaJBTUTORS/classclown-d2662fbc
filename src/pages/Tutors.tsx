@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { PlusIcon, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import PageTitle from '@/components/ui/PageTitle';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
+import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { Tutor } from '@/types/tutor';
 import {
   Table,
   TableBody,
@@ -18,27 +20,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-interface Tutor {
-  id: string;
-  created_at: string;
-  title: string | null;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string | null;
-  specialities: string[] | null;
-  bio: string | null;
-  education: string | null;
-  status: string;
-}
-
 const Tutors = () => {
-  const [tutors, setTutors] = useState<any[]>([]);
+  const [tutors, setTutors] = useState<Tutor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddTutorOpen, setIsAddTutorOpen] = useState(false);
   const [isSettingUpTrigger, setIsSettingUpTrigger] = useState(false);
+  const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
+  const [isViewTutorOpen, setIsViewTutorOpen] = useState(false);
   const { isOwner } = useAuth();
-  const navigate = useNavigate();
 
   const fetchTutors = async () => {
     setIsLoading(true);
@@ -87,6 +76,11 @@ const Tutors = () => {
     } finally {
       setIsSettingUpTrigger(false);
     }
+  };
+
+  const handleViewTutor = (tutor: Tutor) => {
+    setSelectedTutor(tutor);
+    setIsViewTutorOpen(true);
   };
 
   useEffect(() => {
@@ -143,7 +137,11 @@ const Tutors = () => {
                   <TableCell>{tutor.email}</TableCell>
                   <TableCell>{tutor.specialities ? tutor.specialities.join(', ') : 'N/A'}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="secondary" size="sm" onClick={() => navigate(`/tutors/${tutor.id}`)}>
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      onClick={() => handleViewTutor(tutor)}
+                    >
                       View
                     </Button>
                   </TableCell>
@@ -161,6 +159,12 @@ const Tutors = () => {
           setIsAddTutorOpen(false);
           fetchTutors();
         }}
+      />
+
+      <ViewTutorProfile
+        tutor={selectedTutor}
+        isOpen={isViewTutorOpen}
+        onClose={() => setIsViewTutorOpen(false)}
       />
     </div>
   );
