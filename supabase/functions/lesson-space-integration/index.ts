@@ -120,7 +120,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
           id: `tutor_${lesson.tutor.id}`,
           name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
           role: "teacher",
-          leader: true,
+          leader: true, // TUTOR IS LEADER
           custom_jwt_parameters: {
             meta: {
               displayName: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`
@@ -219,6 +219,7 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
     }
 
     // Create student-specific URL by calling launch for the existing space
+    // CRITICAL: Student should have leader: false
     const studentResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
       method: "POST",
       headers: {
@@ -231,7 +232,7 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
           id: `student_${data.studentId}`,
           name: data.studentName,
           role: "student",
-          leader: false,
+          leader: false, // STUDENT IS NOT LEADER - THIS IS THE KEY DIFFERENCE
           custom_jwt_parameters: {
             meta: {
               displayName: data.studentName
