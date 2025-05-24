@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
@@ -139,7 +138,6 @@ const Calendar = () => {
       
       <CalendarDisplay
         events={events}
-        onEventClick={handleEventClick}
         isLoading={isLoading}
       />
 
