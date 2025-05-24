@@ -79,7 +79,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               }}
               eventClick={handleEventClick}
               dayMaxEvents={false}
-              moreLinkClick="popover"
               eventClassNames={(info) => {
                 let classes = ['custom-calendar-event'];
                 
@@ -94,6 +93,8 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               }}
               eventContent={(eventInfo) => {
                 const isMonthView = eventInfo.view.type === 'dayGridMonth';
+                const isWeekView = eventInfo.view.type === 'timeGridWeek';
+                const isDayView = eventInfo.view.type === 'timeGridDay';
                 const isRecurring = eventInfo.event.extendedProps.isRecurring || 
                                   eventInfo.event.extendedProps.isRecurringInstance;
                 
@@ -101,12 +102,19 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                   <div className="fc-event-main-frame p-1">
                     <div className="fc-event-title-container flex items-center gap-1">
                       <div className="fc-event-title text-xs font-medium truncate">
-                        {!isMonthView && (
-                          <span className="fc-event-time text-xs opacity-90 mr-1">
-                            {eventInfo.timeText}
-                          </span>
+                        {/* Show lesson name in week and day view instead of time */}
+                        {(isWeekView || isDayView) && (
+                          <span className="event-title font-semibold">{eventInfo.event.title}</span>
                         )}
-                        <span className="event-title">{eventInfo.event.title}</span>
+                        {/* Show both time and title in month view */}
+                        {isMonthView && (
+                          <>
+                            <span className="fc-event-time text-xs opacity-90 mr-1">
+                              {eventInfo.timeText}
+                            </span>
+                            <span className="event-title">{eventInfo.event.title}</span>
+                          </>
+                        )}
                         {isRecurring && (
                           <span className="inline-flex items-center justify-center ml-1">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
@@ -120,9 +128,15 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                         )}
                       </div>
                     </div>
-                    {eventInfo.event.extendedProps.tutor && !isMonthView && (
-                      <div className="fc-event-tutor text-xs opacity-75 truncate">
+                    {eventInfo.event.extendedProps.tutor && (isWeekView || isDayView) && (
+                      <div className="fc-event-tutor text-xs opacity-75 truncate mt-1">
                         {eventInfo.event.extendedProps.tutor.first_name} {eventInfo.event.extendedProps.tutor.last_name}
+                      </div>
+                    )}
+                    {/* Show time below title in week/day view */}
+                    {(isWeekView || isDayView) && eventInfo.timeText && (
+                      <div className="fc-event-time text-xs opacity-75 mt-1">
+                        {eventInfo.timeText}
                       </div>
                     )}
                   </div>
