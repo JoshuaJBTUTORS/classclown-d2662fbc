@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, AlertTriangle, Link } from 'lucide-react';
+import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -72,24 +72,29 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  // Generate the direct Lesson Space invite URL for students
-  const getLessonSpaceInviteUrl = () => {
-    if (!spaceId) return null;
-    return `https://www.thelessonspace.com/space/${spaceId}`;
+  // Generate the correct URL based on user role
+  const getCorrectUrl = () => {
+    if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
+      if (userRole === 'student') {
+        // Students get the simple invite URL
+        return `https://www.thelessonspace.com/space/${spaceId}`;
+      } else {
+        // Tutors and admins get the authenticated URL
+        return link;
+      }
+    }
+    return link;
   };
 
+  const urlToUse = getCorrectUrl();
   const showStudentJoinLink = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
                               provider === 'lesson_space' && hasLessonSpace && studentCount > 0 && spaceId;
-
-  // For students using Lesson Space, show the direct invite link
-  const shouldShowDirectInvite = userRole === 'student' && provider === 'lesson_space' && hasLessonSpace && spaceId;
-  const studentInviteUrl = shouldShowDirectInvite ? getLessonSpaceInviteUrl() : null;
 
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
         {/* Main lesson URL section */}
-        {(link || shouldShowDirectInvite) && (
+        {urlToUse && (
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -119,12 +124,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             <div className="flex gap-2">
               <Button 
                 size="sm" 
-                onClick={() => {
-                  const urlToOpen = shouldShowDirectInvite ? studentInviteUrl : link;
-                  if (urlToOpen) {
-                    window.open(urlToOpen, '_blank');
-                  }
-                }}
+                onClick={() => window.open(urlToUse, '_blank')}
                 className="flex-1"
                 variant={userRole === 'tutor' ? 'default' : 'outline'}
               >
@@ -135,12 +135,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => {
-                  const urlToCopy = shouldShowDirectInvite ? studentInviteUrl : link;
-                  if (urlToCopy) {
-                    copyToClipboard(urlToCopy);
-                  }
-                }}
+                onClick={() => copyToClipboard(urlToUse)}
               >
                 {copied ? (
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -152,14 +147,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
             {userRole === 'tutor' && provider === 'lesson_space' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Teacher privileges:</strong> You can control participant audio/video, 
-                enable leader mode, and manage the session.
+                <strong>Teacher privileges:</strong> You have full control of the lesson space with leader permissions.
               </div>
             )}
 
-            {userRole === 'student' && provider === 'lesson_space' && shouldShowDirectInvite && (
+            {userRole === 'student' && provider === 'lesson_space' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Direct access:</strong> Click "Join Lesson" to access your lesson space directly via Lesson Space.
+                <strong>Student access:</strong> Click "Join Lesson" to enter the lesson space.
               </div>
             )}
           </>
@@ -181,13 +175,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                 <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div className="flex items-center">
                     <Link className="h-4 w-4 text-blue-500 mr-2" />
-                    <span className="text-sm">Direct Lesson Space invite</span>
+                    <span className="text-sm">Student invite URL</span>
                   </div>
                   <div className="flex gap-1">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => window.open(getLessonSpaceInviteUrl(), '_blank')}
+                      onClick={() => window.open(`https://www.thelessonspace.com/space/${spaceId}`, '_blank')}
                       className="h-7 px-2"
                     >
                       <ExternalLink className="h-3 w-3" />
@@ -195,7 +189,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyToClipboard(getLessonSpaceInviteUrl()!)}
+                      onClick={() => copyToClipboard(`https://www.thelessonspace.com/space/${spaceId}`)}
                       className="h-7 px-2"
                     >
                       <Clipboard className="h-3 w-3" />
@@ -203,7 +197,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Students can join directly via this Lesson Space invite link.
+                  Share this simple URL with students to join the lesson.
                 </div>
               </CollapsibleContent>
             </Collapsible>

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -143,24 +144,12 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const spaceData = await spaceResponse.json();
     console.log("Created/Retrieved Lesson Space for teacher:", spaceData);
 
-    // Clear any existing student URLs from lesson_students table
-    const { error: clearError } = await supabase
-      .from("lesson_students")
-      .update({
-        lesson_space_url: null
-      })
-      .eq("lesson_id", data.lessonId);
-
-    if (clearError) {
-      console.error("Error clearing student URLs:", clearError);
-    }
-
     // Update the lesson with room details (teacher URL only)
     const { error: updateError } = await supabase
       .from("lessons")
       .update({
         lesson_space_room_id: spaceData.room_id,
-        lesson_space_room_url: spaceData.client_url, // Teacher URL
+        lesson_space_room_url: spaceData.client_url, // Teacher's authenticated URL
         lesson_space_space_id: spaceId, // Store the space ID for student joins
         video_conference_provider: "lesson_space",
         video_conference_link: spaceData.client_url
@@ -176,12 +165,12 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       JSON.stringify({
         success: true,
         roomId: spaceData.room_id,
-        roomUrl: spaceData.client_url, // Teacher URL
+        roomUrl: spaceData.client_url, // Teacher's authenticated URL
         teacherUrl: spaceData.client_url,
         spaceId: spaceId,
         sessionId: spaceData.session_id,
-        studentInviteUrl: `https://www.thelessonspace.com/space/${spaceId}`, // Direct Lesson Space invite URL
-        message: "Teacher space created successfully. Students can join via direct Lesson Space invite URL."
+        studentInviteUrl: `https://www.thelessonspace.com/space/${spaceId}`, // Simple invite URL for students
+        message: "Teacher space created successfully. Students can join via simple invite URL."
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -198,8 +187,6 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 }
 
 async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
-  const lessonSpaceApiKey = "832a4e97-e402-4757-8ba3-a8afb14941b2";
-  
   try {
     console.log("Student joining lesson space:", data);
     
@@ -218,43 +205,14 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       throw new Error("No lesson space found for this lesson");
     }
 
-    // Create student-specific URL by calling launch for the existing space
-    // CRITICAL: Student should have leader: false
-    const studentResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
-      method: "POST",
-      headers: {
-        "Authorization": `Organisation ${lessonSpaceApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id: lesson.lesson_space_space_id,
-        user: {
-          id: `student_${data.studentId}`,
-          name: data.studentName,
-          role: "student",
-          leader: false, // STUDENT IS NOT LEADER - THIS IS THE KEY DIFFERENCE
-          custom_jwt_parameters: {
-            meta: {
-              displayName: data.studentName
-            }
-          }
-        }
-      }),
-    });
-
-    if (!studentResponse.ok) {
-      const errorText = await studentResponse.text();
-      console.error(`Failed to create URL for student ${data.studentId}:`, studentResponse.status, errorText);
-      throw new Error(`Failed to create student URL: ${studentResponse.status} ${errorText}`);
-    }
-
-    const studentData = await studentResponse.json();
-    console.log(`Generated URL for student ${data.studentId}:`, studentData.client_url);
+    // Return the simple invite URL for students
+    const studentUrl = `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
+    console.log(`Generated simple invite URL for student ${data.studentId}:`, studentUrl);
 
     return new Response(
       JSON.stringify({
         success: true,
-        studentUrl: studentData.client_url,
+        studentUrl: studentUrl,
         spaceId: lesson.lesson_space_space_id
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -329,21 +287,6 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
       .eq("lesson_space_room_id", roomId);
 
     if (lessonError) throw lessonError;
-
-    if (lessonData?.id) {
-      const { error: studentError } = await supabase
-        .from("lesson_students")
-        .update({
-          lesson_space_url: null
-        })
-        .eq("lesson_id", lessonData.id);
-
-      if (studentError) {
-        console.error("Error clearing student URLs:", studentError);
-      } else {
-        console.log("Successfully cleared student URLs for lesson:", lessonData.id);
-      }
-    }
 
     return new Response(
       JSON.stringify({ success: true }),

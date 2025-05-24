@@ -87,15 +87,15 @@ const StudentJoinPage: React.FC = () => {
     }
   };
 
-  const getLessonSpaceInviteUrl = () => {
+  const getStudentInviteUrl = () => {
     if (!lesson?.lesson_space_space_id) return null;
     return `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
   };
 
   const handleJoinLesson = () => {
-    const inviteUrl = getLessonSpaceInviteUrl();
+    const inviteUrl = getStudentInviteUrl();
     if (inviteUrl) {
-      // Open the lesson space directly
+      // Open the simple lesson space invite URL
       window.open(inviteUrl, '_blank');
       toast.success('Redirecting to Lesson Space...');
     } else {
@@ -133,9 +133,9 @@ const StudentJoinPage: React.FC = () => {
     );
   }
 
-  // If lesson has Lesson Space configured, redirect immediately
-  const lessonSpaceUrl = getLessonSpaceInviteUrl();
-  if (lessonSpaceUrl && lesson.video_conference_provider === 'lesson_space') {
+  // Check if lesson has Lesson Space configured
+  const studentInviteUrl = getStudentInviteUrl();
+  if (studentInviteUrl && lesson.video_conference_provider === 'lesson_space') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
@@ -181,7 +181,7 @@ const StudentJoinPage: React.FC = () => {
               <p className="text-sm text-blue-800">
                 <strong>Welcome, {studentData.first_name}!</strong>
                 <br />
-                Click the button below to join your lesson directly via Lesson Space.
+                Click the button below to join your lesson via Lesson Space.
               </p>
             </div>
 
