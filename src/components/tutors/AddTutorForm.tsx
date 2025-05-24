@@ -306,6 +306,22 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         } else if (userData && userData.user) {
           console.log('User account created successfully, user ID:', userData.user.id);
           
+          // Send welcome email
+          const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              userId: userData.user.id,
+              email: data.email,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              role: 'tutor',
+              password: DEFAULT_PASSWORD
+            }
+          });
+
+          if (emailError) {
+            console.error('Error sending welcome email:', emailError);
+          }
+          
           // Wait a moment for the trigger to work
           setTimeout(async () => {
             // Double-check that the trigger worked
@@ -339,10 +355,18 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
             }
           }, 1500);
           
-          toast({
-            title: "Tutor created successfully",
-            description: `Account created with default password: ${DEFAULT_PASSWORD}`,
-          });
+          if (emailError) {
+            toast({
+              title: "Tutor account created successfully",
+              description: `Account created with default password: ${DEFAULT_PASSWORD}. However, there was an issue sending the welcome email.`,
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "Tutor account created successfully",
+              description: "Account created and welcome email sent with login credentials.",
+            });
+          }
         }
       } else {
         toast({

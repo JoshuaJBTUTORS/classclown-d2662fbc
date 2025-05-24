@@ -85,10 +85,33 @@ const CreateAdmin = () => {
 
       if (signUpError) throw signUpError;
 
-      toast({
-        title: "Admin account created successfully",
-        description: `Admin account for ${data.firstName} ${data.lastName} has been created with the default password: ${DEFAULT_PASSWORD}`,
-      });
+      // Send welcome email
+      if (authData.user) {
+        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            userId: authData.user.id,
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            role: 'admin',
+            password: DEFAULT_PASSWORD
+          }
+        });
+
+        if (emailError) {
+          console.error('Error sending welcome email:', emailError);
+          toast({
+            title: "Admin account created successfully",
+            description: "However, there was an issue sending the welcome email. Please contact the admin manually with their credentials.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Admin account created successfully",
+            description: `Admin account for ${data.firstName} ${data.lastName} has been created and a welcome email has been sent with login credentials.`,
+          });
+        }
+      }
 
       form.reset();
     } catch (error: any) {
