@@ -390,9 +390,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Determine if lesson has Lesson Space setup
-  const hasLessonSpace = lesson?.lesson_space_room_url || lesson?.lesson_space_space_id;
-  let displayVideoLink = lesson?.video_conference_link || lesson?.lesson_space_room_url;
+  // Check if any video conference capability exists
+  const hasVideoConference = lesson?.video_conference_link || 
+                            lesson?.lesson_space_room_url || 
+                            lesson?.lesson_space_space_id;
 
   return (
     <>
@@ -443,17 +444,18 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 ) : <p>No students assigned</p>}
               </div>
 
-              {/* Updated Video Conference Section with single link workflow */}
-              {(displayVideoLink || hasLessonSpace) ? (
+              {/* Updated Video Conference Section - let VideoConferenceLink handle URL determination */}
+              {hasVideoConference ? (
                 <VideoConferenceLink 
-                  link={displayVideoLink}
+                  link={lesson.video_conference_link || lesson.lesson_space_room_url}
                   provider={lesson.video_conference_provider}
                   className="mb-4"
                   userRole={userRole as 'tutor' | 'student' | 'admin' | 'owner'}
                   isGroupLesson={lesson.is_group}
                   studentCount={lesson.students?.length || 0}
                   lessonId={lesson.id}
-                  hasLessonSpace={!!hasLessonSpace}
+                  hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_space_id)}
+                  spaceId={lesson.lesson_space_space_id}
                 />
               ) : (
                 <div className="border rounded-lg p-4 bg-gray-50">
