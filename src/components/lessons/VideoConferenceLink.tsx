@@ -16,6 +16,7 @@ interface VideoConferenceLinkProps {
   studentCount?: number;
   lessonId?: string;
   hasLessonSpace?: boolean;
+  spaceId?: string;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ 
@@ -26,7 +27,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   isGroupLesson = false,
   studentCount = 0,
   lessonId,
-  hasLessonSpace = false
+  hasLessonSpace = false,
+  spaceId
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
@@ -70,23 +72,24 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  // Generate student join URL for the single link workflow
-  const getStudentJoinUrl = () => {
-    if (!lessonId) return null;
-    return `${window.location.origin}/join-lesson/${lessonId}`;
+  // Generate the direct Lesson Space invite URL for students
+  const getLessonSpaceInviteUrl = () => {
+    if (!spaceId) return null;
+    return `https://www.thelessonspace.com/space/${spaceId}`;
   };
 
   const showStudentJoinLink = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
-                              provider === 'lesson_space' && hasLessonSpace && studentCount > 0;
+                              provider === 'lesson_space' && hasLessonSpace && studentCount > 0 && spaceId;
 
-  // For students using Lesson Space, show the join page link instead of direct access
-  const shouldShowJoinPage = userRole === 'student' && provider === 'lesson_space' && hasLessonSpace;
+  // For students using Lesson Space, show the direct invite link
+  const shouldShowDirectInvite = userRole === 'student' && provider === 'lesson_space' && hasLessonSpace && spaceId;
+  const studentInviteUrl = shouldShowDirectInvite ? getLessonSpaceInviteUrl() : null;
 
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
         {/* Main lesson URL section */}
-        {(link || shouldShowJoinPage) && (
+        {(link || shouldShowDirectInvite) && (
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -117,10 +120,9 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               <Button 
                 size="sm" 
                 onClick={() => {
-                  if (shouldShowJoinPage) {
-                    window.open(getStudentJoinUrl(), '_self');
-                  } else {
-                    window.open(link!, '_blank');
+                  const urlToOpen = shouldShowDirectInvite ? studentInviteUrl : link;
+                  if (urlToOpen) {
+                    window.open(urlToOpen, '_blank');
                   }
                 }}
                 className="flex-1"
@@ -133,7 +135,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => copyToClipboard(shouldShowJoinPage ? getStudentJoinUrl()! : link!)}
+                onClick={() => {
+                  const urlToCopy = shouldShowDirectInvite ? studentInviteUrl : link;
+                  if (urlToCopy) {
+                    copyToClipboard(urlToCopy);
+                  }
+                }}
               >
                 {copied ? (
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -150,20 +157,20 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </div>
             )}
 
-            {userRole === 'student' && provider === 'lesson_space' && (
+            {userRole === 'student' && provider === 'lesson_space' && shouldShowDirectInvite && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Student access:</strong> Click "Join Lesson" to authenticate and access your personalized lesson space.
+                <strong>Direct access:</strong> Click "Join Lesson" to access your lesson space directly via Lesson Space.
               </div>
             )}
           </>
         )}
 
-        {/* Student join link section for tutors/admins */}
+        {/* Student invite link section for tutors/admins */}
         {showStudentJoinLink && (
           <div className="border-t pt-3">
             <Collapsible open={isStudentLinksOpen} onOpenChange={setIsStudentLinksOpen}>
               <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground">
-                <span>Student Join Link</span>
+                <span>Student Invite Link</span>
                 {isStudentLinksOpen ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
@@ -174,13 +181,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                 <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div className="flex items-center">
                     <Link className="h-4 w-4 text-blue-500 mr-2" />
-                    <span className="text-sm">Share this link with students</span>
+                    <span className="text-sm">Direct Lesson Space invite</span>
                   </div>
                   <div className="flex gap-1">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => window.open(getStudentJoinUrl(), '_blank')}
+                      onClick={() => window.open(getLessonSpaceInviteUrl(), '_blank')}
                       className="h-7 px-2"
                     >
                       <ExternalLink className="h-3 w-3" />
@@ -188,7 +195,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyToClipboard(getStudentJoinUrl()!)}
+                      onClick={() => copyToClipboard(getLessonSpaceInviteUrl()!)}
                       className="h-7 px-2"
                     >
                       <Clipboard className="h-3 w-3" />
@@ -196,7 +203,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Students will be authenticated and redirected to their personal lesson space.
+                  Students can join directly via this Lesson Space invite link.
                 </div>
               </CollapsibleContent>
             </Collapsible>
