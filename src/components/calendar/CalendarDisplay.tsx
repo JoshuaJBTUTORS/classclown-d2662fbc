@@ -19,7 +19,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  // New state for homework dialog
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [homeworkLessonId, setHomeworkLessonId] = useState<string | null>(null);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
@@ -34,20 +33,28 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setSelectedLessonId(null);
   };
 
-  // New handler for opening homework assignment dialog
   const handleAssignHomework = (lessonId: string, lessonData: any) => {
     setHomeworkLessonId(lessonId);
     setPreloadedLessonData(lessonData);
     setIsAssigningHomework(true);
-    // Close details dialog
     setIsDetailsOpen(false);
   };
 
-  // New handler for closing homework dialog
   const handleHomeworkDialogClose = () => {
     setIsAssigningHomework(false);
     setHomeworkLessonId(null);
     setPreloadedLessonData(null);
+  };
+
+  // Enhanced event color logic based on lesson properties
+  const getEventColor = (event: any) => {
+    if (event.extendedProps?.isRecurring || event.extendedProps?.isRecurringInstance) {
+      return 'hsl(174 51% 51%)'; // Accent turquoise for recurring lessons
+    }
+    if (event.extendedProps?.isGroup) {
+      return 'hsl(45 93% 59%)'; // Secondary yellow for group lessons
+    }
+    return 'hsl(342 77% 60%)'; // Primary pink for regular lessons
   };
 
   return (
@@ -71,28 +78,38 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
               }}
               eventClick={handleEventClick}
+              dayMaxEvents={false}
+              moreLinkClick="popover"
               eventClassNames={(info) => {
-                let classes = ['calendar-event', 'rounded-md', 'border-l-4', 'shadow-sm', 'transition-all', 'hover:shadow-md'];
+                let classes = ['custom-calendar-event'];
                 
-                // Add special styling for recurring events
-                if (info.event.extendedProps.isRecurring) {
+                if (info.event.extendedProps.isRecurring || info.event.extendedProps.isRecurringInstance) {
                   classes.push('recurring-event');
                 }
-                if (info.event.extendedProps.isRecurringInstance) {
-                  classes.push('recurring-instance');
+                if (info.event.extendedProps.isGroup) {
+                  classes.push('group-event');
                 }
+                
                 return classes;
               }}
               eventContent={(eventInfo) => {
+                const isMonthView = eventInfo.view.type === 'dayGridMonth';
+                const isRecurring = eventInfo.event.extendedProps.isRecurring || 
+                                  eventInfo.event.extendedProps.isRecurringInstance;
+                
                 return (
                   <div className="fc-event-main-frame p-1">
                     <div className="fc-event-title-container flex items-center gap-1">
-                      <div className="fc-event-title text-sm font-medium">
-                        {eventInfo.event.title}
-                        {(eventInfo.event.extendedProps.isRecurring || 
-                          eventInfo.event.extendedProps.isRecurringInstance) && (
-                          <span className="inline-flex items-center justify-center ml-1 text-xs">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                      <div className="fc-event-title text-xs font-medium truncate">
+                        {!isMonthView && (
+                          <span className="fc-event-time text-xs opacity-90 mr-1">
+                            {eventInfo.timeText}
+                          </span>
+                        )}
+                        <span className="event-title">{eventInfo.event.title}</span>
+                        {isRecurring && (
+                          <span className="inline-flex items-center justify-center ml-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
                               <path d="M21 12a9 9 0 0 0-9-9 9 9 0 0 0-9 9"></path>
                               <path d="M3 12h.01M21 12h.01M12 21v.01"></path>
                               <path d="m9 3 3 3 3-3M3 9l3 3-3 3"></path>
@@ -103,20 +120,29 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                         )}
                       </div>
                     </div>
+                    {eventInfo.event.extendedProps.tutor && !isMonthView && (
+                      <div className="fc-event-tutor text-xs opacity-75 truncate">
+                        {eventInfo.event.extendedProps.tutor.first_name} {eventInfo.event.extendedProps.tutor.last_name}
+                      </div>
+                    )}
                   </div>
                 );
               }}
-              dayMaxEvents={true}
               eventTimeFormat={{
                 hour: '2-digit',
                 minute: '2-digit',
                 meridiem: 'short'
               }}
+              eventDidMount={(info) => {
+                const color = getEventColor(info.event);
+                info.el.style.backgroundColor = color;
+                info.el.style.borderColor = color;
+                info.el.style.color = 'white';
+              }}
             />
           </div>
         )}
 
-        {/* Lesson Details Dialog with new onAssignHomework prop */}
         <LessonDetailsDialog
           isOpen={isDetailsOpen}
           onClose={handleDetailsClose}
@@ -124,7 +150,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           onAssignHomework={handleAssignHomework}
         />
 
-        {/* Moved AssignHomeworkDialog here */}
         <AssignHomeworkDialog
           isOpen={isAssigningHomework}
           onClose={handleHomeworkDialogClose}
