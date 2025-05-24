@@ -128,9 +128,9 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
           let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
           let studentUrls = [];
           
-          if (userRole === 'student' && lesson.lesson_space_space_id) {
-            // Always use the simple invite URL for students when space_id exists
-            videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
+          if (userRole === 'student' && lesson.lesson_space_room_id) {
+            // Always use the simple invite URL for students when room_id exists
+            videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
           } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
             // Fallback to individual URL if available
             const studentLessonData = lesson.lesson_students[0];
@@ -148,7 +148,7 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
               }));
           }
           
-          const hasVideoConference = videoConferenceLink || studentUrls.length > 0 || lesson.lesson_space_space_id;
+          const hasVideoConference = videoConferenceLink || studentUrls.length > 0 || lesson.lesson_space_room_id;
           let className = 'calendar-event';
           
           if (hasVideoConference) {
@@ -176,7 +176,7 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
               videoConferenceProvider: lesson.video_conference_provider,
               lessonSpaceRoomId: lesson.lesson_space_room_id,
               lessonSpaceRoomUrl: lesson.lesson_space_room_url,
-              lessonSpaceSpaceId: lesson.lesson_space_space_id,
+              lessonSpaceSpaceId: lesson.lesson_space_room_id, // Use room_id as space_id
               studentUrls: studentUrls,
               userRole: userRole,
               attendanceStatus: userRole === 'student' ? lesson.lesson_students?.[0]?.attendance_status : null
@@ -219,9 +219,9 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
     let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
     let studentUrls = [];
     
-    if (userRole === 'student' && lesson.lesson_space_space_id) {
-      // Always use the simple invite URL for students when space_id exists
-      videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
+    if (userRole === 'student' && lesson.lesson_space_room_id) {
+      // Always use the simple invite URL for students when room_id exists
+      videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
     } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
       // Fallback to individual URL if available
       const studentLessonData = lesson.lesson_students[0];
@@ -238,7 +238,7 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
         }));
     }
     
-    const hasVideoConference = videoConferenceLink || studentUrls.length > 0 || lesson.lesson_space_space_id;
+    const hasVideoConference = videoConferenceLink || studentUrls.length > 0 || lesson.lesson_space_room_id;
     
     let currentDate = startDate;
     
@@ -267,7 +267,7 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
             videoConferenceProvider: lesson.video_conference_provider,
             lessonSpaceRoomId: lesson.lesson_space_room_id,
             lessonSpaceRoomUrl: lesson.lesson_space_room_url,
-            lessonSpaceSpaceId: lesson.lesson_space_space_id,
+            lessonSpaceSpaceId: lesson.lesson_space_room_id, // Use room_id as space_id
             studentUrls: studentUrls,
             userRole: userRole
           }

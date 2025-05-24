@@ -393,7 +393,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   // Check if any video conference capability exists
   const hasVideoConference = lesson?.video_conference_link || 
                             lesson?.lesson_space_room_url || 
-                            lesson?.lesson_space_space_id;
+                            lesson?.lesson_space_room_id;
 
   return (
     <>
@@ -444,7 +444,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 ) : <p>No students assigned</p>}
               </div>
 
-              {/* Updated Video Conference Section - let VideoConferenceLink handle URL determination */}
+              {/* Updated Video Conference Section - now using lesson_space_room_id as spaceId */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
@@ -454,8 +454,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   isGroupLesson={lesson.is_group}
                   studentCount={lesson.students?.length || 0}
                   lessonId={lesson.id}
-                  hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_space_id)}
-                  spaceId={lesson.lesson_space_space_id}
+                  hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_room_id)}
+                  spaceId={lesson.lesson_space_room_id}
                 />
               ) : (
                 <div className="border rounded-lg p-4 bg-gray-50">
@@ -492,7 +492,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* ... keep existing code (recurrence info, homework info, status info) */}
+              {/* ... keep existing code (recurrence info, homework info, status info) the same */}
               {(lesson.is_recurring || lesson.is_recurring_instance) && (
                 <div>
                   <h3 className="font-medium">Recurrence</h3>
