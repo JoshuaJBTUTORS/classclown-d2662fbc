@@ -1,4 +1,8 @@
+
 import React, { useState, useCallback } from 'react';
+import Navbar from '@/components/navigation/Navbar';
+import Sidebar from '@/components/navigation/Sidebar';
+import PageTitle from '@/components/ui/PageTitle';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import ViewOptions from '@/components/calendar/ViewOptions';
@@ -14,6 +18,7 @@ import { format } from 'date-fns';
 
 const Calendar = () => {
   const { user, userRole } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -30,6 +35,10 @@ const Calendar = () => {
     isAuthenticated: !!user,
     refreshKey 
   });
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(prev => prev + 1);
@@ -128,55 +137,68 @@ const Calendar = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <CalendarHeader />
-      
-      <ViewOptions 
-        currentView={getFullCalendarView(view)} 
-        onViewChange={handleViewChange}
-      />
-      
-      <CalendarDisplay
-        events={events}
-        isLoading={isLoading}
-      />
+    <div className="flex min-h-screen bg-background">
+      <Sidebar isOpen={sidebarOpen} />
+      <div className="flex flex-col flex-1 lg:pl-0">
+        <Navbar toggleSidebar={toggleSidebar} />
+        <main className="flex-1 p-4 md:p-6">
+          <PageTitle 
+            title="Calendar" 
+            subtitle="Manage your lessons and sessions."
+          />
+          
+          <div className="space-y-6">
+            <CalendarHeader />
+            
+            <ViewOptions 
+              currentView={getFullCalendarView(view)} 
+              onViewChange={handleViewChange}
+            />
+            
+            <CalendarDisplay
+              events={events}
+              isLoading={isLoading}
+            />
 
-      <LessonDetailsDialog
-        isOpen={isLessonDetailsOpen}
-        onClose={() => {
-          setIsLessonDetailsOpen(false);
-          setSelectedLessonId(null);
-        }}
-        lessonId={selectedLessonId}
-        onDelete={handleDeleteLesson}
-        onCompleteSession={handleCompleteSession}
-        onAssignHomework={handleAssignHomework}
-        onRefresh={handleRefresh}
-      />
+            <LessonDetailsDialog
+              isOpen={isLessonDetailsOpen}
+              onClose={() => {
+                setIsLessonDetailsOpen(false);
+                setSelectedLessonId(null);
+              }}
+              lessonId={selectedLessonId}
+              onDelete={handleDeleteLesson}
+              onCompleteSession={handleCompleteSession}
+              onAssignHomework={handleAssignHomework}
+              onRefresh={handleRefresh}
+            />
 
-      <AddLessonForm
-        isOpen={isAddLessonOpen}
-        onClose={() => setIsAddLessonOpen(false)}
-        onSuccess={handleLessonAdded}
-      />
+            <AddLessonForm
+              isOpen={isAddLessonOpen}
+              onClose={() => setIsAddLessonOpen(false)}
+              onSuccess={handleLessonAdded}
+            />
 
-      <CompleteSessionDialog
-        isOpen={isCompleteSessionOpen}
-        onClose={() => setIsCompleteSessionOpen(false)}
-        lessonId={selectedLessonId}
-        onSuccess={handleSessionCompleted}
-      />
+            <CompleteSessionDialog
+              isOpen={isCompleteSessionOpen}
+              onClose={() => setIsCompleteSessionOpen(false)}
+              lessonId={selectedLessonId}
+              onSuccess={handleSessionCompleted}
+            />
 
-      <AssignHomeworkDialog
-        isOpen={isAssignHomeworkOpen}
-        onClose={() => {
-          setIsAssignHomeworkOpen(false);
-          setHomeworkLessonData(null);
-        }}
-        preSelectedLessonId={selectedLessonId}
-        preloadedLessonData={homeworkLessonData}
-        onSuccess={handleHomeworkAssigned}
-      />
+            <AssignHomeworkDialog
+              isOpen={isAssignHomeworkOpen}
+              onClose={() => {
+                setIsAssignHomeworkOpen(false);
+                setHomeworkLessonData(null);
+              }}
+              preSelectedLessonId={selectedLessonId}
+              preloadedLessonData={homeworkLessonData}
+              onSuccess={handleHomeworkAssigned}
+            />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
