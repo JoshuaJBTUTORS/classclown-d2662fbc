@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -144,7 +143,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const spaceData = await spaceResponse.json();
     console.log("Created/Retrieved Lesson Space for teacher:", spaceData);
 
-    // Update the lesson with room details (teacher URL only)
+    // Update the lesson with room details (now includes lesson_space_space_id)
     const { error: updateError } = await supabase
       .from("lessons")
       .update({

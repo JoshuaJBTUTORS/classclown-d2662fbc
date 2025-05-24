@@ -6,15 +6,16 @@ import PageTitle from '@/components/ui/PageTitle';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import ViewOptions from '@/components/calendar/ViewOptions';
+import CalendarRefreshButton from '@/components/calendar/CalendarRefreshButton';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCalendarData } from '@/hooks/useCalendarData';
+import { useStudentLessonUpdates } from '@/hooks/useStudentLessonUpdates';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 
 const Calendar = () => {
   const { user, userRole } = useAuth();
@@ -29,6 +30,10 @@ const Calendar = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [homeworkLessonData, setHomeworkLessonData] = useState<any>(null);
 
+  const handleRefresh = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
+
   const { events, isLoading } = useCalendarData({ 
     userRole, 
     userEmail: user?.email || null, 
@@ -36,13 +41,23 @@ const Calendar = () => {
     refreshKey 
   });
 
+  // Initialize student lesson updates system
+  const {
+    isUpdating,
+    lastUpdateTime,
+    refreshStudentCalendar,
+    updateStudentLessonStatus,
+    syncLessonSpaceUrls
+  } = useStudentLessonUpdates({
+    userRole,
+    userEmail: user?.email || null,
+    isAuthenticated: !!user,
+    onLessonUpdate: handleRefresh
+  });
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
-  const handleRefresh = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
-  }, []);
 
   const handleEventClick = (lessonId: string) => {
     setSelectedLessonId(lessonId);
@@ -52,7 +67,6 @@ const Calendar = () => {
   const handleDeleteLesson = async (lessonId: string, deleteAllFuture = false) => {
     try {
       if (deleteAllFuture) {
-        // Delete the main lesson (this will cascade to all instances due to recurrence)
         const { error } = await supabase
           .from('lessons')
           .delete()
@@ -61,7 +75,6 @@ const Calendar = () => {
         if (error) throw error;
         toast.success('Recurring lesson series deleted successfully');
       } else {
-        // Delete just this lesson
         const { error } = await supabase
           .from('lessons')
           .delete()
@@ -136,6 +149,15 @@ const Calendar = () => {
     }
   };
 
+  // Enhanced refresh function that uses the student updates system
+  const handleCalendarRefresh = async () => {
+    if (userRole === 'student') {
+      await refreshStudentCalendar();
+    } else {
+      handleRefresh();
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} />
@@ -150,10 +172,19 @@ const Calendar = () => {
           <div className="space-y-6">
             <CalendarHeader />
             
-            <ViewOptions 
-              currentView={getFullCalendarView(view)} 
-              onViewChange={handleViewChange}
-            />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <ViewOptions 
+                currentView={getFullCalendarView(view)} 
+                onViewChange={handleViewChange}
+              />
+              
+              <CalendarRefreshButton
+                onRefresh={handleCalendarRefresh}
+                isRefreshing={isUpdating || isLoading}
+                lastUpdateTime={lastUpdateTime}
+                userRole={userRole || 'student'}
+              />
+            </div>
             
             <CalendarDisplay
               events={events}

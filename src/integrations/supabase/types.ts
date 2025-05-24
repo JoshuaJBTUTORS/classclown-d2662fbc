@@ -320,6 +320,7 @@ export type Database = {
           is_recurring: boolean
           lesson_space_room_id: string | null
           lesson_space_room_url: string | null
+          lesson_space_space_id: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
           recurrence_interval: string | null
@@ -341,6 +342,7 @@ export type Database = {
           is_recurring?: boolean
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
+          lesson_space_space_id?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -362,6 +364,7 @@ export type Database = {
           is_recurring?: boolean
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
+          lesson_space_space_id?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
