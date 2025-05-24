@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -9,9 +8,10 @@ interface UseCalendarDataProps {
   userRole: AppRole | null;
   userEmail: string | null;
   isAuthenticated: boolean;
+  refreshKey?: number;
 }
 
-export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCalendarDataProps) => {
+export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshKey }: UseCalendarDataProps) => {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -158,7 +158,7 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
     };
 
     fetchEvents();
-  }, [userRole, userEmail, isAuthenticated]);
+  }, [userRole, userEmail, isAuthenticated, refreshKey]);
 
   // Function to generate recurring events
   const generateRecurringEvents = (lesson, userRole) => {

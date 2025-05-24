@@ -9,6 +9,7 @@ import { format, parseISO } from 'date-fns';
 import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
+import EditLessonForm from '@/components/lessons/EditLessonForm';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
@@ -21,6 +22,7 @@ interface LessonDetailsDialogProps {
   onDelete?: (lessonId: string, deleteAllFuture?: boolean) => void;
   onCompleteSession?: (lessonId: string) => void;
   onAssignHomework?: (lessonId: string, lessonData: any) => void;
+  onRefresh?: () => void;
 }
 
 // This regex pattern matches the format we generate for recurring lessons: UUID-YYYY-MM-DD
@@ -33,7 +35,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   onSave,
   onDelete,
   onCompleteSession,
-  onAssignHomework
+  onAssignHomework,
+  onRefresh
 }) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +48,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [homeworkDeleteOption, setHomeworkDeleteOption] = useState<'delete' | 'cancel'>('delete');
   const [isHomeworkDeleteConfirmOpen, setIsHomeworkDeleteConfirmOpen] = useState(false);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // Add Lesson Space integration
   const { createRoom, isCreatingRoom } = useLessonSpace();
@@ -279,6 +283,35 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
+  const handleEditLesson = () => {
+    if (lesson) {
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleEditSuccess = () => {
+    // Close the edit dialog
+    setIsEditDialogOpen(false);
+    
+    // Refresh the lesson data
+    if (lesson) {
+      if (isRecurringInstanceId(lesson.id)) {
+        const parts = lesson.id.split('-');
+        const baseId = parts.slice(0, 5).join('-');
+        fetchRecurringInstance(baseId, lesson.id);
+      } else {
+        fetchLessonDetails(lesson.id);
+      }
+    }
+    
+    // Call the onRefresh callback if provided
+    if (onRefresh) {
+      onRefresh();
+    }
+    
+    toast.success('Lesson updated successfully');
+  };
+
   const handleDeleteLesson = () => {
     if (hasHomework) {
       setIsHomeworkDeleteConfirmOpen(true);
@@ -351,14 +384,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
-  const handleEditLesson = () => {
-    if (lesson && onSave) {
-      onSave(lesson);
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
+
+  // Get the lesson ID to use for editing (base lesson ID for recurring instances)
+  const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
   return (
     <>
@@ -512,7 +541,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   Complete Lesson
                 </Button>
               )}
-              {lesson && onSave && (
+              {lesson && (
                 <Button 
                   onClick={handleEditLesson} 
                   variant="outline"
@@ -550,6 +579,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Lesson Dialog */}
+      <EditLessonForm
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSuccess={handleEditSuccess}
+        lessonId={editLessonId}
+      />
 
       {/* Regular delete confirmation dialog */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
