@@ -4,9 +4,14 @@ import { Button } from '@/components/ui/button';
 import { CalendarPlus, Info } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CalendarHeader: React.FC = () => {
+  const { userRole } = useAuth();
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
+
+  // Check if user is a student
+  const isStudent = userRole === 'student';
 
   const openAddLessonDialog = () => {
     setShowAddLessonDialog(true);
@@ -50,22 +55,27 @@ const CalendarHeader: React.FC = () => {
         </TooltipProvider>
       </div>
       
-      <div className="flex">
-        <Button 
-          onClick={openAddLessonDialog}
-          className="flex items-center gap-2"
-        >
-          <CalendarPlus className="h-4 w-4" />
-          Schedule Lesson
-        </Button>
-      </div>
+      {/* Only show Schedule Lesson button for non-students */}
+      {!isStudent && (
+        <div className="flex">
+          <Button 
+            onClick={openAddLessonDialog}
+            className="flex items-center gap-2"
+          >
+            <CalendarPlus className="h-4 w-4" />
+            Schedule Lesson
+          </Button>
+        </div>
+      )}
 
-      {/* Add Lesson Dialog */}
-      <AddLessonForm 
-        isOpen={showAddLessonDialog} 
-        onClose={closeAddLessonDialog}
-        onSuccess={handleLessonAdded}
-      />
+      {/* Only show Add Lesson Dialog for non-students */}
+      {!isStudent && (
+        <AddLessonForm 
+          isOpen={showAddLessonDialog} 
+          onClose={closeAddLessonDialog}
+          onSuccess={handleLessonAdded}
+        />
+      )}
     </div>
   );
 };
