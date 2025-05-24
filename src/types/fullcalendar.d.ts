@@ -34,6 +34,7 @@ declare module '@fullcalendar/react' {
     eventClick?: (info: any) => void;
     eventClassNames?: (info: any) => string[];
     eventContent?: (eventInfo: any) => JSX.Element;
+    eventDidMount?: (info: any) => void;
     datesSet?: (info: any) => void;
     height?: string | number;
     allDaySlot?: boolean;
