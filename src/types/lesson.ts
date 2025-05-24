@@ -1,4 +1,3 @@
-
 export interface Lesson {
   id: string;
   title: string;
@@ -15,10 +14,10 @@ export interface Lesson {
   // Enhanced video conference fields
   lesson_space_room_id?: string | null;
   lesson_space_room_url?: string | null;
+  lesson_space_space_id?: string | null; // Add space ID field
   video_conference_provider?: string | null;
   video_conference_link?: string | null;
   // Additional Lesson Space fields
-  lesson_space_space_id?: string | null;
   lesson_space_session_id?: string | null;
   tutor?: {
     id: string;

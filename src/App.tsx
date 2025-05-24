@@ -1,29 +1,30 @@
 
-import { Route, Routes } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
+import { LearningHubProvider } from '@/contexts/LearningHubContext';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import Auth from '@/pages/Auth';
+import Index from '@/pages/Index';
+import Calendar from '@/pages/Calendar';
+import Lessons from '@/pages/Lessons';
+import Students from '@/pages/Students';
+import Tutors from '@/pages/Tutors';
+import Homework from '@/pages/Homework';
+import LearningHub from '@/pages/LearningHub';
+import CourseDetail from '@/pages/CourseDetail';
+import CourseCreate from '@/pages/CourseCreate';
+import CourseEdit from '@/pages/CourseEdit';
+import Invite from '@/pages/Invite';
+import CreateAdmin from '@/pages/CreateAdmin';
+import Unauthorized from '@/pages/Unauthorized';
+import NotFound from '@/pages/NotFound';
+import StudentJoinPage from '@/components/lessons/StudentJoinPage';
+import './App.css';
 
-import Index from './pages/Index';
-import Students from './pages/Students';
-import Tutors from './pages/Tutors';
-import Auth from './pages/Auth';
-import NotFound from './pages/NotFound';
-import Calendar from './pages/Calendar';
-import Lessons from './pages/Lessons';
-import Homework from './pages/Homework';
-import LearningHub from './pages/LearningHub';
-import CourseDetail from './pages/CourseDetail';
-import CourseCreate from './pages/CourseCreate';
-import CourseEdit from './pages/CourseEdit';
-import Unauthorized from './pages/Unauthorized';
-import Invite from './pages/Invite';
-import CreateAdmin from './pages/CreateAdmin';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-
-// Initialize QueryClient
 const queryClient = new QueryClient();
 
 function App() {
@@ -32,49 +33,35 @@ function App() {
       <AuthProvider>
         <OrganizationProvider>
           <LearningHubProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/auth" element={<ProtectedRoute requireAuth={false}><Auth /></ProtectedRoute>} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
-              <Route path="/invite" element={<Invite />} />
-              
-              {/* Protected routes - require authentication */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<Index />} />
-                
-                {/* Owner only routes */}
-                <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
+            <Router>
+              <div className="min-h-screen bg-background">
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/invite/:token" element={<Invite />} />
                   <Route path="/create-admin" element={<CreateAdmin />} />
-                </Route>
-                
-                {/* Admin/Owner only routes */}
-                <Route element={<ProtectedRoute allowedRoles={['admin', 'owner']} />}>
-                  <Route path="/students" element={<Students />} />
-                  <Route path="/tutors" element={<Tutors />} />
-                </Route>
-                
-                {/* Admin/Owner/Tutor routes */}
-                <Route element={<ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']} />}>
-                  <Route path="/lessons" element={<Lessons />} />
-                </Route>
-                
-                {/* Accessible to all authenticated users */}
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/homework" element={<Homework />} />
-                <Route path="/learning-hub" element={<LearningHub />} />
-                <Route path="/learning-hub/course/:courseId" element={<CourseDetail />} />
-                
-                {/* Course management routes - restricted to admin/owner/tutor */}
-                <Route element={<ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']} />}>
-                  <Route path="/learning-hub/create" element={<CourseCreate />} />
-                  <Route path="/learning-hub/course/:courseId/edit" element={<CourseEdit />} />
-                </Route>
-              </Route>
-              
-              {/* Catch-all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
+                  <Route path="/unauthorized" element={<Unauthorized />} />
+                  <Route path="/join-lesson/:lessonId" element={<StudentJoinPage />} />
+                  
+                  {/* Protected routes */}
+                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                  <Route path="/lessons" element={<ProtectedRoute><Lessons /></ProtectedRoute>} />
+                  <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
+                  <Route path="/tutors" element={<ProtectedRoute><Tutors /></ProtectedRoute>} />
+                  <Route path="/homework" element={<ProtectedRoute><Homework /></ProtectedRoute>} />
+                  <Route path="/learning-hub" element={<ProtectedRoute><LearningHub /></ProtectedRoute>} />
+                  <Route path="/course/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+                  <Route path="/course/:id/edit" element={<ProtectedRoute><CourseEdit /></ProtectedRoute>} />
+                  <Route path="/create-course" element={<ProtectedRoute><CourseCreate /></ProtectedRoute>} />
+                  
+                  {/* Fallback routes */}
+                  <Route path="/404" element={<NotFound />} />
+                  <Route path="*" element={<Navigate to="/404" replace />} />
+                </Routes>
+              </div>
+              <Toaster />
+            </Router>
           </LearningHubProvider>
         </OrganizationProvider>
       </AuthProvider>

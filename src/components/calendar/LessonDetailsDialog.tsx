@@ -51,9 +51,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isHomeworkDeleteConfirmOpen, setIsHomeworkDeleteConfirmOpen] = useState(false);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [studentUrls, setStudentUrls] = useState<Array<{url: string, studentName: string}>>([]);
   
-  // Add Lesson Space integration
   const { createRoom, isCreatingRoom } = useLessonSpace();
 
   // Function to check if the ID is a recurring instance ID using our specific format
@@ -66,7 +64,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       console.log("Opening lesson details for ID:", lessonId);
       setLesson(null);
       setHasHomework(false);
-      setStudentUrls([]);
       
       if (isRecurringInstanceId(lessonId)) {
         const parts = lessonId.split('-');
@@ -88,7 +85,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       setOriginalLessonId(null);
       setHasHomework(false);
       setPreloadedLessonData(null);
-      setStudentUrls([]);
     }
   }, [lessonId, isOpen]);
 
@@ -147,17 +143,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       }
 
       setPreloadedLessonData(data);
-
-      // Extract student URLs for tutors/admins
-      if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && data.lesson_students) {
-        const urls = data.lesson_students
-          .filter(ls => ls.lesson_space_url)
-          .map(ls => ({
-            url: ls.lesson_space_url,
-            studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-          }));
-        setStudentUrls(urls);
-      }
 
       const dateParts = instanceId.split('-');
       const year = parseInt(dateParts[5], 10);
@@ -249,17 +234,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       
       setPreloadedLessonData(data);
 
-      // Extract student URLs for tutors/admins
-      if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && data.lesson_students) {
-        const urls = data.lesson_students
-          .filter(ls => ls.lesson_space_url)
-          .map(ls => ({
-            url: ls.lesson_space_url,
-            studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-          }));
-        setStudentUrls(urls);
-      }
-
       const students = data.lesson_students?.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
@@ -296,7 +270,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       });
 
       if (result) {
-        // Refresh lesson data to get the updated room information
         if (isRecurringInstanceId(lesson.id)) {
           const parts = lesson.id.split('-');
           const baseId = parts.slice(0, 5).join('-');
@@ -415,19 +388,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   if (!isOpen) return null;
 
-  // Get the lesson ID to use for editing (base lesson ID for recurring instances)
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Determine the appropriate video conference link based on user role
+  // Determine if lesson has Lesson Space setup
+  const hasLessonSpace = lesson?.lesson_space_room_url || lesson?.lesson_space_space_id;
   let displayVideoLink = lesson?.video_conference_link || lesson?.lesson_space_room_url;
-  
-  // For students, prioritize their individual URL
-  if (userRole === 'student' && lesson?.lesson_students && lesson.lesson_students.length > 0) {
-    const studentLessonData = lesson.lesson_students.find(ls => ls.lesson_space_url);
-    if (studentLessonData?.lesson_space_url) {
-      displayVideoLink = studentLessonData.lesson_space_url;
-    }
-  }
 
   return (
     <>
@@ -478,8 +443,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 ) : <p>No students assigned</p>}
               </div>
 
-              {/* Enhanced Video Conference Section with role-specific URLs */}
-              {(displayVideoLink || studentUrls.length > 0) ? (
+              {/* Updated Video Conference Section with single link workflow */}
+              {(displayVideoLink || hasLessonSpace) ? (
                 <VideoConferenceLink 
                   link={displayVideoLink}
                   provider={lesson.video_conference_provider}
@@ -487,7 +452,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   userRole={userRole as 'tutor' | 'student' | 'admin' | 'owner'}
                   isGroupLesson={lesson.is_group}
                   studentCount={lesson.students?.length || 0}
-                  studentUrls={studentUrls}
+                  lessonId={lesson.id}
+                  hasLessonSpace={!!hasLessonSpace}
                 />
               ) : (
                 <div className="border rounded-lg p-4 bg-gray-50">
@@ -524,6 +490,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
+              {/* ... keep existing code (recurrence info, homework info, status info) */}
               {(lesson.is_recurring || lesson.is_recurring_instance) && (
                 <div>
                   <h3 className="font-medium">Recurrence</h3>

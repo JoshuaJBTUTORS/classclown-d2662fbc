@@ -2,15 +2,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, AlertTriangle, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-
-interface StudentUrl {
-  url: string;
-  studentName: string;
-}
 
 interface VideoConferenceLinkProps {
   link: string | null;
@@ -19,7 +14,8 @@ interface VideoConferenceLinkProps {
   userRole?: 'tutor' | 'student' | 'admin' | 'owner';
   isGroupLesson?: boolean;
   studentCount?: number;
-  studentUrls?: StudentUrl[];
+  lessonId?: string;
+  hasLessonSpace?: boolean;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ 
@@ -29,27 +25,20 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   userRole = 'tutor',
   isGroupLesson = false,
   studentCount = 0,
-  studentUrls = []
+  lessonId,
+  hasLessonSpace = false
 }) => {
   const [copied, setCopied] = React.useState(false);
-  const [isStudentUrlsOpen, setIsStudentUrlsOpen] = React.useState(false);
-  const [copiedStudentUrl, setCopiedStudentUrl] = React.useState<string | null>(null);
+  const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
 
-  // Don't render if no links are available
-  if (!link && (!studentUrls || studentUrls.length === 0)) return null;
+  // Don't render if no links are available and no lesson space
+  if (!link && !hasLessonSpace) return null;
 
-  const copyToClipboard = (url: string, isStudentUrl = false, studentName = '') => {
+  const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
-    
-    if (isStudentUrl) {
-      setCopiedStudentUrl(url);
-      toast.success(`${studentName}'s link copied to clipboard`);
-      setTimeout(() => setCopiedStudentUrl(null), 2000);
-    } else {
-      setCopied(true);
-      toast.success("Link copied to clipboard");
-      setTimeout(() => setCopied(false), 2000);
-    }
+    setCopied(true);
+    toast.success("Link copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const getProviderName = () => {
@@ -81,20 +70,23 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  const showStudentUrls = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
-                          studentUrls && studentUrls.length > 0;
+  // Generate student join URL for the single link workflow
+  const getStudentJoinUrl = () => {
+    if (!lessonId) return null;
+    return `${window.location.origin}/join-lesson/${lessonId}`;
+  };
 
-  // Check if we have missing student URLs for lessons that should have them
-  const hasMissingStudentUrls = provider === 'lesson_space' && 
-                                (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') &&
-                                studentCount > 0 && 
-                                (!studentUrls || studentUrls.length === 0);
+  const showStudentJoinLink = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
+                              provider === 'lesson_space' && hasLessonSpace && studentCount > 0;
+
+  // For students using Lesson Space, show the join page link instead of direct access
+  const shouldShowJoinPage = userRole === 'student' && provider === 'lesson_space' && hasLessonSpace;
 
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
         {/* Main lesson URL section */}
-        {link && (
+        {(link || shouldShowJoinPage) && (
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -124,7 +116,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             <div className="flex gap-2">
               <Button 
                 size="sm" 
-                onClick={() => window.open(link, '_blank')}
+                onClick={() => {
+                  if (shouldShowJoinPage) {
+                    window.open(getStudentJoinUrl(), '_self');
+                  } else {
+                    window.open(link!, '_blank');
+                  }
+                }}
                 className="flex-1"
                 variant={userRole === 'tutor' ? 'default' : 'outline'}
               >
@@ -135,7 +133,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => copyToClipboard(link)}
+                onClick={() => copyToClipboard(shouldShowJoinPage ? getStudentJoinUrl()! : link!)}
               >
                 {copied ? (
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -154,69 +152,52 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
             {userRole === 'student' && provider === 'lesson_space' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Student access:</strong> You'll join with your personal profile. 
-                Your teacher can manage session controls.
+                <strong>Student access:</strong> Click "Join Lesson" to authenticate and access your personalized lesson space.
               </div>
             )}
           </>
         )}
 
-        {/* Warning for missing student URLs */}
-        {hasMissingStudentUrls && (
-          <div className="border border-amber-200 bg-amber-50 p-3 rounded-lg">
-            <div className="flex items-center gap-2 text-amber-700">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">Student URLs Missing</span>
-            </div>
-            <p className="text-xs text-amber-600 mt-1">
-              Individual student access links haven't been generated yet. Students may see the same URL as teachers.
-            </p>
-          </div>
-        )}
-
-        {/* Student URLs section for tutors/admins */}
-        {showStudentUrls && (
+        {/* Student join link section for tutors/admins */}
+        {showStudentJoinLink && (
           <div className="border-t pt-3">
-            <Collapsible open={isStudentUrlsOpen} onOpenChange={setIsStudentUrlsOpen}>
+            <Collapsible open={isStudentLinksOpen} onOpenChange={setIsStudentLinksOpen}>
               <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground">
-                <span>Student Access Links ({studentUrls.length})</span>
-                {isStudentUrlsOpen ? (
+                <span>Student Join Link</span>
+                {isStudentLinksOpen ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
                   <ChevronDown className="h-4 w-4" />
                 )}
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 mt-2">
-                {studentUrls.map((studentUrl, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 text-blue-500 mr-2" />
-                      <span className="text-sm">{studentUrl.studentName}</span>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => window.open(studentUrl.url, '_blank')}
-                        className="h-7 px-2"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => copyToClipboard(studentUrl.url, true, studentUrl.studentName)}
-                        className="h-7 px-2"
-                      >
-                        {copiedStudentUrl === studentUrl.url ? (
-                          <CheckCircle className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Clipboard className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex items-center">
+                    <Link className="h-4 w-4 text-blue-500 mr-2" />
+                    <span className="text-sm">Share this link with students</span>
                   </div>
-                ))}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(getStudentJoinUrl(), '_blank')}
+                      className="h-7 px-2"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(getStudentJoinUrl()!)}
+                      className="h-7 px-2"
+                    >
+                      <Clipboard className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Students will be authenticated and redirected to their personal lesson space.
+                </div>
               </CollapsibleContent>
             </Collapsible>
           </div>
