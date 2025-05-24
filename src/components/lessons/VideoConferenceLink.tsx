@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -84,6 +84,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   const showStudentUrls = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
                           studentUrls && studentUrls.length > 0;
 
+  // Check if we have missing student URLs for lessons that should have them
+  const hasMissingStudentUrls = provider === 'lesson_space' && 
+                                (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') &&
+                                studentCount > 0 && 
+                                (!studentUrls || studentUrls.length === 0);
+
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
@@ -153,6 +159,19 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </div>
             )}
           </>
+        )}
+
+        {/* Warning for missing student URLs */}
+        {hasMissingStudentUrls && (
+          <div className="border border-amber-200 bg-amber-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Student URLs Missing</span>
+            </div>
+            <p className="text-xs text-amber-600 mt-1">
+              Individual student access links haven't been generated yet. Students may see the same URL as teachers.
+            </p>
+          </div>
         )}
 
         {/* Student URLs section for tutors/admins */}

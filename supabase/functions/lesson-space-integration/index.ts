@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -80,6 +81,10 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       throw new Error(`Failed to fetch lesson details: ${lessonError?.message}`);
     }
 
+    if (!lesson.lesson_students || lesson.lesson_students.length === 0) {
+      throw new Error("No students found for this lesson");
+    }
+
     // Generate space ID based on lesson type (ensuring it's under 64 characters)
     let spaceId: string;
     if (lesson.is_group) {
@@ -97,6 +102,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     console.log("Generated space ID:", spaceId);
 
     // Create space with teacher as leader using the Launch endpoint
+    console.log("Creating teacher space with API key:", lessonSpaceApiKey);
     const spaceResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
       method: "POST",
       headers: {
@@ -121,45 +127,65 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 
     if (!spaceResponse.ok) {
       const errorText = await spaceResponse.text();
-      console.error("Lesson Space API error:", spaceResponse.status, errorText);
-      throw new Error(`Failed to create space: ${spaceResponse.status} ${errorText}`);
+      console.error("Lesson Space API error for teacher:", spaceResponse.status, errorText);
+      throw new Error(`Failed to create space for teacher: ${spaceResponse.status} ${errorText}`);
     }
 
     const spaceData = await spaceResponse.json();
-    console.log("Created/Retrieved Lesson Space:", spaceData);
+    console.log("Created/Retrieved Lesson Space for teacher:", spaceData);
+
+    // Track successful student URL generations
+    const successfulStudentUpdates = [];
+    const failedStudentUpdates = [];
 
     // Generate and store individual student URLs
     for (const lessonStudent of lesson.lesson_students) {
       const student = lessonStudent.student;
       
-      console.log(`Creating URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
-      
-      // Create student-specific URL by calling launch again for each student
-      const studentResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
-        method: "POST",
-        headers: {
-          "Authorization": `Organisation ${lessonSpaceApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: spaceId, // Same space ID
-          user: {
-            id: `student_${student.id}`,
-            name: `${student.first_name} ${student.last_name}`,
-            role: "student",
-            leader: false,
-            custom_jwt_parameters: {
-              meta: {
-                displayName: `${student.first_name} ${student.last_name}`
+      try {
+        console.log(`Creating URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
+        
+        // Create student-specific URL by calling launch again for each student
+        const studentResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
+          method: "POST",
+          headers: {
+            "Authorization": `Organisation ${lessonSpaceApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: spaceId, // Same space ID
+            user: {
+              id: `student_${student.id}`,
+              name: `${student.first_name} ${student.last_name}`,
+              role: "student",
+              leader: false,
+              custom_jwt_parameters: {
+                meta: {
+                  displayName: `${student.first_name} ${student.last_name}`
+                }
               }
             }
-          }
-        }),
-      });
+          }),
+        });
 
-      if (studentResponse.ok) {
+        if (!studentResponse.ok) {
+          const errorText = await studentResponse.text();
+          console.error(`Failed to create URL for student ${student.id}:`, studentResponse.status, errorText);
+          failedStudentUpdates.push({
+            studentId: student.id,
+            lessonStudentId: lessonStudent.id,
+            error: `API call failed: ${studentResponse.status} ${errorText}`
+          });
+          continue;
+        }
+
         const studentData = await studentResponse.json();
         console.log(`Generated URL for student ${student.id}:`, studentData.client_url);
+        
+        // Validate that the student URL is different from teacher URL
+        if (studentData.client_url === spaceData.client_url) {
+          console.warn(`Student URL is the same as teacher URL for student ${student.id}`);
+        }
         
         // Store the individual student URL in the lesson_students table
         const { error: updateError } = await supabase
@@ -171,12 +197,33 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 
         if (updateError) {
           console.error(`Error storing URL for student ${student.id}:`, updateError);
+          failedStudentUpdates.push({
+            studentId: student.id,
+            lessonStudentId: lessonStudent.id,
+            error: `Database update failed: ${updateError.message}`
+          });
         } else {
           console.log(`Successfully stored URL for student ${student.id}`);
+          successfulStudentUpdates.push({
+            studentId: student.id,
+            lessonStudentId: lessonStudent.id,
+            url: studentData.client_url
+          });
         }
-      } else {
-        console.error(`Failed to create URL for student ${student.id}:`, await studentResponse.text());
+      } catch (studentError) {
+        console.error(`Error processing student ${student.id}:`, studentError);
+        failedStudentUpdates.push({
+          studentId: student.id,
+          lessonStudentId: lessonStudent.id,
+          error: `Exception: ${studentError.message}`
+        });
       }
+    }
+
+    // Log the results
+    console.log(`Student URL generation completed: ${successfulStudentUpdates.length} successful, ${failedStudentUpdates.length} failed`);
+    if (failedStudentUpdates.length > 0) {
+      console.error("Failed student updates:", failedStudentUpdates);
     }
 
     // Update the lesson with room details (teacher URL)
@@ -195,15 +242,26 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       throw updateError;
     }
 
+    // Return success with detailed information
+    const response = {
+      success: true,
+      roomId: spaceData.room_id,
+      roomUrl: spaceData.client_url, // Teacher URL
+      teacherUrl: spaceData.client_url,
+      spaceId: spaceId,
+      sessionId: spaceData.session_id,
+      studentUrlsGenerated: successfulStudentUpdates.length,
+      studentUrlsFailure: failedStudentUpdates.length
+    };
+
+    // If some student URLs failed but teacher URL succeeded, still return success but log warnings
+    if (failedStudentUpdates.length > 0) {
+      console.warn(`Room created but ${failedStudentUpdates.length} student URLs failed to generate`);
+      response.warnings = failedStudentUpdates;
+    }
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        roomId: spaceData.room_id,
-        roomUrl: spaceData.client_url, // Teacher URL
-        teacherUrl: spaceData.client_url,
-        spaceId: spaceId,
-        sessionId: spaceData.session_id
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -258,6 +316,17 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
     // Spaces are designed to be persistent. We'll just clear the lesson references
     console.log("Lesson Space spaces are persistent - clearing lesson references only");
 
+    // Get the lesson ID first to clear student URLs
+    const { data: lessonData, error: lessonFetchError } = await supabase
+      .from("lessons")
+      .select("id")
+      .eq("lesson_space_room_id", roomId)
+      .single();
+
+    if (lessonFetchError) {
+      console.warn("Could not fetch lesson for room deletion:", lessonFetchError);
+    }
+
     // Update lesson to remove room details
     const { error: lessonError } = await supabase
       .from("lessons")
@@ -272,19 +341,19 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
     if (lessonError) throw lessonError;
 
     // Clear student URLs from lesson_students table
-    const { error: studentError } = await supabase
-      .from("lesson_students")
-      .update({
-        lesson_space_url: null
-      })
-      .eq("lesson_id", (await supabase
-        .from("lessons")
-        .select("id")
-        .eq("lesson_space_room_id", roomId)
-        .single()).data?.id);
+    if (lessonData?.id) {
+      const { error: studentError } = await supabase
+        .from("lesson_students")
+        .update({
+          lesson_space_url: null
+        })
+        .eq("lesson_id", lessonData.id);
 
-    if (studentError) {
-      console.error("Error clearing student URLs:", studentError);
+      if (studentError) {
+        console.error("Error clearing student URLs:", studentError);
+      } else {
+        console.log("Successfully cleared student URLs for lesson:", lessonData.id);
+      }
     }
 
     return new Response(
