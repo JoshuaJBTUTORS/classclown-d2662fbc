@@ -30,10 +30,10 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <OrganizationProvider>
-          <LearningHubProvider>
-            <Router>
+      <Router>
+        <AuthProvider>
+          <OrganizationProvider>
+            <LearningHubProvider>
               <div className="min-h-screen bg-background">
                 <Routes>
                   {/* Public routes */}
@@ -61,10 +61,10 @@ function App() {
                 </Routes>
               </div>
               <Toaster />
-            </Router>
-          </LearningHubProvider>
-        </OrganizationProvider>
-      </AuthProvider>
+            </LearningHubProvider>
+          </OrganizationProvider>
+        </AuthProvider>
+      </Router>
     </QueryClientProvider>
   );
 }
