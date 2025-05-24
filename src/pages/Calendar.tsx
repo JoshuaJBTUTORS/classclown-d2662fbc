@@ -30,6 +30,9 @@ const Calendar = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [homeworkLessonData, setHomeworkLessonData] = useState<any>(null);
 
+  // Check if user is a student
+  const isStudent = userRole === 'student';
+
   const handleRefresh = useCallback(() => {
     setRefreshKey(prev => prev + 1);
   }, []);
@@ -198,35 +201,44 @@ const Calendar = () => {
                 setSelectedLessonId(null);
               }}
               lessonId={selectedLessonId}
-              onDelete={handleDeleteLesson}
-              onCompleteSession={handleCompleteSession}
-              onAssignHomework={handleAssignHomework}
+              onDelete={!isStudent ? handleDeleteLesson : undefined}
+              onCompleteSession={!isStudent ? handleCompleteSession : undefined}
+              onAssignHomework={!isStudent ? handleAssignHomework : undefined}
               onRefresh={handleRefresh}
             />
 
-            <AddLessonForm
-              isOpen={isAddLessonOpen}
-              onClose={() => setIsAddLessonOpen(false)}
-              onSuccess={handleLessonAdded}
-            />
+            {/* Only show Add Lesson form for non-students */}
+            {!isStudent && (
+              <AddLessonForm
+                isOpen={isAddLessonOpen}
+                onClose={() => setIsAddLessonOpen(false)}
+                onSuccess={handleLessonAdded}
+              />
+            )}
 
-            <CompleteSessionDialog
-              isOpen={isCompleteSessionOpen}
-              onClose={() => setIsCompleteSessionOpen(false)}
-              lessonId={selectedLessonId}
-              onSuccess={handleSessionCompleted}
-            />
+            {/* Only show Complete Session dialog for non-students */}
+            {!isStudent && (
+              <CompleteSessionDialog
+                isOpen={isCompleteSessionOpen}
+                onClose={() => setIsCompleteSessionOpen(false)}
+                lessonId={selectedLessonId}
+                onSuccess={handleSessionCompleted}
+              />
+            )}
 
-            <AssignHomeworkDialog
-              isOpen={isAssignHomeworkOpen}
-              onClose={() => {
-                setIsAssignHomeworkOpen(false);
-                setHomeworkLessonData(null);
-              }}
-              preSelectedLessonId={selectedLessonId}
-              preloadedLessonData={homeworkLessonData}
-              onSuccess={handleHomeworkAssigned}
-            />
+            {/* Only show Assign Homework dialog for non-students */}
+            {!isStudent && (
+              <AssignHomeworkDialog
+                isOpen={isAssignHomeworkOpen}
+                onClose={() => {
+                  setIsAssignHomeworkOpen(false);
+                  setHomeworkLessonData(null);
+                }}
+                preSelectedLessonId={selectedLessonId}
+                preloadedLessonData={homeworkLessonData}
+                onSuccess={handleHomeworkAssigned}
+              />
+            )}
           </div>
         </main>
       </div>

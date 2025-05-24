@@ -42,8 +42,10 @@ import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import { Lesson } from '@/types/lesson';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Lessons = () => {
+  const { userRole } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<Lesson[]>([]);
@@ -55,6 +57,9 @@ const Lessons = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const { organization } = useOrganization();
+
+  // Check if user is a student
+  const isStudent = userRole === 'student';
 
   useEffect(() => {
     fetchLessons();
@@ -166,16 +171,19 @@ const Lessons = () => {
               subtitle="Manage all tuition sessions"
               className="mb-4 md:mb-0"
             />
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="flex items-center gap-1">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-              <Button className="flex items-center gap-2" onClick={() => setIsAddingLesson(true)}>
-                <Plus className="h-4 w-4" />
-                New Lesson
-              </Button>
-            </div>
+            {/* Only show action buttons for non-students */}
+            {!isStudent && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="flex items-center gap-1">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+                <Button className="flex items-center gap-2" onClick={() => setIsAddingLesson(true)}>
+                  <Plus className="h-4 w-4" />
+                  New Lesson
+                </Button>
+              </div>
+            )}
           </div>
 
           <Card className="mb-8">
@@ -280,7 +288,8 @@ const Lessons = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              {lesson.status !== 'completed' && (
+                              {/* Only show complete button for non-students */}
+                              {lesson.status !== 'completed' && !isStudent && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -311,27 +320,31 @@ const Lessons = () => {
         </main>
       </div>
 
-      {/* Add Lesson Dialog */}
-      <AddLessonForm 
-        isOpen={isAddingLesson} 
-        onClose={() => setIsAddingLesson(false)}
-        onSuccess={handleAddLessonSuccess}
-      />
+      {/* Only show Add Lesson Dialog for non-students */}
+      {!isStudent && (
+        <AddLessonForm 
+          isOpen={isAddingLesson} 
+          onClose={() => setIsAddingLesson(false)}
+          onSuccess={handleAddLessonSuccess}
+        />
+      )}
 
-      {/* Lesson Details Dialog */}
+      {/* Lesson Details Dialog - available for all users but with restricted actions for students */}
       <LessonDetailsDialog
         lessonId={selectedLessonId}
         isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
       />
 
-      {/* Complete Session Dialog */}
-      <CompleteSessionDialog
-        lessonId={selectedLessonId}
-        isOpen={isCompleteSessionOpen}
-        onClose={() => setIsCompleteSessionOpen(false)}
-        onSuccess={handleCompleteSessionSuccess}
-      />
+      {/* Only show Complete Session Dialog for non-students */}
+      {!isStudent && (
+        <CompleteSessionDialog
+          lessonId={selectedLessonId}
+          isOpen={isCompleteSessionOpen}
+          onClose={() => setIsCompleteSessionOpen(false)}
+          onSuccess={handleCompleteSessionSuccess}
+        />
+      )}
     </div>
   );
 };

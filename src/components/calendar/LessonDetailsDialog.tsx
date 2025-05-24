@@ -54,6 +54,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
 
+  // Check if user is a student
+  const isStudent = userRole === 'student';
+
   // Function to check if the ID is a recurring instance ID using our specific format
   const isRecurringInstanceId = (id: string): boolean => {
     return RECURRING_INSTANCE_REGEX.test(id);
@@ -444,7 +447,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 ) : <p>No students assigned</p>}
               </div>
 
-              {/* Updated Video Conference Section - now using lesson_space_room_id as spaceId */}
+              {/* Video Conference Section */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
@@ -458,38 +461,41 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   spaceId={lesson.lesson_space_room_id}
                 />
               ) : (
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-sm">Online Lesson Room</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {lesson.is_group 
-                          ? `No group room created yet (${lesson.students?.length || 0} students)`
-                          : 'No room created yet'
-                        }
-                      </p>
+                // Only show room creation for non-students
+                !isStudent && (
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-sm">Online Lesson Room</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {lesson.is_group 
+                            ? `No group room created yet (${lesson.students?.length || 0} students)`
+                            : 'No room created yet'
+                          }
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCreateOnlineRoom}
+                        disabled={isCreatingRoom}
+                        className="flex items-center gap-2"
+                      >
+                        {isCreatingRoom ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4" />
+                            {lesson.is_group ? 'Create Group Room' : 'Create Room'}
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCreateOnlineRoom}
-                      disabled={isCreatingRoom}
-                      className="flex items-center gap-2"
-                    >
-                      {isCreatingRoom ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-4 w-4" />
-                          {lesson.is_group ? 'Create Group Room' : 'Create Room'}
-                        </>
-                      )}
-                    </Button>
                   </div>
-                </div>
+                )
               )}
 
               {/* ... keep existing code (recurrence info, homework info, status info) the same */}
@@ -527,7 +533,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           
           <div className="flex flex-wrap justify-between gap-2 mt-4">
             <div>
-              {onDelete && lesson && (
+              {/* Only show delete button for non-students */}
+              {onDelete && lesson && !isStudent && (
                 <Button 
                   variant="destructive" 
                   onClick={handleDeleteLesson}
@@ -540,7 +547,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               )}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
-              {lesson && onAssignHomework && (
+              {/* Only show homework assignment for non-students */}
+              {lesson && onAssignHomework && !isStudent && (
                 <Button
                   className="flex items-center gap-1"
                   onClick={handleCompleteLesson}
@@ -551,7 +559,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   Complete Lesson
                 </Button>
               )}
-              {lesson && (
+              {/* Only show edit button for non-students */}
+              {lesson && !isStudent && (
                 <Button 
                   onClick={handleEditLesson} 
                   variant="outline"
@@ -562,7 +571,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   Edit
                 </Button>
               )}
-              {lesson && lesson.status !== 'completed' && onCompleteSession && (
+              {/* Only show complete session for non-students */}
+              {lesson && lesson.status !== 'completed' && onCompleteSession && !isStudent && (
                 <Button 
                   className="flex items-center gap-1" 
                   onClick={handleCompleteSession}
@@ -590,13 +600,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Edit Lesson Dialog */}
-      <EditLessonForm
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-        onSuccess={handleEditSuccess}
-        lessonId={editLessonId}
-      />
+      {/* Only show edit dialog for non-students */}
+      {!isStudent && (
+        <EditLessonForm
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          onSuccess={handleEditSuccess}
+          lessonId={editLessonId}
+        />
+      )}
 
       {/* Regular delete confirmation dialog */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
