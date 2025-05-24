@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { AppRole } from '@/contexts/AuthContext';
 
 interface CalendarRefreshButtonProps {
   onRefresh: () => void;
   isRefreshing: boolean;
   lastUpdateTime: Date | null;
-  userRole: 'student' | 'tutor' | 'admin' | 'owner';
+  userRole: AppRole;
   className?: string;
 }
 
