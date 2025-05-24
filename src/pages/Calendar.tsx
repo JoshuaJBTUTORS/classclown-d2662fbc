@@ -100,24 +100,45 @@ const Calendar = () => {
     toast.success('Lesson added successfully');
   };
 
+  // Convert view to FullCalendar view format
+  const getFullCalendarView = (view: 'month' | 'week' | 'day') => {
+    switch (view) {
+      case 'month':
+        return 'dayGridMonth';
+      case 'week':
+        return 'timeGridWeek';
+      case 'day':
+        return 'timeGridDay';
+      default:
+        return 'dayGridMonth';
+    }
+  };
+
+  const handleViewChange = (newView: string) => {
+    switch (newView) {
+      case 'dayGridMonth':
+        setView('month');
+        break;
+      case 'timeGridWeek':
+        setView('week');
+        break;
+      case 'timeGridDay':
+        setView('day');
+        break;
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <CalendarHeader 
-        currentDate={currentDate}
-        onDateChange={setCurrentDate}
-        onAddLesson={() => setIsAddLessonOpen(true)}
-        userRole={userRole}
-      />
+      <CalendarHeader />
       
       <ViewOptions 
-        view={view} 
-        onViewChange={setView} 
+        currentView={getFullCalendarView(view)} 
+        onViewChange={handleViewChange}
       />
       
       <CalendarDisplay
         events={events}
-        currentDate={currentDate}
-        view={view}
         onEventClick={handleEventClick}
         isLoading={isLoading}
       />
@@ -154,8 +175,8 @@ const Calendar = () => {
           setIsAssignHomeworkOpen(false);
           setHomeworkLessonData(null);
         }}
-        lessonId={selectedLessonId}
-        lessonData={homeworkLessonData}
+        preSelectedLessonId={selectedLessonId}
+        preloadedLessonData={homeworkLessonData}
         onSuccess={handleHomeworkAssigned}
       />
     </div>
