@@ -106,6 +106,21 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 
     console.log("Generated space ID:", spaceId);
 
+    // Get the correct application domain from request headers
+    const origin = req.headers.get('origin') || req.headers.get('referer');
+    let appDomain = 'https://sjxbxkpegcnnfjbsxazo.supabase.co'; // fallback
+    
+    if (origin) {
+      try {
+        const url = new URL(origin);
+        appDomain = `${url.protocol}//${url.host}`;
+      } catch (e) {
+        console.log("Could not parse origin, using fallback domain");
+      }
+    }
+
+    console.log("Using app domain for invite URL:", appDomain);
+
     // Create space with teacher as leader using the Launch endpoint
     console.log("Creating teacher space with API key:", lessonSpaceApiKey);
     const spaceResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
@@ -130,7 +145,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         features: {
           invite: true
         },
-        invite_url: `${Deno.env.get("SUPABASE_URL")?.replace("https://", "https://sjxbxkpegcnnfjbsxazo.supabase.co")}/functions/v1/lesson-space-integration`
+        invite_url: `${appDomain}/join-lesson/${data.lessonId}`
       }),
     });
 
