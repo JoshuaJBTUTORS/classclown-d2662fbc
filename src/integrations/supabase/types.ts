@@ -273,6 +273,7 @@ export type Database = {
           created_at: string | null
           id: string
           lesson_id: string
+          lesson_space_url: string | null
           student_id: number
         }
         Insert: {
@@ -280,6 +281,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           lesson_id: string
+          lesson_space_url?: string | null
           student_id: number
         }
         Update: {
@@ -287,6 +289,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           lesson_id?: string
+          lesson_space_url?: string | null
           student_id?: number
         }
         Relationships: [

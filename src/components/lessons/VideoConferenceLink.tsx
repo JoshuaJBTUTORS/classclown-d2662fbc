@@ -55,6 +55,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Join Lesson';
   };
 
+  const getRoleDescription = () => {
+    if (userRole === 'teacher') {
+      return 'Teacher Access';
+    }
+    return 'Student Access';
+  };
+
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
@@ -71,11 +78,14 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               )}
             </div>
           </div>
-          {userRole === 'teacher' && (
-            <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-              Leader
-            </div>
-          )}
+          <div className={cn(
+            "text-xs px-2 py-1 rounded",
+            userRole === 'teacher' 
+              ? "text-green-600 bg-green-50" 
+              : "text-blue-600 bg-blue-50"
+          )}>
+            {getRoleDescription()}
+          </div>
         </div>
         
         <div className="flex gap-2">
@@ -106,6 +116,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
           <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
             <strong>Teacher privileges:</strong> You can control participant audio/video, 
             enable leader mode, and manage the session.
+          </div>
+        )}
+
+        {userRole === 'student' && provider === 'lesson_space' && (
+          <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
+            <strong>Student access:</strong> You'll join with your personal profile. 
+            Your teacher can manage session controls.
           </div>
         )}
       </div>

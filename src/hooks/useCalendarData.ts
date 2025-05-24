@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -47,11 +48,15 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
             return;
           }
 
+          // For students, get lessons with their individual lesson space URLs
           query = supabase
             .from('lessons')
             .select(`
               *,
-              lesson_students!inner(student_id)
+              lesson_students!inner(
+                student_id,
+                lesson_space_url
+              )
             `)
             .eq('lesson_students.student_id', studentData.id);
 
@@ -99,7 +104,18 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
         
         // Process regular lessons
         const calendarEvents = (data || []).map(lesson => {
-          const hasVideoConference = lesson.video_conference_link || lesson.lesson_space_room_url;
+          // For students, use their individual lesson space URL
+          let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
+          
+          if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
+            // Use the student's individual lesson space URL if available
+            const studentLessonData = lesson.lesson_students[0];
+            if (studentLessonData.lesson_space_url) {
+              videoConferenceLink = studentLessonData.lesson_space_url;
+            }
+          }
+          
+          const hasVideoConference = videoConferenceLink;
           const className = hasVideoConference ? 'calendar-event video-conference-event' : 'calendar-event';
           
           return {
@@ -113,10 +129,13 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
               recurrenceInterval: lesson.recurrence_interval,
               recurrenceEndDate: lesson.recurrence_end_date,
               description: lesson.description,
-              videoConferenceLink: lesson.video_conference_link,
+              videoConferenceLink: videoConferenceLink,
               videoConferenceProvider: lesson.video_conference_provider,
               lessonSpaceRoomId: lesson.lesson_space_room_id,
-              lessonSpaceRoomUrl: lesson.lesson_space_room_url
+              lessonSpaceRoomUrl: userRole === 'student' && lesson.lesson_students?.[0]?.lesson_space_url 
+                ? lesson.lesson_students[0].lesson_space_url 
+                : lesson.lesson_space_room_url,
+              userRole: userRole
             }
           };
         });
@@ -124,7 +143,7 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
         // Process recurring lessons
         for (const lesson of data || []) {
           if (lesson.is_recurring && lesson.recurrence_interval) {
-            const recurringEvents = generateRecurringEvents(lesson);
+            const recurringEvents = generateRecurringEvents(lesson, userRole);
             calendarEvents.push(...recurringEvents);
           }
         }
@@ -142,7 +161,7 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
   }, [userRole, userEmail, isAuthenticated]);
 
   // Function to generate recurring events
-  const generateRecurringEvents = (lesson) => {
+  const generateRecurringEvents = (lesson, userRole) => {
     const events = [];
     const startDate = parseISO(lesson.start_time);
     const endDate = parseISO(lesson.end_time);
@@ -151,7 +170,17 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
       : addDays(startDate, 90);
 
     const durationMs = endDate.getTime() - startDate.getTime();
-    const hasVideoConference = lesson.video_conference_link || lesson.lesson_space_room_url;
+    
+    // Determine the correct video conference link for this user role
+    let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
+    if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
+      const studentLessonData = lesson.lesson_students[0];
+      if (studentLessonData.lesson_space_url) {
+        videoConferenceLink = studentLessonData.lesson_space_url;
+      }
+    }
+    
+    const hasVideoConference = videoConferenceLink;
     
     let currentDate = startDate;
     
@@ -176,10 +205,13 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated }: UseCal
             isRecurringInstance: true,
             originalLessonId: lesson.id,
             description: lesson.description,
-            videoConferenceLink: lesson.video_conference_link,
+            videoConferenceLink: videoConferenceLink,
             videoConferenceProvider: lesson.video_conference_provider,
             lessonSpaceRoomId: lesson.lesson_space_room_id,
-            lessonSpaceRoomUrl: lesson.lesson_space_room_url
+            lessonSpaceRoomUrl: userRole === 'student' && lesson.lesson_students?.[0]?.lesson_space_url 
+              ? lesson.lesson_students[0].lesson_space_url 
+              : lesson.lesson_space_room_url,
+            userRole: userRole
           }
         });
       }

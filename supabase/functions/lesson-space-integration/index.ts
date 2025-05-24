@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -70,6 +69,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         *,
         tutor:tutors(id, first_name, last_name, email),
         lesson_students(
+          id,
           student:students(id, first_name, last_name, email)
         )
       `)
@@ -80,18 +80,18 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       throw new Error(`Failed to fetch lesson details: ${lessonError?.message}`);
     }
 
-    // Generate space ID based on lesson type
+    // Generate space ID based on lesson type (ensuring it's under 64 characters)
     let spaceId: string;
     if (lesson.is_group) {
-      // For group lessons: tutor_{tutor_id}_group_{lesson_id}
-      spaceId = `tutor_${lesson.tutor_id}_group_${data.lessonId}`;
+      // For group lessons: group_{shortened_lesson_id}
+      spaceId = `group_${data.lessonId.substring(0, 30)}`;
     } else {
       // For individual lessons: tutor_{tutor_id}_student_{student_id}
       const studentId = lesson.lesson_students[0]?.student?.id;
       if (!studentId) {
         throw new Error("No student found for individual lesson");
       }
-      spaceId = `tutor_${lesson.tutor_id}_student_${studentId}`;
+      spaceId = `t${lesson.tutor_id.substring(0, 8)}_s${studentId}`;
     }
 
     console.log("Generated space ID:", spaceId);
@@ -128,11 +128,11 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const spaceData = await spaceResponse.json();
     console.log("Created/Retrieved Lesson Space:", spaceData);
 
-    // Generate student URLs for each participant
-    const studentUrls = [];
-    
+    // Generate and store individual student URLs
     for (const lessonStudent of lesson.lesson_students) {
       const student = lessonStudent.student;
+      
+      console.log(`Creating URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
       
       // Create student-specific URL by calling launch again for each student
       const studentResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
@@ -159,17 +159,27 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 
       if (studentResponse.ok) {
         const studentData = await studentResponse.json();
-        studentUrls.push({
-          studentId: student.id,
-          url: studentData.client_url,
-          userId: studentData.user_id
-        });
+        console.log(`Generated URL for student ${student.id}:`, studentData.client_url);
+        
+        // Store the individual student URL in the lesson_students table
+        const { error: updateError } = await supabase
+          .from("lesson_students")
+          .update({
+            lesson_space_url: studentData.client_url
+          })
+          .eq("id", lessonStudent.id);
+
+        if (updateError) {
+          console.error(`Error storing URL for student ${student.id}:`, updateError);
+        } else {
+          console.log(`Successfully stored URL for student ${student.id}`);
+        }
+      } else {
+        console.error(`Failed to create URL for student ${student.id}:`, await studentResponse.text());
       }
     }
 
-    console.log("Generated student URLs:", studentUrls);
-
-    // Update the lesson with room details
+    // Update the lesson with room details (teacher URL)
     const { error: updateError } = await supabase
       .from("lessons")
       .update({
@@ -185,16 +195,12 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       throw updateError;
     }
 
-    // Store student URLs in lesson_students table if we have the field
-    // For now, we'll return them in the response for frontend handling
-    
     return new Response(
       JSON.stringify({
         success: true,
         roomId: spaceData.room_id,
         roomUrl: spaceData.client_url, // Teacher URL
         teacherUrl: spaceData.client_url,
-        studentUrls: studentUrls,
         spaceId: spaceId,
         sessionId: spaceData.session_id
       }),
@@ -253,7 +259,7 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
     console.log("Lesson Space spaces are persistent - clearing lesson references only");
 
     // Update lesson to remove room details
-    const { error } = await supabase
+    const { error: lessonError } = await supabase
       .from("lessons")
       .update({
         lesson_space_room_id: null,
@@ -263,7 +269,23 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
       })
       .eq("lesson_space_room_id", roomId);
 
-    if (error) throw error;
+    if (lessonError) throw lessonError;
+
+    // Clear student URLs from lesson_students table
+    const { error: studentError } = await supabase
+      .from("lesson_students")
+      .update({
+        lesson_space_url: null
+      })
+      .eq("lesson_id", (await supabase
+        .from("lessons")
+        .select("id")
+        .eq("lesson_space_room_id", roomId)
+        .single()).data?.id);
+
+    if (studentError) {
+      console.error("Error clearing student URLs:", studentError);
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
