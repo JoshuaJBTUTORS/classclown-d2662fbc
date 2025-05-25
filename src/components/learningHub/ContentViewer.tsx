@@ -41,18 +41,8 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{lesson.title}</h2>
-      </div>
-      
-      {lesson.description && (
-        <p className="text-gray-500">{lesson.description}</p>
-      )}
-      
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {renderContent()}
-      </div>
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      {renderContent()}
     </div>
   );
 };
