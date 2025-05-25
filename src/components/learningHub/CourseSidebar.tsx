@@ -106,22 +106,22 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   });
 
   return (
-    <div className="w-full h-full flex flex-col border rounded-md">
-      <div className="p-4 border-b">
-        <h3 className="font-medium">Course Content</h3>
+    <div className="w-full h-full flex flex-col border rounded-md bg-white">
+      <div className="p-3 border-b">
+        <h3 className="font-medium text-sm">Course Content</h3>
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="p-2">
+        <div className="p-1">
           {modules.length === 0 ? (
-            <div className="text-center p-4">
-              <BookOpen className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-500">No modules available</p>
+            <div className="text-center p-3">
+              <BookOpen className="mx-auto h-6 w-6 text-gray-400 mb-2" />
+              <p className="text-xs text-gray-500">No modules available</p>
               {isAdmin && (
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="mt-2"
+                  className="mt-2 text-xs"
                 >
                   Add Content
                 </Button>
@@ -134,28 +134,28 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
               const totalCount = moduleLessons.length;
               
               return (
-                <div key={module.id} className="mb-3">
+                <div key={module.id} className="mb-2">
                   <button
                     onClick={() => toggleModule(module.id)}
-                    className="w-full flex items-center justify-between p-2 hover:bg-gray-100 rounded-md text-left"
+                    className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-left"
                   >
-                    <div className="flex-1">
-                      <span className="font-medium truncate block">{module.title}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-sm truncate block">{module.title}</span>
                       {totalCount > 0 && (
                         <span className="text-xs text-gray-500">
-                          {completedCount}/{totalCount} completed
+                          {completedCount}/{totalCount}
                         </span>
                       )}
                     </div>
                     {expandedModules[module.id] ? (
-                      <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                      <ChevronUp className="h-3 w-3 flex-shrink-0 ml-1" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                      <ChevronDown className="h-3 w-3 flex-shrink-0 ml-1" />
                     )}
                   </button>
                   
                   {expandedModules[module.id] && moduleLessons.length > 0 && (
-                    <div className="ml-4 border-l pl-3 mt-1 space-y-1">
+                    <div className="ml-3 border-l pl-2 mt-1 space-y-1">
                       {moduleLessons.map((lesson) => {
                         const completed = isLessonCompleted(lesson.id);
                         const isActive = currentLessonId === lesson.id;
@@ -172,26 +172,26 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                         return (
                           <div
                             key={lesson.id}
-                            className={`w-full text-left p-2 text-sm rounded-md flex items-start hover:bg-gray-100 ${
+                            className={`w-full text-left p-1.5 text-xs rounded flex items-start hover:bg-gray-50 ${
                               isActive ? 'bg-blue-50 border border-blue-200' : ''
                             }`}
                           >
                             <button
                               onClick={(e) => handleToggleCompletion(e, lesson.id)}
                               disabled={isLoading}
-                              className="mr-3 mt-0.5 hover:scale-110 transition-transform disabled:opacity-50"
+                              className="mr-2 mt-0.5 hover:scale-110 transition-transform disabled:opacity-50 flex-shrink-0"
                             >
                               {completed ? (
-                                <CircleCheck className="h-6 w-6 text-green-500" />
+                                <CircleCheck className="h-4 w-4 text-green-500" />
                               ) : (
-                                <Circle className="h-6 w-6 text-gray-300 hover:text-gray-500" />
+                                <Circle className="h-4 w-4 text-gray-300 hover:text-gray-500" />
                               )}
                             </button>
                             <button
                               onClick={() => onSelectLesson(lesson)}
-                              className="flex-1 text-left"
+                              className="flex-1 text-left min-w-0"
                             >
-                              <span className={`line-clamp-2 ${isActive ? 'font-medium text-blue-700' : ''}`}>
+                              <span className={`line-clamp-2 ${isActive ? 'font-medium text-blue-700' : 'text-gray-700'}`}>
                                 {lesson.title}
                               </span>
                             </button>

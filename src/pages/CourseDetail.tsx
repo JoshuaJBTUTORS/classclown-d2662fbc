@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -107,14 +108,14 @@ const CourseDetail: React.FC = () => {
                 <Skeleton className="h-6 w-1/2" />
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-                <div className="lg:col-span-1">
+              <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+                <div className="lg:col-span-2">
+                  <Skeleton className="h-[600px] w-full" />
+                </div>
+                <div className="lg:col-span-5">
                   <Skeleton className="h-[600px] w-full" />
                 </div>
                 <div className="lg:col-span-3">
-                  <Skeleton className="h-[600px] w-full" />
-                </div>
-                <div className="lg:col-span-2">
                   <Skeleton className="h-[600px] w-full" />
                 </div>
               </div>
@@ -164,7 +165,7 @@ const CourseDetail: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-y-auto">
-          <div className="container py-8">
+          <div className="container py-6">
             {/* Header with navigation and actions */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
@@ -191,12 +192,12 @@ const CourseDetail: React.FC = () => {
             </div>
             
             {/* Course header */}
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                 <Badge className="bg-blue-500">{course.subject || "General"}</Badge>
                 <Badge variant="outline" className="text-gray-500">{course.status}</Badge>
               </div>
-              <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
+              <h1 className="text-2xl font-bold mb-2">{course.title}</h1>
               <p className="text-gray-600 mb-4">{course.description}</p>
               
               {/* Progress bar */}
@@ -210,12 +211,12 @@ const CourseDetail: React.FC = () => {
               )}
             </div>
             
-            <Separator className="my-6" />
+            <Separator className="my-4" />
             
-            {/* Course content with notes section */}
-            <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-              {/* Sidebar with modules and lessons */}
-              <div className="lg:col-span-1">
+            {/* Optimized course content layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+              {/* Compact sidebar with modules and lessons */}
+              <div className="lg:col-span-2">
                 <CourseSidebar 
                   modules={modules || []}
                   studentProgress={studentProgress || []}
@@ -224,8 +225,8 @@ const CourseDetail: React.FC = () => {
                 />
               </div>
               
-              {/* Content viewer */}
-              <div className="lg:col-span-3">
+              {/* Expanded content viewer */}
+              <div className="lg:col-span-5">
                 {activeLesson ? (
                   <ContentViewer 
                     lesson={activeLesson} 
@@ -242,8 +243,8 @@ const CourseDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Notes section */}
-              <div className="lg:col-span-2">
+              {/* Compact notes section */}
+              <div className="lg:col-span-3">
                 <NotesSection 
                   courseId={courseId!}
                   lessonId={activeLessonId || undefined}
