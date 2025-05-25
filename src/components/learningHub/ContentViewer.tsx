@@ -29,7 +29,12 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   const isCompleted = studentProgress?.status === 'completed';
 
   const markCompleteMutation = useMutation({
-    mutationFn: () => learningHubService.markLessonComplete(user!.id, lesson.id),
+    mutationFn: () => {
+      if (!user?.email) {
+        throw new Error('User email not available');
+      }
+      return learningHubService.markLessonComplete(user.email, lesson.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress'] });
       queryClient.invalidateQueries({ queryKey: ['course-progress'] });
@@ -45,7 +50,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       console.error('Error marking lesson complete:', error);
       toast({
         title: "Error marking lesson complete",
-        description: "Please try again later",
+        description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive",
       });
     },
@@ -53,10 +58,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
 
   // Auto-mark lesson as complete when user accesses it (Udemy-style)
   useEffect(() => {
-    if (user && !isCompleted && !markCompleteMutation.isPending) {
+    if (user?.email && !isCompleted && !markCompleteMutation.isPending) {
+      console.log('Auto-marking lesson as complete for:', user.email, 'lesson:', lesson.id);
       markCompleteMutation.mutate();
     }
-  }, [user, lesson.id, isCompleted]);
+  }, [user?.email, lesson.id, isCompleted]);
 
   // This renders the appropriate content based on content_type
   const renderContent = () => {

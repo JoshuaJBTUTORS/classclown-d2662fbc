@@ -44,18 +44,18 @@ const CourseDetail: React.FC = () => {
     enabled: !!courseId,
   });
 
-  // Fetch student progress
+  // Fetch student progress using user email
   const { data: studentProgress, isLoading: progressLoading } = useQuery({
-    queryKey: ['student-progress', user?.id, courseId],
-    queryFn: () => learningHubService.getStudentProgress(user!.id, courseId!),
-    enabled: !!user && !!courseId,
+    queryKey: ['student-progress', user?.email, courseId],
+    queryFn: () => learningHubService.getStudentProgress(user!.email, courseId!),
+    enabled: !!user?.email && !!courseId,
   });
 
-  // Fetch course completion percentage
+  // Fetch course completion percentage using user email
   const { data: courseProgress } = useQuery({
-    queryKey: ['course-progress', courseId, user?.id],
-    queryFn: () => learningHubService.getCourseProgress(courseId!, user!.id),
-    enabled: !!user && !!courseId,
+    queryKey: ['course-progress', courseId, user?.email],
+    queryFn: () => learningHubService.getCourseProgress(courseId!, user!.email),
+    enabled: !!user?.email && !!courseId,
   });
 
   // Set initial active module and lesson when data loads

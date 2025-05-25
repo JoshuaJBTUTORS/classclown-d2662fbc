@@ -179,118 +179,180 @@ export const learningHubService = {
     if (error) throw error;
   },
 
-  // Student Progress methods - Updated to use string user IDs and convert to student records
-  getStudentProgress: async (userId: string, courseId?: string): Promise<StudentProgress[]> => {
-    // First, get the student record for this user
-    const { data: student, error: studentError } = await supabase
-      .from('students')
-      .select('id')
-      .eq('email', userId) // Assuming students table links via email
-      .single();
+  // Helper function to get current user's email
+  getCurrentUserEmail: async (): Promise<string> => {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user?.email) {
+      throw new Error('User not authenticated or email not available');
+    }
+    return user.email;
+  },
 
-    if (studentError || !student) {
-      // If no student record found, return empty array
+  // Student Progress methods - Updated to use email-based student lookup
+  getStudentProgress: async (userEmail?: string, courseId?: string): Promise<StudentProgress[]> => {
+    try {
+      // Get email from parameter or current user
+      const email = userEmail || await learningHubService.getCurrentUserEmail();
+      
+      // First, get the student record for this email
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (studentError) {
+        console.error('Error fetching student record:', studentError);
+        return [];
+      }
+
+      if (!student) {
+        console.log('No student record found for email:', email);
+        return [];
+      }
+
+      let query = supabase
+        .from('student_progress')
+        .select(`
+          *,
+          lesson:course_lessons(
+            *,
+            module:course_modules(*)
+          )
+        `)
+        .eq('student_id', student.id);
+
+      if (courseId) {
+        query = query.eq('lesson.module.course_id', courseId);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching student progress:', error);
+        return [];
+      }
+      
+      return data as StudentProgress[];
+    } catch (error) {
+      console.error('Error in getStudentProgress:', error);
       return [];
     }
-
-    let query = supabase
-      .from('student_progress')
-      .select(`
-        *,
-        lesson:course_lessons(
-          *,
-          module:course_modules(*)
-        )
-      `)
-      .eq('student_id', student.id);
-
-    if (courseId) {
-      query = query.eq('lesson.module.course_id', courseId);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as StudentProgress[];
   },
 
   // Simplified progress tracking - mark as complete immediately when accessed
-  markLessonComplete: async (userId: string, lessonId: string): Promise<StudentProgress> => {
-    // First, get the student record for this user
-    const { data: student, error: studentError } = await supabase
-      .from('students')
-      .select('id')
-      .eq('email', userId) // Assuming students table links via email
-      .single();
+  markLessonComplete: async (userEmail: string, lessonId: string): Promise<StudentProgress> => {
+    try {
+      // First, get the student record for this email
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', userEmail)
+        .maybeSingle();
 
-    if (studentError || !student) {
-      throw new Error('Student record not found');
-    }
+      if (studentError) {
+        console.error('Error fetching student record:', studentError);
+        throw new Error('Error finding student record');
+      }
 
-    // First, check if progress already exists
-    const { data: existing } = await supabase
-      .from('student_progress')
-      .select('*')
-      .eq('student_id', student.id)
-      .eq('lesson_id', lessonId)
-      .single();
+      if (!student) {
+        console.error('No student record found for email:', userEmail);
+        throw new Error('Student record not found. Please contact support.');
+      }
 
-    if (existing) {
-      // Update existing progress to completed
-      const { data, error } = await supabase
+      console.log('Found student record:', student.id, 'for email:', userEmail);
+
+      // First, check if progress already exists
+      const { data: existing } = await supabase
         .from('student_progress')
-        .update({
-          status: 'completed',
-          completion_percentage: 100,
-          completed_at: new Date().toISOString(),
-          last_accessed_at: new Date().toISOString()
-        })
-        .eq('id', existing.id)
-        .select()
-        .single();
+        .select('*')
+        .eq('student_id', student.id)
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
 
-      if (error) throw error;
-      return data as StudentProgress;
-    } else {
-      // Create new progress as completed
-      const { data, error } = await supabase
-        .from('student_progress')
-        .insert({
-          student_id: student.id,
-          lesson_id: lessonId,
-          status: 'completed',
-          completion_percentage: 100,
-          completed_at: new Date().toISOString(),
-          last_accessed_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      if (existing) {
+        // Update existing progress to completed
+        const { data, error } = await supabase
+          .from('student_progress')
+          .update({
+            status: 'completed',
+            completion_percentage: 100,
+            completed_at: new Date().toISOString(),
+            last_accessed_at: new Date().toISOString()
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data as StudentProgress;
+        if (error) {
+          console.error('Error updating progress:', error);
+          throw error;
+        }
+        
+        console.log('Updated existing progress record');
+        return data as StudentProgress;
+      } else {
+        // Create new progress as completed
+        const { data, error } = await supabase
+          .from('student_progress')
+          .insert({
+            student_id: student.id,
+            lesson_id: lessonId,
+            status: 'completed',
+            completion_percentage: 100,
+            completed_at: new Date().toISOString(),
+            last_accessed_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating progress:', error);
+          throw error;
+        }
+        
+        console.log('Created new progress record');
+        return data as StudentProgress;
+      }
+    } catch (error) {
+      console.error('Error in markLessonComplete:', error);
+      throw error;
     }
   },
 
-  getCourseProgress: async (courseId: string, userId: string): Promise<number> => {
-    // First, get the student record for this user
-    const { data: student, error: studentError } = await supabase
-      .from('students')
-      .select('id')
-      .eq('email', userId) // Assuming students table links via email
-      .single();
+  getCourseProgress: async (courseId: string, userEmail?: string): Promise<number> => {
+    try {
+      // Get email from parameter or current user
+      const email = userEmail || await learningHubService.getCurrentUserEmail();
+      
+      // First, get the student record for this email
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
 
-    if (studentError || !student) {
+      if (studentError || !student) {
+        console.log('No student record found for course progress calculation');
+        return 0;
+      }
+
+      const { data, error } = await supabase
+        .rpc('calculate_course_completion', {
+          course_id_param: courseId,
+          student_id_param: student.id
+        });
+
+      if (error) {
+        console.error('Error calculating course progress:', error);
+        return 0;
+      }
+      
+      return data || 0;
+    } catch (error) {
+      console.error('Error in getCourseProgress:', error);
       return 0;
     }
-
-    const { data, error } = await supabase
-      .rpc('calculate_course_completion', {
-        course_id_param: courseId,
-        student_id_param: student.id
-      });
-
-    if (error) throw error;
-    return data || 0;
   },
 
   getNextLesson: async (currentLessonId: string): Promise<string | null> => {
