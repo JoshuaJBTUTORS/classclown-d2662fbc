@@ -21,7 +21,7 @@ import { Course } from '@/types/course';
 import ModuleManager from '@/components/learningHub/ModuleManager';
 
 const CourseEdit: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
