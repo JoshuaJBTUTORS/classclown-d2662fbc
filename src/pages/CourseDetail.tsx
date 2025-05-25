@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen } from 'lucide-react';
+import { ChevronLeft, PenSquare, BookOpen, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -13,13 +13,14 @@ import { learningHubService } from '@/services/learningHubService';
 import { Course, CourseModule } from '@/types/course';
 import CourseSidebar from '@/components/learningHub/CourseSidebar';
 import ContentViewer from '@/components/learningHub/ContentViewer';
+import ProgressBar from '@/components/learningHub/ProgressBar';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 
 const CourseDetail: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin, isOwner, isTutor } = useAuth();
+  const { isAdmin, isOwner, isTutor, user } = useAuth();
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -42,6 +43,20 @@ const CourseDetail: React.FC = () => {
     queryKey: ['course-modules', courseId],
     queryFn: () => learningHubService.getCourseModules(courseId!),
     enabled: !!courseId,
+  });
+
+  // Fetch student progress
+  const { data: studentProgress, isLoading: progressLoading } = useQuery({
+    queryKey: ['student-progress', user?.id, courseId],
+    queryFn: () => learningHubService.getStudentProgress(user!.id, courseId!),
+    enabled: !!user && !!courseId,
+  });
+
+  // Fetch course completion percentage
+  const { data: courseProgress } = useQuery({
+    queryKey: ['course-progress', courseId, user?.id],
+    queryFn: () => learningHubService.getCourseProgress(courseId!, user!.id),
+    enabled: !!user && !!courseId,
   });
 
   // Set initial active module and lesson when data loads
@@ -71,9 +86,35 @@ const CourseDetail: React.FC = () => {
     setActiveLessonId(lessonId);
   };
 
+  // Handle lesson completion and auto-progression
+  const handleLessonComplete = async (completedLessonId: string) => {
+    try {
+      const nextLessonId = await learningHubService.getNextLesson(completedLessonId);
+      if (nextLessonId) {
+        // Find the module containing the next lesson
+        const nextModule = modules?.find(m => 
+          m.lessons?.some(l => l.id === nextLessonId)
+        );
+        if (nextModule) {
+          setActiveModuleId(nextModule.id);
+          setActiveLessonId(nextLessonId);
+        }
+      }
+    } catch (error) {
+      console.error('Error getting next lesson:', error);
+    }
+  };
+
+  // Get current lesson progress
+  const currentLessonProgress = studentProgress?.find(p => p.lesson_id === activeLessonId);
+
   // Find active content
   const activeModule = modules?.find(m => m.id === activeModuleId);
   const activeLesson = activeModule?.lessons?.find(l => l.id === activeLessonId);
+
+  // Count total lessons
+  const totalLessons = modules?.reduce((total, module) => total + (module.lessons?.length || 0), 0) || 0;
+  const completedLessons = studentProgress?.filter(p => p.status === 'completed').length || 0;
 
   if (courseLoading || modulesLoading) {
     return (
@@ -187,7 +228,17 @@ const CourseDetail: React.FC = () => {
                 <Badge variant="outline" className="text-gray-500">{course.status}</Badge>
               </div>
               <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
-              <p className="text-gray-600">{course.description}</p>
+              <p className="text-gray-600 mb-4">{course.description}</p>
+              
+              {/* Progress bar */}
+              {user && !progressLoading && (
+                <ProgressBar 
+                  current={completedLessons}
+                  total={totalLessons}
+                  label="Course Progress"
+                  className="max-w-md"
+                />
+              )}
             </div>
             
             <Separator className="my-6" />
@@ -198,6 +249,7 @@ const CourseDetail: React.FC = () => {
               <div className="md:col-span-1">
                 <CourseSidebar 
                   modules={modules || []}
+                  studentProgress={studentProgress || []}
                   onSelectLesson={lesson => setActiveLessonId(lesson.id)}
                   currentLessonId={activeLessonId || undefined}
                 />
@@ -209,6 +261,8 @@ const CourseDetail: React.FC = () => {
                   <ContentViewer 
                     lesson={activeLesson} 
                     isLoading={false}
+                    onLessonComplete={handleLessonComplete}
+                    studentProgress={currentLessonProgress}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[400px] bg-gray-50 border rounded-lg">

@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Course, CourseModule, CourseLesson } from '@/types/course';
+import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 
 export const learningHubService = {
   // Course methods
@@ -177,5 +176,94 @@ export const learningHubService = {
       .eq('id', id);
     
     if (error) throw error;
+  },
+
+  // Student Progress methods
+  getStudentProgress: async (studentId: string, courseId?: string): Promise<StudentProgress[]> => {
+    let query = supabase
+      .from('student_progress')
+      .select(`
+        *,
+        lesson:course_lessons(
+          *,
+          module:course_modules(*)
+        )
+      `)
+      .eq('student_id', studentId);
+
+    if (courseId) {
+      query = query.eq('lesson.module.course_id', courseId);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return data as StudentProgress[];
+  },
+
+  createOrUpdateProgress: async (progress: Partial<StudentProgress>): Promise<StudentProgress> => {
+    // First, check if progress already exists
+    const { data: existing } = await supabase
+      .from('student_progress')
+      .select('*')
+      .eq('student_id', progress.student_id!)
+      .eq('lesson_id', progress.lesson_id!)
+      .single();
+
+    if (existing) {
+      // Update existing progress
+      const { data, error } = await supabase
+        .from('student_progress')
+        .update({
+          status: progress.status,
+          completion_percentage: progress.completion_percentage,
+          completed_at: progress.status === 'completed' ? new Date().toISOString() : null,
+          last_accessed_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as StudentProgress;
+    } else {
+      // Create new progress
+      const { data, error } = await supabase
+        .from('student_progress')
+        .insert({
+          student_id: progress.student_id,
+          lesson_id: progress.lesson_id,
+          status: progress.status || 'in_progress',
+          completion_percentage: progress.completion_percentage || 0,
+          completed_at: progress.status === 'completed' ? new Date().toISOString() : null,
+          last_accessed_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as StudentProgress;
+    }
+  },
+
+  getCourseProgress: async (courseId: string, studentId: string): Promise<number> => {
+    const { data, error } = await supabase
+      .rpc('calculate_course_completion', {
+        course_id_param: courseId,
+        student_id_param: studentId
+      });
+
+    if (error) throw error;
+    return data || 0;
+  },
+
+  getNextLesson: async (currentLessonId: string): Promise<string | null> => {
+    const { data, error } = await supabase
+      .rpc('get_next_lesson', {
+        current_lesson_id: currentLessonId
+      });
+
+    if (error) throw error;
+    return data;
   }
 };

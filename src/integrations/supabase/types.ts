@@ -488,6 +488,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_student_progress_lesson"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "student_progress_lesson_id_fkey"
             columns: ["lesson_id"]
             isOneToOne: false
@@ -660,6 +667,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_course_completion: {
+        Args: { course_id_param: string; student_id_param: string }
+        Returns: number
+      }
+      get_next_lesson: {
+        Args: { current_lesson_id: string }
+        Returns: string
+      }
       get_primary_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
