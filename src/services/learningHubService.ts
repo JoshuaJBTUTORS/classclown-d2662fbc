@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 
@@ -179,25 +178,8 @@ export const learningHubService = {
     if (error) throw error;
   },
 
-  // Student Progress methods - Updated to handle UUID to integer mapping
-  getStudentProgress: async (userId: string, courseId?: string): Promise<StudentProgress[]> => {
-    // First, get the student record by matching with auth user
-    const { data: studentData, error: studentError } = await supabase
-      .from('students')
-      .select('id')
-      .eq('student_id', userId)
-      .maybeSingle();
-
-    if (studentError) {
-      console.error('Error finding student:', studentError);
-      throw studentError;
-    }
-
-    if (!studentData) {
-      console.log('No student record found for user:', userId);
-      return [];
-    }
-
+  // Student Progress methods
+  getStudentProgress: async (studentId: string, courseId?: string): Promise<StudentProgress[]> => {
     let query = supabase
       .from('student_progress')
       .select(`
@@ -207,24 +189,10 @@ export const learningHubService = {
           module:course_modules(*)
         )
       `)
-      .eq('student_id', studentData.id);
+      .eq('student_id', studentId);
 
     if (courseId) {
-      // We need to join through the lessons to filter by course
-      const { data, error } = await supabase
-        .from('student_progress')
-        .select(`
-          *,
-          lesson:course_lessons!inner(
-            *,
-            module:course_modules!inner(*)
-          )
-        `)
-        .eq('student_id', studentData.id)
-        .eq('lesson.module.course_id', courseId);
-
-      if (error) throw error;
-      return data as StudentProgress[];
+      query = query.eq('lesson.module.course_id', courseId);
     }
 
     const { data, error } = await query;
@@ -234,32 +202,11 @@ export const learningHubService = {
   },
 
   createOrUpdateProgress: async (progress: Partial<StudentProgress>): Promise<StudentProgress> => {
-    console.log('Creating/updating progress:', progress);
-    
-    // First, get the student record by matching with auth user
-    const { data: studentData, error: studentError } = await supabase
-      .from('students')
-      .select('id')
-      .eq('student_id', progress.student_id!)
-      .maybeSingle();
-
-    if (studentError) {
-      console.error('Error finding student:', studentError);
-      throw studentError;
-    }
-
-    if (!studentData) {
-      console.error('No student record found for user:', progress.student_id);
-      throw new Error('Student record not found. Please ensure the user is registered as a student.');
-    }
-
-    const studentId = studentData.id;
-
-    // Check if progress already exists
+    // First, check if progress already exists
     const { data: existing } = await supabase
       .from('student_progress')
       .select('*')
-      .eq('student_id', studentId)
+      .eq('student_id', progress.student_id!)
       .eq('lesson_id', progress.lesson_id!)
       .single();
 
@@ -277,17 +224,14 @@ export const learningHubService = {
         .select()
         .single();
 
-      if (error) {
-        console.error('Error updating progress:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data as StudentProgress;
     } else {
       // Create new progress
       const { data, error } = await supabase
         .from('student_progress')
         .insert({
-          student_id: studentId,
+          student_id: progress.student_id,
           lesson_id: progress.lesson_id,
           status: progress.status || 'in_progress',
           completion_percentage: progress.completion_percentage || 0,
@@ -297,42 +241,19 @@ export const learningHubService = {
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating progress:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data as StudentProgress;
     }
   },
 
   getCourseProgress: async (courseId: string, studentId: string): Promise<number> => {
-    // First, get the student record by matching with auth user
-    const { data: studentData, error: studentError } = await supabase
-      .from('students')
-      .select('id')
-      .eq('student_id', studentId)
-      .maybeSingle();
-
-    if (studentError) {
-      console.error('Error finding student:', studentError);
-      throw studentError;
-    }
-
-    if (!studentData) {
-      console.log('No student record found for user:', studentId);
-      return 0;
-    }
-
     const { data, error } = await supabase
       .rpc('calculate_course_completion', {
         course_id_param: courseId,
-        student_id_param: studentData.id
+        student_id_param: studentId
       });
 
-    if (error) {
-      console.error('Error calculating course progress:', error);
-      throw error;
-    }
+    if (error) throw error;
     return data || 0;
   },
 
@@ -342,10 +263,7 @@ export const learningHubService = {
         current_lesson_id: currentLessonId
       });
 
-    if (error) {
-      console.error('Error getting next lesson:', error);
-      throw error;
-    }
+    if (error) throw error;
     return data;
   }
 };

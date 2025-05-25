@@ -31,12 +31,8 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   const currentProgress = studentProgress?.completion_percentage || 0;
 
   const updateProgressMutation = useMutation({
-    mutationFn: (progressData: any) => {
-      console.log('Updating progress with data:', progressData);
-      return learningHubService.createOrUpdateProgress(progressData);
-    },
-    onSuccess: (data) => {
-      console.log('Progress updated successfully:', data);
+    mutationFn: (progressData: any) => learningHubService.createOrUpdateProgress(progressData),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress'] });
       queryClient.invalidateQueries({ queryKey: ['course-progress'] });
     },
@@ -51,14 +47,12 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   });
 
   const handleVideoProgress = (percentage: number) => {
-    console.log('Video progress:', percentage, 'User:', user?.id);
     if (!user || isCompleted) return;
 
     // Update progress in database every 10% increment
     if (Math.floor(percentage / 10) > Math.floor(currentProgress / 10)) {
-      console.log('Updating progress at', percentage, '% for user', user.id);
       updateProgressMutation.mutate({
-        student_id: user.id, // This is the auth user ID (UUID string)
+        student_id: user.id,
         lesson_id: lesson.id,
         status: percentage >= 90 ? 'completed' : 'in_progress',
         completion_percentage: Math.round(percentage)
@@ -67,11 +61,10 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   };
 
   const handleVideoComplete = () => {
-    console.log('Video completed for user:', user?.id);
     if (!user || isCompleted) return;
 
     updateProgressMutation.mutate({
-      student_id: user.id, // This is the auth user ID (UUID string)
+      student_id: user.id,
       lesson_id: lesson.id,
       status: 'completed',
       completion_percentage: 100
@@ -89,7 +82,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     if (!user) return;
 
     updateProgressMutation.mutate({
-      student_id: user.id, // This is the auth user ID (UUID string)
+      student_id: user.id,
       lesson_id: lesson.id,
       status: 'completed',
       completion_percentage: 100
@@ -102,7 +95,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     if (!user) return;
 
     updateProgressMutation.mutate({
-      student_id: user.id, // This is the auth user ID (UUID string)
+      student_id: user.id,
       lesson_id: lesson.id,
       status: 'in_progress',
       completion_percentage: 0
