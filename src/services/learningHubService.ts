@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 
@@ -178,7 +179,7 @@ export const learningHubService = {
     if (error) throw error;
   },
 
-  // Student Progress methods
+  // Student Progress methods - Simplified for click-based completion
   getStudentProgress: async (studentId: string, courseId?: string): Promise<StudentProgress[]> => {
     let query = supabase
       .from('student_progress')
@@ -201,23 +202,24 @@ export const learningHubService = {
     return data as StudentProgress[];
   },
 
-  createOrUpdateProgress: async (progress: Partial<StudentProgress>): Promise<StudentProgress> => {
+  // Simplified progress tracking - mark as complete immediately when accessed
+  markLessonComplete: async (studentId: number, lessonId: string): Promise<StudentProgress> => {
     // First, check if progress already exists
     const { data: existing } = await supabase
       .from('student_progress')
       .select('*')
-      .eq('student_id', progress.student_id!)
-      .eq('lesson_id', progress.lesson_id!)
+      .eq('student_id', studentId)
+      .eq('lesson_id', lessonId)
       .single();
 
     if (existing) {
-      // Update existing progress
+      // Update existing progress to completed
       const { data, error } = await supabase
         .from('student_progress')
         .update({
-          status: progress.status,
-          completion_percentage: progress.completion_percentage,
-          completed_at: progress.status === 'completed' ? new Date().toISOString() : null,
+          status: 'completed',
+          completion_percentage: 100,
+          completed_at: new Date().toISOString(),
           last_accessed_at: new Date().toISOString()
         })
         .eq('id', existing.id)
@@ -227,15 +229,15 @@ export const learningHubService = {
       if (error) throw error;
       return data as StudentProgress;
     } else {
-      // Create new progress
+      // Create new progress as completed
       const { data, error } = await supabase
         .from('student_progress')
         .insert({
-          student_id: progress.student_id,
-          lesson_id: progress.lesson_id,
-          status: progress.status || 'in_progress',
-          completion_percentage: progress.completion_percentage || 0,
-          completed_at: progress.status === 'completed' ? new Date().toISOString() : null,
+          student_id: studentId,
+          lesson_id: lessonId,
+          status: 'completed',
+          completion_percentage: 100,
+          completed_at: new Date().toISOString(),
           last_accessed_at: new Date().toISOString()
         })
         .select()
@@ -246,7 +248,7 @@ export const learningHubService = {
     }
   },
 
-  getCourseProgress: async (courseId: string, studentId: string): Promise<number> => {
+  getCourseProgress: async (courseId: string, studentId: number): Promise<number> => {
     const { data, error } = await supabase
       .rpc('calculate_course_completion', {
         course_id_param: courseId,

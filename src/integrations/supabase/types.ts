@@ -668,7 +668,9 @@ export type Database = {
     }
     Functions: {
       calculate_course_completion: {
-        Args: { course_id_param: string; student_id_param: string }
+        Args:
+          | { course_id_param: string; student_id_param: number }
+          | { course_id_param: string; student_id_param: string }
         Returns: number
       }
       get_next_lesson: {

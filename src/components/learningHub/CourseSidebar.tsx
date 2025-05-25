@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle, Play } from 'lucide-react';
+import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CourseModule, CourseLesson, StudentProgress } from '@/types/course';
@@ -32,16 +32,10 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
     }));
   };
 
-  // Helper to check lesson status
-  const getLessonStatus = (lessonId: string) => {
+  // Helper to check if lesson is completed
+  const isLessonCompleted = (lessonId: string) => {
     const progress = studentProgress.find(p => p.lesson_id === lessonId);
-    return progress?.status || 'not_started';
-  };
-
-  // Helper to get lesson progress percentage
-  const getLessonProgress = (lessonId: string) => {
-    const progress = studentProgress.find(p => p.lesson_id === lessonId);
-    return progress?.completion_percentage || 0;
+    return progress?.status === 'completed';
   };
 
   return (
@@ -68,9 +62,9 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
             </div>
           ) : (
             modules.map((module) => {
-              const moduleProgress = module.lessons?.map(lesson => getLessonStatus(lesson.id)) || [];
-              const completedCount = moduleProgress.filter(status => status === 'completed').length;
-              const totalCount = moduleProgress.length;
+              const moduleLessons = module.lessons || [];
+              const completedCount = moduleLessons.filter(lesson => isLessonCompleted(lesson.id)).length;
+              const totalCount = moduleLessons.length;
               
               return (
                 <div key={module.id} className="mb-3">
@@ -93,11 +87,10 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                     )}
                   </button>
                   
-                  {expandedModules[module.id] && module.lessons && module.lessons.length > 0 && (
+                  {expandedModules[module.id] && moduleLessons.length > 0 && (
                     <div className="ml-4 border-l pl-3 mt-1 space-y-1">
-                      {module.lessons.map((lesson) => {
-                        const status = getLessonStatus(lesson.id);
-                        const progress = getLessonProgress(lesson.id);
+                      {moduleLessons.map((lesson) => {
+                        const completed = isLessonCompleted(lesson.id);
                         const isActive = currentLessonId === lesson.id;
                         
                         return (
@@ -109,10 +102,8 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                             }`}
                           >
                             <div className="mr-2 mt-0.5">
-                              {status === 'completed' ? (
+                              {completed ? (
                                 <CircleCheck className="h-4 w-4 text-green-500" />
-                              ) : status === 'in_progress' ? (
-                                <Play className="h-4 w-4 text-blue-500" />
                               ) : (
                                 <Circle className="h-4 w-4 text-gray-300" />
                               )}
@@ -121,17 +112,6 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                               <span className={`line-clamp-2 ${isActive ? 'font-medium text-blue-700' : ''}`}>
                                 {lesson.title}
                               </span>
-                              {status === 'in_progress' && progress > 0 && (
-                                <div className="mt-1">
-                                  <div className="w-full bg-gray-200 rounded-full h-1">
-                                    <div 
-                                      className="bg-blue-500 h-1 rounded-full transition-all duration-300" 
-                                      style={{ width: `${progress}%` }}
-                                    ></div>
-                                  </div>
-                                  <span className="text-xs text-gray-500">{Math.round(progress)}%</span>
-                                </div>
-                              )}
                             </div>
                           </button>
                         );

@@ -1,23 +1,17 @@
 
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 
 interface VideoEmbedProps {
   src: string;
   title?: string;
   className?: string;
-  onProgress?: (percentage: number) => void;
-  onComplete?: () => void;
 }
 
 const VideoEmbed: React.FC<VideoEmbedProps> = ({ 
   src, 
   title = 'Video content', 
-  className = '',
-  onProgress,
-  onComplete
+  className = ''
 }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
   // Extract Vimeo ID from URL if full URL is provided
   const getVimeoId = (url: string) => {
     if (!url) return null;
@@ -44,38 +38,9 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({
   const vimeoId = getVimeoId(src);
   const embedUrl = vimeoId ? `https://player.vimeo.com/video/${vimeoId}` : src;
 
-  useEffect(() => {
-    // Set up Vimeo player API for progress tracking
-    if (vimeoId && (onProgress || onComplete)) {
-      const script = document.createElement('script');
-      script.src = 'https://player.vimeo.com/api/player.js';
-      script.onload = () => {
-        if (window.Vimeo && iframeRef.current) {
-          const player = new window.Vimeo.Player(iframeRef.current);
-          
-          // Track progress every second
-          player.on('timeupdate', (data: any) => {
-            const percentage = (data.seconds / data.duration) * 100;
-            onProgress?.(percentage);
-            
-            // Mark as complete when 90% watched
-            if (percentage >= 90) {
-              onComplete?.();
-            }
-          });
-        }
-      };
-      
-      if (!document.querySelector(`script[src="${script.src}"]`)) {
-        document.head.appendChild(script);
-      }
-    }
-  }, [vimeoId, onProgress, onComplete]);
-
   return (
     <div className={`aspect-video w-full ${className}`}>
       <iframe
-        ref={iframeRef}
         src={embedUrl}
         title={title}
         className="w-full h-full rounded-md"
@@ -86,12 +51,5 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({
     </div>
   );
 };
-
-// Extend window object for Vimeo Player
-declare global {
-  interface Window {
-    Vimeo: any;
-  }
-}
 
 export default VideoEmbed;
