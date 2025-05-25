@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 
@@ -178,8 +179,8 @@ export const learningHubService = {
     if (error) throw error;
   },
 
-  // Student Progress methods
-  getStudentProgress: async (studentId: string, courseId?: string): Promise<StudentProgress[]> => {
+  // Student Progress methods - Updated to use auth user ID properly
+  getStudentProgress: async (userId: string, courseId?: string): Promise<StudentProgress[]> => {
     let query = supabase
       .from('student_progress')
       .select(`
@@ -189,10 +190,24 @@ export const learningHubService = {
           module:course_modules(*)
         )
       `)
-      .eq('student_id', studentId);
+      .eq('student_id', userId);
 
     if (courseId) {
-      query = query.eq('lesson.module.course_id', courseId);
+      // We need to join through the lessons to filter by course
+      const { data, error } = await supabase
+        .from('student_progress')
+        .select(`
+          *,
+          lesson:course_lessons!inner(
+            *,
+            module:course_modules!inner(*)
+          )
+        `)
+        .eq('student_id', userId)
+        .eq('lesson.module.course_id', courseId);
+
+      if (error) throw error;
+      return data as StudentProgress[];
     }
 
     const { data, error } = await query;
@@ -202,6 +217,8 @@ export const learningHubService = {
   },
 
   createOrUpdateProgress: async (progress: Partial<StudentProgress>): Promise<StudentProgress> => {
+    console.log('Creating/updating progress:', progress);
+    
     // First, check if progress already exists
     const { data: existing } = await supabase
       .from('student_progress')
@@ -224,7 +241,10 @@ export const learningHubService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating progress:', error);
+        throw error;
+      }
       return data as StudentProgress;
     } else {
       // Create new progress
@@ -241,7 +261,10 @@ export const learningHubService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating progress:', error);
+        throw error;
+      }
       return data as StudentProgress;
     }
   },
@@ -253,7 +276,10 @@ export const learningHubService = {
         student_id_param: studentId
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error calculating course progress:', error);
+      throw error;
+    }
     return data || 0;
   },
 
@@ -263,7 +289,10 @@ export const learningHubService = {
         current_lesson_id: currentLessonId
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting next lesson:', error);
+      throw error;
+    }
     return data;
   }
 };

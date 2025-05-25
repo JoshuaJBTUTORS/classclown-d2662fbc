@@ -45,32 +45,102 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({
   const embedUrl = vimeoId ? `https://player.vimeo.com/video/${vimeoId}` : src;
 
   useEffect(() => {
+    console.log('VideoEmbed: Setting up tracking for video:', vimeoId, 'with callbacks:', { onProgress: !!onProgress, onComplete: !!onComplete });
+    
     // Set up Vimeo player API for progress tracking
     if (vimeoId && (onProgress || onComplete)) {
       const script = document.createElement('script');
       script.src = 'https://player.vimeo.com/api/player.js';
       script.onload = () => {
+        console.log('Vimeo Player script loaded');
         if (window.Vimeo && iframeRef.current) {
-          const player = new window.Vimeo.Player(iframeRef.current);
-          
-          // Track progress every second
-          player.on('timeupdate', (data: any) => {
-            const percentage = (data.seconds / data.duration) * 100;
-            onProgress?.(percentage);
+          try {
+            const player = new window.Vimeo.Player(iframeRef.current);
+            console.log('Vimeo Player instance created');
             
-            // Mark as complete when 90% watched
-            if (percentage >= 90) {
+            // Track progress every second
+            player.on('timeupdate', (data: any) => {
+              const percentage = (data.seconds / data.duration) * 100;
+              console.log('Video progress:', percentage.toFixed(2) + '%');
+              onProgress?.(percentage);
+              
+              // Mark as complete when 90% watched
+              if (percentage >= 90) {
+                console.log('Video 90% complete, marking as finished');
+                onComplete?.();
+              }
+            });
+
+            // Also listen for video end event
+            player.on('ended', () => {
+              console.log('Video ended event triggered');
               onComplete?.();
-            }
-          });
+            });
+
+            // Listen for play event to confirm player is working
+            player.on('play', () => {
+              console.log('Video started playing');
+            });
+
+            // Listen for pause event
+            player.on('pause', () => {
+              console.log('Video paused');
+            });
+
+          } catch (error) {
+            console.error('Error setting up Vimeo player:', error);
+          }
         }
       };
       
+      script.onerror = () => {
+        console.error('Failed to load Vimeo Player script');
+      };
+      
       if (!document.querySelector(`script[src="${script.src}"]`)) {
+        console.log('Loading Vimeo Player script');
         document.head.appendChild(script);
+      } else {
+        console.log('Vimeo Player script already loaded');
+        // Script already exists, try to initialize player immediately
+        if (window.Vimeo && iframeRef.current) {
+          try {
+            const player = new window.Vimeo.Player(iframeRef.current);
+            console.log('Vimeo Player instance created (script already loaded)');
+            
+            player.on('timeupdate', (data: any) => {
+              const percentage = (data.seconds / data.duration) * 100;
+              console.log('Video progress:', percentage.toFixed(2) + '%');
+              onProgress?.(percentage);
+              
+              if (percentage >= 90) {
+                console.log('Video 90% complete, marking as finished');
+                onComplete?.();
+              }
+            });
+
+            player.on('ended', () => {
+              console.log('Video ended event triggered');
+              onComplete?.();
+            });
+
+            player.on('play', () => {
+              console.log('Video started playing');
+            });
+
+            player.on('pause', () => {
+              console.log('Video paused');
+            });
+
+          } catch (error) {
+            console.error('Error setting up Vimeo player (script already loaded):', error);
+          }
+        }
       }
     }
   }, [vimeoId, onProgress, onComplete]);
+
+  console.log('VideoEmbed rendering with src:', src, 'embedUrl:', embedUrl);
 
   return (
     <div className={`aspect-video w-full ${className}`}>
