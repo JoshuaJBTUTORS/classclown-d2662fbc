@@ -10,9 +10,10 @@ import { useNavigate } from 'react-router-dom';
 interface CourseCardProps {
   course: Course;
   isAdmin?: boolean;
+  hasProgress?: boolean;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false, hasProgress = false }) => {
   const navigate = useNavigate();
 
   const getStatusColor = (status: string) => {
@@ -22,6 +23,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false }) => {
       case 'archived': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-blue-100 text-blue-800 border-blue-200';
     }
+  };
+
+  const getButtonText = () => {
+    if (course.status !== 'published' && !isAdmin) {
+      return "Preview Course";
+    }
+    
+    return hasProgress ? "Continue Learning" : "Start Learning";
   };
 
   return (
@@ -60,7 +69,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false }) => {
           variant={course.status === 'published' ? "default" : "outline"}
           disabled={course.status !== 'published' && !isAdmin}
         >
-          {course.status === 'published' ? "Start Learning" : "Preview Course"}
+          {getButtonText()}
         </Button>
       </CardFooter>
     </Card>
