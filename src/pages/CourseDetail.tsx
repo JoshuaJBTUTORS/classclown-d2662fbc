@@ -201,7 +201,7 @@ const CourseDetail: React.FC = () => {
                   current={completedLessons}
                   total={totalLessons}
                   label="Course Progress"
-                  className="max-w-md"
+                  className="w-full"
                 />
               )}
             </div>
