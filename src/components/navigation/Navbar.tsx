@@ -61,7 +61,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
 
   return (
     <header className="border-b border-gray-200 bg-background">
-      <div className="flex h-16 items-center px-4 md:px-6">
+      <div className="flex h-14 items-center px-4 md:px-6">
         <Button variant="ghost" size="icon" className="md:hidden mr-2" onClick={toggleSidebar}>
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle sidebar</span>
@@ -70,7 +70,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
           <img 
             src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
             alt="Class Clown Logo" 
-            className="h-24 w-auto" 
+            className="h-16 w-auto" 
           />
         </div>
         <div className="ml-auto flex items-center gap-4">
@@ -79,7 +79,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
             <Input
               type="search"
               placeholder="Search..."
-              className="w-[200px] lg:w-[300px] pl-8 rounded-full border-gray-200 focus-visible:ring-[#e94b7f]"
+              className="w-[200px] lg:w-[250px] pl-8 rounded-full border-gray-200 focus-visible:ring-[#e94b7f]"
             />
           </form>
           <Button variant="ghost" size="icon" className="relative rounded-full text-muted-foreground">
@@ -90,7 +90,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 rounded-full px-2 py-1.5">
-                  <div className="w-8 h-8 rounded-full bg-[#e94b7f]/10 text-[#e94b7f] flex items-center justify-center font-medium">
+                  <div className="w-7 h-7 rounded-full bg-[#e94b7f]/10 text-[#e94b7f] flex items-center justify-center font-medium text-sm">
                     {getUserInitials()}
                   </div>
                   <div className="hidden md:block text-start">
