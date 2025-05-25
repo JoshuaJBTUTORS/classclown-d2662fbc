@@ -325,7 +325,7 @@ export const learningHubService = {
     const { data, error } = await supabase
       .rpc('calculate_course_completion', {
         course_id_param: courseId,
-        student_id_param: studentData.id.toString()
+        student_id_param: studentData.id
       });
 
     if (error) {
