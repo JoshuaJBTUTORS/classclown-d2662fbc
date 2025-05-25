@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
@@ -41,13 +42,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({
       setIsCreating(false);
       setNewNote({ title: '', content: '' });
       toast({
-        title: "Note created",
-        description: "Your note has been saved successfully.",
+        title: "Flash card created",
+        description: "Your flash card has been saved successfully.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Error creating note",
+        title: "Error creating flash card",
         description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive",
       });
@@ -62,13 +63,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({
       queryClient.invalidateQueries({ queryKey: ['course-notes', courseId] });
       setEditingNoteId(null);
       toast({
-        title: "Note updated",
-        description: "Your note has been updated successfully.",
+        title: "Flash card updated",
+        description: "Your flash card has been updated successfully.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Error updating note",
+        title: "Error updating flash card",
         description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive",
       });
@@ -81,13 +82,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['course-notes', courseId] });
       toast({
-        title: "Note deleted",
-        description: "Your note has been deleted successfully.",
+        title: "Flash card deleted",
+        description: "Your flash card has been deleted successfully.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Error deleting note",
+        title: "Error deleting flash card",
         description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive",
       });
@@ -98,7 +99,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
     if (!newNote.title.trim()) {
       toast({
         title: "Title required",
-        description: "Please enter a title for your note.",
+        description: "Please enter a title for your flash card.",
         variant: "destructive",
       });
       return;
@@ -121,7 +122,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
     if (!editNote.title.trim()) {
       toast({
         title: "Title required",
-        description: "Please enter a title for your note.",
+        description: "Please enter a title for your flash card.",
         variant: "destructive",
       });
       return;
@@ -134,7 +135,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   };
 
   const handleDeleteNote = (noteId: string) => {
-    if (confirm('Are you sure you want to delete this note?')) {
+    if (confirm('Are you sure you want to delete this flash card?')) {
       deleteNoteMutation.mutate(noteId);
     }
   };
@@ -152,7 +153,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
     <div className="h-full flex flex-col border rounded-lg bg-white">
       <div className="p-4 border-b flex items-center justify-between">
         <div>
-          <h3 className="font-medium">Notes</h3>
+          <h3 className="font-medium">Flash Cards</h3>
           {lessonTitle && (
             <p className="text-sm text-gray-500 mt-1">For: {lessonTitle}</p>
           )}
@@ -164,7 +165,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
           disabled={isCreating}
         >
           <Plus className="h-4 w-4 mr-1" />
-          Add Note
+          Add Flash Card
         </Button>
       </div>
 
@@ -174,13 +175,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({
           {isCreating && (
             <div className="border rounded-lg p-3 bg-gray-50">
               <Input
-                placeholder="Note title"
+                placeholder="Flash card title"
                 value={newNote.title}
                 onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
                 className="mb-3"
               />
               <Textarea
-                placeholder="Write your note here..."
+                placeholder="Write your flash card content here..."
                 value={newNote.content}
                 onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
                 className="mb-3"
@@ -212,10 +213,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({
 
           {/* Existing notes */}
           {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading notes...</div>
+            <div className="text-center py-8 text-gray-500">Loading flash cards...</div>
           ) : notes.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No notes yet. Create your first note to get started!
+              No flash cards yet. Create your first flash card to get started!
             </div>
           ) : (
             notes.map((note) => (
