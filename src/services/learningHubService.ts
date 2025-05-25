@@ -187,7 +187,7 @@ export const learningHubService = {
     return user.email;
   },
 
-  // Student Progress methods
+  // Fixed Student Progress method - simplified query without complex joins
   getStudentProgress: async (userEmail?: string, courseId?: string): Promise<StudentProgress[]> => {
     try {
       const email = userEmail || await learningHubService.getCurrentUserEmail();
@@ -211,19 +211,37 @@ export const learningHubService = {
 
       console.log('Found student record:', student);
 
+      // Simplified query - just get student progress without complex joins
       let query = supabase
         .from('student_progress')
-        .select(`
-          *,
-          lesson:course_lessons(
-            *,
-            module:course_modules(*)
-          )
-        `)
+        .select('*')
         .eq('student_id', student.id);
 
+      // If courseId is provided, we need to filter by lessons in that course
       if (courseId) {
-        query = query.eq('lesson.module.course_id', courseId);
+        // First get all lesson IDs for this course
+        const { data: lessons, error: lessonsError } = await supabase
+          .from('course_lessons')
+          .select('id')
+          .in('module_id', 
+            await supabase
+              .from('course_modules')
+              .select('id')
+              .eq('course_id', courseId)
+              .then(result => result.data?.map(m => m.id) || [])
+          );
+
+        if (lessonsError) {
+          console.error('Error fetching lessons for course:', lessonsError);
+          return [];
+        }
+
+        const lessonIds = lessons?.map(l => l.id) || [];
+        if (lessonIds.length > 0) {
+          query = query.in('lesson_id', lessonIds);
+        } else {
+          return []; // No lessons in course
+        }
       }
 
       const { data, error } = await query;

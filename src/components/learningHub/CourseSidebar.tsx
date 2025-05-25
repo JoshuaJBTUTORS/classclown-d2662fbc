@@ -62,8 +62,17 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
     },
     onSuccess: (data) => {
       console.log('Toggle completion success:', data);
-      queryClient.invalidateQueries({ queryKey: ['student-progress'] });
-      queryClient.invalidateQueries({ queryKey: ['course-progress'] });
+      
+      // Invalidate both student progress queries with proper keys
+      queryClient.invalidateQueries({ 
+        queryKey: ['student-progress', user?.email] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['student-progress', user?.email, window.location.pathname.split('/course/')[1]] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['course-progress'] 
+      });
       
       toast({
         title: "Lesson status updated",

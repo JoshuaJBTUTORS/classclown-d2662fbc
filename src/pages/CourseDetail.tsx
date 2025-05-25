@@ -43,7 +43,7 @@ const CourseDetail: React.FC = () => {
     enabled: !!courseId,
   });
 
-  // Fetch student progress using user email
+  // Fetch student progress with corrected query key
   const { data: studentProgress, isLoading: progressLoading } = useQuery({
     queryKey: ['student-progress', user?.email, courseId],
     queryFn: () => learningHubService.getStudentProgress(user!.email, courseId!),
