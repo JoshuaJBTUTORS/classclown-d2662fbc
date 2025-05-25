@@ -55,7 +55,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false }) => {
       
       <CardFooter className="mt-auto">
         <Button 
-          onClick={() => navigate(`/learning-hub/course/${course.id}`)} 
+          onClick={() => navigate(`/course/${course.id}`)} 
           className="w-full"
           variant={course.status === 'published' ? "default" : "outline"}
           disabled={course.status !== 'published' && !isAdmin}

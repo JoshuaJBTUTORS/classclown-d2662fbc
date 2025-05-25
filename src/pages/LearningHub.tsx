@@ -69,7 +69,7 @@ const LearningHub: React.FC = () => {
         <PageTitle title="Learning Hub" subtitle="Access educational resources and courses" />
         
         {hasAdminPrivileges && (
-          <Button onClick={() => navigate('/learning-hub/create')}>
+          <Button onClick={() => navigate('/create-course')}>
             Create New Course
           </Button>
         )}
@@ -121,7 +121,7 @@ const LearningHub: React.FC = () => {
               : "Check back later for new courses."}
           </p>
           {hasAdminPrivileges && (
-            <Button onClick={() => navigate('/learning-hub/create')}>
+            <Button onClick={() => navigate('/create-course')}>
               Create Your First Course
             </Button>
           )}
@@ -166,7 +166,7 @@ const LearningHub: React.FC = () => {
               
               <CardFooter className="mt-auto">
                 <Button 
-                  onClick={() => navigate(`/learning-hub/course/${course.id}`)} 
+                  onClick={() => navigate(`/course/${course.id}`)} 
                   className="w-full"
                   variant={course.status === 'published' ? "default" : "outline"}
                   disabled={course.status !== 'published' && !hasAdminPrivileges}

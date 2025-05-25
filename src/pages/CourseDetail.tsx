@@ -15,7 +15,7 @@ import CourseSidebar from '@/components/learningHub/CourseSidebar';
 import ContentViewer from '@/components/learningHub/ContentViewer';
 
 const CourseDetail: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin, isOwner, isTutor } = useAuth();
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
@@ -143,7 +143,7 @@ const CourseDetail: React.FC = () => {
         
         {hasAdminPrivileges && (
           <Button 
-            onClick={() => navigate(`/learning-hub/course/${courseId}/edit`)}
+            onClick={() => navigate(`/course/${courseId}/edit`)}
             variant="outline"
           >
             <PenSquare className="mr-2 h-4 w-4" />
