@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
@@ -150,12 +149,12 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   };
 
   return (
-    <div className="h-[calc(100vh-200px)] flex flex-col border rounded-lg bg-white">
-      <div className="p-3 border-b flex items-center justify-between">
+    <div className="h-full flex flex-col border rounded-lg bg-white">
+      <div className="p-4 border-b flex items-center justify-between">
         <div>
-          <h3 className="font-medium text-sm">Notes</h3>
+          <h3 className="font-medium">Notes</h3>
           {lessonTitle && (
-            <p className="text-xs text-gray-500 mt-1">For: {lessonTitle}</p>
+            <p className="text-sm text-gray-500 mt-1">For: {lessonTitle}</p>
           )}
         </div>
         <Button
@@ -164,13 +163,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({
           variant="outline"
           disabled={isCreating}
         >
-          <Plus className="h-3 w-3 mr-1" />
+          <Plus className="h-4 w-4 mr-1" />
           Add Note
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 p-3">
-        <div className="space-y-3">
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
           {/* Create new note form */}
           {isCreating && (
             <div className="border rounded-lg p-3 bg-gray-50">
@@ -178,14 +177,14 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                 placeholder="Note title"
                 value={newNote.title}
                 onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-                className="mb-2 text-sm"
+                className="mb-3"
               />
               <Textarea
                 placeholder="Write your note here..."
                 value={newNote.content}
                 onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
-                className="mb-2 text-sm"
-                rows={6}
+                className="mb-3"
+                rows={4}
               />
               <div className="flex gap-2">
                 <Button
@@ -193,7 +192,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                   size="sm"
                   disabled={createNoteMutation.isPending}
                 >
-                  <Save className="h-3 w-3 mr-1" />
+                  <Save className="h-4 w-4 mr-1" />
                   Save
                 </Button>
                 <Button
@@ -204,7 +203,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                   size="sm"
                   variant="outline"
                 >
-                  <X className="h-3 w-3 mr-1" />
+                  <X className="h-4 w-4 mr-1" />
                   Cancel
                 </Button>
               </div>
@@ -213,9 +212,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({
 
           {/* Existing notes */}
           {isLoading ? (
-            <div className="text-center py-8 text-gray-500 text-sm">Loading notes...</div>
+            <div className="text-center py-8 text-gray-500">Loading notes...</div>
           ) : notes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 text-sm">
+            <div className="text-center py-8 text-gray-500">
               No notes yet. Create your first note to get started!
             </div>
           ) : (
@@ -227,13 +226,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                     <Input
                       value={editNote.title}
                       onChange={(e) => setEditNote({ ...editNote, title: e.target.value })}
-                      className="mb-2 text-sm"
+                      className="mb-3"
                     />
                     <Textarea
                       value={editNote.content}
                       onChange={(e) => setEditNote({ ...editNote, content: e.target.value })}
-                      className="mb-2 text-sm"
-                      rows={6}
+                      className="mb-3"
+                      rows={4}
                     />
                     <div className="flex gap-2">
                       <Button
@@ -241,7 +240,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                         size="sm"
                         disabled={updateNoteMutation.isPending}
                       >
-                        <Save className="h-3 w-3 mr-1" />
+                        <Save className="h-4 w-4 mr-1" />
                         Save
                       </Button>
                       <Button
@@ -249,7 +248,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                         size="sm"
                         variant="outline"
                       >
-                        <X className="h-3 w-3 mr-1" />
+                        <X className="h-4 w-4 mr-1" />
                         Cancel
                       </Button>
                     </div>
@@ -264,7 +263,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                           onClick={() => handleEditNote(note)}
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 p-0"
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
@@ -272,14 +271,14 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                           onClick={() => handleDeleteNote(note.id)}
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
                     {note.content && (
-                      <p className="text-xs text-gray-700 mb-2 whitespace-pre-wrap">
+                      <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">
                         {note.content}
                       </p>
                     )}

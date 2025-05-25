@@ -108,14 +108,14 @@ const CourseDetail: React.FC = () => {
                 <Skeleton className="h-6 w-1/2" />
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
                 <div className="lg:col-span-2">
                   <Skeleton className="h-[600px] w-full" />
                 </div>
-                <div className="lg:col-span-6">
+                <div className="lg:col-span-5">
                   <Skeleton className="h-[600px] w-full" />
                 </div>
-                <div className="lg:col-span-4">
+                <div className="lg:col-span-3">
                   <Skeleton className="h-[600px] w-full" />
                 </div>
               </div>
@@ -165,9 +165,9 @@ const CourseDetail: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-y-auto">
-          <div className="container py-4 px-3">
+          <div className="container py-6">
             {/* Header with navigation and actions */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
                 <Button 
                   variant="ghost" 
@@ -192,13 +192,13 @@ const CourseDetail: React.FC = () => {
             </div>
             
             {/* Course header */}
-            <div className="mb-4">
+            <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                 <Badge className="bg-blue-500">{course.subject || "General"}</Badge>
                 <Badge variant="outline" className="text-gray-500">{course.status}</Badge>
               </div>
-              <h1 className="text-xl font-bold mb-2">{course.title}</h1>
-              <p className="text-gray-600 mb-3 text-sm">{course.description}</p>
+              <h1 className="text-2xl font-bold mb-2">{course.title}</h1>
+              <p className="text-gray-600 mb-4">{course.description}</p>
               
               {/* Progress bar */}
               {user && !progressLoading && (
@@ -211,11 +211,11 @@ const CourseDetail: React.FC = () => {
               )}
             </div>
             
-            <Separator className="my-3" />
+            <Separator className="my-4" />
             
-            {/* Optimized course content layout with better spacing */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-              {/* Compact sidebar with modules and lessons - reduced space */}
+            {/* Optimized course content layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+              {/* Compact sidebar with modules and lessons */}
               <div className="lg:col-span-2">
                 <CourseSidebar 
                   modules={modules || []}
@@ -225,15 +225,15 @@ const CourseDetail: React.FC = () => {
                 />
               </div>
               
-              {/* Expanded content viewer - increased space */}
-              <div className="lg:col-span-6">
+              {/* Expanded content viewer */}
+              <div className="lg:col-span-5">
                 {activeLesson ? (
                   <ContentViewer 
                     lesson={activeLesson} 
                     isLoading={false}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-[500px] bg-gray-50 border rounded-lg">
+                  <div className="flex flex-col items-center justify-center h-[400px] bg-gray-50 border rounded-lg">
                     <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium mb-2">No lesson selected</h3>
                     <p className="text-gray-500">
@@ -243,8 +243,8 @@ const CourseDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Enhanced notes section - increased space */}
-              <div className="lg:col-span-4">
+              {/* Compact notes section */}
+              <div className="lg:col-span-3">
                 <NotesSection 
                   courseId={courseId!}
                   lessonId={activeLessonId || undefined}

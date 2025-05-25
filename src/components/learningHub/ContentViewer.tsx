@@ -31,7 +31,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         return <QuizEmbed src={lesson.content_url || ''} title={lesson.title} />;
       case 'text':
         return (
-          <div className="prose max-w-none p-4">
+          <div className="prose max-w-none p-6">
             <div dangerouslySetInnerHTML={{ __html: lesson.content_text || '' }} />
           </div>
         );
@@ -41,16 +41,16 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   };
 
   return (
-    <div className="space-y-3 h-full">
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-xl font-bold">{lesson.title}</h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">{lesson.title}</h2>
       </div>
       
       {lesson.description && (
-        <p className="text-gray-500 text-sm px-1">{lesson.description}</p>
+        <p className="text-gray-500">{lesson.description}</p>
       )}
       
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden h-[calc(100vh-280px)]">
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {renderContent()}
       </div>
     </div>
