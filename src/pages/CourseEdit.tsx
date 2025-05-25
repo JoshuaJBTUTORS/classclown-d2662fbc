@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -170,7 +169,7 @@ const CourseEdit: React.FC = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => navigate(`/learning-hub/course/${courseId}`)} 
+          onClick={() => navigate(`/course/${courseId}`)} 
           className="mr-2"
         >
           <ChevronLeft className="mr-1" />
