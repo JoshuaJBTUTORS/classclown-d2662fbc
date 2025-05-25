@@ -70,47 +70,43 @@ const CreateAdmin = () => {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      // Create user account with default password
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: DEFAULT_PASSWORD,
-        options: {
-          data: {
-            first_name: data.firstName,
-            last_name: data.lastName,
-            role: 'admin',
-          }
+      console.log('Creating admin account using edge function...');
+
+      // Use the new edge function to create account without affecting current session
+      const { data: result, error } = await supabase.functions.invoke('create-user-account', {
+        body: {
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          role: 'admin',
+          password: DEFAULT_PASSWORD,
+          sendWelcomeEmail: true
         }
       });
 
-      if (signUpError) throw signUpError;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to create admin account');
+      }
 
-      // Send welcome email
-      if (authData.user) {
-        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-          body: {
-            userId: authData.user.id,
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            role: 'admin',
-            password: DEFAULT_PASSWORD
-          }
+      if (result?.error) {
+        console.error('Account creation error:', result.error);
+        throw new Error(result.error);
+      }
+
+      console.log('Admin account created successfully:', result);
+
+      if (result?.emailError) {
+        toast({
+          title: "Admin account created successfully",
+          description: `Account created for ${data.firstName} ${data.lastName}, but there was an issue sending the welcome email.`,
+          variant: "destructive"
         });
-
-        if (emailError) {
-          console.error('Error sending welcome email:', emailError);
-          toast({
-            title: "Admin account created successfully",
-            description: "However, there was an issue sending the welcome email. Please contact the admin manually with their credentials.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Admin account created successfully",
-            description: `Admin account for ${data.firstName} ${data.lastName} has been created and a welcome email has been sent with login credentials.`,
-          });
-        }
+      } else {
+        toast({
+          title: "Admin account created successfully",
+          description: `Account created for ${data.firstName} ${data.lastName} and welcome email sent with login credentials.`,
+        });
       }
 
       form.reset();
