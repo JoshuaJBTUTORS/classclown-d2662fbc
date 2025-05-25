@@ -41,18 +41,27 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   // Helper to check if lesson is completed
   const isLessonCompleted = (lessonId: string) => {
     const progress = studentProgress.find(p => p.lesson_id === lessonId);
-    return progress?.status === 'completed';
+    const completed = progress?.status === 'completed';
+    console.log('Checking lesson completion:', { lessonId, progress, completed });
+    return completed;
   };
 
   // Mutation for toggling lesson completion
   const toggleCompletionMutation = useMutation({
-    mutationFn: (lessonId: string) => {
+    mutationFn: async (lessonId: string) => {
+      console.log('Starting toggle completion for lesson:', lessonId);
+      console.log('User email:', user?.email);
+      
       if (!user?.email) {
         throw new Error('User email not available');
       }
-      return learningHubService.toggleLessonCompletion(user.email, lessonId);
+      
+      const result = await learningHubService.toggleLessonCompletion(user.email, lessonId);
+      console.log('Toggle completion result:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Toggle completion success:', data);
       queryClient.invalidateQueries({ queryKey: ['student-progress'] });
       queryClient.invalidateQueries({ queryKey: ['course-progress'] });
       
@@ -73,8 +82,19 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
 
   const handleToggleCompletion = (e: React.MouseEvent, lessonId: string) => {
     e.stopPropagation();
+    console.log('Circle clicked for lesson:', lessonId);
+    console.log('Current student progress:', studentProgress);
+    console.log('Is lesson currently completed:', isLessonCompleted(lessonId));
+    
     toggleCompletionMutation.mutate(lessonId);
   };
+
+  console.log('CourseSidebar render:', {
+    modulesCount: modules.length,
+    studentProgressCount: studentProgress.length,
+    userEmail: user?.email,
+    currentLessonId
+  });
 
   return (
     <div className="w-full h-full flex flex-col border rounded-md">
@@ -131,6 +151,14 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                         const completed = isLessonCompleted(lesson.id);
                         const isActive = currentLessonId === lesson.id;
                         const isLoading = toggleCompletionMutation.isPending;
+                        
+                        console.log('Rendering lesson:', { 
+                          lessonId: lesson.id, 
+                          lessonTitle: lesson.title, 
+                          completed, 
+                          isActive, 
+                          isLoading 
+                        });
                         
                         return (
                           <div

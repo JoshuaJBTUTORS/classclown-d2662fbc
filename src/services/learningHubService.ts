@@ -191,6 +191,7 @@ export const learningHubService = {
   getStudentProgress: async (userEmail?: string, courseId?: string): Promise<StudentProgress[]> => {
     try {
       const email = userEmail || await learningHubService.getCurrentUserEmail();
+      console.log('Getting student progress for email:', email, 'courseId:', courseId);
       
       const { data: student, error: studentError } = await supabase
         .from('students')
@@ -207,6 +208,8 @@ export const learningHubService = {
         console.log('No student record found for email:', email);
         return [];
       }
+
+      console.log('Found student record:', student);
 
       let query = supabase
         .from('student_progress')
@@ -230,6 +233,7 @@ export const learningHubService = {
         return [];
       }
       
+      console.log('Retrieved student progress:', data);
       return data as StudentProgress[];
     } catch (error) {
       console.error('Error in getStudentProgress:', error);
@@ -240,11 +244,15 @@ export const learningHubService = {
   // New manual toggle completion method
   toggleLessonCompletion: async (userEmail: string, lessonId: string): Promise<StudentProgress> => {
     try {
+      console.log('toggleLessonCompletion called with:', { userEmail, lessonId });
+      
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id')
         .eq('email', userEmail)
         .maybeSingle();
+
+      console.log('Student lookup result:', { student, studentError });
 
       if (studentError || !student) {
         throw new Error('Student record not found');
@@ -258,6 +266,8 @@ export const learningHubService = {
         .eq('lesson_id', lessonId)
         .maybeSingle();
 
+      console.log('Existing progress check:', existing);
+
       if (existing) {
         // Toggle completion status
         const newStatus = existing.status === 'completed' ? 'not_started' : 'completed';
@@ -268,6 +278,8 @@ export const learningHubService = {
           last_accessed_at: new Date().toISOString()
         };
 
+        console.log('Updating existing progress with:', updateData);
+
         const { data, error } = await supabase
           .from('student_progress')
           .update(updateData)
@@ -275,24 +287,38 @@ export const learningHubService = {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating progress:', error);
+          throw error;
+        }
+        
+        console.log('Successfully updated progress:', data);
         return data as StudentProgress;
       } else {
         // Create new completed progress
+        const insertData = {
+          student_id: student.id,
+          lesson_id: lessonId,
+          status: 'completed',
+          completion_percentage: 100,
+          completed_at: new Date().toISOString(),
+          last_accessed_at: new Date().toISOString()
+        };
+
+        console.log('Creating new progress with:', insertData);
+
         const { data, error } = await supabase
           .from('student_progress')
-          .insert({
-            student_id: student.id,
-            lesson_id: lessonId,
-            status: 'completed',
-            completion_percentage: 100,
-            completed_at: new Date().toISOString(),
-            last_accessed_at: new Date().toISOString()
-          })
+          .insert(insertData)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating progress:', error);
+          throw error;
+        }
+
+        console.log('Successfully created progress:', data);
         return data as StudentProgress;
       }
     } catch (error) {
