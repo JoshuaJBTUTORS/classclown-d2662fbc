@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 
@@ -259,7 +258,7 @@ export const learningHubService = {
     const { data: existing } = await supabase
       .from('student_progress')
       .select('*')
-      .eq('student_id', studentId.toString())
+      .eq('student_id', studentId)
       .eq('lesson_id', progress.lesson_id!)
       .single();
 
