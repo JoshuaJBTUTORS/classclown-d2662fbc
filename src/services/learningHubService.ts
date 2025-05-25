@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
+import { CourseNote, CreateCourseNoteRequest, UpdateCourseNoteRequest } from '@/types/courseNotes';
 
 export const learningHubService = {
   // Course methods
@@ -386,5 +387,79 @@ export const learningHubService = {
 
     if (error) throw error;
     return data;
-  }
+  },
+
+  // Course Notes methods
+  getCourseNotes: async (courseId: string, lessonId?: string): Promise<CourseNote[]> => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.log('User not authenticated');
+        return [];
+      }
+
+      let query = supabase
+        .from('course_notes')
+        .select('*')
+        .eq('course_id', courseId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (lessonId) {
+        query = query.eq('lesson_id', lessonId);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching course notes:', error);
+        return [];
+      }
+      
+      return data as CourseNote[];
+    } catch (error) {
+      console.error('Error in getCourseNotes:', error);
+      return [];
+    }
+  },
+
+  createCourseNote: async (noteData: CreateCourseNoteRequest): Promise<CourseNote> => {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data, error } = await supabase
+      .from('course_notes')
+      .insert({
+        ...noteData,
+        user_id: user.id
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as CourseNote;
+  },
+
+  updateCourseNote: async (noteId: string, noteData: UpdateCourseNoteRequest): Promise<CourseNote> => {
+    const { data, error } = await supabase
+      .from('course_notes')
+      .update(noteData)
+      .eq('id', noteId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as CourseNote;
+  },
+
+  deleteCourseNote: async (noteId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('course_notes')
+      .delete()
+      .eq('id', noteId);
+    
+    if (error) throw error;
+  },
 };

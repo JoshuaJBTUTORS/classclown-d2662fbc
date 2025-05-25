@@ -14,6 +14,7 @@ import ContentViewer from '@/components/learningHub/ContentViewer';
 import ProgressBar from '@/components/learningHub/ProgressBar';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import NotesSection from '@/components/learningHub/NotesSection';
 
 const CourseDetail: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
@@ -106,11 +107,14 @@ const CourseDetail: React.FC = () => {
                 <Skeleton className="h-6 w-1/2" />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="md:col-span-1">
+              <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+                <div className="lg:col-span-1">
                   <Skeleton className="h-[600px] w-full" />
                 </div>
-                <div className="md:col-span-3">
+                <div className="lg:col-span-3">
+                  <Skeleton className="h-[600px] w-full" />
+                </div>
+                <div className="lg:col-span-2">
                   <Skeleton className="h-[600px] w-full" />
                 </div>
               </div>
@@ -208,10 +212,10 @@ const CourseDetail: React.FC = () => {
             
             <Separator className="my-6" />
             
-            {/* Course content */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Course content with notes section */}
+            <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
               {/* Sidebar with modules and lessons */}
-              <div className="md:col-span-1">
+              <div className="lg:col-span-1">
                 <CourseSidebar 
                   modules={modules || []}
                   studentProgress={studentProgress || []}
@@ -221,7 +225,7 @@ const CourseDetail: React.FC = () => {
               </div>
               
               {/* Content viewer */}
-              <div className="md:col-span-3">
+              <div className="lg:col-span-3">
                 {activeLesson ? (
                   <ContentViewer 
                     lesson={activeLesson} 
@@ -236,6 +240,15 @@ const CourseDetail: React.FC = () => {
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Notes section */}
+              <div className="lg:col-span-2">
+                <NotesSection 
+                  courseId={courseId!}
+                  lessonId={activeLessonId || undefined}
+                  lessonTitle={activeLesson?.title}
+                />
               </div>
             </div>
           </div>
