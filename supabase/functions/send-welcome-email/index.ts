@@ -73,9 +73,9 @@ serve(async (req) => {
       })
     );
 
-    // Send the email
+    // Send the email with verified domain
     const { error: emailError } = await resend.emails.send({
-      from: 'JB Tutors <onboarding@resend.dev>',
+      from: 'JB Tutors <enquiries@jb-tutors.com>',
       to: [email],
       subject: `Welcome to JB Tutors - Your ${role} account has been created`,
       html,
