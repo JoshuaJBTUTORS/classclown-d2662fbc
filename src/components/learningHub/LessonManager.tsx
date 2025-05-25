@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, Trash2, Video, FileQuestion, LinkIcon, FileText } from 'lucide-react';
@@ -19,9 +18,10 @@ import { CourseLesson } from '@/types/course';
 
 interface LessonManagerProps {
   moduleId: string;
+  courseId: string;
 }
 
-const LessonManager: React.FC<LessonManagerProps> = ({ moduleId }) => {
+const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingLesson, setIsAddingLesson] = useState(false);
@@ -37,19 +37,20 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId }) => {
 
   // Fetch lessons for this module
   const { data: module, isLoading } = useQuery({
-    queryKey: ['moduleWithLessons', moduleId],
+    queryKey: ['moduleWithLessons', moduleId, courseId],
     queryFn: async () => {
-      const modules = await learningHubService.getCourseModules(moduleId.split('-')[0]);
+      const modules = await learningHubService.getCourseModules(courseId);
       return modules.find(m => m.id === moduleId);
     },
-    enabled: !!moduleId,
+    enabled: !!moduleId && !!courseId,
   });
 
   const createLessonMutation = useMutation({
     mutationFn: (lesson: Partial<CourseLesson>) => 
       learningHubService.createLesson(lesson),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons', moduleId] });
+      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons', moduleId, courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
       setIsAddingLesson(false);
       setNewLesson({
         title: '',
@@ -77,7 +78,8 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId }) => {
     mutationFn: ({id, lesson}: {id: string, lesson: Partial<CourseLesson>}) => 
       learningHubService.updateLesson(id, lesson),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons', moduleId] });
+      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons', moduleId, courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
       setEditingLessonId(null);
       toast({
         title: "Lesson updated",
@@ -96,7 +98,8 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId }) => {
   const deleteLessonMutation = useMutation({
     mutationFn: (id: string) => learningHubService.deleteLesson(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons', moduleId] });
+      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons', moduleId, courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
       toast({
         title: "Lesson deleted",
         description: "The lesson has been successfully deleted",

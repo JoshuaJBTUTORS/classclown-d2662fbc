@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Grip } from 'lucide-react';
@@ -238,7 +237,7 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
                     )}
                   </CardContent>
                   <CardContent className="pt-0">
-                    <LessonManager moduleId={module.id} />
+                    <LessonManager moduleId={module.id} courseId={courseId} />
                   </CardContent>
                 </>
               )}
