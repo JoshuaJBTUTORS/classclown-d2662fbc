@@ -179,8 +179,20 @@ export const learningHubService = {
     if (error) throw error;
   },
 
-  // Student Progress methods - Simplified for click-based completion
-  getStudentProgress: async (studentId: string, courseId?: string): Promise<StudentProgress[]> => {
+  // Student Progress methods - Updated to use string user IDs and convert to student records
+  getStudentProgress: async (userId: string, courseId?: string): Promise<StudentProgress[]> => {
+    // First, get the student record for this user
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('email', userId) // Assuming students table links via email
+      .single();
+
+    if (studentError || !student) {
+      // If no student record found, return empty array
+      return [];
+    }
+
     let query = supabase
       .from('student_progress')
       .select(`
@@ -190,7 +202,7 @@ export const learningHubService = {
           module:course_modules(*)
         )
       `)
-      .eq('student_id', studentId);
+      .eq('student_id', student.id);
 
     if (courseId) {
       query = query.eq('lesson.module.course_id', courseId);
@@ -203,12 +215,23 @@ export const learningHubService = {
   },
 
   // Simplified progress tracking - mark as complete immediately when accessed
-  markLessonComplete: async (studentId: number, lessonId: string): Promise<StudentProgress> => {
+  markLessonComplete: async (userId: string, lessonId: string): Promise<StudentProgress> => {
+    // First, get the student record for this user
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('email', userId) // Assuming students table links via email
+      .single();
+
+    if (studentError || !student) {
+      throw new Error('Student record not found');
+    }
+
     // First, check if progress already exists
     const { data: existing } = await supabase
       .from('student_progress')
       .select('*')
-      .eq('student_id', studentId)
+      .eq('student_id', student.id)
       .eq('lesson_id', lessonId)
       .single();
 
@@ -233,7 +256,7 @@ export const learningHubService = {
       const { data, error } = await supabase
         .from('student_progress')
         .insert({
-          student_id: studentId,
+          student_id: student.id,
           lesson_id: lessonId,
           status: 'completed',
           completion_percentage: 100,
@@ -248,11 +271,22 @@ export const learningHubService = {
     }
   },
 
-  getCourseProgress: async (courseId: string, studentId: number): Promise<number> => {
+  getCourseProgress: async (courseId: string, userId: string): Promise<number> => {
+    // First, get the student record for this user
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('email', userId) // Assuming students table links via email
+      .single();
+
+    if (studentError || !student) {
+      return 0;
+    }
+
     const { data, error } = await supabase
       .rpc('calculate_course_completion', {
         course_id_param: courseId,
-        student_id_param: studentId
+        student_id_param: student.id
       });
 
     if (error) throw error;
