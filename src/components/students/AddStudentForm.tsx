@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -114,7 +115,33 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
           });
         }
       } else if (data.createAccount && data.email) {
-        // Create user account with default password
+        // Send welcome email BEFORE creating the account to avoid session switching
+        let emailSent = false;
+        const tempUserId = crypto.randomUUID(); // Generate temporary ID for email
+        
+        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            userId: tempUserId,
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            role: 'student',
+            password: DEFAULT_PASSWORD
+          }
+        });
+
+        if (emailError) {
+          console.error('Error sending welcome email:', emailError);
+          toast({
+            title: "Email sending failed",
+            description: "We'll still create the account, but the welcome email couldn't be sent.",
+            variant: "destructive"
+          });
+        } else {
+          emailSent = true;
+        }
+
+        // Now create user account with default password
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
           password: DEFAULT_PASSWORD,
@@ -129,34 +156,23 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
 
         if (signUpError) {
           toast({
-            title: "Student created successfully",
-            description: "However, there was an issue creating their account: " + signUpError.message,
+            title: "Account creation failed",
+            description: emailSent 
+              ? "Email was sent but account creation failed: " + signUpError.message
+              : "Both email and account creation failed: " + signUpError.message,
             variant: "destructive"
           });
         } else if (authData.user) {
-          // Send welcome email
-          const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-            body: {
-              userId: authData.user.id,
-              email: data.email,
-              firstName: data.firstName,
-              lastName: data.lastName,
-              role: 'student',
-              password: DEFAULT_PASSWORD
-            }
-          });
-
-          if (emailError) {
-            console.error('Error sending welcome email:', emailError);
+          if (emailSent) {
             toast({
               title: "Student account created successfully",
-              description: `Account created with default password: ${DEFAULT_PASSWORD}. However, there was an issue sending the welcome email.`,
-              variant: "destructive"
+              description: "Account created and welcome email sent with login credentials.",
             });
           } else {
             toast({
               title: "Student account created successfully",
-              description: "Account created and welcome email sent with login credentials.",
+              description: `Account created with default password: ${DEFAULT_PASSWORD}. However, the welcome email couldn't be sent.`,
+              variant: "destructive"
             });
           }
         }

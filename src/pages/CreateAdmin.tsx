@@ -70,6 +70,32 @@ const CreateAdmin = () => {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
+      // Send welcome email BEFORE creating the account to avoid session switching
+      let emailSent = false;
+      const tempUserId = crypto.randomUUID(); // Generate temporary ID for email
+      
+      const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          userId: tempUserId,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          role: 'admin',
+          password: DEFAULT_PASSWORD
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending welcome email:', emailError);
+        toast({
+          title: "Email sending failed",
+          description: "We'll still create the account, but the welcome email couldn't be sent.",
+          variant: "destructive"
+        });
+      } else {
+        emailSent = true;
+      }
+
       // Create user account with default password
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
@@ -83,32 +109,25 @@ const CreateAdmin = () => {
         }
       });
 
-      if (signUpError) throw signUpError;
-
-      // Send welcome email
-      if (authData.user) {
-        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-          body: {
-            userId: authData.user.id,
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            role: 'admin',
-            password: DEFAULT_PASSWORD
-          }
+      if (signUpError) {
+        toast({
+          title: "Failed to create admin account",
+          description: emailSent 
+            ? "Email was sent but account creation failed: " + signUpError.message
+            : "Both email and account creation failed: " + signUpError.message,
+          variant: "destructive"
         });
-
-        if (emailError) {
-          console.error('Error sending welcome email:', emailError);
+      } else if (authData.user) {
+        if (emailSent) {
           toast({
             title: "Admin account created successfully",
-            description: "However, there was an issue sending the welcome email. Please contact the admin manually with their credentials.",
-            variant: "destructive"
+            description: `Admin account for ${data.firstName} ${data.lastName} has been created and a welcome email has been sent with login credentials.`,
           });
         } else {
           toast({
             title: "Admin account created successfully",
-            description: `Admin account for ${data.firstName} ${data.lastName} has been created and a welcome email has been sent with login credentials.`,
+            description: `Admin account for ${data.firstName} ${data.lastName} has been created with default password: ${DEFAULT_PASSWORD}. However, the welcome email couldn't be sent.`,
+            variant: "destructive"
           });
         }
       }
