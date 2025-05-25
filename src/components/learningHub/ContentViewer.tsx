@@ -1,69 +1,18 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { CourseLesson } from '@/types/course';
 import VideoEmbed from './VideoEmbed';
 import QuizEmbed from './QuizEmbed';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { learningHubService } from '@/services/learningHubService';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { CheckCircle } from 'lucide-react';
 
 interface ContentViewerProps {
   lesson: CourseLesson;
   isLoading?: boolean;
-  onLessonComplete?: (lessonId: string) => void;
-  studentProgress?: any;
 }
 
 const ContentViewer: React.FC<ContentViewerProps> = ({ 
   lesson, 
-  isLoading = false, 
-  onLessonComplete,
-  studentProgress 
+  isLoading = false
 }) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  const isCompleted = studentProgress?.status === 'completed';
-
-  const markCompleteMutation = useMutation({
-    mutationFn: () => {
-      if (!user?.email) {
-        throw new Error('User email not available');
-      }
-      return learningHubService.markLessonComplete(user.email, lesson.id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-progress'] });
-      queryClient.invalidateQueries({ queryKey: ['course-progress'] });
-      
-      toast({
-        title: "Lesson completed!",
-        description: "Great job! Moving to the next lesson.",
-      });
-
-      onLessonComplete?.(lesson.id);
-    },
-    onError: (error) => {
-      console.error('Error marking lesson complete:', error);
-      toast({
-        title: "Error marking lesson complete",
-        description: error instanceof Error ? error.message : "Please try again later",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Auto-mark lesson as complete when user accesses it (Udemy-style)
-  useEffect(() => {
-    if (user?.email && !isCompleted && !markCompleteMutation.isPending) {
-      console.log('Auto-marking lesson as complete for:', user.email, 'lesson:', lesson.id);
-      markCompleteMutation.mutate();
-    }
-  }, [user?.email, lesson.id, isCompleted]);
-
   // This renders the appropriate content based on content_type
   const renderContent = () => {
     if (isLoading) {
@@ -95,12 +44,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">{lesson.title}</h2>
-        {isCompleted && (
-          <div className="flex items-center text-green-600">
-            <CheckCircle className="h-5 w-5 mr-2" />
-            <span className="text-sm font-medium">Completed</span>
-          </div>
-        )}
       </div>
       
       {lesson.description && (

@@ -4,6 +4,10 @@ import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CourseModule, CourseLesson, StudentProgress } from '@/types/course';
+import { learningHubService } from '@/services/learningHubService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 interface CourseSidebarProps {
   modules: CourseModule[];
@@ -20,8 +24,10 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   currentLessonId,
   isAdmin = false
 }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>(
-    // Default to expanding all modules
     modules.reduce((acc, module) => ({ ...acc, [module.id]: true }), {})
   );
 
@@ -36,6 +42,38 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   const isLessonCompleted = (lessonId: string) => {
     const progress = studentProgress.find(p => p.lesson_id === lessonId);
     return progress?.status === 'completed';
+  };
+
+  // Mutation for toggling lesson completion
+  const toggleCompletionMutation = useMutation({
+    mutationFn: (lessonId: string) => {
+      if (!user?.email) {
+        throw new Error('User email not available');
+      }
+      return learningHubService.toggleLessonCompletion(user.email, lessonId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['course-progress'] });
+      
+      toast({
+        title: "Lesson status updated",
+        description: "Lesson completion status has been updated.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error toggling lesson completion:', error);
+      toast({
+        title: "Error updating lesson",
+        description: error instanceof Error ? error.message : "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleCompletion = (e: React.MouseEvent, lessonId: string) => {
+    e.stopPropagation();
+    toggleCompletionMutation.mutate(lessonId);
   };
 
   return (
@@ -92,28 +130,35 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                       {moduleLessons.map((lesson) => {
                         const completed = isLessonCompleted(lesson.id);
                         const isActive = currentLessonId === lesson.id;
+                        const isLoading = toggleCompletionMutation.isPending;
                         
                         return (
-                          <button
+                          <div
                             key={lesson.id}
-                            onClick={() => onSelectLesson(lesson)}
                             className={`w-full text-left p-2 text-sm rounded-md flex items-start hover:bg-gray-100 ${
                               isActive ? 'bg-blue-50 border border-blue-200' : ''
                             }`}
                           >
-                            <div className="mr-2 mt-0.5">
+                            <button
+                              onClick={(e) => handleToggleCompletion(e, lesson.id)}
+                              disabled={isLoading}
+                              className="mr-3 mt-0.5 hover:scale-110 transition-transform disabled:opacity-50"
+                            >
                               {completed ? (
-                                <CircleCheck className="h-4 w-4 text-green-500" />
+                                <CircleCheck className="h-6 w-6 text-green-500" />
                               ) : (
-                                <Circle className="h-4 w-4 text-gray-300" />
+                                <Circle className="h-6 w-6 text-gray-300 hover:text-gray-500" />
                               )}
-                            </div>
-                            <div className="flex-1">
+                            </button>
+                            <button
+                              onClick={() => onSelectLesson(lesson)}
+                              className="flex-1 text-left"
+                            >
                               <span className={`line-clamp-2 ${isActive ? 'font-medium text-blue-700' : ''}`}>
                                 {lesson.title}
                               </span>
-                            </div>
-                          </button>
+                            </button>
+                          </div>
                         );
                       })}
                     </div>

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 
@@ -188,13 +187,11 @@ export const learningHubService = {
     return user.email;
   },
 
-  // Student Progress methods - Updated to use email-based student lookup
+  // Student Progress methods
   getStudentProgress: async (userEmail?: string, courseId?: string): Promise<StudentProgress[]> => {
     try {
-      // Get email from parameter or current user
       const email = userEmail || await learningHubService.getCurrentUserEmail();
       
-      // First, get the student record for this email
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id')
@@ -240,29 +237,20 @@ export const learningHubService = {
     }
   },
 
-  // Simplified progress tracking - mark as complete immediately when accessed
-  markLessonComplete: async (userEmail: string, lessonId: string): Promise<StudentProgress> => {
+  // New manual toggle completion method
+  toggleLessonCompletion: async (userEmail: string, lessonId: string): Promise<StudentProgress> => {
     try {
-      // First, get the student record for this email
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id')
         .eq('email', userEmail)
         .maybeSingle();
 
-      if (studentError) {
-        console.error('Error fetching student record:', studentError);
-        throw new Error('Error finding student record');
+      if (studentError || !student) {
+        throw new Error('Student record not found');
       }
 
-      if (!student) {
-        console.error('No student record found for email:', userEmail);
-        throw new Error('Student record not found. Please contact support.');
-      }
-
-      console.log('Found student record:', student.id, 'for email:', userEmail);
-
-      // First, check if progress already exists
+      // Check if progress already exists
       const { data: existing } = await supabase
         .from('student_progress')
         .select('*')
@@ -271,28 +259,26 @@ export const learningHubService = {
         .maybeSingle();
 
       if (existing) {
-        // Update existing progress to completed
+        // Toggle completion status
+        const newStatus = existing.status === 'completed' ? 'not_started' : 'completed';
+        const updateData = {
+          status: newStatus,
+          completion_percentage: newStatus === 'completed' ? 100 : 0,
+          completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+          last_accessed_at: new Date().toISOString()
+        };
+
         const { data, error } = await supabase
           .from('student_progress')
-          .update({
-            status: 'completed',
-            completion_percentage: 100,
-            completed_at: new Date().toISOString(),
-            last_accessed_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', existing.id)
           .select()
           .single();
 
-        if (error) {
-          console.error('Error updating progress:', error);
-          throw error;
-        }
-        
-        console.log('Updated existing progress record');
+        if (error) throw error;
         return data as StudentProgress;
       } else {
-        // Create new progress as completed
+        // Create new completed progress
         const { data, error } = await supabase
           .from('student_progress')
           .insert({
@@ -306,26 +292,19 @@ export const learningHubService = {
           .select()
           .single();
 
-        if (error) {
-          console.error('Error creating progress:', error);
-          throw error;
-        }
-        
-        console.log('Created new progress record');
+        if (error) throw error;
         return data as StudentProgress;
       }
     } catch (error) {
-      console.error('Error in markLessonComplete:', error);
+      console.error('Error in toggleLessonCompletion:', error);
       throw error;
     }
   },
 
   getCourseProgress: async (courseId: string, userEmail?: string): Promise<number> => {
     try {
-      // Get email from parameter or current user
       const email = userEmail || await learningHubService.getCurrentUserEmail();
       
-      // First, get the student record for this email
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id')

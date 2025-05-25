@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen, ChevronRight } from 'lucide-react';
+import { ChevronLeft, PenSquare, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,43 +68,10 @@ const CourseDetail: React.FC = () => {
     }
   }, [modules, activeModuleId]);
 
-  // Handle module selection
-  const handleModuleSelect = (moduleId: string) => {
-    setActiveModuleId(moduleId);
-    const selectedModule = modules?.find(m => m.id === moduleId);
-    if (selectedModule?.lessons && selectedModule.lessons.length > 0) {
-      setActiveLessonId(selectedModule.lessons[0].id);
-    } else {
-      setActiveLessonId(null);
-    }
-  };
-
   // Handle lesson selection
   const handleLessonSelect = (lessonId: string) => {
     setActiveLessonId(lessonId);
   };
-
-  // Handle lesson completion and auto-progression
-  const handleLessonComplete = async (completedLessonId: string) => {
-    try {
-      const nextLessonId = await learningHubService.getNextLesson(completedLessonId);
-      if (nextLessonId) {
-        // Find the module containing the next lesson
-        const nextModule = modules?.find(m => 
-          m.lessons?.some(l => l.id === nextLessonId)
-        );
-        if (nextModule) {
-          setActiveModuleId(nextModule.id);
-          setActiveLessonId(nextLessonId);
-        }
-      }
-    } catch (error) {
-      console.error('Error getting next lesson:', error);
-    }
-  };
-
-  // Get current lesson progress
-  const currentLessonProgress = studentProgress?.find(p => p.lesson_id === activeLessonId);
 
   // Find active content
   const activeModule = modules?.find(m => m.id === activeModuleId);
@@ -260,8 +226,6 @@ const CourseDetail: React.FC = () => {
                   <ContentViewer 
                     lesson={activeLesson} 
                     isLoading={false}
-                    onLessonComplete={handleLessonComplete}
-                    studentProgress={currentLessonProgress}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[400px] bg-gray-50 border rounded-lg">
