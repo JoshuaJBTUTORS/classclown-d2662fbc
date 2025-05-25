@@ -114,38 +114,40 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
           });
         }
       } else if (data.createAccount && data.email) {
-        // Use the new edge function to create account without affecting current session
-        console.log('Creating student account using edge function...');
-
-        const { data: result, error } = await supabase.functions.invoke('create-user-account', {
-          body: {
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            role: 'student',
-            password: DEFAULT_PASSWORD,
-            sendWelcomeEmail: true
+        // Create user account with default password
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: DEFAULT_PASSWORD,
+          options: {
+            data: {
+              first_name: data.firstName,
+              last_name: data.lastName,
+              role: 'student',
+            }
           }
         });
 
-        if (error) {
-          console.error('Edge function error:', error);
+        if (signUpError) {
           toast({
             title: "Student created successfully",
-            description: "However, there was an issue creating their account: " + error.message,
+            description: "However, there was an issue creating their account: " + signUpError.message,
             variant: "destructive"
           });
-        } else if (result?.error) {
-          console.error('Account creation error:', result.error);
-          toast({
-            title: "Student created successfully",
-            description: "However, there was an issue creating their account: " + result.error,
-            variant: "destructive"
+        } else if (authData.user) {
+          // Send welcome email
+          const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              userId: authData.user.id,
+              email: data.email,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              role: 'student',
+              password: DEFAULT_PASSWORD
+            }
           });
-        } else {
-          console.log('Student account created successfully:', result);
 
-          if (result?.emailError) {
+          if (emailError) {
+            console.error('Error sending welcome email:', emailError);
             toast({
               title: "Student account created successfully",
               description: `Account created with default password: ${DEFAULT_PASSWORD}. However, there was an issue sending the welcome email.`,

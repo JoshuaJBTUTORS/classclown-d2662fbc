@@ -277,38 +277,85 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           });
         }
       } else if (data.createAccount) {
-        // Use the new edge function to create account without affecting current session
-        console.log('Creating tutor account using edge function...');
-
-        const { data: result, error } = await supabase.functions.invoke('create-user-account', {
-          body: {
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            role: 'tutor',
-            password: DEFAULT_PASSWORD,
-            sendWelcomeEmail: true
+        // Create user account with default password and proper metadata
+        console.log('Creating user account with metadata:', {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          role: 'tutor'
+        });
+        
+        const { data: userData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: DEFAULT_PASSWORD,
+          options: {
+            data: {
+              first_name: data.firstName,
+              last_name: data.lastName,
+              role: 'tutor', // This is important for the trigger
+            }
           }
         });
 
-        if (error) {
-          console.error('Edge function error:', error);
+        if (signUpError) {
+          console.error('Error creating user account:', signUpError);
           toast({
             title: "Tutor created successfully",
-            description: "However, there was an issue creating their account: " + error.message,
+            description: "However, there was an issue creating their account: " + signUpError.message,
             variant: "destructive"
           });
-        } else if (result?.error) {
-          console.error('Account creation error:', result.error);
-          toast({
-            title: "Tutor created successfully",
-            description: "However, there was an issue creating their account: " + result.error,
-            variant: "destructive"
+        } else if (userData && userData.user) {
+          console.log('User account created successfully, user ID:', userData.user.id);
+          
+          // Send welcome email
+          const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              userId: userData.user.id,
+              email: data.email,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              role: 'tutor',
+              password: DEFAULT_PASSWORD
+            }
           });
-        } else {
-          console.log('Tutor account created successfully:', result);
 
-          if (result?.emailError) {
+          if (emailError) {
+            console.error('Error sending welcome email:', emailError);
+          }
+          
+          // Wait a moment for the trigger to work
+          setTimeout(async () => {
+            // Double-check that the trigger worked
+            const { data: profileCheck, error: profileCheckError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', userData.user!.id)
+              .maybeSingle();
+              
+            if (profileCheckError) {
+              console.error('Error checking profile:', profileCheckError);
+            }
+              
+            // If no profile, create one manually as fallback
+            if (!profileCheck) {
+              console.log('No profile found after 1.5s, using fallback mechanism');
+              const success = await createProfileAndRole(userData.user!.id, data.firstName, data.lastName);
+              
+              if (success) {
+                console.log('Profile and role created manually as fallback');
+              } else {
+                console.error('Failed to create profile and role manually');
+                toast({
+                  title: "Account created but profile setup failed",
+                  description: "The account was created but there was a problem setting up the user profile. Please check the user in Supabase.",
+                  variant: "destructive"
+                });
+              }
+            } else {
+              console.log('Profile found, trigger worked successfully');
+            }
+          }, 1500);
+          
+          if (emailError) {
             toast({
               title: "Tutor account created successfully",
               description: `Account created with default password: ${DEFAULT_PASSWORD}. However, there was an issue sending the welcome email.`,
