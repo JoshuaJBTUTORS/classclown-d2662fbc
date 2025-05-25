@@ -163,8 +163,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({
           size="sm"
           variant="outline"
           disabled={isCreating}
+          className="text-xs border-[#e94b7f]/30 text-[#e94b7f] hover:bg-[#e94b7f]/10 hover:border-[#e94b7f]"
         >
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-3 w-3 mr-1" />
           Add Flash Card
         </Button>
       </div>
@@ -173,18 +174,18 @@ const NotesSection: React.FC<NotesSectionProps> = ({
         <div className="space-y-4">
           {/* Create new note form */}
           {isCreating && (
-            <div className="border rounded-lg p-3 bg-gray-50">
+            <div className="border rounded-lg p-3 bg-[#e94b7f]/5 border-[#e94b7f]/20">
               <Input
                 placeholder="Flash card title"
                 value={newNote.title}
                 onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-                className="mb-3"
+                className="mb-3 border-[#e94b7f]/30 focus-visible:ring-[#e94b7f]"
               />
               <Textarea
                 placeholder="Write your flash card content here..."
                 value={newNote.content}
                 onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
-                className="mb-3"
+                className="mb-3 border-[#e94b7f]/30 focus-visible:ring-[#e94b7f]"
                 rows={4}
               />
               <div className="flex gap-2">
@@ -192,6 +193,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                   onClick={handleCreateNote}
                   size="sm"
                   disabled={createNoteMutation.isPending}
+                  className="bg-[#e94b7f] hover:bg-[#e94b7f]/90 text-white"
                 >
                   <Save className="h-4 w-4 mr-1" />
                   Save
@@ -203,6 +205,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                   }}
                   size="sm"
                   variant="outline"
+                  className="border-[#e94b7f]/30 text-[#e94b7f] hover:bg-[#e94b7f]/10"
                 >
                   <X className="h-4 w-4 mr-1" />
                   Cancel
@@ -220,19 +223,19 @@ const NotesSection: React.FC<NotesSectionProps> = ({
             </div>
           ) : (
             notes.map((note) => (
-              <div key={note.id} className="border rounded-lg p-3 bg-white">
+              <div key={note.id} className="border rounded-lg p-3 bg-white border-[#e94b7f]/20 hover:border-[#e94b7f]/40 transition-colors">
                 {editingNoteId === note.id ? (
                   // Edit mode
                   <div>
                     <Input
                       value={editNote.title}
                       onChange={(e) => setEditNote({ ...editNote, title: e.target.value })}
-                      className="mb-3"
+                      className="mb-3 border-[#e94b7f]/30 focus-visible:ring-[#e94b7f]"
                     />
                     <Textarea
                       value={editNote.content}
                       onChange={(e) => setEditNote({ ...editNote, content: e.target.value })}
-                      className="mb-3"
+                      className="mb-3 border-[#e94b7f]/30 focus-visible:ring-[#e94b7f]"
                       rows={4}
                     />
                     <div className="flex gap-2">
@@ -240,6 +243,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                         onClick={handleUpdateNote}
                         size="sm"
                         disabled={updateNoteMutation.isPending}
+                        className="bg-[#e94b7f] hover:bg-[#e94b7f]/90 text-white"
                       >
                         <Save className="h-4 w-4 mr-1" />
                         Save
@@ -248,6 +252,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                         onClick={() => setEditingNoteId(null)}
                         size="sm"
                         variant="outline"
+                        className="border-[#e94b7f]/30 text-[#e94b7f] hover:bg-[#e94b7f]/10"
                       >
                         <X className="h-4 w-4 mr-1" />
                         Cancel
@@ -258,13 +263,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                   // View mode
                   <div>
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-sm">{note.title}</h4>
+                      <h4 className="font-medium text-sm text-[#e94b7f]">{note.title}</h4>
                       <div className="flex gap-1">
                         <Button
                           onClick={() => handleEditNote(note)}
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 text-[#e94b7f] hover:bg-[#e94b7f]/10"
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
@@ -272,7 +277,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                           onClick={() => handleDeleteNote(note.id)}
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
