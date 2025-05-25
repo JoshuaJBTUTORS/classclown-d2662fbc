@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Calendar,
@@ -87,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background border-r w-64">
+    <div className="flex flex-col h-full bg-background border-r w-64 transition-all duration-300">
       <div className="flex items-center justify-center p-5 border-b border-gray-100">
         <img 
           src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 

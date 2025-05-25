@@ -87,7 +87,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen flex w-full">
         <Sidebar isOpen={sidebarOpen} />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-0'}`}>
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-y-auto">
             <div className="container py-8">
@@ -130,7 +130,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen flex w-full">
         <Sidebar isOpen={sidebarOpen} />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-0'}`}>
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-y-auto">
             <div className="container py-8">
@@ -162,7 +162,7 @@ const CourseDetail: React.FC = () => {
   return (
     <div className="min-h-screen flex w-full">
       <Sidebar isOpen={sidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-0'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-y-auto">
           <div className="container py-6">
