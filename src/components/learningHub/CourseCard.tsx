@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, ShoppingCart, CheckCircle } from 'lucide-react';
+import { BookOpen, ShoppingCart, CheckCircle, Gift } from 'lucide-react';
 import { Course } from '@/types/course';
 import { useNavigate } from 'react-router-dom';
 import { paymentService } from '@/services/paymentService';
@@ -65,14 +65,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false, hasPro
   };
 
   const handleButtonClick = () => {
-    if (course.status === 'published' && !isPurchased && !isAdmin && user) {
-      // For published courses that haven't been purchased by non-admin users
-      // Still allow preview (first lesson access)
-      navigate(`/course/${course.id}`);
-    } else {
-      // For all other cases (admin, purchased, or preview)
-      navigate(`/course/${course.id}`);
-    }
+    navigate(`/course/${course.id}`);
   };
 
   const handlePurchaseClick = (e: React.MouseEvent) => {
@@ -84,8 +77,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false, hasPro
 
   return (
     <>
-      <Card className="overflow-hidden flex flex-col h-full">
-        <div className="h-40 bg-gray-100 relative">
+      <Card className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow">
+        <div className="h-40 bg-gradient-to-br from-primary/10 to-accent/10 relative">
           {course.cover_image_url ? (
             <img 
               src={course.cover_image_url} 
@@ -94,29 +87,29 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false, hasPro
             />
           ) : (
             <div className="flex items-center justify-center h-full">
-              <BookOpen className="h-12 w-12 text-gray-400" />
+              <BookOpen className="h-12 w-12 text-primary/60" />
             </div>
           )}
           
           <div className="absolute top-2 right-2 flex gap-2">
             <Badge 
               variant="outline" 
-              className={`${getStatusColor(course.status)}`}
+              className={`${getStatusColor(course.status)} shadow-sm`}
             >
               {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
             </Badge>
             
             {isPurchased && (
-              <Badge className="bg-green-500 text-white">
+              <Badge className="bg-green-500 text-white shadow-sm">
                 <CheckCircle className="h-3 w-3 mr-1" />
-                Owned
+                Subscribed
               </Badge>
             )}
           </div>
           
           {course.status === 'published' && course.price && (
-            <Badge className="absolute bottom-2 left-2 bg-blue-600 text-white">
-              {formatPrice(course.price)}
+            <Badge className="absolute bottom-2 left-2 bg-primary text-white shadow-sm">
+              {formatPrice(course.price)}/month
             </Badge>
           )}
         </div>
@@ -131,7 +124,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false, hasPro
         <CardFooter className="mt-auto flex flex-col gap-2">
           <Button 
             onClick={handleButtonClick} 
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary/90"
             variant={course.status === 'published' ? "default" : "outline"}
             disabled={course.status !== 'published' && !isAdmin}
           >
@@ -141,11 +134,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, isAdmin = false, hasPro
           {isPublishedAndNotPurchased && (
             <Button 
               onClick={handlePurchaseClick}
-              variant="outline"
-              className="w-full border-blue-500 text-blue-600 hover:bg-blue-50"
+              variant="premium"
+              className="w-full group"
             >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Buy Full Course - {formatPrice(course.price || 899)}
+              <div className="flex items-center justify-center gap-2">
+                <Gift className="h-4 w-4 text-green-600 group-hover:text-green-700" />
+                <span>Start Free Trial</span>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  7 days free
+                </span>
+              </div>
             </Button>
           )}
         </CardFooter>

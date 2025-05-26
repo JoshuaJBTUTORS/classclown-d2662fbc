@@ -63,9 +63,10 @@ serve(async (req) => {
       throw new Error("Payment session not found");
     }
 
-    if (session.payment_status !== 'paid') {
+    // For subscription mode, check if subscription was created successfully
+    if (!session.subscription) {
       return new Response(
-        JSON.stringify({ error: "Payment not completed" }),
+        JSON.stringify({ error: "Subscription not created" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -77,6 +78,9 @@ serve(async (req) => {
       throw new Error("Invalid payment session metadata");
     }
 
+    // Get subscription details
+    const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+    
     // Check if purchase record already exists
     const { data: existingPurchase } = await supabaseClient
       .from('course_purchases')
@@ -92,17 +96,17 @@ serve(async (req) => {
       );
     }
 
-    // Create purchase record
+    // Create purchase record for subscription
     const { error: insertError } = await supabaseClient
       .from('course_purchases')
       .insert({
         user_id: userId,
         course_id: courseId,
         stripe_session_id: sessionId,
-        stripe_payment_intent_id: session.payment_intent,
-        amount_paid: session.amount_total || 0,
-        currency: session.currency || 'gbp',
-        status: 'completed'
+        stripe_payment_intent_id: subscription.id, // Store subscription ID
+        amount_paid: subscription.items.data[0]?.price?.unit_amount || 0,
+        currency: subscription.currency || 'gbp',
+        status: subscription.status === 'active' || subscription.status === 'trialing' ? 'completed' : 'pending'
       });
 
     if (insertError) {
@@ -110,7 +114,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Purchase verified and recorded" }),
+      JSON.stringify({ success: true, message: "Subscription verified and recorded" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

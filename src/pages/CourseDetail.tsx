@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen, ShoppingCart } from 'lucide-react';
+import { ChevronLeft, PenSquare, BookOpen, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,8 +43,8 @@ const CourseDetail: React.FC = () => {
     const paymentStatus = searchParams.get('payment');
     if (paymentStatus === 'success') {
       toast({
-        title: "Payment successful!",
-        description: "You now have full access to this course.",
+        title: "Subscription started!",
+        description: "Your 7-day free trial has begun. You now have full access to this course.",
       });
       // Verify the payment and update purchase status
       const sessionId = searchParams.get('session_id');
@@ -53,8 +53,8 @@ const CourseDetail: React.FC = () => {
       }
     } else if (paymentStatus === 'cancelled') {
       toast({
-        title: "Payment cancelled",
-        description: "Your payment was cancelled. You can try again anytime.",
+        title: "Subscription cancelled",
+        description: "Your subscription was cancelled. You can try again anytime.",
         variant: "destructive",
       });
     }
@@ -138,7 +138,7 @@ const CourseDetail: React.FC = () => {
     return `£${(priceInPence / 100).toFixed(2)}`;
   };
 
-  const handlePurchaseCourse = () => {
+  const handleStartTrial = () => {
     setShowPaymentModal(true);
   };
 
@@ -219,7 +219,7 @@ const CourseDetail: React.FC = () => {
   }
 
   const canAccessFullCourse = hasAdminPrivileges || isPurchased;
-  const showPurchaseButton = course.status === 'published' && !canAccessFullCourse && user;
+  const showTrialButton = course?.status === 'published' && !canAccessFullCourse && user;
 
   return (
     <div className="min-h-screen flex w-full">
@@ -243,13 +243,13 @@ const CourseDetail: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                {showPurchaseButton && (
+                {showTrialButton && (
                   <Button 
-                    onClick={handlePurchaseCourse}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={handleStartTrial}
+                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
                   >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Buy Course - {formatPrice(course.price || 899)}
+                    <Gift className="mr-2 h-4 w-4" />
+                    Start Free Trial - {formatPrice(course.price || 899)}/month
                   </Button>
                 )}
                 
@@ -268,19 +268,19 @@ const CourseDetail: React.FC = () => {
             {/* Course header */}
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-blue-500">{course.subject || "General"}</Badge>
-                <Badge variant="outline" className="text-gray-500">{course.status}</Badge>
+                <Badge className="bg-primary">{course?.subject || "General"}</Badge>
+                <Badge variant="outline" className="text-gray-500">{course?.status}</Badge>
                 {isPurchased && (
-                  <Badge className="bg-green-500 text-white">Purchased</Badge>
+                  <Badge className="bg-green-500 text-white">Subscribed</Badge>
                 )}
-                {!canAccessFullCourse && course.status === 'published' && (
+                {!canAccessFullCourse && course?.status === 'published' && (
                   <Badge variant="outline" className="text-orange-600 border-orange-300">
-                    Preview Mode - {formatPrice(course.price || 899)} to unlock
+                    Preview Mode - Start trial to unlock full course
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl font-bold mb-2">{course.title}</h1>
-              <p className="text-gray-600 mb-4">{course.description}</p>
+              <h1 className="text-2xl font-bold mb-2">{course?.title}</h1>
+              <p className="text-gray-600 mb-4">{course?.description}</p>
               
               {/* Progress bar */}
               {user && !progressLoading && (
