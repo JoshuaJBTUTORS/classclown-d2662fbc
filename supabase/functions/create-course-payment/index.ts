@@ -15,11 +15,15 @@ serve(async (req) => {
   }
   
   try {
+    console.log("Starting create-course-payment function");
+    
     const { courseId } = await req.json();
     
     if (!courseId) {
       throw new Error("Course ID is required");
     }
+
+    console.log("Processing payment for course:", courseId);
 
     // Create Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
@@ -39,11 +43,14 @@ serve(async (req) => {
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) {
+      console.error("Authentication error:", authError);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("User authenticated:", user.email);
 
     // Get course details
     const { data: course, error: courseError } = await supabaseClient
@@ -53,8 +60,11 @@ serve(async (req) => {
       .single();
 
     if (courseError || !course) {
+      console.error("Course fetch error:", courseError);
       throw new Error("Course not found");
     }
+
+    console.log("Course found:", course.title, "Price:", course.price);
 
     // Check if user already has an active subscription for this course
     const { data: existingPurchase } = await supabaseClient
@@ -77,14 +87,20 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
+    console.log("Stripe initialized");
+
     // Check if a Stripe customer record exists for this user
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+      console.log("Existing customer found:", customerId);
+    } else {
+      console.log("No existing customer found");
     }
 
     // Create a subscription checkout session with 7-day free trial
+    console.log("Creating Stripe checkout session");
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -99,7 +115,6 @@ serve(async (req) => {
             unit_amount: course.price || 899, // £8.99 per month
             recurring: {
               interval: "month",
-              trial_period_days: 7, // 7-day free trial
             },
           },
           quantity: 1,
@@ -120,6 +135,8 @@ serve(async (req) => {
         user_id: user.id,
       },
     });
+
+    console.log("Checkout session created successfully:", session.id);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

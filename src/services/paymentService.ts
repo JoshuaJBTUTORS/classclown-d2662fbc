@@ -1,26 +1,49 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CoursePurchase } from '@/types/course';
 
 export const paymentService = {
   // Create a Stripe checkout session for course purchase
   createCoursePayment: async (courseId: string): Promise<{ url: string }> => {
-    const { data, error } = await supabase.functions.invoke('create-course-payment', {
-      body: { courseId }
-    });
+    console.log('Creating payment for course:', courseId);
     
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.functions.invoke('create-course-payment', {
+        body: { courseId }
+      });
+      
+      if (error) {
+        console.error('Payment creation error:', error);
+        throw error;
+      }
+      
+      console.log('Payment session created successfully');
+      return data;
+    } catch (error) {
+      console.error('Payment service error:', error);
+      throw error;
+    }
   },
 
   // Verify payment completion
   verifyCoursePayment: async (sessionId: string): Promise<{ success: boolean; message: string }> => {
-    const { data, error } = await supabase.functions.invoke('verify-course-payment', {
-      body: { sessionId }
-    });
+    console.log('Verifying payment for session:', sessionId);
     
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-course-payment', {
+        body: { sessionId }
+      });
+      
+      if (error) {
+        console.error('Payment verification error:', error);
+        throw error;
+      }
+      
+      console.log('Payment verification successful');
+      return data;
+    } catch (error) {
+      console.error('Payment verification service error:', error);
+      throw error;
+    }
   },
 
   // Check if user has purchased a course
