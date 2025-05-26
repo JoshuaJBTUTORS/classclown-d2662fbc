@@ -7,6 +7,7 @@ export interface Course {
   status: 'draft' | 'published' | 'archived';
   subject?: string;
   difficulty_level?: string;
+  price?: number; // Price in pence (e.g., 899 for £8.99)
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +33,7 @@ export interface CourseLesson {
   content_text?: string;
   position: number;
   duration_minutes?: number;
+  is_preview?: boolean; // New field to mark preview lessons
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +77,20 @@ export interface QuizAttempt {
   score: number;
   total_questions: number;
   completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CoursePurchase {
+  id: string;
+  user_id: string;
+  course_id: string;
+  stripe_payment_intent_id?: string;
+  stripe_session_id?: string;
+  amount_paid: number;
+  currency: string;
+  purchase_date: string;
+  status: string;
   created_at: string;
   updated_at: string;
 }

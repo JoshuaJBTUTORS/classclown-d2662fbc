@@ -1,14 +1,15 @@
 
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen } from 'lucide-react';
+import { ChevronLeft, PenSquare, BookOpen, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { learningHubService } from '@/services/learningHubService';
+import { paymentService } from '@/services/paymentService';
 import { Course, CourseModule } from '@/types/course';
 import CourseSidebar from '@/components/learningHub/CourseSidebar';
 import ContentViewer from '@/components/learningHub/ContentViewer';
@@ -16,20 +17,48 @@ import ProgressBar from '@/components/learningHub/ProgressBar';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import NotesSection from '@/components/learningHub/NotesSection';
+import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
+import { useToast } from '@/hooks/use-toast';
 
 const CourseDetail: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAdmin, isOwner, isTutor, user } = useAuth();
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isPurchased, setIsPurchased] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const { toast } = useToast();
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // Check for payment success/failure in URL params
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'success') {
+      toast({
+        title: "Payment successful!",
+        description: "You now have full access to this course.",
+      });
+      // Verify the payment and update purchase status
+      const sessionId = searchParams.get('session_id');
+      if (sessionId) {
+        paymentService.verifyCoursePayment(sessionId).catch(console.error);
+      }
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Payment cancelled",
+        description: "Your payment was cancelled. You can try again anytime.",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams, toast]);
 
   // Fetch course details
   const { data: course, isLoading: courseLoading, error: courseError } = useQuery({
@@ -44,6 +73,22 @@ const CourseDetail: React.FC = () => {
     queryFn: () => learningHubService.getCourseModules(courseId!),
     enabled: !!courseId,
   });
+
+  // Check purchase status
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      if (user && courseId && course?.status === 'published') {
+        try {
+          const purchased = await paymentService.checkCoursePurchase(courseId);
+          setIsPurchased(purchased);
+        } catch (error) {
+          console.error('Error checking purchase status:', error);
+        }
+      }
+    };
+
+    checkPurchaseStatus();
+  }, [courseId, user, course?.status]);
 
   // Fetch student progress with corrected query key
   const { data: studentProgress, isLoading: progressLoading } = useQuery({
@@ -65,14 +110,20 @@ const CourseDetail: React.FC = () => {
       setActiveModuleId(modules[0].id);
       
       if (modules[0].lessons && modules[0].lessons.length > 0) {
-        setActiveLessonId(modules[0].lessons[0].id);
+        // Find the first accessible lesson (preview or purchased)
+        const firstAccessibleLesson = modules[0].lessons.find(lesson => 
+          lesson.is_preview || isPurchased || hasAdminPrivileges
+        );
+        if (firstAccessibleLesson) {
+          setActiveLessonId(firstAccessibleLesson.id);
+        }
       }
     }
-  }, [modules, activeModuleId]);
+  }, [modules, activeModuleId, isPurchased, hasAdminPrivileges]);
 
   // Handle lesson selection
-  const handleLessonSelect = (lessonId: string) => {
-    setActiveLessonId(lessonId);
+  const handleLessonSelect = (lesson: any) => {
+    setActiveLessonId(lesson.id);
   };
 
   // Find active content
@@ -82,6 +133,14 @@ const CourseDetail: React.FC = () => {
   // Count total lessons
   const totalLessons = modules?.reduce((total, module) => total + (module.lessons?.length || 0), 0) || 0;
   const completedLessons = studentProgress?.filter(p => p.status === 'completed').length || 0;
+
+  const formatPrice = (priceInPence: number) => {
+    return `£${(priceInPence / 100).toFixed(2)}`;
+  };
+
+  const handlePurchaseCourse = () => {
+    setShowPaymentModal(true);
+  };
 
   if (courseLoading || modulesLoading) {
     return (
@@ -159,6 +218,9 @@ const CourseDetail: React.FC = () => {
     );
   }
 
+  const canAccessFullCourse = hasAdminPrivileges || isPurchased;
+  const showPurchaseButton = course.status === 'published' && !canAccessFullCourse && user;
+
   return (
     <div className="min-h-screen flex w-full">
       <Sidebar isOpen={sidebarOpen} />
@@ -180,15 +242,27 @@ const CourseDetail: React.FC = () => {
                 </Button>
               </div>
               
-              {hasAdminPrivileges && (
-                <Button 
-                  onClick={() => navigate(`/course/${courseId}/edit`)}
-                  variant="outline"
-                >
-                  <PenSquare className="mr-2 h-4 w-4" />
-                  Edit Course
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {showPurchaseButton && (
+                  <Button 
+                    onClick={handlePurchaseCourse}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Buy Course - {formatPrice(course.price || 899)}
+                  </Button>
+                )}
+                
+                {hasAdminPrivileges && (
+                  <Button 
+                    onClick={() => navigate(`/course/${courseId}/edit`)}
+                    variant="outline"
+                  >
+                    <PenSquare className="mr-2 h-4 w-4" />
+                    Edit Course
+                  </Button>
+                )}
+              </div>
             </div>
             
             {/* Course header */}
@@ -196,6 +270,14 @@ const CourseDetail: React.FC = () => {
               <div className="flex items-center gap-2 mb-2">
                 <Badge className="bg-blue-500">{course.subject || "General"}</Badge>
                 <Badge variant="outline" className="text-gray-500">{course.status}</Badge>
+                {isPurchased && (
+                  <Badge className="bg-green-500 text-white">Purchased</Badge>
+                )}
+                {!canAccessFullCourse && course.status === 'published' && (
+                  <Badge variant="outline" className="text-orange-600 border-orange-300">
+                    Preview Mode - {formatPrice(course.price || 899)} to unlock
+                  </Badge>
+                )}
               </div>
               <h1 className="text-2xl font-bold mb-2">{course.title}</h1>
               <p className="text-gray-600 mb-4">{course.description}</p>
@@ -213,19 +295,21 @@ const CourseDetail: React.FC = () => {
             
             <Separator className="my-4" />
             
-            {/* Optimized course content layout */}
+            {/* Course content layout */}
             <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-              {/* Compact sidebar with modules and lessons */}
+              {/* Sidebar with modules and lessons */}
               <div className="lg:col-span-2">
                 <CourseSidebar 
                   modules={modules || []}
                   studentProgress={studentProgress || []}
-                  onSelectLesson={lesson => setActiveLessonId(lesson.id)}
+                  onSelectLesson={handleLessonSelect}
                   currentLessonId={activeLessonId || undefined}
+                  isAdmin={hasAdminPrivileges}
+                  isPurchased={canAccessFullCourse}
                 />
               </div>
               
-              {/* Expanded content viewer */}
+              {/* Content viewer */}
               <div className="lg:col-span-5">
                 {activeLesson ? (
                   <ContentViewer 
@@ -236,14 +320,16 @@ const CourseDetail: React.FC = () => {
                   <div className="flex flex-col items-center justify-center h-[400px] bg-gray-50 border rounded-lg">
                     <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium mb-2">No lesson selected</h3>
-                    <p className="text-gray-500">
-                      Select a lesson from the sidebar to start learning
+                    <p className="text-gray-500 text-center">
+                      {modules && modules.length > 0 
+                        ? "Select a lesson from the sidebar to start learning"
+                        : "No content available for this course"}
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Compact notes section */}
+              {/* Notes section */}
               <div className="lg:col-span-3">
                 <NotesSection 
                   courseId={courseId!}
@@ -255,6 +341,14 @@ const CourseDetail: React.FC = () => {
           </div>
         </main>
       </div>
+      
+      {course && (
+        <CoursePaymentModal
+          course={course}
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle } from 'lucide-react';
+import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 import { learningHubService } from '@/services/learningHubService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ interface CourseSidebarProps {
   onSelectLesson: (lesson: CourseLesson) => void;
   currentLessonId?: string;
   isAdmin?: boolean;
+  isPurchased?: boolean;
 }
 
 const CourseSidebar: React.FC<CourseSidebarProps> = ({ 
@@ -22,7 +24,8 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   studentProgress = [],
   onSelectLesson,
   currentLessonId,
-  isAdmin = false
+  isAdmin = false,
+  isPurchased = false
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -42,28 +45,33 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   const isLessonCompleted = (lessonId: string) => {
     const progress = studentProgress.find(p => p.lesson_id === lessonId);
     const completed = progress?.status === 'completed';
-    console.log('Checking lesson completion:', { lessonId, progress, completed });
     return completed;
+  };
+
+  // Helper to check if lesson is accessible
+  const isLessonAccessible = (lesson: CourseLesson) => {
+    // Admin can access all lessons
+    if (isAdmin) return true;
+    
+    // If course is purchased, all lessons are accessible
+    if (isPurchased) return true;
+    
+    // If not purchased, only preview lessons are accessible
+    return lesson.is_preview === true;
   };
 
   // Mutation for toggling lesson completion
   const toggleCompletionMutation = useMutation({
     mutationFn: async (lessonId: string) => {
-      console.log('Starting toggle completion for lesson:', lessonId);
-      console.log('User email:', user?.email);
-      
       if (!user?.email) {
         throw new Error('User email not available');
       }
       
       const result = await learningHubService.toggleLessonCompletion(user.email, lessonId);
-      console.log('Toggle completion result:', result);
       return result;
     },
     onSuccess: (data) => {
-      console.log('Toggle completion success:', data);
-      
-      // Invalidate both student progress queries with proper keys
+      // Invalidate relevant queries
       queryClient.invalidateQueries({ 
         queryKey: ['student-progress', user?.email] 
       });
@@ -91,19 +99,20 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
 
   const handleToggleCompletion = (e: React.MouseEvent, lessonId: string) => {
     e.stopPropagation();
-    console.log('Circle clicked for lesson:', lessonId);
-    console.log('Current student progress:', studentProgress);
-    console.log('Is lesson currently completed:', isLessonCompleted(lessonId));
-    
     toggleCompletionMutation.mutate(lessonId);
   };
 
-  console.log('CourseSidebar render:', {
-    modulesCount: modules.length,
-    studentProgressCount: studentProgress.length,
-    userEmail: user?.email,
-    currentLessonId
-  });
+  const handleLessonClick = (lesson: CourseLesson) => {
+    if (!isLessonAccessible(lesson)) {
+      toast({
+        title: "Lesson locked",
+        description: "Purchase the full course to access this lesson.",
+        variant: "destructive",
+      });
+      return;
+    }
+    onSelectLesson(lesson);
+  };
 
   return (
     <div className="w-full h-full flex flex-col border rounded-md bg-white">
@@ -132,6 +141,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
               const moduleLessons = module.lessons || [];
               const completedCount = moduleLessons.filter(lesson => isLessonCompleted(lesson.id)).length;
               const totalCount = moduleLessons.length;
+              const accessibleCount = moduleLessons.filter(lesson => isLessonAccessible(lesson)).length;
               
               return (
                 <div key={module.id} className="mb-2">
@@ -142,9 +152,14 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                     <div className="flex-1 min-w-0">
                       <span className="font-medium text-sm truncate block">{module.title}</span>
                       {totalCount > 0 && (
-                        <span className="text-xs text-gray-500">
-                          {completedCount}/{totalCount}
-                        </span>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>{completedCount}/{totalCount}</span>
+                          {!isPurchased && !isAdmin && (
+                            <Badge variant="outline" className="text-xs">
+                              {accessibleCount} accessible
+                            </Badge>
+                          )}
+                        </div>
                       )}
                     </div>
                     {expandedModules[module.id] ? (
@@ -160,25 +175,18 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                         const completed = isLessonCompleted(lesson.id);
                         const isActive = currentLessonId === lesson.id;
                         const isLoading = toggleCompletionMutation.isPending;
-                        
-                        console.log('Rendering lesson:', { 
-                          lessonId: lesson.id, 
-                          lessonTitle: lesson.title, 
-                          completed, 
-                          isActive, 
-                          isLoading 
-                        });
+                        const accessible = isLessonAccessible(lesson);
                         
                         return (
                           <div
                             key={lesson.id}
                             className={`w-full text-left p-1.5 text-xs rounded flex items-start hover:bg-gray-50 ${
                               isActive ? 'bg-blue-50 border border-blue-200' : ''
-                            }`}
+                            } ${!accessible ? 'opacity-60' : ''}`}
                           >
                             <button
                               onClick={(e) => handleToggleCompletion(e, lesson.id)}
-                              disabled={isLoading}
+                              disabled={isLoading || !accessible}
                               className="mr-2 mt-0.5 hover:scale-110 transition-transform disabled:opacity-50 flex-shrink-0"
                             >
                               {completed ? (
@@ -187,14 +195,28 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                                 <Circle className="h-4 w-4 text-gray-300 hover:text-gray-500" />
                               )}
                             </button>
-                            <button
-                              onClick={() => onSelectLesson(lesson)}
-                              className="flex-1 text-left min-w-0"
-                            >
-                              <span className={`line-clamp-2 ${isActive ? 'font-medium text-blue-700' : 'text-gray-700'}`}>
-                                {lesson.title}
-                              </span>
-                            </button>
+                            
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              <button
+                                onClick={() => handleLessonClick(lesson)}
+                                className="flex-1 text-left min-w-0"
+                              >
+                                <span className={`line-clamp-2 ${isActive ? 'font-medium text-blue-700' : 'text-gray-700'}`}>
+                                  {lesson.title}
+                                </span>
+                              </button>
+                              
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {lesson.is_preview && (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    Preview
+                                  </Badge>
+                                )}
+                                {!accessible && (
+                                  <Lock className="h-3 w-3 text-gray-400" />
+                                )}
+                              </div>
+                            </div>
                           </div>
                         );
                       })}

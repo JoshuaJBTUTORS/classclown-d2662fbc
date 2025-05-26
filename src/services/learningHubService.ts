@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 import { CourseNote, CreateCourseNoteRequest, UpdateCourseNoteRequest } from '@/types/courseNotes';
+import { paymentService } from './paymentService';
 
 export const learningHubService = {
   // Course methods
@@ -37,7 +38,8 @@ export const learningHubService = {
       cover_image_url: course.cover_image_url,
       subject: course.subject,
       difficulty_level: course.difficulty_level,
-      status: course.status || 'draft'
+      status: course.status || 'draft',
+      price: course.price || 899 // Default to £8.99
     };
     
     const { data, error } = await supabase
@@ -145,7 +147,8 @@ export const learningHubService = {
       content_url: lesson.content_url,
       content_text: lesson.content_text,
       position: lesson.position,
-      duration_minutes: lesson.duration_minutes
+      duration_minutes: lesson.duration_minutes,
+      is_preview: lesson.is_preview || false
     };
     
     const { data, error } = await supabase
@@ -186,6 +189,11 @@ export const learningHubService = {
       throw new Error('User not authenticated or email not available');
     }
     return user.email;
+  },
+
+  // Check if user has purchased a course
+  checkCoursePurchase: async (courseId: string): Promise<boolean> => {
+    return await paymentService.checkCoursePurchase(courseId);
   },
 
   // Fixed Student Progress method - simplified query without complex joins

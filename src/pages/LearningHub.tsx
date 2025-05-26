@@ -1,10 +1,6 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/ui/PageTitle';
 import { learningHubService } from '@/services/learningHubService';
@@ -12,8 +8,10 @@ import { Course } from '@/types/course';
 import { BookOpen, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import CourseCard from '@/components/learningHub/CourseCard';
 
 // Define subject categories
 const subjects = [
@@ -35,15 +33,6 @@ const LearningHub: React.FC = () => {
     queryKey: ['courses'],
     queryFn: learningHubService.getCourses,
   });
-  
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'published': return 'bg-green-100 text-green-800 border-green-200';
-      case 'archived': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-blue-100 text-blue-800 border-blue-200';
-    }
-  };
 
   // Filter courses by selected subject
   const filteredCourses = courses?.filter((course: Course) => {
@@ -103,18 +92,16 @@ const LearningHub: React.FC = () => {
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <Card key={i} className="overflow-hidden">
+                  <div key={i} className="overflow-hidden border rounded-lg">
                     <div className="h-40 bg-gray-200">
                       <Skeleton className="h-full w-full" />
                     </div>
-                    <CardHeader>
+                    <div className="p-6">
                       <Skeleton className="h-6 w-3/4 mb-2" />
-                      <Skeleton className="h-4 w-full" />
-                    </CardHeader>
-                    <CardFooter>
+                      <Skeleton className="h-4 w-full mb-4" />
                       <Skeleton className="h-9 w-full" />
-                    </CardFooter>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : error ? (
@@ -143,52 +130,12 @@ const LearningHub: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCourses?.map((course: Course) => (
-                  <Card key={course.id} className="overflow-hidden flex flex-col">
-                    <div className="h-40 bg-gray-100 relative">
-                      {course.cover_image_url ? (
-                        <img 
-                          src={course.cover_image_url} 
-                          alt={course.title} 
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <BookOpen className="h-12 w-12 text-gray-400" />
-                        </div>
-                      )}
-                      <Badge 
-                        variant="outline" 
-                        className={`absolute top-2 right-2 ${getStatusColor(course.status)}`}
-                      >
-                        {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                      </Badge>
-                      {course.subject && (
-                        <Badge 
-                          className="absolute bottom-2 left-2 bg-blue-500 text-white"
-                        >
-                          {course.subject}
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <CardHeader>
-                      <CardTitle className="line-clamp-2">{course.title}</CardTitle>
-                      <CardDescription className="line-clamp-3">
-                        {course.description || "No description available"}
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    <CardFooter className="mt-auto">
-                      <Button 
-                        onClick={() => navigate(`/course/${course.id}`)} 
-                        className="w-full"
-                        variant={course.status === 'published' ? "default" : "outline"}
-                        disabled={course.status !== 'published' && !hasAdminPrivileges}
-                      >
-                        {course.status === 'published' ? "Start Learning" : "Preview Course"}
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    isAdmin={hasAdminPrivileges}
+                    hasProgress={false} // TODO: Implement progress checking
+                  />
                 ))}
               </div>
             )}

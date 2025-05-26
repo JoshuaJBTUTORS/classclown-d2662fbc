@@ -18,6 +18,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           id: string
+          is_preview: boolean | null
           module_id: string
           position: number
           title: string
@@ -31,6 +32,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          is_preview?: boolean | null
           module_id: string
           position: number
           title: string
@@ -44,6 +46,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          is_preview?: boolean | null
           module_id?: string
           position?: number
           title?: string
@@ -145,6 +148,56 @@ export type Database = {
           },
         ]
       }
+      course_purchases: {
+        Row: {
+          amount_paid: number
+          course_id: string
+          created_at: string
+          currency: string
+          id: string
+          purchase_date: string
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          course_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          purchase_date?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          course_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          purchase_date?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_purchases_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           cover_image_url: string | null
@@ -152,6 +205,7 @@ export type Database = {
           description: string | null
           difficulty_level: string | null
           id: string
+          price: number | null
           status: string
           subject: string | null
           title: string
@@ -163,6 +217,7 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
+          price?: number | null
           status?: string
           subject?: string | null
           title: string
@@ -174,6 +229,7 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
+          price?: number | null
           status?: string
           subject?: string | null
           title?: string
@@ -729,11 +785,22 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_purchased_courses: {
+        Args: { user_id_param: string }
+        Returns: {
+          course_id: string
+          purchase_date: string
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      user_has_purchased_course: {
+        Args: { course_id_param: string; user_id_param: string }
         Returns: boolean
       }
     }
