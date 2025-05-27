@@ -45,12 +45,16 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   }, [lessonId, student.id]);
 
   const loadAttendanceData = async () => {
-    const attendanceData = await getAttendanceData(lessonId);
-    const studentAttendance = attendanceData.find(a => a.student_id === student.id);
-    
-    if (studentAttendance) {
-      setAttendanceStatus(studentAttendance.attendance_status);
-      setLastMarked(studentAttendance.marked_at);
+    try {
+      const attendanceData = await getAttendanceData(lessonId);
+      const studentAttendance = attendanceData.find(a => a.student_id === student.id);
+      
+      if (studentAttendance) {
+        setAttendanceStatus(studentAttendance.attendance_status);
+        setLastMarked(studentAttendance.marked_at);
+      }
+    } catch (error) {
+      console.error('Error loading attendance data:', error);
     }
   };
 

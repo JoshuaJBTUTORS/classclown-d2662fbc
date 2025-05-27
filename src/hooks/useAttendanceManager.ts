@@ -16,6 +16,9 @@ export const useAttendanceManager = () => {
   ) => {
     setIsUpdating(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('lesson_attendance')
         .upsert({
@@ -23,6 +26,7 @@ export const useAttendanceManager = () => {
           student_id: studentId,
           attendance_status: status,
           marked_at: new Date().toISOString(),
+          marked_by: user?.id || null,
           notes: notes || null
         }, {
           onConflict: 'lesson_id,student_id'
