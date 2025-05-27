@@ -188,15 +188,17 @@
   padding: 0.5rem;
 }
 
-/* Enhanced Event Styling */
+/* Enhanced Event Styling with Optimized Text Display */
 .calendar-container .custom-calendar-event {
   border-radius: 0.375rem;
   border: none !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   font-weight: 500;
   cursor: pointer;
+  min-height: 16px;
+  overflow: hidden;
 }
 
 .calendar-container .custom-calendar-event:hover {
@@ -206,43 +208,83 @@
 
 .calendar-container .custom-calendar-event .fc-event-title {
   font-weight: 500;
-  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.calendar-container .custom-calendar-event .fc-event-main-frame {
+  padding: 1px 3px;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .calendar-container .recurring-event {
-  border-left: 4px solid rgba(255, 255, 255, 0.5) !important;
+  border-left: 2px solid rgba(255, 255, 255, 0.6) !important;
+  padding-left: 1px !important;
 }
 
 .calendar-container .group-event .fc-event-title {
   font-style: italic;
 }
 
-/* Month view specific styling */
+/* Month view specific styling - ultra compact */
 .calendar-container .fc-daygrid-event {
-  margin: 1px 2px;
-  padding: 2px 6px;
+  margin: 0.5px 1px;
+  padding: 1px 2px;
+  min-height: 14px;
+  font-size: 10px;
+  line-height: 1.1;
 }
 
 .calendar-container .fc-daygrid-event .fc-event-title {
-  font-size: 0.75rem;
-  line-height: 1.2;
-}
-
-/* Week and Day view styling */
-.calendar-container .fc-timegrid-event {
-  border-radius: 0.25rem;
-  padding: 2px 4px;
-}
-
-.calendar-container .fc-timegrid-event .fc-event-title {
-  font-size: 0.875rem;
+  font-size: 10px;
+  line-height: 1.1;
   font-weight: 500;
 }
 
+.calendar-container .fc-daygrid-event .fc-event-time {
+  font-size: 9px;
+  line-height: 1.1;
+}
+
+/* Week and Day view styling - more space available */
+.calendar-container .fc-timegrid-event {
+  border-radius: 0.25rem;
+  padding: 2px 4px;
+  min-height: 20px;
+}
+
+.calendar-container .fc-timegrid-event .fc-event-title {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.calendar-container .fc-timegrid-event .fc-event-time {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
 .calendar-container .fc-timegrid-event .fc-event-tutor {
-  font-size: 0.75rem;
+  font-size: 10px;
   opacity: 0.8;
-  margin-top: 2px;
+  margin-top: 1px;
+  line-height: 1.1;
+}
+
+.calendar-container .fc-timegrid-event .fc-event-students {
+  font-size: 10px;
+  opacity: 0.8;
+  line-height: 1.1;
+}
+
+/* Text truncation utilities */
+.calendar-container .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* More link styling */
@@ -252,6 +294,7 @@
   padding: 2px 4px;
   border-radius: 0.25rem;
   transition: all 0.2s;
+  font-size: 10px;
 }
 
 .calendar-container .fc-more-link:hover {
@@ -321,5 +364,38 @@
   .calendar-container .fc-toolbar-title {
     font-size: 1.25rem;
     margin-bottom: 0.5rem;
+  }
+
+  /* Even more compact on mobile */
+  .calendar-container .fc-daygrid-event {
+    margin: 0.5px;
+    padding: 0.5px 1px;
+    min-height: 12px;
+    font-size: 9px;
+  }
+
+  .calendar-container .fc-daygrid-event .fc-event-title {
+    font-size: 9px;
+  }
+
+  .calendar-container .fc-daygrid-event .fc-event-time {
+    font-size: 8px;
+  }
+}
+
+/* Ultra-small screen adjustments */
+@media (max-width: 480px) {
+  .calendar-container .fc-daygrid-event {
+    font-size: 8px;
+    min-height: 10px;
+    padding: 0.5px;
+  }
+
+  .calendar-container .fc-daygrid-event .fc-event-title {
+    font-size: 8px;
+  }
+
+  .calendar-container .fc-daygrid-event .fc-event-time {
+    font-size: 7px;
   }
 }
