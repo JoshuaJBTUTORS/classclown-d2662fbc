@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -45,27 +46,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setPreloadedLessonData(null);
   };
 
-  // Enhanced event color logic with completion status
+  // Simplified event color logic - use primary pink for all lessons
   const getEventColor = (event: any) => {
-    // Check completion status
-    if (event.extendedProps.attendance_completed) {
-      return 'hsl(142 76% 36%)'; // Green for fully completed
-    } else if (event.extendedProps.homework_assigned || event.extendedProps.status === 'completed') {
-      return 'hsl(45 93% 47%)'; // Yellow for homework assigned but attendance pending
-    } else {
-      return 'hsl(342 77% 60%)'; // Primary pink for scheduled
-    }
-  };
-
-  // Helper function to get completion indicator
-  const getCompletionIndicator = (event: any, view: string) => {
-    if (event.extendedProps.attendance_completed) {
-      return '✓'; // Green checkmark for fully completed
-    } else if (event.extendedProps.homework_assigned || event.extendedProps.status === 'completed') {
-      return '●'; // Yellow dot for homework assigned
-    } else {
-      return ''; // No indicator for scheduled
-    }
+    return 'hsl(342 77% 60%)'; // Primary pink for all lessons
   };
 
   // Helper function to truncate text intelligently
@@ -157,7 +140,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 const isRecurring = eventInfo.event.extendedProps.isRecurring || 
                                   eventInfo.event.extendedProps.isRecurringInstance;
                 const subject = eventInfo.event.extendedProps.subject;
-                const completionIndicator = getCompletionIndicator(eventInfo.event, eventInfo.view.type);
                 
                 return (
                   <div className="fc-event-main-frame p-0.5 min-h-0 overflow-hidden">
@@ -170,11 +152,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                           <span className="event-title text-[10px] leading-tight font-medium truncate min-w-0">
                             {truncateText(eventInfo.event.title, 12)}
                           </span>
-                          {completionIndicator && (
-                            <span className="inline-flex items-center justify-center flex-shrink-0 text-[10px]">
-                              {completionIndicator}
-                            </span>
-                          )}
                           {isRecurring && (
                             <span className="inline-flex items-center justify-center flex-shrink-0">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
@@ -195,11 +172,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                             <span className="event-title text-xs leading-tight font-semibold truncate min-w-0">
                               {truncateText(eventInfo.event.title, isWeekView ? 20 : 30)}
                             </span>
-                            {completionIndicator && (
-                              <span className="inline-flex items-center justify-center flex-shrink-0 text-xs">
-                                {completionIndicator}
-                              </span>
-                            )}
                             {isRecurring && (
                               <span className="inline-flex items-center justify-center flex-shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">

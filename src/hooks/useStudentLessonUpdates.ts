@@ -60,22 +60,6 @@ export const useStudentLessonUpdates = ({
           toast.success('Lesson enrollment updated');
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lesson_attendance'
-        },
-        (payload) => {
-          console.log('Lesson attendance update received:', payload);
-          setLastUpdateTime(new Date());
-          if (onLessonUpdate) {
-            onLessonUpdate();
-          }
-          toast.success('Attendance updated');
-        }
-      )
       .subscribe();
 
     return () => {
@@ -109,7 +93,7 @@ export const useStudentLessonUpdates = ({
     }
   }, [isAuthenticated, userEmail, onLessonUpdate]);
 
-  // Update student lesson attendance status
+  // Update student lesson status (attendance, etc.)
   const updateStudentLessonStatus = useCallback(async (
     lessonId: string, 
     studentId: number, 
@@ -119,26 +103,21 @@ export const useStudentLessonUpdates = ({
 
     setIsUpdating(true);
     try {
-      console.log(`Updating lesson attendance for student ${studentId} in lesson ${lessonId} to ${status}`);
+      console.log(`Updating lesson status for student ${studentId} in lesson ${lessonId} to ${status}`);
       
-      // Use upsert to either insert or update attendance record
       const { error } = await supabase
-        .from('lesson_attendance')
-        .upsert({
-          lesson_id: lessonId,
-          student_id: studentId,
-          attendance_status: status
-        }, {
-          onConflict: 'lesson_id,student_id'
-        });
+        .from('lesson_students')
+        .update({ attendance_status: status })
+        .eq('lesson_id', lessonId)
+        .eq('student_id', studentId);
 
       if (error) throw error;
 
-      toast.success('Lesson attendance updated successfully');
+      toast.success('Lesson status updated successfully');
       return true;
     } catch (error) {
-      console.error('Error updating lesson attendance:', error);
-      toast.error('Failed to update lesson attendance');
+      console.error('Error updating lesson status:', error);
+      toast.error('Failed to update lesson status');
       return false;
     } finally {
       setIsUpdating(false);
