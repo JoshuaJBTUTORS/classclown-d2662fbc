@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -35,19 +34,19 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     try {
       setIsLoading(true);
       
-      // Fetch students
+      // Fetch students with status field included
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select('id, first_name, last_name, email')
+        .select('id, first_name, last_name, email, status')
         .eq('status', 'active')
         .order('first_name');
 
       if (studentsError) throw studentsError;
 
-      // Fetch tutors
+      // Fetch tutors with status field included
       const { data: tutorsData, error: tutorsError } = await supabase
         .from('tutors')
-        .select('id, first_name, last_name, email')
+        .select('id, first_name, last_name, email, status')
         .eq('status', 'active')
         .order('first_name');
 
