@@ -371,9 +371,53 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_attendance: {
+        Row: {
+          attendance_status: string
+          created_at: string | null
+          id: string
+          lesson_id: string
+          notes: string | null
+          student_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          attendance_status: string
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          notes?: string | null
+          student_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          attendance_status?: string
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          notes?: string | null
+          student_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_attendance_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_students: {
         Row: {
-          attendance_status: string | null
           created_at: string | null
           id: string
           lesson_id: string
@@ -381,7 +425,6 @@ export type Database = {
           student_id: number
         }
         Insert: {
-          attendance_status?: string | null
           created_at?: string | null
           id?: string
           lesson_id: string
@@ -389,7 +432,6 @@ export type Database = {
           student_id: number
         }
         Update: {
-          attendance_status?: string | null
           created_at?: string | null
           id?: string
           lesson_id?: string
@@ -415,6 +457,7 @@ export type Database = {
       }
       lessons: {
         Row: {
+          attendance_completed: boolean | null
           completion_date: string | null
           created_at: string | null
           description: string | null
@@ -438,6 +481,7 @@ export type Database = {
           video_conference_provider: string | null
         }
         Insert: {
+          attendance_completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
@@ -461,6 +505,7 @@ export type Database = {
           video_conference_provider?: string | null
         }
         Update: {
+          attendance_completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
