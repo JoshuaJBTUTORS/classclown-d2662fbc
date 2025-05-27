@@ -65,8 +65,7 @@ export const useCalendarData = ({
               *,
               lesson_students!inner(
                 student_id,
-                lesson_space_url,
-                attendance_status
+                lesson_space_url
               )
             `)
             .eq('lesson_students.student_id', studentData.id);
@@ -99,7 +98,6 @@ export const useCalendarData = ({
               lesson_students(
                 student_id,
                 lesson_space_url,
-                attendance_status,
                 student:students(id, first_name, last_name)
               )
             `)
@@ -114,7 +112,6 @@ export const useCalendarData = ({
               lesson_students(
                 student_id,
                 lesson_space_url,
-                attendance_status,
                 student:students(id, first_name, last_name)
               )
             `);
@@ -165,8 +162,7 @@ export const useCalendarData = ({
               .filter(ls => ls.lesson_space_url)
               .map(ls => ({
                 url: ls.lesson_space_url,
-                studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student',
-                attendanceStatus: ls.attendance_status
+                studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
               }));
           }
           
@@ -177,9 +173,11 @@ export const useCalendarData = ({
             className += ' video-conference-event';
           }
           
-          if (userRole === 'student' && lesson.lesson_students?.[0]?.attendance_status) {
-            const status = lesson.lesson_students[0].attendance_status;
-            className += ` status-${status}`;
+          // Use lesson completion status instead of individual attendance status
+          if (lesson.attendance_completed) {
+            className += ' status-completed';
+          } else if (lesson.status === 'completed') {
+            className += ' status-partial';
           }
           
           return {
@@ -193,7 +191,7 @@ export const useCalendarData = ({
               recurrenceInterval: lesson.recurrence_interval,
               recurrenceEndDate: lesson.recurrence_end_date,
               description: lesson.description,
-              subject: lesson.subject, // Add subject to extended props
+              subject: lesson.subject,
               videoConferenceLink: videoConferenceLink,
               videoConferenceProvider: lesson.video_conference_provider,
               lessonSpaceRoomId: lesson.lesson_space_room_id,
@@ -201,7 +199,9 @@ export const useCalendarData = ({
               lessonSpaceSpaceId: lesson.lesson_space_room_id,
               studentUrls: studentUrls,
               userRole: userRole,
-              attendanceStatus: userRole === 'student' ? lesson.lesson_students?.[0]?.attendance_status : null,
+              // Use lesson-level completion status
+              attendance_completed: lesson.attendance_completed,
+              status: lesson.status,
               tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
                 id: lesson.tutor.id,
                 first_name: lesson.tutor.first_name,
@@ -260,8 +260,7 @@ export const useCalendarData = ({
         .filter(ls => ls.lesson_space_url)
         .map(ls => ({
           url: ls.lesson_space_url,
-          studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student',
-          attendanceStatus: ls.attendance_status
+          studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
         }));
     }
     
@@ -290,6 +289,7 @@ export const useCalendarData = ({
             isRecurringInstance: true,
             originalLessonId: lesson.id,
             description: lesson.description,
+            subject: lesson.subject,
             videoConferenceLink: videoConferenceLink,
             videoConferenceProvider: lesson.video_conference_provider,
             lessonSpaceRoomId: lesson.lesson_space_room_id,
@@ -297,6 +297,9 @@ export const useCalendarData = ({
             lessonSpaceSpaceId: lesson.lesson_space_room_id,
             studentUrls: studentUrls,
             userRole: userRole,
+            // Recurring instances inherit the completion status from the original lesson
+            attendance_completed: lesson.attendance_completed,
+            status: lesson.status,
             tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
               id: lesson.tutor.id,
               first_name: lesson.tutor.first_name,
