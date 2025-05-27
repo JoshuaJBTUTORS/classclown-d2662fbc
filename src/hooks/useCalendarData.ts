@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,9 +9,19 @@ interface UseCalendarDataProps {
   userEmail: string | null;
   isAuthenticated: boolean;
   refreshKey?: number;
+  filters?: {
+    selectedStudents: string[];
+    selectedTutors: string[];
+  };
 }
 
-export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshKey }: UseCalendarDataProps) => {
+export const useCalendarData = ({ 
+  userRole, 
+  userEmail, 
+  isAuthenticated, 
+  refreshKey,
+  filters 
+}: UseCalendarDataProps) => {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,7 +58,6 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
             return;
           }
 
-          // For students, get lessons with their individual lesson space URLs
           query = supabase
             .from('lessons')
             .select(`
@@ -83,7 +91,6 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
             return;
           }
 
-          // For tutors, get lessons with all student URLs
           query = supabase
             .from('lessons')
             .select(`
@@ -98,11 +105,11 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
             .eq('tutor_id', tutorData.id);
 
         } else if (userRole === 'admin' || userRole === 'owner') {
-          // For admins, get all lessons with student information
           query = supabase
             .from('lessons')
             .select(`
               *,
+              tutor:tutors!inner(id, first_name, last_name, email),
               lesson_students(
                 student_id,
                 lesson_space_url,
@@ -110,6 +117,15 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
                 student:students(id, first_name, last_name)
               )
             `);
+
+          if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
+            query = query.in('tutor_id', filters.selectedTutors);
+          }
+
+          if (filters?.selectedStudents && filters.selectedStudents.length > 0) {
+            query = query.in('lesson_students.student_id', filters.selectedStudents.map(id => parseInt(id)));
+          }
+
         } else {
           setEvents([]);
           setIsLoading(false);
@@ -122,23 +138,28 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
 
         console.log("Lessons fetched:", data);
         
-        // Process regular lessons
-        const calendarEvents = (data || []).map(lesson => {
-          // For students, prioritize the simple invite URL format over individual URLs
+        let filteredData = data || [];
+        if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
+          filteredData = filteredData.filter(lesson => {
+            if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
+            return lesson.lesson_students.some(ls => 
+              filters.selectedStudents.includes(ls.student_id.toString())
+            );
+          });
+        }
+        
+        const calendarEvents = filteredData.map(lesson => {
           let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
           let studentUrls = [];
           
           if (userRole === 'student' && lesson.lesson_space_room_id) {
-            // Always use the simple invite URL for students when room_id exists
             videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
           } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
-            // Fallback to individual URL if available
             const studentLessonData = lesson.lesson_students[0];
             if (studentLessonData.lesson_space_url) {
               videoConferenceLink = studentLessonData.lesson_space_url;
             }
           } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
-            // For tutors and admins, collect all student URLs
             studentUrls = lesson.lesson_students
               .filter(ls => ls.lesson_space_url)
               .map(ls => ({
@@ -155,7 +176,6 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
             className += ' video-conference-event';
           }
           
-          // Add status-based styling for students
           if (userRole === 'student' && lesson.lesson_students?.[0]?.attendance_status) {
             const status = lesson.lesson_students[0].attendance_status;
             className += ` status-${status}`;
@@ -176,16 +196,25 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
               videoConferenceProvider: lesson.video_conference_provider,
               lessonSpaceRoomId: lesson.lesson_space_room_id,
               lessonSpaceRoomUrl: lesson.lesson_space_room_url,
-              lessonSpaceSpaceId: lesson.lesson_space_room_id, // Use room_id as space_id
+              lessonSpaceSpaceId: lesson.lesson_space_room_id,
               studentUrls: studentUrls,
               userRole: userRole,
-              attendanceStatus: userRole === 'student' ? lesson.lesson_students?.[0]?.attendance_status : null
+              attendanceStatus: userRole === 'student' ? lesson.lesson_students?.[0]?.attendance_status : null,
+              tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
+                id: lesson.tutor.id,
+                first_name: lesson.tutor.first_name,
+                last_name: lesson.tutor.last_name,
+                email: lesson.tutor.email
+              } : null,
+              students: lesson.lesson_students?.map(ls => ({
+                id: ls.student_id,
+                name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+              })) || []
             }
           };
         });
 
-        // Process recurring lessons
-        for (const lesson of data || []) {
+        for (const lesson of filteredData) {
           if (lesson.is_recurring && lesson.recurrence_interval) {
             const recurringEvents = generateRecurringEvents(lesson, userRole);
             calendarEvents.push(...recurringEvents);
@@ -202,9 +231,8 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
     };
 
     fetchEvents();
-  }, [userRole, userEmail, isAuthenticated, refreshKey]);
+  }, [userRole, userEmail, isAuthenticated, refreshKey, filters]);
 
-  // Function to generate recurring events with corrected URL logic
   const generateRecurringEvents = (lesson, userRole) => {
     const events = [];
     const startDate = parseISO(lesson.start_time);
@@ -215,15 +243,12 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
 
     const durationMs = endDate.getTime() - startDate.getTime();
     
-    // Determine the correct video conference link for this user role
     let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
     let studentUrls = [];
     
     if (userRole === 'student' && lesson.lesson_space_room_id) {
-      // Always use the simple invite URL for students when room_id exists
       videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
     } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
-      // Fallback to individual URL if available
       const studentLessonData = lesson.lesson_students[0];
       if (studentLessonData.lesson_space_url) {
         videoConferenceLink = studentLessonData.lesson_space_url;
@@ -267,9 +292,19 @@ export const useCalendarData = ({ userRole, userEmail, isAuthenticated, refreshK
             videoConferenceProvider: lesson.video_conference_provider,
             lessonSpaceRoomId: lesson.lesson_space_room_id,
             lessonSpaceRoomUrl: lesson.lesson_space_room_url,
-            lessonSpaceSpaceId: lesson.lesson_space_room_id, // Use room_id as space_id
+            lessonSpaceSpaceId: lesson.lesson_space_room_id,
             studentUrls: studentUrls,
-            userRole: userRole
+            userRole: userRole,
+            tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
+              id: lesson.tutor.id,
+              first_name: lesson.tutor.first_name,
+              last_name: lesson.tutor.last_name,
+              email: lesson.tutor.email
+            } : null,
+            students: lesson.lesson_students?.map(ls => ({
+              id: ls.student_id,
+              name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+            })) || []
           }
         });
       }

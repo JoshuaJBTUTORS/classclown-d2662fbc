@@ -54,6 +54,19 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     if (event.extendedProps?.isGroup) {
       return 'hsl(45 93% 59%)'; // Secondary yellow for group lessons
     }
+    // Different colors for different tutors (admin/owner view)
+    if (event.extendedProps?.tutor?.id) {
+      const tutorId = event.extendedProps.tutor.id;
+      const colors = [
+        'hsl(342 77% 60%)', // Primary pink
+        'hsl(262 72% 65%)', // Purple
+        'hsl(221 72% 65%)', // Blue
+        'hsl(142 76% 36%)', // Green
+        'hsl(25 95% 53%)',  // Orange
+      ];
+      const colorIndex = tutorId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+      return colors[colorIndex];
+    }
     return 'hsl(342 77% 60%)'; // Primary pink for regular lessons
   };
 
@@ -102,11 +115,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                   <div className="fc-event-main-frame p-1">
                     <div className="fc-event-title-container flex items-center gap-1">
                       <div className="fc-event-title text-xs font-medium truncate">
-                        {/* Show lesson name in week and day view instead of time */}
                         {(isWeekView || isDayView) && (
                           <span className="event-title font-semibold">{eventInfo.event.title}</span>
                         )}
-                        {/* Show both time and title in month view */}
                         {isMonthView && (
                           <>
                             <span className="fc-event-time text-xs opacity-90 mr-1">
@@ -128,12 +139,21 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                         )}
                       </div>
                     </div>
+                    
+                    {/* Show tutor info for admin/owner views */}
                     {eventInfo.event.extendedProps.tutor && (isWeekView || isDayView) && (
                       <div className="fc-event-tutor text-xs opacity-75 truncate mt-1">
                         {eventInfo.event.extendedProps.tutor.first_name} {eventInfo.event.extendedProps.tutor.last_name}
                       </div>
                     )}
-                    {/* Show time below title in week/day view */}
+                    
+                    {/* Show student count for group lessons */}
+                    {eventInfo.event.extendedProps.students && eventInfo.event.extendedProps.students.length > 1 && (isWeekView || isDayView) && (
+                      <div className="fc-event-students text-xs opacity-75 truncate">
+                        {eventInfo.event.extendedProps.students.length} students
+                      </div>
+                    )}
+                    
                     {(isWeekView || isDayView) && eventInfo.timeText && (
                       <div className="fc-event-time text-xs opacity-75 mt-1">
                         {eventInfo.timeText}

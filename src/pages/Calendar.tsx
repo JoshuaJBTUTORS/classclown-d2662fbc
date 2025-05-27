@@ -1,10 +1,10 @@
-
 import React, { useState, useCallback } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
+import CalendarFilters from '@/components/calendar/CalendarFilters';
 import ViewOptions from '@/components/calendar/ViewOptions';
 import CalendarRefreshButton from '@/components/calendar/CalendarRefreshButton';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
@@ -30,18 +30,29 @@ const Calendar = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [homeworkLessonData, setHomeworkLessonData] = useState<any>(null);
 
-  // Check if user is a student
+  // Filter state for admin/owner views
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
+
   const isStudent = userRole === 'student';
+  const isAdminOrOwner = userRole === 'admin' || userRole === 'owner';
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(prev => prev + 1);
   }, []);
 
+  // Create filters object for admin/owner
+  const filters = isAdminOrOwner ? {
+    selectedStudents,
+    selectedTutors
+  } : undefined;
+
   const { events, isLoading } = useCalendarData({ 
     userRole, 
     userEmail: user?.email || null, 
     isAuthenticated: !!user,
-    refreshKey 
+    refreshKey,
+    filters
   });
 
   // Initialize student lesson updates system
@@ -161,6 +172,20 @@ const Calendar = () => {
     }
   };
 
+  // Filter handlers
+  const handleStudentFilterChange = (studentIds: string[]) => {
+    setSelectedStudents(studentIds);
+  };
+
+  const handleTutorFilterChange = (tutorIds: string[]) => {
+    setSelectedTutors(tutorIds);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedStudents([]);
+    setSelectedTutors([]);
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} />
@@ -174,6 +199,17 @@ const Calendar = () => {
           
           <div className="space-y-6">
             <CalendarHeader />
+            
+            {/* Show filters only for admin/owner */}
+            {isAdminOrOwner && (
+              <CalendarFilters
+                selectedStudents={selectedStudents}
+                selectedTutors={selectedTutors}
+                onStudentFilterChange={handleStudentFilterChange}
+                onTutorFilterChange={handleTutorFilterChange}
+                onClearFilters={handleClearFilters}
+              />
+            )}
             
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <ViewOptions 
