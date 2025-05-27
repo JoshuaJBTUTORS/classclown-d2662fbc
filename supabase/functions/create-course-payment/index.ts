@@ -99,6 +99,10 @@ serve(async (req) => {
       console.log("No existing customer found");
     }
 
+    // Get the origin from the request
+    const origin = req.headers.get("origin") || "http://localhost:5173";
+    console.log("Origin for redirect URLs:", origin);
+
     // Create a subscription checkout session with 7-day free trial
     console.log("Creating Stripe checkout session");
     const session = await stripe.checkout.sessions.create({
@@ -128,8 +132,8 @@ serve(async (req) => {
           user_id: user.id,
         },
       },
-      success_url: `${req.headers.get("origin")}/course/${courseId}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/course/${courseId}?payment=cancelled`,
+      success_url: `${origin}/course/${courseId}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/course/${courseId}?payment=cancelled`,
       metadata: {
         course_id: courseId,
         user_id: user.id,
@@ -137,6 +141,7 @@ serve(async (req) => {
     });
 
     console.log("Checkout session created successfully:", session.id);
+    console.log("Success URL:", `${origin}/course/${courseId}?payment=success&session_id={CHECKOUT_SESSION_ID}`);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

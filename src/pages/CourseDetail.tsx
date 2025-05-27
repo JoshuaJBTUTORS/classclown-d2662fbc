@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen, Gift } from 'lucide-react';
+import { ChevronLeft, PenSquare, BookOpen, Gift, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,6 +30,7 @@ const CourseDetail: React.FC = () => {
   const [isPurchased, setIsPurchased] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
@@ -40,9 +41,11 @@ const CourseDetail: React.FC = () => {
 
   // Function to refresh purchase status
   const refreshPurchaseStatus = async () => {
+    console.log("Refreshing purchase status for course:", courseId);
     if (user && courseId && course?.status === 'published') {
       try {
         const purchased = await paymentService.checkCoursePurchase(courseId);
+        console.log("Purchase status refreshed:", purchased);
         setIsPurchased(purchased);
         return purchased;
       } catch (error) {
@@ -53,18 +56,50 @@ const CourseDetail: React.FC = () => {
     return false;
   };
 
+  // Manual refresh button handler
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const purchased = await refreshPurchaseStatus();
+      if (purchased) {
+        toast({
+          title: "Course access verified!",
+          description: "You now have access to this course.",
+        });
+      } else {
+        toast({
+          title: "No active subscription found",
+          description: "If you just completed payment, please try again in a few moments.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error refreshing status",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Check for payment success/failure in URL params and verify payment
   useEffect(() => {
     const handlePaymentVerification = async () => {
       const paymentStatus = searchParams.get('payment');
       const sessionId = searchParams.get('session_id');
       
+      console.log("Payment verification check:", { paymentStatus, sessionId, isVerifyingPayment });
+      
       if (paymentStatus === 'success' && sessionId && !isVerifyingPayment) {
         setIsVerifyingPayment(true);
+        console.log("Starting payment verification with session ID:", sessionId);
         
         try {
-          console.log('Verifying payment with session ID:', sessionId);
+          console.log('Calling verify-course-payment with session ID:', sessionId);
           const verificationResult = await paymentService.verifyCoursePayment(sessionId);
+          console.log('Payment verification result:', verificationResult);
           
           if (verificationResult.success) {
             toast({
@@ -73,12 +108,22 @@ const CourseDetail: React.FC = () => {
             });
             
             // Refresh purchase status to grant immediate access
+            console.log('Refreshing purchase status after successful verification');
             const purchased = await refreshPurchaseStatus();
+            console.log('Purchase status after verification:', purchased);
             
             if (purchased) {
               console.log('Purchase status updated successfully');
+            } else {
+              console.warn('Purchase status not updated despite successful verification');
+              // Add a small delay and try again
+              setTimeout(async () => {
+                const retryPurchased = await refreshPurchaseStatus();
+                console.log('Retry purchase status:', retryPurchased);
+              }, 2000);
             }
           } else {
+            console.error('Payment verification failed:', verificationResult);
             toast({
               title: "Payment verification failed",
               description: verificationResult.message || "There was an issue verifying your payment. Please contact support.",
@@ -101,6 +146,7 @@ const CourseDetail: React.FC = () => {
           setSearchParams(newSearchParams, { replace: true });
         }
       } else if (paymentStatus === 'cancelled') {
+        console.log("Payment was cancelled");
         toast({
           title: "Subscription cancelled",
           description: "Your subscription was cancelled. You can try again anytime.",
@@ -292,6 +338,18 @@ const CourseDetail: React.FC = () => {
                   <Badge variant="outline" className="text-blue-600 border-blue-300">
                     Verifying payment...
                   </Badge>
+                )}
+                
+                {!canAccessFullCourse && (
+                  <Button 
+                    onClick={handleManualRefresh}
+                    disabled={isRefreshing}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    {isRefreshing ? 'Checking...' : 'Refresh Access'}
+                  </Button>
                 )}
                 
                 {showTrialButton && (
