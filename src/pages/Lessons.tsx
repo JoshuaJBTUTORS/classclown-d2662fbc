@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -39,7 +40,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
-import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import { Lesson } from '@/types/lesson';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,7 +52,6 @@ const Lessons = () => {
   const [isAddingLesson, setIsAddingLesson] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
-  const [isCompleteSessionOpen, setIsCompleteSessionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -140,19 +139,9 @@ const Lessons = () => {
     toast.success('Lesson added successfully!');
   };
 
-  const handleCompleteSessionSuccess = () => {
-    fetchLessons();
-    toast.success('Session completed successfully!');
-  };
-
   const viewLessonDetails = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setIsLessonDetailsOpen(true);
-  };
-
-  const openCompleteSession = (lessonId: string) => {
-    setSelectedLessonId(lessonId);
-    setIsCompleteSessionOpen(true);
   };
 
   const formatDateTime = (dateString: string) => {
@@ -287,27 +276,13 @@ const Lessons = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              {/* Only show complete button for non-students */}
-                              {lesson.status !== 'completed' && !isStudent && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
-                                  onClick={() => openCompleteSession(lesson.id)}
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Complete
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => viewLessonDetails(lesson.id)}
-                              >
-                                View
-                              </Button>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => viewLessonDetails(lesson.id)}
+                            >
+                              View
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -335,16 +310,6 @@ const Lessons = () => {
         isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
       />
-
-      {/* Only show Complete Session Dialog for non-students */}
-      {!isStudent && (
-        <CompleteSessionDialog
-          lessonId={selectedLessonId}
-          isOpen={isCompleteSessionOpen}
-          onClose={() => setIsCompleteSessionOpen(false)}
-          onSuccess={handleCompleteSessionSuccess}
-        />
-      )}
     </div>
   );
 };
