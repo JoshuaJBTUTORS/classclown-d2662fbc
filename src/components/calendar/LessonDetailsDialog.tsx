@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus } from 'lucide-react';
+import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus, Users } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
+import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
@@ -399,7 +401,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       <Dialog open={isOpen} onOpenChange={(open) => {
         if (!open) onClose();
       }}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Lesson Details</DialogTitle>
             <DialogDescription>
@@ -432,16 +434,31 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 <h3 className="font-medium">Tutor</h3>
                 <p>{lesson.tutor ? `${lesson.tutor.first_name} ${lesson.tutor.last_name}` : 'Not assigned'}</p>
               </div>
-              <div>
-                <h3 className="font-medium">Students</h3>
-                {lesson.students && lesson.students.length > 0 ? (
-                  <ul className="list-disc pl-5">
+
+              {/* Student Attendance Section */}
+              {lesson.students && lesson.students.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="h-4 w-4" />
+                    <h3 className="font-medium">Students & Attendance</h3>
+                  </div>
+                  <div className="space-y-2">
                     {lesson.students.map(student => (
-                      <li key={student.id}>{student.first_name} {student.last_name}</li>
+                      <StudentAttendanceRow
+                        key={student.id}
+                        student={student}
+                        lessonId={lesson.id}
+                        lessonData={{
+                          title: lesson.title,
+                          start_time: lesson.start_time,
+                          tutor: lesson.tutor
+                        }}
+                        isStudent={isStudent}
+                      />
                     ))}
-                  </ul>
-                ) : <p>No students assigned</p>}
-              </div>
+                  </div>
+                </div>
+              )}
 
               {/* Video Conference Section */}
               {hasVideoConference ? (
@@ -494,7 +511,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 )
               )}
 
-              {/* ... keep existing code (recurrence info, homework info, status info) the same */}
               {(lesson.is_recurring || lesson.is_recurring_instance) && (
                 <div>
                   <h3 className="font-medium">Recurrence</h3>
