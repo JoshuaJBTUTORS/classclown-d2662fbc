@@ -51,7 +51,7 @@ const formSchema = z.object({
       id: z.number(),
       first_name: z.string(),
       last_name: z.string(),
-      attendance: z.enum(['attended', 'missed', 'cancelled']),
+      attendance: z.enum(['attended', 'absent', 'late']),
       feedback: z.string().optional(),
       homework: z.string().optional(),
     })
@@ -100,16 +100,16 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
 
   // Initialize form values when lesson data is loaded or when step changes
   useEffect(() => {
-    if (lesson && lesson.students) {
-      const studentData = lesson.students.map(student => {
+    if (lesson && lesson.lesson_students) {
+      const studentData = lesson.lesson_students.map(ls => {
         // If we have stored homework data and we're in the attendance step, use it
-        const homeworkText = homeworkData?.students.find(s => s.id === student.id)?.homework || '';
+        const homeworkText = homeworkData?.students.find(s => s.id === ls.student.id)?.homework || '';
         
         return {
-          id: student.id,
-          first_name: student.first_name,
-          last_name: student.last_name,
-          attendance: student.attendance_status as 'attended' | 'missed' | 'cancelled' || 'attended',
+          id: ls.student.id,
+          first_name: ls.student.first_name,
+          last_name: ls.student.last_name,
+          attendance: 'attended' as 'attended' | 'absent' | 'late',
           feedback: '',
           homework: homeworkText,
         };
@@ -131,7 +131,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           tutor:tutors(id, first_name, last_name),
           lesson_students(
             student:students(id, first_name, last_name),
-            attendance_status
+            lesson_space_url
           )
         `)
         .eq('id', id)
@@ -140,16 +140,9 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       if (lessonError) throw lessonError;
 
       // Transform the data to match our Lesson interface
-      const students = lessonData.lesson_students.map((ls: any) => ({
-        id: ls.student.id,
-        first_name: ls.student.first_name,
-        last_name: ls.student.last_name,
-        attendance_status: ls.attendance_status || 'pending'
-      }));
-
       const transformedLesson: Lesson = {
         ...lessonData,
-        students,
+        lesson_students: lessonData.lesson_students || []
       };
 
       setLesson(transformedLesson);
@@ -183,13 +176,32 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       } 
       // If we're in the "Record Attendance" step (skipping homework)
       else {
-        console.log('Updating lesson status to completed');
-        // 1. Update the lesson status to completed
+        console.log('Recording attendance for lesson completion');
+        
+        // 1. Insert attendance records into the lesson_attendance table
+        const attendanceRecords = data.students.map(student => ({
+          lesson_id: lessonId,
+          student_id: student.id,
+          attendance_status: student.attendance,
+          notes: student.feedback || null
+        }));
+
+        const { error: attendanceError } = await supabase
+          .from('lesson_attendance')
+          .insert(attendanceRecords);
+        
+        if (attendanceError) {
+          console.error('Error recording attendance:', attendanceError);
+          throw attendanceError;
+        }
+
+        // 2. Update the lesson status to completed and mark attendance as completed
         const { error: lessonError } = await supabase
           .from('lessons')
           .update({ 
             status: 'completed',
-            completion_date: new Date().toISOString()
+            completion_date: new Date().toISOString(),
+            attendance_completed: true
           })
           .eq('id', lessonId);
         
@@ -198,25 +210,10 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           throw lessonError;
         }
 
-        console.log('Updating student attendance');
-        // 2. Update attendance status and feedback for all students
-        const attendanceUpdates = data.students.map(async (student) => {
-          console.log(`Updating attendance for student ${student.id} to ${student.attendance}`);
-          const { error } = await supabase
-            .from('lesson_students')
-            .update({ 
-              attendance_status: student.attendance 
-            })
-            .eq('lesson_id', lessonId)
-            .eq('student_id', student.id);
-          
-          if (error) {
-            console.error('Error updating attendance:', error);
-            throw error;
-          }
-
-          // Add the homework to the homework table if it was provided
-          if (student.homework) {
+        // 3. Add homework to the homework table if it was provided
+        const homeworkPromises = data.students
+          .filter(student => student.homework?.trim())
+          .map(async (student) => {
             try {
               const { error: homeworkError } = await supabase
                 .from('homework')
@@ -234,15 +231,9 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
               console.error('Error saving homework:', homeworkError);
               // We don't want to fail the whole process if just the homework fails
             }
-          }
+          });
 
-          // Save feedback if provided (in a real app, you might want to store this in a separate table)
-          if (student.feedback) {
-            console.log(`Feedback for student ${student.id}: ${student.feedback}`);
-          }
-        });
-
-        await Promise.all(attendanceUpdates);
+        await Promise.all(homeworkPromises);
 
         toast.success('Session completed successfully!');
         
@@ -326,14 +317,14 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
                                       <span>Attended</span>
                                     </div>
                                   </SelectItem>
-                                  <SelectItem value="missed">
+                                  <SelectItem value="absent">
                                     <div className="flex items-center gap-2">
                                       <span className="h-4 w-4 text-red-500">✗</span>
-                                      <span>Missed</span>
+                                      <span>Absent</span>
                                     </div>
                                   </SelectItem>
-                                  <SelectItem value="cancelled">
-                                    <span>Cancelled</span>
+                                  <SelectItem value="late">
+                                    <span>Late</span>
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
