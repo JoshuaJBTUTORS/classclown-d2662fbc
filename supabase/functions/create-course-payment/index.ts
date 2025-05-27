@@ -128,7 +128,7 @@ serve(async (req) => {
           user_id: user.id,
         },
       },
-      success_url: `${req.headers.get("origin")}/course/${courseId}?payment=success`,
+      success_url: `${req.headers.get("origin")}/course/${courseId}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/course/${courseId}?payment=cancelled`,
       metadata: {
         course_id: courseId,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -23,13 +22,14 @@ import { useToast } from '@/hooks/use-toast';
 const CourseDetail: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAdmin, isOwner, isTutor, user } = useAuth();
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const { toast } = useToast();
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
@@ -38,27 +38,83 @@ const CourseDetail: React.FC = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Check for payment success/failure in URL params
-  useEffect(() => {
-    const paymentStatus = searchParams.get('payment');
-    if (paymentStatus === 'success') {
-      toast({
-        title: "Subscription started!",
-        description: "Your 7-day free trial has begun. You now have full access to this course.",
-      });
-      // Verify the payment and update purchase status
-      const sessionId = searchParams.get('session_id');
-      if (sessionId) {
-        paymentService.verifyCoursePayment(sessionId).catch(console.error);
+  // Function to refresh purchase status
+  const refreshPurchaseStatus = async () => {
+    if (user && courseId && course?.status === 'published') {
+      try {
+        const purchased = await paymentService.checkCoursePurchase(courseId);
+        setIsPurchased(purchased);
+        return purchased;
+      } catch (error) {
+        console.error('Error checking purchase status:', error);
+        return false;
       }
-    } else if (paymentStatus === 'cancelled') {
-      toast({
-        title: "Subscription cancelled",
-        description: "Your subscription was cancelled. You can try again anytime.",
-        variant: "destructive",
-      });
     }
-  }, [searchParams, toast]);
+    return false;
+  };
+
+  // Check for payment success/failure in URL params and verify payment
+  useEffect(() => {
+    const handlePaymentVerification = async () => {
+      const paymentStatus = searchParams.get('payment');
+      const sessionId = searchParams.get('session_id');
+      
+      if (paymentStatus === 'success' && sessionId && !isVerifyingPayment) {
+        setIsVerifyingPayment(true);
+        
+        try {
+          console.log('Verifying payment with session ID:', sessionId);
+          const verificationResult = await paymentService.verifyCoursePayment(sessionId);
+          
+          if (verificationResult.success) {
+            toast({
+              title: "Subscription started!",
+              description: "Your 7-day free trial has begun. You now have full access to this course.",
+            });
+            
+            // Refresh purchase status to grant immediate access
+            const purchased = await refreshPurchaseStatus();
+            
+            if (purchased) {
+              console.log('Purchase status updated successfully');
+            }
+          } else {
+            toast({
+              title: "Payment verification failed",
+              description: verificationResult.message || "There was an issue verifying your payment. Please contact support.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Payment verification error:', error);
+          toast({
+            title: "Payment verification error",
+            description: "There was an error verifying your payment. Please contact support if the issue persists.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsVerifyingPayment(false);
+          // Clean up URL parameters
+          const newSearchParams = new URLSearchParams(searchParams);
+          newSearchParams.delete('payment');
+          newSearchParams.delete('session_id');
+          setSearchParams(newSearchParams, { replace: true });
+        }
+      } else if (paymentStatus === 'cancelled') {
+        toast({
+          title: "Subscription cancelled",
+          description: "Your subscription was cancelled. You can try again anytime.",
+          variant: "destructive",
+        });
+        // Clean up URL parameters
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('payment');
+        setSearchParams(newSearchParams, { replace: true });
+      }
+    };
+
+    handlePaymentVerification();
+  }, [searchParams, toast, isVerifyingPayment]);
 
   // Fetch course details
   const { data: course, isLoading: courseLoading, error: courseError } = useQuery({
@@ -76,18 +132,7 @@ const CourseDetail: React.FC = () => {
 
   // Check purchase status
   useEffect(() => {
-    const checkPurchaseStatus = async () => {
-      if (user && courseId && course?.status === 'published') {
-        try {
-          const purchased = await paymentService.checkCoursePurchase(courseId);
-          setIsPurchased(purchased);
-        } catch (error) {
-          console.error('Error checking purchase status:', error);
-        }
-      }
-    };
-
-    checkPurchaseStatus();
+    refreshPurchaseStatus();
   }, [courseId, user, course?.status]);
 
   // Fetch student progress with corrected query key
@@ -219,7 +264,7 @@ const CourseDetail: React.FC = () => {
   }
 
   const canAccessFullCourse = hasAdminPrivileges || isPurchased;
-  const showTrialButton = course?.status === 'published' && !canAccessFullCourse && user;
+  const showTrialButton = course?.status === 'published' && !canAccessFullCourse && user && !isVerifyingPayment;
 
   return (
     <div className="min-h-screen flex w-full">
@@ -243,6 +288,12 @@ const CourseDetail: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-2">
+                {isVerifyingPayment && (
+                  <Badge variant="outline" className="text-blue-600 border-blue-300">
+                    Verifying payment...
+                  </Badge>
+                )}
+                
                 {showTrialButton && (
                   <Button 
                     onClick={handleStartTrial}
