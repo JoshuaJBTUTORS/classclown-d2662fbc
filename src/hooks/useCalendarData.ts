@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -192,6 +193,7 @@ export const useCalendarData = ({
               recurrenceInterval: lesson.recurrence_interval,
               recurrenceEndDate: lesson.recurrence_end_date,
               description: lesson.description,
+              subject: lesson.subject, // Add subject to extended props
               videoConferenceLink: videoConferenceLink,
               videoConferenceProvider: lesson.video_conference_provider,
               lessonSpaceRoomId: lesson.lesson_space_room_id,

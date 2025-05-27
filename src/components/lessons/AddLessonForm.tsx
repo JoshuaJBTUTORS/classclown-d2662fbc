@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, addHours } from 'date-fns';
 import { z } from 'zod';
@@ -43,6 +44,7 @@ import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
 import { Student } from '@/types/student';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 interface AddLessonFormProps {
   isOpen: boolean;
@@ -76,6 +78,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   const formSchema = z.object({
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
+    subject: z.string().min(1, { message: "Subject is required" }),
     tutorId: z.string().min(1, { message: "Tutor is required" }),
     studentId: z.number().or(z.string().transform(s => parseInt(s, 10))).optional(),
     date: z.date({ required_error: "Date is required" }),
@@ -99,6 +102,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     defaultValues: {
       title: "",
       description: "",
+      subject: "",
       tutorId: "",
       studentId: undefined,
       date: preselectedTime ? preselectedTime.start : new Date(),
@@ -123,6 +127,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       form.reset({
         title: "",
         description: "",
+        subject: "",
         tutorId: "",
         studentId: undefined,
         date: preselectedTime ? preselectedTime.start : new Date(),
@@ -231,6 +236,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         .insert({
           title: values.title,
           description: values.description || '',
+          subject: values.subject,
           tutor_id: values.tutorId,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
@@ -331,6 +337,31 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                   <FormControl>
                     <Input placeholder="Math Tutoring Session" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="subject"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a subject" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {LESSON_SUBJECTS.map((subject) => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

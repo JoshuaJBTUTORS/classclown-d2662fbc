@@ -1,3 +1,4 @@
+
 export interface Lesson {
   id: string;
   title: string;
@@ -7,6 +8,7 @@ export interface Lesson {
   end_time: string;
   is_group: boolean;
   status: string;
+  subject?: string; // Add subject field
   is_recurring?: boolean;
   recurrence_interval?: string | null;
   recurrence_day?: string | null;

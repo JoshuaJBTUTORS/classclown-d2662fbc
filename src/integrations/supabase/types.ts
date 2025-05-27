@@ -430,6 +430,7 @@ export type Database = {
           recurrence_interval: string | null
           start_time: string
           status: string
+          subject: string | null
           title: string
           tutor_id: string
           updated_at: string | null
@@ -452,6 +453,7 @@ export type Database = {
           recurrence_interval?: string | null
           start_time: string
           status?: string
+          subject?: string | null
           title: string
           tutor_id: string
           updated_at?: string | null
@@ -474,6 +476,7 @@ export type Database = {
           recurrence_interval?: string | null
           start_time?: string
           status?: string
+          subject?: string | null
           title?: string
           tutor_id?: string
           updated_at?: string | null

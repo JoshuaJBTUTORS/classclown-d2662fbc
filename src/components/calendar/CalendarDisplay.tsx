@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -110,13 +109,21 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 const isDayView = eventInfo.view.type === 'timeGridDay';
                 const isRecurring = eventInfo.event.extendedProps.isRecurring || 
                                   eventInfo.event.extendedProps.isRecurringInstance;
+                const subject = eventInfo.event.extendedProps.subject;
                 
                 return (
                   <div className="fc-event-main-frame p-1">
                     <div className="fc-event-title-container flex items-center gap-1">
                       <div className="fc-event-title text-xs font-medium truncate">
                         {(isWeekView || isDayView) && (
-                          <span className="event-title font-semibold">{eventInfo.event.title}</span>
+                          <>
+                            <span className="event-title font-semibold">{eventInfo.event.title}</span>
+                            {subject && (
+                              <div className="text-xs opacity-75 truncate mt-1">
+                                {subject}
+                              </div>
+                            )}
+                          </>
                         )}
                         {isMonthView && (
                           <>
@@ -124,6 +131,11 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                               {eventInfo.timeText}
                             </span>
                             <span className="event-title">{eventInfo.event.title}</span>
+                            {subject && (
+                              <div className="text-xs opacity-75 truncate">
+                                {subject}
+                              </div>
+                            )}
                           </>
                         )}
                         {isRecurring && (

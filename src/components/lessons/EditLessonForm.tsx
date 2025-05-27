@@ -42,6 +42,7 @@ import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
 import { Student } from '@/types/student';
 import { Lesson } from '@/types/lesson';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 interface EditLessonFormProps {
   isOpen: boolean;
@@ -67,6 +68,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
   const formSchema = z.object({
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
+    subject: z.string().min(1, { message: "Subject is required" }),
     tutorId: z.string().min(1, { message: "Tutor is required" }),
     date: z.date({ required_error: "Date is required" }),
     startTime: z.string().min(1, { message: "Start time is required" }),
@@ -84,6 +86,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
     defaultValues: {
       title: "",
       description: "",
+      subject: "",
       tutorId: "",
       date: new Date(),
       startTime: "",
@@ -145,6 +148,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       form.reset({
         title: data.title,
         description: data.description || '',
+        subject: data.subject || '',
         tutorId: data.tutor_id,
         date: startDate,
         startTime: startHours,
@@ -222,6 +226,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       const lessonData = {
         title: values.title,
         description: values.description || '',
+        subject: values.subject,
         tutor_id: values.tutorId,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
@@ -308,6 +313,31 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                     <FormControl>
                       <Input placeholder="Math Tutoring Session" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subject</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a subject" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {LESSON_SUBJECTS.map((subject) => (
+                          <SelectItem key={subject} value={subject}>
+                            {subject}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
