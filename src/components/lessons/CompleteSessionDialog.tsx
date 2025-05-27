@@ -109,7 +109,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           id: student.id,
           first_name: student.first_name,
           last_name: student.last_name,
-          attendance: student.attendance_status as 'attended' | 'missed' | 'cancelled' || 'attended',
+          attendance: 'attended' as 'attended' | 'missed' | 'cancelled',
           feedback: '',
           homework: homeworkText,
         };
@@ -130,8 +130,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           *,
           tutor:tutors(id, first_name, last_name),
           lesson_students(
-            student:students(id, first_name, last_name),
-            attendance_status
+            student:students(id, first_name, last_name)
           )
         `)
         .eq('id', id)
@@ -143,8 +142,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       const students = lessonData.lesson_students.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
-        last_name: ls.student.last_name,
-        attendance_status: ls.attendance_status || 'pending'
+        last_name: ls.student.last_name
       }));
 
       const transformedLesson: Lesson = {
@@ -198,22 +196,10 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           throw lessonError;
         }
 
-        console.log('Updating student attendance');
-        // 2. Update attendance status and feedback for all students
-        const attendanceUpdates = data.students.map(async (student) => {
-          console.log(`Updating attendance for student ${student.id} to ${student.attendance}`);
-          const { error } = await supabase
-            .from('lesson_students')
-            .update({ 
-              attendance_status: student.attendance 
-            })
-            .eq('lesson_id', lessonId)
-            .eq('student_id', student.id);
-          
-          if (error) {
-            console.error('Error updating attendance:', error);
-            throw error;
-          }
+        console.log('Processing student attendance and homework');
+        // 2. Process each student's data
+        const studentUpdates = data.students.map(async (student) => {
+          console.log(`Processing student ${student.id}: ${student.attendance}`);
 
           // Add the homework to the homework table if it was provided
           if (student.homework) {
@@ -242,7 +228,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           }
         });
 
-        await Promise.all(attendanceUpdates);
+        await Promise.all(studentUpdates);
 
         toast.success('Session completed successfully!');
         

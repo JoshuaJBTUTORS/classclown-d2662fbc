@@ -124,7 +124,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           tutor:tutors(id, first_name, last_name),
           lesson_students(
             student:students(id, first_name, last_name),
-            attendance_status,
             lesson_space_url
           )
         `)
@@ -156,8 +155,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const students = data.lesson_students?.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
-        last_name: ls.student.last_name,
-        attendance_status: ls.attendance_status || 'pending'
+        last_name: ls.student.last_name
       })) || [];
       
       const startDate = parseISO(data.start_time);
@@ -216,7 +214,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           tutor:tutors(id, first_name, last_name),
           lesson_students(
             student:students(id, first_name, last_name),
-            attendance_status,
             lesson_space_url
           )
         `)
@@ -240,8 +237,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const students = data.lesson_students?.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
-        last_name: ls.student.last_name,
-        attendance_status: ls.attendance_status || 'pending'
+        last_name: ls.student.last_name
       })) || [];
         
       const processedLesson: Lesson = {
