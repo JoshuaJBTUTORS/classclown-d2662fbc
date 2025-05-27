@@ -8,7 +8,7 @@ export interface Lesson {
   end_time: string;
   is_group: boolean;
   status: string;
-  subject?: string; // Add subject field
+  subject?: string;
   is_recurring?: boolean;
   recurrence_interval?: string | null;
   recurrence_day?: string | null;
@@ -16,11 +16,14 @@ export interface Lesson {
   // Enhanced video conference fields
   lesson_space_room_id?: string | null;
   lesson_space_room_url?: string | null;
-  lesson_space_space_id?: string | null; // Add space ID field
+  lesson_space_space_id?: string | null;
   video_conference_provider?: string | null;
   video_conference_link?: string | null;
   // Additional Lesson Space fields
   lesson_space_session_id?: string | null;
+  // New attendance tracking fields
+  attendance_completed?: boolean;
+  homework_assigned?: boolean;
   tutor?: {
     id: string;
     first_name: string;
@@ -34,7 +37,7 @@ export interface Lesson {
     email?: string;
     attendance_status?: string;
     feedback?: string;
-    lesson_space_url?: string; // Individual student URL for Lesson Space
+    lesson_space_url?: string;
   }[];
   completed?: boolean;
   completion_date?: string | null;
@@ -46,7 +49,6 @@ export interface Lesson {
     attachment_url?: string | null;
     attachment_type?: string | null;
   };
-  homework_assigned?: boolean;
   color?: string;
   is_recurring_instance?: boolean;
   parent?: {
@@ -65,6 +67,22 @@ export interface Lesson {
     };
     lesson_space_url?: string;
   }[];
+}
+
+// New interface for lesson attendance
+export interface LessonAttendance {
+  id: string;
+  lesson_id: string;
+  student_id: number;
+  attendance_status: 'attended' | 'absent' | 'late';
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  student?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export interface HomeworkSubmission {

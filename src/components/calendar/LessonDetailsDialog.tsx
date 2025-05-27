@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
+import AttendanceTrackingDialog from '@/components/lessons/AttendanceTrackingDialog';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -51,6 +52,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isHomeworkDeleteConfirmOpen, setIsHomeworkDeleteConfirmOpen] = useState(false);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAssignHomeworkOpen, setIsAssignHomeworkOpen] = useState(false);
+  const [isAttendanceTrackingOpen, setIsAttendanceTrackingOpen] = useState(false);
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
 
@@ -124,7 +127,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           tutor:tutors(id, first_name, last_name),
           lesson_students(
             student:students(id, first_name, last_name),
-            attendance_status,
             lesson_space_url
           )
         `)
@@ -157,7 +159,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         id: ls.student.id,
         first_name: ls.student.first_name,
         last_name: ls.student.last_name,
-        attendance_status: ls.attendance_status || 'pending'
+        attendance_status: 'pending'
       })) || [];
       
       const startDate = parseISO(data.start_time);
@@ -216,7 +218,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           tutor:tutors(id, first_name, last_name),
           lesson_students(
             student:students(id, first_name, last_name),
-            attendance_status,
             lesson_space_url
           )
         `)
@@ -241,7 +242,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         id: ls.student.id,
         first_name: ls.student.first_name,
         last_name: ls.student.last_name,
-        attendance_status: ls.attendance_status || 'pending'
+        attendance_status: 'pending'
       })) || [];
         
       const processedLesson: Lesson = {
@@ -295,10 +296,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
 
   const handleEditSuccess = () => {
-    // Close the edit dialog
     setIsEditDialogOpen(false);
     
-    // Refresh the lesson data
     if (lesson) {
       if (isRecurringInstanceId(lesson.id)) {
         const parts = lesson.id.split('-');
@@ -309,12 +308,48 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       }
     }
     
-    // Call the onRefresh callback if provided
     if (onRefresh) {
       onRefresh();
     }
     
     toast.success('Lesson updated successfully');
+  };
+
+  // New handler for the Complete Lesson button (two-step workflow)
+  const handleCompleteLesson = () => {
+    if (lesson) {
+      const lessonIdToUse = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
+      setIsAssignHomeworkOpen(true);
+    }
+  };
+
+  // Handler for when homework is successfully assigned (step 1 complete)
+  const handleHomeworkSuccess = (lessonId: string, lessonData: any) => {
+    setIsAssignHomeworkOpen(false);
+    // Immediately open attendance tracking dialog
+    setIsAttendanceTrackingOpen(true);
+  };
+
+  // Handler for when attendance is successfully recorded (step 2 complete)
+  const handleAttendanceSuccess = () => {
+    setIsAttendanceTrackingOpen(false);
+    
+    // Refresh the lesson data to show completion status
+    if (lesson) {
+      if (isRecurringInstanceId(lesson.id)) {
+        const parts = lesson.id.split('-');
+        const baseId = parts.slice(0, 5).join('-');
+        fetchRecurringInstance(baseId, lesson.id);
+      } else {
+        fetchLessonDetails(lesson.id);
+      }
+    }
+    
+    if (onRefresh) {
+      onRefresh();
+    }
+    
+    toast.success('Lesson completed successfully!');
   };
 
   const handleDeleteLesson = () => {
@@ -379,13 +414,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           onCompleteSession(completionId);
         }
       }, 100);
-    }
-  };
-  
-  const handleCompleteLesson = () => {
-    if (lesson && onAssignHomework) {
-      const lessonIdToUse = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
-      onAssignHomework(lessonIdToUse, preloadedLessonData);
     }
   };
 
@@ -461,7 +489,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   spaceId={lesson.lesson_space_room_id}
                 />
               ) : (
-                // Only show room creation for non-students
                 !isStudent && (
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between">
@@ -498,7 +525,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 )
               )}
 
-              {/* ... keep existing code (recurrence info, homework info, status info) the same */}
               {(lesson.is_recurring || lesson.is_recurring_instance) && (
                 <div>
                   <h3 className="font-medium">Recurrence</h3>
@@ -520,9 +546,17 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               )}
               <div className="pt-2">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${lesson.status === 'completed' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${
+                    lesson.attendance_completed ? 'bg-green-500' : 
+                    lesson.status === 'completed' || hasHomework ? 'bg-yellow-500' : 
+                    'bg-gray-400'
+                  }`}></div>
                   <span className="text-sm font-medium">
-                    Status: {lesson.status === 'completed' ? 'Completed' : 'Scheduled'}
+                    Status: {
+                      lesson.attendance_completed ? 'Fully Completed' :
+                      lesson.status === 'completed' || hasHomework ? 'Homework Assigned' : 
+                      'Scheduled'
+                    }
                   </span>
                 </div>
               </div>
@@ -533,7 +567,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           
           <div className="flex flex-wrap justify-between gap-2 mt-4">
             <div>
-              {/* Only show delete button for non-students */}
               {onDelete && lesson && !isStudent && (
                 <Button 
                   variant="destructive" 
@@ -547,162 +580,134 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               )}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
-              {/* Only show homework assignment for non-students */}
-              {lesson && onAssignHomework && !isStudent && (
-                <Button
-                  className="flex items-center gap-1"
+              {lesson && !isStudent && !lesson.attendance_completed && (
+                <Button 
                   onClick={handleCompleteLesson}
-                  variant="outline"
+                  className="flex items-center gap-1"
                   size="sm"
                 >
                   <Check className="h-4 w-4" />
                   Complete Lesson
                 </Button>
               )}
-              {/* Only show edit button for non-students */}
               {lesson && !isStudent && (
                 <Button 
-                  onClick={handleEditLesson} 
-                  variant="outline"
-                  size="sm"
+                  variant="outline" 
+                  onClick={handleEditLesson}
                   className="flex items-center gap-1"
+                  size="sm"
                 >
                   <Edit className="h-4 w-4" />
                   Edit
                 </Button>
               )}
-              {/* Only show complete session for non-students */}
-              {lesson && lesson.status !== 'completed' && onCompleteSession && !isStudent && (
-                <Button 
-                  className="flex items-center gap-1" 
-                  onClick={handleCompleteSession}
-                  variant="default"
-                  size="sm"
-                >
-                  <Check className="h-4 w-4" />
-                  Complete
-                </Button>
-              )}
-              {lesson && lesson.status === 'completed' && (
-                <Button 
-                  className="flex items-center gap-1" 
-                  variant="outline"
-                  disabled
-                  size="sm"
-                >
-                  <Clock className="h-4 w-4" />
-                  Completed
-                </Button>
-              )}
-              <Button variant="outline" onClick={onClose} size="sm">Close</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Only show edit dialog for non-students */}
-      {!isStudent && (
+      {/* Homework Assignment Dialog (Step 1) */}
+      <AssignHomeworkDialog
+        isOpen={isAssignHomeworkOpen}
+        onClose={() => setIsAssignHomeworkOpen(false)}
+        onHomeworkSuccess={handleHomeworkSuccess}
+        preSelectedLessonId={isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null}
+        preloadedLessonData={preloadedLessonData}
+      />
+
+      {/* Attendance Tracking Dialog (Step 2) */}
+      <AttendanceTrackingDialog
+        isOpen={isAttendanceTrackingOpen}
+        onClose={() => setIsAttendanceTrackingOpen(false)}
+        lessonId={isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null}
+        lessonData={preloadedLessonData}
+        onSuccess={handleAttendanceSuccess}
+      />
+
+      {/* Edit Lesson Dialog */}
+      {editLessonId && (
         <EditLessonForm
           isOpen={isEditDialogOpen}
           onClose={() => setIsEditDialogOpen(false)}
-          onSuccess={handleEditSuccess}
           lessonId={editLessonId}
+          onSuccess={handleEditSuccess}
         />
       )}
 
-      {/* Regular delete confirmation dialog */}
-      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the session "{lesson?.title}".
-              {(lesson?.is_recurring || lesson?.is_recurring_instance) && (
-                <div className="mt-4">
-                  <RadioGroup value={deleteOption} onValueChange={(value) => setDeleteOption(value as 'single' | 'all')}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <RadioGroupItem value="single" id="single" />
-                      <Label htmlFor="single">Delete only this instance</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="all" id="all" />
-                      <Label htmlFor="all">Delete this and all future instances</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteLesson}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteLesson} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Special confirmation dialog for lessons with homework */}
+      {/* Delete Confirmation Dialogs - keep existing code the same */}
       <AlertDialog open={isHomeworkDeleteConfirmOpen} onOpenChange={setIsHomeworkDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              This lesson has homework
+              Homework Found
             </AlertDialogTitle>
             <AlertDialogDescription>
-              <p className="mb-4">The lesson "{lesson?.title}" has homework assigned to it. What would you like to do?</p>
-              
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
-                <RadioGroup
-                  value={homeworkDeleteOption}
-                  onValueChange={(value) => setHomeworkDeleteOption(value as 'delete' | 'cancel')}
-                >
-                  <div className="flex items-center space-x-2 mb-2">
-                    <RadioGroupItem value="delete" id="delete-homework" />
-                    <div>
-                      <Label htmlFor="delete-homework" className="font-medium">Delete the lesson and its homework</Label>
-                      <p className="text-xs text-muted-foreground">This will permanently delete both the lesson and any associated homework.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="cancel" id="keep-homework" />
-                    <div>
-                      <Label htmlFor="keep-homework" className="font-medium">Cancel deletion</Label>
-                      <p className="text-xs text-muted-foreground">Go back to the lesson details without deleting anything.</p>
-                    </div>
-                  </div>
-                </RadioGroup>
+              This lesson has homework assigned to it. What would you like to do?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <RadioGroup value={homeworkDeleteOption} onValueChange={(value: 'delete' | 'cancel') => setHomeworkDeleteOption(value)}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="delete" id="delete" />
+                <Label htmlFor="delete">Delete lesson and associated homework</Label>
               </div>
-              
-              {(lesson?.is_recurring || lesson?.is_recurring_instance) && homeworkDeleteOption === 'delete' && (
-                <div className="mt-4">
-                  <p className="mb-2 font-medium">For recurring lessons:</p>
-                  <RadioGroup value={deleteOption} onValueChange={(value) => setDeleteOption(value as 'single' | 'all')}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <RadioGroupItem value="single" id="homework-single" />
-                      <Label htmlFor="homework-single">Delete only this instance</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="all" id="homework-all" />
-                      <Label htmlFor="homework-all">Delete this and all future instances</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="cancel" id="cancel" />
+                <Label htmlFor="cancel">Cancel deletion (keep lesson and homework)</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteLesson}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (homeworkDeleteOption === 'delete') {
+                setIsHomeworkDeleteConfirmOpen(false);
+                setIsDeleteConfirmOpen(true);
+              } else {
+                cancelDeleteLesson();
+              }
+            }}>
+              {homeworkDeleteOption === 'delete' ? 'Continue' : 'Keep Lesson'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Lesson
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isRecurringInstance ? (
+                <>
+                  This is a recurring lesson. Would you like to delete just this instance or the entire series?
+                  <div className="mt-4">
+                    <RadioGroup value={deleteOption} onValueChange={(value: 'single' | 'all') => setDeleteOption(value)}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="single" id="single" />
+                        <Label htmlFor="single">Delete only this instance</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="all" id="all" />
+                        <Label htmlFor="all">Delete entire recurring series</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </>
+              ) : (
+                "Are you sure you want to delete this lesson? This action cannot be undone."
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDeleteLesson}>Cancel</AlertDialogCancel>
-            {homeworkDeleteOption === 'delete' ? (
-              <AlertDialogAction onClick={confirmDeleteLesson} className="bg-destructive text-destructive-foreground">
-                Delete
-              </AlertDialogAction>
-            ) : (
-              <AlertDialogAction onClick={cancelDeleteLesson}>
-                Go Back
-              </AlertDialogAction>
-            )}
+            <AlertDialogAction onClick={confirmDeleteLesson} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

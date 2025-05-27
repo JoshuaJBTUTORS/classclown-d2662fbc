@@ -1,51 +1,24 @@
-
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
-import { CalendarIcon, Upload } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { CalendarIcon, Upload, X } from 'lucide-react';
 
 interface AssignHomeworkDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onHomeworkSuccess?: (lessonId: string, lessonData: any) => void;
+  preSelectedLessonId?: string | null;
+  preloadedLessonData?: any;
   editingHomework?: {
     id: string;
     title: string;
@@ -55,123 +28,48 @@ interface AssignHomeworkDialogProps {
     attachment_url?: string;
     attachment_type?: string;
   };
-  preSelectedLessonId?: string;
-  preloadedLessonData?: any; // Add the new prop here
 }
 
-interface Lesson {
-  id: string;
-  title: string;
-  tutor_first_name: string;
-  tutor_last_name: string;
-}
-
-const formSchema = z.object({
-  title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  description: z.string().optional(),
-  lesson_id: z.string({ required_error: "Please select a lesson." }),
-  due_date: z.date().optional(),
-  attachment: z.instanceof(File).optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  editingHomework,
+const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  onHomeworkSuccess,
   preSelectedLessonId,
-  preloadedLessonData
+  preloadedLessonData,
+  editingHomework
 }) => {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [existingAttachmentUrl, setExistingAttachmentUrl] = useState<string | null>(null);
-  const [existingAttachmentType, setExistingAttachmentType] = useState<string | null>(null);
-  const [preSelectedLesson, setPreSelectedLesson] = useState<Lesson | null>(null);
-  
-  const isEditing = Boolean(editingHomework);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedLessonId, setSelectedLessonId] = useState<string>('');
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [isDateOpen, setIsDateOpen] = useState(false);
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: editingHomework?.title || "",
-      description: editingHomework?.description || "",
-      lesson_id: preSelectedLessonId || editingHomework?.lesson_id || "",
-      due_date: editingHomework?.due_date ? new Date(editingHomework.due_date) : undefined,
-      attachment: undefined,
-    },
-  });
-
-  // Effect to set preSelectedLessonId when it changes
-  useEffect(() => {
-    if (preSelectedLessonId) {
-      form.setValue('lesson_id', preSelectedLessonId);
-      
-      // If we have preloaded data, use it instead of fetching again
-      if (preloadedLessonData && preloadedLessonData.id === preSelectedLessonId) {
-        const data = preloadedLessonData;
-        setPreSelectedLesson({
-          id: data.id,
-          title: data.title,
-          tutor_first_name: data.tutor.first_name,
-          tutor_last_name: data.tutor.last_name
-        });
-      } else {
-        fetchPreSelectedLesson(preSelectedLessonId);
-      }
-    }
-  }, [preSelectedLessonId, form, preloadedLessonData]);
-
-  // Fetch pre-selected lesson details
-  const fetchPreSelectedLesson = async (lessonId: string) => {
-    // Skip fetch if we already have the preloaded data
-    if (preloadedLessonData && preloadedLessonData.id === lessonId) {
-      return;
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('lessons')
-        .select(`
-          id,
-          title,
-          tutor:tutors(first_name, last_name)
-        `)
-        .eq('id', lessonId)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setPreSelectedLesson({
-          id: data.id,
-          title: data.title,
-          tutor_first_name: data.tutor.first_name,
-          tutor_last_name: data.tutor.last_name
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching pre-selected lesson:', error);
-    }
-  };
-
-  // Fetch lessons on component mount
   useEffect(() => {
     if (isOpen) {
-      // If we have a preSelectedLessonId and preloadedLessonData, we don't need to fetch all lessons immediately
-      // This improves initial load time
-      if (!(preSelectedLessonId && preloadedLessonData)) {
-        fetchLessons();
-      }
-
-      if (editingHomework?.attachment_url) {
-        setExistingAttachmentUrl(editingHomework.attachment_url);
-        setExistingAttachmentType(editingHomework.attachment_type || null);
+      if (editingHomework) {
+        setTitle(editingHomework.title);
+        setDescription(editingHomework.description || '');
+        setSelectedLessonId(editingHomework.lesson_id);
+        setDueDate(editingHomework.due_date);
+      } else {
+        setTitle('');
+        setDescription('');
+        setDueDate(undefined);
+        setAttachment(null);
+        
+        if (preSelectedLessonId) {
+          setSelectedLessonId(preSelectedLessonId);
+        } else {
+          setSelectedLessonId('');
+          fetchLessons();
+        }
       }
     }
-  }, [isOpen, editingHomework, preSelectedLessonId, preloadedLessonData]);
+  }, [isOpen, editingHomework, preSelectedLessonId]);
 
   const fetchLessons = async () => {
     try {
@@ -180,288 +78,226 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
         .select(`
           id,
           title,
+          start_time,
           tutor:tutors(first_name, last_name)
         `)
-        .order('start_time', { ascending: false });
+        .eq('status', 'scheduled')
+        .order('start_time', { ascending: true });
 
       if (error) throw error;
-
-      // Transform data to include tutor names
-      const formattedLessons = data.map(lesson => ({
-        id: lesson.id,
-        title: lesson.title,
-        tutor_first_name: lesson.tutor.first_name,
-        tutor_last_name: lesson.tutor.last_name,
-      }));
-
-      setLessons(formattedLessons);
+      setLessons(data || []);
     } catch (error) {
       console.error('Error fetching lessons:', error);
-      toast.error('Failed to fetch lessons. Please try again.');
+      toast.error('Failed to load lessons');
+    }
+  };
+
+  const uploadAttachment = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `homework/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('attachments')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('attachments')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !selectedLessonId) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let attachmentUrl = null;
+      let attachmentType = null;
+
+      if (attachment) {
+        attachmentUrl = await uploadAttachment(attachment);
+        attachmentType = attachment.type;
+      }
+
+      const homeworkData = {
+        title: title.trim(),
+        description: description.trim() || null,
+        lesson_id: selectedLessonId,
+        due_date: dueDate?.toISOString() || null,
+        attachment_url: attachmentUrl,
+        attachment_type: attachmentType
+      };
+
+      if (editingHomework) {
+        const { error } = await supabase
+          .from('homework')
+          .update(homeworkData)
+          .eq('id', editingHomework.id);
+
+        if (error) throw error;
+        toast.success('Homework updated successfully!');
+      } else {
+        const { error } = await supabase
+          .from('homework')
+          .insert([homeworkData]);
+
+        if (error) throw error;
+        toast.success('Homework assigned successfully!');
+      }
+
+      // If onHomeworkSuccess is provided (two-step workflow), call it
+      if (onHomeworkSuccess && !editingHomework) {
+        onHomeworkSuccess(selectedLessonId, preloadedLessonData);
+      } else {
+        onSuccess?.();
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving homework:', error);
+      toast.error('Failed to save homework');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      form.setValue('attachment', file);
+      setAttachment(file);
     }
   };
 
-  const onSubmit = async (data: FormData) => {
-    console.log("Submitting homework data:", data);
-    setLoading(true);
-    
-    try {
-      let attachmentUrl = existingAttachmentUrl;
-      let attachmentType = existingAttachmentType;
-      
-      // Upload file if provided
-      if (data.attachment) {
-        const fileExt = data.attachment.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `${fileName}`;
-        
-        try {
-          // Upload the file to Supabase Storage
-          const { error: uploadError, data: uploadData } = await supabase.storage
-            .from('homework')
-            .upload(filePath, data.attachment, {
-              cacheControl: '3600',
-              upsert: false,
-            });
-
-          if (uploadError) {
-            console.error("File upload error:", uploadError);
-            throw uploadError;
-          }
-          
-          // Get the public URL of the uploaded file
-          const { data: urlData } = supabase.storage
-            .from('homework')
-            .getPublicUrl(filePath);
-          
-          attachmentUrl = urlData.publicUrl;
-          attachmentType = fileExt;
-          console.log("File uploaded successfully:", attachmentUrl);
-        } catch (uploadError) {
-          console.error("Error during file upload:", uploadError);
-          toast.error("Failed to upload file. Please try again.");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Prepare the homework data
-      const homeworkData = {
-        title: data.title,
-        description: data.description || null,
-        lesson_id: data.lesson_id,
-        due_date: data.due_date ? data.due_date.toISOString() : null,
-        attachment_url: attachmentUrl,
-        attachment_type: attachmentType,
-      };
-
-      console.log("Saving homework with data:", homeworkData);
-
-      // Use upsert to avoid RLS issues - this performs either an insert or update
-      const { error, data: insertData } = await supabase
-        .from('homework')
-        .upsert(
-          isEditing && editingHomework 
-            ? { ...homeworkData, id: editingHomework.id } 
-            : homeworkData
-        )
-        .select();
-
-      if (error) {
-        console.error(isEditing ? "Error updating homework:" : "Error inserting homework:", error);
-        throw error;
-      }
-      
-      console.log(isEditing ? "Homework updated successfully:" : "Homework created successfully:", insertData);
-      toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
-      
-      onSuccess?.();
-      onClose();
-    } catch (error) {
-      console.error('Error saving homework:', error);
-      toast.error(`Failed to ${isEditing ? 'update' : 'assign'} homework. Please try again.`);
-    } finally {
-      setLoading(false);
-    }
+  const removeAttachment = () => {
+    setAttachment(null);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
-    }}>
-      <DialogContent className="sm:max-w-[550px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Homework' : 'Assign New Homework'}</DialogTitle>
-          <DialogDescription>
-            Create an assignment for students to complete after their lesson
-          </DialogDescription>
+          <DialogTitle>
+            {editingHomework ? 'Edit Homework' : 'Assign Homework'}
+          </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Algebra Equations Homework" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="lesson_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Related Lesson</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                    disabled={!!preSelectedLessonId}
+        <div className="space-y-4 py-4">
+          <div>
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter homework title"
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Instructions</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Provide detailed instructions for the homework"
+              className="mt-1 min-h-[100px]"
+            />
+          </div>
+
+          {!preSelectedLessonId && !editingHomework && (
+            <div>
+              <Label htmlFor="lesson">Lesson *</Label>
+              <Select value={selectedLessonId} onValueChange={setSelectedLessonId}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a lesson" />
+                </SelectTrigger>
+                <SelectContent>
+                  {lessons.map((lesson) => (
+                    <SelectItem key={lesson.id} value={lesson.id}>
+                      {lesson.title} - {format(new Date(lesson.start_time), 'MMM d, yyyy')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div>
+            <Label>Due Date</Label>
+            <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left font-normal mt-1"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dueDate ? format(dueDate, 'PPP') : 'Select due date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  onSelect={(date) => {
+                    setDueDate(date);
+                    setIsDateOpen(false);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label htmlFor="attachment">Attachment</Label>
+            <div className="mt-1">
+              {attachment ? (
+                <div className="flex items-center justify-between p-2 border rounded-md">
+                  <span className="text-sm truncate">{attachment.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeAttachment}
                   >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={
-                          preSelectedLesson 
-                            ? `${preSelectedLesson.title} (${preSelectedLesson.tutor_first_name} ${preSelectedLesson.tutor_last_name})`
-                            : "Select a lesson"
-                        } />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {lessons.map((lesson) => (
-                        <SelectItem key={lesson.id} value={lesson.id}>
-                          {lesson.title} ({lesson.tutor_first_name} {lesson.tutor_last_name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {preSelectedLessonId ? "Lesson is pre-selected based on your current session" : "Choose the lesson this homework is related to"}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Instructions</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter detailed instructions for the homework..."
-                      className="min-h-[120px]"
-                      {...field}
-                      value={field.value || ''}
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-500">Click to upload file</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  </label>
+                </div>
               )}
-            />
+            </div>
+          </div>
+        </div>
 
-            <FormField
-              control={form.control}
-              name="due_date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Due Date (Optional)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className="pl-3 text-left font-normal"
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a due date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormDescription>
-                    When should the homework be submitted by
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="attachment"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Attachment (Optional)</FormLabel>
-                  <FormControl>
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                      <Input
-                        id="attachment"
-                        type="file"
-                        onChange={handleFileChange}
-                        className="cursor-pointer"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Upload a PDF, document, or worksheet
-                  </FormDescription>
-                  {existingAttachmentUrl && !selectedFile && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        type="button"
-                        onClick={() => window.open(existingAttachmentUrl!, '_blank')}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        View current file
-                      </Button>
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (isEditing ? "Updating..." : "Assigning...") : (isEditing ? "Update Homework" : "Assign Homework")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : (editingHomework ? 'Update' : 'Assign Homework')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
