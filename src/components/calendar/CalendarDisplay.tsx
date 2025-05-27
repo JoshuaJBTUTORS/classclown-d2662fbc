@@ -45,28 +45,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setPreloadedLessonData(null);
   };
 
-  // Enhanced event color logic based on lesson properties
+  // Simplified event color logic - use primary pink for all lessons
   const getEventColor = (event: any) => {
-    if (event.extendedProps?.isRecurring || event.extendedProps?.isRecurringInstance) {
-      return 'hsl(174 51% 51%)'; // Accent turquoise for recurring lessons
-    }
-    if (event.extendedProps?.isGroup) {
-      return 'hsl(45 93% 59%)'; // Secondary yellow for group lessons
-    }
-    // Different colors for different tutors (admin/owner view)
-    if (event.extendedProps?.tutor?.id) {
-      const tutorId = event.extendedProps.tutor.id;
-      const colors = [
-        'hsl(342 77% 60%)', // Primary pink
-        'hsl(262 72% 65%)', // Purple
-        'hsl(221 72% 65%)', // Blue
-        'hsl(142 76% 36%)', // Green
-        'hsl(25 95% 53%)',  // Orange
-      ];
-      const colorIndex = tutorId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-      return colors[colorIndex];
-    }
-    return 'hsl(342 77% 60%)'; // Primary pink for regular lessons
+    return 'hsl(342 77% 60%)'; // Primary pink for all lessons
   };
 
   return (
