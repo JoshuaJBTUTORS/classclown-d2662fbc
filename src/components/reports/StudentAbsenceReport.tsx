@@ -4,18 +4,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, UserX } from 'lucide-react';
+import { Download, UserX, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getCompletedLessons } from '@/services/lessonCompletionService';
+
+interface TutorAbsenceData {
+  tutor_id: string;
+  tutor_name: string;
+  total_absence_hours: number;
+  absence_lesson_count: number;
+  absence_lessons: AbsenceLessonData[];
+}
 
 interface AbsenceLessonData {
   lesson_id: string;
   lesson_title: string;
   lesson_date: string;
   duration_hours: number;
-  tutor_name: string;
   subject: string;
   absent_students: string[];
 }
@@ -29,7 +36,8 @@ interface StudentAbsenceReportProps {
 }
 
 const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) => {
-  const [data, setData] = useState<AbsenceLessonData[]>([]);
+  const [data, setData] = useState<TutorAbsenceData[]>([]);
+  const [expandedTutors, setExpandedTutors] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -87,7 +95,6 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
                 lesson_title: lesson.title,
                 lesson_date: lesson.start_time,
                 duration_hours: Math.round(duration * 10) / 10,
-                tutor_name: `${lesson.tutors.first_name} ${lesson.tutors.last_name}`,
                 subject: lesson.subject || 'General',
                 absent_students: absentStudents
               });
@@ -96,10 +103,43 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
         }
       }
 
-      // Sort by date descending
-      absenceLessons.sort((a, b) => new Date(b.lesson_date).getTime() - new Date(a.lesson_date).getTime());
+      // Group absence lessons by tutor
+      const tutorAbsenceMap = new Map<string, TutorAbsenceData>();
 
-      setData(absenceLessons);
+      for (const absenceLesson of absenceLessons) {
+        // Find the corresponding completed lesson to get tutor info
+        const completedLesson = completedLessons.find(cl => cl.id === absenceLesson.lesson_id);
+        if (completedLesson) {
+          const tutorKey = completedLesson.tutor_id;
+          const tutorName = `${completedLesson.tutors.first_name} ${completedLesson.tutors.last_name}`;
+
+          if (!tutorAbsenceMap.has(tutorKey)) {
+            tutorAbsenceMap.set(tutorKey, {
+              tutor_id: tutorKey,
+              tutor_name: tutorName,
+              total_absence_hours: 0,
+              absence_lesson_count: 0,
+              absence_lessons: []
+            });
+          }
+
+          const tutorData = tutorAbsenceMap.get(tutorKey)!;
+          tutorData.total_absence_hours += absenceLesson.duration_hours;
+          tutorData.absence_lesson_count += 1;
+          tutorData.absence_lessons.push(absenceLesson);
+        }
+      }
+
+      // Convert to array and sort by total absence hours descending
+      const tutorAbsenceData = Array.from(tutorAbsenceMap.values());
+      tutorAbsenceData.sort((a, b) => b.total_absence_hours - a.total_absence_hours);
+
+      // Sort lessons within each tutor by date descending
+      tutorAbsenceData.forEach(tutor => {
+        tutor.absence_lessons.sort((a, b) => new Date(b.lesson_date).getTime() - new Date(a.lesson_date).getTime());
+      });
+
+      setData(tutorAbsenceData);
     } catch (error) {
       console.error('Error fetching absence data:', error);
       toast.error('Failed to load absence data');
@@ -108,30 +148,67 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
     }
   };
 
-  const exportToCSV = () => {
-    const headers = ['Lesson Title', 'Date', 'Duration (hrs)', 'Tutor', 'Subject', 'Absent Students'];
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => [
-        row.lesson_title,
-        format(new Date(row.lesson_date), 'yyyy-MM-dd HH:mm'),
-        row.duration_hours,
-        row.tutor_name,
-        row.subject,
-        `"${row.absent_students.join(', ')}"`
-      ].join(','))
-    ].join('\n');
+  const toggleTutorExpansion = (tutorId: string) => {
+    const newExpanded = new Set(expandedTutors);
+    if (newExpanded.has(tutorId)) {
+      newExpanded.delete(tutorId);
+    } else {
+      newExpanded.add(tutorId);
+    }
+    setExpandedTutors(newExpanded);
+  };
 
+  const exportToCSV = () => {
+    const headers = ['Tutor', 'Total Absence Hours', 'Absence Lessons Count', 'Lesson Title', 'Date', 'Duration (hrs)', 'Subject', 'Absent Students'];
+    const csvRows = [];
+    
+    // Add header
+    csvRows.push(headers.join(','));
+    
+    // Add data rows
+    data.forEach(tutor => {
+      // Add tutor summary row
+      csvRows.push([
+        tutor.tutor_name,
+        tutor.total_absence_hours,
+        tutor.absence_lesson_count,
+        '-- SUMMARY --',
+        '',
+        '',
+        '',
+        ''
+      ].join(','));
+      
+      // Add detailed lesson rows
+      tutor.absence_lessons.forEach(lesson => {
+        csvRows.push([
+          tutor.tutor_name,
+          '',
+          '',
+          lesson.lesson_title,
+          format(new Date(lesson.lesson_date), 'yyyy-MM-dd HH:mm'),
+          lesson.duration_hours,
+          lesson.subject,
+          `"${lesson.absent_students.join(', ')}"`
+        ].join(','));
+      });
+      
+      // Add empty row between tutors
+      csvRows.push('');
+    });
+
+    const csvContent = csvRows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'student-absence-report.csv';
+    a.download = 'tutor-absence-payroll-report.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
-  const totalLostHours = data.reduce((sum, lesson) => sum + lesson.duration_hours, 0);
+  const totalAbsenceHours = data.reduce((sum, tutor) => sum + tutor.total_absence_hours, 0);
+  const totalAbsenceLessons = data.reduce((sum, tutor) => sum + tutor.absence_lesson_count, 0);
 
   if (loading) {
     return (
@@ -153,12 +230,12 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Student Absence Report</CardTitle>
+          <CardTitle>Student Absence Report (Reduced Pay Hours)</CardTitle>
           <CardDescription>
-            Lessons where all enrolled students were absent
+            Lessons with all students absent - grouped by tutor for payroll processing
             {data.length > 0 && (
               <span className="block mt-1 text-orange-600 font-medium">
-                Total lost hours: {Math.round(totalLostHours * 10) / 10}h across {data.length} lessons
+                Total reduced pay hours: {Math.round(totalAbsenceHours * 10) / 10}h across {totalAbsenceLessons} lessons ({data.length} tutors affected)
               </span>
             )}
           </CardDescription>
@@ -166,56 +243,114 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
         {data.length > 0 && (
           <Button onClick={exportToCSV} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            Export Payroll CSV
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {data.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Lesson</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Tutor</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Absent Students</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((lesson) => (
-                <TableRow key={lesson.lesson_id}>
-                  <TableCell className="font-medium">{lesson.lesson_title}</TableCell>
-                  <TableCell>
-                    {format(new Date(lesson.lesson_date), 'MMM d, yyyy')}
-                    <br />
-                    <span className="text-sm text-gray-500">
-                      {format(new Date(lesson.lesson_date), 'h:mm a')}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-orange-600 border-orange-200">
-                      {lesson.duration_hours}h
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{lesson.tutor_name}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{lesson.subject}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {lesson.absent_students.map((student, index) => (
-                        <Badge key={index} variant="destructive" className="text-xs mr-1">
-                          {student}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="space-y-4">
+            {/* Tutor Summary Table */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Tutor Summary</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tutor</TableHead>
+                    <TableHead>Reduced Pay Hours</TableHead>
+                    <TableHead>Absence Lessons</TableHead>
+                    <TableHead>Details</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((tutor) => (
+                    <React.Fragment key={tutor.tutor_id}>
+                      <TableRow>
+                        <TableCell className="font-medium">{tutor.tutor_name}</TableCell>
+                        <TableCell>
+                          <Badge variant="destructive" className="text-sm">
+                            {Math.round(tutor.total_absence_hours * 10) / 10}h
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-orange-600 border-orange-200">
+                            {tutor.absence_lesson_count} lessons
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleTutorExpansion(tutor.tutor_id)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {expandedTutors.has(tutor.tutor_id) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Expanded Details */}
+                      {expandedTutors.has(tutor.tutor_id) && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="p-0">
+                            <div className="bg-gray-50 p-4 border-l-4 border-orange-200">
+                              <h4 className="font-medium mb-2 text-orange-800">Detailed Absence Lessons for {tutor.tutor_name}</h4>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="text-xs">Lesson</TableHead>
+                                    <TableHead className="text-xs">Date & Time</TableHead>
+                                    <TableHead className="text-xs">Duration</TableHead>
+                                    <TableHead className="text-xs">Subject</TableHead>
+                                    <TableHead className="text-xs">Absent Students</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {tutor.absence_lessons.map((lesson) => (
+                                    <TableRow key={lesson.lesson_id}>
+                                      <TableCell className="text-sm">{lesson.lesson_title}</TableCell>
+                                      <TableCell className="text-sm">
+                                        {format(new Date(lesson.lesson_date), 'MMM d')}
+                                        <br />
+                                        <span className="text-xs text-gray-500">
+                                          {format(new Date(lesson.lesson_date), 'h:mm a')}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-sm">
+                                        <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">
+                                          {lesson.duration_hours}h
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-sm">
+                                        <Badge variant="secondary" className="text-xs">{lesson.subject}</Badge>
+                                      </TableCell>
+                                      <TableCell className="text-sm">
+                                        <div className="space-y-1">
+                                          {lesson.absent_students.map((student, index) => (
+                                            <Badge key={index} variant="destructive" className="text-xs mr-1">
+                                              {student}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
             <UserX className="h-12 w-12 text-gray-300 mx-auto mb-4" />
