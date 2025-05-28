@@ -155,7 +155,7 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
         
         console.log(`Creating student ${i + 1}: ${student.firstName} ${student.lastName}`);
 
-        // Create student record
+        // Create student record with corrected column mapping
         const { data: studentData, error: studentError } = await supabase
           .from('students')
           .insert({
@@ -163,7 +163,6 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
             first_name: student.firstName,
             last_name: student.lastName,
             email: student.email || null,
-            grade: student.yearGroup || null,
             subjects: student.subjects || null,
             status: 'active'
           })
