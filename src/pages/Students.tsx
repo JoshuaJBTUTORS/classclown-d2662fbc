@@ -56,7 +56,10 @@ const Students = () => {
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
-      let query = supabase
+      console.log('Fetching students...');
+      
+      // Use LEFT JOIN to include students with null parent_id
+      const { data, error } = await supabase
         .from('students')
         .select(`
           *,
@@ -68,41 +71,68 @@ const Students = () => {
           )
         `)
         .order('last_name', { ascending: true });
-      
-      const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+      
+      console.log('Raw data from Supabase:', data);
+      
+      if (!data || data.length === 0) {
+        console.log('No students found in database');
+        setStudents([]);
+        setFilteredStudents([]);
+        return;
+      }
       
       // Transform the data to match the Student interface
-      const formattedStudents: Student[] = data.map((student: any) => ({
-        id: student.id,
-        name: `${student.first_name} ${student.last_name}`,
-        email: student.email || '',
-        phone: student.phone || '',
-        subjects: student.subjects || '',
-        status: (student.status as 'active' | 'inactive') || 'active',
-        joinedDate: student.created_at 
-          ? new Date(student.created_at).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            }) 
-          : undefined,
-        first_name: student.first_name || '',
-        last_name: student.last_name || '',
-        parent_id: student.parent_id,
-        user_id: student.user_id,
-        student_id: student.student_id,
-        created_at: student.created_at,
-        grade: student.grade,
-        // Add parent information for display
-        parentName: student.parents 
-          ? `${student.parents.first_name} ${student.parents.last_name}`
-          : 'No Parent Assigned',
-        parentEmail: student.parents?.email || '',
-        parentPhone: student.parents?.phone || ''
-      }));
+      const formattedStudents: Student[] = data
+        .filter(student => {
+          // Filter out records with missing required fields
+          if (!student.first_name && !student.last_name) {
+            console.warn('Skipping student with missing name:', student);
+            return false;
+          }
+          return true;
+        })
+        .map((student: any) => {
+          console.log('Processing student:', student);
+          
+          const formattedStudent: Student = {
+            id: student.id,
+            name: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
+            email: student.email || '',
+            phone: student.phone || '',
+            subjects: student.subjects || '',
+            status: (student.status as 'active' | 'inactive') || 'active',
+            joinedDate: student.created_at 
+              ? new Date(student.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                }) 
+              : undefined,
+            first_name: student.first_name || '',
+            last_name: student.last_name || '',
+            parent_id: student.parent_id || null, // Explicitly handle null
+            user_id: student.user_id,
+            student_id: student.student_id,
+            created_at: student.created_at,
+            grade: student.grade,
+            // Add parent information for display - handle both null parent_id and missing parent data
+            parentName: student.parents && student.parent_id
+              ? `${student.parents.first_name || ''} ${student.parents.last_name || ''}`.trim()
+              : 'No Parent Assigned',
+            parentEmail: student.parents?.email || '',
+            parentPhone: student.parents?.phone || ''
+          };
+          
+          console.log('Formatted student:', formattedStudent);
+          return formattedStudent;
+        });
       
+      console.log('Total formatted students:', formattedStudents.length);
       setStudents(formattedStudents);
       setFilteredStudents(formattedStudents);
     } catch (error) {
