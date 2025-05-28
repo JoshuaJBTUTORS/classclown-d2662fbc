@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
@@ -27,13 +27,22 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Users } from 'lucide-react';
+import { UserPlus, Users, Plus, Trash2 } from 'lucide-react';
 
 interface AddParentStudentFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
+
+const studentSchema = z.object({
+  firstName: z.string().min(2, { message: "Student's first name must be at least 2 characters." }),
+  lastName: z.string().min(2, { message: "Student's last name must be at least 2 characters." }),
+  email: z.string().email({ message: "Invalid email format." }).optional().or(z.literal("")),
+  yearGroup: z.string().optional(),
+  subjects: z.string().optional(),
+  createStudentLogin: z.boolean().default(false),
+});
 
 const formSchema = z.object({
   // Parent details
@@ -43,15 +52,8 @@ const formSchema = z.object({
   parentPhone: z.string().optional(),
   parentPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
   
-  // Student details
-  studentFirstName: z.string().min(2, { message: "Student's first name must be at least 2 characters." }),
-  studentLastName: z.string().min(2, { message: "Student's last name must be at least 2 characters." }),
-  studentEmail: z.string().email({ message: "Invalid email format." }).optional().or(z.literal("")),
-  yearGroup: z.string().optional(),
-  subjects: z.string().optional(),
-  
-  // Student login option
-  createStudentLogin: z.boolean().default(false),
+  // Students array
+  students: z.array(studentSchema).min(1, { message: "At least one student is required." }).max(6, { message: "Maximum 6 students allowed." }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -69,14 +71,40 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
       parentEmail: "",
       parentPhone: "",
       parentPassword: "",
-      studentFirstName: "",
-      studentLastName: "",
-      studentEmail: "",
-      yearGroup: "",
-      subjects: "",
-      createStudentLogin: false,
+      students: [{
+        firstName: "",
+        lastName: "",
+        email: "",
+        yearGroup: "",
+        subjects: "",
+        createStudentLogin: false,
+      }],
     },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "students",
+  });
+
+  const addStudent = () => {
+    if (fields.length < 6) {
+      append({
+        firstName: "",
+        lastName: "",
+        email: "",
+        yearGroup: "",
+        subjects: "",
+        createStudentLogin: false,
+      });
+    }
+  };
+
+  const removeStudent = (index: number) => {
+    if (fields.length > 1) {
+      remove(index);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -116,70 +144,99 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
 
       if (parentProfileError) throw parentProfileError;
 
-      console.log("Parent profile created, creating student...");
+      console.log("Parent profile created, creating students...");
 
-      // Step 3: Create student record
-      const { data: studentData, error: studentError } = await supabase
-        .from('students')
-        .insert({
-          parent_id: parentProfile.id,
-          first_name: data.studentFirstName,
-          last_name: data.studentLastName,
-          email: data.studentEmail || null,
-          grade: data.yearGroup || null,
-          subjects: data.subjects || null,
-          status: 'active'
-        })
-        .select()
-        .single();
+      // Step 3: Create all student records
+      const studentResults = [];
+      const studentLoginResults = [];
 
-      if (studentError) throw studentError;
-
-      console.log("Student record created");
-
-      // Step 4: Create student login if requested
-      if (data.createStudentLogin && data.studentEmail) {
-        console.log("Creating student login account...");
+      for (let i = 0; i < data.students.length; i++) {
+        const student = data.students[i];
         
-        const { data: studentAuthData, error: studentAuthError } = await supabase.auth.signUp({
-          email: data.studentEmail,
-          password: DEFAULT_STUDENT_PASSWORD,
-          options: {
-            data: {
-              first_name: data.studentFirstName,
-              last_name: data.studentLastName,
-              role: 'student',
-            }
-          }
-        });
+        console.log(`Creating student ${i + 1}: ${student.firstName} ${student.lastName}`);
 
-        if (studentAuthError) {
-          console.error("Student auth creation failed:", studentAuthError);
-          toast({
-            title: "Partial success",
-            description: "Parent and student profiles created, but student login failed: " + studentAuthError.message,
-            variant: "destructive"
-          });
-        } else if (studentAuthData.user) {
-          // Link student account to student record
-          const { error: linkError } = await supabase
-            .from('students')
-            .update({ user_id: studentAuthData.user.id })
-            .eq('id', studentData.id);
+        // Create student record
+        const { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .insert({
+            parent_id: parentProfile.id,
+            first_name: student.firstName,
+            last_name: student.lastName,
+            email: student.email || null,
+            grade: student.yearGroup || null,
+            subjects: student.subjects || null,
+            status: 'active'
+          })
+          .select()
+          .single();
 
-          if (linkError) {
-            console.error("Failed to link student account:", linkError);
-          }
-
-          console.log("Student login account created and linked");
+        if (studentError) {
+          console.error(`Error creating student ${i + 1}:`, studentError);
+          throw new Error(`Failed to create student ${student.firstName} ${student.lastName}: ${studentError.message}`);
         }
+
+        studentResults.push(studentData);
+
+        // Step 4: Create student login if requested
+        if (student.createStudentLogin && student.email) {
+          console.log(`Creating login for student ${i + 1}...`);
+          
+          try {
+            const { data: studentAuthData, error: studentAuthError } = await supabase.auth.signUp({
+              email: student.email,
+              password: DEFAULT_STUDENT_PASSWORD,
+              options: {
+                data: {
+                  first_name: student.firstName,
+                  last_name: student.lastName,
+                  role: 'student',
+                }
+              }
+            });
+
+            if (studentAuthError) {
+              console.error(`Student ${i + 1} auth creation failed:`, studentAuthError);
+              studentLoginResults.push({ student: `${student.firstName} ${student.lastName}`, error: studentAuthError.message });
+            } else if (studentAuthData.user) {
+              // Link student account to student record
+              const { error: linkError } = await supabase
+                .from('students')
+                .update({ user_id: studentAuthData.user.id })
+                .eq('id', studentData.id);
+
+              if (linkError) {
+                console.error(`Failed to link student ${i + 1} account:`, linkError);
+                studentLoginResults.push({ student: `${student.firstName} ${student.lastName}`, error: `Failed to link account: ${linkError.message}` });
+              } else {
+                studentLoginResults.push({ student: `${student.firstName} ${student.lastName}`, success: true });
+                console.log(`Student ${i + 1} login account created and linked`);
+              }
+            }
+          } catch (error: any) {
+            console.error(`Error creating login for student ${i + 1}:`, error);
+            studentLoginResults.push({ student: `${student.firstName} ${student.lastName}`, error: error.message });
+          }
+        }
+      }
+
+      // Prepare success message
+      const studentNames = studentResults.map(s => `${s.first_name} ${s.last_name}`).join(', ');
+      const loginCount = studentLoginResults.filter(r => r.success).length;
+      const loginErrors = studentLoginResults.filter(r => r.error);
+
+      let successMessage = `Family account created successfully! Parent account for ${data.parentFirstName} ${data.parentLastName} and ${studentResults.length} student(s): ${studentNames}.`;
+      
+      if (loginCount > 0) {
+        successMessage += ` ${loginCount} student login(s) created with default password: ${DEFAULT_STUDENT_PASSWORD}`;
+      }
+
+      if (loginErrors.length > 0) {
+        successMessage += ` Note: Some student logins failed - ${loginErrors.map(e => `${e.student}: ${e.error}`).join('; ')}`;
       }
 
       toast({
         title: "Family account created successfully!",
-        description: data.createStudentLogin 
-          ? `Parent account created. Student login: ${data.studentEmail} / ${DEFAULT_STUDENT_PASSWORD}`
-          : "Parent account created. Student profile added under parent account.",
+        description: successMessage,
       });
 
       onSuccess?.();
@@ -198,14 +255,14 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Create Family Account
           </DialogTitle>
           <DialogDescription>
-            Create a parent account and add a student in one step. The student will be linked to the parent account.
+            Create a parent account and add multiple students in one step. Students will be linked to the parent account.
           </DialogDescription>
         </DialogHeader>
         
@@ -296,108 +353,143 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
               </CardContent>
             </Card>
 
-            {/* Student Details Section */}
+            {/* Students Section */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Student Details</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Students ({fields.length})</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addStudent}
+                    disabled={fields.length >= 6}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Student
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="studentFirstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Jane" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="studentLastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Smith" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="studentEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="jane.smith@example.com" type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="yearGroup"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year Group</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Year 10" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="subjects"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subjects</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Math, Physics, Chemistry" className="min-h-[60px]" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="createStudentLogin"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Create student login account
-                        </FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Student will get login credentials (default password: <strong>{DEFAULT_STUDENT_PASSWORD}</strong>) to access the same family account data.
-                        </p>
+              <CardContent className="space-y-6">
+                {fields.map((field, index) => (
+                  <Card key={field.id} className="relative border-l-4 border-l-primary/20">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-md">Student {index + 1}</CardTitle>
+                        {fields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeStudent(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    </FormItem>
-                  )}
-                />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name={`students.${index}.firstName`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>First Name *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Jane" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`students.${index}.lastName`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Last Name *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Smith" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name={`students.${index}.email`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Address (Optional)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="jane.smith@example.com" type="email" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`students.${index}.yearGroup`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Year Group</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Year 10" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name={`students.${index}.subjects`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Subjects</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Math, Physics, Chemistry" className="min-h-[60px]" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`students.${index}.createStudentLogin`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                              <Checkbox 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Create student login account
+                              </FormLabel>
+                              <p className="text-sm text-muted-foreground">
+                                Student will get login credentials (default password: <strong>{DEFAULT_STUDENT_PASSWORD}</strong>) to access the same family account data.
+                              </p>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
               </CardContent>
             </Card>
 
@@ -411,7 +503,7 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Family Account"}
+                {loading ? "Creating..." : `Create Family Account (${fields.length} student${fields.length !== 1 ? 's' : ''})`}
               </Button>
             </DialogFooter>
           </form>
