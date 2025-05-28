@@ -74,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send the late notification email
     const emailResponse = await resend.emails.send({
-      from: "Tuition Management <onboarding@resend.dev>",
+      from: "JB Tutors <enquiries@jb-tutors.com>",
       to: [recipientEmail],
       subject: `${studentName} is running late for ${lessonTitle}`,
       html: `
@@ -98,11 +98,11 @@ const handler = async (req: Request): Promise<Response> => {
           <p>Thank you for your attention to this matter.</p>
           
           <p>Best regards,<br>
-          The Tuition Management Team</p>
+          The JB Tutors Team</p>
           
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #6c757d;">
-            This is an automated notification. If you have any questions, please contact your tutor or our support team.
+            This is an automated notification. If you have any questions, please contact your tutor or our support team at enquiries@jb-tutors.com.
           </p>
         </div>
       `,
