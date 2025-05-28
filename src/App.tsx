@@ -89,19 +89,19 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                <Route path="/courses/:id" element={
+                <Route path="/course/:id" element={
                   <ProtectedRoute>
                     <CourseDetail />
                   </ProtectedRoute>
                 } />
                 
-                <Route path="/courses/create" element={
+                <Route path="/course/create" element={
                   <ProtectedRoute allowedRoles={['admin', 'owner']}>
                     <CourseCreate />
                   </ProtectedRoute>
                 } />
                 
-                <Route path="/courses/:id/edit" element={
+                <Route path="/course/:id/edit" element={
                   <ProtectedRoute allowedRoles={['admin', 'owner']}>
                     <CourseEdit />
                   </ProtectedRoute>
