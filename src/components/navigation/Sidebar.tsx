@@ -39,6 +39,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       ];
     }
 
+    // For parents, start with Progress and exclude Dashboard
+    if (userRole === 'parent') {
+      return [
+        { name: 'Progress', href: '/progress', icon: TrendingUp },
+        { name: 'Calendar', href: '/calendar', icon: Calendar },
+        { name: 'Lessons', href: '/lessons', icon: BookOpen },
+        { name: 'Homework', href: '/homework', icon: BookMarked },
+        { name: 'Learning Hub', href: '/learning-hub', icon: Library },
+      ];
+    }
+
     // For all other roles, keep the original navigation with Dashboard first
     const baseNavigation = [
       { name: 'Dashboard', href: '/', icon: Home },

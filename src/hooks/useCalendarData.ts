@@ -131,6 +131,62 @@ export const useCalendarData = ({
             `)
             .eq('lesson_students.student_id', studentData.id);
 
+        } else if (userRole === 'parent') {
+          // For parents, first get the parent record
+          const { data: parentData, error: parentError } = await supabase
+            .from('parents')
+            .select('id')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+          if (parentError) {
+            console.error('Error fetching parent data:', parentError);
+            toast.error('Failed to load parent data');
+            setIsLoading(false);
+            return;
+          }
+
+          if (!parentData) {
+            console.log('No parent record found for email:', userEmail);
+            setRawLessons([]);
+            setIsLoading(false);
+            return;
+          }
+
+          // Get all students linked to this parent
+          const { data: studentData, error: studentError } = await supabase
+            .from('students')
+            .select('id')
+            .eq('parent_id', parentData.id);
+
+          if (studentError) {
+            console.error('Error fetching parent\'s students:', studentError);
+            toast.error('Failed to load student data');
+            setIsLoading(false);
+            return;
+          }
+
+          if (!studentData || studentData.length === 0) {
+            console.log('No students found for parent:', parentData.id);
+            setRawLessons([]);
+            setIsLoading(false);
+            return;
+          }
+
+          const studentIds = studentData.map(s => s.id);
+
+          query = supabase
+            .from('lessons')
+            .select(`
+              *,
+              lesson_students!inner(
+                student_id,
+                lesson_space_url,
+                student:students(id, first_name, last_name)
+              )
+            `)
+            .in('lesson_students.student_id', studentIds);
+
         } else if (userRole === 'tutor') {
           const { data: tutorData, error: tutorError } = await supabase
             .from('tutors')

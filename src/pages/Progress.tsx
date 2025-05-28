@@ -35,8 +35,8 @@ const Progress: React.FC = () => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  // Check if user has access to progress tracking
-  if (userRole !== 'student' && userRole !== 'owner') {
+  // Check if user has access to progress tracking - now includes parents
+  if (userRole !== 'student' && userRole !== 'owner' && userRole !== 'parent') {
     return (
       <div className="flex min-h-screen bg-background">
         <Sidebar isOpen={sidebarOpen} />
@@ -56,6 +56,26 @@ const Progress: React.FC = () => {
     );
   }
 
+  const getPageTitle = () => {
+    if (userRole === 'parent') {
+      return "Your Children's Progress";
+    } else if (userRole === 'student') {
+      return "Your Progress";
+    } else {
+      return "Progress Tracking";
+    }
+  };
+
+  const getSubtitle = () => {
+    if (userRole === 'parent') {
+      return "Track your children's homework and attendance progress";
+    } else if (userRole === 'student') {
+      return "View your homework and attendance progress";
+    } else {
+      return "Track student progress and performance analytics";
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} />
@@ -63,10 +83,8 @@ const Progress: React.FC = () => {
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <PageTitle 
-            title="Progress Tracking" 
-            subtitle={userRole === 'owner' 
-              ? "Track student progress and performance analytics" 
-              : "View your homework and attendance progress"}
+            title={getPageTitle()}
+            subtitle={getSubtitle()}
           />
 
           <div className="space-y-8">

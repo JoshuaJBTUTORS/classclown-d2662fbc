@@ -11,9 +11,9 @@ const StudentDashboardRedirect = () => {
     return <Navigate to="/progress" replace />;
   }
   
-  // If user is a parent, show family-focused dashboard
+  // If user is a parent, redirect to progress page to see children's progress
   if (userRole === 'parent') {
-    return <Index />;
+    return <Navigate to="/progress" replace />;
   }
   
   // For all other roles (admin, owner, tutor), show the dashboard
