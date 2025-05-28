@@ -11,7 +11,6 @@ import StudentDashboardRedirect from '@/components/routing/StudentDashboardRedir
 // Page imports
 import Auth from '@/pages/Auth';
 import Calendar from '@/pages/Calendar';
-import Lessons from '@/pages/Lessons';
 import Students from '@/pages/Students';
 import Tutors from '@/pages/Tutors';
 import Homework from '@/pages/Homework';
@@ -51,12 +50,6 @@ function App() {
                 <Route path="/calendar" element={
                   <ProtectedRoute>
                     <Calendar />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/lessons" element={
-                  <ProtectedRoute>
-                    <Lessons />
                   </ProtectedRoute>
                 } />
                 

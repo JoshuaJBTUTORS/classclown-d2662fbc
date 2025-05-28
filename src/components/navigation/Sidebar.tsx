@@ -1,9 +1,7 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Calendar, 
-  BookOpen, 
   Users, 
   GraduationCap, 
   Home, 
@@ -33,7 +31,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       return [
         { name: 'Progress', href: '/progress', icon: TrendingUp },
         { name: 'Calendar', href: '/calendar', icon: Calendar },
-        { name: 'Lessons', href: '/lessons', icon: BookOpen },
         { name: 'Homework', href: '/homework', icon: BookMarked },
         { name: 'Learning Hub', href: '/learning-hub', icon: Library },
       ];
@@ -44,7 +41,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       return [
         { name: 'Progress', href: '/progress', icon: TrendingUp },
         { name: 'Calendar', href: '/calendar', icon: Calendar },
-        { name: 'Lessons', href: '/lessons', icon: BookOpen },
         { name: 'Homework', href: '/homework', icon: BookMarked },
         { name: 'Learning Hub', href: '/learning-hub', icon: Library },
       ];
@@ -54,7 +50,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     const baseNavigation = [
       { name: 'Dashboard', href: '/', icon: Home },
       { name: 'Calendar', href: '/calendar', icon: Calendar },
-      { name: 'Lessons', href: '/lessons', icon: BookOpen },
     ];
 
     // Add role-specific navigation items
