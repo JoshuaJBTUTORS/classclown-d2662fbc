@@ -93,7 +93,7 @@ const CourseCheckout = () => {
   if (isLoading || !course) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -101,13 +101,13 @@ const CourseCheckout = () => {
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row">
       {/* Left Panel - Course Information */}
-      <div className="lg:w-2/5 bg-white border-r border-gray-100 p-8 lg:p-12 flex flex-col">
+      <div className="lg:w-2/5 bg-gradient-to-br from-white via-white to-primary/5 border-r border-gray-100 p-8 lg:p-12 flex flex-col">
         {/* Header */}
         <div className="mb-8">
           <Button
             variant="ghost"
             onClick={() => navigate(`/course/${course.id}`)}
-            className="mb-6 p-0 h-auto font-normal text-gray-600 hover:text-gray-900 hover:bg-transparent"
+            className="mb-6 p-0 h-auto font-normal text-gray-600 hover:text-primary hover:bg-transparent"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to course
@@ -130,33 +130,33 @@ const CourseCheckout = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">What's included</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-gray-700">Full access to all course lessons and materials</span>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-gray-700">Progress tracking and completion certificates</span>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-gray-700">Mobile access and offline downloads</span>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-gray-700">Expert support and community access</span>
               </div>
             </div>
           </div>
 
           {/* Trial Information */}
-          <div className="border border-green-200 bg-green-50 rounded-lg p-6 mb-8">
+          <div className="border border-primary/20 bg-primary/10 rounded-lg p-6 mb-8">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-1.5 bg-green-100 rounded-full">
-                <Shield className="h-4 w-4 text-green-700" />
+              <div className="p-1.5 bg-primary/20 rounded-full">
+                <Shield className="h-4 w-4 text-primary" />
               </div>
-              <span className="font-semibold text-green-900">7-Day Free Trial</span>
+              <span className="font-semibold text-primary">7-Day Free Trial</span>
             </div>
-            <p className="text-sm text-green-800">
+            <p className="text-sm text-primary/80">
               Start learning immediately with full access. Cancel anytime during your trial period with no charges.
             </p>
           </div>
@@ -201,7 +201,7 @@ const CourseCheckout = () => {
             />
           ) : (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           )}
         </div>

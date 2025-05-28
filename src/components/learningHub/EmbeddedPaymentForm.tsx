@@ -119,18 +119,18 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   return (
     <div className="space-y-8">
       {/* Order Summary */}
-      <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+      <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
         <h3 className="font-semibold text-gray-900 mb-4">Order summary</h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">First 7 days</span>
-            <span className="font-semibold text-green-600">Free</span>
+            <span className="font-semibold text-primary">Free</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Then {formatPrice(amount)}/month</span>
             <span className="text-sm text-gray-500">Cancel anytime</span>
           </div>
-          <div className="border-t border-gray-200 pt-3 mt-3">
+          <div className="border-t border-primary/20 pt-3 mt-3">
             <div className="flex justify-between items-center">
               <span className="font-semibold text-gray-900">Due today</span>
               <span className="font-bold text-xl text-gray-900">£0.00</span>
@@ -156,7 +156,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               placeholder="Enter your email"
               value={emailForReceipt}
               onChange={(e) => setEmailForReceipt(e.target.value)}
-              className="h-11 border-gray-300 focus:border-gray-900 focus:ring-gray-900"
+              className="h-11 border-gray-300 focus:border-primary focus:ring-primary/20"
               required
             />
           </div>
@@ -171,7 +171,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               placeholder="Enter your full name"
               value={billingName}
               onChange={(e) => setBillingName(e.target.value)}
-              className="h-11 border-gray-300 focus:border-gray-900 focus:ring-gray-900"
+              className="h-11 border-gray-300 focus:border-primary focus:ring-primary/20"
               required
             />
           </div>
@@ -183,7 +183,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             <Label className="text-sm font-medium text-gray-700 mb-2 block">
               Card information
             </Label>
-            <div className="border border-gray-300 rounded-md bg-white focus-within:border-gray-900 focus-within:ring-1 focus-within:ring-gray-900 transition-colors">
+            <div className="border border-gray-300 rounded-md bg-white focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-colors">
               <div className="h-11 px-3 py-3 border-b border-gray-200">
                 <CardNumberElement
                   options={stripeElementOptions}
@@ -214,7 +214,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         <Button
           type="submit"
           disabled={!stripe || isProcessing || !cardComplete || !emailForReceipt || !billingName}
-          className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <>
@@ -256,7 +256,7 @@ const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = (props) => {
     appearance: {
       theme: 'stripe',
       variables: {
-        colorPrimary: '#111827',
+        colorPrimary: 'hsl(342, 77%, 60%)',
         colorBackground: '#ffffff',
         colorText: '#374151',
         colorDanger: '#ef4444',
