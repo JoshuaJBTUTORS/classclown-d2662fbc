@@ -174,20 +174,6 @@
   border-left: 3px solid #f59e0b !important;
 }
 
-/* Video conference event styles */
-.video-conference-event {
-  position: relative;
-}
-
-.video-conference-event::before {
-  content: '📹';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  font-size: 10px;
-  z-index: 5;
-}
-
 /* Group event styles */
 .group-event {
   border-right: 3px solid #8b5cf6 !important;
