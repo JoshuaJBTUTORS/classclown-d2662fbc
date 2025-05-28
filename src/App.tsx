@@ -17,6 +17,7 @@ import Homework from '@/pages/Homework';
 import Progress from '@/pages/Progress';
 import LearningHub from '@/pages/LearningHub';
 import CourseDetail from '@/pages/CourseDetail';
+import CourseCheckout from '@/pages/CourseCheckout';
 import CourseCreate from '@/pages/CourseCreate';
 import CourseEdit from '@/pages/CourseEdit';
 import CreateAdmin from '@/pages/CreateAdmin';
@@ -99,6 +100,12 @@ function App() {
                 <Route path="/course/:id" element={
                   <ProtectedRoute>
                     <CourseDetail />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/course/:id/checkout" element={
+                  <ProtectedRoute>
+                    <CourseCheckout />
                   </ProtectedRoute>
                 } />
                 
