@@ -134,6 +134,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 if (info.event.extendedProps.isCompleted) {
                   classes.push('completed-event');
                 }
+                if (info.event.extendedProps.videoConferenceLink) {
+                  classes.push('video-conference-event');
+                }
                 
                 return classes;
               }}

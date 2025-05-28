@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
@@ -23,17 +23,113 @@ export const useCalendarData = ({
   refreshKey,
   filters 
 }: UseCalendarDataProps) => {
-  const [events, setEvents] = useState<any[]>([]);
-  const [lessonIds, setLessonIds] = useState<string[]>([]);
+  const [rawLessons, setRawLessons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Memoize lesson IDs to prevent infinite re-renders
+  const lessonIds = useMemo(() => {
+    return rawLessons.map(lesson => lesson.id);
+  }, [rawLessons]);
+
   const { completionData } = useLessonCompletion(lessonIds);
+
+  // Memoize events to prevent unnecessary recalculations
+  const events = useMemo(() => {
+    if (rawLessons.length === 0) return [];
+
+    const calendarEvents = rawLessons.map(lesson => {
+      // Only add video conference properties if there are actual working links
+      let videoConferenceLink = null;
+      let studentUrls = [];
+      let hasValidVideoConference = false;
+
+      if (userRole === 'student' && lesson.lesson_space_room_id) {
+        videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
+        hasValidVideoConference = true;
+      } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
+        const studentLessonData = lesson.lesson_students[0];
+        if (studentLessonData.lesson_space_url) {
+          videoConferenceLink = studentLessonData.lesson_space_url;
+          hasValidVideoConference = true;
+        }
+      } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
+        studentUrls = lesson.lesson_students
+          .filter(ls => ls.lesson_space_url)
+          .map(ls => ({
+            url: ls.lesson_space_url,
+            studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+          }));
+        
+        if (lesson.video_conference_link || lesson.lesson_space_room_url) {
+          videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
+          hasValidVideoConference = true;
+        } else if (studentUrls.length > 0) {
+          hasValidVideoConference = true;
+        }
+      }
+
+      // Get completion status for this lesson
+      const completionInfo = completionData[lesson.id];
+      const isCompleted = completionInfo?.isCompleted || false;
+
+      let className = 'calendar-event';
+      if (hasValidVideoConference) {
+        className += ' video-conference-event';
+      }
+      if (isCompleted) {
+        className += ' completed-event';
+      }
+      
+      return {
+        id: lesson.id,
+        title: lesson.title,
+        start: lesson.start_time,
+        end: lesson.end_time,
+        className,
+        extendedProps: {
+          isRecurring: lesson.is_recurring,
+          recurrenceInterval: lesson.recurrence_interval,
+          recurrenceEndDate: lesson.recurrence_end_date,
+          description: lesson.description,
+          subject: lesson.subject,
+          videoConferenceLink: hasValidVideoConference ? videoConferenceLink : null,
+          videoConferenceProvider: hasValidVideoConference ? lesson.video_conference_provider : null,
+          lessonSpaceRoomId: lesson.lesson_space_room_id,
+          lessonSpaceRoomUrl: lesson.lesson_space_room_url,
+          lessonSpaceSpaceId: lesson.lesson_space_room_id,
+          studentUrls: studentUrls,
+          userRole: userRole,
+          tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
+            id: lesson.tutor.id,
+            first_name: lesson.tutor.first_name,
+            last_name: lesson.tutor.last_name,
+            email: lesson.tutor.email
+          } : null,
+          students: lesson.lesson_students?.map(ls => ({
+            id: ls.student_id,
+            name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+          })) || [],
+          isCompleted: isCompleted,
+          completionDetails: completionInfo
+        }
+      };
+    });
+
+    // Add recurring events
+    for (const lesson of rawLessons) {
+      if (lesson.is_recurring && lesson.recurrence_interval) {
+        const recurringEvents = generateRecurringEvents(lesson, userRole, completionData);
+        calendarEvents.push(...recurringEvents);
+      }
+    }
+
+    return calendarEvents;
+  }, [rawLessons, userRole, completionData]);
 
   useEffect(() => {
     const fetchEvents = async () => {
       if (!isAuthenticated || !userRole || !userEmail) {
-        setEvents([]);
-        setLessonIds([]);
+        setRawLessons([]);
         setIsLoading(false);
         return;
       }
@@ -58,8 +154,7 @@ export const useCalendarData = ({
 
           if (!studentData) {
             console.log('No student record found for email:', userEmail);
-            setEvents([]);
-            setLessonIds([]);
+            setRawLessons([]);
             setIsLoading(false);
             return;
           }
@@ -91,8 +186,7 @@ export const useCalendarData = ({
 
           if (!tutorData) {
             console.log('No tutor record found for email:', userEmail);
-            setEvents([]);
-            setLessonIds([]);
+            setRawLessons([]);
             setIsLoading(false);
             return;
           }
@@ -131,8 +225,7 @@ export const useCalendarData = ({
           }
 
         } else {
-          setEvents([]);
-          setLessonIds([]);
+          setRawLessons([]);
           setIsLoading(false);
           return;
         }
@@ -153,82 +246,7 @@ export const useCalendarData = ({
           });
         }
 
-        // Collect all lesson IDs for completion checking
-        const allLessonIds: string[] = [];
-        filteredData.forEach(lesson => {
-          allLessonIds.push(lesson.id);
-        });
-        setLessonIds(allLessonIds);
-        
-        const calendarEvents = filteredData.map(lesson => {
-          // ... keep existing code (video conference link logic)
-          let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
-          let studentUrls = [];
-          
-          if (userRole === 'student' && lesson.lesson_space_room_id) {
-            videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
-          } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
-            const studentLessonData = lesson.lesson_students[0];
-            if (studentLessonData.lesson_space_url) {
-              videoConferenceLink = studentLessonData.lesson_space_url;
-            }
-          } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
-            studentUrls = lesson.lesson_students
-              .filter(ls => ls.lesson_space_url)
-              .map(ls => ({
-                url: ls.lesson_space_url,
-                studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-              }));
-          }
-          
-          const hasVideoConference = videoConferenceLink || studentUrls.length > 0 || lesson.lesson_space_room_id;
-          let className = 'calendar-event';
-          
-          if (hasVideoConference) {
-            className += ' video-conference-event';
-          }
-          
-          return {
-            id: lesson.id,
-            title: lesson.title,
-            start: lesson.start_time,
-            end: lesson.end_time,
-            className,
-            extendedProps: {
-              isRecurring: lesson.is_recurring,
-              recurrenceInterval: lesson.recurrence_interval,
-              recurrenceEndDate: lesson.recurrence_end_date,
-              description: lesson.description,
-              subject: lesson.subject,
-              videoConferenceLink: videoConferenceLink,
-              videoConferenceProvider: lesson.video_conference_provider,
-              lessonSpaceRoomId: lesson.lesson_space_room_id,
-              lessonSpaceRoomUrl: lesson.lesson_space_room_url,
-              lessonSpaceSpaceId: lesson.lesson_space_room_id,
-              studentUrls: studentUrls,
-              userRole: userRole,
-              tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
-                id: lesson.tutor.id,
-                first_name: lesson.tutor.first_name,
-                last_name: lesson.tutor.last_name,
-                email: lesson.tutor.email
-              } : null,
-              students: lesson.lesson_students?.map(ls => ({
-                id: ls.student_id,
-                name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-              })) || []
-            }
-          };
-        });
-
-        for (const lesson of filteredData) {
-          if (lesson.is_recurring && lesson.recurrence_interval) {
-            const recurringEvents = generateRecurringEvents(lesson, userRole);
-            calendarEvents.push(...recurringEvents);
-          }
-        }
-
-        setEvents(calendarEvents);
+        setRawLessons(filteredData);
       } catch (error) {
         console.error('Error fetching lessons:', error);
         toast.error('Failed to load lessons');
@@ -240,23 +258,7 @@ export const useCalendarData = ({
     fetchEvents();
   }, [userRole, userEmail, isAuthenticated, refreshKey, filters]);
 
-  // Update events with completion data when it becomes available
-  useEffect(() => {
-    if (Object.keys(completionData).length > 0) {
-      setEvents(prevEvents => 
-        prevEvents.map(event => ({
-          ...event,
-          extendedProps: {
-            ...event.extendedProps,
-            isCompleted: completionData[event.id]?.isCompleted || false,
-            completionDetails: completionData[event.id]
-          }
-        }))
-      );
-    }
-  }, [completionData]);
-
-  const generateRecurringEvents = (lesson, userRole) => {
+  const generateRecurringEvents = (lesson, userRole, completionData) => {
     const events = [];
     const startDate = parseISO(lesson.start_time);
     const endDate = parseISO(lesson.end_time);
@@ -266,15 +268,18 @@ export const useCalendarData = ({
 
     const durationMs = endDate.getTime() - startDate.getTime();
     
-    let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
+    let videoConferenceLink = null;
     let studentUrls = [];
-    
+    let hasValidVideoConference = false;
+
     if (userRole === 'student' && lesson.lesson_space_room_id) {
       videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
+      hasValidVideoConference = true;
     } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
       const studentLessonData = lesson.lesson_students[0];
       if (studentLessonData.lesson_space_url) {
         videoConferenceLink = studentLessonData.lesson_space_url;
+        hasValidVideoConference = true;
       }
     } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
       studentUrls = lesson.lesson_students
@@ -283,9 +288,14 @@ export const useCalendarData = ({
           url: ls.lesson_space_url,
           studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
         }));
+      
+      if (lesson.video_conference_link || lesson.lesson_space_room_url) {
+        videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
+        hasValidVideoConference = true;
+      } else if (studentUrls.length > 0) {
+        hasValidVideoConference = true;
+      }
     }
-    
-    const hasVideoConference = videoConferenceLink || studentUrls.length > 0 || lesson.lesson_space_room_id;
     
     let currentDate = startDate;
     
@@ -295,9 +305,16 @@ export const useCalendarData = ({
         const instanceEndDate = new Date(instanceStartDate.getTime() + durationMs);
         const instanceId = `${lesson.id}-${format(currentDate, 'yyyy-MM-dd')}`;
         
+        // Recurring instances are typically not completed (they inherit from main lesson)
+        const completionInfo = completionData[lesson.id];
+        const isCompleted = completionInfo?.isCompleted || false;
+        
         let className = 'recurring-instance';
-        if (hasVideoConference) {
+        if (hasValidVideoConference) {
           className += ' video-conference-event';
+        }
+        if (isCompleted) {
+          className += ' completed-event';
         }
         
         events.push({
@@ -310,8 +327,9 @@ export const useCalendarData = ({
             isRecurringInstance: true,
             originalLessonId: lesson.id,
             description: lesson.description,
-            videoConferenceLink: videoConferenceLink,
-            videoConferenceProvider: lesson.video_conference_provider,
+            subject: lesson.subject,
+            videoConferenceLink: hasValidVideoConference ? videoConferenceLink : null,
+            videoConferenceProvider: hasValidVideoConference ? lesson.video_conference_provider : null,
             lessonSpaceRoomId: lesson.lesson_space_room_id,
             lessonSpaceRoomUrl: lesson.lesson_space_room_url,
             lessonSpaceSpaceId: lesson.lesson_space_room_id,
@@ -326,7 +344,9 @@ export const useCalendarData = ({
             students: lesson.lesson_students?.map(ls => ({
               id: ls.student_id,
               name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-            })) || []
+            })) || [],
+            isCompleted: isCompleted,
+            completionDetails: completionInfo
           }
         });
       }
