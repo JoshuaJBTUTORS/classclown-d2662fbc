@@ -33,9 +33,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <OrganizationProvider>
-        <AuthProvider>
-          <LearningHubProvider>
-            <Router>
+        <Router>
+          <AuthProvider>
+            <LearningHubProvider>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/invite/:token" element={<Invite />} />
@@ -111,10 +111,10 @@ function App() {
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Router>
-            <Toaster />
-          </LearningHubProvider>
-        </AuthProvider>
+              <Toaster />
+            </LearningHubProvider>
+          </AuthProvider>
+        </Router>
       </OrganizationProvider>
     </QueryClientProvider>
   );
