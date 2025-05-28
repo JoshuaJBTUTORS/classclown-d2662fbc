@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,16 +15,20 @@ interface UserProfile {
   organization_id?: string;
 }
 
-interface UserRole {
-  role: AppRole;
+interface ParentProfile {
+  id: string;
   user_id: string;
-  is_primary?: boolean;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
+  parentProfile: ParentProfile | null;
   userRole: AppRole | null;
   isAdmin: boolean;
   isOwner: boolean;
@@ -46,15 +51,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Clean up auth state helper
 const cleanupAuthState = () => {
-  // Remove standard auth tokens
   localStorage.removeItem('supabase.auth.token');
-  // Remove all Supabase auth keys from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
       localStorage.removeItem(key);
     }
   });
-  // Remove from sessionStorage if in use
   Object.keys(sessionStorage || {}).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
       sessionStorage.removeItem(key);
@@ -66,14 +68,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch user profile and role
+  // Fetch user profile, role, and parent profile
   const fetchUserData = async (userId: string) => {
     try {
-      // Fetch profile
+      // Fetch basic profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -92,6 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (roleError) throw roleError;
 
+      // Fetch parent profile if user is a parent
+      const { data: parentData, error: parentError } = await supabase
+        .from('parents')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      // Don't throw error if no parent profile found - user might be student/tutor
+
       if (profileData) {
         setProfile(profileData);
       }
@@ -99,25 +111,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (roleData) {
         setUserRole(roleData.role as AppRole);
       } else if (user) {
-        // If no role found but user is authenticated, create a default 'student' role
-        console.log("No role found for user, creating default student role");
+        // If no role found, create default based on whether they have parent profile
+        const defaultRole = parentData ? 'parent' : 'student';
         try {
           const { error: insertError } = await supabase
             .from('user_roles')
             .insert({
               user_id: userId,
-              role: 'student',
+              role: defaultRole,
               is_primary: true
             });
             
           if (!insertError) {
-            setUserRole('student');
-          } else {
-            console.error("Error creating default role:", insertError);
+            setUserRole(defaultRole);
           }
         } catch (err) {
           console.error("Failed to create default role:", err);
         }
+      }
+
+      if (parentData) {
+        setParentProfile(parentData);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -125,14 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         console.log("Auth state change event:", event);
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
-        // Defer data fetching to prevent deadlocks
         if (event === 'SIGNED_IN' && newSession?.user) {
           setTimeout(() => {
             fetchUserData(newSession.user.id);
@@ -143,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
+          setParentProfile(null);
           setUserRole(null);
           setTimeout(() => {
             toast({
@@ -158,7 +171,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       console.log("Checking for existing session:", existingSession?.user?.email || "None");
       setSession(existingSession);
@@ -188,15 +200,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   ) => {
     try {
-      // Clean up existing state
       cleanupAuthState();
       
-      // Try to sign out first
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         console.log("Error during pre-signup signout:", err);
-        // Continue even if this fails
       }
       
       console.log("Starting signup with metadata:", metadata);
@@ -233,14 +242,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Clean up existing state
       cleanupAuthState();
       
-      // Try to sign out first
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
-        // Continue even if this fails
         console.log("Error during pre-signin signout:", err);
       }
       
@@ -252,7 +258,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log("Sign-in successful, navigating to home");
-      // Force page reload for a clean state
       navigate('/');
       
     } catch (error: any) {
@@ -268,19 +273,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clean up auth state
       cleanupAuthState();
-      
-      // Attempt global sign out
       await supabase.auth.signOut({ scope: 'global' });
-      
-      // Reset local state
       setProfile(null);
+      setParentProfile(null);
       setUserRole(null);
-      
-      // Force page reload for a clean state
       navigate('/auth');
-      
     } catch (error: any) {
       console.error("Sign-out error:", error);
       toast({
@@ -302,6 +300,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     profile,
+    parentProfile,
     userRole,
     isAdmin,
     isOwner,

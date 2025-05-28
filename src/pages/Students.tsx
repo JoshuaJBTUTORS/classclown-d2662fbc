@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -33,29 +32,41 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import EditStudentForm from '@/components/students/EditStudentForm';
 import ViewStudentProfile from '@/components/students/ViewStudentProfile';
-import { Student } from '@/types/student'; 
+import { Student } from '@/types/student';
 import AddStudentForm from '@/components/students/AddStudentForm';
+import AddParentStudentForm from '@/components/students/AddParentStudentForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Students = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddFamilyDialogOpen, setIsAddFamilyDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { isParent, isAdmin, isOwner } = useAuth();
 
-  // Fetch students from Supabase
+  // Fetch students from Supabase with parent information
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
       let query = supabase
         .from('students')
-        .select('*')
+        .select(`
+          *,
+          parents (
+            first_name,
+            last_name,
+            email,
+            phone
+          )
+        `)
         .order('last_name', { ascending: true });
       
       const { data, error } = await query;
@@ -79,10 +90,17 @@ const Students = () => {
           : undefined,
         first_name: student.first_name || '',
         last_name: student.last_name || '',
-        parent_first_name: student.parent_first_name || '',
-        parent_last_name: student.parent_last_name || '',
+        parent_id: student.parent_id,
+        user_id: student.user_id,
         student_id: student.student_id,
-        created_at: student.created_at
+        created_at: student.created_at,
+        grade: student.grade,
+        // Add parent information for display
+        parentName: student.parents 
+          ? `${student.parents.first_name} ${student.parents.last_name}`
+          : 'No Parent Assigned',
+        parentEmail: student.parents?.email || '',
+        parentPhone: student.parents?.phone || ''
       }));
       
       setStudents(formattedStudents);
@@ -110,7 +128,8 @@ const Students = () => {
           student.first_name.toLowerCase().includes(query) ||
           student.last_name.toLowerCase().includes(query) ||
           student.email.toLowerCase().includes(query) ||
-          (typeof student.subjects === 'string' && student.subjects.toLowerCase().includes(query))
+          (typeof student.subjects === 'string' && student.subjects.toLowerCase().includes(query)) ||
+          (student.parentName && student.parentName.toLowerCase().includes(query))
       );
       setFilteredStudents(filtered);
     }
@@ -148,24 +167,42 @@ const Students = () => {
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col md:flex-row items-center justify-between mb-6">
             <PageTitle 
-              title="Students" 
-              subtitle="Manage your students"
+              title={isParent ? "My Children" : "Students"} 
+              subtitle={isParent ? "Manage your children's profiles" : "Manage student accounts and family relationships"}
               className="mb-4 md:mb-0"
             />
-            <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Student
-            </Button>
+            <div className="flex gap-2">
+              {(isAdmin || isOwner) && (
+                <>
+                  <Button 
+                    onClick={() => setIsAddFamilyDialogOpen(true)} 
+                    className="flex items-center gap-2"
+                    variant="default"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Family
+                  </Button>
+                  <Button 
+                    onClick={() => setIsAddDialogOpen(true)} 
+                    className="flex items-center gap-2"
+                    variant="outline"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Student Only
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
           
           <Card>
             <CardHeader className="pb-2">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <CardTitle>Student List</CardTitle>
+                <CardTitle>{isParent ? "Children" : "Student List"}</CardTitle>
                 <div className="relative w-full md:w-64">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search students..."
+                    placeholder="Search students or parents..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8"
@@ -177,8 +214,9 @@ const Students = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Student Name</TableHead>
                     <TableHead className="hidden md:table-cell">Email</TableHead>
+                    <TableHead className="hidden lg:table-cell">Parent</TableHead>
                     <TableHead className="hidden md:table-cell">Subjects</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -187,13 +225,13 @@ const Students = () => {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10">
+                      <TableCell colSpan={6} className="text-center py-10">
                         Loading students...
                       </TableCell>
                     </TableRow>
                   ) : filteredStudents.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10">
+                      <TableCell colSpan={6} className="text-center py-10">
                         No students found.
                       </TableCell>
                     </TableRow>
@@ -204,9 +242,20 @@ const Students = () => {
                           <div className="font-medium">
                             {student.first_name} {student.last_name}
                           </div>
+                          <div className="text-sm text-gray-500">
+                            {student.user_id ? '🔐 Has Login' : '👤 Parent Managed'}
+                          </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {student.email}
+                          {student.email || <span className="text-gray-400">Not provided</span>}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <div className="text-sm">
+                            <div className="font-medium">{student.parentName}</div>
+                            {student.parentEmail && (
+                              <div className="text-gray-500">{student.parentEmail}</div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <div className="flex flex-wrap gap-1">
@@ -247,12 +296,14 @@ const Students = () => {
                               <DropdownMenuItem onClick={() => handleEditClick(student)}>
                                 Edit Student
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => handleDeleteClick(student)}
-                              >
-                                Delete Student
-                              </DropdownMenuItem>
+                              {(isAdmin || isOwner) && (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => handleDeleteClick(student)}
+                                >
+                                  Delete Student
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -266,7 +317,14 @@ const Students = () => {
         </main>
       </div>
 
-      {/* Use the AddStudentForm component */}
+      {/* Add Family Dialog */}
+      <AddParentStudentForm
+        isOpen={isAddFamilyDialogOpen}
+        onClose={() => setIsAddFamilyDialogOpen(false)}
+        onSuccess={fetchStudents}
+      />
+
+      {/* Add Student Only Dialog */}
       <AddStudentForm
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}

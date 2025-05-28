@@ -586,6 +586,48 @@ export type Database = {
         }
         Relationships: []
       }
+      parents: {
+        Row: {
+          billing_address: string | null
+          created_at: string
+          email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_address?: string | null
+          created_at?: string
+          email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_address?: string | null
+          created_at?: string
+          email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -678,12 +720,12 @@ export type Database = {
           first_name: string | null
           id: number
           last_name: string | null
-          parent_first_name: string | null
-          parent_last_name: string | null
+          parent_id: string | null
           phone: string | null
           status: string | null
           student_id: string | null
           subjects: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -691,12 +733,12 @@ export type Database = {
           first_name?: string | null
           id?: number
           last_name?: string | null
-          parent_first_name?: string | null
-          parent_last_name?: string | null
+          parent_id?: string | null
           phone?: string | null
           status?: string | null
           student_id?: string | null
           subjects?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -704,14 +746,22 @@ export type Database = {
           first_name?: string | null
           id?: number
           last_name?: string | null
-          parent_first_name?: string | null
-          parent_last_name?: string | null
+          parent_id?: string | null
           phone?: string | null
           status?: string | null
           student_id?: string | null
           subjects?: string | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tutor_availability: {
         Row: {
@@ -839,6 +889,10 @@ export type Database = {
           | { course_id_param: string; student_id_param: number }
           | { course_id_param: string; student_id_param: string }
         Returns: number
+      }
+      get_current_user_parent_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_next_lesson: {
         Args: { current_lesson_id: string }
