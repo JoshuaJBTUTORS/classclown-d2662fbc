@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -215,11 +216,17 @@ const StudentJoinPage: React.FC = () => {
   };
 
   const getStudentInviteUrl = () => {
-    if (!lesson?.lesson_space_space_id) {
-      console.warn('No lesson_space_space_id found in lesson data');
+    // Use the lesson_space_room_id instead of lesson_space_space_id for the correct URL
+    if (!lesson?.lesson_space_room_id) {
+      console.warn('No lesson_space_room_id found in lesson data');
+      console.log('Available lesson space fields:', {
+        space_id: lesson?.lesson_space_space_id,
+        room_id: lesson?.lesson_space_room_id,
+        room_url: lesson?.lesson_space_room_url
+      });
       return null;
     }
-    const url = `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
+    const url = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
     console.log('Generated student invite URL:', url);
     return url;
   };
@@ -331,6 +338,12 @@ const StudentJoinPage: React.FC = () => {
               <div className="bg-gray-50 p-3 rounded border">
                 <p className="text-xs text-gray-600 font-mono">
                   Debug: Student URL will be: {studentInviteUrl}
+                </p>
+                <p className="text-xs text-gray-600 font-mono mt-1">
+                  Room ID: {lesson?.lesson_space_room_id || 'Not found'}
+                </p>
+                <p className="text-xs text-gray-600 font-mono mt-1">
+                  Space ID: {lesson?.lesson_space_space_id || 'Not found'}
                 </p>
               </div>
 
