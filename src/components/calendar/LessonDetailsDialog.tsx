@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -313,6 +314,51 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
+  // Fetch completion status for the lesson
+  const fetchCompletionStatus = async (lessonId: string) => {
+    try {
+      // Fetch attendance data
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('lesson_attendance')
+        .select('student_id')
+        .eq('lesson_id', lessonId);
+
+      if (attendanceError) throw attendanceError;
+
+      // Fetch homework data
+      const { data: homeworkData, error: homeworkError } = await supabase
+        .from('homework')
+        .select('id')
+        .eq('lesson_id', lessonId);
+
+      if (homeworkError) throw homeworkError;
+
+      // Fetch student count
+      const { data: lessonStudentData, error: lessonStudentError } = await supabase
+        .from('lesson_students')
+        .select('student_id')
+        .eq('lesson_id', lessonId);
+
+      if (lessonStudentError) throw lessonStudentError;
+
+      const totalStudents = lessonStudentData?.length || 0;
+      const attendanceCount = attendanceData?.length || 0;
+      const hasHomeworkAssigned = homeworkData && homeworkData.length > 0;
+      const isCompleted = totalStudents > 0 && attendanceCount === totalStudents && hasHomeworkAssigned;
+
+      setCompletionStatus({
+        isCompleted,
+        attendanceCount,
+        totalStudents,
+        hasHomework: hasHomeworkAssigned
+      });
+
+      setHasHomework(hasHomeworkAssigned);
+    } catch (error) {
+      console.error('Error fetching completion status:', error);
+    }
+  };
+
   const handleCreateOnlineRoom = async () => {
     if (!lesson) return;
     
@@ -452,6 +498,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                             lesson?.lesson_space_room_url || 
                             lesson?.lesson_space_room_id;
 
+  // Map userRole to VideoConferenceLink compatible type
+  const getVideoConferenceUserRole = () => {
+    if (userRole === 'parent') {
+      return 'student'; // Parents should have the same video conference access as students
+    }
+    return userRole as 'tutor' | 'student' | 'admin' | 'owner';
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => {
@@ -569,7 +623,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
                   provider={lesson.video_conference_provider}
                   className="mb-4"
-                  userRole={userRole as 'tutor' | 'student' | 'admin' | 'owner' | 'parent'}
+                  userRole={getVideoConferenceUserRole()}
                   isGroupLesson={lesson.is_group}
                   studentCount={lesson.students?.length || 0}
                   lessonId={lesson.id}
