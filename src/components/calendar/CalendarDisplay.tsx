@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -24,11 +25,13 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
 
   const handleEventClick = (info: any) => {
+    console.log("Event clicked:", info.event.id, info.event);
     setSelectedLessonId(info.event.id);
     setIsDetailsOpen(true);
   };
 
   const handleDetailsClose = () => {
+    console.log("Closing lesson details dialog");
     setIsDetailsOpen(false);
     setSelectedLessonId(null);
   };
@@ -44,6 +47,25 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setIsAssigningHomework(false);
     setHomeworkLessonId(null);
     setPreloadedLessonData(null);
+  };
+
+  const handleDeleteLesson = async (lessonId: string, deleteAllFuture = false) => {
+    console.log("Delete lesson called:", lessonId, deleteAllFuture);
+    // This will be handled by the parent Calendar component
+    setIsDetailsOpen(false);
+    setSelectedLessonId(null);
+  };
+
+  const handleCompleteSession = (lessonId: string) => {
+    console.log("Complete session called:", lessonId);
+    // This will be handled by the parent Calendar component
+    setIsDetailsOpen(false);
+    setSelectedLessonId(null);
+  };
+
+  const handleRefresh = () => {
+    console.log("Refresh called from CalendarDisplay");
+    // This will trigger a refresh in the parent component
   };
 
   // Simplified event color logic - use primary pink for all lessons
@@ -246,7 +268,10 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           isOpen={isDetailsOpen}
           onClose={handleDetailsClose}
           lessonId={selectedLessonId}
+          onDelete={handleDeleteLesson}
+          onCompleteSession={handleCompleteSession}
           onAssignHomework={handleAssignHomework}
+          onRefresh={handleRefresh}
         />
 
         <AssignHomeworkDialog
@@ -254,6 +279,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           onClose={handleHomeworkDialogClose}
           preSelectedLessonId={homeworkLessonId}
           preloadedLessonData={preloadedLessonData}
+          onSuccess={handleHomeworkDialogClose}
         />
       </CardContent>
     </Card>
