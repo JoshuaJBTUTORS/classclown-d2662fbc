@@ -753,6 +753,7 @@ export type Database = {
       }
       tutors: {
         Row: {
+          absence_hourly_rate: number | null
           bio: string | null
           created_at: string | null
           education: string | null
@@ -761,6 +762,7 @@ export type Database = {
           id: string
           joined_date: string | null
           last_name: string
+          normal_hourly_rate: number | null
           phone: string | null
           rating: number | null
           specialities: string[] | null
@@ -768,6 +770,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
+          absence_hourly_rate?: number | null
           bio?: string | null
           created_at?: string | null
           education?: string | null
@@ -776,6 +779,7 @@ export type Database = {
           id?: string
           joined_date?: string | null
           last_name: string
+          normal_hourly_rate?: number | null
           phone?: string | null
           rating?: number | null
           specialities?: string[] | null
@@ -783,6 +787,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
+          absence_hourly_rate?: number | null
           bio?: string | null
           created_at?: string | null
           education?: string | null
@@ -791,6 +796,7 @@ export type Database = {
           id?: string
           joined_date?: string | null
           last_name?: string
+          normal_hourly_rate?: number | null
           phone?: string | null
           rating?: number | null
           specialities?: string[] | null

@@ -52,6 +52,8 @@ const formSchema = z.object({
   specialities: z.string().array().default([]),
   bio: z.string().optional(),
   education: z.string().optional(),
+  normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
+  absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
   newSpeciality: z.string().optional(),
   createAccount: z.boolean().default(false),
   sendInvite: z.boolean().default(false),
@@ -82,6 +84,8 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       specialities: [],
       bio: "",
       education: "",
+      normal_hourly_rate: 25.00,
+      absence_hourly_rate: 12.50,
       newSpeciality: "",
       createAccount: false,
       sendInvite: false,
@@ -224,6 +228,8 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           specialities: data.specialities,
           bio: data.bio,
           education: data.education,
+          normal_hourly_rate: data.normal_hourly_rate,
+          absence_hourly_rate: data.absence_hourly_rate,
           status: 'active'
         })
         .select()
@@ -633,6 +639,50 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="normal_hourly_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Normal Hourly Rate (£)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        placeholder="25.00" 
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="absence_hourly_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Absence Hourly Rate (£)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        placeholder="12.50" 
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <FormField

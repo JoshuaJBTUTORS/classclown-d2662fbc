@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -11,6 +10,7 @@ import ReportFilters from '@/components/reports/ReportFilters';
 import TutorHoursReport from '@/components/reports/TutorHoursReport';
 import StudentAbsenceReport from '@/components/reports/StudentAbsenceReport';
 import ReportSummaryCards from '@/components/reports/ReportSummaryCards';
+import PayrollSummaryReport from '@/components/reports/PayrollSummaryReport';
 
 interface ReportFilters {
   dateRange: { from: Date | null; to: Date | null };
@@ -65,7 +65,7 @@ const Reports: React.FC = () => {
         <main className="flex-1 p-4 md:p-8">
           <PageTitle 
             title="Reports" 
-            subtitle="Track tutor hours and student attendance analytics"
+            subtitle="Track tutor hours, student attendance analytics, and payroll calculations"
           />
 
           <div className="space-y-8">
@@ -77,9 +77,10 @@ const Reports: React.FC = () => {
             <ReportSummaryCards filters={filters} />
 
             <Tabs defaultValue="tutor-hours" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="tutor-hours">Tutor Hours</TabsTrigger>
                 <TabsTrigger value="student-absence">Student Absences</TabsTrigger>
+                <TabsTrigger value="payroll-summary">Payroll Summary</TabsTrigger>
               </TabsList>
               
               <TabsContent value="tutor-hours" className="mt-6">
@@ -88,6 +89,10 @@ const Reports: React.FC = () => {
               
               <TabsContent value="student-absence" className="mt-6">
                 <StudentAbsenceReport filters={filters} />
+              </TabsContent>
+              
+              <TabsContent value="payroll-summary" className="mt-6">
+                <PayrollSummaryReport filters={filters} />
               </TabsContent>
             </Tabs>
           </div>

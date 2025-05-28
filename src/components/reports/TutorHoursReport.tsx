@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Download, FileBarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import { getCompletedLessons } from '@/services/lessonCompletionService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TutorHoursData {
   tutor_id: string;
@@ -14,6 +16,8 @@ interface TutorHoursData {
   lessons_completed: number;
   total_hours: number;
   average_duration: number;
+  hourly_rate: number;
+  total_pay: number;
 }
 
 interface TutorHoursReportProps {
@@ -38,6 +42,17 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
       // Get completed lessons using the proper completion logic
       const completedLessons = await getCompletedLessons(filters);
 
+      // Get tutor rates
+      const { data: tutorRates, error: ratesError } = await supabase
+        .from('tutors')
+        .select('id, normal_hourly_rate');
+
+      if (ratesError) throw ratesError;
+
+      const tutorRatesMap = new Map(
+        tutorRates?.map(tutor => [tutor.id, tutor.normal_hourly_rate || 25.00]) || []
+      );
+
       // Group by tutor and calculate hours
       const tutorDataMap = new Map<string, TutorHoursData>();
 
@@ -47,6 +62,7 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
         const start = new Date(lesson.start_time);
         const end = new Date(lesson.end_time);
         const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        const hourlyRate = tutorRatesMap.get(tutorId) || 25.00;
 
         if (!tutorDataMap.has(tutorId)) {
           tutorDataMap.set(tutorId, {
@@ -54,7 +70,9 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
             tutor_name: tutorName,
             lessons_completed: 0,
             total_hours: 0,
-            average_duration: 0
+            average_duration: 0,
+            hourly_rate: hourlyRate,
+            total_pay: 0
           });
         }
 
@@ -63,12 +81,19 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
         tutorData.total_hours += hours;
       });
 
-      // Calculate averages and convert to array
-      const tutorDataArray = Array.from(tutorDataMap.values()).map(tutor => ({
-        ...tutor,
-        total_hours: Math.round(tutor.total_hours * 10) / 10,
-        average_duration: Math.round((tutor.total_hours / tutor.lessons_completed) * 10) / 10
-      }));
+      // Calculate averages and pay amounts, convert to array
+      const tutorDataArray = Array.from(tutorDataMap.values()).map(tutor => {
+        const roundedHours = Math.round(tutor.total_hours * 10) / 10;
+        const averageDuration = Math.round((tutor.total_hours / tutor.lessons_completed) * 10) / 10;
+        const totalPay = Math.round(roundedHours * tutor.hourly_rate * 100) / 100;
+
+        return {
+          ...tutor,
+          total_hours: roundedHours,
+          average_duration: averageDuration,
+          total_pay: totalPay
+        };
+      });
 
       // Sort by total hours descending
       tutorDataArray.sort((a, b) => b.total_hours - a.total_hours);
@@ -83,14 +108,16 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Tutor Name', 'Lessons Completed', 'Total Hours', 'Average Duration (hrs)'];
+    const headers = ['Tutor Name', 'Lessons Completed', 'Total Hours', 'Average Duration (hrs)', 'Hourly Rate (£)', 'Total Pay (£)'];
     const csvContent = [
       headers.join(','),
       ...data.map(row => [
         row.tutor_name,
         row.lessons_completed,
         row.total_hours,
-        row.average_duration
+        row.average_duration,
+        row.hourly_rate.toFixed(2),
+        row.total_pay.toFixed(2)
       ].join(','))
     ].join('\n');
 
@@ -164,7 +191,8 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
                             <p className="font-semibold text-gray-900 mb-2">{label}</p>
                             <p className="text-[#e94b7f] font-medium">Total Hours: {data.total_hours}h</p>
                             <p className="text-blue-600 font-medium">Lessons: {data.lessons_completed}</p>
-                            <p className="text-green-600 font-medium">Avg Duration: {data.average_duration}h</p>
+                            <p className="text-green-600 font-medium">Total Pay: £{data.total_pay}</p>
+                            <p className="text-gray-600 font-medium">Rate: £{data.hourly_rate}/hr</p>
                           </div>
                         );
                       }
@@ -194,8 +222,8 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Detailed Tutor Hours</CardTitle>
-          <CardDescription>Complete breakdown of hours and lessons by tutor</CardDescription>
+          <CardTitle>Detailed Tutor Hours & Pay</CardTitle>
+          <CardDescription>Complete breakdown of hours, rates, and pay by tutor</CardDescription>
         </CardHeader>
         <CardContent>
           {data.length > 0 ? (
@@ -206,6 +234,8 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
                   <TableHead className="text-right">Lessons Completed</TableHead>
                   <TableHead className="text-right">Total Hours</TableHead>
                   <TableHead className="text-right">Average Duration</TableHead>
+                  <TableHead className="text-right">Hourly Rate</TableHead>
+                  <TableHead className="text-right">Total Pay</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -213,8 +243,18 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
                   <TableRow key={tutor.tutor_id}>
                     <TableCell className="font-medium">{tutor.tutor_name}</TableCell>
                     <TableCell className="text-right">{tutor.lessons_completed}</TableCell>
-                    <TableCell className="text-right">{tutor.total_hours}h</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="secondary" className="text-green-600 border-green-200">
+                        {tutor.total_hours}h
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right">{tutor.average_duration}h</TableCell>
+                    <TableCell className="text-right">£{tutor.hourly_rate.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="default" className="bg-[#e94b7f] text-white">
+                        £{tutor.total_pay.toFixed(2)}
+                      </Badge>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

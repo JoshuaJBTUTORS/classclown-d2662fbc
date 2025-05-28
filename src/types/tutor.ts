@@ -7,7 +7,9 @@ export interface Tutor {
   phone?: string | null;
   bio?: string | null;
   hourly_rate?: number;
-  status: string; // Changed from 'active' | 'inactive' | 'pending' to string
+  normal_hourly_rate?: number;
+  absence_hourly_rate?: number;
+  status: string;
   subjects?: string[];
   specialities?: string[];
   organization_id?: string | null;

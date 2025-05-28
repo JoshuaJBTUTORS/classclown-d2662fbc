@@ -55,7 +55,7 @@ interface EditTutorFormProps {
   onUpdate: (tutor: Tutor) => void;
 }
 
-// Update the schema to use string instead of enum for status
+// Update the schema to include hourly rates
 const formSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
@@ -63,7 +63,9 @@ const formSchema = z.object({
   phone: z.string().optional(),
   bio: z.string().optional(),
   specialities: z.array(z.string()).optional(),
-  status: z.string(), // Changed from enum to string to match our updated Tutor type
+  status: z.string(),
+  normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
+  absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
   availability: z.array(z.object({
     id: z.string(),
     day_of_week: z.string(),
@@ -125,6 +127,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       bio: "",
       specialities: [],
       status: 'active',
+      normal_hourly_rate: 25.00,
+      absence_hourly_rate: 12.50,
       availability: []
     },
   });
@@ -167,6 +171,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         bio: tutor.bio || "",
         specialities: tutor.specialities || [],
         status: tutor.status,
+        normal_hourly_rate: tutor.normal_hourly_rate || 25.00,
+        absence_hourly_rate: tutor.absence_hourly_rate || 12.50,
         availability: []
       });
       
@@ -223,6 +229,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
           bio: data.bio,
           specialities: data.specialities,
           status: data.status,
+          normal_hourly_rate: data.normal_hourly_rate,
+          absence_hourly_rate: data.absence_hourly_rate,
           organization_id: tutor.organization_id
         })
         .eq('id', tutor.id);
@@ -281,6 +289,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         bio: data.bio,
         specialities: data.specialities,
         status: data.status,
+        normal_hourly_rate: data.normal_hourly_rate,
+        absence_hourly_rate: data.absence_hourly_rate,
         organization_id: tutor.organization_id,
         availability: availabilitySlots
       };
@@ -473,6 +483,48 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 </div>
               )}
             </div>
+            
+            <FormField
+              control={form.control}
+              name="normal_hourly_rate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Normal Hourly Rate (£)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      min="0" 
+                      placeholder="25.00" 
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="absence_hourly_rate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Absence Hourly Rate (£)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      min="0" 
+                      placeholder="12.50" 
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
