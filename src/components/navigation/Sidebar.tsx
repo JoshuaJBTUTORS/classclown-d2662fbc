@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -10,7 +11,8 @@ import {
   TrendingUp,
   Library,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileBarChart
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
