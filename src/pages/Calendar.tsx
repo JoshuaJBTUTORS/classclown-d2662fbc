@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -34,7 +35,7 @@ const Calendar = () => {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
 
-  const isStudent = userRole === 'student';
+  const isStudentOrParent = userRole === 'student' || userRole === 'parent';
   const isAdminOrOwner = userRole === 'admin' || userRole === 'owner';
 
   const handleRefresh = useCallback(() => {
@@ -55,7 +56,7 @@ const Calendar = () => {
     filters
   });
 
-  // Initialize student lesson updates system
+  // Initialize student lesson updates system (now includes parents)
   const {
     isUpdating,
     lastUpdateTime,
@@ -163,9 +164,9 @@ const Calendar = () => {
     }
   };
 
-  // Enhanced refresh function that uses the student updates system
+  // Enhanced refresh function that uses the student updates system (now includes parents)
   const handleCalendarRefresh = async () => {
-    if (userRole === 'student') {
+    if (isStudentOrParent) {
       await refreshStudentCalendar();
     } else {
       handleRefresh();
@@ -237,14 +238,14 @@ const Calendar = () => {
                 setSelectedLessonId(null);
               }}
               lessonId={selectedLessonId}
-              onDelete={!isStudent ? handleDeleteLesson : undefined}
-              onCompleteSession={!isStudent ? handleCompleteSession : undefined}
-              onAssignHomework={!isStudent ? handleAssignHomework : undefined}
+              onDelete={!isStudentOrParent ? handleDeleteLesson : undefined}
+              onCompleteSession={!isStudentOrParent ? handleCompleteSession : undefined}
+              onAssignHomework={!isStudentOrParent ? handleAssignHomework : undefined}
               onRefresh={handleRefresh}
             />
 
-            {/* Only show Add Lesson form for non-students */}
-            {!isStudent && (
+            {/* Only show Add Lesson form for tutors, admins, and owners */}
+            {!isStudentOrParent && (
               <AddLessonForm
                 isOpen={isAddLessonOpen}
                 onClose={() => setIsAddLessonOpen(false)}
@@ -252,8 +253,8 @@ const Calendar = () => {
               />
             )}
 
-            {/* Only show Complete Session dialog for non-students */}
-            {!isStudent && (
+            {/* Only show Complete Session dialog for tutors, admins, and owners */}
+            {!isStudentOrParent && (
               <CompleteSessionDialog
                 isOpen={isCompleteSessionOpen}
                 onClose={() => setIsCompleteSessionOpen(false)}
@@ -262,8 +263,8 @@ const Calendar = () => {
               />
             )}
 
-            {/* Only show Assign Homework dialog for non-students */}
-            {!isStudent && (
+            {/* Only show Assign Homework dialog for tutors, admins, and owners */}
+            {!isStudentOrParent && (
               <AssignHomeworkDialog
                 isOpen={isAssignHomeworkOpen}
                 onClose={() => {

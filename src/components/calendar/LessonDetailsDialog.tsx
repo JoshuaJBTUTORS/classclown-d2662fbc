@@ -63,8 +63,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
 
-  // Check if user is a student
-  const isStudent = userRole === 'student';
+  // Check if user is a student or parent (both have read-only access)
+  const isStudentOrParent = userRole === 'student' || userRole === 'parent';
 
   // Function to check if the ID is a recurring instance ID using our specific format
   const isRecurringInstanceId = (id: string): boolean => {
@@ -477,8 +477,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             <div className="py-6 text-center">Loading lesson details...</div>
           ) : lesson ? (
             <div className="grid gap-4 py-4">
-              {/* Completion Status Section */}
-              {completionStatus && !isStudent && (
+              {/* Completion Status Section - only show for tutors, admins, and owners */}
+              {completionStatus && !isStudentOrParent && (
                 <div className="border rounded-lg p-4 bg-gray-50">
                   <h3 className="font-medium mb-2 flex items-center gap-2">
                     <Users className="h-4 w-4" />
@@ -556,7 +556,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                           start_time: lesson.start_time,
                           tutor: lesson.tutor
                         }}
-                        isStudent={isStudent}
+                        isStudent={isStudentOrParent}
                       />
                     ))}
                   </div>
@@ -569,7 +569,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
                   provider={lesson.video_conference_provider}
                   className="mb-4"
-                  userRole={userRole as 'tutor' | 'student' | 'admin' | 'owner'}
+                  userRole={userRole as 'tutor' | 'student' | 'admin' | 'owner' | 'parent'}
                   isGroupLesson={lesson.is_group}
                   studentCount={lesson.students?.length || 0}
                   lessonId={lesson.id}
@@ -577,8 +577,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   spaceId={lesson.lesson_space_room_id}
                 />
               ) : (
-                // Only show room creation for non-students
-                !isStudent && (
+                // Only show room creation for tutors, admins, and owners
+                !isStudentOrParent && (
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between">
                       <div>
@@ -648,8 +648,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           
           <div className="flex flex-wrap justify-between gap-2 mt-4">
             <div>
-              {/* Only show delete button for non-students */}
-              {onDelete && lesson && !isStudent && (
+              {/* Only show delete button for tutors, admins, and owners */}
+              {onDelete && lesson && !isStudentOrParent && (
                 <Button 
                   variant="destructive" 
                   onClick={handleDeleteLesson}
@@ -662,8 +662,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               )}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
-              {/* Only show homework assignment for non-students */}
-              {lesson && onAssignHomework && !isStudent && (
+              {/* Only show homework assignment for tutors, admins, and owners */}
+              {lesson && onAssignHomework && !isStudentOrParent && (
                 <Button
                   className="flex items-center gap-1"
                   onClick={handleCompleteLesson}
@@ -674,8 +674,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   Complete Lesson
                 </Button>
               )}
-              {/* Only show edit button for non-students */}
-              {lesson && !isStudent && (
+              {/* Only show edit button for tutors, admins, and owners */}
+              {lesson && !isStudentOrParent && (
                 <Button 
                   onClick={handleEditLesson} 
                   variant="outline"
@@ -686,8 +686,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   Edit
                 </Button>
               )}
-              {/* Only show complete session for non-students */}
-              {lesson && lesson.status !== 'completed' && onCompleteSession && !isStudent && (
+              {/* Only show complete session for tutors, admins, and owners */}
+              {lesson && lesson.status !== 'completed' && onCompleteSession && !isStudentOrParent && (
                 <Button 
                   className="flex items-center gap-1" 
                   onClick={handleCompleteSession}
@@ -715,8 +715,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Only show edit dialog for non-students */}
-      {!isStudent && (
+      {/* Only show edit dialog for tutors, admins, and owners */}
+      {!isStudentOrParent && (
         <EditLessonForm
           isOpen={isEditDialogOpen}
           onClose={() => setIsEditDialogOpen(false)}
