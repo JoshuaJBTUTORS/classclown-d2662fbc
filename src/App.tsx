@@ -24,6 +24,7 @@ import Invite from '@/pages/Invite';
 import NotFound from '@/pages/NotFound';
 import Unauthorized from '@/pages/Unauthorized';
 import Reports from '@/pages/Reports';
+import StudentJoinPage from '@/components/lessons/StudentJoinPage';
 
 import './App.css';
 
@@ -40,6 +41,12 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/invite/:token" element={<Invite />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                <Route path="/join-lesson/:lessonId" element={
+                  <ProtectedRoute allowedRoles={['student', 'parent']}>
+                    <StudentJoinPage />
+                  </ProtectedRoute>
+                } />
                 
                 <Route path="/" element={
                   <ProtectedRoute>

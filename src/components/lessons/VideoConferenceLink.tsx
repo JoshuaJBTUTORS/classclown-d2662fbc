@@ -6,6 +6,7 @@ import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, Chevro
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useNavigate } from 'react-router-dom';
 
 interface VideoConferenceLinkProps {
   link: string | null;
@@ -32,6 +33,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
+  const navigate = useNavigate();
 
   // Don't render if no links are available and no lesson space
   if (!link && !hasLessonSpace) return null;
@@ -86,6 +88,23 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return link;
   };
 
+  const handleJoinLesson = () => {
+    // For students and parents, redirect to consent flow
+    if ((userRole === 'student') && lessonId) {
+      navigate(`/join-lesson/${lessonId}`);
+      return;
+    }
+
+    // For tutors, admins, and owners, join directly
+    const urlToUse = getCorrectUrl();
+    if (urlToUse) {
+      window.open(urlToUse, '_blank');
+      toast.success('Redirecting to Lesson Space...');
+    } else {
+      toast.error('Lesson space not available');
+    }
+  };
+
   const urlToUse = getCorrectUrl();
   const showStudentJoinLink = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
                               provider === 'lesson_space' && hasLessonSpace && studentCount > 0 && spaceId;
@@ -124,7 +143,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             <div className="flex gap-2">
               <Button 
                 size="sm" 
-                onClick={() => window.open(urlToUse, '_blank')}
+                onClick={handleJoinLesson}
                 className="flex-1"
                 variant={userRole === 'tutor' ? 'default' : 'outline'}
               >
@@ -132,17 +151,20 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                 {getJoinButtonText()}
               </Button>
               
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => copyToClipboard(urlToUse)}
-              >
-                {copied ? (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Clipboard className="h-4 w-4" />
-                )}
-              </Button>
+              {/* Only show copy button for tutors/admins/owners */}
+              {userRole !== 'student' && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => copyToClipboard(urlToUse)}
+                >
+                  {copied ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Clipboard className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
             </div>
 
             {userRole === 'tutor' && provider === 'lesson_space' && (
@@ -153,7 +175,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
             {userRole === 'student' && provider === 'lesson_space' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Student access:</strong> Click "Join Lesson" to enter the lesson space.
+                <strong>Student access:</strong> Click "Join Lesson" to review requirements and enter the lesson space.
               </div>
             )}
           </>
