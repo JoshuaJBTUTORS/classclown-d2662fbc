@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -78,7 +79,7 @@ function App() {
                 } />
 
                 <Route path="/progress" element={
-                  <ProtectedRoute allowedRoles={['student', 'owner']}>
+                  <ProtectedRoute allowedRoles={['student', 'owner', 'parent']}>
                     <Progress />
                   </ProtectedRoute>
                 } />
