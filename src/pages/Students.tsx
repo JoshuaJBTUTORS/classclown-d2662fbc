@@ -50,26 +50,52 @@ const Students = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { isParent, isAdmin, isOwner } = useAuth();
+  const { isParent, isAdmin, isOwner, user, userRole } = useAuth();
 
   // Fetch students from Supabase with parent information
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
       console.log('Starting student fetch...');
+      console.log('Current user:', user?.email);
+      console.log('User role:', userRole);
+      console.log('Is admin:', isAdmin);
+      console.log('Is owner:', isOwner);
+      console.log('Is parent:', isParent);
       
-      // Get students data first
+      // First, let's check if we can connect to Supabase and what our session looks like
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session:', sessionData.session?.user?.email);
+      
+      // Try a simple query first to test our connection and permissions
+      const { data: testData, error: testError } = await supabase
+        .from('students')
+        .select('count', { count: 'exact' });
+      
+      console.log('Test query result:', { testData, testError });
+      
+      if (testError) {
+        console.error('Test query failed:', testError);
+        toast.error(`Database connection error: ${testError.message}`);
+        return;
+      }
+
+      // Get students data with detailed error handling
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
         .select('*')
         .order('last_name', { ascending: true });
 
+      console.log('Students query result:', { studentsData, studentsError });
+
       if (studentsError) {
         console.error('Error fetching students:', studentsError);
+        toast.error(`Failed to fetch students: ${studentsError.message}`);
         throw studentsError;
       }
 
       console.log('Raw students data from database:', studentsData);
+      console.log('Number of students found:', studentsData?.length || 0);
 
       if (!studentsData || studentsData.length === 0) {
         console.log('No students found in database');
@@ -93,6 +119,8 @@ const Students = () => {
           .from('parents')
           .select('id, first_name, last_name, email, phone')
           .in('id', parentIds);
+
+        console.log('Parents query result:', { fetchedParents, parentsError });
 
         if (parentsError) {
           console.error('Error fetching parents:', parentsError);
@@ -130,7 +158,7 @@ const Students = () => {
         }
         
         const formattedStudent: Student = {
-          id: student.id, // Keep as is - bigint from database
+          id: student.id,
           name: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
           email: student.email || '',
           phone: student.phone || '',
@@ -170,8 +198,14 @@ const Students = () => {
   };
 
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    // Only fetch if user is authenticated
+    if (user) {
+      fetchStudents();
+    } else {
+      console.log('User not authenticated, skipping fetch');
+      setIsLoading(false);
+    }
+  }, [user, userRole]);
 
   // Filter students based on search query
   useEffect(() => {
@@ -267,6 +301,14 @@ const Students = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Debug information - will remove later */}
+              {(isAdmin || isOwner) && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg text-xs">
+                  <strong>Debug Info:</strong> User: {user?.email}, Role: {userRole}, 
+                  Students count: {students.length}, Loading: {isLoading.toString()}
+                </div>
+              )}
+              
               <Table>
                 <TableHeader>
                   <TableRow>
