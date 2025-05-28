@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Edit, PlusIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/navigation/Navbar';
+import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
 import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/table"
 
 const Tutors = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddTutorOpen, setIsAddTutorOpen] = useState(false);
@@ -29,6 +32,10 @@ const Tutors = () => {
   const [isEditTutorOpen, setIsEditTutorOpen] = useState(false);
   const [isDeleteTutorOpen, setIsDeleteTutorOpen] = useState(false);
   const { isOwner } = useAuth();
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   const fetchTutors = async () => {
     setIsLoading(true);
@@ -84,105 +91,111 @@ const Tutors = () => {
   }, []);
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <PageTitle>Tutors</PageTitle>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => setIsAddTutorOpen(true)}
-            className="flex items-center gap-1"
-          >
-            <PlusIcon className="h-4 w-4" /> Add Tutor
-          </Button>
-        </div>
+    <div className="flex min-h-screen bg-background">
+      <Sidebar isOpen={sidebarOpen} />
+      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
+        <Navbar toggleSidebar={toggleSidebar} />
+        <main className="flex-1 p-4 md:p-8">
+          <div className="flex justify-between items-center mb-6">
+            <PageTitle>Tutors</PageTitle>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setIsAddTutorOpen(true)}
+                className="flex items-center gap-1"
+              >
+                <PlusIcon className="h-4 w-4" /> Add Tutor
+              </Button>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <p>Loading tutors...</p>
+          ) : tutors.length === 0 ? (
+            <p>No tutors found.</p>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Title</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Specialities</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tutors.map((tutor: Tutor) => (
+                    <TableRow key={tutor.id}>
+                      <TableCell className="font-medium">{tutor.title || 'N/A'}</TableCell>
+                      <TableCell>{tutor.first_name} {tutor.last_name}</TableCell>
+                      <TableCell>{tutor.email}</TableCell>
+                      <TableCell>{tutor.specialities ? tutor.specialities.join(', ') : 'N/A'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleDeleteTutor(tutor)}
+                            className="text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleEditTutor(tutor)}
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            onClick={() => handleViewTutor(tutor)}
+                          >
+                            View
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          
+          <AddTutorForm 
+            isOpen={isAddTutorOpen} 
+            onClose={() => setIsAddTutorOpen(false)}
+            onSuccess={() => {
+              setIsAddTutorOpen(false);
+              fetchTutors();
+            }}
+          />
+
+          <ViewTutorProfile
+            tutor={selectedTutor}
+            isOpen={isViewTutorOpen}
+            onClose={() => setIsViewTutorOpen(false)}
+          />
+
+          <EditTutorForm
+            tutor={selectedTutor}
+            isOpen={isEditTutorOpen}
+            onClose={() => setIsEditTutorOpen(false)}
+            onUpdate={handleTutorUpdate}
+          />
+
+          <DeleteTutorDialog
+            tutor={selectedTutor}
+            isOpen={isDeleteTutorOpen}
+            onClose={() => setIsDeleteTutorOpen(false)}
+            onDeleted={fetchTutors}
+          />
+        </main>
       </div>
-
-      {isLoading ? (
-        <p>Loading tutors...</p>
-      ) : tutors.length === 0 ? (
-        <p>No tutors found.</p>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Title</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Specialities</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tutors.map((tutor: Tutor) => (
-                <TableRow key={tutor.id}>
-                  <TableCell className="font-medium">{tutor.title || 'N/A'}</TableCell>
-                  <TableCell>{tutor.first_name} {tutor.last_name}</TableCell>
-                  <TableCell>{tutor.email}</TableCell>
-                  <TableCell>{tutor.specialities ? tutor.specialities.join(', ') : 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleDeleteTutor(tutor)}
-                        className="text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleEditTutor(tutor)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={() => handleViewTutor(tutor)}
-                      >
-                        View
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-      
-      <AddTutorForm 
-        isOpen={isAddTutorOpen} 
-        onClose={() => setIsAddTutorOpen(false)}
-        onSuccess={() => {
-          setIsAddTutorOpen(false);
-          fetchTutors();
-        }}
-      />
-
-      <ViewTutorProfile
-        tutor={selectedTutor}
-        isOpen={isViewTutorOpen}
-        onClose={() => setIsViewTutorOpen(false)}
-      />
-
-      <EditTutorForm
-        tutor={selectedTutor}
-        isOpen={isEditTutorOpen}
-        onClose={() => setIsEditTutorOpen(false)}
-        onUpdate={handleTutorUpdate}
-      />
-
-      <DeleteTutorDialog
-        tutor={selectedTutor}
-        isOpen={isDeleteTutorOpen}
-        onClose={() => setIsDeleteTutorOpen(false)}
-        onDeleted={fetchTutors}
-      />
     </div>
   );
 };
