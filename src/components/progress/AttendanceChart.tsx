@@ -12,6 +12,7 @@ interface AttendanceChartProps {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
     selectedSubjects: string[];
+    selectedChild: string;
   };
   userRole: string;
 }
@@ -80,8 +81,21 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
           .eq('parent_id', parentProfile.id);
 
         if (childrenData && childrenData.length > 0) {
-          const childrenIds = childrenData.map(child => child.id);
-          query = query.in('student_id', childrenIds);
+          let childrenIds = childrenData.map(child => child.id);
+          
+          // If a specific child is selected, filter to just that child
+          if (filters.selectedChild !== 'all') {
+            const selectedChildId = parseInt(filters.selectedChild);
+            childrenIds = childrenIds.filter(id => id === selectedChildId);
+          }
+          
+          if (childrenIds.length > 0) {
+            query = query.in('student_id', childrenIds);
+          } else {
+            setData([]);
+            setLoading(false);
+            return;
+          }
         } else {
           console.log('No children found for parent:', parentProfile.id);
           setData([]);

@@ -1,20 +1,23 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Filter, X } from 'lucide-react';
+import { CalendarIcon, Filter, X, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProgressFiltersProps {
   filters: {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
     selectedSubjects: string[];
+    selectedChild: string;
   };
   onFiltersChange: (filters: any) => void;
   userRole: string;
@@ -26,16 +29,27 @@ interface Student {
   last_name: string;
 }
 
+interface Child {
+  id: number;
+  first_name: string;
+  last_name: string;
+}
+
 const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersChange, userRole }) => {
   const [students, setStudents] = useState<Student[]>([]);
+  const [children, setChildren] = useState<Child[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const { parentProfile } = useAuth();
 
   useEffect(() => {
     if (userRole === 'owner') {
       fetchStudents();
-      fetchSubjects();
     }
-  }, [userRole]);
+    if (userRole === 'parent') {
+      fetchChildren();
+    }
+    fetchSubjects();
+  }, [userRole, parentProfile]);
 
   const fetchStudents = async () => {
     try {
@@ -49,6 +63,29 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to load students');
+    }
+  };
+
+  const fetchChildren = async () => {
+    if (!parentProfile) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, first_name, last_name')
+        .eq('parent_id', parentProfile.id)
+        .order('first_name');
+
+      if (error) throw error;
+      setChildren(data || []);
+      
+      // Auto-select single child
+      if (data && data.length === 1) {
+        onFiltersChange({ selectedChild: data[0].id.toString() });
+      }
+    } catch (error) {
+      console.error('Error fetching children:', error);
+      toast.error('Failed to load children');
     }
   };
 
@@ -73,7 +110,8 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     onFiltersChange({
       dateRange: { from: null, to: null },
       selectedStudents: [],
-      selectedSubjects: []
+      selectedSubjects: [],
+      selectedChild: 'all'
     });
   };
 
@@ -81,7 +119,8 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     filters.dateRange.from || 
     filters.dateRange.to || 
     filters.selectedStudents.length > 0 || 
-    filters.selectedSubjects.length > 0;
+    filters.selectedSubjects.length > 0 ||
+    (userRole === 'parent' && filters.selectedChild !== 'all');
 
   if (userRole === 'student') {
     return (
@@ -247,6 +286,31 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* Child Filter - Only for parents */}
+          {userRole === 'parent' && (
+            <div className="flex flex-col space-y-2">
+              <label className="text-sm font-medium text-gray-700">Child</label>
+              <Select
+                value={filters.selectedChild}
+                onValueChange={(value) => 
+                  onFiltersChange({ selectedChild: value })
+                }
+              >
+                <SelectTrigger className="w-[200px] border-gray-200 hover:bg-gray-50">
+                  <SelectValue placeholder="Select child" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All children</SelectItem>
+                  {children.map(child => (
+                    <SelectItem key={child.id} value={child.id.toString()}>
+                      {child.first_name} {child.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Student Filter - Only for owners */}
           {userRole === 'owner' && (

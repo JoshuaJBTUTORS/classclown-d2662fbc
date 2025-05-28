@@ -10,6 +10,7 @@ interface ProgressSummaryProps {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
     selectedSubjects: string[];
+    selectedChild: string;
   };
   userRole: string;
 }
@@ -62,7 +63,15 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
           .eq('parent_id', parentProfile.id);
 
         if (childrenData && childrenData.length > 0) {
-          studentIds = childrenData.map(child => child.id);
+          let allChildrenIds = childrenData.map(child => child.id);
+          
+          // If a specific child is selected, filter to just that child
+          if (filters.selectedChild !== 'all') {
+            const selectedChildId = parseInt(filters.selectedChild);
+            studentIds = allChildrenIds.filter(id => id === selectedChildId);
+          } else {
+            studentIds = allChildrenIds;
+          }
         } else {
           // If no children found, set empty stats
           setStats({

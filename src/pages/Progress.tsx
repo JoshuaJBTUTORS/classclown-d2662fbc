@@ -15,6 +15,7 @@ interface ProgressFilters {
   dateRange: { from: Date | null; to: Date | null };
   selectedStudents: string[];
   selectedSubjects: string[];
+  selectedChild: string; // Add selectedChild for parent filtering
 }
 
 const Progress: React.FC = () => {
@@ -22,7 +23,8 @@ const Progress: React.FC = () => {
   const [filters, setFilters] = useState<ProgressFilters>({
     dateRange: { from: null, to: null },
     selectedStudents: [],
-    selectedSubjects: []
+    selectedSubjects: [],
+    selectedChild: 'all' // Default to all children
   });
 
   const { userRole, user } = useAuth();
