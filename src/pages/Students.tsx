@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -63,23 +64,6 @@ const Students = () => {
       console.log('Is owner:', isOwner);
       console.log('Is parent:', isParent);
       
-      // First, let's check if we can connect to Supabase and what our session looks like
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session:', sessionData.session?.user?.email);
-      
-      // Try a simple query first to test our connection and permissions
-      const { data: testData, error: testError } = await supabase
-        .from('students')
-        .select('count', { count: 'exact' });
-      
-      console.log('Test query result:', { testData, testError });
-      
-      if (testError) {
-        console.error('Test query failed:', testError);
-        toast.error(`Database connection error: ${testError.message}`);
-        return;
-      }
-
       // Get students data with detailed error handling
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
@@ -301,14 +285,6 @@ const Students = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Debug information - will remove later */}
-              {(isAdmin || isOwner) && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg text-xs">
-                  <strong>Debug Info:</strong> User: {user?.email}, Role: {userRole}, 
-                  Students count: {students.length}, Loading: {isLoading.toString()}
-                </div>
-              )}
-              
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -330,7 +306,7 @@ const Students = () => {
                   ) : filteredStudents.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-10">
-                        No students found.
+                        {searchQuery ? 'No students found matching your search.' : 'No students found. Add your first student to get started.'}
                       </TableCell>
                     </TableRow>
                   ) : (
