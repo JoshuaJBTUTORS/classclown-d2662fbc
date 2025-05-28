@@ -5,6 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardContent } from '@/components/ui/card';
+import { Check } from 'lucide-react';
 import LessonDetailsDialog from './LessonDetailsDialog';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 
@@ -130,6 +131,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 if (info.event.extendedProps.isGroup) {
                   classes.push('group-event');
                 }
+                if (info.event.extendedProps.isCompleted) {
+                  classes.push('completed-event');
+                }
                 
                 return classes;
               }}
@@ -139,10 +143,20 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 const isDayView = eventInfo.view.type === 'timeGridDay';
                 const isRecurring = eventInfo.event.extendedProps.isRecurring || 
                                   eventInfo.event.extendedProps.isRecurringInstance;
+                const isCompleted = eventInfo.event.extendedProps.isCompleted;
                 const subject = eventInfo.event.extendedProps.subject;
                 
                 return (
-                  <div className="fc-event-main-frame p-0.5 min-h-0 overflow-hidden">
+                  <div className="fc-event-main-frame p-0.5 min-h-0 overflow-hidden relative">
+                    {/* Completion indicator */}
+                    {isCompleted && (
+                      <div className="absolute top-0 right-0 z-10">
+                        <div className="bg-green-500 text-white rounded-full p-0.5 w-4 h-4 flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5" />
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="fc-event-title-container flex flex-col gap-0 min-h-0">
                       {isMonthView && (
                         <div className="flex items-center gap-1 min-w-0">

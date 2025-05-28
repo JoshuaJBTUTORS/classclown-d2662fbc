@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus, Users } from 'lucide-react';
+import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus, Users, CheckCircle, XCircle } from 'lucide-react';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
@@ -53,6 +54,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isHomeworkDeleteConfirmOpen, setIsHomeworkDeleteConfirmOpen] = useState(false);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [completionStatus, setCompletionStatus] = useState<{
+    isCompleted: boolean;
+    attendanceCount: number;
+    totalStudents: number;
+    hasHomework: boolean;
+  } | null>(null);
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
 
@@ -64,11 +71,57 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     return RECURRING_INSTANCE_REGEX.test(id);
   };
 
+  // Fetch completion status for the lesson
+  const fetchCompletionStatus = async (lessonId: string) => {
+    try {
+      // Fetch attendance data
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('lesson_attendance')
+        .select('student_id')
+        .eq('lesson_id', lessonId);
+
+      if (attendanceError) throw attendanceError;
+
+      // Fetch homework data
+      const { data: homeworkData, error: homeworkError } = await supabase
+        .from('homework')
+        .select('id')
+        .eq('lesson_id', lessonId);
+
+      if (homeworkError) throw homeworkError;
+
+      // Fetch student count
+      const { data: lessonStudentData, error: lessonStudentError } = await supabase
+        .from('lesson_students')
+        .select('student_id')
+        .eq('lesson_id', lessonId);
+
+      if (lessonStudentError) throw lessonStudentError;
+
+      const totalStudents = lessonStudentData?.length || 0;
+      const attendanceCount = attendanceData?.length || 0;
+      const hasHomeworkAssigned = homeworkData && homeworkData.length > 0;
+      const isCompleted = totalStudents > 0 && attendanceCount === totalStudents && hasHomeworkAssigned;
+
+      setCompletionStatus({
+        isCompleted,
+        attendanceCount,
+        totalStudents,
+        hasHomework: hasHomeworkAssigned
+      });
+
+      setHasHomework(hasHomeworkAssigned);
+    } catch (error) {
+      console.error('Error fetching completion status:', error);
+    }
+  };
+
   useEffect(() => {
     if (lessonId && isOpen) {
       console.log("Opening lesson details for ID:", lessonId);
       setLesson(null);
       setHasHomework(false);
+      setCompletionStatus(null);
       
       if (isRecurringInstanceId(lessonId)) {
         const parts = lessonId.split('-');
@@ -78,11 +131,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         
         fetchRecurringInstance(baseId, lessonId);
         checkForHomework(baseId);
+        fetchCompletionStatus(baseId);
       } else {
         setOriginalLessonId(lessonId);
         setIsRecurringInstance(false);
         fetchLessonDetails(lessonId);
         checkForHomework(lessonId);
+        fetchCompletionStatus(lessonId);
       }
     } else {
       setLesson(null);
@@ -90,6 +145,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       setOriginalLessonId(null);
       setHasHomework(false);
       setPreloadedLessonData(null);
+      setCompletionStatus(null);
     }
   }, [lessonId, isOpen]);
 
@@ -403,7 +459,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       }}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Lesson Details</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              Lesson Details
+              {completionStatus?.isCompleted && (
+                <Badge variant="default" className="bg-green-500 text-white">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Completed
+                </Badge>
+              )}
+            </DialogTitle>
             <DialogDescription>
               View and manage lesson information
             </DialogDescription>
@@ -413,6 +477,45 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             <div className="py-6 text-center">Loading lesson details...</div>
           ) : lesson ? (
             <div className="grid gap-4 py-4">
+              {/* Completion Status Section */}
+              {completionStatus && !isStudent && (
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-medium mb-2 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Lesson Progress
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>Attendance marked:</span>
+                      <div className="flex items-center gap-2">
+                        <span>{completionStatus.attendanceCount}/{completionStatus.totalStudents} students</span>
+                        {completionStatus.attendanceCount === completionStatus.totalStudents ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Homework assigned:</span>
+                      <div className="flex items-center gap-2">
+                        <span>{completionStatus.hasHomework ? 'Yes' : 'No'}</span>
+                        {completionStatus.hasHomework ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                    {completionStatus.isCompleted && (
+                      <div className="mt-2 p-2 bg-green-100 text-green-800 rounded-md text-center">
+                        ✓ Lesson fully completed
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h3 className="font-medium">Title</h3>
                 <p>{lesson.title}</p>

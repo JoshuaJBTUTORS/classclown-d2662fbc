@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
 import { AppRole } from '@/contexts/AuthContext';
+import { useLessonCompletion } from './useLessonCompletion';
 
 interface UseCalendarDataProps {
   userRole: AppRole | null;
@@ -24,12 +24,16 @@ export const useCalendarData = ({
   filters 
 }: UseCalendarDataProps) => {
   const [events, setEvents] = useState<any[]>([]);
+  const [lessonIds, setLessonIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const { completionData } = useLessonCompletion(lessonIds);
 
   useEffect(() => {
     const fetchEvents = async () => {
       if (!isAuthenticated || !userRole || !userEmail) {
         setEvents([]);
+        setLessonIds([]);
         setIsLoading(false);
         return;
       }
@@ -55,6 +59,7 @@ export const useCalendarData = ({
           if (!studentData) {
             console.log('No student record found for email:', userEmail);
             setEvents([]);
+            setLessonIds([]);
             setIsLoading(false);
             return;
           }
@@ -87,6 +92,7 @@ export const useCalendarData = ({
           if (!tutorData) {
             console.log('No tutor record found for email:', userEmail);
             setEvents([]);
+            setLessonIds([]);
             setIsLoading(false);
             return;
           }
@@ -126,6 +132,7 @@ export const useCalendarData = ({
 
         } else {
           setEvents([]);
+          setLessonIds([]);
           setIsLoading(false);
           return;
         }
@@ -145,8 +152,16 @@ export const useCalendarData = ({
             );
           });
         }
+
+        // Collect all lesson IDs for completion checking
+        const allLessonIds: string[] = [];
+        filteredData.forEach(lesson => {
+          allLessonIds.push(lesson.id);
+        });
+        setLessonIds(allLessonIds);
         
         const calendarEvents = filteredData.map(lesson => {
+          // ... keep existing code (video conference link logic)
           let videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
           let studentUrls = [];
           
@@ -224,6 +239,22 @@ export const useCalendarData = ({
 
     fetchEvents();
   }, [userRole, userEmail, isAuthenticated, refreshKey, filters]);
+
+  // Update events with completion data when it becomes available
+  useEffect(() => {
+    if (Object.keys(completionData).length > 0) {
+      setEvents(prevEvents => 
+        prevEvents.map(event => ({
+          ...event,
+          extendedProps: {
+            ...event.extendedProps,
+            isCompleted: completionData[event.id]?.isCompleted || false,
+            completionDetails: completionData[event.id]
+          }
+        }))
+      );
+    }
+  }, [completionData]);
 
   const generateRecurringEvents = (lesson, userRole) => {
     const events = [];
