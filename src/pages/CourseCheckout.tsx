@@ -92,117 +92,101 @@ const CourseCheckout = () => {
 
   if (isLoading || !course) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
-      {/* Left Panel - Course Branding & Details */}
-      <div className="lg:w-2/5 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8 lg:p-12 flex flex-col justify-between">
+    <div className="min-h-screen bg-white flex flex-col lg:flex-row">
+      {/* Left Panel - Course Information */}
+      <div className="lg:w-2/5 bg-white border-r border-gray-100 p-8 lg:p-12 flex flex-col">
         {/* Header */}
-        <div>
+        <div className="mb-8">
           <Button
             variant="ghost"
             onClick={() => navigate(`/course/${course.id}`)}
-            className="mb-8 p-0 h-auto font-normal text-gray-600 hover:text-gray-900"
+            className="mb-6 p-0 h-auto font-normal text-gray-600 hover:text-gray-900 hover:bg-transparent"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to course
           </Button>
+        </div>
 
-          {/* Course Hero */}
+        {/* Course Details */}
+        <div className="flex-1">
           <div className="mb-8">
-            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
               {course.title}
             </h1>
-            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              {course.description || "Unlock your potential with comprehensive learning materials, expert guidance, and practical exercises."}
+            <p className="text-lg text-gray-600 leading-relaxed">
+              {course.description || "Comprehensive learning with expert guidance and practical exercises."}
             </p>
           </div>
 
-          {/* Features List */}
-          <div className="space-y-4 mb-8">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-              <span className="text-gray-700">Full access to all course lessons</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-              <span className="text-gray-700">Progress tracking and certificates</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-              <span className="text-gray-700">Mobile and offline access</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-              <span className="text-gray-700">Expert support and community</span>
+          {/* What's Included */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">What's included</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-700">Full access to all course lessons and materials</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-700">Progress tracking and completion certificates</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-700">Mobile access and offline downloads</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-700">Expert support and community access</span>
+              </div>
             </div>
           </div>
 
-          {/* Trial Highlight */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="flex items-center gap-2 mb-3">
+          {/* Trial Information */}
+          <div className="border border-green-200 bg-green-50 rounded-lg p-6 mb-8">
+            <div className="flex items-center gap-3 mb-3">
               <div className="p-1.5 bg-green-100 rounded-full">
-                <Shield className="h-4 w-4 text-green-600" />
+                <Shield className="h-4 w-4 text-green-700" />
               </div>
-              <span className="font-semibold text-green-800">7-Day Free Trial</span>
+              <span className="font-semibold text-green-900">7-Day Free Trial</span>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Start learning immediately with full access. No commitments during your trial period - cancel anytime.
+            <p className="text-sm text-green-800">
+              Start learning immediately with full access. Cancel anytime during your trial period with no charges.
             </p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="hidden lg:block">
-          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+        {/* Footer Info */}
+        <div className="border-t border-gray-100 pt-6">
+          <div className="flex items-center gap-6 text-sm text-gray-500 mb-4">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span>Join 10,000+ learners</span>
+              <span>10,000+ students</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="h-4 w-4 fill-current text-yellow-400" />
-              <span>4.9/5 rating</span>
+              <span>4.9 rating</span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Lock className="h-3 w-3" />
-            <span>Secured by Stripe • 256-bit SSL encryption</span>
+            <span>Payments secured by Stripe</span>
           </div>
         </div>
       </div>
 
       {/* Right Panel - Payment Form */}
-      <div className="lg:w-3/5 bg-white p-8 lg:p-12 flex flex-col">
-        <div className="max-w-md mx-auto w-full flex-1 flex flex-col justify-center">
-          {/* Order Summary */}
+      <div className="lg:w-3/5 bg-white p-8 lg:p-12">
+        <div className="max-w-lg">
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Complete your subscription</h2>
-            
-            {/* Pricing Summary */}
-            <div className="bg-gray-50 rounded-lg p-6 mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-gray-600">First 7 days</span>
-                <span className="font-semibold text-green-600">FREE</span>
-              </div>
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-gray-600">Monthly subscription</span>
-                <span className="font-semibold">{formatPrice(course.price || 899)}</span>
-              </div>
-              <div className="border-t pt-3 mt-3">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Due today</span>
-                  <span className="font-bold text-xl text-gray-900">£0.00</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Your trial starts today. You'll be charged {formatPrice(course.price || 899)} on {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}.
-                </p>
-              </div>
-            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete subscription</h2>
+            <p className="text-gray-600">Start your 7-day free trial today</p>
           </div>
 
           {/* Payment Form */}
@@ -217,17 +201,9 @@ const CourseCheckout = () => {
             />
           ) : (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
           )}
-        </div>
-
-        {/* Mobile Footer */}
-        <div className="lg:hidden mt-8 pt-6 border-t">
-          <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-            <Lock className="h-3 w-3" />
-            <span>Secured by Stripe • SSL Encrypted</span>
-          </div>
         </div>
       </div>
     </div>

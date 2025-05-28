@@ -90,7 +90,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     style: {
       base: {
         fontSize: '16px',
-        color: '#1f2937',
+        color: '#374151',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         fontWeight: '400',
         '::placeholder': {
@@ -112,84 +112,91 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     hideIcon: false,
   };
 
-  return (
-    <div className="max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Header */}
-        <div className="text-center pb-2">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <CreditCard className="h-5 w-5 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">Payment Details</h3>
-          </div>
-          <p className="text-sm text-gray-600">Complete your subscription to {courseTitle}</p>
-        </div>
+  const formatPrice = (priceInPence: number) => {
+    return `£${(priceInPence / 100).toFixed(2)}`;
+  };
 
-        {/* Billing Information */}
+  return (
+    <div className="space-y-8">
+      {/* Order Summary */}
+      <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+        <h3 className="font-semibold text-gray-900 mb-4">Order summary</h3>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">First 7 days</span>
+            <span className="font-semibold text-green-600">Free</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Then {formatPrice(amount)}/month</span>
+            <span className="text-sm text-gray-500">Cancel anytime</span>
+          </div>
+          <div className="border-t border-gray-200 pt-3 mt-3">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-gray-900">Due today</span>
+              <span className="font-bold text-xl text-gray-900">£0.00</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              You'll be charged {formatPrice(amount)} on {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Form */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Contact Information */}
         <div className="space-y-4">
           <div>
-            <Label htmlFor="billingName" className="text-sm font-medium text-gray-700 mb-1.5 block">
-              Full Name
-            </Label>
-            <Input
-              id="billingName"
-              type="text"
-              placeholder="John Doe"
-              value={billingName}
-              onChange={(e) => setBillingName(e.target.value)}
-              className="h-12 border-gray-200 focus:border-primary/50 focus:ring-primary/30"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="email" className="text-sm font-medium text-gray-700 mb-1.5 block">
-              Email Address
+            <Label htmlFor="email" className="text-sm font-medium text-gray-700 mb-2 block">
+              Email
             </Label>
             <Input
               id="email"
               type="email"
-              placeholder="john@example.com"
+              placeholder="Enter your email"
               value={emailForReceipt}
               onChange={(e) => setEmailForReceipt(e.target.value)}
-              className="h-12 border-gray-200 focus:border-primary/50 focus:ring-primary/30"
+              className="h-11 border-gray-300 focus:border-gray-900 focus:ring-gray-900"
+              required
             />
-            <p className="text-xs text-gray-500 mt-1">Receipt will be sent to this email</p>
+          </div>
+
+          <div>
+            <Label htmlFor="billingName" className="text-sm font-medium text-gray-700 mb-2 block">
+              Full name
+            </Label>
+            <Input
+              id="billingName"
+              type="text"
+              placeholder="Enter your full name"
+              value={billingName}
+              onChange={(e) => setBillingName(e.target.value)}
+              className="h-11 border-gray-300 focus:border-gray-900 focus:ring-gray-900"
+              required
+            />
           </div>
         </div>
 
-        {/* Card Details */}
+        {/* Payment Method */}
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-1.5 block">
-              Card Number
+            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+              Card information
             </Label>
-            <div className="relative">
-              <div className="h-12 px-3 py-3 border border-gray-200 rounded-md bg-white focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/30 transition-colors">
+            <div className="border border-gray-300 rounded-md bg-white focus-within:border-gray-900 focus-within:ring-1 focus-within:ring-gray-900 transition-colors">
+              <div className="h-11 px-3 py-3 border-b border-gray-200">
                 <CardNumberElement
                   options={stripeElementOptions}
                   onChange={(event) => setCardComplete(event.complete)}
                 />
               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                Expiry Date
-              </Label>
-              <div className="h-12 px-3 py-3 border border-gray-200 rounded-md bg-white focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/30 transition-colors">
-                <CardExpiryElement options={stripeElementOptions} />
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                CVC
-              </Label>
-              <div className="h-12 px-3 py-3 border border-gray-200 rounded-md bg-white focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/30 transition-colors">
-                <CardCvcElement options={stripeElementOptions} />
+              <div className="grid grid-cols-2">
+                <div className="h-11 px-3 py-3 border-r border-gray-200">
+                  <CardExpiryElement options={stripeElementOptions} />
+                </div>
+                <div className="h-11 px-3 py-3">
+                  <CardCvcElement options={stripeElementOptions} />
+                </div>
               </div>
             </div>
           </div>
@@ -203,52 +210,31 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           </Alert>
         )}
 
-        {/* Trial Information */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-          <div className="flex items-start gap-3">
-            <div className="p-1 bg-blue-100 rounded-full mt-0.5">
-              <Shield className="h-4 w-4 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-blue-900 text-sm mb-1">7-Day Free Trial</h4>
-              <ul className="text-sm text-blue-800 space-y-0.5">
-                <li>• Free access to {courseTitle}</li>
-                <li>• £{(amount / 100).toFixed(2)}/month after trial</li>
-                <li>• Cancel anytime during trial period</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Security Notice */}
-        <div className="flex items-center justify-center gap-2 text-xs text-gray-500 border-t pt-4">
-          <Lock className="h-3 w-3" />
-          <span>Secured by Stripe • SSL Encrypted</span>
-        </div>
-
         {/* Submit Button */}
         <Button
           type="submit"
-          disabled={!stripe || isProcessing || !cardComplete}
-          className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold text-base rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          size="lg"
+          disabled={!stripe || isProcessing || !cardComplete || !emailForReceipt || !billingName}
+          className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Processing Payment...
+              Processing...
             </>
           ) : (
-            <>
-              <CreditCard className="h-4 w-4 mr-2" />
-              Start Free Trial
-            </>
+            'Start free trial'
           )}
         </Button>
 
-        {/* Powered by Stripe */}
-        <div className="text-center">
-          <p className="text-xs text-gray-400">Powered by Stripe</p>
+        {/* Terms */}
+        <p className="text-xs text-gray-500 text-center">
+          By confirming your subscription, you allow us to charge your card for this payment and future payments in accordance with our terms.
+        </p>
+
+        {/* Security Info */}
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400 pt-4 border-t border-gray-100">
+          <Lock className="h-3 w-3" />
+          <span>Secured by Stripe</span>
         </div>
       </form>
     </div>
@@ -270,12 +256,12 @@ const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = (props) => {
     appearance: {
       theme: 'stripe',
       variables: {
-        colorPrimary: '#e11d48',
+        colorPrimary: '#111827',
         colorBackground: '#ffffff',
-        colorText: '#1f2937',
+        colorText: '#374151',
         colorDanger: '#ef4444',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        borderRadius: '8px',
+        borderRadius: '6px',
       },
     },
   };
