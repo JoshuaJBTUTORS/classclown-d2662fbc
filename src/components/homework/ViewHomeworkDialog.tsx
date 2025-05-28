@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -54,6 +53,7 @@ interface Homework {
     };
     status: string;
     submitted_at: string;
+    percentage_score: number | null;
   }[];
 }
 
