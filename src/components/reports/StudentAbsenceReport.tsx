@@ -49,16 +49,6 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
           tutors!inner(
             first_name,
             last_name
-          ),
-          lesson_students!inner(
-            student_id,
-            students!inner(
-              first_name,
-              last_name
-            ),
-            lesson_attendance!inner(
-              attendance_status
-            )
           )
         `)
         .eq('status', 'completed');
@@ -81,37 +71,59 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
 
       if (error) throw error;
 
-      // Filter lessons where ALL students were absent
       const absenceLessons: AbsenceLessonData[] = [];
 
-      lessons?.forEach(lesson => {
-        if (lesson.lesson_students.length === 0) return;
+      // For each lesson, check if all students were absent
+      for (const lesson of lessons || []) {
+        // Get students enrolled in this lesson
+        const { data: lessonStudents } = await supabase
+          .from('lesson_students')
+          .select(`
+            student_id,
+            students!inner(
+              first_name,
+              last_name
+            )
+          `)
+          .eq('lesson_id', lesson.id);
 
-        // Check if all students were absent
-        const allAbsent = lesson.lesson_students.every(ls => 
-          ls.lesson_attendance.some(att => att.attendance_status === 'absent')
-        );
+        if (lessonStudents && lessonStudents.length > 0) {
+          // Get attendance for this lesson
+          const { data: attendanceData } = await supabase
+            .from('lesson_attendance')
+            .select('student_id, attendance_status')
+            .eq('lesson_id', lesson.id);
 
-        if (allAbsent) {
-          const start = new Date(lesson.start_time);
-          const end = new Date(lesson.end_time);
-          const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+          if (attendanceData && attendanceData.length > 0) {
+            // Check if all students were absent
+            const allAbsent = lessonStudents.every(ls => 
+              attendanceData.some(att => 
+                att.student_id === ls.student_id && att.attendance_status === 'absent'
+              )
+            );
 
-          const absentStudents = lesson.lesson_students.map(ls => 
-            `${ls.students.first_name} ${ls.students.last_name}`
-          );
+            if (allAbsent) {
+              const start = new Date(lesson.start_time);
+              const end = new Date(lesson.end_time);
+              const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
-          absenceLessons.push({
-            lesson_id: lesson.id,
-            lesson_title: lesson.title,
-            lesson_date: lesson.start_time,
-            duration_hours: Math.round(duration * 10) / 10,
-            tutor_name: `${lesson.tutors.first_name} ${lesson.tutors.last_name}`,
-            subject: lesson.subject || 'General',
-            absent_students: absentStudents
-          });
+              const absentStudents = lessonStudents.map(ls => 
+                `${ls.students.first_name} ${ls.students.last_name}`
+              );
+
+              absenceLessons.push({
+                lesson_id: lesson.id,
+                lesson_title: lesson.title,
+                lesson_date: lesson.start_time,
+                duration_hours: Math.round(duration * 10) / 10,
+                tutor_name: `${lesson.tutors.first_name} ${lesson.tutors.last_name}`,
+                subject: lesson.subject || 'General',
+                absent_students: absentStudents
+              });
+            }
+          }
         }
-      });
+      }
 
       // Sort by date descending
       absenceLessons.sort((a, b) => new Date(b.lesson_date).getTime() - new Date(a.lesson_date).getTime());

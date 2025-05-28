@@ -74,28 +74,58 @@ const ReportSummaryCards: React.FC<ReportSummaryCardsProps> = ({ filters }) => {
 
       const activeTutors = new Set(lessons?.map(lesson => lesson.tutor_id)).size;
 
-      // Calculate absence lessons (where all students were absent)
-      const { data: absenceLessonsData } = await supabase
+      // Calculate absence lessons separately - get lessons with all students absent
+      let absenceQuery = supabase
         .from('lessons')
         .select(`
           id,
           lesson_students!inner(
-            student_id,
-            lesson_attendance!inner(
-              attendance_status
-            )
+            student_id
           )
         `)
         .eq('status', 'completed');
 
+      // Apply same filters for absence calculation
+      if (filters.dateRange.from) {
+        absenceQuery = absenceQuery.gte('start_time', filters.dateRange.from.toISOString());
+      }
+      if (filters.dateRange.to) {
+        absenceQuery = absenceQuery.lte('end_time', filters.dateRange.to.toISOString());
+      }
+      if (filters.selectedTutors.length > 0) {
+        absenceQuery = absenceQuery.in('tutor_id', filters.selectedTutors);
+      }
+      if (filters.selectedSubjects.length > 0) {
+        absenceQuery = absenceQuery.in('subject', filters.selectedSubjects);
+      }
+
+      const { data: lessonsWithStudents } = await absenceQuery;
+
       let absenceLessons = 0;
-      if (absenceLessonsData) {
-        absenceLessons = absenceLessonsData.filter(lesson => {
-          const allAbsent = lesson.lesson_students.every(ls => 
-            ls.lesson_attendance.some(att => att.attendance_status === 'absent')
-          );
-          return allAbsent && lesson.lesson_students.length > 0;
-        }).length;
+      if (lessonsWithStudents) {
+        // For each lesson, check if all students were absent
+        for (const lesson of lessonsWithStudents) {
+          if (lesson.lesson_students.length > 0) {
+            // Get attendance for this lesson
+            const { data: attendanceData } = await supabase
+              .from('lesson_attendance')
+              .select('student_id, attendance_status')
+              .eq('lesson_id', lesson.id);
+
+            if (attendanceData && attendanceData.length > 0) {
+              // Check if all students were absent
+              const allAbsent = lesson.lesson_students.every(ls => 
+                attendanceData.some(att => 
+                  att.student_id === ls.student_id && att.attendance_status === 'absent'
+                )
+              );
+              
+              if (allAbsent) {
+                absenceLessons++;
+              }
+            }
+          }
+        }
       }
 
       setSummaryData({

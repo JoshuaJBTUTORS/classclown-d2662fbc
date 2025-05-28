@@ -59,6 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
     if (userRole === 'owner') {
       baseNavigation.push({ name: 'Progress', href: '/progress', icon: TrendingUp });
+      baseNavigation.push({ name: 'Reports', href: '/reports', icon: FileBarChart });
     }
 
     baseNavigation.push({ name: 'Learning Hub', href: '/learning-hub', icon: Library });
