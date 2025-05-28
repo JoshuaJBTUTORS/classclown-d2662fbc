@@ -8,6 +8,7 @@ import { Download, UserX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { getCompletedLessons } from '@/services/lessonCompletionService';
 
 interface AbsenceLessonData {
   lesson_id: string;
@@ -38,43 +39,13 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
   const fetchAbsenceData = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('lessons')
-        .select(`
-          id,
-          title,
-          start_time,
-          end_time,
-          subject,
-          tutors!inner(
-            first_name,
-            last_name
-          )
-        `)
-        .eq('status', 'completed');
-
-      // Apply filters
-      if (filters.dateRange.from) {
-        query = query.gte('start_time', filters.dateRange.from.toISOString());
-      }
-      if (filters.dateRange.to) {
-        query = query.lte('end_time', filters.dateRange.to.toISOString());
-      }
-      if (filters.selectedTutors.length > 0) {
-        query = query.in('tutor_id', filters.selectedTutors);
-      }
-      if (filters.selectedSubjects.length > 0) {
-        query = query.in('subject', filters.selectedSubjects);
-      }
-
-      const { data: lessons, error } = await query;
-
-      if (error) throw error;
+      // Get completed lessons using the proper completion logic
+      const completedLessons = await getCompletedLessons(filters);
 
       const absenceLessons: AbsenceLessonData[] = [];
 
-      // For each lesson, check if all students were absent
-      for (const lesson of lessons || []) {
+      // For each completed lesson, check if all students were absent
+      for (const lesson of completedLessons) {
         // Get students enrolled in this lesson
         const { data: lessonStudents } = await supabase
           .from('lesson_students')

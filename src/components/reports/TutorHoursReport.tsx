@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Download, FileBarChart } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getCompletedLessons } from '@/services/lessonCompletionService';
 
 interface TutorHoursData {
   tutor_id: string;
@@ -35,44 +35,13 @@ const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
   const fetchTutorHoursData = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('lessons')
-        .select(`
-          id,
-          tutor_id,
-          start_time,
-          end_time,
-          subject,
-          tutors!inner(
-            id,
-            first_name,
-            last_name
-          )
-        `)
-        .eq('status', 'completed');
-
-      // Apply filters
-      if (filters.dateRange.from) {
-        query = query.gte('start_time', filters.dateRange.from.toISOString());
-      }
-      if (filters.dateRange.to) {
-        query = query.lte('end_time', filters.dateRange.to.toISOString());
-      }
-      if (filters.selectedTutors.length > 0) {
-        query = query.in('tutor_id', filters.selectedTutors);
-      }
-      if (filters.selectedSubjects.length > 0) {
-        query = query.in('subject', filters.selectedSubjects);
-      }
-
-      const { data: lessons, error } = await query;
-
-      if (error) throw error;
+      // Get completed lessons using the proper completion logic
+      const completedLessons = await getCompletedLessons(filters);
 
       // Group by tutor and calculate hours
       const tutorDataMap = new Map<string, TutorHoursData>();
 
-      lessons?.forEach(lesson => {
+      completedLessons.forEach(lesson => {
         const tutorId = lesson.tutor_id;
         const tutorName = `${lesson.tutors.first_name} ${lesson.tutors.last_name}`;
         const start = new Date(lesson.start_time);
