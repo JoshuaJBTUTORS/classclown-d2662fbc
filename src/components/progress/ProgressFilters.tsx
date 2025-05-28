@@ -150,10 +150,10 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
             <div className="flex flex-col space-y-2">
               <label className="text-sm font-medium">Subjects</label>
               <Select
-                value={filters.selectedSubjects[0] || ""}
+                value={filters.selectedSubjects[0] || "all"}
                 onValueChange={(value) => 
                   onFiltersChange({ 
-                    selectedSubjects: value ? [value] : [] 
+                    selectedSubjects: value === "all" ? [] : [value] 
                   })
                 }
               >
@@ -161,7 +161,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                   <SelectValue placeholder="All subjects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All subjects</SelectItem>
+                  <SelectItem value="all">All subjects</SelectItem>
                   {subjects.map(subject => (
                     <SelectItem key={subject} value={subject}>
                       {subject}
@@ -255,10 +255,10 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
             <div className="flex flex-col space-y-2">
               <label className="text-sm font-medium">Students</label>
               <Select
-                value={filters.selectedStudents[0] || ""}
+                value={filters.selectedStudents[0] || "all"}
                 onValueChange={(value) => 
                   onFiltersChange({ 
-                    selectedStudents: value ? [value] : [] 
+                    selectedStudents: value === "all" ? [] : [value] 
                   })
                 }
               >
@@ -266,7 +266,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                   <SelectValue placeholder="All students" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All students</SelectItem>
+                  <SelectItem value="all">All students</SelectItem>
                   {students.map(student => (
                     <SelectItem key={student.id} value={student.id.toString()}>
                       {student.first_name} {student.last_name}
@@ -281,10 +281,10 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
           <div className="flex flex-col space-y-2">
             <label className="text-sm font-medium">Subjects</label>
             <Select
-              value={filters.selectedSubjects[0] || ""}
+              value={filters.selectedSubjects[0] || "all"}
               onValueChange={(value) => 
                 onFiltersChange({ 
-                  selectedSubjects: value ? [value] : [] 
+                  selectedSubjects: value === "all" ? [] : [value] 
                 })
               }
             >
@@ -292,7 +292,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All subjects</SelectItem>
+                <SelectItem value="all">All subjects</SelectItem>
                 {subjects.map(subject => (
                   <SelectItem key={subject} value={subject}>
                     {subject}
