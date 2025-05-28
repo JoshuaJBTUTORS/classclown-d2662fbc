@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -311,51 +310,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       toast.error('Failed to load lesson details');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Fetch completion status for the lesson
-  const fetchCompletionStatus = async (lessonId: string) => {
-    try {
-      // Fetch attendance data
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('lesson_attendance')
-        .select('student_id')
-        .eq('lesson_id', lessonId);
-
-      if (attendanceError) throw attendanceError;
-
-      // Fetch homework data
-      const { data: homeworkData, error: homeworkError } = await supabase
-        .from('homework')
-        .select('id')
-        .eq('lesson_id', lessonId);
-
-      if (homeworkError) throw homeworkError;
-
-      // Fetch student count
-      const { data: lessonStudentData, error: lessonStudentError } = await supabase
-        .from('lesson_students')
-        .select('student_id')
-        .eq('lesson_id', lessonId);
-
-      if (lessonStudentError) throw lessonStudentError;
-
-      const totalStudents = lessonStudentData?.length || 0;
-      const attendanceCount = attendanceData?.length || 0;
-      const hasHomeworkAssigned = homeworkData && homeworkData.length > 0;
-      const isCompleted = totalStudents > 0 && attendanceCount === totalStudents && hasHomeworkAssigned;
-
-      setCompletionStatus({
-        isCompleted,
-        attendanceCount,
-        totalStudents,
-        hasHomework: hasHomeworkAssigned
-      });
-
-      setHasHomework(hasHomeworkAssigned);
-    } catch (error) {
-      console.error('Error fetching completion status:', error);
     }
   };
 
