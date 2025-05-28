@@ -39,8 +39,8 @@ const formSchema = z.object({
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email format." }).optional(),
   phone: z.string().optional(),
-  parentFirstName: z.string().optional(),
-  parentLastName: z.string().optional(),
+  studentId: z.string().optional(),
+  grade: z.string().optional(),
   subjects: z.string().optional(),
   sendInvite: z.boolean().default(false),
   createAccount: z.boolean().default(false),
@@ -60,8 +60,8 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
       lastName: "",
       email: "",
       phone: "",
-      parentFirstName: "",
-      parentLastName: "",
+      studentId: "",
+      grade: "",
       subjects: "",
       sendInvite: false,
       createAccount: false,
@@ -83,10 +83,11 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
           last_name: data.lastName,
           email: data.email || null,
           phone: data.phone || null,
-          parent_first_name: data.parentFirstName || null,
-          parent_last_name: data.parentLastName || null,
+          student_id: data.studentId || null,
+          grade: data.grade || null,
           subjects: data.subjects || null,
-          status: 'active'
+          status: 'active',
+          parent_id: null // Explicitly set to null for standalone students
         })
         .select()
         .single();
@@ -163,14 +164,24 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
             variant: "destructive"
           });
         } else if (authData.user) {
+          // Link the auth user to the student record
+          const { error: linkError } = await supabase
+            .from('students')
+            .update({ user_id: authData.user.id })
+            .eq('id', studentData.id);
+
+          if (linkError) {
+            console.error('Failed to link student account:', linkError);
+          }
+
           if (emailSent) {
             toast({
-              title: "Student account created successfully",
+              title: "Standalone student account created successfully",
               description: "Account created and welcome email sent with login credentials.",
             });
           } else {
             toast({
-              title: "Student account created successfully",
+              title: "Standalone student account created successfully",
               description: `Account created with default password: ${DEFAULT_PASSWORD}. However, the welcome email couldn't be sent.`,
               variant: "destructive"
             });
@@ -178,8 +189,8 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
         }
       } else {
         toast({
-          title: "Student created successfully",
-          description: "The student has been added to the system."
+          title: "Standalone student created successfully",
+          description: "The student has been added to the system as a standalone record."
         });
       }
 
@@ -201,9 +212,9 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add New Student</DialogTitle>
+          <DialogTitle>Add New Standalone Student</DialogTitle>
           <DialogDescription>
-            Enter the student's details below to add them to the system.
+            Create a standalone student record. This student will not be linked to any parent account initially.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -252,29 +263,15 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="123-456-7890" type="tel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="parentFirstName"
+                name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Parent First Name (Optional)</FormLabel>
+                    <FormLabel>Phone Number (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} />
+                      <Input placeholder="123-456-7890" type="tel" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -283,12 +280,12 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
 
               <FormField
                 control={form.control}
-                name="parentLastName"
+                name="studentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Parent Last Name (Optional)</FormLabel>
+                    <FormLabel>Student ID (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Smith" {...field} />
+                      <Input placeholder="STU001" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -296,19 +293,35 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="subjects"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subjects (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Math, Physics, Chemistry" className="min-h-[60px]" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="grade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Grade/Year (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Year 10" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subjects"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subjects (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Math, Physics, Chemistry" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="space-y-4">
               <FormField
@@ -380,14 +393,14 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
               <Button type="submit" disabled={loading} className="flex items-center gap-2">
                 {loading ? "Creating..." : form.watch("createAccount") ? (
                   <>
-                    Create Student & Account
+                    Create Standalone Student & Account
                   </>
                 ) : form.watch("sendInvite") ? (
                   <>
                     <Mail className="h-4 w-4" />
-                    Create & Invite Student
+                    Create & Invite Standalone Student
                   </>
-                ) : "Create Student"}
+                ) : "Create Standalone Student"}
               </Button>
             </DialogFooter>
           </form>

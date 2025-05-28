@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { Student } from '@/types/student';
+import { UserX, Users } from 'lucide-react';
 
 interface ViewStudentProfileProps {
   student: Student | null;
@@ -32,11 +33,21 @@ const ViewStudentProfile: React.FC<ViewStudentProfileProps> = ({ student, isOpen
       })
     : 'Not available');
 
+  // Check if this is a standalone student (no parent)
+  const isStandaloneStudent = !student.parent_id;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">{student.first_name} {student.last_name}'s Profile</DialogTitle>
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            {isStandaloneStudent ? (
+              <UserX className="h-5 w-5 text-orange-500" />
+            ) : (
+              <Users className="h-5 w-5 text-blue-500" />
+            )}
+            {student.first_name} {student.last_name}'s Profile
+          </DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
@@ -46,13 +57,31 @@ const ViewStudentProfile: React.FC<ViewStudentProfileProps> = ({ student, isOpen
               <p className="text-base">{student.student_id || 'No ID assigned'}</p>
             </div>
             <div>
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Status</h3>
-              <Badge 
-                variant={student.status === 'active' ? 'default' : 'outline'} 
-                className="capitalize"
-              >
-                {student.status}
-              </Badge>
+              <h3 className="font-medium text-sm text-muted-foreground mb-1">Account Type</h3>
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant={student.status === 'active' ? 'default' : 'outline'} 
+                  className="capitalize"
+                >
+                  {student.status}
+                </Badge>
+                <Badge 
+                  variant={isStandaloneStudent ? 'secondary' : 'outline'}
+                  className="flex items-center gap-1"
+                >
+                  {isStandaloneStudent ? (
+                    <>
+                      <UserX className="h-3 w-3" />
+                      Standalone
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-3 w-3" />
+                      Family-linked
+                    </>
+                  )}
+                </Badge>
+              </div>
             </div>
           </div>
           
@@ -69,28 +98,48 @@ const ViewStudentProfile: React.FC<ViewStudentProfileProps> = ({ student, isOpen
               </div>
               <div>
                 <h3 className="font-medium text-sm text-muted-foreground mb-1">Email Address</h3>
-                <p className="text-base">{student.email}</p>
+                <p className="text-base">{student.email || 'Not provided'}</p>
               </div>
               <div>
                 <h3 className="font-medium text-sm text-muted-foreground mb-1">Phone Number</h3>
                 <p className="text-base">{student.phone || 'Not provided'}</p>
               </div>
+              {student.grade && (
+                <div>
+                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Grade/Year</h3>
+                  <p className="text-base">{student.grade}</p>
+                </div>
+              )}
             </div>
           </div>
           
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Parent Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Parent Name</h3>
-                <p className="text-base">{student.parentName || 'Not provided'}</p>
-              </div>
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Parent Email</h3>
-                <p className="text-base">{student.parentEmail || 'Not provided'}</p>
+          {!isStandaloneStudent && (
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Parent Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
+                <div>
+                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Parent Name</h3>
+                  <p className="text-base">{student.parentName || 'Not provided'}</p>
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Parent Email</h3>
+                  <p className="text-base">{student.parentEmail || 'Not provided'}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+          
+          {isStandaloneStudent && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <UserX className="h-4 w-4 text-orange-500" />
+                <h2 className="text-lg font-semibold text-orange-700">Standalone Student</h2>
+              </div>
+              <p className="text-sm text-orange-600">
+                This student is not currently linked to any parent account. They can be converted to a family account or linked to an existing parent later if needed.
+              </p>
+            </div>
+          )}
           
           <div>
             <h2 className="text-lg font-semibold mb-2">Academic Information</h2>

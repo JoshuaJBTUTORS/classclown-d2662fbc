@@ -29,7 +29,7 @@ export interface ParentWithStudents extends Parent {
     student_id?: string;
     name?: string;
     joinedDate?: string;
-    parent_id: string;
+    parent_id: string | null; // Can be null for standalone students
     user_id?: string;
   }>;
 }
