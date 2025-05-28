@@ -34,14 +34,27 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     try {
       setIsLoading(true);
       
-      // Fetch students with status field included
+      // Fetch students with required parent_id field
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select('id, first_name, last_name, email, status')
+        .select('id, first_name, last_name, email, status, parent_id')
         .eq('status', 'active')
         .order('first_name');
 
       if (studentsError) throw studentsError;
+
+      // Transform data to match Student interface
+      const formattedStudents: Student[] = (studentsData || []).map(student => ({
+        id: student.id,
+        first_name: student.first_name,
+        last_name: student.last_name,
+        email: student.email || '',
+        status: student.status,
+        parent_id: student.parent_id || '', // Ensure parent_id is always present
+        phone: '',
+        subjects: '',
+        name: `${student.first_name} ${student.last_name}`
+      }));
 
       // Fetch tutors with status field included
       const { data: tutorsData, error: tutorsError } = await supabase
@@ -52,7 +65,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
 
       if (tutorsError) throw tutorsError;
 
-      setStudents(studentsData || []);
+      setStudents(formattedStudents);
       setTutors(tutorsData || []);
     } catch (error) {
       console.error('Error fetching filter data:', error);

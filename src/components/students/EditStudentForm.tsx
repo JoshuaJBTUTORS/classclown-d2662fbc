@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Student } from '@/types/student'; // Import the Student interface from our shared type definition
+import { Student } from '@/types/student';
 
 interface EditStudentFormProps {
   student: Student;
@@ -39,12 +40,6 @@ const formSchema = z.object({
   }),
   email: z.string().email({
     message: "Please enter a valid email address.",
-  }),
-  parentFirstName: z.string().min(2, {
-    message: "Parent's first name must be at least 2 characters.",
-  }),
-  parentLastName: z.string().min(2, {
-    message: "Parent's last name must be at least 2 characters.",
   }),
   studentId: z.string().optional(),
   subjects: z.string().min(2, {
@@ -67,8 +62,6 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
       firstName: student?.first_name || "",
       lastName: student?.last_name || "",
       email: student?.email || "",
-      parentFirstName: student?.parent_first_name || "",
-      parentLastName: student?.parent_last_name || "",
       studentId: student?.student_id || "",
       subjects: subjectsString,
       status: (student?.status === 'active' || student?.status === 'inactive' 
@@ -88,8 +81,6 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         firstName: student.first_name || "",
         lastName: student.last_name || "",
         email: student.email || "",
-        parentFirstName: student.parent_first_name || "",
-        parentLastName: student.parent_last_name || "",
         studentId: student.student_id || "",
         subjects: subjectsValue,
         status: (student.status === 'active' || student.status === 'inactive' 
@@ -112,8 +103,6 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         first_name: values.firstName,
         last_name: values.lastName,
         email: values.email,
-        parent_first_name: values.parentFirstName,
-        parent_last_name: values.parentLastName,
         student_id: values.studentId,
         subjects: subjectsString,
         status: values.status
@@ -139,7 +128,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           name: `${data[0].first_name} ${data[0].last_name}`,
           email: data[0].email || '',
           phone: data[0].phone || '',
-          subjects: data[0].subjects || '',  // Keep as string to match database
+          subjects: data[0].subjects || '',
           status: data[0].status || 'active',
           joinedDate: new Date(data[0].created_at).toLocaleDateString('en-US', {
             month: 'short',
@@ -148,10 +137,10 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           }),
           first_name: data[0].first_name || '',
           last_name: data[0].last_name || '',
-          parent_first_name: data[0].parent_first_name || '',
-          parent_last_name: data[0].parent_last_name || '',
           student_id: data[0].student_id,
-          created_at: data[0].created_at
+          created_at: data[0].created_at,
+          parent_id: data[0].parent_id || student.parent_id,
+          user_id: data[0].user_id
         };
         onUpdate(updatedStudent);
         toast.success("Student details updated successfully");
@@ -220,36 +209,6 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="parentFirstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Parent's First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Parent's First Name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="parentLastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Parent's Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Parent's Last Name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             <FormField
               control={form.control}

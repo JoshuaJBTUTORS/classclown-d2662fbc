@@ -16,4 +16,8 @@ export interface Student {
   joinedDate?: string;
   parent_id: string; // Required - links to parent
   user_id?: string; // Optional - for students with login accounts
+  // Add computed fields for display purposes
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string;
 }

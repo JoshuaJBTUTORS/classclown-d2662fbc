@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Dialog,
@@ -6,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-import { Student } from '@/types/student'; // Import the shared Student type
+import { Student } from '@/types/student';
 
 interface ViewStudentProfileProps {
   student: Student | null;
@@ -81,12 +82,12 @@ const ViewStudentProfile: React.FC<ViewStudentProfileProps> = ({ student, isOpen
             <h2 className="text-lg font-semibold mb-2">Parent Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
               <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">First Name</h3>
-                <p className="text-base">{student.parent_first_name || 'Not provided'}</p>
+                <h3 className="font-medium text-sm text-muted-foreground mb-1">Parent Name</h3>
+                <p className="text-base">{student.parentName || 'Not provided'}</p>
               </div>
               <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Last Name</h3>
-                <p className="text-base">{student.parent_last_name || 'Not provided'}</p>
+                <h3 className="font-medium text-sm text-muted-foreground mb-1">Parent Email</h3>
+                <p className="text-base">{student.parentEmail || 'Not provided'}</p>
               </div>
             </div>
           </div>
