@@ -2,6 +2,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.5';
+import React from 'npm:react@18.3.1';
+import { renderAsync } from 'npm:@react-email/components@0.0.22';
+import { LateNotificationEmail } from './_templates/late-notification-email.tsx';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -72,41 +75,30 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('No email address found for student or parent');
     }
 
+    // Render the React Email template
+    const html = await renderAsync(
+      React.createElement(LateNotificationEmail, {
+        studentName,
+        recipientName,
+        lessonTitle,
+        lessonDate,
+        lessonTime,
+        tutorName,
+      })
+    );
+
     // Send the late notification email
     const emailResponse = await resend.emails.send({
       from: "JB Tutors <enquiries@jb-tutors.com>",
       to: [recipientEmail],
       subject: `${studentName} is running late for ${lessonTitle}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #e74c3c;">Student Late Notification</h2>
-          
-          <p>Dear ${recipientName},</p>
-          
-          <p>We wanted to inform you that <strong>${studentName}</strong> is running late for their scheduled lesson.</p>
-          
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #343a40;">Lesson Details:</h3>
-            <p><strong>Lesson:</strong> ${lessonTitle}</p>
-            <p><strong>Date:</strong> ${lessonDate}</p>
-            <p><strong>Time:</strong> ${lessonTime}</p>
-            <p><strong>Tutor:</strong> ${tutorName}</p>
-          </div>
-          
-          <p>Please ensure ${studentName} joins the lesson as soon as possible. If there are any issues or if ${studentName} will not be able to attend, please contact us immediately.</p>
-          
-          <p>Thank you for your attention to this matter.</p>
-          
-          <p>Best regards,<br>
-          The JB Tutors Team</p>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #6c757d;">
-            This is an automated notification. If you have any questions, please contact your tutor or our support team at enquiries@jb-tutors.com.
-          </p>
-        </div>
-      `,
+      html,
     });
+
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      throw new Error(`Failed to send email: ${emailResponse.error.message}`);
+    }
 
     console.log("Late notification email sent successfully:", emailResponse);
 
@@ -140,7 +132,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-late-notification function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString()
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
