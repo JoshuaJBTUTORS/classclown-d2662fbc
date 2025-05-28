@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -6,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from 'sonner';
+import { Calendar } from 'lucide-react';
 
 interface AttendanceChartProps {
   filters: {
@@ -127,10 +127,10 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium">Week of {label}</p>
-          <p className="text-green-600">Attended: {data.attended}/{data.total}</p>
-          <p className="text-blue-600">Percentage: {data.percentage}%</p>
+        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-green-500">
+          <p className="font-semibold text-gray-900 mb-2">Week of {label}</p>
+          <p className="text-green-600 font-medium">Attended: {data.attended}/{data.total}</p>
+          <p className="text-blue-600 font-medium">Percentage: {data.percentage}%</p>
         </div>
       );
     }
@@ -139,14 +139,14 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Attendance Tracking</CardTitle>
-          <CardDescription>Loading attendance data...</CardDescription>
+      <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
+        <CardHeader className="pb-4">
+          <CardTitle className="font-playfair text-xl text-gray-900">Attendance Tracking</CardTitle>
+          <CardDescription className="text-gray-600">Loading attendance data...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div className="h-80 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e94b7f]"></div>
           </div>
         </CardContent>
       </Card>
@@ -154,21 +154,33 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Attendance Tracking</CardTitle>
-        <CardDescription>
+    <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
+      <CardHeader className="pb-4">
+        <CardTitle className="font-playfair text-xl text-gray-900">Attendance Tracking</CardTitle>
+        <CardDescription className="text-gray-600">
           {userRole === 'owner' ? 'Student attendance rates by week' : 'Your attendance rates by week'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-80">
           {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="week" />
-                <YAxis domain={[0, 100]} />
+              <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="week" 
+                  stroke="#64748b"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  stroke="#64748b"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
                   dataKey="percentage" 
@@ -179,7 +191,11 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
-              No attendance data available for the selected filters
+              <div className="text-center">
+                <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-400">No attendance data available</p>
+                <p className="text-sm text-gray-400 mt-1">for the selected filters</p>
+              </div>
             </div>
           )}
         </div>

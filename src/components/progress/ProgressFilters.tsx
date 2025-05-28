@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,7 +29,6 @@ interface Student {
 const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersChange, userRole }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (userRole === 'owner') {
@@ -191,28 +189,28 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
+    <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 font-playfair text-xl text-gray-900">
+          <Filter className="h-5 w-5 text-[#e94b7f]" />
           Filters
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-6">
           {/* Date Range Filter */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium">Date Range</label>
+            <label className="text-sm font-medium text-gray-700">Date Range</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[240px] justify-start text-left font-normal",
+                    "w-[280px] justify-start text-left font-normal border-gray-200 hover:bg-gray-50",
                     !filters.dateRange.from && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 h-4 w-4 text-[#e94b7f]" />
                   {filters.dateRange.from ? (
                     filters.dateRange.to ? (
                       <>
@@ -253,7 +251,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
           {/* Student Filter - Only for owners */}
           {userRole === 'owner' && (
             <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">Students</label>
+              <label className="text-sm font-medium text-gray-700">Students</label>
               <Select
                 value={filters.selectedStudents[0] || "all"}
                 onValueChange={(value) => 
@@ -262,7 +260,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                   })
                 }
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[200px] border-gray-200 hover:bg-gray-50">
                   <SelectValue placeholder="All students" />
                 </SelectTrigger>
                 <SelectContent>
@@ -279,7 +277,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
 
           {/* Subject Filter */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium">Subjects</label>
+            <label className="text-sm font-medium text-gray-700">Subjects</label>
             <Select
               value={filters.selectedSubjects[0] || "all"}
               onValueChange={(value) => 
@@ -288,7 +286,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                 })
               }
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[200px] border-gray-200 hover:bg-gray-50">
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent>
@@ -308,10 +306,10 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                 variant="ghost" 
                 size="sm"
                 onClick={clearFilters}
-                className="flex items-center gap-1"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
               >
-                <X className="h-3 w-3" />
-                Clear
+                <X className="h-4 w-4" />
+                Clear Filters
               </Button>
             </div>
           )}

@@ -38,11 +38,11 @@ const Progress: React.FC = () => {
   // Check if user has access to progress tracking
   if (userRole !== 'student' && userRole !== 'owner') {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-background">
         <Sidebar isOpen={sidebarOpen} />
-        <div className="flex flex-col flex-1 lg:pl-64">
+        <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
           <Navbar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 p-4 md:p-6">
+          <main className="flex-1 p-4 md:p-8">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Access Denied</AlertTitle>
@@ -57,11 +57,11 @@ const Progress: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} />
-      <div className="flex flex-col flex-1 lg:pl-64">
+      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-8">
           <PageTitle 
             title="Progress Tracking" 
             subtitle={userRole === 'owner' 
@@ -69,7 +69,7 @@ const Progress: React.FC = () => {
               : "View your homework and attendance progress"}
           />
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             <ProgressFilters 
               filters={filters}
               onFiltersChange={handleFiltersChange}
@@ -81,7 +81,7 @@ const Progress: React.FC = () => {
               userRole={userRole}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <ProgressChart 
                 filters={filters}
                 userRole={userRole}
