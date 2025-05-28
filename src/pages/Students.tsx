@@ -58,7 +58,7 @@ const Students = () => {
     try {
       console.log('Starting student fetch...');
       
-      // First get all students
+      // Get students data first
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
         .select('*')
@@ -69,7 +69,7 @@ const Students = () => {
         throw studentsError;
       }
 
-      console.log('Students data received:', studentsData);
+      console.log('Raw students data from database:', studentsData);
 
       if (!studentsData || studentsData.length === 0) {
         console.log('No students found in database');
@@ -98,10 +98,9 @@ const Students = () => {
           console.error('Error fetching parents:', parentsError);
         } else {
           parentsData = fetchedParents || [];
+          console.log('Parents data received:', parentsData);
         }
       }
-
-      console.log('Parents data received:', parentsData);
 
       // Create a map of parent ID to parent data
       const parentsMap = new Map();
@@ -110,51 +109,54 @@ const Students = () => {
       });
 
       // Transform the data to match the Student interface
-      const formattedStudents: Student[] = studentsData
-        .filter(student => {
-          // Only filter out completely empty records
-          if (!student.first_name?.trim() && !student.last_name?.trim()) {
-            console.warn('Skipping student with missing name:', student);
-            return false;
+      const formattedStudents: Student[] = studentsData.map((student: any) => {
+        console.log('Processing student:', student);
+        
+        const parentData = student.parent_id ? parentsMap.get(student.parent_id) : null;
+        
+        // Handle the date formatting with proper null checks
+        let joinedDate = 'Not available';
+        if (student.created_at) {
+          try {
+            joinedDate = new Date(student.created_at).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            });
+          } catch (error) {
+            console.warn('Error formatting date for student:', student.id, error);
+            joinedDate = 'Not available';
           }
-          return true;
-        })
-        .map((student: any) => {
-          const parentData = student.parent_id ? parentsMap.get(student.parent_id) : null;
-          
-          const formattedStudent: Student = {
-            id: student.id,
-            name: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
-            email: student.email || '',
-            phone: student.phone || '',
-            subjects: student.subjects || '',
-            status: student.status || 'active',
-            joinedDate: student.created_at 
-              ? new Date(student.created_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                }) 
-              : 'Not available',
-            first_name: student.first_name || '',
-            last_name: student.last_name || '',
-            parent_id: student.parent_id || null,
-            user_id: student.user_id,
-            student_id: student.student_id,
-            created_at: student.created_at,
-            grade: student.grade,
-            // Add parent information for display
-            parentName: parentData 
-              ? `${parentData.first_name || ''} ${parentData.last_name || ''}`.trim()
-              : 'No Parent Assigned',
-            parentEmail: parentData?.email || '',
-            parentPhone: parentData?.phone || ''
-          };
-          
-          return formattedStudent;
-        });
+        }
+        
+        const formattedStudent: Student = {
+          id: student.id, // Keep as is - bigint from database
+          name: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
+          email: student.email || '',
+          phone: student.phone || '',
+          subjects: student.subjects || '',
+          status: student.status || 'active',
+          joinedDate: joinedDate,
+          first_name: student.first_name || '',
+          last_name: student.last_name || '',
+          parent_id: student.parent_id || null,
+          user_id: student.user_id,
+          student_id: student.student_id,
+          created_at: student.created_at,
+          grade: student.grade,
+          // Add parent information for display
+          parentName: parentData 
+            ? `${parentData.first_name || ''} ${parentData.last_name || ''}`.trim()
+            : 'No Parent Assigned',
+          parentEmail: parentData?.email || '',
+          parentPhone: parentData?.phone || ''
+        };
+        
+        console.log('Formatted student:', formattedStudent);
+        return formattedStudent;
+      });
       
-      console.log('Final formatted students:', formattedStudents);
+      console.log('Final formatted students array:', formattedStudents);
       console.log('Total students to display:', formattedStudents.length);
       
       setStudents(formattedStudents);
@@ -179,9 +181,9 @@ const Students = () => {
       const query = searchQuery.toLowerCase();
       const filtered = students.filter(
         (student) =>
-          student.first_name.toLowerCase().includes(query) ||
-          student.last_name.toLowerCase().includes(query) ||
-          student.email.toLowerCase().includes(query) ||
+          (student.first_name || '').toLowerCase().includes(query) ||
+          (student.last_name || '').toLowerCase().includes(query) ||
+          (student.email || '').toLowerCase().includes(query) ||
           (typeof student.subjects === 'string' && student.subjects.toLowerCase().includes(query)) ||
           (student.parentName && student.parentName.toLowerCase().includes(query))
       );
