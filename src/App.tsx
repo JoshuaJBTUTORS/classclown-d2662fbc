@@ -6,9 +6,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import StudentDashboardRedirect from '@/components/routing/StudentDashboardRedirect';
 
 // Page imports
-import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import Calendar from '@/pages/Calendar';
 import Lessons from '@/pages/Lessons';
@@ -43,7 +43,7 @@ function App() {
                 
                 <Route path="/" element={
                   <ProtectedRoute>
-                    <Index />
+                    <StudentDashboardRedirect />
                   </ProtectedRoute>
                 } />
                 

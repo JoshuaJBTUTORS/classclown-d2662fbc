@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -26,22 +25,46 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const { userRole } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Calendar', href: '/calendar', icon: Calendar },
-    { name: 'Lessons', href: '/lessons', icon: BookOpen },
-    ...(userRole === 'admin' || userRole === 'owner' || userRole === 'tutor' ? [
-      { name: 'Students', href: '/students', icon: Users }
-    ] : []),
-    ...(userRole === 'admin' || userRole === 'owner' ? [
-      { name: 'Tutors', href: '/tutors', icon: GraduationCap }
-    ] : []),
-    { name: 'Homework', href: '/homework', icon: BookMarked },
-    ...(userRole === 'student' || userRole === 'owner' ? [
-      { name: 'Progress', href: '/progress', icon: TrendingUp }
-    ] : []),
-    { name: 'Learning Hub', href: '/learning-hub', icon: Library },
-  ];
+  const getNavigation = () => {
+    // For students, start with Progress and exclude Dashboard
+    if (userRole === 'student') {
+      return [
+        { name: 'Progress', href: '/progress', icon: TrendingUp },
+        { name: 'Calendar', href: '/calendar', icon: Calendar },
+        { name: 'Lessons', href: '/lessons', icon: BookOpen },
+        { name: 'Homework', href: '/homework', icon: BookMarked },
+        { name: 'Learning Hub', href: '/learning-hub', icon: Library },
+      ];
+    }
+
+    // For all other roles, keep the original navigation with Dashboard first
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/', icon: Home },
+      { name: 'Calendar', href: '/calendar', icon: Calendar },
+      { name: 'Lessons', href: '/lessons', icon: BookOpen },
+    ];
+
+    // Add role-specific navigation items
+    if (userRole === 'admin' || userRole === 'owner' || userRole === 'tutor') {
+      baseNavigation.push({ name: 'Students', href: '/students', icon: Users });
+    }
+
+    if (userRole === 'admin' || userRole === 'owner') {
+      baseNavigation.push({ name: 'Tutors', href: '/tutors', icon: GraduationCap });
+    }
+
+    baseNavigation.push({ name: 'Homework', href: '/homework', icon: BookMarked });
+
+    if (userRole === 'owner') {
+      baseNavigation.push({ name: 'Progress', href: '/progress', icon: TrendingUp });
+    }
+
+    baseNavigation.push({ name: 'Learning Hub', href: '/learning-hub', icon: Library });
+
+    return baseNavigation;
+  };
+
+  const navigation = getNavigation();
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
