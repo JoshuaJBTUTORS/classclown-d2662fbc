@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Calendar, 
@@ -9,10 +9,13 @@ import {
   Home, 
   BookMarked,
   TrendingUp,
-  Library
+  Library,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,6 +24,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const location = useLocation();
   const { userRole } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -39,18 +43,51 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { name: 'Learning Hub', href: '/learning-hub', icon: Library },
   ];
 
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   return (
     <div className={cn(
-      "fixed left-0 top-0 z-40 h-screen bg-white shadow-lg border-r border-gray-200 transition-transform duration-300 ease-in-out lg:translate-x-0",
+      "fixed left-0 top-0 z-40 h-screen bg-white shadow-xl border-r border-gray-200/50 transition-all duration-300 ease-in-out lg:translate-x-0",
       isOpen ? "translate-x-0" : "-translate-x-full",
-      "w-64"
+      isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center justify-center border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">Tutoring Platform</h1>
+        {/* Header with Logo */}
+        <div className={cn(
+          "flex h-16 items-center justify-between border-b border-gray-200/50 bg-gradient-to-r from-[#e94b7f]/5 to-[#e94b7f]/10 px-4",
+          isCollapsed && "px-2"
+        )}>
+          {!isCollapsed && (
+            <div className="flex items-center">
+              <img 
+                src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
+                alt="Class Clown Logo" 
+                className="h-10 w-auto" 
+              />
+            </div>
+          )}
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleCollapse}
+            className={cn(
+              "h-8 w-8 text-[#e94b7f] hover:bg-[#e94b7f]/10 hover:text-[#e94b7f]",
+              isCollapsed && "mx-auto"
+            )}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
         </div>
         
-        <nav className="flex-1 space-y-1 px-2 py-4">
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -58,23 +95,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                  "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                   isActive
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-gradient-to-r from-[#e94b7f] to-[#e94b7f]/90 text-white shadow-md"
+                    : "text-gray-700 hover:bg-gradient-to-r hover:from-[#e94b7f]/10 hover:to-[#e94b7f]/5 hover:text-[#e94b7f]",
+                  isCollapsed && "justify-center px-2"
                 )}
+                title={isCollapsed ? item.name : undefined}
               >
                 <item.icon
                   className={cn(
-                    "mr-3 h-5 w-5 flex-shrink-0",
-                    isActive ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
+                    "h-5 w-5 flex-shrink-0 transition-colors",
+                    isActive ? "text-white" : "text-gray-500 group-hover:text-[#e94b7f]",
+                    !isCollapsed && "mr-3"
                   )}
                 />
-                {item.name}
+                {!isCollapsed && (
+                  <span className="truncate">{item.name}</span>
+                )}
               </Link>
             );
           })}
         </nav>
+
+        {/* Footer */}
+        {!isCollapsed && (
+          <div className="border-t border-gray-200/50 p-4">
+            <div className="text-xs text-gray-500 text-center">
+              <p className="font-playfair">Class Clown Tutoring</p>
+              <p className="mt-1">Excellence in Education</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

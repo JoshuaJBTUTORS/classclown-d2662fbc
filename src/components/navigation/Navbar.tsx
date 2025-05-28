@@ -62,17 +62,20 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
   return (
     <header className="border-b border-gray-200 bg-background">
       <div className="flex h-16 items-center px-4 md:px-6">
-        <Button variant="ghost" size="icon" className="mr-2" onClick={toggleSidebar}>
+        <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={toggleSidebar}>
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle sidebar</span>
         </Button>
-        <div className="flex items-center gap-2 md:hidden">
+        
+        {/* Logo - visible on all screen sizes */}
+        <div className="flex items-center gap-2">
           <img 
             src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
             alt="Class Clown Logo" 
-            className="h-24 w-auto" 
+            className="h-8 w-auto lg:hidden" 
           />
         </div>
+        
         <div className="ml-auto flex items-center gap-4">
           <form className="hidden md:flex relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
