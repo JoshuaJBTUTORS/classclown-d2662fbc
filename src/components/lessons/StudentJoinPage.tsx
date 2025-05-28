@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -56,6 +55,9 @@ const StudentJoinPage: React.FC = () => {
       }
 
       console.log('Lesson found:', lessonData);
+      console.log('Lesson Space Space ID:', lessonData.lesson_space_space_id);
+      console.log('Lesson Space Room ID:', lessonData.lesson_space_room_id);
+      console.log('Video Conference Link:', lessonData.video_conference_link);
 
       // Fetch lesson students separately
       const { data: lessonStudents, error: studentsError } = await supabase
@@ -213,8 +215,13 @@ const StudentJoinPage: React.FC = () => {
   };
 
   const getStudentInviteUrl = () => {
-    if (!lesson?.lesson_space_space_id) return null;
-    return `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
+    if (!lesson?.lesson_space_space_id) {
+      console.warn('No lesson_space_space_id found in lesson data');
+      return null;
+    }
+    const url = `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
+    console.log('Generated student invite URL:', url);
+    return url;
   };
 
   const handleStartConsentFlow = () => {
@@ -228,6 +235,7 @@ const StudentJoinPage: React.FC = () => {
 
   const handleJoinLesson = () => {
     const inviteUrl = getStudentInviteUrl();
+    console.log('Attempting to join lesson with URL:', inviteUrl);
     if (inviteUrl) {
       // Open the simple lesson space invite URL
       window.open(inviteUrl, '_blank');
@@ -317,6 +325,12 @@ const StudentJoinPage: React.FC = () => {
                   <strong>Welcome, {studentData.first_name}!</strong>
                   <br />
                   Please review and accept the camera/microphone requirements before joining.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded border">
+                <p className="text-xs text-gray-600 font-mono">
+                  Debug: Student URL will be: {studentInviteUrl}
                 </p>
               </div>
 
