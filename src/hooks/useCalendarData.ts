@@ -29,42 +29,71 @@ export const useCalendarData = ({
   // Memoize lesson IDs to prevent infinite re-renders
   const lessonIds = useMemo(() => {
     return rawLessons.map(lesson => lesson.id);
-  }, [rawLessons]);
+  }, [rawLessons.length, rawLessons.map(l => l.id).join(',')]);
 
   const { completionData } = useLessonCompletion(lessonIds);
+
+  // Helper function to check if a lesson has valid video conference links
+  const hasValidVideoConference = (lesson: any, userRole: AppRole | null) => {
+    // Check for direct video conference link
+    if (lesson.video_conference_link && lesson.video_conference_link.trim() !== '') {
+      return true;
+    }
+
+    // Check for lesson space room URL
+    if (lesson.lesson_space_room_url && lesson.lesson_space_room_url.trim() !== '') {
+      return true;
+    }
+
+    // Check for lesson space room ID (can generate URL)
+    if (lesson.lesson_space_room_id && lesson.lesson_space_room_id.trim() !== '') {
+      return true;
+    }
+
+    // Check for student-specific lesson space URLs
+    if (lesson.lesson_students && lesson.lesson_students.length > 0) {
+      const hasStudentUrls = lesson.lesson_students.some(ls => 
+        ls.lesson_space_url && ls.lesson_space_url.trim() !== ''
+      );
+      if (hasStudentUrls) {
+        return true;
+      }
+    }
+
+    return false;
+  };
 
   // Memoize events to prevent unnecessary recalculations
   const events = useMemo(() => {
     if (rawLessons.length === 0) return [];
 
     const calendarEvents = rawLessons.map(lesson => {
-      // Only add video conference properties if there are actual working links
+      // Check if this lesson actually has video conference capabilities
+      const hasVideoConference = hasValidVideoConference(lesson, userRole);
+      
+      // Only set video conference properties if there are actual working links
       let videoConferenceLink = null;
       let studentUrls = [];
-      let hasValidVideoConference = false;
 
-      if (userRole === 'student' && lesson.lesson_space_room_id) {
-        videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
-        hasValidVideoConference = true;
-      } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
-        const studentLessonData = lesson.lesson_students[0];
-        if (studentLessonData.lesson_space_url) {
-          videoConferenceLink = studentLessonData.lesson_space_url;
-          hasValidVideoConference = true;
-        }
-      } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
-        studentUrls = lesson.lesson_students
-          .filter(ls => ls.lesson_space_url)
-          .map(ls => ({
-            url: ls.lesson_space_url,
-            studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-          }));
-        
-        if (lesson.video_conference_link || lesson.lesson_space_room_url) {
-          videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
-          hasValidVideoConference = true;
-        } else if (studentUrls.length > 0) {
-          hasValidVideoConference = true;
+      if (hasVideoConference) {
+        if (userRole === 'student' && lesson.lesson_space_room_id) {
+          videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
+        } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
+          const studentLessonData = lesson.lesson_students[0];
+          if (studentLessonData.lesson_space_url) {
+            videoConferenceLink = studentLessonData.lesson_space_url;
+          }
+        } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
+          studentUrls = lesson.lesson_students
+            .filter(ls => ls.lesson_space_url && ls.lesson_space_url.trim() !== '')
+            .map(ls => ({
+              url: ls.lesson_space_url,
+              studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+            }));
+          
+          if (lesson.video_conference_link || lesson.lesson_space_room_url) {
+            videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
+          }
         }
       }
 
@@ -73,7 +102,7 @@ export const useCalendarData = ({
       const isCompleted = completionInfo?.isCompleted || false;
 
       let className = 'calendar-event';
-      if (hasValidVideoConference) {
+      if (hasVideoConference && videoConferenceLink) {
         className += ' video-conference-event';
       }
       if (isCompleted) {
@@ -92,12 +121,13 @@ export const useCalendarData = ({
           recurrenceEndDate: lesson.recurrence_end_date,
           description: lesson.description,
           subject: lesson.subject,
-          videoConferenceLink: hasValidVideoConference ? videoConferenceLink : null,
-          videoConferenceProvider: hasValidVideoConference ? lesson.video_conference_provider : null,
+          // Only include video conference properties if there are actual links
+          videoConferenceLink: hasVideoConference ? videoConferenceLink : null,
+          videoConferenceProvider: hasVideoConference ? lesson.video_conference_provider : null,
           lessonSpaceRoomId: lesson.lesson_space_room_id,
           lessonSpaceRoomUrl: lesson.lesson_space_room_url,
           lessonSpaceSpaceId: lesson.lesson_space_room_id,
-          studentUrls: studentUrls,
+          studentUrls: hasVideoConference ? studentUrls : [],
           userRole: userRole,
           tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
             id: lesson.tutor.id,
@@ -268,32 +298,31 @@ export const useCalendarData = ({
 
     const durationMs = endDate.getTime() - startDate.getTime();
     
+    // Check if this lesson has valid video conference capabilities
+    const hasVideoConference = hasValidVideoConference(lesson, userRole);
+    
     let videoConferenceLink = null;
     let studentUrls = [];
-    let hasValidVideoConference = false;
 
-    if (userRole === 'student' && lesson.lesson_space_room_id) {
-      videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
-      hasValidVideoConference = true;
-    } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
-      const studentLessonData = lesson.lesson_students[0];
-      if (studentLessonData.lesson_space_url) {
-        videoConferenceLink = studentLessonData.lesson_space_url;
-        hasValidVideoConference = true;
-      }
-    } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
-      studentUrls = lesson.lesson_students
-        .filter(ls => ls.lesson_space_url)
-        .map(ls => ({
-          url: ls.lesson_space_url,
-          studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-        }));
-      
-      if (lesson.video_conference_link || lesson.lesson_space_room_url) {
-        videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
-        hasValidVideoConference = true;
-      } else if (studentUrls.length > 0) {
-        hasValidVideoConference = true;
+    if (hasVideoConference) {
+      if (userRole === 'student' && lesson.lesson_space_room_id) {
+        videoConferenceLink = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
+      } else if (userRole === 'student' && lesson.lesson_students && lesson.lesson_students.length > 0) {
+        const studentLessonData = lesson.lesson_students[0];
+        if (studentLessonData.lesson_space_url) {
+          videoConferenceLink = studentLessonData.lesson_space_url;
+        }
+      } else if ((userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && lesson.lesson_students) {
+        studentUrls = lesson.lesson_students
+          .filter(ls => ls.lesson_space_url && ls.lesson_space_url.trim() !== '')
+          .map(ls => ({
+            url: ls.lesson_space_url,
+            studentName: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+          }));
+        
+        if (lesson.video_conference_link || lesson.lesson_space_room_url) {
+          videoConferenceLink = lesson.video_conference_link || lesson.lesson_space_room_url;
+        }
       }
     }
     
@@ -310,7 +339,7 @@ export const useCalendarData = ({
         const isCompleted = completionInfo?.isCompleted || false;
         
         let className = 'recurring-instance';
-        if (hasValidVideoConference) {
+        if (hasVideoConference && videoConferenceLink) {
           className += ' video-conference-event';
         }
         if (isCompleted) {
@@ -328,12 +357,13 @@ export const useCalendarData = ({
             originalLessonId: lesson.id,
             description: lesson.description,
             subject: lesson.subject,
-            videoConferenceLink: hasValidVideoConference ? videoConferenceLink : null,
-            videoConferenceProvider: hasValidVideoConference ? lesson.video_conference_provider : null,
+            // Only include video conference properties if there are actual links
+            videoConferenceLink: hasVideoConference ? videoConferenceLink : null,
+            videoConferenceProvider: hasVideoConference ? lesson.video_conference_provider : null,
             lessonSpaceRoomId: lesson.lesson_space_room_id,
             lessonSpaceRoomUrl: lesson.lesson_space_room_url,
             lessonSpaceSpaceId: lesson.lesson_space_room_id,
-            studentUrls: studentUrls,
+            studentUrls: hasVideoConference ? studentUrls : [],
             userRole: userRole,
             tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
               id: lesson.tutor.id,
