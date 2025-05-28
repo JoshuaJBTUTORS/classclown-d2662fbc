@@ -56,48 +56,71 @@ const Students = () => {
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching students...');
+      console.log('Starting student fetch...');
       
-      // Use LEFT JOIN to include students with null parent_id
-      const { data, error } = await supabase
+      // First get all students
+      const { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select(`
-          *,
-          parents (
-            first_name,
-            last_name,
-            email,
-            phone
-          )
-        `)
+        .select('*')
         .order('last_name', { ascending: true });
 
-      if (error) {
-        console.error('Supabase query error:', error);
-        throw error;
+      if (studentsError) {
+        console.error('Error fetching students:', studentsError);
+        throw studentsError;
       }
-      
-      console.log('Raw data from Supabase:', data);
-      
-      if (!data || data.length === 0) {
+
+      console.log('Students data received:', studentsData);
+
+      if (!studentsData || studentsData.length === 0) {
         console.log('No students found in database');
         setStudents([]);
         setFilteredStudents([]);
+        setIsLoading(false);
         return;
       }
-      
+
+      // Get all unique parent IDs (excluding null values)
+      const parentIds = [...new Set(studentsData
+        .map(student => student.parent_id)
+        .filter(Boolean))] as string[];
+
+      console.log('Parent IDs to fetch:', parentIds);
+
+      // Fetch parent data if there are any parent IDs
+      let parentsData: any[] = [];
+      if (parentIds.length > 0) {
+        const { data: fetchedParents, error: parentsError } = await supabase
+          .from('parents')
+          .select('id, first_name, last_name, email, phone')
+          .in('id', parentIds);
+
+        if (parentsError) {
+          console.error('Error fetching parents:', parentsError);
+        } else {
+          parentsData = fetchedParents || [];
+        }
+      }
+
+      console.log('Parents data received:', parentsData);
+
+      // Create a map of parent ID to parent data
+      const parentsMap = new Map();
+      parentsData.forEach(parent => {
+        parentsMap.set(parent.id, parent);
+      });
+
       // Transform the data to match the Student interface
-      const formattedStudents: Student[] = data
+      const formattedStudents: Student[] = studentsData
         .filter(student => {
-          // Filter out records with missing required fields
-          if (!student.first_name && !student.last_name) {
+          // Only filter out completely empty records
+          if (!student.first_name?.trim() && !student.last_name?.trim()) {
             console.warn('Skipping student with missing name:', student);
             return false;
           }
           return true;
         })
         .map((student: any) => {
-          console.log('Processing student:', student);
+          const parentData = student.parent_id ? parentsMap.get(student.parent_id) : null;
           
           const formattedStudent: Student = {
             id: student.id,
@@ -105,38 +128,39 @@ const Students = () => {
             email: student.email || '',
             phone: student.phone || '',
             subjects: student.subjects || '',
-            status: (student.status as 'active' | 'inactive') || 'active',
+            status: student.status || 'active',
             joinedDate: student.created_at 
               ? new Date(student.created_at).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric'
                 }) 
-              : undefined,
+              : 'Not available',
             first_name: student.first_name || '',
             last_name: student.last_name || '',
-            parent_id: student.parent_id || null, // Explicitly handle null
+            parent_id: student.parent_id || null,
             user_id: student.user_id,
             student_id: student.student_id,
             created_at: student.created_at,
             grade: student.grade,
-            // Add parent information for display - handle both null parent_id and missing parent data
-            parentName: student.parents && student.parent_id
-              ? `${student.parents.first_name || ''} ${student.parents.last_name || ''}`.trim()
+            // Add parent information for display
+            parentName: parentData 
+              ? `${parentData.first_name || ''} ${parentData.last_name || ''}`.trim()
               : 'No Parent Assigned',
-            parentEmail: student.parents?.email || '',
-            parentPhone: student.parents?.phone || ''
+            parentEmail: parentData?.email || '',
+            parentPhone: parentData?.phone || ''
           };
           
-          console.log('Formatted student:', formattedStudent);
           return formattedStudent;
         });
       
-      console.log('Total formatted students:', formattedStudents.length);
+      console.log('Final formatted students:', formattedStudents);
+      console.log('Total students to display:', formattedStudents.length);
+      
       setStudents(formattedStudents);
       setFilteredStudents(formattedStudents);
     } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('Error in fetchStudents:', error);
       toast.error('Failed to load students. Please try again.');
     } finally {
       setIsLoading(false);
