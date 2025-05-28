@@ -288,6 +288,7 @@ export type Database = {
           grade: string | null
           homework_id: string
           id: string
+          percentage_score: number | null
           status: string | null
           student_id: number
           submission_text: string | null
@@ -300,6 +301,7 @@ export type Database = {
           grade?: string | null
           homework_id: string
           id?: string
+          percentage_score?: number | null
           status?: string | null
           student_id: number
           submission_text?: string | null
@@ -312,6 +314,7 @@ export type Database = {
           grade?: string | null
           homework_id?: string
           id?: string
+          percentage_score?: number | null
           status?: string | null
           student_id?: number
           submission_text?: string | null

@@ -65,6 +65,7 @@ interface Submission {
   attachment_url: string | null;
   status: string;
   grade: string | null;
+  percentage_score: number | null;
   feedback: string | null;
   submitted_at: string;
   student: {
@@ -101,6 +102,7 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [grade, setGrade] = useState('');
+  const [percentageScore, setPercentageScore] = useState<number | ''>('');
   const [isGrading, setIsGrading] = useState(false);
 
   const isViewingSubmission = Boolean(submissionId);
@@ -132,7 +134,8 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
             id,
             student:students(id, first_name, last_name),
             status,
-            submitted_at
+            submitted_at,
+            percentage_score
           )
         `)
         .eq('id', homeworkId)
@@ -177,6 +180,7 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
       setSubmission(data);
       setFeedback(data.feedback || '');
       setGrade(data.grade || '');
+      setPercentageScore(data.percentage_score || '');
     } catch (error) {
       console.error('Error fetching submission details:', error);
       toast.error('Failed to load submission details');
@@ -237,12 +241,20 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
   const submitGrade = async () => {
     if (!submission) return;
 
+    // Validate percentage score
+    const score = Number(percentageScore);
+    if (percentageScore !== '' && (isNaN(score) || score < 0 || score > 100)) {
+      toast.error('Percentage score must be between 0 and 100');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('homework_submissions')
         .update({
           feedback,
-          grade,
+          grade: grade || null,
+          percentage_score: percentageScore !== '' ? score : null,
           status: 'graded'
         })
         .eq('id', submission.id);
@@ -257,6 +269,7 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
         ...submission,
         feedback,
         grade,
+        percentage_score: percentageScore !== '' ? score : null,
         status: 'graded'
       });
 
@@ -389,10 +402,19 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
               {submission.status === 'graded' ? (
                 // Show grading info
                 <div className="space-y-3">
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Grade</h4>
-                    <p className="text-sm font-medium">{submission.grade}</p>
-                  </div>
+                  {submission.percentage_score !== null && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Score</h4>
+                      <p className="text-lg font-semibold text-blue-600">{submission.percentage_score}%</p>
+                    </div>
+                  )}
+                  
+                  {submission.grade && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Grade</h4>
+                      <p className="text-sm font-medium">{submission.grade}</p>
+                    </div>
+                  )}
                   
                   {submission.feedback && (
                     <div>
@@ -410,6 +432,7 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
                       setIsGrading(true);
                       setGrade(submission.grade || '');
                       setFeedback(submission.feedback || '');
+                      setPercentageScore(submission.percentage_score || '');
                     }}
                   >
                     <Edit className="mr-2 h-4 w-4" />
@@ -420,12 +443,26 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
                 // Grading form
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="grade">Grade</Label>
+                    <Label htmlFor="percentage">Score (0-100%)</Label>
+                    <Input
+                      id="percentage"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={percentageScore}
+                      onChange={(e) => setPercentageScore(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="Enter score percentage"
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="grade">Grade (Optional)</Label>
                     <Input
                       id="grade"
                       value={grade}
                       onChange={(e) => setGrade(e.target.value)}
-                      placeholder="A, B, 90%, etc."
+                      placeholder="A+, B, 90%, etc."
                       className="mt-1"
                     />
                   </div>
@@ -581,6 +618,11 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {format(parseISO(submission.submitted_at), 'MMM d, yyyy')}
+                            {submission.percentage_score !== null && (
+                              <span className="ml-2 text-blue-600 font-medium">
+                                {submission.percentage_score}%
+                              </span>
+                            )}
                           </div>
                         </div>
                         <Badge variant={submission.status === 'graded' ? 'default' : 'outline'} className="text-xs">
