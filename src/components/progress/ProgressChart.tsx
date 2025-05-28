@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
+import { BookOpen } from 'lucide-react';
 
 interface ProgressChartProps {
   filters: {
