@@ -17,11 +17,11 @@ const Homework: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const { userRole, user, profile } = useAuth();
+  const { userRole, user, profile, parentProfile } = useAuth();
 
   useEffect(() => {
     const fetchStudentId = async () => {
-      if (!user || userRole !== 'student') {
+      if (!user || (!['student', 'parent'].includes(userRole || ''))) {
         setIsLoading(false);
         return;
       }
@@ -30,46 +30,80 @@ const Homework: React.FC = () => {
       setError(null);
       
       try {
-        console.log("Fetching student ID for user:", user.email);
+        console.log("Fetching student ID for user:", user.email, "Role:", userRole);
         
-        // Try to find student by email first
-        let { data: studentData, error: studentError } = await supabase
-          .from('students')
-          .select('id')
-          .eq('email', user.email)
-          .maybeSingle();
-
-        if (studentError) {
-          console.error("Error fetching student by email:", studentError);
-          throw studentError;
-        }
-
-        // If not found by email, try by name if profile exists
-        if (!studentData && profile?.first_name && profile?.last_name) {
-          console.log("Trying to find student by name:", profile.first_name, profile.last_name);
-          const { data: nameData, error: nameError } = await supabase
+        if (userRole === 'student') {
+          // For students, find their student record
+          let { data: studentData, error: studentError } = await supabase
             .from('students')
             .select('id')
-            .eq('first_name', profile.first_name)
-            .eq('last_name', profile.last_name)
+            .eq('email', user.email)
             .maybeSingle();
 
-          if (nameError) {
-            console.error("Error fetching student by name:", nameError);
-            throw nameError;
+          if (studentError) {
+            console.error("Error fetching student by email:", studentError);
+            throw studentError;
           }
 
-          studentData = nameData;
-        }
+          // If not found by email, try by name if profile exists
+          if (!studentData && profile?.first_name && profile?.last_name) {
+            console.log("Trying to find student by name:", profile.first_name, profile.last_name);
+            const { data: nameData, error: nameError } = await supabase
+              .from('students')
+              .select('id')
+              .eq('first_name', profile.first_name)
+              .eq('last_name', profile.last_name)
+              .maybeSingle();
 
-        if (studentData) {
-          console.log("Found student ID:", studentData.id);
-          setStudentId(studentData.id);
-        } else {
-          const errorMsg = "No student record found for your account. Please contact your administrator.";
-          console.error(errorMsg);
-          setError(errorMsg);
-          toast.error(errorMsg);
+            if (nameError) {
+              console.error("Error fetching student by name:", nameError);
+              throw nameError;
+            }
+
+            studentData = nameData;
+          }
+
+          if (studentData) {
+            console.log("Found student ID:", studentData.id);
+            setStudentId(studentData.id);
+          } else {
+            const errorMsg = "No student record found for your account. Please contact your administrator.";
+            console.error(errorMsg);
+            setError(errorMsg);
+            toast.error(errorMsg);
+          }
+        } else if (userRole === 'parent') {
+          // For parents, find their first associated student
+          if (!parentProfile?.id) {
+            const errorMsg = "Parent profile not found. Please contact your administrator.";
+            console.error(errorMsg);
+            setError(errorMsg);
+            toast.error(errorMsg);
+            return;
+          }
+
+          console.log("Looking for students associated with parent:", parentProfile.id);
+          const { data: studentData, error: studentError } = await supabase
+            .from('students')
+            .select('id')
+            .eq('parent_id', parentProfile.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (studentError) {
+            console.error("Error fetching student for parent:", studentError);
+            throw studentError;
+          }
+
+          if (studentData) {
+            console.log("Found student ID for parent:", studentData.id);
+            setStudentId(studentData.id);
+          } else {
+            const errorMsg = "No students found associated with your parent account. Please contact your administrator.";
+            console.error(errorMsg);
+            setError(errorMsg);
+            toast.error(errorMsg);
+          }
         }
       } catch (error) {
         console.error('Error fetching student information:', error);
@@ -82,7 +116,7 @@ const Homework: React.FC = () => {
     };
 
     fetchStudentId();
-  }, [user, userRole, profile]);
+  }, [user, userRole, profile, parentProfile]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -96,9 +130,11 @@ const Homework: React.FC = () => {
         <main className="flex-1 p-4 md:p-6">
           <PageTitle 
             title="Homework" 
-            subtitle={userRole === 'tutor' 
+            subtitle={userRole === 'tutor' || userRole === 'admin' || userRole === 'owner'
               ? "Manage homework assignments and submissions" 
-              : "View and submit your homework assignments"}
+              : userRole === 'parent'
+                ? "View your child's homework assignments"
+                : "View and submit your homework assignments"}
           />
 
           {isLoading ? (
@@ -113,7 +149,7 @@ const Homework: React.FC = () => {
             </Alert>
           ) : userRole === 'tutor' || userRole === 'admin' || userRole === 'owner' ? (
             <HomeworkManager />
-          ) : userRole === 'student' && studentId ? (
+          ) : (userRole === 'student' || userRole === 'parent') && studentId ? (
             <StudentHomeworkView studentId={studentId} />
           ) : (
             <Alert variant="destructive">

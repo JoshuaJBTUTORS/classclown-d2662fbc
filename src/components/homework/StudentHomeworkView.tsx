@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parseISO, isPast } from 'date-fns';
@@ -36,6 +35,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentHomeworkProps {
   studentId: number;
@@ -67,6 +67,7 @@ interface HomeworkItem {
 }
 
 const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
+  const { userRole } = useAuth();
   const [homeworks, setHomeworks] = useState<HomeworkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedHomework, setSelectedHomework] = useState<HomeworkItem | null>(null);
@@ -77,6 +78,9 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Check if user is a parent (read-only access)
+  const isParent = userRole === 'parent';
 
   useEffect(() => {
     if (studentId) {
@@ -197,15 +201,18 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
     
     if (homework.submission) {
       console.log("Homework has submission, opening view dialog");
-      // Pre-populate submission text for editing
+      // Pre-populate submission text for editing (but parents can't edit)
       setSubmissionText(homework.submission.submission_text || '');
       setIsViewSubmissionOpen(true);
-    } else {
+    } else if (!isParent) {
       console.log("Homework has no submission, opening submit dialog");
-      // Reset form for new submission
+      // Reset form for new submission (only for students)
       setSubmissionText('');
       setSelectedFile(null);
       setIsSubmitDialogOpen(true);
+    } else {
+      // For parents, just show view dialog even without submission
+      setIsViewSubmissionOpen(true);
     }
   };
 
@@ -333,7 +340,9 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold">Your Homework</h2>
+        <h2 className="text-2xl font-bold">
+          {isParent ? "Your Child's Homework" : "Your Homework"}
+        </h2>
         <Button variant="outline" onClick={() => {
           console.log("Refreshing homework assignments");
           fetchHomework();
@@ -368,7 +377,9 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
             <Info className="h-4 w-4" />
             <AlertTitle>Information</AlertTitle>
             <AlertDescription>
-              Click on any homework card to submit your work or view your existing submission.
+              {isParent 
+                ? "Click on any homework card to view your child's submission or assignment details."
+                : "Click on any homework card to submit your work or view your existing submission."}
             </AlertDescription>
           </Alert>
           
@@ -420,11 +431,15 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                   <CardFooter className="flex justify-between pt-0">
                     {hasSubmission ? (
                       <div className="w-full text-center">
-                        <p className="text-sm text-muted-foreground">Click to view your submission</p>
+                        <p className="text-sm text-muted-foreground">
+                          {isParent ? "Click to view submission" : "Click to view your submission"}
+                        </p>
                       </div>
                     ) : (
                       <div className="w-full text-center">
-                        <p className="text-sm text-muted-foreground">Click to submit homework</p>
+                        <p className="text-sm text-muted-foreground">
+                          {isParent ? "Click to view assignment" : "Click to submit homework"}
+                        </p>
                       </div>
                     )}
                   </CardFooter>
@@ -435,13 +450,135 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         </>
       )}
 
-      {/* Submit Homework Dialog */}
-      <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+      {/* Submit Homework Dialog - Only for students */}
+      {!isParent && (
+        <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+          <DialogContent className="sm:max-w-[550px]">
+            <DialogHeader>
+              <DialogTitle>Submit Homework</DialogTitle>
+              <DialogDescription>
+                Complete your homework assignment and submit it for review.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedHomework && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">{selectedHomework.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedHomework.lesson.title} - {selectedHomework.lesson.tutor.first_name} {selectedHomework.lesson.tutor.last_name}
+                  </p>
+                </div>
+                
+                {selectedHomework.description && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Instructions</h4>
+                    <div className="bg-muted/50 p-3 rounded-md text-sm whitespace-pre-wrap">
+                      {selectedHomework.description}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedHomework.attachment_url && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Reference Material</h4>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(selectedHomework.attachment_url!, '_blank');
+                      }}
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      View Assignment Material
+                    </Button>
+                  </div>
+                )}
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="submission_text" className="block text-sm font-medium mb-1">Your Answer</label>
+                    <Textarea 
+                      id="submission_text" 
+                      placeholder="Type your homework answer here..."
+                      className="min-h-[150px]"
+                      value={submissionText}
+                      onChange={(e) => setSubmissionText(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="submission_file" className="block text-sm font-medium mb-1">
+                      Attach File (Optional)
+                    </label>
+                    <div className="grid w-full items-center gap-1.5">
+                      <Input
+                        id="submission_file"
+                        type="file"
+                        onChange={handleFileChange}
+                        className="cursor-pointer"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Upload your completed homework (PDF, Word document, etc.)
+                      </p>
+                      {selectedFile && (
+                        <p className="text-xs text-green-600">
+                          Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)}MB)
+                        </p>
+                      )}
+                      {fileUploadError && (
+                        <p className="text-xs text-red-500">{fileUploadError}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsSubmitDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmitHomework}
+                disabled={isSubmitting || (!submissionText && !selectedFile)}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="animate-spin mr-2">●</span>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Submit Homework
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* View Submission Dialog - For both students and parents */}
+      <Dialog open={isViewSubmissionOpen} onOpenChange={setIsViewSubmissionOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
-            <DialogTitle>Submit Homework</DialogTitle>
+            <DialogTitle>
+              {isParent ? "Assignment & Submission" : "Your Submission"}
+            </DialogTitle>
             <DialogDescription>
-              Complete your homework assignment and submit it for review.
+              {isParent 
+                ? "View the homework assignment and your child's submission details."
+                : "Review your homework submission and teacher feedback."}
             </DialogDescription>
           </DialogHeader>
           
@@ -449,23 +586,36 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold mb-1">{selectedHomework.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedHomework.lesson.title} - {selectedHomework.lesson.tutor.first_name} {selectedHomework.lesson.tutor.last_name}
-                </p>
+                <div className="flex items-center gap-2">
+                  {selectedHomework.submission && (
+                    <Badge variant={selectedHomework.submission.status === 'graded' ? 'default' : 'outline'}>
+                      {selectedHomework.submission.status === 'graded' ? 'Graded' : 'Submitted'}
+                    </Badge>
+                  )}
+                  {selectedHomework.submission ? (
+                    <span className="text-sm text-muted-foreground">
+                      Submitted on {format(parseISO(selectedHomework.submission.submitted_at), 'MMM d, yyyy')}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Not submitted yet</span>
+                  )}
+                </div>
               </div>
-              
+
+              {/* Show assignment description */}
               {selectedHomework.description && (
                 <div>
-                  <h4 className="text-sm font-medium mb-1">Instructions</h4>
+                  <h4 className="text-sm font-medium mb-1">Assignment Instructions</h4>
                   <div className="bg-muted/50 p-3 rounded-md text-sm whitespace-pre-wrap">
                     {selectedHomework.description}
                   </div>
                 </div>
               )}
-              
+
+              {/* Show assignment attachment */}
               {selectedHomework.attachment_url && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Reference Material</h4>
+                  <h4 className="text-sm font-medium mb-2">Assignment Material</h4>
                   <Button 
                     variant="outline"
                     size="sm"
@@ -480,147 +630,66 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                   </Button>
                 </div>
               )}
-              
-              <Separator />
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="submission_text" className="block text-sm font-medium mb-1">Your Answer</label>
-                  <Textarea 
-                    id="submission_text" 
-                    placeholder="Type your homework answer here..."
-                    className="min-h-[150px]"
-                    value={submissionText}
-                    onChange={(e) => setSubmissionText(e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="submission_file" className="block text-sm font-medium mb-1">
-                    Attach File (Optional)
-                  </label>
-                  <div className="grid w-full items-center gap-1.5">
-                    <Input
-                      id="submission_file"
-                      type="file"
-                      onChange={handleFileChange}
-                      className="cursor-pointer"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Upload your completed homework (PDF, Word document, etc.)
-                    </p>
-                    {selectedFile && (
-                      <p className="text-xs text-green-600">
-                        Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)}MB)
-                      </p>
-                    )}
-                    {fileUploadError && (
-                      <p className="text-xs text-red-500">{fileUploadError}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsSubmitDialogOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitHomework}
-              disabled={isSubmitting || (!submissionText && !selectedFile)}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="animate-spin mr-2">●</span>
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Submit Homework
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* View Submission Dialog */}
-      <Dialog open={isViewSubmissionOpen} onOpenChange={setIsViewSubmissionOpen}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Your Submission</DialogTitle>
-            <DialogDescription>
-              Review your homework submission and teacher feedback.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedHomework?.submission && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-1">{selectedHomework.title}</h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant={selectedHomework.submission.status === 'graded' ? 'default' : 'outline'}>
-                    {selectedHomework.submission.status === 'graded' ? 'Graded' : 'Submitted'}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    Submitted on {format(parseISO(selectedHomework.submission.submitted_at), 'MMM d, yyyy')}
-                  </span>
-                </div>
-              </div>
-              
-              {selectedHomework.submission.submission_text && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Your Answer</h4>
-                  <div className="bg-muted/50 p-3 rounded-md text-sm whitespace-pre-wrap">
-                    {selectedHomework.submission.submission_text}
-                  </div>
-                </div>
-              )}
-              
-              {selectedHomework.submission.attachment_url && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Your Attachment</h4>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(selectedHomework.submission.attachment_url!, '_blank');
-                    }}
-                    className="gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    View Your Submission
-                  </Button>
-                </div>
-              )}
-              
-              {selectedHomework.submission.status === 'graded' && (
+
+              {selectedHomework.submission && (
                 <>
                   <Separator />
                   
-                  <div>
-                    <h4 className="text-sm font-medium flex items-center gap-1 mb-1">
-                      <Check className="h-4 w-4 text-green-500" />
-                      Grade
-                    </h4>
-                    <p className="text-lg font-medium">{selectedHomework.submission.grade}</p>
-                  </div>
-                  
-                  {selectedHomework.submission.feedback && (
+                  {/* Show submission text */}
+                  {selectedHomework.submission.submission_text && (
                     <div>
-                      <h4 className="text-sm font-medium mb-1">Teacher Feedback</h4>
+                      <h4 className="text-sm font-medium mb-1">
+                        {isParent ? "Student's Answer" : "Your Answer"}
+                      </h4>
                       <div className="bg-muted/50 p-3 rounded-md text-sm whitespace-pre-wrap">
-                        {selectedHomework.submission.feedback}
+                        {selectedHomework.submission.submission_text}
                       </div>
                     </div>
+                  )}
+                  
+                  {/* Show submission attachment */}
+                  {selectedHomework.submission.attachment_url && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">
+                        {isParent ? "Student's Attachment" : "Your Attachment"}
+                      </h4>
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(selectedHomework.submission.attachment_url!, '_blank');
+                        }}
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        {isParent ? "View Student's Submission" : "View Your Submission"}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Show grading information */}
+                  {selectedHomework.submission.status === 'graded' && (
+                    <>
+                      <Separator />
+                      
+                      <div>
+                        <h4 className="text-sm font-medium flex items-center gap-1 mb-1">
+                          <Check className="h-4 w-4 text-green-500" />
+                          Grade
+                        </h4>
+                        <p className="text-lg font-medium">{selectedHomework.submission.grade}</p>
+                      </div>
+                      
+                      {selectedHomework.submission.feedback && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Teacher Feedback</h4>
+                          <div className="bg-muted/50 p-3 rounded-md text-sm whitespace-pre-wrap">
+                            {selectedHomework.submission.feedback}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -634,19 +703,22 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
             >
               Close
             </Button>
-            <Button
-              variant="default"
-              onClick={() => {
-                setIsViewSubmissionOpen(false);
-                if (selectedHomework && selectedHomework.submission) {
-                  setSubmissionText(selectedHomework.submission.submission_text || '');
-                  setSelectedFile(null);
-                }
-                setIsSubmitDialogOpen(true);
-              }}
-            >
-              Update Submission
-            </Button>
+            {/* Only show update submission button for students with existing submissions */}
+            {!isParent && selectedHomework?.submission && (
+              <Button
+                variant="default"
+                onClick={() => {
+                  setIsViewSubmissionOpen(false);
+                  if (selectedHomework && selectedHomework.submission) {
+                    setSubmissionText(selectedHomework.submission.submission_text || '');
+                    setSelectedFile(null);
+                  }
+                  setIsSubmitDialogOpen(true);
+                }}
+              >
+                Update Submission
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
