@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -41,12 +42,12 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
         .from('lesson_attendance')
         .select(`
           attendance_status,
-          lesson:lessons(
+          lesson:lessons!inner(
             start_time,
             subject,
             title
           ),
-          student:students(
+          student:students!inner(
             id,
             first_name,
             last_name
@@ -64,6 +65,11 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
 
         if (studentData) {
           query = query.eq('student_id', studentData.id);
+        } else {
+          console.log('No student record found for user:', user.email);
+          setData([]);
+          setLoading(false);
+          return;
         }
       }
 
@@ -76,12 +82,29 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
 
       const { data: attendance, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Attendance query error:', error);
+        throw error;
+      }
+
+      console.log('Raw attendance data:', attendance);
+
+      if (!attendance || attendance.length === 0) {
+        console.log('No attendance data found');
+        setData([]);
+        setLoading(false);
+        return;
+      }
 
       // Group by week and calculate attendance percentages
       const weeklyData = new Map<string, { attended: number; total: number }>();
 
       attendance?.forEach(record => {
+        if (!record.lesson || !record.lesson.start_time) {
+          console.log('Invalid lesson data:', record);
+          return;
+        }
+
         const lessonDate = parseISO(record.lesson.start_time);
         
         // Apply date range filter
@@ -92,7 +115,7 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
         if (filters.selectedSubjects.length > 0 && 
             !filters.selectedSubjects.includes(record.lesson.subject || 'General')) return;
 
-        const weekStart = startOfWeek(lessonDate);
+        const weekStart = startOfWeek(lessonDate, { weekStartsOn: 1 }); // Start week on Monday
         const weekKey = format(weekStart, 'MMM dd');
 
         if (!weeklyData.has(weekKey)) {
@@ -102,10 +125,13 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
         const weekData = weeklyData.get(weekKey)!;
         weekData.total++;
         
-        if (record.attendance_status === 'present') {
+        // Consider 'present' and 'attended' as attended (handle different status values)
+        if (record.attendance_status === 'present' || record.attendance_status === 'attended') {
           weekData.attended++;
         }
       });
+
+      console.log('Weekly data map:', weeklyData);
 
       const chartData: AttendanceData[] = Array.from(weeklyData.entries()).map(([week, data]) => ({
         week,
@@ -114,6 +140,7 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
         percentage: data.total > 0 ? Math.round((data.attended / data.total) * 100) : 0
       }));
 
+      console.log('Final chart data:', chartData);
       setData(chartData);
     } catch (error) {
       console.error('Error fetching attendance data:', error);
@@ -127,9 +154,9 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-green-500">
+        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-emerald-500">
           <p className="font-semibold text-gray-900 mb-2">Week of {label}</p>
-          <p className="text-green-600 font-medium">Attended: {data.attended}/{data.total}</p>
+          <p className="text-emerald-600 font-medium">Attended: {data.attended}/{data.total}</p>
           <p className="text-blue-600 font-medium">Percentage: {data.percentage}%</p>
         </div>
       );
