@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,67 +31,184 @@ const StudentJoinPage: React.FC = () => {
       return;
     }
 
-    fetchLessonAndStudentData();
+    fetchLessonAndCheckAccess();
   }, [user, lessonId, userRole]);
 
-  const fetchLessonAndStudentData = async () => {
+  const fetchLessonAndCheckAccess = async () => {
     try {
-      // Fetch lesson details
+      console.log('Fetching lesson data for ID:', lessonId);
+      
+      // First, fetch lesson details without restrictive joins
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
         .select(`
           *,
-          tutor:tutors(first_name, last_name),
-          lesson_students!inner(
-            student:students(id, first_name, last_name, email)
-          )
+          tutor:tutors(first_name, last_name)
         `)
         .eq('id', lessonId)
         .single();
 
-      if (lessonError) {
+      if (lessonError || !lessonData) {
         console.error('Error fetching lesson:', lessonError);
-        toast.error('Failed to load lesson details');
-        navigate('/');
+        toast.error('Lesson not found');
+        navigate('/calendar');
         return;
       }
 
-      setLesson(lessonData);
+      console.log('Lesson found:', lessonData);
+
+      // Fetch lesson students separately
+      const { data: lessonStudents, error: studentsError } = await supabase
+        .from('lesson_students')
+        .select(`
+          student:students(id, first_name, last_name, email)
+        `)
+        .eq('lesson_id', lessonId);
+
+      if (studentsError) {
+        console.error('Error fetching lesson students:', studentsError);
+      }
+
+      // Add students to lesson data
+      const processedLesson = {
+        ...lessonData,
+        lesson_students: lessonStudents || []
+      };
+
+      setLesson(processedLesson);
 
       if (userRole === 'student') {
-        // Get student data based on email
-        const { data: student, error: studentError } = await supabase
-          .from('students')
-          .select('id, first_name, last_name, email')
-          .eq('email', user.email)
-          .single();
-
-        if (studentError || !student) {
-          console.error('Error fetching student data:', studentError);
-          toast.error('Student profile not found');
-          navigate('/');
-          return;
-        }
-
-        // Check if student is enrolled in this lesson
-        const isEnrolled = lessonData.lesson_students?.some(
-          (ls: any) => ls.student.id === student.id
-        );
-
-        if (!isEnrolled) {
-          toast.error('You are not enrolled in this lesson');
-          navigate('/');
-          return;
-        }
-
-        setStudentData(student);
+        await checkStudentAccess(processedLesson);
+      } else if (userRole === 'parent') {
+        await checkParentAccess(processedLesson);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error in fetchLessonAndCheckAccess:', error);
       toast.error('Failed to load lesson details');
-      navigate('/');
+      navigate('/calendar');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const checkStudentAccess = async (lessonData: any) => {
+    try {
+      console.log('Checking student access for email:', user?.email);
+      
+      // Get student data based on email
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('id, first_name, last_name, email')
+        .eq('email', user?.email)
+        .maybeSingle();
+
+      if (studentError) {
+        console.error('Error fetching student data:', studentError);
+        toast.error('Error verifying student profile');
+        navigate('/calendar');
+        return;
+      }
+
+      if (!student) {
+        console.log('No student profile found for email:', user?.email);
+        toast.error('Student profile not found');
+        navigate('/calendar');
+        return;
+      }
+
+      console.log('Student found:', student);
+
+      // Check if student is enrolled in this lesson
+      const isEnrolled = lessonData.lesson_students?.some(
+        (ls: any) => ls.student?.id === student.id
+      );
+
+      if (!isEnrolled) {
+        console.log('Student not enrolled in lesson');
+        toast.error('You are not enrolled in this lesson');
+        navigate('/calendar');
+        return;
+      }
+
+      console.log('Student access granted');
+      setStudentData(student);
+    } catch (error) {
+      console.error('Error checking student access:', error);
+      toast.error('Error verifying lesson access');
+      navigate('/calendar');
+    }
+  };
+
+  const checkParentAccess = async (lessonData: any) => {
+    try {
+      console.log('Checking parent access for email:', user?.email);
+      
+      // Get parent data based on email
+      const { data: parent, error: parentError } = await supabase
+        .from('parents')
+        .select('id, first_name, last_name, email')
+        .eq('email', user?.email)
+        .maybeSingle();
+
+      if (parentError) {
+        console.error('Error fetching parent data:', parentError);
+        toast.error('Error verifying parent profile');
+        navigate('/calendar');
+        return;
+      }
+
+      if (!parent) {
+        console.log('No parent profile found for email:', user?.email);
+        toast.error('Parent profile not found');
+        navigate('/calendar');
+        return;
+      }
+
+      console.log('Parent found:', parent);
+
+      // Check if any of parent's children are enrolled in this lesson
+      const { data: parentStudents, error: parentStudentsError } = await supabase
+        .from('students')
+        .select('id, first_name, last_name, email')
+        .eq('parent_id', parent.id);
+
+      if (parentStudentsError) {
+        console.error('Error fetching parent students:', parentStudentsError);
+        toast.error('Error verifying parent access');
+        navigate('/calendar');
+        return;
+      }
+
+      if (!parentStudents || parentStudents.length === 0) {
+        console.log('Parent has no students');
+        toast.error('No students found for this parent account');
+        navigate('/calendar');
+        return;
+      }
+
+      // Check if any of the parent's students are enrolled in this lesson
+      const hasEnrolledChild = lessonData.lesson_students?.some((ls: any) =>
+        parentStudents.some(student => student.id === ls.student?.id)
+      );
+
+      if (!hasEnrolledChild) {
+        console.log('None of parent\'s children are enrolled in this lesson');
+        toast.error('None of your children are enrolled in this lesson');
+        navigate('/calendar');
+        return;
+      }
+
+      console.log('Parent access granted');
+      // For parents, we'll use the parent's name in the consent dialog
+      setStudentData({
+        first_name: parent.first_name,
+        last_name: parent.last_name,
+        id: parent.id
+      });
+    } catch (error) {
+      console.error('Error checking parent access:', error);
+      toast.error('Error verifying lesson access');
+      navigate('/calendar');
     }
   };
 
@@ -137,11 +255,11 @@ const StudentJoinPage: React.FC = () => {
           <CardContent className="p-6 text-center">
             <p className="text-muted-foreground">Lesson not found or access denied</p>
             <Button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/calendar')}
               className="mt-4"
               variant="outline"
             >
-              Go Back
+              Go Back to Calendar
             </Button>
           </CardContent>
         </Card>
@@ -242,11 +360,11 @@ const StudentJoinPage: React.FC = () => {
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground">No video conference link available for this lesson</p>
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/calendar')}
             className="mt-4"
             variant="outline"
           >
-            Go Back to Dashboard
+            Go Back to Calendar
           </Button>
         </CardContent>
       </Card>
