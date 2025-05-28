@@ -29,11 +29,11 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     improvementTrend: 0
   });
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, parentProfile } = useAuth();
 
   useEffect(() => {
     fetchSummaryStats();
-  }, [filters, user, userRole]);
+  }, [filters, user, userRole, parentProfile]);
 
   const fetchSummaryStats = async () => {
     if (!user) return;
@@ -42,6 +42,8 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     try {
       // Get student ID for student role
       let studentId = null;
+      let studentIds: number[] = [];
+
       if (userRole === 'student') {
         const { data: studentData } = await supabase
           .from('students')
@@ -49,6 +51,29 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
           .eq('email', user.email)
           .maybeSingle();
         studentId = studentData?.id;
+        if (studentId) studentIds = [studentId];
+      }
+
+      // Get children IDs for parent role
+      if (userRole === 'parent' && parentProfile) {
+        const { data: childrenData } = await supabase
+          .from('students')
+          .select('id')
+          .eq('parent_id', parentProfile.id);
+
+        if (childrenData && childrenData.length > 0) {
+          studentIds = childrenData.map(child => child.id);
+        } else {
+          // If no children found, set empty stats
+          setStats({
+            averageScore: 0,
+            attendanceRate: 0,
+            totalHomework: 0,
+            improvementTrend: 0
+          });
+          setLoading(false);
+          return;
+        }
       }
 
       // Fetch homework statistics
@@ -60,6 +85,8 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
       if (userRole === 'student' && studentId) {
         homeworkQuery = homeworkQuery.eq('student_id', studentId);
+      } else if (userRole === 'parent' && studentIds.length > 0) {
+        homeworkQuery = homeworkQuery.in('student_id', studentIds);
       } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
         homeworkQuery = homeworkQuery.in('student_id', filters.selectedStudents.map(id => parseInt(id)));
       }
@@ -84,6 +111,8 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
       if (userRole === 'student' && studentId) {
         attendanceQuery = attendanceQuery.eq('student_id', studentId);
+      } else if (userRole === 'parent' && studentIds.length > 0) {
+        attendanceQuery = attendanceQuery.in('student_id', studentIds);
       } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
         attendanceQuery = attendanceQuery.in('student_id', filters.selectedStudents.map(id => parseInt(id)));
       }

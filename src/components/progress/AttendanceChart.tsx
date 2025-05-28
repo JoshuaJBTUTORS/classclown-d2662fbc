@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
+import { format, parseISO, startOfWeek } from 'date-fns';
 import { toast } from 'sonner';
 import { Calendar } from 'lucide-react';
 
@@ -27,11 +26,11 @@ interface AttendanceData {
 const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) => {
   const [data, setData] = useState<AttendanceData[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, parentProfile } = useAuth();
 
   useEffect(() => {
     fetchAttendanceData();
-  }, [filters, user, userRole]);
+  }, [filters, user, userRole, parentProfile]);
 
   const fetchAttendanceData = async () => {
     if (!user) return;
@@ -67,6 +66,24 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
           query = query.eq('student_id', studentData.id);
         } else {
           console.log('No student record found for user:', user.email);
+          setData([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Filter by parent's children for parent role
+      if (userRole === 'parent' && parentProfile) {
+        const { data: childrenData } = await supabase
+          .from('students')
+          .select('id')
+          .eq('parent_id', parentProfile.id);
+
+        if (childrenData && childrenData.length > 0) {
+          const childrenIds = childrenData.map(child => child.id);
+          query = query.in('student_id', childrenIds);
+        } else {
+          console.log('No children found for parent:', parentProfile.id);
           setData([]);
           setLoading(false);
           return;
@@ -185,7 +202,9 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
       <CardHeader className="pb-4">
         <CardTitle className="font-playfair text-xl text-gray-900">Attendance Tracking</CardTitle>
         <CardDescription className="text-gray-600">
-          {userRole === 'owner' ? 'Student attendance rates by week' : 'Your attendance rates by week'}
+          {userRole === 'owner' ? 'Student attendance rates by week' : 
+           userRole === 'parent' ? 'Your children\'s attendance rates by week' :
+           'Your attendance rates by week'}
         </CardDescription>
       </CardHeader>
       <CardContent>

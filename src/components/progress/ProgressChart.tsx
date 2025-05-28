@@ -27,11 +27,11 @@ interface HomeworkScore {
 const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   const [data, setData] = useState<HomeworkScore[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, parentProfile } = useAuth();
 
   useEffect(() => {
     fetchHomeworkProgress();
-  }, [filters, user, userRole]);
+  }, [filters, user, userRole, parentProfile]);
 
   const fetchHomeworkProgress = async () => {
     if (!user) return;
@@ -69,6 +69,24 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
 
         if (studentData) {
           query = query.eq('student_id', studentData.id);
+        }
+      }
+
+      // Filter by parent's children for parent role
+      if (userRole === 'parent' && parentProfile) {
+        const { data: childrenData } = await supabase
+          .from('students')
+          .select('id')
+          .eq('parent_id', parentProfile.id);
+
+        if (childrenData && childrenData.length > 0) {
+          const childrenIds = childrenData.map(child => child.id);
+          query = query.in('student_id', childrenIds);
+        } else {
+          // If no children found, return empty data
+          setData([]);
+          setLoading(false);
+          return;
         }
       }
 
@@ -154,7 +172,9 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
       <CardHeader className="pb-4">
         <CardTitle className="font-playfair text-xl text-gray-900">Homework Progress</CardTitle>
         <CardDescription className="text-gray-600">
-          {userRole === 'owner' ? 'Student homework scores over time' : 'Your homework scores over time'}
+          {userRole === 'owner' ? 'Student homework scores over time' : 
+           userRole === 'parent' ? 'Your children\'s homework scores over time' :
+           'Your homework scores over time'}
         </CardDescription>
       </CardHeader>
       <CardContent>
