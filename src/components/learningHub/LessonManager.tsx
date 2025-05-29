@@ -50,8 +50,10 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
   const { data: assessments = [] } = useQuery({
     queryKey: ['publishedAssessments'],
     queryFn: () => aiAssessmentService.getPublishedAssessments(),
-    enabled: newLesson.content_type === 'ai-assessment' || 
-             (editingLessonId && module?.lessons?.find(l => l.id === editingLessonId)?.content_type === 'ai-assessment'),
+    enabled: Boolean(
+      newLesson.content_type === 'ai-assessment' || 
+      (editingLessonId && module?.lessons?.find(l => l.id === editingLessonId)?.content_type === 'ai-assessment')
+    ),
   });
 
   const createLessonMutation = useMutation({
