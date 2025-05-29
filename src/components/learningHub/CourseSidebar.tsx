@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle, Lock, Play, FileText, Brain, Video } from 'lucide-react';
+import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle, Lock, Play, FileText, Brain, Video, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
 import { CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 import { learningHubService } from '@/services/learningHubService';
+import { aiAssessmentService } from '@/services/aiAssessmentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +35,37 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>(
     modules.reduce((acc, module) => ({ ...acc, [module.id]: true }), {})
   );
+
+  // Get assessment scores for AI assessments
+  const { data: assessmentScores } = useQuery({
+    queryKey: ['assessmentScores', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return {};
+      
+      const assessmentLessons = modules
+        .flatMap(m => m.lessons || [])
+        .filter(l => l.content_type === 'ai-assessment' && l.content_url);
+      
+      const scores: Record<string, any> = {};
+      
+      for (const lesson of assessmentLessons) {
+        try {
+          const assessmentId = lesson.content_url; // Assuming content_url contains the assessment ID
+          if (assessmentId) {
+            const score = await aiAssessmentService.getUserBestScore(assessmentId, user.id);
+            if (score) {
+              scores[lesson.id] = score;
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching score for lesson ${lesson.id}:`, error);
+        }
+      }
+      
+      return scores;
+    },
+    enabled: !!user?.id,
+  });
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules(prev => ({
@@ -68,6 +101,39 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
       default:
         return <FileText className="h-4 w-4 text-gray-500" />;
     }
+  };
+
+  // Get assessment score display
+  const getAssessmentScoreDisplay = (lesson: CourseLesson) => {
+    if (lesson.content_type !== 'ai-assessment' || !assessmentScores) return null;
+    
+    const score = assessmentScores[lesson.id];
+    if (!score) return null;
+
+    const getScoreColor = (percentage: number) => {
+      if (percentage >= 80) return 'text-green-600 bg-green-50';
+      if (percentage >= 60) return 'text-yellow-600 bg-yellow-50';
+      return 'text-red-600 bg-red-50';
+    };
+
+    return (
+      <div className="flex items-center gap-1 mt-1">
+        <Badge 
+          variant="outline" 
+          className={`text-xs px-2 py-0 ${getScoreColor(score.percentage_score)}`}
+        >
+          {score.percentage_score}%
+        </Badge>
+        {score.percentage_score >= 90 && (
+          <Trophy className="h-3 w-3 text-yellow-500" />
+        )}
+        {score.completed_sessions > 1 && (
+          <Badge variant="outline" className="text-xs px-1 py-0 bg-blue-50 text-blue-600">
+            x{score.completed_sessions}
+          </Badge>
+        )}
+      </div>
+    );
   };
 
   // Mutation for toggling lesson completion
@@ -253,6 +319,9 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                                       <Lock className="h-3 w-3 text-gray-400" />
                                     )}
                                   </div>
+                                  
+                                  {/* Assessment Score Display */}
+                                  {getAssessmentScoreDisplay(lesson)}
                                 </div>
                               </button>
                             </div>

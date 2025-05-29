@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { aiAssessmentService } from '@/services/aiAssessmentService';
+import { aiAssessmentService, AssessmentScore, UserAssessmentStats } from '@/services/aiAssessmentService';
 import { useAuth } from '@/contexts/AuthContext';
 import AssessmentAccessControl from './AssessmentAccessControl';
 import AssessmentTimer from './AssessmentTimer';
 import AssessmentQuestionCard from './AssessmentQuestion';
 import AssessmentNavigation from './AssessmentNavigation';
 import AssessmentCompletion from './AssessmentCompletion';
+import AssessmentCompletionDialog from './AssessmentCompletionDialog';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 
@@ -41,6 +42,9 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const [feedback, setFeedback] = useState<{ [key: string]: any }>({});
   const [isMarking, setIsMarking] = useState<{ [key: string]: boolean }>({});
   const [isCompletingAssessment, setIsCompletingAssessment] = useState(false);
+  const [completionScore, setCompletionScore] = useState<AssessmentScore | null>(null);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [bestScore, setBestScore] = useState<UserAssessmentStats | null>(null);
 
   const { data: assessment, isLoading: assessmentLoading, error: assessmentError } = useQuery({
     queryKey: ['assessment', id],
@@ -81,27 +85,25 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   });
 
   const { mutate: completeSession } = useMutation({
-    mutationFn: (sessionId: string) => aiAssessmentService.completeSession(sessionId),
-    onSuccess: () => {
-      setIsCompletingAssessment(false);
-      toast({
-        title: "Assessment completed",
-        description: "You have successfully completed the assessment.",
-      });
+    mutationFn: async (sessionId: string) => {
+      const score = await aiAssessmentService.completeSessionWithScore(sessionId);
       
-      // Improved navigation logic
-      const isFromCourse = location.pathname.includes('/course/');
-      if (embedded || isFromCourse) {
-        // If embedded or came from course, go back to course
-        const courseMatch = location.pathname.match(/\/course\/([^\/]+)/);
-        if (courseMatch) {
-          navigate(`/course/${courseMatch[1]}`);
-        } else {
-          navigate('/learning-hub');
-        }
-      } else {
-        navigate('/learning-hub');
+      // Get best score for comparison
+      if (user?.id) {
+        const userBestScore = await aiAssessmentService.getUserBestScore(id!, user.id);
+        setBestScore(userBestScore);
       }
+      
+      return score;
+    },
+    onSuccess: (score) => {
+      setIsCompletingAssessment(false);
+      setCompletionScore(score);
+      setShowCompletionDialog(true);
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['assessmentSession', id] });
+      queryClient.invalidateQueries({ queryKey: ['student-progress'] });
     },
     onError: (error: any) => {
       setIsCompletingAssessment(false);
@@ -282,9 +284,39 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     }
   };
 
+  const handleRetakeAssessment = () => {
+    setShowCompletionDialog(false);
+    setCompletionScore(null);
+    setBestScore(null);
+    setStudentAnswers({});
+    setFeedback({});
+    setCurrentQuestionIndex(0);
+    createSession();
+  };
+
+  const handleBackToCourse = () => {
+    setShowCompletionDialog(false);
+    
+    // Improved navigation logic
+    const isFromCourse = location.pathname.includes('/course/');
+    if (embedded || isFromCourse) {
+      const courseMatch = location.pathname.match(/\/course\/([^\/]+)/);
+      if (courseMatch) {
+        navigate(`/course/${courseMatch[1]}`);
+      } else {
+        navigate('/learning-hub');
+      }
+    } else {
+      navigate('/learning-hub');
+    }
+  };
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  const hasAnsweredQuestions = questions ? 
+    questions.some(q => studentAnswers[q.id] && studentAnswers[q.id].trim()) : false;
 
   const renderMainContent = () => {
     if (assessmentLoading) {
@@ -380,6 +412,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                       <AssessmentCompletion 
                         onComplete={completeAssessment}
                         isLoading={isCompletingAssessment}
+                        hasAnsweredQuestions={hasAnsweredQuestions}
                       />
                     </div>
                   </>
@@ -399,6 +432,20 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
             )}
           </CardContent>
         </Card>
+
+        {/* Completion Dialog */}
+        {completionScore && (
+          <AssessmentCompletionDialog
+            open={showCompletionDialog}
+            onClose={() => setShowCompletionDialog(false)}
+            onRetake={handleRetakeAssessment}
+            onBackToCourse={handleBackToCourse}
+            currentScore={completionScore}
+            bestScore={bestScore}
+            assessmentTitle={assessment.title}
+            isFirstAttempt={!bestScore || bestScore.completed_sessions === 0}
+          />
+        )}
       </div>
     );
   };

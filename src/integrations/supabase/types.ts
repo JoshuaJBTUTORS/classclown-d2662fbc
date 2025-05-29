@@ -143,6 +143,7 @@ export type Database = {
       assessment_sessions: {
         Row: {
           assessment_id: string
+          attempt_number: number | null
           completed_at: string | null
           created_at: string
           id: string
@@ -157,6 +158,7 @@ export type Database = {
         }
         Insert: {
           assessment_id: string
+          attempt_number?: number | null
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -171,6 +173,7 @@ export type Database = {
         }
         Update: {
           assessment_id?: string
+          attempt_number?: number | null
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -1141,6 +1144,16 @@ export type Database = {
           | { course_id_param: string; student_id_param: string }
         Returns: number
       }
+      calculate_session_score: {
+        Args: { session_id_param: string }
+        Returns: {
+          total_marks_achieved: number
+          total_marks_available: number
+          percentage_score: number
+          questions_answered: number
+          total_questions: number
+        }[]
+      }
       get_current_user_parent_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1152,6 +1165,16 @@ export type Database = {
       get_primary_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_best_assessment_score: {
+        Args: { assessment_id_param: string; user_id_param: string }
+        Returns: {
+          best_score: number
+          total_possible: number
+          percentage_score: number
+          completed_sessions: number
+          last_attempt_date: string
+        }[]
       }
       get_user_purchased_courses: {
         Args: { user_id_param: string }

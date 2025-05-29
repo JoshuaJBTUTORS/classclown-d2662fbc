@@ -50,6 +50,7 @@ export interface AssessmentSession {
   total_marks_available: number;
   time_taken_minutes?: number;
   status: 'in_progress' | 'completed' | 'abandoned';
+  attempt_number?: number;
 }
 
 export interface StudentResponse {
@@ -63,6 +64,22 @@ export interface StudentResponse {
   confidence_score?: number;
   submitted_at: string;
   marked_at?: string;
+}
+
+export interface AssessmentScore {
+  total_marks_achieved: number;
+  total_marks_available: number;
+  percentage_score: number;
+  questions_answered: number;
+  total_questions: number;
+}
+
+export interface UserAssessmentStats {
+  best_score: number;
+  total_possible: number;
+  percentage_score: number;
+  completed_sessions: number;
+  last_attempt_date: string;
 }
 
 // Helper function to convert database row to AIAssessment
@@ -378,6 +395,69 @@ export const aiAssessmentService = {
       
       throw error;
     }
+  },
+
+  // Calculate session score
+  async calculateSessionScore(sessionId: string): Promise<AssessmentScore> {
+    const { data, error } = await supabase.rpc('calculate_session_score', {
+      session_id_param: sessionId
+    });
+
+    if (error) throw error;
+    return data[0] || {
+      total_marks_achieved: 0,
+      total_marks_available: 0,
+      percentage_score: 0,
+      questions_answered: 0,
+      total_questions: 0
+    };
+  },
+
+  // Get user's best score for an assessment
+  async getUserBestScore(assessmentId: string, userId: string): Promise<UserAssessmentStats | null> {
+    const { data, error } = await supabase.rpc('get_user_best_assessment_score', {
+      assessment_id_param: assessmentId,
+      user_id_param: userId
+    });
+
+    if (error) throw error;
+    return data[0] || null;
+  },
+
+  // Complete assessment session with score calculation
+  async completeSessionWithScore(sessionId: string): Promise<AssessmentScore> {
+    // First calculate the score
+    const score = await this.calculateSessionScore(sessionId);
+    
+    // Update the session with the calculated scores
+    const { error } = await supabase
+      .from('assessment_sessions')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        total_marks_achieved: score.total_marks_achieved,
+        total_marks_available: score.total_marks_available,
+      })
+      .eq('id', sessionId);
+
+    if (error) throw error;
+    return score;
+  },
+
+  // Get all user sessions for an assessment (for retry functionality)
+  async getUserAssessmentSessions(assessmentId: string, userId: string): Promise<AssessmentSession[]> {
+    const { data, error } = await supabase
+      .from('assessment_sessions')
+      .select('*')
+      .eq('assessment_id', assessmentId)
+      .eq('user_id', userId)
+      .order('attempt_number', { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map(session => ({
+      ...session,
+      status: session.status as 'in_progress' | 'completed' | 'abandoned'
+    }));
   },
 
   // Mark all answers in a session using AI
