@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +29,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
   onAnswerChange,
 }) => {
   // Get options from marking scheme or fallback to default
-  const options = question.marking_scheme?.options || {
+  const options: Record<string, string> = question.marking_scheme?.options || {
     A: 'Option A',
     B: 'Option B', 
     C: 'Option C',
@@ -48,7 +47,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
           <RadioGroupItem value={key} id={`choice-${key}`} className="mt-1" />
           <Label htmlFor={`choice-${key}`} className="flex-1 cursor-pointer">
             <span className="font-medium mr-2">{key}.</span>
-            {value}
+            {String(value)}
           </Label>
         </div>
       ))}
