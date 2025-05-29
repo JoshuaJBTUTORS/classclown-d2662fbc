@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AIAssessment {
@@ -334,12 +333,51 @@ export const aiAssessmentService = {
     feedback: string;
     confidence: number;
   }> {
-    const { data, error } = await supabase.functions.invoke('ai-mark-assessment', {
-      body: { sessionId, questionId, studentAnswer: answer }
-    });
+    console.log('🔄 Calling ai-mark-assessment edge function...');
+    console.log('Parameters:', { sessionId, questionId, answerLength: answer.length });
 
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-mark-assessment', {
+        body: { sessionId, questionId, studentAnswer: answer }
+      });
+
+      console.log('📡 Edge function response:', { data, error });
+
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        
+        // Check if it's a function not found error
+        if (error.message && error.message.includes('not found')) {
+          throw new Error('The AI marking service is not available. Please ensure the edge function is deployed.');
+        }
+        
+        throw new Error(error.message || 'Failed to mark question');
+      }
+
+      if (!data) {
+        throw new Error('No response received from marking service');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Marking failed');
+      }
+
+      console.log('✅ Question marked successfully:', data);
+      return data;
+    } catch (error: any) {
+      console.error('💥 Error in markSingleQuestion:', error);
+      
+      // Provide more specific error messages
+      if (error.name === 'FunctionsError') {
+        throw new Error('The AI marking service is currently unavailable. Please try again later.');
+      }
+      
+      if (error.message && error.message.includes('not found')) {
+        throw new Error('The AI marking service is not deployed. Please contact support.');
+      }
+      
+      throw error;
+    }
   },
 
   // Mark all answers in a session using AI

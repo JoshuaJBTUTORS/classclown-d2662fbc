@@ -12,11 +12,35 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  console.log('🚀 AI Mark Assessment function called');
+  console.log('Request method:', req.method);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+
   try {
-    const { sessionId, questionId, studentAnswer } = await req.json();
+    // Check if OpenAI API key is configured
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      console.error('❌ OpenAI API key not configured');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "OpenAI API key not configured. Please add OPENAI_API_KEY to Supabase secrets." 
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const requestBody = await req.json();
+    console.log('📝 Request body:', requestBody);
+    
+    const { sessionId, questionId, studentAnswer } = requestBody;
     
     if (!sessionId) {
-      throw new Error("Session ID is required");
+      console.error('❌ Session ID missing');
+      return new Response(
+        JSON.stringify({ success: false, error: "Session ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const supabase = createClient(
@@ -32,7 +56,8 @@ serve(async (req) => {
 
     // If questionId is provided, mark a single question
     if (questionId && studentAnswer !== undefined) {
-      const result = await markSingleQuestion(supabase, sessionId, questionId, studentAnswer);
+      console.log('📋 Marking single question');
+      const result = await markSingleQuestion(supabase, sessionId, questionId, studentAnswer, openAIApiKey);
       return new Response(
         JSON.stringify(result),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -40,23 +65,27 @@ serve(async (req) => {
     }
 
     // Otherwise, mark all questions in the session
-    const result = await markAllQuestions(supabase, sessionId);
+    console.log('📋 Marking all questions in session');
+    const result = await markAllQuestions(supabase, sessionId, openAIApiKey);
     return new Response(
       JSON.stringify(result),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error("Error in ai-mark-assessment function:", error);
+    console.error("💥 Error in ai-mark-assessment function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || "An unexpected error occurred while marking the assessment" 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
-async function markSingleQuestion(supabase: any, sessionId: string, questionId: string, studentAnswer: string) {
-  console.log("Marking single question:", questionId);
+async function markSingleQuestion(supabase: any, sessionId: string, questionId: string, studentAnswer: string, openAIApiKey: string) {
+  console.log("🔍 Marking single question:", questionId);
 
   // Get the question details
   const { data: question, error: questionError } = await supabase
@@ -66,8 +95,16 @@ async function markSingleQuestion(supabase: any, sessionId: string, questionId: 
     .single();
 
   if (questionError || !question) {
+    console.error('❌ Failed to fetch question:', questionError);
     throw new Error(`Failed to fetch question: ${questionError?.message}`);
   }
+
+  console.log('📄 Question details:', {
+    id: question.id,
+    type: question.question_type,
+    marks: question.marks_available,
+    hasCorrectAnswer: !!question.correct_answer
+  });
 
   // Get or create student response
   const { data: existingResponse } = await supabase
@@ -77,7 +114,10 @@ async function markSingleQuestion(supabase: any, sessionId: string, questionId: 
     .eq('question_id', questionId)
     .maybeSingle();
 
-  const markingResult = await evaluateAnswer(question, studentAnswer);
+  console.log('📝 Existing response:', existingResponse ? 'Found' : 'Not found');
+
+  const markingResult = await evaluateAnswer(question, studentAnswer, openAIApiKey);
+  console.log('🎯 Marking result:', markingResult);
 
   const responseData = {
     session_id: sessionId,
@@ -97,6 +137,7 @@ async function markSingleQuestion(supabase: any, sessionId: string, questionId: 
       .eq('id', existingResponse.id);
 
     if (updateError) {
+      console.error('❌ Failed to update response:', updateError);
       throw new Error(`Failed to update response: ${updateError.message}`);
     }
   } else {
@@ -105,6 +146,7 @@ async function markSingleQuestion(supabase: any, sessionId: string, questionId: 
       .insert(responseData);
 
     if (insertError) {
+      console.error('❌ Failed to insert response:', insertError);
       throw new Error(`Failed to insert response: ${insertError.message}`);
     }
   }
@@ -118,7 +160,7 @@ async function markSingleQuestion(supabase: any, sessionId: string, questionId: 
   };
 }
 
-async function markAllQuestions(supabase: any, sessionId: string) {
+async function markAllQuestions(supabase: any, sessionId: string, openAIApiKey: string) {
   console.log("Marking all questions for session:", sessionId);
 
   // Get session details
@@ -161,7 +203,7 @@ async function markAllQuestions(supabase: any, sessionId: string) {
     const response = responses.find(r => r.question_id === question.id);
     const studentAnswer = response?.student_answer || '';
 
-    const markingResult = await evaluateAnswer(question, studentAnswer);
+    const markingResult = await evaluateAnswer(question, studentAnswer, openAIApiKey);
     totalMarks += markingResult.marks;
     totalMaxMarks += question.marks_available;
 
@@ -214,8 +256,7 @@ async function markAllQuestions(supabase: any, sessionId: string) {
   };
 }
 
-async function evaluateAnswer(question: any, studentAnswer: string) {
-  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+async function evaluateAnswer(question: any, studentAnswer: string, openAIApiKey: string) {
   if (!openAIApiKey) {
     throw new Error("OpenAI API key not configured");
   }

@@ -100,9 +100,23 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   });
 
   const { mutate: markQuestion } = useMutation({
-    mutationFn: ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
-      aiAssessmentService.markSingleQuestion(sessionId, questionId, answer),
+    mutationFn: async ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) => {
+      console.log('🔍 Starting question marking process...');
+      console.log('Session ID:', sessionId);
+      console.log('Question ID:', questionId);
+      console.log('Student Answer:', answer);
+      
+      try {
+        const result = await aiAssessmentService.markSingleQuestion(sessionId, questionId, answer);
+        console.log('✅ Marking successful:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Marking failed:', error);
+        throw error;
+      }
+    },
     onSuccess: (data, variables) => {
+      console.log('✅ Mutation onSuccess called:', data);
       setFeedback(prev => ({
         ...prev,
         [variables.questionId]: data,
@@ -112,20 +126,34 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         [variables.questionId]: false,
       }));
       toast({
-        title: "Answer marked",
-        description: "Your answer has been evaluated and feedback is available.",
+        title: "Answer marked successfully",
+        description: `Score: ${data.marks}/${data.maxMarks} marks`,
       });
     },
     onError: (error: any, variables) => {
-      toast({
-        title: "Error marking question",
-        description: error.message || "Failed to mark the question.",
-        variant: "destructive",
-      });
+      console.error('❌ Mutation onError called:', error);
       setIsMarking(prev => ({
         ...prev,
         [variables.questionId]: false,
       }));
+      
+      let errorMessage = "Failed to mark the question. Please try again.";
+      
+      if (error.message) {
+        if (error.message.includes('not found')) {
+          errorMessage = "The marking service is not available. Please contact support.";
+        } else if (error.message.includes('unauthorized')) {
+          errorMessage = "You don't have permission to mark this question.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error marking question",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 
@@ -164,16 +192,63 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   };
 
   const markCurrentQuestion = async () => {
-    if (!session) return;
-    const question = questions![currentQuestionIndex];
+    console.log('🚀 Mark button clicked');
+    
+    if (!session) {
+      console.error('❌ No session available');
+      toast({
+        title: "Error",
+        description: "No active session found. Please start the assessment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!questions || questions.length === 0) {
+      console.error('❌ No questions available');
+      toast({
+        title: "Error",
+        description: "No questions found for this assessment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const question = questions[currentQuestionIndex];
     const answer = studentAnswers[question.id] || '';
+
+    if (!answer.trim()) {
+      console.warn('⚠️ Empty answer provided');
+      toast({
+        title: "Empty Answer",
+        description: "Please provide an answer before marking.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('📝 Marking question:', {
+      sessionId: session.id,
+      questionId: question.id,
+      questionText: question.question_text,
+      answer: answer,
+      questionType: question.question_type
+    });
 
     setIsMarking(prev => ({
       ...prev,
       [question.id]: true,
     }));
 
-    markQuestion({ sessionId: session.id, questionId: question.id, answer });
+    try {
+      markQuestion({ sessionId: session.id, questionId: question.id, answer });
+    } catch (error) {
+      console.error('❌ Error calling markQuestion:', error);
+      setIsMarking(prev => ({
+        ...prev,
+        [question.id]: false,
+      }));
+    }
   };
 
   const goToNextQuestion = () => {
