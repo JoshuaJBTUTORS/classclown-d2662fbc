@@ -104,7 +104,7 @@ export const aiAssessmentService = {
     return (data || []).map(item => ({
       ...item,
       question_type: item.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
-      keywords: Array.isArray(item.keywords) ? item.keywords : []
+      keywords: Array.isArray(item.keywords) ? item.keywords.map(k => String(k)) : []
     }));
   },
 
