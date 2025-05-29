@@ -18,8 +18,13 @@ import QuestionFeedback from './QuestionFeedback';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 
-const AIAssessmentViewer: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+interface AIAssessmentViewerProps {
+  assessmentId?: string;
+}
+
+const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId: propAssessmentId }) => {
+  const { id: paramId } = useParams<{ id: string }>();
+  const id = propAssessmentId || paramId;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -51,92 +56,84 @@ const AIAssessmentViewer: React.FC = () => {
     enabled: !!id && !!user && !!assessment,
   });
 
-  const { mutate: createSession } = useMutation(
-    () => aiAssessmentService.createAssessmentSession(id!),
-    {
-      onSuccess: (newSession) => {
-        queryClient.invalidateQueries(['assessmentSession', id]);
-        refetchSession();
-        setSessionStartTime(new Date());
-        toast({
-          title: "Session started",
-          description: "The assessment session has started.",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error starting session",
-          description: error.message || "Failed to start the assessment session.",
-          variant: "destructive",
-        });
-      },
-    }
-  );
+  const { mutate: createSession } = useMutation({
+    mutationFn: () => aiAssessmentService.createAssessmentSession(id!),
+    onSuccess: (newSession) => {
+      queryClient.invalidateQueries({ queryKey: ['assessmentSession', id] });
+      refetchSession();
+      setSessionStartTime(new Date());
+      toast({
+        title: "Session started",
+        description: "The assessment session has started.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error starting session",
+        description: error.message || "Failed to start the assessment session.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const { mutate: submitAnswer } = useMutation(
-    ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
+  const { mutate: submitAnswer } = useMutation({
+    mutationFn: ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
       aiAssessmentService.submitAnswer(sessionId, questionId, answer),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['sessionResponses', session?.id]);
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error submitting answer",
-          description: error.message || "Failed to submit the answer.",
-          variant: "destructive",
-        });
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessionResponses', session?.id] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error submitting answer",
+        description: error.message || "Failed to submit the answer.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const { mutate: completeSession } = useMutation(
-    (sessionId: string) => aiAssessmentService.completeSession(sessionId),
-    {
-      onSuccess: () => {
-        toast({
-          title: "Assessment completed",
-          description: "You have completed the assessment.",
-        });
-        navigate('/learning-hub');
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error completing assessment",
-          description: error.message || "Failed to complete the assessment.",
-          variant: "destructive",
-        });
-      },
-    }
-  );
+  const { mutate: completeSession } = useMutation({
+    mutationFn: (sessionId: string) => aiAssessmentService.completeSession(sessionId),
+    onSuccess: () => {
+      toast({
+        title: "Assessment completed",
+        description: "You have completed the assessment.",
+      });
+      navigate('/learning-hub');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error completing assessment",
+        description: error.message || "Failed to complete the assessment.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const { mutate: markQuestion } = useMutation(
-    ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
+  const { mutate: markQuestion } = useMutation({
+    mutationFn: ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
       aiAssessmentService.markSingleQuestion(sessionId, questionId, answer),
-    {
-      onSuccess: (data, variables) => {
-        setFeedback(prev => ({
-          ...prev,
-          [variables.questionId]: data,
-        }));
-        setIsMarking(prev => ({
-          ...prev,
-          [variables.questionId]: false,
-        }));
-      },
-      onError: (error: any, variables) => {
-        toast({
-          title: "Error marking question",
-          description: error.message || "Failed to mark the question.",
-          variant: "destructive",
-        });
-        setIsMarking(prev => ({
-          ...prev,
-          [variables.questionId]: false,
-        }));
-      },
-    }
-  );
+    onSuccess: (data, variables) => {
+      setFeedback(prev => ({
+        ...prev,
+        [variables.questionId]: data,
+      }));
+      setIsMarking(prev => ({
+        ...prev,
+        [variables.questionId]: false,
+      }));
+    },
+    onError: (error: any, variables) => {
+      toast({
+        title: "Error marking question",
+        description: error.message || "Failed to mark the question.",
+        variant: "destructive",
+      });
+      setIsMarking(prev => ({
+        ...prev,
+        [variables.questionId]: false,
+      }));
+    },
+  });
 
   useEffect(() => {
     if (assessment && assessment.time_limit_minutes && sessionStartTime) {
@@ -449,7 +446,8 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
   studentAnswer,
   onAnswerChange,
 }) => {
-  const choices = question.ai_extraction_data?.choices || ['A', 'B', 'C', 'D'];
+  // Use marking_scheme instead of ai_extraction_data for choices
+  const choices = question.marking_scheme?.choices || ['A', 'B', 'C', 'D'];
 
   return (
     <RadioGroup
@@ -457,7 +455,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
       onValueChange={(value) => onAnswerChange(question.id, value)}
     >
       <div className="grid gap-2">
-        {choices.map((choice) => (
+        {choices.map((choice: string) => (
           <div className="flex items-center space-x-2" key={choice}>
             <RadioGroupItem value={choice} id={`choice-${choice}`} />
             <Label htmlFor={`choice-${choice}`}>{choice}</Label>
