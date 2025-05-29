@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -295,11 +296,11 @@ const CourseDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-      <div className="max-w-full mx-auto px-6 py-6">
-        {/* Enhanced Header */}
-        <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 shadow-xl">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+      <div className="max-w-full mx-auto px-6 py-4">
+        {/* Compact Header */}
+        <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 mb-4 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -309,7 +310,7 @@ const CourseDetail: React.FC = () => {
                 <Home className="mr-1 h-4 w-4" />
                 Home
               </Button>
-              <div className="h-6 w-px bg-gray-300" />
+              <div className="h-4 w-px bg-gray-300" />
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -321,9 +322,9 @@ const CourseDetail: React.FC = () => {
               </Button>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {isVerifyingPayment && (
-                <Badge variant="outline" className="text-rose-600 border-rose-300 bg-rose-50/80 backdrop-blur-sm">
+                <Badge variant="outline" className="text-rose-600 border-rose-300 bg-rose-50/80 backdrop-blur-sm text-xs">
                   Verifying payment...
                 </Badge>
               )}
@@ -334,9 +335,9 @@ const CourseDetail: React.FC = () => {
                   disabled={isRefreshing}
                   variant="outline"
                   size="sm"
-                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80"
+                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs"
                 >
-                  <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`mr-1 h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
                   {isRefreshing ? 'Checking...' : 'Refresh Access'}
                 </Button>
               )}
@@ -344,9 +345,10 @@ const CourseDetail: React.FC = () => {
               {showTrialButton && (
                 <Button 
                   onClick={handleStartTrial}
-                  className="bg-gradient-to-r from-emerald-600 to-rose-600 hover:from-emerald-700 hover:to-rose-700 text-white px-6 shadow-lg"
+                  size="sm"
+                  className="bg-gradient-to-r from-emerald-600 to-rose-600 hover:from-emerald-700 hover:to-rose-700 text-white px-4 shadow-lg text-xs"
                 >
-                  <Gift className="mr-2 h-4 w-4" />
+                  <Gift className="mr-1 h-3 w-3" />
                   Start Free Trial - {formatPrice(course.price || 899)}/month
                 </Button>
               )}
@@ -355,55 +357,56 @@ const CourseDetail: React.FC = () => {
                 <Button 
                   onClick={() => navigate(`/course/${courseId}/edit`)}
                   variant="outline"
-                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80"
+                  size="sm"
+                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs"
                 >
-                  <PenSquare className="mr-2 h-4 w-4" />
+                  <PenSquare className="mr-1 h-3 w-3" />
                   Edit Course
                 </Button>
               )}
             </div>
           </div>
           
-          {/* Course header with enhanced styling */}
+          {/* Compact Course header */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <Badge className="bg-rose-100/80 text-rose-700 border-rose-200/50 backdrop-blur-sm">{course?.subject || "General"}</Badge>
+            <div className="flex items-center gap-2 mb-3">
+              <Badge className="bg-rose-100/80 text-rose-700 border-rose-200/50 backdrop-blur-sm text-xs">{course?.subject || "General"}</Badge>
               <Badge 
                 variant="outline" 
-                className={course?.status === 'published' ? 'text-green-700 border-green-200/50 bg-green-50/80 backdrop-blur-sm' : 'text-gray-600 border-gray-200/50 bg-gray-50/80 backdrop-blur-sm'}
+                className={`text-xs ${course?.status === 'published' ? 'text-green-700 border-green-200/50 bg-green-50/80 backdrop-blur-sm' : 'text-gray-600 border-gray-200/50 bg-gray-50/80 backdrop-blur-sm'}`}
               >
                 {course?.status}
               </Badge>
               {isPurchased && (
-                <Badge className="bg-green-500/90 text-white backdrop-blur-sm">
-                  <CheckCircle className="mr-1 h-3 w-3" />
+                <Badge className="bg-green-500/90 text-white backdrop-blur-sm text-xs">
+                  <CheckCircle className="mr-1 h-2 w-2" />
                   Subscribed
                 </Badge>
               )}
               {!canAccessFullCourse && course?.status === 'published' && (
-                <Badge variant="outline" className="text-orange-600 border-orange-300/50 bg-orange-50/80 backdrop-blur-sm">
-                  <Play className="mr-1 h-3 w-3" />
+                <Badge variant="outline" className="text-orange-600 border-orange-300/50 bg-orange-50/80 backdrop-blur-sm text-xs">
+                  <Play className="mr-1 h-2 w-2" />
                   Preview Mode
                 </Badge>
               )}
             </div>
             
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">{course?.title}</h1>
-            <p className="text-gray-600 text-lg mb-6 max-w-4xl leading-relaxed">{course?.description}</p>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">{course?.title}</h1>
+            <p className="text-gray-600 text-sm mb-4 max-w-4xl leading-relaxed">{course?.description}</p>
             
-            {/* Enhanced progress bar */}
+            {/* Compact progress bar */}
             {user && !progressLoading && totalLessons > 0 && (
-              <div className="bg-gray-50/80 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-gray-700">Course Progress</span>
-                  <span className="text-sm text-gray-600 bg-white/60 px-3 py-1 rounded-full">{completedLessons}/{totalLessons} lessons completed</span>
+              <div className="bg-gray-50/80 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-700">Course Progress</span>
+                  <span className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full">{completedLessons}/{totalLessons} lessons completed</span>
                 </div>
                 <ProgressBar 
                   current={completedLessons}
                   total={totalLessons}
-                  className="w-full h-3"
+                  className="w-full h-2"
                 />
-                <div className="mt-2 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-gray-500">
                   {Math.round((completedLessons / totalLessons) * 100)}% complete
                 </div>
               </div>
@@ -411,14 +414,14 @@ const CourseDetail: React.FC = () => {
           </div>
         </div>
         
-        {/* Course content layout - Now without the notes sidebar */}
-        <div className="flex gap-6">
+        {/* Course content layout */}
+        <div className="flex gap-4">
           {/* Enhanced sidebar with toggle */}
           {!sidebarCollapsed && (
             <div className="w-80 flex-shrink-0">
-              <div className="sticky top-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">Course Content</h3>
+              <div className="sticky top-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-gray-900 text-sm">Course Content</h3>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -443,7 +446,7 @@ const CourseDetail: React.FC = () => {
           {/* Sidebar toggle button when collapsed */}
           {sidebarCollapsed && (
             <div className="flex-shrink-0">
-              <div className="sticky top-6">
+              <div className="sticky top-4">
                 <Button
                   variant="outline"
                   size="sm"
@@ -458,22 +461,22 @@ const CourseDetail: React.FC = () => {
           
           {/* Enhanced content viewer - Now takes full width */}
           <div className="flex-1 min-w-0">
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Main content area */}
               {activeLesson ? (
-                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
-                  <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
+                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg overflow-hidden">
+                  <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{activeLesson.title}</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-1">{activeLesson.title}</h2>
                         {activeLesson.description && (
-                          <p className="text-gray-600 leading-relaxed">{activeLesson.description}</p>
+                          <p className="text-gray-600 text-sm leading-relaxed">{activeLesson.description}</p>
                         )}
                       </div>
                       {activeLesson.duration_minutes && (
-                        <div className="flex items-center gap-2 text-gray-500 bg-white/60 px-3 py-2 rounded-lg backdrop-blur-sm">
-                          <Clock className="h-4 w-4" />
-                          <span className="text-sm font-medium">{activeLesson.duration_minutes} min</span>
+                        <div className="flex items-center gap-2 text-gray-500 bg-white/60 px-2 py-1 rounded-md backdrop-blur-sm">
+                          <Clock className="h-3 w-3" />
+                          <span className="text-xs font-medium">{activeLesson.duration_minutes} min</span>
                         </div>
                       )}
                     </div>
@@ -484,10 +487,10 @@ const CourseDetail: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
-                  <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">No lesson selected</h3>
-                  <p className="text-gray-600 max-w-md mx-auto text-lg leading-relaxed">
+                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-xl p-8 text-center shadow-lg">
+                  <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-800 mb-3">No lesson selected</h3>
+                  <p className="text-gray-600 max-w-md mx-auto text-sm leading-relaxed">
                     {modules && modules.length > 0 
                       ? "Select a lesson from the course content to start learning"
                       : "No content available for this course yet"}
@@ -496,7 +499,7 @@ const CourseDetail: React.FC = () => {
               )}
               
               {/* Flash cards section below the content */}
-              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg overflow-hidden">
                 <NotesSection 
                   courseId={courseId!}
                   lessonId={activeLessonId || undefined}
