@@ -73,72 +73,57 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="h-full">
       {/* Header */}
-      <div className="bg-gray-50 border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-gray-900 text-sm">Flash Cards</h3>
+      <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-1">Flash Cards</h3>
+            {lessonTitle && (
+              <p className="text-sm text-gray-600">For: {lessonTitle}</p>
+            )}
+          </div>
           <Button
             onClick={() => setShowCreateDialog(true)}
-            size="sm"
-            className="bg-[#e94b7f] hover:bg-[#e94b7f]/90 text-white text-xs px-3 py-1 h-auto"
+            className="bg-[#e94b7f] hover:bg-[#e94b7f]/90 text-white"
           >
-            <Plus className="h-3 w-3 mr-1" />
-            Add
+            <Plus className="h-4 w-4 mr-2" />
+            Add Flash Card
           </Button>
         </div>
-        {lessonTitle && (
-          <p className="text-xs text-gray-500">For: {lessonTitle}</p>
-        )}
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1">
+      <div className="p-6">
         {isLoading ? (
-          <div className="p-4 text-center text-gray-500 text-sm">
+          <div className="text-center text-gray-500 py-8">
             Loading flash cards...
           </div>
         ) : notes.length === 0 ? (
-          <div className="p-6 text-center">
-            <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500 mb-3">No flash cards yet</p>
+          <div className="text-center py-12">
+            <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-gray-800 mb-2">No flash cards yet</h4>
+            <p className="text-gray-600 mb-6">Create your first flash card to start organizing your notes</p>
             <Button
               onClick={() => setShowCreateDialog(true)}
-              size="sm"
               variant="outline"
-              className="text-xs border-[#e94b7f]/30 text-[#e94b7f] hover:bg-[#e94b7f]/10"
+              className="border-[#e94b7f]/30 text-[#e94b7f] hover:bg-[#e94b7f]/10"
             >
               Create your first flash card
             </Button>
           </div>
         ) : (
-          <div className="p-2">
-            {notes.map((note, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {notes.map((note) => (
               <div
                 key={note.id}
-                className={`p-3 border-b border-gray-100 hover:bg-gray-50 group transition-colors ${
-                  index === notes.length - 1 ? 'border-b-0' : ''
-                }`}
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 group"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-[#e94b7f] mb-1 truncate">
-                      {note.title}
-                    </h4>
-                    {note.content && (
-                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                        {note.content}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-400">
-                      {formatDate(note.created_at)}
-                      {note.updated_at !== note.created_at && (
-                        <span className="ml-1">(edited)</span>
-                      )}
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                <div className="flex items-start justify-between mb-3">
+                  <h4 className="font-semibold text-[#e94b7f] text-sm leading-tight line-clamp-2">
+                    {note.title}
+                  </h4>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 flex-shrink-0">
                     <Button
                       onClick={() => handleEditNote(note)}
                       size="sm"
@@ -157,11 +142,24 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                     </Button>
                   </div>
                 </div>
+                
+                {note.content && (
+                  <p className="text-xs text-gray-600 mb-3 line-clamp-3 leading-relaxed">
+                    {note.content}
+                  </p>
+                )}
+                
+                <div className="text-xs text-gray-400">
+                  {formatDate(note.created_at)}
+                  {note.updated_at !== note.created_at && (
+                    <span className="ml-1">(edited)</span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Dialogs */}
       <CreateFlashCardDialog

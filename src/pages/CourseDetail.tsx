@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -253,10 +252,7 @@ const CourseDetail: React.FC = () => {
             <div className="col-span-3">
               <Skeleton className="h-[600px] w-full" />
             </div>
-            <div className="col-span-6">
-              <Skeleton className="h-[600px] w-full" />
-            </div>
-            <div className="col-span-3">
+            <div className="col-span-9">
               <Skeleton className="h-[600px] w-full" />
             </div>
           </div>
@@ -415,7 +411,7 @@ const CourseDetail: React.FC = () => {
           </div>
         </div>
         
-        {/* Course content layout with improved space utilization */}
+        {/* Course content layout - Now without the notes sidebar */}
         <div className="flex gap-6">
           {/* Enhanced sidebar with toggle */}
           {!sidebarCollapsed && (
@@ -460,52 +456,53 @@ const CourseDetail: React.FC = () => {
             </div>
           )}
           
-          {/* Enhanced content viewer with flexible width */}
+          {/* Enhanced content viewer - Now takes full width */}
           <div className="flex-1 min-w-0">
-            {activeLesson ? (
-              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
-                <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">{activeLesson.title}</h2>
-                      {activeLesson.description && (
-                        <p className="text-gray-600 leading-relaxed">{activeLesson.description}</p>
+            <div className="space-y-6">
+              {/* Main content area */}
+              {activeLesson ? (
+                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+                  <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{activeLesson.title}</h2>
+                        {activeLesson.description && (
+                          <p className="text-gray-600 leading-relaxed">{activeLesson.description}</p>
+                        )}
+                      </div>
+                      {activeLesson.duration_minutes && (
+                        <div className="flex items-center gap-2 text-gray-500 bg-white/60 px-3 py-2 rounded-lg backdrop-blur-sm">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-sm font-medium">{activeLesson.duration_minutes} min</span>
+                        </div>
                       )}
                     </div>
-                    {activeLesson.duration_minutes && (
-                      <div className="flex items-center gap-2 text-gray-500 bg-white/60 px-3 py-2 rounded-lg backdrop-blur-sm">
-                        <Clock className="h-4 w-4" />
-                        <span className="text-sm font-medium">{activeLesson.duration_minutes} min</span>
-                      </div>
-                    )}
                   </div>
+                  <ContentViewer 
+                    lesson={activeLesson} 
+                    isLoading={false}
+                  />
                 </div>
-                <ContentViewer 
-                  lesson={activeLesson} 
-                  isLoading={false}
+              ) : (
+                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
+                  <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">No lesson selected</h3>
+                  <p className="text-gray-600 max-w-md mx-auto text-lg leading-relaxed">
+                    {modules && modules.length > 0 
+                      ? "Select a lesson from the course content to start learning"
+                      : "No content available for this course yet"}
+                  </p>
+                </div>
+              )}
+              
+              {/* Flash cards section below the content */}
+              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+                <NotesSection 
+                  courseId={courseId!}
+                  lessonId={activeLessonId || undefined}
+                  lessonTitle={activeLesson?.title}
                 />
               </div>
-            ) : (
-              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
-                <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">No lesson selected</h3>
-                <p className="text-gray-600 max-w-md mx-auto text-lg leading-relaxed">
-                  {modules && modules.length > 0 
-                    ? "Select a lesson from the course content to start learning"
-                    : "No content available for this course yet"}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Enhanced notes section with fixed width */}
-          <div className="w-80 flex-shrink-0">
-            <div className="sticky top-6">
-              <NotesSection 
-                courseId={courseId!}
-                lessonId={activeLessonId || undefined}
-                lessonTitle={activeLesson?.title}
-              />
             </div>
           </div>
         </div>
