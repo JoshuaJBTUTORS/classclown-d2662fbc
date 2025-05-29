@@ -30,6 +30,7 @@ const CourseDetail: React.FC = () => {
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentContentType, setCurrentContentType] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
@@ -210,6 +211,11 @@ const CourseDetail: React.FC = () => {
   // Handle lesson selection
   const handleLessonSelect = (lesson: any) => {
     setActiveLessonId(lesson.id);
+  };
+
+  // Handle content type change
+  const handleContentTypeChange = (contentType: string) => {
+    setCurrentContentType(contentType);
   };
 
   // Find active content
@@ -488,6 +494,7 @@ const CourseDetail: React.FC = () => {
                   <ContentViewer 
                     lesson={activeLesson} 
                     isLoading={false}
+                    onContentTypeChange={handleContentTypeChange}
                   />
                 </div>
               ) : (
@@ -508,6 +515,7 @@ const CourseDetail: React.FC = () => {
                   courseId={courseId!}
                   lessonId={activeLessonId || undefined}
                   lessonTitle={activeLesson?.title}
+                  contentType={currentContentType}
                 />
               </div>
             </div>
