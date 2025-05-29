@@ -11,7 +11,7 @@ interface AssessmentAccessControlProps {
     id: string;
     status: 'draft' | 'published' | 'archived';
     created_by?: string;
-  };
+  } | null | undefined;
   requiredAccess: 'view' | 'edit' | 'take';
   children: React.ReactNode;
 }
@@ -37,6 +37,17 @@ const AssessmentAccessControl: React.FC<AssessmentAccessControlProps> = ({
         <Button className="mt-4" onClick={() => navigate('/auth')}>
           Sign In
         </Button>
+      </div>
+    );
+  }
+
+  // Handle loading state when assessment is undefined/null
+  if (!assessment) {
+    return (
+      <div className="container py-8">
+        <div className="text-center">
+          <p className="text-gray-600">Loading assessment...</p>
+        </div>
       </div>
     );
   }
