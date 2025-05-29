@@ -16,16 +16,7 @@ const AIAssessmentManager: React.FC = () => {
 
   const { data: assessments = [], isLoading, refetch } = useQuery({
     queryKey: ['allAssessments'],
-    queryFn: async () => {
-      // We'll need to create a service method to get all assessments, not just published ones
-      const { data, error } = await aiAssessmentService.supabase
-        .from('ai_assessments')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: aiAssessmentService.getAllAssessments,
   });
 
   const filteredAssessments = assessments.filter(assessment => {

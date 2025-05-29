@@ -58,6 +58,39 @@ export interface StudentResponse {
   marked_at?: string;
 }
 
+// Helper function to convert database row to AIAssessment
+const mapToAIAssessment = (row: any): AIAssessment => ({
+  id: row.id,
+  title: row.title,
+  description: row.description,
+  subject: row.subject,
+  exam_board: row.exam_board,
+  year: row.year,
+  paper_type: row.paper_type,
+  total_marks: row.total_marks,
+  time_limit_minutes: row.time_limit_minutes,
+  created_by: row.created_by,
+  created_at: row.created_at,
+  updated_at: row.updated_at,
+  status: row.status as 'draft' | 'published' | 'archived'
+});
+
+// Helper function to convert database row to AssessmentQuestion
+const mapToAssessmentQuestion = (row: any): AssessmentQuestion => ({
+  id: row.id,
+  assessment_id: row.assessment_id,
+  question_number: row.question_number,
+  question_text: row.question_text,
+  question_type: row.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
+  marks_available: row.marks_available,
+  correct_answer: row.correct_answer,
+  marking_scheme: row.marking_scheme,
+  keywords: Array.isArray(row.keywords) ? row.keywords.map(k => String(k)) : [],
+  position: row.position,
+  created_at: row.created_at,
+  updated_at: row.updated_at
+});
+
 export const aiAssessmentService = {
   // Expose Supabase client for direct operations
   supabase,
@@ -71,10 +104,7 @@ export const aiAssessmentService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(item => ({
-      ...item,
-      status: item.status as 'draft' | 'published' | 'archived'
-    }));
+    return (data || []).map(mapToAIAssessment);
   },
 
   // Get all assessments (for admin use)
@@ -85,10 +115,7 @@ export const aiAssessmentService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(item => ({
-      ...item,
-      status: item.status as 'draft' | 'published' | 'archived'
-    }));
+    return (data || []).map(mapToAIAssessment);
   },
 
   // Get assessment by ID
@@ -103,10 +130,7 @@ export const aiAssessmentService = {
       if (error.code === 'PGRST116') return null;
       throw error;
     }
-    return {
-      ...data,
-      status: data.status as 'draft' | 'published' | 'archived'
-    };
+    return mapToAIAssessment(data);
   },
 
   // Get questions for an assessment
@@ -118,30 +142,29 @@ export const aiAssessmentService = {
       .order('position');
 
     if (error) throw error;
-    return (data || []).map(item => ({
-      ...item,
-      question_type: item.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
-      keywords: Array.isArray(item.keywords) ? item.keywords.map(k => String(k)) : []
-    }));
+    return (data || []).map(mapToAssessmentQuestion);
   },
 
   // Create a new assessment
-  async createAssessment(assessment: Partial<AIAssessment>): Promise<AIAssessment> {
+  async createAssessment(assessment: Omit<AIAssessment, 'id' | 'created_at' | 'updated_at' | 'status' | 'created_by'>): Promise<AIAssessment> {
+    const { data: user } = await supabase.auth.getUser();
+    
     const { data, error } = await supabase
       .from('ai_assessments')
-      .insert(assessment)
+      .insert({
+        ...assessment,
+        status: 'draft',
+        created_by: user.user?.id,
+      })
       .select()
       .single();
 
     if (error) throw error;
-    return {
-      ...data,
-      status: data.status as 'draft' | 'published' | 'archived'
-    };
+    return mapToAIAssessment(data);
   },
 
   // Update assessment
-  async updateAssessment(id: string, updates: Partial<AIAssessment>): Promise<AIAssessment> {
+  async updateAssessment(id: string, updates: Partial<Omit<AIAssessment, 'id' | 'created_at' | 'updated_at'>>): Promise<AIAssessment> {
     const { data, error } = await supabase
       .from('ai_assessments')
       .update(updates)
@@ -150,10 +173,7 @@ export const aiAssessmentService = {
       .single();
 
     if (error) throw error;
-    return {
-      ...data,
-      status: data.status as 'draft' | 'published' | 'archived'
-    };
+    return mapToAIAssessment(data);
   },
 
   // Delete assessment
@@ -167,7 +187,7 @@ export const aiAssessmentService = {
   },
 
   // Create a new assessment question
-  async createQuestion(question: Partial<AssessmentQuestion>): Promise<AssessmentQuestion> {
+  async createQuestion(question: Omit<AssessmentQuestion, 'id' | 'created_at' | 'updated_at'>): Promise<AssessmentQuestion> {
     const { data, error } = await supabase
       .from('assessment_questions')
       .insert(question)
@@ -175,15 +195,11 @@ export const aiAssessmentService = {
       .single();
 
     if (error) throw error;
-    return {
-      ...data,
-      question_type: data.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
-      keywords: Array.isArray(data.keywords) ? data.keywords.map(k => String(k)) : []
-    };
+    return mapToAssessmentQuestion(data);
   },
 
   // Update a question
-  async updateQuestion(id: string, updates: Partial<AssessmentQuestion>): Promise<AssessmentQuestion> {
+  async updateQuestion(id: string, updates: Partial<Omit<AssessmentQuestion, 'id' | 'created_at' | 'updated_at'>>): Promise<AssessmentQuestion> {
     const { data, error } = await supabase
       .from('assessment_questions')
       .update(updates)
@@ -192,11 +208,7 @@ export const aiAssessmentService = {
       .single();
 
     if (error) throw error;
-    return {
-      ...data,
-      question_type: data.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
-      keywords: Array.isArray(data.keywords) ? data.keywords.map(k => String(k)) : []
-    };
+    return mapToAssessmentQuestion(data);
   },
 
   // Delete a question

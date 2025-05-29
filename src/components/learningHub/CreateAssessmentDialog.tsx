@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { aiAssessmentService } from '@/services/aiAssessmentService';
 
 interface CreateAssessmentDialogProps {
   isOpen: boolean;
@@ -70,20 +70,7 @@ const CreateAssessmentDialog: React.FC<CreateAssessmentDialogProps> = ({
 
   const createAssessmentMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const { data: userData } = await supabase.auth.getUser();
-      
-      const { data, error } = await supabase
-        .from('ai_assessments')
-        .insert({
-          ...values,
-          status: 'draft',
-          created_by: userData.user?.id,
-        })
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      return data;
+      return await aiAssessmentService.createAssessment(values);
     },
     onSuccess: (data) => {
       toast({
