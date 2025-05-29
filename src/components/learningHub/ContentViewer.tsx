@@ -3,6 +3,7 @@ import React from 'react';
 import { CourseLesson } from '@/types/course';
 import VideoEmbed from './VideoEmbed';
 import QuizEmbed from './QuizEmbed';
+import AIAssessmentViewer from './AIAssessmentViewer';
 
 interface ContentViewerProps {
   lesson: CourseLesson;
@@ -29,6 +30,8 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         );
       case 'quiz':
         return <QuizEmbed src={lesson.content_url || ''} title={lesson.title} />;
+      case 'ai-assessment':
+        return <AIAssessmentViewer assessmentId={lesson.content_url || ''} />;
       case 'text':
         return (
           <div className="prose max-w-none p-6">

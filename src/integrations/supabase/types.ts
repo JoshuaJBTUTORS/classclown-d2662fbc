@@ -9,6 +9,167 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_assessments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          exam_board: string | null
+          id: string
+          paper_type: string | null
+          status: string
+          subject: string | null
+          time_limit_minutes: number | null
+          title: string
+          total_marks: number | null
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          exam_board?: string | null
+          id?: string
+          paper_type?: string | null
+          status?: string
+          subject?: string | null
+          time_limit_minutes?: number | null
+          title: string
+          total_marks?: number | null
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          exam_board?: string | null
+          id?: string
+          paper_type?: string | null
+          status?: string
+          subject?: string | null
+          time_limit_minutes?: number | null
+          title?: string
+          total_marks?: number | null
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
+      assessment_questions: {
+        Row: {
+          assessment_id: string
+          correct_answer: string
+          created_at: string
+          id: string
+          keywords: Json | null
+          marking_scheme: Json
+          marks_available: number
+          position: number
+          question_number: number
+          question_text: string
+          question_type: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          correct_answer: string
+          created_at?: string
+          id?: string
+          keywords?: Json | null
+          marking_scheme?: Json
+          marks_available?: number
+          position: number
+          question_number: number
+          question_text: string
+          question_type: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          correct_answer?: string
+          created_at?: string
+          id?: string
+          keywords?: Json | null
+          marking_scheme?: Json
+          marks_available?: number
+          position?: number
+          question_number?: number
+          question_text?: string
+          question_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_questions_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_sessions: {
+        Row: {
+          assessment_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          started_at: string
+          status: string
+          student_id: number | null
+          time_taken_minutes: number | null
+          total_marks_achieved: number | null
+          total_marks_available: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assessment_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          started_at?: string
+          status?: string
+          student_id?: number | null
+          time_taken_minutes?: number | null
+          total_marks_achieved?: number | null
+          total_marks_available?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assessment_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          started_at?: string
+          status?: string
+          student_id?: number | null
+          time_taken_minutes?: number | null
+          total_marks_achieved?: number | null
+          total_marks_available?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_sessions_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_lessons: {
         Row: {
           content_text: string | null
@@ -709,6 +870,66 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_responses: {
+        Row: {
+          ai_feedback: string | null
+          confidence_score: number | null
+          created_at: string
+          id: string
+          marked_at: string | null
+          marking_breakdown: Json | null
+          marks_awarded: number | null
+          question_id: string
+          session_id: string
+          student_answer: string | null
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          marked_at?: string | null
+          marking_breakdown?: Json | null
+          marks_awarded?: number | null
+          question_id: string
+          session_id: string
+          student_answer?: string | null
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          marked_at?: string | null
+          marking_breakdown?: Json | null
+          marks_awarded?: number | null
+          question_id?: string
+          session_id?: string
+          student_answer?: string | null
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_responses_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_sessions"
             referencedColumns: ["id"]
           },
         ]

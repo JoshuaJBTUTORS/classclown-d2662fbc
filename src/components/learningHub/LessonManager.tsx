@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Video, FileQuestion, LinkIcon, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, Video, FileQuestion, LinkIcon, FileText, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
+import { aiAssessmentService } from '@/services/aiAssessmentService';
 import { CourseLesson } from '@/types/course';
 
 interface LessonManagerProps {
@@ -43,6 +44,14 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
       return modules.find(m => m.id === moduleId);
     },
     enabled: !!moduleId && !!courseId,
+  });
+
+  // Fetch available assessments for AI assessment type
+  const { data: assessments = [] } = useQuery({
+    queryKey: ['publishedAssessments'],
+    queryFn: () => aiAssessmentService.getPublishedAssessments(),
+    enabled: newLesson.content_type === 'ai-assessment' || 
+             (editingLessonId && module?.lessons?.find(l => l.id === editingLessonId)?.content_type === 'ai-assessment'),
   });
 
   const createLessonMutation = useMutation({
@@ -133,7 +142,7 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
       return;
     }
 
-    if ((newLesson.content_type === 'video' || newLesson.content_type === 'quiz') && !newLesson.content_url?.trim()) {
+    if ((newLesson.content_type === 'video' || newLesson.content_type === 'quiz' || newLesson.content_type === 'ai-assessment') && !newLesson.content_url?.trim()) {
       toast({
         title: "Content URL required",
         description: `Please provide a URL for your ${newLesson.content_type}`,
@@ -178,6 +187,8 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
         return <Video className="h-4 w-4 mr-2" />;
       case 'quiz':
         return <FileQuestion className="h-4 w-4 mr-2" />;
+      case 'ai-assessment':
+        return <Brain className="h-4 w-4 mr-2" />;
       case 'text':
         return <FileText className="h-4 w-4 mr-2" />;
       default:
@@ -229,6 +240,36 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
               placeholder="Enter Quizizz embed URL or code"
             />
             <p className="text-xs text-gray-500 mt-1">Copy the embed code from Quizizz share options</p>
+          </div>
+        );
+      case 'ai-assessment':
+        return (
+          <div>
+            <label className="block text-sm font-medium mb-1">AI Assessment</label>
+            <Select
+              value={editingLessonId ? 
+                module?.lessons?.find(l => l.id === editingLessonId)?.content_url || '' : 
+                newLesson.content_url || ''}
+              onValueChange={(value) => {
+                if (editingLessonId) {
+                  handleUpdateLesson(editingLessonId, { content_url: value });
+                } else {
+                  setNewLesson({...newLesson, content_url: value});
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an AI assessment" />
+              </SelectTrigger>
+              <SelectContent>
+                {assessments.map((assessment) => (
+                  <SelectItem key={assessment.id} value={assessment.id}>
+                    {assessment.title} ({assessment.total_marks} marks)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">Choose from published AI assessments</p>
           </div>
         );
       case 'text':
@@ -293,7 +334,7 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
               <label className="block text-sm font-medium mb-1">Content Type</label>
               <Select
                 value={newLesson.content_type}
-                onValueChange={(value) => setNewLesson({...newLesson, content_type: value as 'video' | 'quiz' | 'text'})}
+                onValueChange={(value) => setNewLesson({...newLesson, content_type: value as 'video' | 'quiz' | 'text' | 'ai-assessment'})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select content type" />
@@ -301,6 +342,7 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
                 <SelectContent>
                   <SelectItem value="video">Video (Vimeo)</SelectItem>
                   <SelectItem value="quiz">Quiz (Quizizz)</SelectItem>
+                  <SelectItem value="ai-assessment">AI Assessment</SelectItem>
                   <SelectItem value="text">Text Content</SelectItem>
                 </SelectContent>
               </Select>
@@ -386,7 +428,7 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
               <label className="block text-sm font-medium mb-1">Content Type</label>
               <Select
                 value={module?.lessons?.find(l => l.id === editingLessonId)?.content_type || 'video'}
-                onValueChange={(value) => handleUpdateLesson(editingLessonId, { content_type: value as 'video' | 'quiz' | 'text' })}
+                onValueChange={(value) => handleUpdateLesson(editingLessonId, { content_type: value as 'video' | 'quiz' | 'text' | 'ai-assessment' })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select content type" />
@@ -394,6 +436,7 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
                 <SelectContent>
                   <SelectItem value="video">Video (Vimeo)</SelectItem>
                   <SelectItem value="quiz">Quiz (Quizizz)</SelectItem>
+                  <SelectItem value="ai-assessment">AI Assessment</SelectItem>
                   <SelectItem value="text">Text Content</SelectItem>
                 </SelectContent>
               </Select>
