@@ -175,12 +175,11 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
       
       let questionData: any = {
         assessment_id: assessmentId,
-        question_number: 1, // Will be auto-calculated
+        // Remove hardcoded question_number and position - let the service calculate them
         question_text: values.question_text,
         question_type: values.question_type,
         marks_available: values.marks_available,
         keywords: values.keywords ? values.keywords.split(',').map(k => k.trim()) : [],
-        position: 1, // Will be auto-calculated
         image_url: values.image_url || null,
       };
 
@@ -222,9 +221,16 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
     },
     onError: (error) => {
       console.error('Error creating/updating question:', error);
+      
+      // Provide more user-friendly error messages
+      let errorMessage = error.message;
+      if (error.message.includes('duplicate key value violates unique constraint')) {
+        errorMessage = "There was an issue with question numbering. Please try again.";
+      }
+      
       toast({
         title: "Error",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },

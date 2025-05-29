@@ -230,13 +230,48 @@ export const aiAssessmentService = {
 
   // Create a new assessment question
   async createQuestion(question: Omit<AssessmentQuestion, 'id' | 'created_at' | 'updated_at'>): Promise<AssessmentQuestion> {
+    // First, get the next available question number and position for this assessment
+    const { data: existingQuestions, error: fetchError } = await supabase
+      .from('assessment_questions')
+      .select('question_number, position')
+      .eq('assessment_id', question.assessment_id)
+      .order('question_number', { ascending: false })
+      .limit(1);
+
+    if (fetchError) {
+      console.error('Error fetching existing questions:', fetchError);
+      throw fetchError;
+    }
+
+    // Calculate next question number and position
+    const nextQuestionNumber = existingQuestions && existingQuestions.length > 0 
+      ? existingQuestions[0].question_number + 1 
+      : 1;
+    
+    const nextPosition = existingQuestions && existingQuestions.length > 0 
+      ? existingQuestions[0].position + 1 
+      : 1;
+
+    // Create the question with calculated numbers
+    const questionData = {
+      ...question,
+      question_number: nextQuestionNumber,
+      position: nextPosition,
+    };
+
+    console.log('Creating question with data:', questionData);
+
     const { data, error } = await supabase
       .from('assessment_questions')
-      .insert(question)
+      .insert(questionData)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating question:', error);
+      throw error;
+    }
+    
     return mapToAssessmentQuestion(data);
   },
 
