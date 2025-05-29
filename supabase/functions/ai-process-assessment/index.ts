@@ -61,29 +61,52 @@ serve(async (req) => {
       throw new Error('Assessment not found');
     }
 
-    console.log('Found assessment:', assessment.title);
+    console.log('Found assessment:', assessment.title, 'Subject:', assessment.subject || 'Unknown');
 
-    // Process PDFs with real content extraction
+    // Process PDFs with improved content extraction
     let questionsContent = '';
     let answersContent = '';
+    let hasPDFs = false;
 
     if (assessment.questions_pdf_url) {
-      questionsContent = await downloadAndExtractPDF(supabase, assessment.questions_pdf_url, 'questions');
+      console.log('Processing questions PDF:', assessment.questions_pdf_url);
+      const result = await downloadAndExtractPDF(supabase, assessment.questions_pdf_url, 'questions');
+      questionsContent = result.content;
+      hasPDFs = hasPDFs || result.success;
+      console.log('Questions extraction result:', { 
+        success: result.success, 
+        contentLength: questionsContent.length,
+        preview: questionsContent.substring(0, 200) + '...'
+      });
     }
 
     if (assessment.answers_pdf_url) {
-      answersContent = await downloadAndExtractPDF(supabase, assessment.answers_pdf_url, 'answers');
+      console.log('Processing answers PDF:', assessment.answers_pdf_url);
+      const result = await downloadAndExtractPDF(supabase, assessment.answers_pdf_url, 'answers');
+      answersContent = result.content;
+      hasPDFs = hasPDFs || result.success;
+      console.log('Answers extraction result:', { 
+        success: result.success, 
+        contentLength: answersContent.length,
+        preview: answersContent.substring(0, 200) + '...'
+      });
     }
 
-    // If no PDFs are provided, generate sample content based on assessment metadata
-    if (!questionsContent && !answersContent) {
+    // Only use sample content if no PDFs were provided at all
+    if (!assessment.questions_pdf_url && !assessment.answers_pdf_url) {
+      console.log('No PDFs provided, generating sample content based on assessment metadata');
       questionsContent = generateSampleQuestionContent(assessment);
       answersContent = generateSampleAnswerContent(assessment);
+    } else if (!hasPDFs) {
+      // PDFs were provided but extraction failed
+      console.error('PDF extraction failed for all provided files');
+      throw new Error('Failed to extract content from provided PDF files. Please ensure PDFs contain readable text.');
     }
 
-    console.log('Extracted content lengths:', {
+    console.log('Final content lengths:', {
       questions: questionsContent.length,
-      answers: answersContent.length
+      answers: answersContent.length,
+      usingPDFs: hasPDFs
     });
 
     // Process with AI (OpenAI)
@@ -171,9 +194,9 @@ serve(async (req) => {
   }
 });
 
-async function downloadAndExtractPDF(supabase: any, filePath: string, type: 'questions' | 'answers'): Promise<string> {
+async function downloadAndExtractPDF(supabase: any, filePath: string, type: 'questions' | 'answers'): Promise<{content: string, success: boolean}> {
   try {
-    console.log('Downloading and extracting PDF:', filePath);
+    console.log(`Downloading file: ${filePath} Type: ${type}`);
     
     const { data, error } = await supabase.storage
       .from('assessment-files')
@@ -181,56 +204,76 @@ async function downloadAndExtractPDF(supabase: any, filePath: string, type: 'que
 
     if (error) {
       console.error('Storage download error:', error);
-      return '';
+      return { content: '', success: false };
+    }
+
+    if (!data) {
+      console.error('No data received from storage');
+      return { content: '', success: false };
+    }
+
+    // Get file size for logging
+    const fileSize = data.size || 0;
+    console.log(`Downloaded file size: ${fileSize} bytes`);
+
+    if (fileSize === 0) {
+      console.error('Downloaded file is empty');
+      return { content: '', success: false };
     }
 
     // Convert blob to array buffer
     const arrayBuffer = await data.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     
+    console.log(`Converted to buffer, attempting PDF parsing...`);
+
     try {
-      // Use pdf-parse to extract text content
+      // Try using pdf-parse with better error handling
       const pdfParse = await import('https://esm.sh/pdf-parse@1.1.1');
       const pdfData = await pdfParse.default(uint8Array);
       
-      const extractedText = pdfData.text;
-      console.log(`Successfully extracted ${extractedText.length} characters from ${type} PDF`);
+      const extractedText = pdfData.text || '';
+      console.log(`PDF parsing completed. Text length: ${extractedText.length}`);
       
       if (extractedText.trim().length === 0) {
-        console.warn(`No text content extracted from ${type} PDF`);
-        return generateFallbackContent(type);
+        console.warn(`No text content extracted from ${type} PDF - may be image-based or corrupted`);
+        return { content: '', success: false };
       }
       
-      return extractedText;
+      // Log a preview of extracted content
+      const preview = extractedText.substring(0, 500).replace(/\s+/g, ' ').trim();
+      console.log(`Successfully extracted text preview: "${preview}..."`);
+      
+      return { content: extractedText, success: true };
     } catch (parseError) {
       console.error('PDF parsing error:', parseError);
-      return generateFallbackContent(type);
+      console.log('Attempting alternative text extraction...');
+      
+      // Try alternative approach - convert to text using a different method
+      try {
+        // Simple fallback - try to decode as text directly (for some PDFs)
+        const textDecoder = new TextDecoder('utf-8', { fatal: false });
+        const rawText = textDecoder.decode(uint8Array);
+        
+        // Extract readable text portions (basic heuristic)
+        const cleanText = rawText
+          .replace(/[^\x20-\x7E\n\r\t]/g, ' ') // Keep only printable ASCII
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        if (cleanText.length > 50) { // Arbitrary threshold for meaningful content
+          console.log(`Alternative extraction succeeded, text length: ${cleanText.length}`);
+          return { content: cleanText, success: true };
+        }
+      } catch (altError) {
+        console.error('Alternative extraction failed:', altError);
+      }
+      
+      return { content: '', success: false };
     }
   } catch (error) {
     console.error('Error downloading/extracting PDF:', error);
-    return generateFallbackContent(type);
-  }
-}
-
-function generateFallbackContent(type: 'questions' | 'answers'): string {
-  if (type === 'questions') {
-    return `
-SAMPLE EXAM QUESTIONS
-Unable to extract content from PDF. Please ensure the PDF is text-based and not a scanned image.
-
-Question 1: Define the key concepts covered in this subject area.
-Question 2: Explain the main principles and their applications.
-Question 3: Analyze the given scenario and provide your reasoning.
-    `;
-  } else {
-    return `
-SAMPLE MARKING SCHEME
-Unable to extract content from PDF. Please ensure the PDF is text-based and not a scanned image.
-
-Question 1: Award marks for clear definitions and understanding.
-Question 2: Award marks for correct explanations and examples.
-Question 3: Award marks for logical analysis and reasoning.
-    `;
+    return { content: '', success: false };
   }
 }
 
@@ -360,17 +403,20 @@ ${answersContent}
 
 CRITICAL INSTRUCTIONS:
 1. Extract questions EXACTLY as they appear in the documents
-2. Use the actual subject matter from the PDFs (NOT mathematics if the content is science)
+2. Use the actual subject matter from the PDFs - if the content is about biology/science, DO NOT label it as mathematics
 3. Match questions to their corresponding answers from the marking scheme
 4. Determine question types based on the actual content structure
 5. Extract marking schemes directly from the answers PDF
 6. If content is unclear, set confidence_score lower
 7. Return ONLY valid JSON without markdown formatting
+8. Pay special attention to the subject - analyze the content to determine if it's Biology, Chemistry, Physics, Mathematics, etc.
 
-Analyze the actual content above and extract the real questions and answers.
+Analyze the actual content above and extract the real questions and answers. Make sure the subject field reflects the actual content of the exam papers.
 `;
 
   console.log('Sending request to OpenAI with actual PDF content...');
+  console.log('Content preview - Questions:', questionsContent.substring(0, 200));
+  console.log('Content preview - Answers:', answersContent.substring(0, 200));
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -406,6 +452,7 @@ Analyze the actual content above and extract the real questions and answers.
     
     const parsedContent = JSON.parse(cleanedContent);
     console.log('Successfully parsed AI response');
+    console.log('Detected subject from AI:', parsedContent.metadata?.subject);
     return parsedContent;
   } catch (parseError) {
     console.error('Failed to parse AI response:', content);
