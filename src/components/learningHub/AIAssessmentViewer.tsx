@@ -20,9 +20,13 @@ import Navbar from '@/components/navigation/Navbar';
 
 interface AIAssessmentViewerProps {
   assessmentId?: string;
+  embedded?: boolean;
 }
 
-const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId: propAssessmentId }) => {
+const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ 
+  assessmentId: propAssessmentId, 
+  embedded = false 
+}) => {
   const { id: paramId } = useParams<{ id: string }>();
   const id = propAssessmentId || paramId;
   const navigate = useNavigate();
@@ -98,7 +102,9 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId: p
         title: "Assessment completed",
         description: "You have completed the assessment.",
       });
-      navigate('/learning-hub');
+      if (!embedded) {
+        navigate('/learning-hub');
+      }
     },
     onError: (error: any) => {
       toast({
@@ -220,46 +226,138 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId: p
     setSidebarOpen(!sidebarOpen);
   };
 
-  if (assessmentLoading) {
-    return (
-      <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto">
-            <div className="container py-8">
-              <Skeleton className="h-8 w-64 mb-6" />
-              <div className="space-y-6">
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-48 w-full" />
-              </div>
-            </div>
-          </main>
+  const renderMainContent = () => {
+    if (assessmentLoading) {
+      return (
+        <div className={embedded ? "p-6" : "container py-8"}>
+          <Skeleton className="h-8 w-64 mb-6" />
+          <div className="space-y-6">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (assessmentError || !assessment) {
+    if (assessmentError || !assessment) {
+      return (
+        <div className={embedded ? "p-6" : "container py-8"}>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Not Found</h1>
+            <p className="text-gray-600 mb-6">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
+            {!embedded && (
+              <Button onClick={() => navigate('/learning-hub')}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Learning Hub
+              </Button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto">
-            <div className="container py-8">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Not Found</h1>
-                <p className="text-gray-600 mb-6">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
-                <Button onClick={() => navigate('/learning-hub')}>
-                  <ChevronLeft className="mr-2 h-4 w-4" />
-                  Back to Learning Hub
+      <div className={embedded ? "p-6" : "container py-8"}>
+        {!embedded && (
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/learning-hub')} 
+            className="mb-4"
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to Learning Hub
+          </Button>
+        )}
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-2xl">{assessment.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {session ? (
+              <>
+                {assessment.time_limit_minutes && timeRemaining !== null ? (
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="mr-2 h-4 w-4" />
+                      Time Remaining: {formatTime(timeRemaining)}
+                    </div>
+                    <Button variant="destructive" size="sm" onClick={completeAssessment}>
+                      Complete Assessment
+                    </Button>
+                  </div>
+                ) : null}
+
+                {questionsLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-32 w-full" />
+                    ))}
+                  </div>
+                ) : questions && questions.length > 0 ? (
+                  <>
+                    <div className="mb-4">
+                      Question {currentQuestionIndex + 1} of {questions.length}
+                      <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
+                    </div>
+
+                    <QuestionCard
+                      question={questions[currentQuestionIndex]}
+                      studentAnswer={studentAnswers[questions[currentQuestionIndex].id] || ''}
+                      onAnswerChange={handleAnswerChange}
+                      isSubmitting={isSubmitting}
+                      onSubmit={submitCurrentAnswer}
+                      isMarking={isMarking[questions[currentQuestionIndex].id]}
+                      onMark={markCurrentQuestion}
+                      feedback={feedback[questions[currentQuestionIndex].id]}
+                    />
+
+                    <div className="flex justify-between mt-4">
+                      <Button
+                        variant="secondary"
+                        onClick={goToPreviousQuestion}
+                        disabled={currentQuestionIndex === 0}
+                      >
+                        <ChevronLeft className="mr-2 h-4 w-4" />
+                        Previous
+                      </Button>
+                      <Button
+                        onClick={goToNextQuestion}
+                        disabled={currentQuestionIndex === questions.length - 1}
+                      >
+                        Next
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No questions found for this assessment.</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">Ready to start the assessment?</p>
+                <Button onClick={startAssessment} disabled={assessmentLoading}>
+                  Start Assessment
                 </Button>
               </div>
-            </div>
-          </main>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+    );
+  };
+
+  if (embedded) {
+    return (
+      <AssessmentAccessControl 
+        assessment={assessment} 
+        requiredAccess="take"
+      >
+        {renderMainContent()}
+      </AssessmentAccessControl>
     );
   }
 
@@ -275,94 +373,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId: p
           <Navbar toggleSidebar={toggleSidebar} />
           
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
-            <div className="container py-8">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/learning-hub')} 
-                className="mb-4"
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back to Learning Hub
-              </Button>
-
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-2xl">{assessment.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {session ? (
-                    <>
-                      {assessment.time_limit_minutes && timeRemaining !== null ? (
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="mr-2 h-4 w-4" />
-                            Time Remaining: {formatTime(timeRemaining)}
-                          </div>
-                          <Button variant="destructive" size="sm" onClick={completeAssessment}>
-                            Complete Assessment
-                          </Button>
-                        </div>
-                      ) : null}
-
-                      {questionsLoading ? (
-                        <div className="space-y-4">
-                          {[...Array(3)].map((_, i) => (
-                            <Skeleton key={i} className="h-32 w-full" />
-                          ))}
-                        </div>
-                      ) : questions && questions.length > 0 ? (
-                        <>
-                          <div className="mb-4">
-                            Question {currentQuestionIndex + 1} of {questions.length}
-                            <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
-                          </div>
-
-                          <QuestionCard
-                            question={questions[currentQuestionIndex]}
-                            studentAnswer={studentAnswers[questions[currentQuestionIndex].id] || ''}
-                            onAnswerChange={handleAnswerChange}
-                            isSubmitting={isSubmitting}
-                            onSubmit={submitCurrentAnswer}
-                            isMarking={isMarking[questions[currentQuestionIndex].id]}
-                            onMark={markCurrentQuestion}
-                            feedback={feedback[questions[currentQuestionIndex].id]}
-                          />
-
-                          <div className="flex justify-between mt-4">
-                            <Button
-                              variant="secondary"
-                              onClick={goToPreviousQuestion}
-                              disabled={currentQuestionIndex === 0}
-                            >
-                              <ChevronLeft className="mr-2 h-4 w-4" />
-                              Previous
-                            </Button>
-                            <Button
-                              onClick={goToNextQuestion}
-                              disabled={currentQuestionIndex === questions.length - 1}
-                            >
-                              Next
-                              <ChevronRight className="ml-2 h-4 w-4" />
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No questions found for this assessment.</p>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-600 mb-4">Ready to start the assessment?</p>
-                      <Button onClick={startAssessment} disabled={assessmentLoading}>
-                        Start Assessment
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            {renderMainContent()}
           </main>
         </div>
       </div>
@@ -446,7 +457,6 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
   studentAnswer,
   onAnswerChange,
 }) => {
-  // Use marking_scheme instead of ai_extraction_data for choices
   const choices = question.marking_scheme?.choices || ['A', 'B', 'C', 'D'];
 
   return (

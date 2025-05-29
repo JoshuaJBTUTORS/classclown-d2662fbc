@@ -31,7 +31,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       case 'quiz':
         return <QuizEmbed src={lesson.content_url || ''} title={lesson.title} />;
       case 'ai-assessment':
-        return <AIAssessmentViewer assessmentId={lesson.content_url || ''} />;
+        return <AIAssessmentViewer assessmentId={lesson.content_url || ''} embedded={true} />;
       case 'text':
         return (
           <div className="prose max-w-none p-6">
