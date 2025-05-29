@@ -6,13 +6,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/ui/PageTitle';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
-import { BookOpen, ChevronLeft, Brain, Search, Filter, Grid, List } from 'lucide-react';
+import { BookOpen, ChevronLeft, Brain, Search, Filter, Grid, List, Home, GraduationCap, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
 import CourseCard from '@/components/learningHub/CourseCard';
 import AIAssessmentManager from '@/components/learningHub/AIAssessmentManager';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +29,6 @@ const LearningHub: React.FC = () => {
   const navigate = useNavigate();
   const { profile, isAdmin, isTutor, isOwner } = useAuth();
   const [activeSubject, setActiveSubject] = useState('All Courses');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeMainTab, setActiveMainTab] = useState('courses');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -51,213 +48,222 @@ const LearningHub: React.FC = () => {
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar toggleSidebar={toggleSidebar} />
-        
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate(-1)} 
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <ChevronLeft className="mr-1 h-4 w-4" />
-                  Back
-                </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Enhanced Header with consistent branding */}
+        <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 shadow-xl">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/')} 
+                className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
+              >
+                <Home className="mr-1 h-4 w-4" />
+                Home
+              </Button>
+              <div className="h-6 w-px bg-gray-300" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg backdrop-blur-sm">
+                  <GraduationCap className="h-6 w-6 text-blue-600" />
+                </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Learning Hub</h1>
-                  <p className="text-gray-600 mt-1">Access educational resources and courses</p>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Learning Hub</h1>
+                  <p className="text-gray-600 mt-1">Access educational resources and premium courses</p>
                 </div>
               </div>
-              
-              {hasAdminPrivileges && activeMainTab === 'courses' && (
-                <Button 
-                  onClick={() => navigate('/create-course')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+            </div>
+            
+            {hasAdminPrivileges && activeMainTab === 'courses' && (
+              <Button 
+                onClick={() => navigate('/create-course')}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 shadow-lg"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Create New Course
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Enhanced Main tabs with consistent styling */}
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
+          <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl mb-6 shadow-xl overflow-hidden">
+            <TabsList className="h-16 bg-transparent p-0 w-full justify-start border-b border-gray-200/50">
+              <TabsTrigger 
+                value="courses" 
+                className="flex items-center gap-3 px-8 py-4 text-gray-600 data-[state=active]:text-blue-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-50/80 data-[state=active]:to-purple-50/80 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none h-full font-medium"
+              >
+                <BookOpen className="h-5 w-5" />
+                <span className="text-lg">Courses</span>
+              </TabsTrigger>
+              {isOwner && (
+                <TabsTrigger 
+                  value="ai-assessments" 
+                  className="flex items-center gap-3 px-8 py-4 text-gray-600 data-[state=active]:text-purple-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-50/80 data-[state=active]:to-blue-50/80 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none h-full font-medium"
                 >
-                  Create New Course
-                </Button>
+                  <Brain className="h-5 w-5" />
+                  <span className="text-lg">AI Assessments</span>
+                </TabsTrigger>
               )}
+            </TabsList>
+          </div>
+
+          <TabsContent value="courses" className="space-y-6">
+            {/* Enhanced Filters and Search */}
+            <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-xl">
+              <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+                <div className="flex flex-wrap gap-3">
+                  {subjects.map((subject) => (
+                    <button
+                      key={subject}
+                      onClick={() => setActiveSubject(subject)}
+                      className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-200 border backdrop-blur-sm ${
+                        activeSubject === subject
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg'
+                          : 'bg-white/60 text-gray-700 hover:bg-white/80 border-gray-200/50 hover:border-blue-200 hover:text-blue-600'
+                      }`}
+                    >
+                      {subject}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <Input
+                      placeholder="Search courses..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-12 w-80 h-12 rounded-xl border-gray-200/50 bg-white/60 backdrop-blur-sm focus:bg-white/80 transition-all"
+                    />
+                  </div>
+                  <div className="flex items-center border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      className="rounded-r-none h-12 px-4"
+                    >
+                      <Grid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="rounded-l-none h-12 px-4"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Main tabs */}
-            <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-              <div className="border-b border-gray-200 mb-8">
-                <TabsList className="h-12 bg-transparent p-0">
-                  <TabsTrigger 
-                    value="courses" 
-                    className="flex items-center gap-2 px-6 py-3 text-gray-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent rounded-none"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Courses
-                  </TabsTrigger>
-                  {isOwner && (
-                    <TabsTrigger 
-                      value="ai-assessments" 
-                      className="flex items-center gap-2 px-6 py-3 text-gray-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent rounded-none"
-                    >
-                      <Brain className="h-4 w-4" />
-                      AI Assessments
-                    </TabsTrigger>
-                  )}
-                </TabsList>
-              </div>
-
-              <TabsContent value="courses" className="space-y-6">
-                {/* Filters and Search */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                    <div className="flex flex-wrap gap-3">
-                      {subjects.map((subject) => (
-                        <button
-                          key={subject}
-                          onClick={() => setActiveSubject(subject)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            activeSubject === subject
-                              ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
-                          }`}
-                        >
-                          {subject}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                          placeholder="Search courses..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 w-64"
-                        />
-                      </div>
-                      <div className="flex items-center border border-gray-200 rounded-lg">
-                        <Button
-                          variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                          size="sm"
-                          onClick={() => setViewMode('grid')}
-                          className="rounded-r-none"
-                        >
-                          <Grid className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant={viewMode === 'list' ? 'default' : 'ghost'}
-                          size="sm"
-                          onClick={() => setViewMode('list')}
-                          className="rounded-l-none"
-                        >
-                          <List className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+            {/* Enhanced Course Stats */}
+            {filteredCourses && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                  <span className="font-medium text-gray-700">{filteredCourses.length} courses found</span>
                 </div>
-
-                {/* Course Stats */}
-                {filteredCourses && (
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>{filteredCourses.length} courses found</span>
-                    {searchTerm && (
-                      <Badge variant="outline" className="text-blue-600 border-blue-200">
-                        Searching: "{searchTerm}"
-                      </Badge>
-                    )}
-                    {activeSubject !== 'All Courses' && (
-                      <Badge variant="outline" className="text-green-600 border-green-200">
-                        {activeSubject}
-                      </Badge>
-                    )}
-                  </div>
+                {searchTerm && (
+                  <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50/80 backdrop-blur-sm px-3 py-1">
+                    Searching: "{searchTerm}"
+                  </Badge>
                 )}
+                {activeSubject !== 'All Courses' && (
+                  <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50/80 backdrop-blur-sm px-3 py-1">
+                    {activeSubject}
+                  </Badge>
+                )}
+              </div>
+            )}
 
-                {/* Course Content */}
-                {isLoading ? (
-                  <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                        <Skeleton className="h-48 w-full" />
-                        <div className="p-6">
-                          <Skeleton className="h-6 w-3/4 mb-3" />
-                          <Skeleton className="h-4 w-full mb-2" />
-                          <Skeleton className="h-4 w-2/3 mb-4" />
-                          <Skeleton className="h-10 w-full" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : error ? (
-                  <div className="bg-white border border-red-200 rounded-xl p-8 text-center">
-                    <div className="text-red-500 mb-4">
-                      <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            {/* Enhanced Course Content */}
+            {isLoading ? (
+              <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
+                    <Skeleton className="h-48 w-full" />
+                    <div className="p-6">
+                      <Skeleton className="h-6 w-3/4 mb-3" />
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-2/3 mb-4" />
+                      <Skeleton className="h-12 w-full" />
                     </div>
-                    <h3 className="text-lg font-semibold text-red-800 mb-2">Error loading courses</h3>
-                    <p className="text-red-600">Please try again later or contact support if the issue persists.</p>
                   </div>
-                ) : filteredCourses?.length === 0 ? (
-                  <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-                    <BookOpen className="mx-auto h-16 w-16 text-gray-300 mb-6" />
-                    <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                      {searchTerm 
-                        ? `No courses found for "${searchTerm}"` 
-                        : activeSubject === 'All Courses' 
-                          ? "No courses available" 
-                          : `No ${activeSubject} courses available`}
-                    </h3>
-                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                      {hasAdminPrivileges 
-                        ? "Create your first course to get started with the learning platform." 
-                        : searchTerm
-                          ? "Try adjusting your search terms or browse all courses."
-                          : "Check back later for new courses and learning materials."}
-                    </p>
-                    {hasAdminPrivileges && !searchTerm && (
-                      <Button 
-                        onClick={() => navigate('/create-course')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
-                      >
-                        Create Your First Course
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-                    {filteredCourses?.map((course: Course) => (
-                      <CourseCard
-                        key={course.id}
-                        course={course}
-                        isAdmin={hasAdminPrivileges}
-                        hasProgress={false}
-                        viewMode={viewMode}
-                      />
-                    ))}
-                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="bg-white/90 backdrop-blur-sm border border-red-200/50 rounded-2xl p-12 text-center shadow-xl">
+                <div className="text-red-500 mb-6">
+                  <BookOpen className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                </div>
+                <h3 className="text-2xl font-bold text-red-800 mb-3">Error loading courses</h3>
+                <p className="text-red-600 text-lg">Please try again later or contact support if the issue persists.</p>
+              </div>
+            ) : filteredCourses?.length === 0 ? (
+              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
+                <BookOpen className="mx-auto h-20 w-20 text-gray-300 mb-6" />
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                  {searchTerm 
+                    ? `No courses found for "${searchTerm}"` 
+                    : activeSubject === 'All Courses' 
+                      ? "No courses available" 
+                      : `No ${activeSubject} courses available`}
+                </h3>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
+                  {hasAdminPrivileges 
+                    ? "Create your first course to get started with the learning platform." 
+                    : searchTerm
+                      ? "Try adjusting your search terms or browse all courses."
+                      : "Check back later for new courses and learning materials."}
+                </p>
+                {hasAdminPrivileges && !searchTerm && (
+                  <Button 
+                    onClick={() => navigate('/create-course')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-medium shadow-lg"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Create Your First Course
+                  </Button>
                 )}
-              </TabsContent>
+              </div>
+            ) : (
+              <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
+                {filteredCourses?.map((course: Course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    isAdmin={hasAdminPrivileges}
+                    hasProgress={false}
+                    viewMode={viewMode}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-              {isOwner && (
-                <TabsContent value="ai-assessments">
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <AIAssessmentManager />
+          {isOwner && (
+            <TabsContent value="ai-assessments">
+              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-xl">
+                <div className="mb-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg backdrop-blur-sm">
+                      <Brain className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">AI Assessment Manager</h2>
                   </div>
-                </TabsContent>
-              )}
-            </Tabs>
-          </div>
-        </main>
+                  <p className="text-gray-600 text-lg">Create and manage AI-powered assessments for your students</p>
+                </div>
+                <AIAssessmentManager />
+              </div>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </div>
   );
