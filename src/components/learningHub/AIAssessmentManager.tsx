@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Plus, Search, RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,6 +47,31 @@ const AIAssessmentManager: React.FC = () => {
     },
   });
 
+  const resetAssessmentMutation = useMutation({
+    mutationFn: async (assessmentId: string) => {
+      const { data, error } = await aiAssessmentService.supabase.functions.invoke('reset-assessment-status', {
+        body: { assessmentId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Assessment reset",
+        description: "Assessment status has been reset to pending",
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error resetting assessment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const filteredAssessments = assessments.filter(assessment => {
     const matchesSearch = assessment.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          assessment.subject?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -63,8 +87,13 @@ const AIAssessmentManager: React.FC = () => {
     archived: assessments.filter(a => a.status === 'archived').length,
   };
 
+  // Include both pending and failed assessments, plus stuck processing ones
   const pendingAIAssessments = assessments.filter(a => 
-    a.is_ai_generated && (a.processing_status === 'pending' || a.processing_status === 'failed')
+    a.is_ai_generated && (a.processing_status === 'pending' || a.processing_status === 'failed' || a.processing_status === 'processing')
+  );
+
+  const stuckProcessingAssessments = assessments.filter(a => 
+    a.is_ai_generated && a.processing_status === 'processing'
   );
 
   const handleTriggerAIProcessing = () => {
@@ -80,6 +109,19 @@ const AIAssessmentManager: React.FC = () => {
     triggerAIProcessingMutation.mutate(pendingAIAssessments[0].id);
   };
 
+  const handleResetStuckAssessments = () => {
+    if (stuckProcessingAssessments.length === 0) {
+      toast({
+        title: "No stuck assessments",
+        description: "There are no assessments stuck in processing",
+      });
+      return;
+    }
+
+    // Reset the first stuck assessment
+    resetAssessmentMutation.mutate(stuckProcessingAssessments[0].id);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -88,6 +130,16 @@ const AIAssessmentManager: React.FC = () => {
           <p className="text-gray-600">Create and manage AI-powered assessments</p>
         </div>
         <div className="flex gap-2">
+          {stuckProcessingAssessments.length > 0 && (
+            <Button 
+              variant="outline"
+              onClick={handleResetStuckAssessments}
+              disabled={resetAssessmentMutation.isPending}
+            >
+              <RotateCcw className={`h-4 w-4 mr-2 ${resetAssessmentMutation.isPending ? 'animate-spin' : ''}`} />
+              Reset Stuck ({stuckProcessingAssessments.length})
+            </Button>
+          )}
           {pendingAIAssessments.length > 0 && (
             <Button 
               variant="outline"
