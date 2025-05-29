@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +11,9 @@ import {
   Play,
   Clock,
   Target,
-  BookOpen
+  BookOpen,
+  Bot,
+  FileText
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,13 +111,37 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({ assessment, onUpdate })
     }
   };
 
+  const getProcessingStatusBadge = () => {
+    if (!assessment.is_ai_generated) return null;
+
+    const statusColors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      processing: 'bg-blue-100 text-blue-800',
+      completed: 'bg-green-100 text-green-800',
+      failed: 'bg-red-100 text-red-800',
+    };
+
+    return (
+      <Badge className={statusColors[assessment.processing_status as keyof typeof statusColors] || statusColors.pending}>
+        <Bot className="mr-1 h-3 w-3" />
+        {assessment.processing_status === 'pending' && 'AI Pending'}
+        {assessment.processing_status === 'processing' && 'AI Processing'}
+        {assessment.processing_status === 'completed' && 'AI Generated'}
+        {assessment.processing_status === 'failed' && 'AI Failed'}
+      </Badge>
+    );
+  };
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
-          <Badge className={getStatusColor(assessment.status)}>
-            {assessment.status.charAt(0).toUpperCase() + assessment.status.slice(1)}
-          </Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge className={getStatusColor(assessment.status)}>
+              {assessment.status.charAt(0).toUpperCase() + assessment.status.slice(1)}
+            </Badge>
+            {getProcessingStatusBadge()}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -193,6 +218,12 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({ assessment, onUpdate })
             <BookOpen className="h-3.5 w-3.5 mr-1" />
             {assessment.subject}
             {assessment.exam_board && ` • ${assessment.exam_board}`}
+            {assessment.is_ai_generated && (
+              <div className="flex items-center ml-2 text-blue-600">
+                <Bot className="h-3.5 w-3.5 mr-1" />
+                AI Generated
+              </div>
+            )}
           </div>
         )}
       </CardHeader>
@@ -202,6 +233,24 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({ assessment, onUpdate })
             <p className="text-sm text-gray-700 line-clamp-2">
               {assessment.description}
             </p>
+          )}
+          
+          {/* Show AI confidence score if available */}
+          {assessment.is_ai_generated && assessment.ai_confidence_score && (
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">AI Confidence: </span>
+              <span className={`${assessment.ai_confidence_score > 0.8 ? 'text-green-600' : assessment.ai_confidence_score > 0.6 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {(assessment.ai_confidence_score * 100).toFixed(0)}%
+              </span>
+            </div>
+          )}
+
+          {/* Show processing error if failed */}
+          {assessment.processing_status === 'failed' && assessment.processing_error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              <span className="font-medium">Processing Error: </span>
+              {assessment.processing_error}
+            </div>
           )}
           
           <div className="flex justify-between text-sm text-gray-500">

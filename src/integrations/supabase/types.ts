@@ -11,12 +11,19 @@ export type Database = {
     Tables: {
       ai_assessments: {
         Row: {
+          ai_confidence_score: number | null
+          ai_extraction_data: Json | null
+          answers_pdf_url: string | null
           created_at: string
           created_by: string | null
           description: string | null
           exam_board: string | null
           id: string
+          is_ai_generated: boolean | null
           paper_type: string | null
+          processing_error: string | null
+          processing_status: string | null
+          questions_pdf_url: string | null
           status: string
           subject: string | null
           time_limit_minutes: number | null
@@ -26,12 +33,19 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          ai_confidence_score?: number | null
+          ai_extraction_data?: Json | null
+          answers_pdf_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           exam_board?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           paper_type?: string | null
+          processing_error?: string | null
+          processing_status?: string | null
+          questions_pdf_url?: string | null
           status?: string
           subject?: string | null
           time_limit_minutes?: number | null
@@ -41,12 +55,19 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          ai_confidence_score?: number | null
+          ai_extraction_data?: Json | null
+          answers_pdf_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           exam_board?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           paper_type?: string | null
+          processing_error?: string | null
+          processing_status?: string | null
+          questions_pdf_url?: string | null
           status?: string
           subject?: string | null
           time_limit_minutes?: number | null

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AIAssessment {
@@ -15,6 +14,13 @@ export interface AIAssessment {
   created_at: string;
   updated_at: string;
   status: 'draft' | 'published' | 'archived';
+  questions_pdf_url?: string;
+  answers_pdf_url?: string;
+  processing_status?: 'pending' | 'processing' | 'completed' | 'failed';
+  ai_extraction_data?: any;
+  ai_confidence_score?: number;
+  processing_error?: string;
+  is_ai_generated?: boolean;
 }
 
 export interface AssessmentQuestion {
@@ -72,7 +78,14 @@ const mapToAIAssessment = (row: any): AIAssessment => ({
   created_by: row.created_by,
   created_at: row.created_at,
   updated_at: row.updated_at,
-  status: row.status as 'draft' | 'published' | 'archived'
+  status: row.status as 'draft' | 'published' | 'archived',
+  questions_pdf_url: row.questions_pdf_url,
+  answers_pdf_url: row.answers_pdf_url,
+  processing_status: row.processing_status as 'pending' | 'processing' | 'completed' | 'failed',
+  ai_extraction_data: row.ai_extraction_data,
+  ai_confidence_score: row.ai_confidence_score,
+  processing_error: row.processing_error,
+  is_ai_generated: row.is_ai_generated,
 });
 
 // Helper function to convert database row to AssessmentQuestion

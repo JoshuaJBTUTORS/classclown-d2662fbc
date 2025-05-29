@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
@@ -8,10 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { aiAssessmentService } from '@/services/aiAssessmentService';
 import AssessmentCard from './AssessmentCard';
 import CreateAssessmentDialog from './CreateAssessmentDialog';
+import CreateAIAssessmentDialog from './CreateAIAssessmentDialog';
 
 const AIAssessmentManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isAICreateDialogOpen, setIsAICreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
   const { data: assessments = [], isLoading, refetch } = useQuery({
@@ -41,10 +42,19 @@ const AIAssessmentManager: React.FC = () => {
           <h2 className="text-2xl font-bold">AI Assessments</h2>
           <p className="text-gray-600">Create and manage AI-powered assessments</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Assessment
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Manual Create
+          </Button>
+          <Button onClick={() => setIsAICreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            AI Create
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center space-x-4">
@@ -121,6 +131,15 @@ const AIAssessmentManager: React.FC = () => {
         onClose={() => setIsCreateDialogOpen(false)}
         onSuccess={() => {
           setIsCreateDialogOpen(false);
+          refetch();
+        }}
+      />
+
+      <CreateAIAssessmentDialog
+        isOpen={isAICreateDialogOpen}
+        onClose={() => setIsAICreateDialogOpen(false)}
+        onSuccess={() => {
+          setIsAICreateDialogOpen(false);
           refetch();
         }}
       />
