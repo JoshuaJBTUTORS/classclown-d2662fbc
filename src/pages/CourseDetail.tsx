@@ -296,35 +296,35 @@ const CourseDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-      <div className="max-w-full mx-auto px-6 py-4">
-        {/* Compact Header */}
-        <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 mb-4 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+      <div className="max-w-full mx-auto px-6 py-2">
+        {/* Ultra Compact Header */}
+        <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-lg p-3 mb-3 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/')} 
-                className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
+                className="text-gray-600 hover:text-gray-900 hover:bg-white/60 px-2 py-1 h-7 text-xs"
               >
-                <Home className="mr-1 h-4 w-4" />
+                <Home className="mr-1 h-3 w-3" />
                 Home
               </Button>
-              <div className="h-4 w-px bg-gray-300" />
+              <div className="h-3 w-px bg-gray-300" />
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/learning-hub')} 
-                className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
+                className="text-gray-600 hover:text-gray-900 hover:bg-white/60 px-2 py-1 h-7 text-xs"
               >
-                <ChevronLeft className="mr-1 h-4 w-4" />
+                <ChevronLeft className="mr-1 h-3 w-3" />
                 All Courses
               </Button>
             </div>
             
             <div className="flex items-center gap-2">
               {isVerifyingPayment && (
-                <Badge variant="outline" className="text-rose-600 border-rose-300 bg-rose-50/80 backdrop-blur-sm text-xs">
+                <Badge variant="outline" className="text-rose-600 border-rose-300 bg-rose-50/80 backdrop-blur-sm text-xs px-2 py-0.5">
                   Verifying payment...
                 </Badge>
               )}
@@ -335,7 +335,7 @@ const CourseDetail: React.FC = () => {
                   disabled={isRefreshing}
                   variant="outline"
                   size="sm"
-                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs"
+                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs px-2 py-1 h-7"
                 >
                   <RefreshCw className={`mr-1 h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
                   {isRefreshing ? 'Checking...' : 'Refresh Access'}
@@ -346,7 +346,7 @@ const CourseDetail: React.FC = () => {
                 <Button 
                   onClick={handleStartTrial}
                   size="sm"
-                  className="bg-gradient-to-r from-emerald-600 to-rose-600 hover:from-emerald-700 hover:to-rose-700 text-white px-4 shadow-lg text-xs"
+                  className="bg-gradient-to-r from-emerald-600 to-rose-600 hover:from-emerald-700 hover:to-rose-700 text-white px-3 shadow-lg text-xs h-7"
                 >
                   <Gift className="mr-1 h-3 w-3" />
                   Start Free Trial - {formatPrice(course.price || 899)}/month
@@ -358,7 +358,7 @@ const CourseDetail: React.FC = () => {
                   onClick={() => navigate(`/course/${courseId}/edit`)}
                   variant="outline"
                   size="sm"
-                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs"
+                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs px-2 py-1 h-7"
                 >
                   <PenSquare className="mr-1 h-3 w-3" />
                   Edit Course
@@ -367,47 +367,51 @@ const CourseDetail: React.FC = () => {
             </div>
           </div>
           
-          {/* Compact Course header */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Badge className="bg-rose-100/80 text-rose-700 border-rose-200/50 backdrop-blur-sm text-xs">{course?.subject || "General"}</Badge>
-              <Badge 
-                variant="outline" 
-                className={`text-xs ${course?.status === 'published' ? 'text-green-700 border-green-200/50 bg-green-50/80 backdrop-blur-sm' : 'text-gray-600 border-gray-200/50 bg-gray-50/80 backdrop-blur-sm'}`}
-              >
-                {course?.status}
-              </Badge>
-              {isPurchased && (
-                <Badge className="bg-green-500/90 text-white backdrop-blur-sm text-xs">
-                  <CheckCircle className="mr-1 h-2 w-2" />
-                  Subscribed
+          {/* Ultra Compact Course Info */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Badge className="bg-rose-100/80 text-rose-700 border-rose-200/50 backdrop-blur-sm text-xs px-1.5 py-0.5">{course?.subject || "General"}</Badge>
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs px-1.5 py-0.5 ${course?.status === 'published' ? 'text-green-700 border-green-200/50 bg-green-50/80 backdrop-blur-sm' : 'text-gray-600 border-gray-200/50 bg-gray-50/80 backdrop-blur-sm'}`}
+                >
+                  {course?.status}
                 </Badge>
-              )}
-              {!canAccessFullCourse && course?.status === 'published' && (
-                <Badge variant="outline" className="text-orange-600 border-orange-300/50 bg-orange-50/80 backdrop-blur-sm text-xs">
-                  <Play className="mr-1 h-2 w-2" />
-                  Preview Mode
-                </Badge>
-              )}
+                {isPurchased && (
+                  <Badge className="bg-green-500/90 text-white backdrop-blur-sm text-xs px-1.5 py-0.5">
+                    <CheckCircle className="mr-1 h-2 w-2" />
+                    Subscribed
+                  </Badge>
+                )}
+                {!canAccessFullCourse && course?.status === 'published' && (
+                  <Badge variant="outline" className="text-orange-600 border-orange-300/50 bg-orange-50/80 backdrop-blur-sm text-xs px-1.5 py-0.5">
+                    <Play className="mr-1 h-2 w-2" />
+                    Preview Mode
+                  </Badge>
+                )}
+              </div>
+              
+              <h1 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-1 truncate">{course?.title}</h1>
+              <p className="text-gray-600 text-xs mb-2 line-clamp-1 leading-relaxed">{course?.description}</p>
             </div>
             
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">{course?.title}</h1>
-            <p className="text-gray-600 text-sm mb-4 max-w-4xl leading-relaxed">{course?.description}</p>
-            
-            {/* Compact progress bar */}
+            {/* Inline compact progress */}
             {user && !progressLoading && totalLessons > 0 && (
-              <div className="bg-gray-50/80 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-700">Course Progress</span>
-                  <span className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full">{completedLessons}/{totalLessons} lessons completed</span>
+              <div className="ml-4 flex items-center gap-3 bg-gray-50/80 backdrop-blur-sm rounded-md px-3 py-1.5 border border-white/20">
+                <div className="text-right">
+                  <div className="text-xs font-semibold text-gray-700">Progress</div>
+                  <div className="text-xs text-gray-500">{completedLessons}/{totalLessons} lessons</div>
                 </div>
-                <ProgressBar 
-                  current={completedLessons}
-                  total={totalLessons}
-                  className="w-full h-2"
-                />
-                <div className="mt-1 text-xs text-gray-500">
-                  {Math.round((completedLessons / totalLessons) * 100)}% complete
+                <div className="w-16">
+                  <ProgressBar 
+                    current={completedLessons}
+                    total={totalLessons}
+                    className="w-full h-1.5"
+                  />
+                  <div className="mt-0.5 text-xs text-gray-500 text-center">
+                    {Math.round((completedLessons / totalLessons) * 100)}%
+                  </div>
                 </div>
               </div>
             )}
