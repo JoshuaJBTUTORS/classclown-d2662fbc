@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { aiAssessmentService } from '@/services/aiAssessmentService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAssessmentPermissions } from '@/hooks/useAssessmentPermissions';
+import AssessmentAccessControl from '@/components/learningHub/AssessmentAccessControl';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 
@@ -17,7 +18,6 @@ const AssessmentPreview: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isOwner } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   const { data: assessment, isLoading, error } = useQuery({
@@ -31,6 +31,8 @@ const AssessmentPreview: React.FC = () => {
     queryFn: () => aiAssessmentService.getAssessmentQuestions(id!),
     enabled: !!id,
   });
+
+  const permissions = useAssessmentPermissions(assessment);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -93,115 +95,120 @@ const AssessmentPreview: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar isOpen={sidebarOpen} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar toggleSidebar={toggleSidebar} />
+    <AssessmentAccessControl 
+      assessment={assessment} 
+      requiredAccess="view"
+    >
+      <div className="flex min-h-screen bg-background">
+        <Sidebar isOpen={sidebarOpen} />
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
-          <div className="container py-8">
-            <div className="flex items-center justify-between mb-6">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/learning-hub')} 
-                className="mb-4"
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back to Learning Hub
-              </Button>
-              
-              {isOwner && (
-                <Button onClick={() => navigate(`/assessment/${id}/edit`)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Assessment
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Navbar toggleSidebar={toggleSidebar} />
+          
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="container py-8">
+              <div className="flex items-center justify-between mb-6">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/learning-hub')} 
+                  className="mb-4"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Learning Hub
                 </Button>
-              )}
-            </div>
-
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <Badge className={getStatusColor(assessment.status)}>
-                    {assessment.status.charAt(0).toUpperCase() + assessment.status.slice(1)}
-                  </Badge>
-                </div>
-                <CardTitle className="text-2xl">{assessment.title}</CardTitle>
-                {assessment.subject && (
-                  <div className="text-sm text-gray-500 flex items-center">
-                    <BookOpen className="h-4 w-4 mr-1" />
-                    {assessment.subject}
-                    {assessment.exam_board && ` • ${assessment.exam_board}`}
-                    {assessment.year && ` • ${assessment.year}`}
-                    {assessment.paper_type && ` • ${assessment.paper_type}`}
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent>
-                {assessment.description && (
-                  <p className="text-gray-700 mb-4">{assessment.description}</p>
-                )}
                 
-                <div className="flex gap-6 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Target className="h-4 w-4 mr-1" />
-                    <span>{assessment.total_marks} marks</span>
+                {permissions.canEdit && (
+                  <Button onClick={() => navigate(`/assessment/${id}/edit`)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Assessment
+                  </Button>
+                )}
+              </div>
+
+              <Card className="mb-6">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <Badge className={getStatusColor(assessment.status)}>
+                      {assessment.status.charAt(0).toUpperCase() + assessment.status.slice(1)}
+                    </Badge>
                   </div>
-                  {assessment.time_limit_minutes && (
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span>{assessment.time_limit_minutes} minutes</span>
+                  <CardTitle className="text-2xl">{assessment.title}</CardTitle>
+                  {assessment.subject && (
+                    <div className="text-sm text-gray-500 flex items-center">
+                      <BookOpen className="h-4 w-4 mr-1" />
+                      {assessment.subject}
+                      {assessment.exam_board && ` • ${assessment.exam_board}`}
+                      {assessment.year && ` • ${assessment.year}`}
+                      {assessment.paper_type && ` • ${assessment.paper_type}`}
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Questions ({questions?.length || 0})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {questionsLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-20 w-full" />
-                    ))}
-                  </div>
-                ) : questions && questions.length > 0 ? (
-                  <div className="space-y-4">
-                    {questions.map((question, index) => (
-                      <div key={question.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium">Question {index + 1}</h4>
-                          <Badge variant="outline">{question.marks_available} marks</Badge>
-                        </div>
-                        <p className="text-gray-700 mb-2">{question.question_text}</p>
-                        <div className="text-sm text-gray-500">
-                          Type: {question.question_type.replace('_', ' ')}
-                        </div>
+                </CardHeader>
+                <CardContent>
+                  {assessment.description && (
+                    <p className="text-gray-700 mb-4">{assessment.description}</p>
+                  )}
+                  
+                  <div className="flex gap-6 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <Target className="h-4 w-4 mr-1" />
+                      <span>{assessment.total_marks} marks</span>
+                    </div>
+                    {assessment.time_limit_minutes && (
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>{assessment.time_limit_minutes} minutes</span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No questions have been added to this assessment yet.</p>
-                    {isOwner && (
-                      <Button 
-                        className="mt-4" 
-                        onClick={() => navigate(`/assessment/${id}/edit`)}
-                      >
-                        Add Questions
-                      </Button>
                     )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Questions ({questions?.length || 0})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {questionsLoading ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-20 w-full" />
+                      ))}
+                    </div>
+                  ) : questions && questions.length > 0 ? (
+                    <div className="space-y-4">
+                      {questions.map((question, index) => (
+                        <div key={question.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-medium">Question {index + 1}</h4>
+                            <Badge variant="outline">{question.marks_available} marks</Badge>
+                          </div>
+                          <p className="text-gray-700 mb-2">{question.question_text}</p>
+                          <div className="text-sm text-gray-500">
+                            Type: {question.question_type.replace('_', ' ')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No questions have been added to this assessment yet.</p>
+                      {permissions.canEdit && (
+                        <Button 
+                          className="mt-4" 
+                          onClick={() => navigate(`/assessment/${id}/edit`)}
+                        >
+                          Add Questions
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AssessmentAccessControl>
   );
 };
 

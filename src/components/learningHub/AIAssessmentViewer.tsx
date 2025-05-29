@@ -1,409 +1,471 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, Clock, FileText, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, Clock, CheckCircle, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { aiAssessmentService, AssessmentQuestion, AssessmentSession, StudentResponse } from '@/services/aiAssessmentService';
+import { aiAssessmentService, AssessmentQuestion } from '@/services/aiAssessmentService';
+import { useAuth } from '@/contexts/AuthContext';
+import AssessmentAccessControl from './AssessmentAccessControl';
 import QuestionFeedback from './QuestionFeedback';
+import Sidebar from '@/components/navigation/Sidebar';
+import Navbar from '@/components/navigation/Navbar';
 
-interface AIAssessmentViewerProps {
-  assessmentId: string;
-}
-
-interface FeedbackData {
-  marks: number;
-  maxMarks: number;
-  feedback: string;
-  confidence: number;
-}
-
-const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId }) => {
-  const { toast } = useToast();
+const AIAssessmentViewer: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [studentAnswers, setStudentAnswers] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [session, setSession] = useState<AssessmentSession | null>(null);
-  const [questionFeedback, setQuestionFeedback] = useState<Record<string, FeedbackData>>({});
-  const [isMarkingInProgress, setIsMarkingInProgress] = useState(false);
+  const [feedback, setFeedback] = useState<{ [key: string]: any }>({});
+  const [isMarking, setIsMarking] = useState<{ [key: string]: boolean }>({});
 
-  // Fetch assessment details
-  const { data: assessment } = useQuery({
-    queryKey: ['assessment', assessmentId],
-    queryFn: () => aiAssessmentService.getAssessmentById(assessmentId),
+  const { data: assessment, isLoading: assessmentLoading, error: assessmentError } = useQuery({
+    queryKey: ['assessment', id],
+    queryFn: () => aiAssessmentService.getAssessmentById(id!),
+    enabled: !!id,
   });
 
-  // Fetch questions
-  const { data: questions = [] } = useQuery({
-    queryKey: ['assessmentQuestions', assessmentId],
-    queryFn: () => aiAssessmentService.getAssessmentQuestions(assessmentId),
-    enabled: !!assessmentId,
+  const { data: questions, isLoading: questionsLoading } = useQuery({
+    queryKey: ['assessmentQuestions', id],
+    queryFn: () => aiAssessmentService.getAssessmentQuestions(id!),
+    enabled: !!id && !!assessment,
   });
 
-  // Fetch or create session
-  const { data: existingSession } = useQuery({
-    queryKey: ['userSession', assessmentId],
-    queryFn: () => aiAssessmentService.getUserSession(assessmentId),
-    enabled: !!assessmentId,
+  const { data: session, refetch: refetchSession } = useQuery({
+    queryKey: ['assessmentSession', id],
+    queryFn: () => aiAssessmentService.getUserSession(id!),
+    enabled: !!id && !!user && !!assessment,
   });
 
-  // Create session mutation
-  const createSessionMutation = useMutation({
-    mutationFn: () => aiAssessmentService.createAssessmentSession(assessmentId),
-    onSuccess: (newSession) => {
-      setSession(newSession);
-      queryClient.invalidateQueries({ queryKey: ['userSession', assessmentId] });
-    },
-  });
-
-  // Submit answer mutation
-  const submitAnswerMutation = useMutation({
-    mutationFn: ({ questionId, answer }: { questionId: string; answer: string }) =>
-      aiAssessmentService.submitAnswer(session!.id, questionId, answer),
-    onSuccess: () => {
-      toast({
-        title: "Answer saved",
-        description: "Your answer has been saved automatically",
-      });
-    },
-  });
-
-  // Mark single question mutation
-  const markQuestionMutation = useMutation({
-    mutationFn: ({ questionId, answer }: { questionId: string; answer: string }) =>
-      aiAssessmentService.markSingleQuestion(session!.id, questionId, answer),
-    onSuccess: (result, { questionId }) => {
-      setQuestionFeedback(prev => ({
-        ...prev,
-        [questionId]: {
-          marks: result.marks,
-          maxMarks: result.maxMarks,
-          feedback: result.feedback,
-          confidence: result.confidence,
-        }
-      }));
-      setIsMarkingInProgress(false);
-    },
-    onError: () => {
-      setIsMarkingInProgress(false);
-      toast({
-        title: "Marking failed",
-        description: "Failed to mark your answer. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Complete session mutation
-  const completeSessionMutation = useMutation({
-    mutationFn: () => aiAssessmentService.completeSession(session!.id),
-    onSuccess: () => {
-      // Mark all answers with AI
-      markAnswersMutation.mutate();
-    },
-  });
-
-  // Mark answers mutation
-  const markAnswersMutation = useMutation({
-    mutationFn: () => aiAssessmentService.markAnswers(session!.id),
-    onSuccess: () => {
-      toast({
-        title: "Assessment completed",
-        description: "Your answers have been marked and feedback is available",
-      });
-      queryClient.invalidateQueries({ queryKey: ['userSession', assessmentId] });
-    },
-  });
-
-  // Set up session on component mount
-  useEffect(() => {
-    if (existingSession) {
-      setSession(existingSession);
-      if (existingSession.status === 'completed') {
-        // Show results view
-        return;
-      }
+  const { mutate: createSession } = useMutation(
+    () => aiAssessmentService.createAssessmentSession(id!),
+    {
+      onSuccess: (newSession) => {
+        queryClient.invalidateQueries(['assessmentSession', id]);
+        refetchSession();
+        setSessionStartTime(new Date());
+        toast({
+          title: "Session started",
+          description: "The assessment session has started.",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error starting session",
+          description: error.message || "Failed to start the assessment session.",
+          variant: "destructive",
+        });
+      },
     }
-  }, [existingSession]);
+  );
 
-  // Timer effect
+  const { mutate: submitAnswer } = useMutation(
+    ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
+      aiAssessmentService.submitAnswer(sessionId, questionId, answer),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['sessionResponses', session?.id]);
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error submitting answer",
+          description: error.message || "Failed to submit the answer.",
+          variant: "destructive",
+        });
+      },
+    }
+  );
+
+  const { mutate: completeSession } = useMutation(
+    (sessionId: string) => aiAssessmentService.completeSession(sessionId),
+    {
+      onSuccess: () => {
+        toast({
+          title: "Assessment completed",
+          description: "You have completed the assessment.",
+        });
+        navigate('/learning-hub');
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error completing assessment",
+          description: error.message || "Failed to complete the assessment.",
+          variant: "destructive",
+        });
+      },
+    }
+  );
+
+  const { mutate: markQuestion } = useMutation(
+    ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
+      aiAssessmentService.markSingleQuestion(sessionId, questionId, answer),
+    {
+      onSuccess: (data, variables) => {
+        setFeedback(prev => ({
+          ...prev,
+          [variables.questionId]: data,
+        }));
+        setIsMarking(prev => ({
+          ...prev,
+          [variables.questionId]: false,
+        }));
+      },
+      onError: (error: any, variables) => {
+        toast({
+          title: "Error marking question",
+          description: error.message || "Failed to mark the question.",
+          variant: "destructive",
+        });
+        setIsMarking(prev => ({
+          ...prev,
+          [variables.questionId]: false,
+        }));
+      },
+    }
+  );
+
   useEffect(() => {
-    if (session && assessment?.time_limit_minutes && session.status === 'in_progress') {
-      const startTime = new Date(session.started_at).getTime();
-      const timeLimit = assessment.time_limit_minutes * 60 * 1000;
-      
-      const timer = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, timeLimit - elapsed);
-        setTimeRemaining(remaining);
-        
-        if (remaining === 0) {
-          handleCompleteAssessment();
+    if (assessment && assessment.time_limit_minutes && sessionStartTime) {
+      const totalTime = assessment.time_limit_minutes * 60;
+      const startTime = sessionStartTime.getTime();
+
+      const interval = setInterval(() => {
+        const now = new Date().getTime();
+        const elapsedTime = Math.floor((now - startTime) / 1000);
+        const timeLeft = Math.max(0, totalTime - elapsedTime);
+
+        setTimeRemaining(timeLeft);
+
+        if (timeLeft === 0) {
+          clearInterval(interval);
+          if (session) {
+            completeAssessment();
+          }
         }
       }, 1000);
 
-      return () => clearInterval(timer);
+      return () => clearInterval(interval);
     }
-  }, [session, assessment]);
+  }, [assessment, sessionStartTime, session]);
 
-  const handleStartAssessment = () => {
-    createSessionMutation.mutate();
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
   const handleAnswerChange = (questionId: string, answer: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
-    
-    // Auto-save after 2 seconds of no typing
-    if (session) {
-      const timeoutId = setTimeout(() => {
-        submitAnswerMutation.mutate({ questionId, answer });
-      }, 2000);
-      
-      return () => clearTimeout(timeoutId);
-    }
+    setStudentAnswers({ ...studentAnswers, [questionId]: answer });
   };
 
-  const handleMarkQuestion = (questionId: string, answer: string) => {
-    if (!session || !answer.trim()) return;
-    
-    setIsMarkingInProgress(true);
-    markQuestionMutation.mutate({ questionId, answer });
+  const submitCurrentAnswer = async () => {
+    if (!session) return;
+    setIsSubmitting(true);
+    const question = questions![currentQuestionIndex];
+    const answer = studentAnswers[question.id] || '';
+
+    submitAnswer({ sessionId: session.id, questionId: question.id, answer });
+    setIsSubmitting(false);
   };
 
-  const handleNextQuestion = () => {
-    const currentQuestion = questions[currentQuestionIndex];
-    if (currentQuestion && session && answers[currentQuestion.id]) {
-      submitAnswerMutation.mutate({
-        questionId: currentQuestion.id,
-        answer: answers[currentQuestion.id],
-      });
-    }
-    
-    if (currentQuestionIndex < questions.length - 1) {
+  const markCurrentQuestion = async () => {
+    if (!session) return;
+    const question = questions![currentQuestionIndex];
+    const answer = studentAnswers[question.id] || '';
+
+    setIsMarking(prev => ({
+      ...prev,
+      [question.id]: true,
+    }));
+
+    markQuestion({ sessionId: session.id, questionId: question.id, answer });
+  };
+
+  const goToNextQuestion = () => {
+    submitCurrentAnswer();
+    if (questions && currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
-  const handlePreviousQuestion = () => {
+  const goToPreviousQuestion = () => {
+    submitCurrentAnswer();
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
-  const handleCompleteAssessment = () => {
+  const startAssessment = () => {
+    createSession();
+  };
+
+  const completeAssessment = () => {
     if (session) {
-      completeSessionMutation.mutate();
+      completeSession(session.id);
     }
   };
 
-  const formatTime = (milliseconds: number) => {
-    const minutes = Math.floor(milliseconds / 60000);
-    const seconds = Math.floor((milliseconds % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
-  if (!assessment) {
-    return <div className="p-8 text-center">Loading assessment...</div>;
-  }
-
-  // Pre-assessment view
-  if (!session) {
+  if (assessmentLoading) {
     return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            {assessment.title}
-          </CardTitle>
-          {assessment.description && (
-            <p className="text-gray-600">{assessment.description}</p>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            {assessment.subject && (
-              <div>
-                <span className="font-medium">Subject:</span> {assessment.subject}
+      <div className="flex min-h-screen bg-background">
+        <Sidebar isOpen={sidebarOpen} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Navbar toggleSidebar={toggleSidebar} />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="container py-8">
+              <Skeleton className="h-8 w-64 mb-6" />
+              <div className="space-y-6">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-48 w-full" />
               </div>
-            )}
-            {assessment.exam_board && (
-              <div>
-                <span className="font-medium">Exam Board:</span> {assessment.exam_board}
-              </div>
-            )}
-            <div>
-              <span className="font-medium">Total Marks:</span> {assessment.total_marks}
             </div>
-            {assessment.time_limit_minutes && (
-              <div>
-                <span className="font-medium">Time Limit:</span> {assessment.time_limit_minutes} minutes
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2 p-4 bg-blue-50 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <p className="text-sm text-blue-800">
-              This assessment will be automatically marked by AI. Make sure you have a stable internet connection.
-            </p>
-          </div>
-
-          <Button 
-            onClick={handleStartAssessment} 
-            disabled={createSessionMutation.isPending}
-            className="w-full"
-          >
-            {createSessionMutation.isPending ? 'Starting...' : 'Start Assessment'}
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Assessment in progress
-  if (session.status === 'in_progress' && questions.length > 0) {
-    const currentQuestion = questions[currentQuestionIndex];
-    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-    const currentAnswer = answers[currentQuestion.id] || '';
-    const currentFeedback = questionFeedback[currentQuestion.id];
-
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">{assessment.title}</h1>
-            <p className="text-gray-600">
-              Question {currentQuestionIndex + 1} of {questions.length}
-            </p>
-          </div>
-          
-          {timeRemaining !== null && (
-            <div className="flex items-center gap-2 text-red-600">
-              <Clock className="h-4 w-4" />
-              <span className="font-mono">{formatTime(timeRemaining)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Progress */}
-        <Progress value={progress} className="w-full" />
-
-        {/* Question */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex justify-between items-start">
-              <span>Question {currentQuestion.question_number}</span>
-              <Badge variant="outline">{currentQuestion.marks_available} mark{currentQuestion.marks_available !== 1 ? 's' : ''}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="prose max-w-none">
-              <p>{currentQuestion.question_text}</p>
-            </div>
-            
-            {currentQuestion.image_url && (
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <img 
-                  src={currentQuestion.image_url} 
-                  alt="Question image" 
-                  className="max-w-full h-auto rounded"
-                />
-              </div>
-            )}
-            
-            <Textarea
-              value={currentAnswer}
-              onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-              placeholder="Enter your answer here..."
-              rows={6}
-              className="w-full"
-            />
-
-            {/* Mark This Question Button */}
-            {currentAnswer.trim() && !currentFeedback && (
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => handleMarkQuestion(currentQuestion.id, currentAnswer)}
-                  disabled={isMarkingInProgress}
-                  variant="outline"
-                  size="sm"
-                >
-                  {isMarkingInProgress ? 'Marking...' : 'Get Immediate Feedback'}
-                </Button>
-              </div>
-            )}
-
-            {/* Show feedback */}
-            <QuestionFeedback 
-              feedback={currentFeedback} 
-              isLoading={isMarkingInProgress} 
-            />
-          </CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePreviousQuestion}
-            disabled={currentQuestionIndex === 0}
-          >
-            Previous
-          </Button>
-          
-          <div className="flex gap-2">
-            {currentQuestionIndex === questions.length - 1 ? (
-              <Button
-                onClick={handleCompleteAssessment}
-                disabled={completeSessionMutation.isPending}
-              >
-                {completeSessionMutation.isPending ? 'Submitting...' : 'Submit Assessment'}
-              </Button>
-            ) : (
-              <Button onClick={handleNextQuestion}>
-                Next
-              </Button>
-            )}
-          </div>
+          </main>
         </div>
       </div>
     );
   }
 
-  // Assessment completed - show results
-  if (session.status === 'completed') {
+  if (assessmentError || !assessment) {
     return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            Assessment Completed
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">
-              {session.total_marks_achieved} / {session.total_marks_available}
+      <div className="flex min-h-screen bg-background">
+        <Sidebar isOpen={sidebarOpen} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Navbar toggleSidebar={toggleSidebar} />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="container py-8">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Not Found</h1>
+                <p className="text-gray-600 mb-6">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
+                <Button onClick={() => navigate('/learning-hub')}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Learning Hub
+                </Button>
+              </div>
             </div>
-            <p className="text-gray-600">
-              {Math.round((session.total_marks_achieved / session.total_marks_available) * 100)}%
-            </p>
-          </div>
-          
-          <p className="text-center text-gray-600">
-            AI feedback and detailed results are available for each question.
-          </p>
-        </CardContent>
-      </Card>
+          </main>
+        </div>
+      </div>
     );
   }
 
-  return <div className="p-8 text-center">Loading...</div>;
+  return (
+    <AssessmentAccessControl 
+      assessment={assessment} 
+      requiredAccess="take"
+    >
+      <div className="flex min-h-screen bg-background">
+        <Sidebar isOpen={sidebarOpen} />
+        
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Navbar toggleSidebar={toggleSidebar} />
+          
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="container py-8">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/learning-hub')} 
+                className="mb-4"
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Learning Hub
+              </Button>
+
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-2xl">{assessment.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {session ? (
+                    <>
+                      {assessment.time_limit_minutes && timeRemaining !== null ? (
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="mr-2 h-4 w-4" />
+                            Time Remaining: {formatTime(timeRemaining)}
+                          </div>
+                          <Button variant="destructive" size="sm" onClick={completeAssessment}>
+                            Complete Assessment
+                          </Button>
+                        </div>
+                      ) : null}
+
+                      {questionsLoading ? (
+                        <div className="space-y-4">
+                          {[...Array(3)].map((_, i) => (
+                            <Skeleton key={i} className="h-32 w-full" />
+                          ))}
+                        </div>
+                      ) : questions && questions.length > 0 ? (
+                        <>
+                          <div className="mb-4">
+                            Question {currentQuestionIndex + 1} of {questions.length}
+                            <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
+                          </div>
+
+                          <QuestionCard
+                            question={questions[currentQuestionIndex]}
+                            studentAnswer={studentAnswers[questions[currentQuestionIndex].id] || ''}
+                            onAnswerChange={handleAnswerChange}
+                            isSubmitting={isSubmitting}
+                            onSubmit={submitCurrentAnswer}
+                            isMarking={isMarking[questions[currentQuestionIndex].id]}
+                            onMark={markCurrentQuestion}
+                            feedback={feedback[questions[currentQuestionIndex].id]}
+                          />
+
+                          <div className="flex justify-between mt-4">
+                            <Button
+                              variant="secondary"
+                              onClick={goToPreviousQuestion}
+                              disabled={currentQuestionIndex === 0}
+                            >
+                              <ChevronLeft className="mr-2 h-4 w-4" />
+                              Previous
+                            </Button>
+                            <Button
+                              onClick={goToNextQuestion}
+                              disabled={currentQuestionIndex === questions.length - 1}
+                            >
+                              Next
+                              <ChevronRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No questions found for this assessment.</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600 mb-4">Ready to start the assessment?</p>
+                      <Button onClick={startAssessment} disabled={assessmentLoading}>
+                        Start Assessment
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </div>
+      </div>
+    </AssessmentAccessControl>
+  );
+};
+
+interface QuestionCardProps {
+  question: AssessmentQuestion;
+  studentAnswer: string;
+  onAnswerChange: (questionId: string, answer: string) => void;
+  isSubmitting: boolean;
+  onSubmit: () => void;
+  isMarking?: boolean;
+  onMark?: () => void;
+  feedback?: any;
+}
+
+const QuestionCard: React.FC<QuestionCardProps> = ({
+  question,
+  studentAnswer,
+  onAnswerChange,
+  isSubmitting,
+  onSubmit,
+  isMarking = false,
+  onMark,
+  feedback,
+}) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <div className="flex items-center">
+            <FileText className="mr-2 h-4 w-4" />
+            Question {question.question_number} ({question.marks_available} marks)
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p>{question.question_text}</p>
+        {question.question_type === 'multiple_choice' ? (
+          <MultipleChoiceQuestion
+            question={question}
+            studentAnswer={studentAnswer}
+            onAnswerChange={onAnswerChange}
+          />
+        ) : (
+          <Textarea
+            placeholder="Enter your answer here..."
+            value={studentAnswer}
+            onChange={(e) => onAnswerChange(question.id, e.target.value)}
+            disabled={isSubmitting}
+          />
+        )}
+        <div className="flex justify-between">
+          <Button onClick={onSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={onMark} 
+            disabled={isMarking}
+          >
+            {isMarking ? 'Marking...' : 'Mark Answer'}
+          </Button>
+        </div>
+        <QuestionFeedback feedback={feedback} isLoading={isMarking} />
+      </CardContent>
+    </Card>
+  );
+};
+
+interface MultipleChoiceQuestionProps {
+  question: AssessmentQuestion;
+  studentAnswer: string;
+  onAnswerChange: (questionId: string, answer: string) => void;
+}
+
+const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
+  question,
+  studentAnswer,
+  onAnswerChange,
+}) => {
+  const choices = question.ai_extraction_data?.choices || ['A', 'B', 'C', 'D'];
+
+  return (
+    <RadioGroup
+      defaultValue={studentAnswer}
+      onValueChange={(value) => onAnswerChange(question.id, value)}
+    >
+      <div className="grid gap-2">
+        {choices.map((choice) => (
+          <div className="flex items-center space-x-2" key={choice}>
+            <RadioGroupItem value={choice} id={`choice-${choice}`} />
+            <Label htmlFor={`choice-${choice}`}>{choice}</Label>
+          </div>
+        ))}
+      </div>
+    </RadioGroup>
+  );
 };
 
 export default AIAssessmentViewer;

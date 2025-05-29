@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AIAssessment {
@@ -118,7 +119,10 @@ export const aiAssessmentService = {
       .eq('status', 'published')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching published assessments:', error);
+      throw error;
+    }
     return (data || []).map(mapToAIAssessment);
   },
 
@@ -129,7 +133,10 @@ export const aiAssessmentService = {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching all assessments:', error);
+      throw error;
+    }
     return (data || []).map(mapToAIAssessment);
   },
 
@@ -143,6 +150,7 @@ export const aiAssessmentService = {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
+      console.error('Error fetching assessment:', error);
       throw error;
     }
     return mapToAIAssessment(data);
@@ -156,7 +164,10 @@ export const aiAssessmentService = {
       .eq('assessment_id', assessmentId)
       .order('position');
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching assessment questions:', error);
+      throw error;
+    }
     return (data || []).map(mapToAssessmentQuestion);
   },
 

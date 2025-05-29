@@ -1167,6 +1167,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_can_edit_assessment: {
+        Args: { assessment_id_param: string }
+        Returns: boolean
+      }
+      user_can_take_assessment: {
+        Args: { assessment_id_param: string }
+        Returns: boolean
+      }
       user_has_purchased_course: {
         Args: { course_id_param: string; user_id_param: string }
         Returns: boolean
