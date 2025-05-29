@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Plus, Search, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import { aiAssessmentService } from '@/services/aiAssessmentService';
 import AssessmentCard from './AssessmentCard';
 import CreateAssessmentDialog from './CreateAssessmentDialog';
@@ -14,10 +16,36 @@ const AIAssessmentManager: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAICreateDialogOpen, setIsAICreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const { toast } = useToast();
 
   const { data: assessments = [], isLoading, refetch } = useQuery({
     queryKey: ['allAssessments'],
     queryFn: aiAssessmentService.getAllAssessments,
+  });
+
+  const triggerAIProcessingMutation = useMutation({
+    mutationFn: async (assessmentId: string) => {
+      const { data, error } = await aiAssessmentService.supabase.functions.invoke('ai-process-assessment', {
+        body: { assessmentId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Processing started",
+        description: "AI processing has been triggered for pending assessments",
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error triggering processing",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const filteredAssessments = assessments.filter(assessment => {
@@ -35,6 +63,23 @@ const AIAssessmentManager: React.FC = () => {
     archived: assessments.filter(a => a.status === 'archived').length,
   };
 
+  const pendingAIAssessments = assessments.filter(a => 
+    a.is_ai_generated && (a.processing_status === 'pending' || a.processing_status === 'failed')
+  );
+
+  const handleTriggerAIProcessing = () => {
+    if (pendingAIAssessments.length === 0) {
+      toast({
+        title: "No pending assessments",
+        description: "There are no AI assessments pending processing",
+      });
+      return;
+    }
+
+    // Trigger processing for the first pending assessment
+    triggerAIProcessingMutation.mutate(pendingAIAssessments[0].id);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -43,6 +88,16 @@ const AIAssessmentManager: React.FC = () => {
           <p className="text-gray-600">Create and manage AI-powered assessments</p>
         </div>
         <div className="flex gap-2">
+          {pendingAIAssessments.length > 0 && (
+            <Button 
+              variant="outline"
+              onClick={handleTriggerAIProcessing}
+              disabled={triggerAIProcessingMutation.isPending}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${triggerAIProcessingMutation.isPending ? 'animate-spin' : ''}`} />
+              Process AI ({pendingAIAssessments.length})
+            </Button>
+          )}
           <Button 
             variant="outline"
             onClick={() => setIsCreateDialogOpen(true)}
