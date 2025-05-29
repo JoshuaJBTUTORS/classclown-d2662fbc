@@ -41,7 +41,7 @@ const formSchema = z.object({
   question_text: z.string().min(1, "Question text is required"),
   question_type: z.enum(['multiple_choice', 'short_answer', 'extended_writing', 'calculation']),
   marks_available: z.coerce.number().int().positive().default(1),
-  correct_answer: z.string().min(1, "Correct answer is required"),
+  correct_answer: z.string().optional(),
   keywords: z.string().optional(),
   image_url: z.string().optional(),
   // MCQ specific fields
@@ -51,9 +51,11 @@ const formSchema = z.object({
   option_d: z.string().optional(),
   correct_option: z.enum(['A', 'B', 'C', 'D']).optional(),
 }).refine((data) => {
+  console.log('Validation refine called with data:', data);
+  
   // If it's MCQ, all options must be filled and a correct option selected
   if (data.question_type === 'multiple_choice') {
-    return data.option_a && 
+    const mcqValid = data.option_a && 
            data.option_b && 
            data.option_c && 
            data.option_d && 
@@ -62,11 +64,26 @@ const formSchema = z.object({
            data.option_b.trim() !== '' &&
            data.option_c.trim() !== '' &&
            data.option_d.trim() !== '';
+    
+    console.log('MCQ validation result:', mcqValid);
+    return mcqValid;
   }
-  return true;
-}, {
-  message: "For multiple choice questions, all options must be filled and a correct option must be selected",
-  path: ["option_a"]
+  
+  // For non-MCQ questions, correct_answer is required
+  const nonMcqValid = data.correct_answer && data.correct_answer.trim() !== '';
+  console.log('Non-MCQ validation result:', nonMcqValid);
+  return nonMcqValid;
+}, (data) => {
+  if (data.question_type === 'multiple_choice') {
+    return {
+      message: "For multiple choice questions, all options must be filled and a correct option must be selected",
+      path: ["option_a"]
+    };
+  }
+  return {
+    message: "Correct answer is required",
+    path: ["correct_answer"]
+  };
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -105,7 +122,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
       question_text: editingQuestion?.question_text || "",
       question_type: editingQuestion?.question_type || 'short_answer',
       marks_available: editingQuestion?.marks_available || 1,
-      correct_answer: editingQuestion?.question_type === 'multiple_choice' ? editingQuestion.correct_answer : (editingQuestion?.correct_answer || ""),
+      correct_answer: editingQuestion?.question_type === 'multiple_choice' ? "" : (editingQuestion?.correct_answer || ""),
       keywords: editingQuestion?.keywords?.join(', ') || "",
       image_url: editingQuestion?.image_url || "",
       ...initialMCQData,
@@ -113,9 +130,12 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
   });
 
   const watchQuestionType = form.watch('question_type');
+  const watchCorrectOption = form.watch('correct_option');
 
-  // Handle question type changes
+  // Handle question type changes and sync correct_answer with correct_option for MCQ
   useEffect(() => {
+    console.log('Question type changed to:', watchQuestionType);
+    
     if (watchQuestionType === 'multiple_choice') {
       // Initialize MCQ fields if they're empty
       const currentValues = form.getValues();
@@ -126,8 +146,6 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
         form.setValue('option_d', '');
         form.setValue('correct_option', undefined);
       }
-      // Clear correct_answer for MCQ since it uses correct_option instead
-      form.setValue('correct_answer', '');
     } else {
       // Clear MCQ fields when switching away from multiple choice
       form.setValue('option_a', '');
@@ -135,16 +153,25 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
       form.setValue('option_c', '');
       form.setValue('option_d', '');
       form.setValue('correct_option', undefined);
-      // Reset correct_answer if it was empty
+      // Reset correct_answer if it was empty for non-MCQ
       if (!form.getValues('correct_answer')) {
         form.setValue('correct_answer', '');
       }
     }
   }, [watchQuestionType, form]);
 
+  // Sync correct_answer with correct_option for MCQ
+  useEffect(() => {
+    if (watchQuestionType === 'multiple_choice' && watchCorrectOption) {
+      console.log('Syncing correct_answer with correct_option:', watchCorrectOption);
+      form.setValue('correct_answer', watchCorrectOption);
+    }
+  }, [watchCorrectOption, watchQuestionType, form]);
+
   const createQuestionMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       console.log('Submitting form values:', values);
+      console.log('Form errors before submit:', form.formState.errors);
       
       let questionData: any = {
         assessment_id: assessmentId,
@@ -205,7 +232,13 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
 
   const onSubmit = (values: FormValues) => {
     console.log('Form submitted with values:', values);
-    console.log('Form errors:', form.formState.errors);
+    console.log('Current form errors:', form.formState.errors);
+    console.log('Form is valid:', form.formState.isValid);
+    
+    // Additional validation logging
+    const isValid = form.trigger();
+    console.log('Manual validation trigger result:', isValid);
+    
     createQuestionMutation.mutate(values);
   };
 
