@@ -12,13 +12,15 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  console.log('🚀 AI Mark Assessment function called');
+  console.log('🚀 AI Mark Assessment function called - DEPLOYED VERSION');
   console.log('Request method:', req.method);
   console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
   try {
     // Check if OpenAI API key is configured
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('🔑 OpenAI API key configured:', !!openAIApiKey);
+    
     if (!openAIApiKey) {
       console.error('❌ OpenAI API key not configured');
       return new Response(
@@ -54,6 +56,8 @@ serve(async (req) => {
       }
     );
 
+    console.log('🔗 Supabase client created successfully');
+
     // If questionId is provided, mark a single question
     if (questionId && studentAnswer !== undefined) {
       console.log('📋 Marking single question');
@@ -77,7 +81,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || "An unexpected error occurred while marking the assessment" 
+        error: error.message || "An unexpected error occurred while marking the assessment",
+        stack: error.stack
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -86,78 +91,91 @@ serve(async (req) => {
 
 async function markSingleQuestion(supabase: any, sessionId: string, questionId: string, studentAnswer: string, openAIApiKey: string) {
   console.log("🔍 Marking single question:", questionId);
+  console.log("📝 Student answer length:", studentAnswer.length);
 
-  // Get the question details
-  const { data: question, error: questionError } = await supabase
-    .from('assessment_questions')
-    .select('*')
-    .eq('id', questionId)
-    .single();
+  try {
+    // Get the question details
+    console.log("🔍 Fetching question details...");
+    const { data: question, error: questionError } = await supabase
+      .from('assessment_questions')
+      .select('*')
+      .eq('id', questionId)
+      .single();
 
-  if (questionError || !question) {
-    console.error('❌ Failed to fetch question:', questionError);
-    throw new Error(`Failed to fetch question: ${questionError?.message}`);
-  }
-
-  console.log('📄 Question details:', {
-    id: question.id,
-    type: question.question_type,
-    marks: question.marks_available,
-    hasCorrectAnswer: !!question.correct_answer
-  });
-
-  // Get or create student response
-  const { data: existingResponse } = await supabase
-    .from('student_responses')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('question_id', questionId)
-    .maybeSingle();
-
-  console.log('📝 Existing response:', existingResponse ? 'Found' : 'Not found');
-
-  const markingResult = await evaluateAnswer(question, studentAnswer, openAIApiKey);
-  console.log('🎯 Marking result:', markingResult);
-
-  const responseData = {
-    session_id: sessionId,
-    question_id: questionId,
-    student_answer: studentAnswer,
-    marks_awarded: markingResult.marks,
-    ai_feedback: markingResult.feedback,
-    confidence_score: markingResult.confidence,
-    marking_breakdown: markingResult.breakdown,
-    marked_at: new Date().toISOString(),
-  };
-
-  if (existingResponse) {
-    const { error: updateError } = await supabase
-      .from('student_responses')
-      .update(responseData)
-      .eq('id', existingResponse.id);
-
-    if (updateError) {
-      console.error('❌ Failed to update response:', updateError);
-      throw new Error(`Failed to update response: ${updateError.message}`);
+    if (questionError || !question) {
+      console.error('❌ Failed to fetch question:', questionError);
+      throw new Error(`Failed to fetch question: ${questionError?.message || 'Question not found'}`);
     }
-  } else {
-    const { error: insertError } = await supabase
+
+    console.log('📄 Question details:', {
+      id: question.id,
+      type: question.question_type,
+      marks: question.marks_available,
+      hasCorrectAnswer: !!question.correct_answer
+    });
+
+    // Get or create student response
+    console.log("🔍 Checking for existing response...");
+    const { data: existingResponse } = await supabase
       .from('student_responses')
-      .insert(responseData);
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('question_id', questionId)
+      .maybeSingle();
 
-    if (insertError) {
-      console.error('❌ Failed to insert response:', insertError);
-      throw new Error(`Failed to insert response: ${insertError.message}`);
+    console.log('📝 Existing response:', existingResponse ? 'Found' : 'Not found');
+
+    const markingResult = await evaluateAnswer(question, studentAnswer, openAIApiKey);
+    console.log('🎯 Marking result:', markingResult);
+
+    const responseData = {
+      session_id: sessionId,
+      question_id: questionId,
+      student_answer: studentAnswer,
+      marks_awarded: markingResult.marks,
+      ai_feedback: markingResult.feedback,
+      confidence_score: markingResult.confidence,
+      marking_breakdown: markingResult.breakdown,
+      marked_at: new Date().toISOString(),
+    };
+
+    if (existingResponse) {
+      console.log("🔄 Updating existing response...");
+      const { error: updateError } = await supabase
+        .from('student_responses')
+        .update(responseData)
+        .eq('id', existingResponse.id);
+
+      if (updateError) {
+        console.error('❌ Failed to update response:', updateError);
+        throw new Error(`Failed to update response: ${updateError.message}`);
+      }
+    } else {
+      console.log("➕ Creating new response...");
+      const { error: insertError } = await supabase
+        .from('student_responses')
+        .insert(responseData);
+
+      if (insertError) {
+        console.error('❌ Failed to insert response:', insertError);
+        throw new Error(`Failed to insert response: ${insertError.message}`);
+      }
     }
-  }
 
-  return {
-    success: true,
-    marks: markingResult.marks,
-    maxMarks: question.marks_available,
-    feedback: markingResult.feedback,
-    confidence: markingResult.confidence,
-  };
+    console.log("✅ Response saved successfully");
+
+    return {
+      success: true,
+      marks: markingResult.marks,
+      maxMarks: question.marks_available,
+      feedback: markingResult.feedback,
+      confidence: markingResult.confidence,
+    };
+
+  } catch (error) {
+    console.error("💥 Error in markSingleQuestion:", error);
+    throw error;
+  }
 }
 
 async function markAllQuestions(supabase: any, sessionId: string, openAIApiKey: string) {
@@ -257,14 +275,18 @@ async function markAllQuestions(supabase: any, sessionId: string, openAIApiKey: 
 }
 
 async function evaluateAnswer(question: any, studentAnswer: string, openAIApiKey: string) {
+  console.log("🔍 Evaluating answer for question type:", question.question_type);
+  
   if (!openAIApiKey) {
     throw new Error("OpenAI API key not configured");
   }
 
   // Handle different question types
   if (question.question_type === 'multiple_choice') {
+    console.log("📝 Evaluating multiple choice question");
     return evaluateMultipleChoice(question, studentAnswer);
   } else {
+    console.log("📝 Evaluating worded answer using AI");
     return await evaluateWordedAnswer(question, studentAnswer, openAIApiKey);
   }
 }
@@ -325,6 +347,7 @@ Respond in JSON format:
 `;
 
   try {
+    console.log("🤖 Calling OpenAI API...");
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -349,10 +372,13 @@ Respond in JSON format:
     });
 
     if (!response.ok) {
+      console.error("❌ OpenAI API error:", response.status, response.statusText);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("✅ OpenAI response received");
+    
     const aiContent = data.choices[0].message.content;
     
     // Clean and parse the JSON response
@@ -372,7 +398,7 @@ Respond in JSON format:
     };
 
   } catch (error) {
-    console.error("Error in AI evaluation:", error);
+    console.error("💥 Error in AI evaluation:", error);
     
     // Fallback: Simple keyword matching
     const keywords = question.keywords || [];

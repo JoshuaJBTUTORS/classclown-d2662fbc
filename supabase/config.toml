@@ -52,6 +52,9 @@ verify_jwt = true
 [functions.ai-process-assessment]
 verify_jwt = true
 
+[functions.ai-mark-assessment]
+verify_jwt = true
+
 [inbucket]
 enabled = true
 port = 54325
