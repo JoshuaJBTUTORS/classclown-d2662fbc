@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const { id: paramId } = useParams<{ id: string }>();
   const id = propAssessmentId || paramId;
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -39,6 +40,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ [key: string]: any }>({});
   const [isMarking, setIsMarking] = useState<{ [key: string]: boolean }>({});
+  const [isCompletingAssessment, setIsCompletingAssessment] = useState(false);
 
   const { data: assessment, isLoading: assessmentLoading, error: assessmentError } = useQuery({
     queryKey: ['assessment', id],
@@ -81,15 +83,28 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const { mutate: completeSession } = useMutation({
     mutationFn: (sessionId: string) => aiAssessmentService.completeSession(sessionId),
     onSuccess: () => {
+      setIsCompletingAssessment(false);
       toast({
         title: "Assessment completed",
-        description: "You have completed the assessment.",
+        description: "You have successfully completed the assessment.",
       });
-      if (!embedded) {
+      
+      // Improved navigation logic
+      const isFromCourse = location.pathname.includes('/course/');
+      if (embedded || isFromCourse) {
+        // If embedded or came from course, go back to course
+        const courseMatch = location.pathname.match(/\/course\/([^\/]+)/);
+        if (courseMatch) {
+          navigate(`/course/${courseMatch[1]}`);
+        } else {
+          navigate('/learning-hub');
+        }
+      } else {
         navigate('/learning-hub');
       }
     },
     onError: (error: any) => {
+      setIsCompletingAssessment(false);
       toast({
         title: "Error completing assessment",
         description: error.message || "Failed to complete the assessment.",
@@ -262,6 +277,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
 
   const completeAssessment = () => {
     if (session) {
+      setIsCompletingAssessment(true);
       completeSession(session.id);
     }
   };
@@ -320,14 +336,15 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
           <CardContent>
             {session ? (
               <>
-                {/* Timer and Complete Button Section */}
-                <div className="flex items-center justify-between mb-4">
-                  <AssessmentTimer 
-                    timeRemaining={timeRemaining}
-                    hasTimeLimit={!!assessment.time_limit_minutes}
-                  />
-                  <AssessmentCompletion onComplete={completeAssessment} hasTimeLimit={!!assessment.time_limit_minutes} />
-                </div>
+                {/* Timer Section - Only show for timed assessments */}
+                {assessment.time_limit_minutes && (
+                  <div className="flex items-center justify-between mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <AssessmentTimer 
+                      timeRemaining={timeRemaining}
+                      hasTimeLimit={!!assessment.time_limit_minutes}
+                    />
+                  </div>
+                )}
 
                 {questionsLoading ? (
                   <div className="space-y-4">
@@ -358,21 +375,13 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                       onNext={goToNextQuestion}
                     />
 
-                    {/* Additional Complete Assessment Button for non-timed assessments */}
-                    {!assessment.time_limit_minutes && (
-                      <div className="text-center mt-6 pt-4 border-t">
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Ready to submit your assessment?
-                        </p>
-                        <AssessmentCompletion 
-                          onComplete={completeAssessment}
-                          hasTimeLimit={false}
-                          className="w-full max-w-xs"
-                          variant="default"
-                          size="default"
-                        />
-                      </div>
-                    )}
+                    {/* Single Complete Assessment Button - Always shown at bottom */}
+                    <div className="mt-8 pt-6 border-t">
+                      <AssessmentCompletion 
+                        onComplete={completeAssessment}
+                        isLoading={isCompletingAssessment}
+                      />
+                    </div>
                   </>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
