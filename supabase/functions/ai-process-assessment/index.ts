@@ -16,27 +16,31 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  let assessmentId: string | null = null;
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { assessmentId }: ProcessAssessmentRequest = await req.json();
+    const requestBody: ProcessAssessmentRequest = await req.json();
+    assessmentId = requestBody.assessmentId;
     console.log('Processing assessment:', assessmentId);
 
     // Check if OpenAI API key is available
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
       console.error("OpenAI API key not configured");
-      await supabase
-        .from('ai_assessments')
-        .update({ 
-          processing_status: 'failed',
-          processing_error: 'OpenAI API key not configured' 
-        })
-        .eq('id', assessmentId);
-      
+      if (assessmentId) {
+        await supabase
+          .from('ai_assessments')
+          .update({ 
+            processing_status: 'failed',
+            processing_error: 'OpenAI API key not configured' 
+          })
+          .eq('id', assessmentId);
+      }
       throw new Error("OpenAI API key not configured");
     }
 
@@ -140,15 +144,14 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error processing assessment:", error);
     
-    // Update status to failed
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-    
-    try {
-      const { assessmentId } = await req.json();
-      if (assessmentId) {
+    // Update status to failed with better error handling
+    if (assessmentId) {
+      try {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+        );
+        
         await supabase
           .from('ai_assessments')
           .update({ 
@@ -156,9 +159,9 @@ serve(async (req) => {
             processing_error: error.message 
           })
           .eq('id', assessmentId);
+      } catch (updateError) {
+        console.error('Failed to update error status:', updateError);
       }
-    } catch (e) {
-      console.error('Failed to update error status:', e);
     }
 
     return new Response(
@@ -320,6 +323,25 @@ c) P(2 red in 3) = C(3,2) × (2/5)² × (3/5)¹ = 3 × 4/25 × 3/5 = 36/125 (6 m
   `;
 }
 
+function cleanJsonString(content: string): string {
+  // Remove markdown code blocks if present
+  let cleaned = content.trim();
+  
+  // Remove ```json at the beginning
+  if (cleaned.startsWith('```json')) {
+    cleaned = cleaned.substring(7);
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.substring(3);
+  }
+  
+  // Remove ``` at the end
+  if (cleaned.endsWith('```')) {
+    cleaned = cleaned.substring(0, cleaned.length - 3);
+  }
+  
+  return cleaned.trim();
+}
+
 async function processWithAI(questionsContent: string, answersContent: string, openaiKey: string, assessment: any) {
   const prompt = `
 You are an expert assessment processor. I will provide you with the content extracted from assessment materials (questions and answers).
@@ -364,7 +386,7 @@ ${questionsContent}
 Answers Content:
 ${answersContent}
 
-Analyze the content and extract all questions, determine their types (calculation, short_answer, extended_writing, multiple_choice), and map them to the correct answers. Return only valid JSON.
+Analyze the content and extract all questions, determine their types (calculation, short_answer, extended_writing, multiple_choice), and map them to the correct answers. Return only valid JSON without any markdown formatting.
 `;
 
   console.log('Sending request to OpenAI...');
@@ -397,11 +419,16 @@ Analyze the content and extract all questions, determine their types (calculatio
   }
 
   try {
-    const parsedContent = JSON.parse(content);
+    // Clean the JSON string to remove markdown formatting
+    const cleanedContent = cleanJsonString(content);
+    console.log('Cleaned AI response for parsing');
+    
+    const parsedContent = JSON.parse(cleanedContent);
     console.log('Successfully parsed AI response');
     return parsedContent;
   } catch (parseError) {
     console.error('Failed to parse AI response:', content);
-    throw new Error('Invalid JSON response from AI');
+    console.error('Parse error:', parseError);
+    throw new Error('Invalid JSON response from AI - please try again');
   }
 }
