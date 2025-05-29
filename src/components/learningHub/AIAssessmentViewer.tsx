@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Clock, FileText, CheckCircle } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { aiAssessmentService, AssessmentQuestion } from '@/services/aiAssessmentService';
+import { aiAssessmentService } from '@/services/aiAssessmentService';
 import { useAuth } from '@/contexts/AuthContext';
 import AssessmentAccessControl from './AssessmentAccessControl';
-import QuestionFeedback from './QuestionFeedback';
+import AssessmentTimer from './AssessmentTimer';
+import AssessmentQuestionCard from './AssessmentQuestion';
+import AssessmentNavigation from './AssessmentNavigation';
+import AssessmentCompletion from './AssessmentCompletion';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 
@@ -181,12 +180,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     }
   }, [assessment, sessionStartTime, session]);
 
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-  };
-
   const handleAnswerChange = (questionId: string, answer: string) => {
     setStudentAnswers({ ...studentAnswers, [questionId]: answer });
   };
@@ -329,25 +322,11 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
               <>
                 {/* Timer and Complete Button Section */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    {assessment.time_limit_minutes && timeRemaining !== null ? (
-                      <>
-                        <Clock className="mr-2 h-4 w-4" />
-                        Time Remaining: {formatTime(timeRemaining)}
-                      </>
-                    ) : (
-                      <span>No time limit</span>
-                    )}
-                  </div>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={completeAssessment}
-                    className="flex items-center"
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Complete Assessment
-                  </Button>
+                  <AssessmentTimer 
+                    timeRemaining={timeRemaining}
+                    hasTimeLimit={!!assessment.time_limit_minutes}
+                  />
+                  <AssessmentCompletion onComplete={completeAssessment} hasTimeLimit={!!assessment.time_limit_minutes} />
                 </div>
 
                 {questionsLoading ? (
@@ -363,7 +342,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                       <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
                     </div>
 
-                    <QuestionCard
+                    <AssessmentQuestionCard
                       question={questions[currentQuestionIndex]}
                       studentAnswer={studentAnswers[questions[currentQuestionIndex].id] || ''}
                       onAnswerChange={handleAnswerChange}
@@ -372,23 +351,12 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                       feedback={feedback[questions[currentQuestionIndex].id]}
                     />
 
-                    <div className="flex justify-between mt-4">
-                      <Button
-                        variant="secondary"
-                        onClick={goToPreviousQuestion}
-                        disabled={currentQuestionIndex === 0}
-                      >
-                        <ChevronLeft className="mr-2 h-4 w-4" />
-                        Previous
-                      </Button>
-                      <Button
-                        onClick={goToNextQuestion}
-                        disabled={currentQuestionIndex === questions.length - 1}
-                      >
-                        Next
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
+                    <AssessmentNavigation
+                      currentQuestionIndex={currentQuestionIndex}
+                      totalQuestions={questions.length}
+                      onPrevious={goToPreviousQuestion}
+                      onNext={goToNextQuestion}
+                    />
 
                     {/* Additional Complete Assessment Button for non-timed assessments */}
                     {!assessment.time_limit_minutes && (
@@ -396,14 +364,13 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                         <p className="text-sm text-muted-foreground mb-3">
                           Ready to submit your assessment?
                         </p>
-                        <Button 
-                          onClick={completeAssessment}
+                        <AssessmentCompletion 
+                          onComplete={completeAssessment}
+                          hasTimeLimit={false}
                           className="w-full max-w-xs"
                           variant="default"
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Complete Assessment
-                        </Button>
+                          size="default"
+                        />
                       </div>
                     )}
                   </>
@@ -455,109 +422,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         </div>
       </div>
     </AssessmentAccessControl>
-  );
-};
-
-interface QuestionCardProps {
-  question: AssessmentQuestion;
-  studentAnswer: string;
-  onAnswerChange: (questionId: string, answer: string) => void;
-  isMarking?: boolean;
-  onMark?: () => void;
-  feedback?: any;
-}
-
-const QuestionCard: React.FC<QuestionCardProps> = ({
-  question,
-  studentAnswer,
-  onAnswerChange,
-  isMarking = false,
-  onMark,
-  feedback,
-}) => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <div className="flex items-center">
-            <FileText className="mr-2 h-4 w-4" />
-            Question {question.question_number} ({question.marks_available} marks)
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p>{question.question_text}</p>
-        
-        {/* Display question image if it exists */}
-        {question.image_url && (
-          <div className="my-4">
-            <img 
-              src={question.image_url} 
-              alt={`Question ${question.question_number} image`}
-              className="max-w-full h-auto rounded-lg shadow-sm border"
-              style={{ maxHeight: '400px' }}
-            />
-          </div>
-        )}
-        
-        {question.question_type === 'multiple_choice' ? (
-          <MultipleChoiceQuestion
-            question={question}
-            studentAnswer={studentAnswer}
-            onAnswerChange={onAnswerChange}
-          />
-        ) : (
-          <Textarea
-            placeholder="Enter your answer here..."
-            value={studentAnswer}
-            onChange={(e) => onAnswerChange(question.id, e.target.value)}
-            disabled={isMarking}
-          />
-        )}
-        
-        <div className="flex justify-center">
-          <Button 
-            onClick={onMark} 
-            disabled={isMarking || !studentAnswer.trim()}
-            className="w-full max-w-xs"
-          >
-            {isMarking ? 'Marking Answer...' : 'Mark Answer'}
-          </Button>
-        </div>
-        
-        <QuestionFeedback feedback={feedback} isLoading={isMarking} />
-      </CardContent>
-    </Card>
-  );
-};
-
-interface MultipleChoiceQuestionProps {
-  question: AssessmentQuestion;
-  studentAnswer: string;
-  onAnswerChange: (questionId: string, answer: string) => void;
-}
-
-const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
-  question,
-  studentAnswer,
-  onAnswerChange,
-}) => {
-  const choices = question.marking_scheme?.choices || ['A', 'B', 'C', 'D'];
-
-  return (
-    <RadioGroup
-      defaultValue={studentAnswer}
-      onValueChange={(value) => onAnswerChange(question.id, value)}
-    >
-      <div className="grid gap-2">
-        {choices.map((choice: string) => (
-          <div className="flex items-center space-x-2" key={choice}>
-            <RadioGroupItem value={choice} id={`choice-${choice}`} />
-            <Label htmlFor={`choice-${choice}`}>{choice}</Label>
-          </div>
-        ))}
-      </div>
-    </RadioGroup>
   );
 };
 
