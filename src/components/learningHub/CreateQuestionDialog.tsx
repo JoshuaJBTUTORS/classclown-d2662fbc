@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -53,7 +53,15 @@ const formSchema = z.object({
 }).refine((data) => {
   // If it's MCQ, all options must be filled and a correct option selected
   if (data.question_type === 'multiple_choice') {
-    return data.option_a && data.option_b && data.option_c && data.option_d && data.correct_option;
+    return data.option_a && 
+           data.option_b && 
+           data.option_c && 
+           data.option_d && 
+           data.correct_option &&
+           data.option_a.trim() !== '' &&
+           data.option_b.trim() !== '' &&
+           data.option_c.trim() !== '' &&
+           data.option_d.trim() !== '';
   }
   return true;
 }, {
@@ -106,8 +114,38 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
 
   const watchQuestionType = form.watch('question_type');
 
+  // Handle question type changes
+  useEffect(() => {
+    if (watchQuestionType === 'multiple_choice') {
+      // Initialize MCQ fields if they're empty
+      const currentValues = form.getValues();
+      if (!currentValues.option_a) {
+        form.setValue('option_a', '');
+        form.setValue('option_b', '');
+        form.setValue('option_c', '');
+        form.setValue('option_d', '');
+        form.setValue('correct_option', undefined);
+      }
+      // Clear correct_answer for MCQ since it uses correct_option instead
+      form.setValue('correct_answer', '');
+    } else {
+      // Clear MCQ fields when switching away from multiple choice
+      form.setValue('option_a', '');
+      form.setValue('option_b', '');
+      form.setValue('option_c', '');
+      form.setValue('option_d', '');
+      form.setValue('correct_option', undefined);
+      // Reset correct_answer if it was empty
+      if (!form.getValues('correct_answer')) {
+        form.setValue('correct_answer', '');
+      }
+    }
+  }, [watchQuestionType, form]);
+
   const createQuestionMutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      console.log('Submitting form values:', values);
+      
       let questionData: any = {
         assessment_id: assessmentId,
         question_number: 1, // Will be auto-calculated
@@ -136,6 +174,8 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
         questionData.marking_scheme = {};
       }
 
+      console.log('Final question data:', questionData);
+
       if (editingQuestion) {
         return await aiAssessmentService.updateQuestion(editingQuestion.id, questionData);
       } else {
@@ -154,6 +194,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
       }
     },
     onError: (error) => {
+      console.error('Error creating/updating question:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -163,6 +204,8 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
   });
 
   const onSubmit = (values: FormValues) => {
+    console.log('Form submitted with values:', values);
+    console.log('Form errors:', form.formState.errors);
     createQuestionMutation.mutate(values);
   };
 
@@ -228,7 +271,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
                   <FormItem>
                     <FormLabel>Question Type</FormLabel>
                     <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -271,7 +314,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
                     name="option_a"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Option A</FormLabel>
+                        <FormLabel>Option A *</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter option A..." {...field} />
                         </FormControl>
@@ -285,7 +328,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
                     name="option_b"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Option B</FormLabel>
+                        <FormLabel>Option B *</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter option B..." {...field} />
                         </FormControl>
@@ -299,7 +342,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
                     name="option_c"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Option C</FormLabel>
+                        <FormLabel>Option C *</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter option C..." {...field} />
                         </FormControl>
@@ -313,7 +356,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
                     name="option_d"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Option D</FormLabel>
+                        <FormLabel>Option D *</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter option D..." {...field} />
                         </FormControl>
@@ -328,11 +371,11 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
                   name="correct_option"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Correct Answer</FormLabel>
+                      <FormLabel>Correct Answer *</FormLabel>
                       <FormControl>
                         <RadioGroup 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
+                          value={field.value} 
+                          onValueChange={field.onChange}
                           className="flex flex-row space-x-6"
                         >
                           <div className="flex items-center space-x-2">
