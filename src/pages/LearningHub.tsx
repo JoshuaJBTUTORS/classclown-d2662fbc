@@ -49,7 +49,7 @@ const LearningHub: React.FC = () => {
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Enhanced Header with consistent branding */}
         <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 shadow-xl">
@@ -66,8 +66,8 @@ const LearningHub: React.FC = () => {
               </Button>
               <div className="h-6 w-px bg-gray-300" />
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg backdrop-blur-sm">
-                  <GraduationCap className="h-6 w-6 text-blue-600" />
+                <div className="p-2 bg-gradient-to-r from-rose-500/20 to-pink-500/20 rounded-lg backdrop-blur-sm">
+                  <GraduationCap className="h-6 w-6 text-rose-600" />
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Learning Hub</h1>
@@ -79,7 +79,7 @@ const LearningHub: React.FC = () => {
             {hasAdminPrivileges && activeMainTab === 'courses' && (
               <Button 
                 onClick={() => navigate('/create-course')}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 shadow-lg"
+                className="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white px-6 shadow-lg"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 Create New Course
@@ -94,7 +94,7 @@ const LearningHub: React.FC = () => {
             <TabsList className="h-16 bg-transparent p-0 w-full justify-start border-b border-gray-200/50">
               <TabsTrigger 
                 value="courses" 
-                className="flex items-center gap-3 px-8 py-4 text-gray-600 data-[state=active]:text-blue-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-50/80 data-[state=active]:to-purple-50/80 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none h-full font-medium"
+                className="flex items-center gap-3 px-8 py-4 text-gray-600 data-[state=active]:text-rose-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-50/80 data-[state=active]:to-pink-50/80 data-[state=active]:border-b-2 data-[state=active]:border-rose-600 rounded-none h-full font-medium"
               >
                 <BookOpen className="h-5 w-5" />
                 <span className="text-lg">Courses</span>
@@ -102,7 +102,7 @@ const LearningHub: React.FC = () => {
               {isOwner && (
                 <TabsTrigger 
                   value="ai-assessments" 
-                  className="flex items-center gap-3 px-8 py-4 text-gray-600 data-[state=active]:text-purple-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-50/80 data-[state=active]:to-blue-50/80 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none h-full font-medium"
+                  className="flex items-center gap-3 px-8 py-4 text-gray-600 data-[state=active]:text-pink-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-50/80 data-[state=active]:to-rose-50/80 data-[state=active]:border-b-2 data-[state=active]:border-pink-600 rounded-none h-full font-medium"
                 >
                   <Brain className="h-5 w-5" />
                   <span className="text-lg">AI Assessments</span>
@@ -122,8 +122,8 @@ const LearningHub: React.FC = () => {
                       onClick={() => setActiveSubject(subject)}
                       className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-200 border backdrop-blur-sm ${
                         activeSubject === subject
-                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg'
-                          : 'bg-white/60 text-gray-700 hover:bg-white/80 border-gray-200/50 hover:border-blue-200 hover:text-blue-600'
+                          ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-lg'
+                          : 'bg-white/60 text-gray-700 hover:bg-white/80 border-gray-200/50 hover:border-rose-200 hover:text-rose-600'
                       }`}
                     >
                       {subject}
@@ -170,12 +170,12 @@ const LearningHub: React.FC = () => {
                   <span className="font-medium text-gray-700">{filteredCourses.length} courses found</span>
                 </div>
                 {searchTerm && (
-                  <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50/80 backdrop-blur-sm px-3 py-1">
+                  <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50/80 backdrop-blur-sm px-3 py-1">
                     Searching: "{searchTerm}"
                   </Badge>
                 )}
                 {activeSubject !== 'All Courses' && (
-                  <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50/80 backdrop-blur-sm px-3 py-1">
+                  <Badge variant="outline" className="text-pink-600 border-pink-200 bg-pink-50/80 backdrop-blur-sm px-3 py-1">
                     {activeSubject}
                   </Badge>
                 )}
@@ -225,7 +225,7 @@ const LearningHub: React.FC = () => {
                 {hasAdminPrivileges && !searchTerm && (
                   <Button 
                     onClick={() => navigate('/create-course')}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-medium shadow-lg"
+                    className="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white px-8 py-3 rounded-xl font-medium shadow-lg"
                   >
                     <Sparkles className="mr-2 h-5 w-5" />
                     Create Your First Course
@@ -252,10 +252,10 @@ const LearningHub: React.FC = () => {
               <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-xl">
                 <div className="mb-6">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg backdrop-blur-sm">
-                      <Brain className="h-6 w-6 text-purple-600" />
+                    <div className="p-2 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-lg backdrop-blur-sm">
+                      <Brain className="h-6 w-6 text-pink-600" />
                     </div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">AI Assessment Manager</h2>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">AI Assessment Manager</h2>
                   </div>
                   <p className="text-gray-600 text-lg">Create and manage AI-powered assessments for your students</p>
                 </div>

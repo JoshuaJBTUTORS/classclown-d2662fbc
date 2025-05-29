@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -229,7 +228,7 @@ const CourseDetail: React.FC = () => {
 
   if (courseLoading || modulesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center mb-6">
             <Button 
@@ -266,7 +265,7 @@ const CourseDetail: React.FC = () => {
 
   if (courseError || modulesError || !course) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center mb-6">
             <Button 
@@ -284,7 +283,7 @@ const CourseDetail: React.FC = () => {
             <BookOpen className="mx-auto h-16 w-16 text-red-300 mb-6" />
             <h3 className="text-xl font-semibold text-red-800 mb-3">Error loading course</h3>
             <p className="text-red-600 mb-6">Please try again later or contact support if the issue persists.</p>
-            <Button onClick={() => navigate('/learning-hub')} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => navigate('/learning-hub')} className="bg-rose-600 hover:bg-rose-700">
               Return to Learning Hub
             </Button>
           </div>
@@ -297,7 +296,7 @@ const CourseDetail: React.FC = () => {
   const showTrialButton = course?.status === 'published' && !canAccessFullCourse && user && !isVerifyingPayment;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Enhanced Header */}
         <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 shadow-xl">
@@ -326,7 +325,7 @@ const CourseDetail: React.FC = () => {
             
             <div className="flex items-center gap-3">
               {isVerifyingPayment && (
-                <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50/80 backdrop-blur-sm">
+                <Badge variant="outline" className="text-rose-600 border-rose-300 bg-rose-50/80 backdrop-blur-sm">
                   Verifying payment...
                 </Badge>
               )}
@@ -347,7 +346,7 @@ const CourseDetail: React.FC = () => {
               {showTrialButton && (
                 <Button 
                   onClick={handleStartTrial}
-                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 shadow-lg"
+                  className="bg-gradient-to-r from-emerald-600 to-rose-600 hover:from-emerald-700 hover:to-rose-700 text-white px-6 shadow-lg"
                 >
                   <Gift className="mr-2 h-4 w-4" />
                   Start Free Trial - {formatPrice(course.price || 899)}/month
@@ -370,7 +369,7 @@ const CourseDetail: React.FC = () => {
           {/* Course header with enhanced styling */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <Badge className="bg-blue-100/80 text-blue-700 border-blue-200/50 backdrop-blur-sm">{course?.subject || "General"}</Badge>
+              <Badge className="bg-rose-100/80 text-rose-700 border-rose-200/50 backdrop-blur-sm">{course?.subject || "General"}</Badge>
               <Badge 
                 variant="outline" 
                 className={course?.status === 'published' ? 'text-green-700 border-green-200/50 bg-green-50/80 backdrop-blur-sm' : 'text-gray-600 border-gray-200/50 bg-gray-50/80 backdrop-blur-sm'}
@@ -434,7 +433,7 @@ const CourseDetail: React.FC = () => {
           <div className="col-span-6">
             {activeLesson ? (
               <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
-                <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-blue-50/80">
+                <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">{activeLesson.title}</h2>

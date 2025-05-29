@@ -50,7 +50,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
       case 'draft': return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'published': return 'bg-green-50 text-green-700 border-green-200';
       case 'archived': return 'bg-gray-50 text-gray-700 border-gray-200';
-      default: return 'bg-blue-50 text-blue-700 border-blue-200';
+      default: return 'bg-rose-50 text-rose-700 border-rose-200';
     }
   };
 
@@ -85,7 +85,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
     return (
       <>
         <Card className="flex flex-row overflow-hidden hover:shadow-lg transition-all duration-200 border-gray-200 bg-white">
-          <div className="w-48 h-32 bg-gradient-to-br from-blue-50 to-indigo-50 relative flex-shrink-0">
+          <div className="w-48 h-32 bg-gradient-to-br from-rose-50 to-pink-50 relative flex-shrink-0">
             {course.cover_image_url ? (
               <img 
                 src={course.cover_image_url} 
@@ -94,12 +94,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
               />
             ) : (
               <div className="flex items-center justify-center h-full">
-                <BookOpen className="h-8 w-8 text-blue-400" />
+                <BookOpen className="h-8 w-8 text-rose-400" />
               </div>
             )}
             
             {course.status === 'published' && course.price && (
-              <Badge className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1">
+              <Badge className="absolute bottom-2 left-2 bg-rose-600 text-white text-xs px-2 py-1">
                 {formatPrice(course.price)}/month
               </Badge>
             )}
@@ -110,7 +110,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-blue-100 text-blue-700 text-xs">{course.subject || "General"}</Badge>
+                    <Badge className="bg-rose-100 text-rose-700 text-xs">{course.subject || "General"}</Badge>
                     <Badge 
                       variant="outline" 
                       className={`${getStatusColor(course.status)} text-xs`}
@@ -159,7 +159,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 
                 <Button 
                   onClick={handleButtonClick} 
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                  className="bg-rose-600 hover:bg-rose-700 text-white px-6"
                   variant={course.status === 'published' ? "default" : "outline"}
                   disabled={course.status !== 'published' && !isAdmin}
                 >
@@ -182,7 +182,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   return (
     <>
       <Card className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-all duration-200 border-gray-200 bg-white group">
-        <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-50 relative overflow-hidden">
+        <div className="h-48 bg-gradient-to-br from-rose-50 to-pink-50 relative overflow-hidden">
           {course.cover_image_url ? (
             <img 
               src={course.cover_image_url} 
@@ -191,7 +191,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
             />
           ) : (
             <div className="flex items-center justify-center h-full">
-              <BookOpen className="h-12 w-12 text-blue-400 group-hover:scale-110 transition-transform duration-200" />
+              <BookOpen className="h-12 w-12 text-rose-400 group-hover:scale-110 transition-transform duration-200" />
             </div>
           )}
           
@@ -212,7 +212,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
           </div>
           
           {course.status === 'published' && course.price && (
-            <Badge className="absolute bottom-3 left-3 bg-blue-600 text-white shadow-sm backdrop-blur-sm">
+            <Badge className="absolute bottom-3 left-3 bg-rose-600 text-white shadow-sm backdrop-blur-sm">
               {formatPrice(course.price)}/month
             </Badge>
           )}
@@ -220,7 +220,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
         
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2 mb-2">
-            <Badge className="bg-blue-100 text-blue-700 text-xs">{course.subject || "General"}</Badge>
+            <Badge className="bg-rose-100 text-rose-700 text-xs">{course.subject || "General"}</Badge>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <Star className="h-3 w-3 text-yellow-500" />
               <span>4.8</span>
@@ -246,7 +246,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
           
           <Button 
             onClick={handleButtonClick} 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium"
             variant={course.status === 'published' ? "default" : "outline"}
             disabled={course.status !== 'published' && !isAdmin}
           >
