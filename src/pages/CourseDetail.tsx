@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen, Gift, RefreshCw, CheckCircle, Clock, Play } from 'lucide-react';
+import { ChevronLeft, PenSquare, BookOpen, Gift, RefreshCw, CheckCircle, Clock, Play, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,8 +14,6 @@ import { Course, CourseModule } from '@/types/course';
 import CourseSidebar from '@/components/learningHub/CourseSidebar';
 import ContentViewer from '@/components/learningHub/ContentViewer';
 import ProgressBar from '@/components/learningHub/ProgressBar';
-import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
 import NotesSection from '@/components/learningHub/NotesSection';
 import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +25,6 @@ const CourseDetail: React.FC = () => {
   const { isAdmin, isOwner, isTutor, user } = useAuth();
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
@@ -34,10 +32,6 @@ const CourseDetail: React.FC = () => {
   const { toast } = useToast();
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   // Function to refresh purchase status
   const refreshPurchaseStatus = async () => {
@@ -235,42 +229,36 @@ const CourseDetail: React.FC = () => {
 
   if (courseLoading || modulesLoading) {
     return (
-      <div className="min-h-screen flex w-full bg-gray-50">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-0'}`}>
-          <Navbar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 overflow-y-auto bg-white">
-            <div className="max-w-7xl mx-auto px-6 py-8">
-              <div className="flex items-center mb-6">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate(-1)} 
-                  className="mr-2"
-                >
-                  <ChevronLeft className="mr-1" />
-                  Back
-                </Button>
-              </div>
-              
-              <div className="flex flex-col gap-4 mb-6">
-                <Skeleton className="h-10 w-3/4" />
-                <Skeleton className="h-6 w-1/2" />
-              </div>
-              
-              <div className="grid grid-cols-12 gap-6">
-                <div className="col-span-3">
-                  <Skeleton className="h-[600px] w-full" />
-                </div>
-                <div className="col-span-6">
-                  <Skeleton className="h-[600px] w-full" />
-                </div>
-                <div className="col-span-3">
-                  <Skeleton className="h-[600px] w-full" />
-                </div>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/')} 
+              className="mr-2"
+            >
+              <Home className="mr-1 h-4 w-4" />
+              Home
+            </Button>
+          </div>
+          
+          <div className="flex flex-col gap-4 mb-6">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-6 w-1/2" />
+          </div>
+          
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-3">
+              <Skeleton className="h-[600px] w-full" />
             </div>
-          </main>
+            <div className="col-span-6">
+              <Skeleton className="h-[600px] w-full" />
+            </div>
+            <div className="col-span-3">
+              <Skeleton className="h-[600px] w-full" />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -278,34 +266,28 @@ const CourseDetail: React.FC = () => {
 
   if (courseError || modulesError || !course) {
     return (
-      <div className="min-h-screen flex w-full bg-gray-50">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-0'}`}>
-          <Navbar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 overflow-y-auto bg-white">
-            <div className="max-w-7xl mx-auto px-6 py-8">
-              <div className="flex items-center mb-6">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate(-1)} 
-                  className="mr-2"
-                >
-                  <ChevronLeft className="mr-1" />
-                  Back
-                </Button>
-              </div>
-              
-              <div className="bg-white border border-red-200 rounded-xl p-8 text-center">
-                <BookOpen className="mx-auto h-16 w-16 text-red-300 mb-6" />
-                <h3 className="text-xl font-semibold text-red-800 mb-3">Error loading course</h3>
-                <p className="text-red-600 mb-6">Please try again later or contact support if the issue persists.</p>
-                <Button onClick={() => navigate('/learning-hub')} className="bg-blue-600 hover:bg-blue-700">
-                  Return to Learning Hub
-                </Button>
-              </div>
-            </div>
-          </main>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/')} 
+              className="mr-2"
+            >
+              <Home className="mr-1 h-4 w-4" />
+              Home
+            </Button>
+          </div>
+          
+          <div className="bg-white border border-red-200 rounded-xl p-8 text-center">
+            <BookOpen className="mx-auto h-16 w-16 text-red-300 mb-6" />
+            <h3 className="text-xl font-semibold text-red-800 mb-3">Error loading course</h3>
+            <p className="text-red-600 mb-6">Please try again later or contact support if the issue persists.</p>
+            <Button onClick={() => navigate('/learning-hub')} className="bg-blue-600 hover:bg-blue-700">
+              Return to Learning Hub
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -315,181 +297,188 @@ const CourseDetail: React.FC = () => {
   const showTrialButton = course?.status === 'published' && !canAccessFullCourse && user && !isVerifyingPayment;
 
   return (
-    <div className="min-h-screen flex w-full bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-0'}`}>
-        <Navbar toggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-y-auto bg-white">
-          <div className="max-w-7xl mx-auto px-6 py-6">
-            {/* Enhanced Header */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => navigate('/learning-hub')} 
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ChevronLeft className="mr-1 h-4 w-4" />
-                    Back to Courses
-                  </Button>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  {isVerifyingPayment && (
-                    <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50">
-                      Verifying payment...
-                    </Badge>
-                  )}
-                  
-                  {!canAccessFullCourse && (
-                    <Button 
-                      onClick={handleManualRefresh}
-                      disabled={isRefreshing}
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-300"
-                    >
-                      <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      {isRefreshing ? 'Checking...' : 'Refresh Access'}
-                    </Button>
-                  )}
-                  
-                  {showTrialButton && (
-                    <Button 
-                      onClick={handleStartTrial}
-                      className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6"
-                    >
-                      <Gift className="mr-2 h-4 w-4" />
-                      Start Free Trial - {formatPrice(course.price || 899)}/month
-                    </Button>
-                  )}
-                  
-                  {hasAdminPrivileges && (
-                    <Button 
-                      onClick={() => navigate(`/course/${courseId}/edit`)}
-                      variant="outline"
-                      className="border-gray-300"
-                    >
-                      <PenSquare className="mr-2 h-4 w-4" />
-                      Edit Course
-                    </Button>
-                  )}
-                </div>
-              </div>
-              
-              {/* Course header with enhanced styling */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <Badge className="bg-blue-100 text-blue-700 border-blue-200">{course?.subject || "General"}</Badge>
-                  <Badge 
-                    variant="outline" 
-                    className={course?.status === 'published' ? 'text-green-700 border-green-200 bg-green-50' : 'text-gray-600 border-gray-200'}
-                  >
-                    {course?.status}
-                  </Badge>
-                  {isPurchased && (
-                    <Badge className="bg-green-500 text-white">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Subscribed
-                    </Badge>
-                  )}
-                  {!canAccessFullCourse && course?.status === 'published' && (
-                    <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">
-                      <Play className="mr-1 h-3 w-3" />
-                      Preview Mode
-                    </Badge>
-                  )}
-                </div>
-                
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">{course?.title}</h1>
-                <p className="text-gray-600 text-lg mb-6 max-w-4xl">{course?.description}</p>
-                
-                {/* Enhanced progress bar */}
-                {user && !progressLoading && totalLessons > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Course Progress</span>
-                      <span className="text-sm text-gray-600">{completedLessons}/{totalLessons} lessons completed</span>
-                    </div>
-                    <ProgressBar 
-                      current={completedLessons}
-                      total={totalLessons}
-                      className="w-full"
-                    />
-                  </div>
-                )}
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Enhanced Header */}
+        <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 shadow-xl">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/')} 
+                className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
+              >
+                <Home className="mr-1 h-4 w-4" />
+                Home
+              </Button>
+              <div className="h-6 w-px bg-gray-300" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/learning-hub')} 
+                className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                All Courses
+              </Button>
             </div>
             
-            {/* Course content layout with improved styling */}
-            <div className="grid grid-cols-12 gap-6">
-              {/* Enhanced sidebar */}
-              <div className="col-span-3">
-                <div className="sticky top-6">
-                  <CourseSidebar 
-                    modules={modules || []}
-                    studentProgress={studentProgress || []}
-                    onSelectLesson={handleLessonSelect}
-                    currentLessonId={activeLessonId || undefined}
-                    isAdmin={hasAdminPrivileges}
-                    isPurchased={canAccessFullCourse}
-                  />
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              {isVerifyingPayment && (
+                <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50/80 backdrop-blur-sm">
+                  Verifying payment...
+                </Badge>
+              )}
               
-              {/* Enhanced content viewer */}
-              <div className="col-span-6">
-                {activeLesson ? (
-                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-gray-200 bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900">{activeLesson.title}</h2>
-                          {activeLesson.description && (
-                            <p className="text-gray-600 mt-1">{activeLesson.description}</p>
-                          )}
-                        </div>
-                        {activeLesson.duration_minutes && (
-                          <div className="flex items-center gap-1 text-gray-500">
-                            <Clock className="h-4 w-4" />
-                            <span className="text-sm">{activeLesson.duration_minutes} min</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <ContentViewer 
-                      lesson={activeLesson} 
-                      isLoading={false}
-                    />
-                  </div>
-                ) : (
-                  <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-                    <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-6" />
-                    <h3 className="text-xl font-semibold text-gray-800 mb-3">No lesson selected</h3>
-                    <p className="text-gray-600 max-w-md mx-auto">
-                      {modules && modules.length > 0 
-                        ? "Select a lesson from the course content to start learning"
-                        : "No content available for this course yet"}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Enhanced notes section */}
-              <div className="col-span-3">
-                <div className="sticky top-6">
-                  <NotesSection 
-                    courseId={courseId!}
-                    lessonId={activeLessonId || undefined}
-                    lessonTitle={activeLesson?.title}
-                  />
-                </div>
-              </div>
+              {!canAccessFullCourse && (
+                <Button 
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  variant="outline"
+                  size="sm"
+                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80"
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Checking...' : 'Refresh Access'}
+                </Button>
+              )}
+              
+              {showTrialButton && (
+                <Button 
+                  onClick={handleStartTrial}
+                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 shadow-lg"
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  Start Free Trial - {formatPrice(course.price || 899)}/month
+                </Button>
+              )}
+              
+              {hasAdminPrivileges && (
+                <Button 
+                  onClick={() => navigate(`/course/${courseId}/edit`)}
+                  variant="outline"
+                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80"
+                >
+                  <PenSquare className="mr-2 h-4 w-4" />
+                  Edit Course
+                </Button>
+              )}
             </div>
           </div>
-        </main>
+          
+          {/* Course header with enhanced styling */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <Badge className="bg-blue-100/80 text-blue-700 border-blue-200/50 backdrop-blur-sm">{course?.subject || "General"}</Badge>
+              <Badge 
+                variant="outline" 
+                className={course?.status === 'published' ? 'text-green-700 border-green-200/50 bg-green-50/80 backdrop-blur-sm' : 'text-gray-600 border-gray-200/50 bg-gray-50/80 backdrop-blur-sm'}
+              >
+                {course?.status}
+              </Badge>
+              {isPurchased && (
+                <Badge className="bg-green-500/90 text-white backdrop-blur-sm">
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  Subscribed
+                </Badge>
+              )}
+              {!canAccessFullCourse && course?.status === 'published' && (
+                <Badge variant="outline" className="text-orange-600 border-orange-300/50 bg-orange-50/80 backdrop-blur-sm">
+                  <Play className="mr-1 h-3 w-3" />
+                  Preview Mode
+                </Badge>
+              )}
+            </div>
+            
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">{course?.title}</h1>
+            <p className="text-gray-600 text-lg mb-6 max-w-4xl leading-relaxed">{course?.description}</p>
+            
+            {/* Enhanced progress bar */}
+            {user && !progressLoading && totalLessons > 0 && (
+              <div className="bg-gray-50/80 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-gray-700">Course Progress</span>
+                  <span className="text-sm text-gray-600 bg-white/60 px-3 py-1 rounded-full">{completedLessons}/{totalLessons} lessons completed</span>
+                </div>
+                <ProgressBar 
+                  current={completedLessons}
+                  total={totalLessons}
+                  className="w-full h-3"
+                />
+                <div className="mt-2 text-xs text-gray-500">
+                  {Math.round((completedLessons / totalLessons) * 100)}% complete
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Course content layout with improved styling */}
+        <div className="grid grid-cols-12 gap-6">
+          {/* Enhanced sidebar */}
+          <div className="col-span-3">
+            <div className="sticky top-6">
+              <CourseSidebar 
+                modules={modules || []}
+                studentProgress={studentProgress || []}
+                onSelectLesson={handleLessonSelect}
+                currentLessonId={activeLessonId || undefined}
+                isAdmin={hasAdminPrivileges}
+                isPurchased={canAccessFullCourse}
+              />
+            </div>
+          </div>
+          
+          {/* Enhanced content viewer */}
+          <div className="col-span-6">
+            {activeLesson ? (
+              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+                <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-blue-50/80">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">{activeLesson.title}</h2>
+                      {activeLesson.description && (
+                        <p className="text-gray-600 leading-relaxed">{activeLesson.description}</p>
+                      )}
+                    </div>
+                    {activeLesson.duration_minutes && (
+                      <div className="flex items-center gap-2 text-gray-500 bg-white/60 px-3 py-2 rounded-lg backdrop-blur-sm">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm font-medium">{activeLesson.duration_minutes} min</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <ContentViewer 
+                  lesson={activeLesson} 
+                  isLoading={false}
+                />
+              </div>
+            ) : (
+              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
+                <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">No lesson selected</h3>
+                <p className="text-gray-600 max-w-md mx-auto text-lg leading-relaxed">
+                  {modules && modules.length > 0 
+                    ? "Select a lesson from the course content to start learning"
+                    : "No content available for this course yet"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Enhanced notes section */}
+          <div className="col-span-3">
+            <div className="sticky top-6">
+              <NotesSection 
+                courseId={courseId!}
+                lessonId={activeLessonId || undefined}
+                lessonTitle={activeLesson?.title}
+              />
+            </div>
+          </div>
+        </div>
       </div>
       
       {course && (
