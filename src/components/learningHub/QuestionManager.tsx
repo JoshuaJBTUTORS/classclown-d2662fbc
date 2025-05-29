@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, MoveUp, MoveDown } from 'lucide-react';
+import { Plus, Edit, Trash2, MoveUp, MoveDown, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +71,12 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
                         <Badge variant="secondary">
                           {getQuestionTypeLabel(question.question_type)}
                         </Badge>
+                        {question.image_url && (
+                          <Badge variant="outline" className="text-blue-600">
+                            <Image className="h-3 w-3 mr-1" />
+                            Image
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         {index > 0 && (
@@ -95,17 +101,31 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
                         </Button>
                       </div>
                     </div>
-                    <p className="text-gray-700">{question.question_text}</p>
-                    {question.keywords && question.keywords.length > 0 && (
-                      <div className="mt-2">
-                        <span className="text-sm text-gray-500">Keywords: </span>
-                        {question.keywords.map((keyword, i) => (
-                          <Badge key={i} variant="outline" className="mr-1 text-xs">
-                            {keyword}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+                    
+                    <div className="space-y-3">
+                      <p className="text-gray-700">{question.question_text}</p>
+                      
+                      {question.image_url && (
+                        <div className="border rounded-lg p-2 bg-gray-50">
+                          <img 
+                            src={question.image_url} 
+                            alt="Question image" 
+                            className="max-w-full h-auto max-h-32 rounded"
+                          />
+                        </div>
+                      )}
+                      
+                      {question.keywords && question.keywords.length > 0 && (
+                        <div>
+                          <span className="text-sm text-gray-500">Keywords: </span>
+                          {question.keywords.map((keyword, i) => (
+                            <Badge key={i} variant="outline" className="mr-1 text-xs">
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}

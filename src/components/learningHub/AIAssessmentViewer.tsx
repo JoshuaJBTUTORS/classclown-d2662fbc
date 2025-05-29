@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -261,6 +260,16 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId })
             <div className="prose max-w-none">
               <p>{currentQuestion.question_text}</p>
             </div>
+            
+            {currentQuestion.image_url && (
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <img 
+                  src={currentQuestion.image_url} 
+                  alt="Question image" 
+                  className="max-w-full h-auto rounded"
+                />
+              </div>
+            )}
             
             <Textarea
               value={answers[currentQuestion.id] || ''}

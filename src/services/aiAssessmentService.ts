@@ -34,6 +34,7 @@ export interface AssessmentQuestion {
   marking_scheme: any;
   keywords: string[];
   position: number;
+  image_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -100,6 +101,7 @@ const mapToAssessmentQuestion = (row: any): AssessmentQuestion => ({
   marking_scheme: row.marking_scheme,
   keywords: Array.isArray(row.keywords) ? row.keywords.map(k => String(k)) : [],
   position: row.position,
+  image_url: row.image_url,
   created_at: row.created_at,
   updated_at: row.updated_at
 });

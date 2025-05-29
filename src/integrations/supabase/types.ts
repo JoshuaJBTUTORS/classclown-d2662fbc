@@ -90,6 +90,7 @@ export type Database = {
           correct_answer: string
           created_at: string
           id: string
+          image_url: string | null
           keywords: Json | null
           marking_scheme: Json
           marks_available: number
@@ -104,6 +105,7 @@ export type Database = {
           correct_answer: string
           created_at?: string
           id?: string
+          image_url?: string | null
           keywords?: Json | null
           marking_scheme?: Json
           marks_available?: number
@@ -118,6 +120,7 @@ export type Database = {
           correct_answer?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           keywords?: Json | null
           marking_scheme?: Json
           marks_available?: number

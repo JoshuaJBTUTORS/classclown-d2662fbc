@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { aiAssessmentService, AssessmentQuestion } from '@/services/aiAssessmentService';
+import ImageUploadField from './ImageUploadField';
 
 interface CreateQuestionDialogProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ const formSchema = z.object({
   marks_available: z.coerce.number().int().positive().default(1),
   correct_answer: z.string().min(1, "Correct answer is required"),
   keywords: z.string().optional(),
+  image_url: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -62,6 +64,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
       marks_available: editingQuestion?.marks_available || 1,
       correct_answer: editingQuestion?.correct_answer || "",
       keywords: editingQuestion?.keywords?.join(', ') || "",
+      image_url: editingQuestion?.image_url || "",
     },
   });
 
@@ -77,6 +80,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
         marking_scheme: {},
         keywords: values.keywords ? values.keywords.split(',').map(k => k.trim()) : [],
         position: 1, // Will be auto-calculated
+        image_url: values.image_url || null,
       };
 
       if (editingQuestion) {
@@ -120,7 +124,7 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
 
   return (
     <Dialog open={isOpen || !!editingQuestion} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingQuestion ? 'Edit Question' : 'Add New Question'}
@@ -139,6 +143,23 @@ const CreateQuestionDialog: React.FC<CreateQuestionDialogProps> = ({
                     <Textarea 
                       placeholder="Enter the question text..." 
                       {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <ImageUploadField
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={createQuestionMutation.isPending}
                     />
                   </FormControl>
                   <FormMessage />
