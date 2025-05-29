@@ -70,7 +70,18 @@ const CreateAssessmentDialog: React.FC<CreateAssessmentDialogProps> = ({
 
   const createAssessmentMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      return await aiAssessmentService.createAssessment(values);
+      // Ensure values conform to the expected type by explicitly typing
+      const assessmentData = {
+        title: values.title,
+        description: values.description,
+        subject: values.subject,
+        exam_board: values.exam_board,
+        year: values.year,
+        paper_type: values.paper_type,
+        time_limit_minutes: values.time_limit_minutes,
+        total_marks: values.total_marks,
+      };
+      return await aiAssessmentService.createAssessment(assessmentData);
     },
     onSuccess: (data) => {
       toast({
@@ -78,8 +89,7 @@ const CreateAssessmentDialog: React.FC<CreateAssessmentDialogProps> = ({
         description: "You can now add questions to your assessment",
       });
       onSuccess();
-      // Can redirect to edit page here if needed
-      // window.location.href = `/assessment/${data.id}/edit`;
+      setIsSubmitting(false);
     },
     onError: (error) => {
       toast({
