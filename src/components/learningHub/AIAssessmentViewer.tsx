@@ -36,7 +36,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [studentAnswers, setStudentAnswers] = useState<{ [key: string]: string }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ [key: string]: any }>({});
@@ -80,21 +79,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     },
   });
 
-  const { mutate: submitAnswer } = useMutation({
-    mutationFn: ({ sessionId, questionId, answer }: { sessionId: string, questionId: string, answer: string }) =>
-      aiAssessmentService.submitAnswer(sessionId, questionId, answer),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessionResponses', session?.id] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error submitting answer",
-        description: error.message || "Failed to submit the answer.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const { mutate: completeSession } = useMutation({
     mutationFn: (sessionId: string) => aiAssessmentService.completeSession(sessionId),
     onSuccess: () => {
@@ -127,6 +111,10 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         ...prev,
         [variables.questionId]: false,
       }));
+      toast({
+        title: "Answer marked",
+        description: "Your answer has been evaluated and feedback is available.",
+      });
     },
     onError: (error: any, variables) => {
       toast({
@@ -175,16 +163,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     setStudentAnswers({ ...studentAnswers, [questionId]: answer });
   };
 
-  const submitCurrentAnswer = async () => {
-    if (!session) return;
-    setIsSubmitting(true);
-    const question = questions![currentQuestionIndex];
-    const answer = studentAnswers[question.id] || '';
-
-    submitAnswer({ sessionId: session.id, questionId: question.id, answer });
-    setIsSubmitting(false);
-  };
-
   const markCurrentQuestion = async () => {
     if (!session) return;
     const question = questions![currentQuestionIndex];
@@ -199,14 +177,12 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   };
 
   const goToNextQuestion = () => {
-    submitCurrentAnswer();
     if (questions && currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
   const goToPreviousQuestion = () => {
-    submitCurrentAnswer();
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
@@ -305,8 +281,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                       question={questions[currentQuestionIndex]}
                       studentAnswer={studentAnswers[questions[currentQuestionIndex].id] || ''}
                       onAnswerChange={handleAnswerChange}
-                      isSubmitting={isSubmitting}
-                      onSubmit={submitCurrentAnswer}
                       isMarking={isMarking[questions[currentQuestionIndex].id]}
                       onMark={markCurrentQuestion}
                       feedback={feedback[questions[currentQuestionIndex].id]}
@@ -385,8 +359,6 @@ interface QuestionCardProps {
   question: AssessmentQuestion;
   studentAnswer: string;
   onAnswerChange: (questionId: string, answer: string) => void;
-  isSubmitting: boolean;
-  onSubmit: () => void;
   isMarking?: boolean;
   onMark?: () => void;
   feedback?: any;
@@ -396,8 +368,6 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   question,
   studentAnswer,
   onAnswerChange,
-  isSubmitting,
-  onSubmit,
   isMarking = false,
   onMark,
   feedback,
@@ -438,21 +408,20 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             placeholder="Enter your answer here..."
             value={studentAnswer}
             onChange={(e) => onAnswerChange(question.id, e.target.value)}
-            disabled={isSubmitting}
+            disabled={isMarking}
           />
         )}
-        <div className="flex justify-between">
-          <Button onClick={onSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : 'Submit Answer'}
-          </Button>
+        
+        <div className="flex justify-center">
           <Button 
-            variant="secondary" 
             onClick={onMark} 
-            disabled={isMarking}
+            disabled={isMarking || !studentAnswer.trim()}
+            className="w-full max-w-xs"
           >
-            {isMarking ? 'Marking...' : 'Mark Answer'}
+            {isMarking ? 'Marking Answer...' : 'Mark Answer'}
           </Button>
         </div>
+        
         <QuestionFeedback feedback={feedback} isLoading={isMarking} />
       </CardContent>
     </Card>
