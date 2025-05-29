@@ -28,7 +28,7 @@ export interface CourseLesson {
   module_id: string;
   title: string;
   description?: string;
-  content_type: 'video' | 'pdf' | 'text' | 'quiz';
+  content_type: 'video' | 'pdf' | 'text' | 'quiz' | 'ai-assessment';
   content_url?: string;
   content_text?: string;
   position: number;

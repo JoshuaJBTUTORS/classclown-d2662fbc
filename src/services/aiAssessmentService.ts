@@ -68,7 +68,10 @@ export const aiAssessmentService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as 'draft' | 'published' | 'archived'
+    }));
   },
 
   // Get assessment by ID
@@ -83,7 +86,10 @@ export const aiAssessmentService = {
       if (error.code === 'PGRST116') return null;
       throw error;
     }
-    return data;
+    return {
+      ...data,
+      status: data.status as 'draft' | 'published' | 'archived'
+    };
   },
 
   // Get questions for an assessment
@@ -95,7 +101,11 @@ export const aiAssessmentService = {
       .order('position');
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      question_type: item.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
+      keywords: Array.isArray(item.keywords) ? item.keywords : []
+    }));
   },
 
   // Create a new assessment session
@@ -114,7 +124,10 @@ export const aiAssessmentService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      status: data.status as 'in_progress' | 'completed' | 'abandoned'
+    };
   },
 
   // Get user's session for an assessment
@@ -132,7 +145,10 @@ export const aiAssessmentService = {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data ? {
+      ...data,
+      status: data.status as 'in_progress' | 'completed' | 'abandoned'
+    } : null;
   },
 
   // Submit answer for a question
