@@ -316,7 +316,22 @@ export const aiAssessmentService = {
     if (error) throw error;
   },
 
-  // Mark answers using AI
+  // Mark a single question using AI
+  async markSingleQuestion(sessionId: string, questionId: string, answer: string): Promise<{
+    marks: number;
+    maxMarks: number;
+    feedback: string;
+    confidence: number;
+  }> {
+    const { data, error } = await supabase.functions.invoke('ai-mark-assessment', {
+      body: { sessionId, questionId, studentAnswer: answer }
+    });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Mark all answers in a session using AI
   async markAnswers(sessionId: string): Promise<void> {
     const { data, error } = await supabase.functions.invoke('ai-mark-assessment', {
       body: { sessionId }

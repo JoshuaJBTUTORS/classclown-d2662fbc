@@ -8,9 +8,17 @@ import { Progress } from '@/components/ui/progress';
 import { AlertCircle, Clock, CheckCircle, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { aiAssessmentService, AssessmentQuestion, AssessmentSession, StudentResponse } from '@/services/aiAssessmentService';
+import QuestionFeedback from './QuestionFeedback';
 
 interface AIAssessmentViewerProps {
   assessmentId: string;
+}
+
+interface FeedbackData {
+  marks: number;
+  maxMarks: number;
+  feedback: string;
+  confidence: number;
 }
 
 const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId }) => {
@@ -20,6 +28,8 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId })
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [session, setSession] = useState<AssessmentSession | null>(null);
+  const [questionFeedback, setQuestionFeedback] = useState<Record<string, FeedbackData>>({});
+  const [isMarkingInProgress, setIsMarkingInProgress] = useState(false);
 
   // Fetch assessment details
   const { data: assessment } = useQuery({
@@ -62,11 +72,37 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId })
     },
   });
 
+  // Mark single question mutation
+  const markQuestionMutation = useMutation({
+    mutationFn: ({ questionId, answer }: { questionId: string; answer: string }) =>
+      aiAssessmentService.markSingleQuestion(session!.id, questionId, answer),
+    onSuccess: (result, { questionId }) => {
+      setQuestionFeedback(prev => ({
+        ...prev,
+        [questionId]: {
+          marks: result.marks,
+          maxMarks: result.maxMarks,
+          feedback: result.feedback,
+          confidence: result.confidence,
+        }
+      }));
+      setIsMarkingInProgress(false);
+    },
+    onError: () => {
+      setIsMarkingInProgress(false);
+      toast({
+        title: "Marking failed",
+        description: "Failed to mark your answer. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Complete session mutation
   const completeSessionMutation = useMutation({
     mutationFn: () => aiAssessmentService.completeSession(session!.id),
     onSuccess: () => {
-      // Mark answers with AI
+      // Mark all answers with AI
       markAnswersMutation.mutate();
     },
   });
@@ -129,6 +165,13 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId })
       
       return () => clearTimeout(timeoutId);
     }
+  };
+
+  const handleMarkQuestion = (questionId: string, answer: string) => {
+    if (!session || !answer.trim()) return;
+    
+    setIsMarkingInProgress(true);
+    markQuestionMutation.mutate({ questionId, answer });
   };
 
   const handleNextQuestion = () => {
@@ -225,6 +268,8 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId })
   if (session.status === 'in_progress' && questions.length > 0) {
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+    const currentAnswer = answers[currentQuestion.id] || '';
+    const currentFeedback = questionFeedback[currentQuestion.id];
 
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -272,11 +317,31 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId })
             )}
             
             <Textarea
-              value={answers[currentQuestion.id] || ''}
+              value={currentAnswer}
               onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
               placeholder="Enter your answer here..."
               rows={6}
               className="w-full"
+            />
+
+            {/* Mark This Question Button */}
+            {currentAnswer.trim() && !currentFeedback && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => handleMarkQuestion(currentQuestion.id, currentAnswer)}
+                  disabled={isMarkingInProgress}
+                  variant="outline"
+                  size="sm"
+                >
+                  {isMarkingInProgress ? 'Marking...' : 'Get Immediate Feedback'}
+                </Button>
+              </div>
+            )}
+
+            {/* Show feedback */}
+            <QuestionFeedback 
+              feedback={currentFeedback} 
+              isLoading={isMarkingInProgress} 
             />
           </CardContent>
         </Card>
@@ -331,7 +396,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ assessmentId })
           </div>
           
           <p className="text-center text-gray-600">
-            AI feedback and detailed results will be available shortly.
+            AI feedback and detailed results are available for each question.
           </p>
         </CardContent>
       </Card>
