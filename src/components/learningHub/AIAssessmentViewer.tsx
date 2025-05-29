@@ -327,17 +327,28 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
           <CardContent>
             {session ? (
               <>
-                {assessment.time_limit_minutes && timeRemaining !== null ? (
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-2 h-4 w-4" />
-                      Time Remaining: {formatTime(timeRemaining)}
-                    </div>
-                    <Button variant="destructive" size="sm" onClick={completeAssessment}>
-                      Complete Assessment
-                    </Button>
+                {/* Timer and Complete Button Section */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    {assessment.time_limit_minutes && timeRemaining !== null ? (
+                      <>
+                        <Clock className="mr-2 h-4 w-4" />
+                        Time Remaining: {formatTime(timeRemaining)}
+                      </>
+                    ) : (
+                      <span>No time limit</span>
+                    )}
                   </div>
-                ) : null}
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={completeAssessment}
+                    className="flex items-center"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Complete Assessment
+                  </Button>
+                </div>
 
                 {questionsLoading ? (
                   <div className="space-y-4">
@@ -378,6 +389,23 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
+
+                    {/* Additional Complete Assessment Button for non-timed assessments */}
+                    {!assessment.time_limit_minutes && (
+                      <div className="text-center mt-6 pt-4 border-t">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Ready to submit your assessment?
+                        </p>
+                        <Button 
+                          onClick={completeAssessment}
+                          className="w-full max-w-xs"
+                          variant="default"
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Complete Assessment
+                        </Button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
