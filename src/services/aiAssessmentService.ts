@@ -59,12 +59,29 @@ export interface StudentResponse {
 }
 
 export const aiAssessmentService = {
+  // Expose Supabase client for direct operations
+  supabase,
+  
   // Get published assessments
   async getPublishedAssessments(): Promise<AIAssessment[]> {
     const { data, error } = await supabase
       .from('ai_assessments')
       .select('*')
       .eq('status', 'published')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as 'draft' | 'published' | 'archived'
+    }));
+  },
+
+  // Get all assessments (for admin use)
+  async getAllAssessments(): Promise<AIAssessment[]> {
+    const { data, error } = await supabase
+      .from('ai_assessments')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -106,6 +123,90 @@ export const aiAssessmentService = {
       question_type: item.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
       keywords: Array.isArray(item.keywords) ? item.keywords.map(k => String(k)) : []
     }));
+  },
+
+  // Create a new assessment
+  async createAssessment(assessment: Partial<AIAssessment>): Promise<AIAssessment> {
+    const { data, error } = await supabase
+      .from('ai_assessments')
+      .insert(assessment)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      status: data.status as 'draft' | 'published' | 'archived'
+    };
+  },
+
+  // Update assessment
+  async updateAssessment(id: string, updates: Partial<AIAssessment>): Promise<AIAssessment> {
+    const { data, error } = await supabase
+      .from('ai_assessments')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      status: data.status as 'draft' | 'published' | 'archived'
+    };
+  },
+
+  // Delete assessment
+  async deleteAssessment(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('ai_assessments')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  // Create a new assessment question
+  async createQuestion(question: Partial<AssessmentQuestion>): Promise<AssessmentQuestion> {
+    const { data, error } = await supabase
+      .from('assessment_questions')
+      .insert(question)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      question_type: data.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
+      keywords: Array.isArray(data.keywords) ? data.keywords.map(k => String(k)) : []
+    };
+  },
+
+  // Update a question
+  async updateQuestion(id: string, updates: Partial<AssessmentQuestion>): Promise<AssessmentQuestion> {
+    const { data, error } = await supabase
+      .from('assessment_questions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      question_type: data.question_type as 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation',
+      keywords: Array.isArray(data.keywords) ? data.keywords.map(k => String(k)) : []
+    };
+  },
+
+  // Delete a question
+  async deleteQuestion(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('assessment_questions')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   },
 
   // Create a new assessment session
