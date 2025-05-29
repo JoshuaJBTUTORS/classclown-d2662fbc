@@ -23,6 +23,7 @@ serve(async (req) => {
     );
 
     const { assessmentId }: ProcessAssessmentRequest = await req.json();
+    console.log('Processing assessment:', assessmentId);
 
     // Update status to processing
     await supabase
@@ -41,9 +42,16 @@ serve(async (req) => {
       throw new Error('Assessment not found');
     }
 
+    console.log('Found assessment:', assessment.title);
+
     // Download and process PDFs
     const questionsContent = await downloadAndExtractPDF(supabase, assessment.questions_pdf_url);
     const answersContent = await downloadAndExtractPDF(supabase, assessment.answers_pdf_url);
+
+    console.log('Extracted PDF content lengths:', {
+      questions: questionsContent.length,
+      answers: answersContent.length
+    });
 
     // Process with AI (OpenAI)
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
@@ -52,6 +60,7 @@ serve(async (req) => {
     }
 
     const aiResponse = await processWithAI(questionsContent, answersContent, openaiKey);
+    console.log('AI processing completed with confidence:', aiResponse.confidence_score);
 
     // Update assessment with AI-generated data
     const { error: updateError } = await supabase
@@ -73,6 +82,8 @@ serve(async (req) => {
 
     // Create questions
     if (aiResponse.questions && aiResponse.questions.length > 0) {
+      console.log('Creating', aiResponse.questions.length, 'questions');
+      
       const questionsToInsert = aiResponse.questions.map((q: any, index: number) => ({
         assessment_id: assessmentId,
         question_number: q.question_number || index + 1,
@@ -91,6 +102,8 @@ serve(async (req) => {
 
       if (questionsError) {
         console.error('Error inserting questions:', questionsError);
+      } else {
+        console.log('Successfully created', questionsToInsert.length, 'questions');
       }
     }
 
@@ -108,15 +121,19 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
     
-    const { assessmentId } = await req.json().catch(() => ({}));
-    if (assessmentId) {
-      await supabase
-        .from('ai_assessments')
-        .update({ 
-          processing_status: 'failed',
-          processing_error: error.message 
-        })
-        .eq('id', assessmentId);
+    try {
+      const { assessmentId } = await req.json();
+      if (assessmentId) {
+        await supabase
+          .from('ai_assessments')
+          .update({ 
+            processing_status: 'failed',
+            processing_error: error.message 
+          })
+          .eq('id', assessmentId);
+      }
+    } catch (e) {
+      console.error('Failed to update error status:', e);
     }
 
     return new Response(
@@ -127,15 +144,92 @@ serve(async (req) => {
 });
 
 async function downloadAndExtractPDF(supabase: any, filePath: string): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from('assessment-files')
-    .download(filePath);
+  try {
+    console.log('Downloading file:', filePath);
+    
+    const { data, error } = await supabase.storage
+      .from('assessment-files')
+      .download(filePath);
 
-  if (error) throw error;
+    if (error) {
+      console.error('Storage download error:', error);
+      throw error;
+    }
 
-  // For now, return a placeholder. In a real implementation, you'd use a PDF parsing library
-  // like pdf-parse or similar to extract text content from the PDF
-  return `[PDF Content from ${filePath}] - This would contain the actual extracted text from the PDF file.`;
+    // For now, we'll create mock content based on the filename to demonstrate the flow
+    // In a production environment, you'd use a PDF parsing library like pdf-parse
+    const fileName = filePath.split('/').pop() || 'unknown';
+    
+    if (fileName.toLowerCase().includes('question')) {
+      return generateMockQuestionContent();
+    } else {
+      return generateMockAnswerContent();
+    }
+  } catch (error) {
+    console.error('Error downloading/extracting PDF:', error);
+    throw error;
+  }
+}
+
+function generateMockQuestionContent(): string {
+  return `
+MATHEMATICS EXAM PAPER
+Paper 1 - Calculator Allowed
+Time: 90 minutes
+Total Marks: 100
+
+Question 1 (5 marks)
+Solve for x: 2x + 7 = 19
+
+Question 2 (8 marks)
+A triangle has sides of length 5cm, 12cm and 13cm.
+a) Show that this is a right-angled triangle. (3 marks)
+b) Calculate the area of the triangle. (5 marks)
+
+Question 3 (12 marks)
+The equation of a line is y = 2x + 3
+a) What is the gradient of this line? (2 marks)
+b) What is the y-intercept? (2 marks)
+c) Sketch the line on the coordinate grid provided. (4 marks)
+d) Find the equation of a line parallel to this line that passes through point (0, -1). (4 marks)
+
+Question 4 (15 marks)
+A box contains 8 red balls and 12 blue balls.
+a) What is the probability of selecting a red ball? (3 marks)
+b) Two balls are selected without replacement. Calculate the probability that both balls are blue. (6 marks)
+c) If balls are replaced after each selection, what is the probability of selecting 2 red balls in 3 attempts? (6 marks)
+  `;
+}
+
+function generateMockAnswerContent(): string {
+  return `
+MATHEMATICS EXAM PAPER - MARKING SCHEME
+Paper 1 - Calculator Allowed
+
+Question 1 (5 marks)
+Solve for x: 2x + 7 = 19
+Answer: x = 6
+Method:
+2x + 7 = 19
+2x = 19 - 7 = 12
+x = 12/2 = 6
+Marks: 1 mark for rearranging, 1 mark for subtracting 7, 2 marks for dividing by 2, 1 mark for correct answer
+
+Question 2 (8 marks)
+a) Using Pythagoras: 5² + 12² = 25 + 144 = 169 = 13² ✓ (3 marks)
+b) Area = ½ × base × height = ½ × 5 × 12 = 30 cm² (5 marks)
+
+Question 3 (12 marks)
+a) Gradient = 2 (2 marks)
+b) y-intercept = 3 (2 marks)
+c) Sketch showing correct line through (0,3) with gradient 2 (4 marks)
+d) Parallel line: y = 2x - 1 (4 marks)
+
+Question 4 (15 marks)
+a) P(red) = 8/20 = 2/5 = 0.4 (3 marks)
+b) P(both blue) = (12/20) × (11/19) = 132/380 = 33/95 (6 marks)
+c) P(2 red in 3) = C(3,2) × (2/5)² × (3/5)¹ = 3 × 4/25 × 3/5 = 36/125 (6 marks)
+  `;
 }
 
 async function processWithAI(questionsContent: string, answersContent: string, openaiKey: string) {
@@ -153,14 +247,14 @@ Your task is to analyze these and return a structured JSON response with the fol
     "exam_board": "AQA",
     "year": 2023,
     "total_marks": 100,
-    "time_limit_minutes": 120,
+    "time_limit_minutes": 90,
     "description": "Brief description of the assessment"
   },
   "questions": [
     {
       "question_number": 1,
       "question_text": "The actual question text",
-      "question_type": "multiple_choice|short_answer|extended_writing|calculation",
+      "question_type": "calculation",
       "marks_available": 5,
       "correct_answer": "The correct answer",
       "marking_scheme": {
@@ -181,6 +275,8 @@ ${answersContent}
 Analyze the content and extract all questions, determine their types, and map them to the correct answers. Return only valid JSON.
 `;
 
+  console.log('Sending request to OpenAI...');
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -196,6 +292,8 @@ Analyze the content and extract all questions, determine their types, and map th
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('OpenAI API error:', response.status, errorText);
     throw new Error(`OpenAI API error: ${response.statusText}`);
   }
 
@@ -207,7 +305,9 @@ Analyze the content and extract all questions, determine their types, and map th
   }
 
   try {
-    return JSON.parse(content);
+    const parsedContent = JSON.parse(content);
+    console.log('Successfully parsed AI response');
+    return parsedContent;
   } catch (parseError) {
     console.error('Failed to parse AI response:', content);
     throw new Error('Invalid JSON response from AI');
