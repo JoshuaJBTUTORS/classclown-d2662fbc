@@ -158,7 +158,7 @@ export const aiAssessmentService = {
     return (data || []).map(mapToAssessmentQuestion);
   },
 
-  // Create a new assessment
+  // Create a new assessment with text content
   async createAssessment(assessment: Omit<AIAssessment, 'id' | 'created_at' | 'updated_at' | 'status' | 'created_by'>): Promise<AIAssessment> {
     const { data: user } = await supabase.auth.getUser();
     

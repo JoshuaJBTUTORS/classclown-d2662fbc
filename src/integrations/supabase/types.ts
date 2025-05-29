@@ -14,6 +14,7 @@ export type Database = {
           ai_confidence_score: number | null
           ai_extraction_data: Json | null
           answers_pdf_url: string | null
+          answers_text: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -24,6 +25,7 @@ export type Database = {
           processing_error: string | null
           processing_status: string | null
           questions_pdf_url: string | null
+          questions_text: string | null
           status: string
           subject: string | null
           time_limit_minutes: number | null
@@ -36,6 +38,7 @@ export type Database = {
           ai_confidence_score?: number | null
           ai_extraction_data?: Json | null
           answers_pdf_url?: string | null
+          answers_text?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -46,6 +49,7 @@ export type Database = {
           processing_error?: string | null
           processing_status?: string | null
           questions_pdf_url?: string | null
+          questions_text?: string | null
           status?: string
           subject?: string | null
           time_limit_minutes?: number | null
@@ -58,6 +62,7 @@ export type Database = {
           ai_confidence_score?: number | null
           ai_extraction_data?: Json | null
           answers_pdf_url?: string | null
+          answers_text?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -68,6 +73,7 @@ export type Database = {
           processing_error?: string | null
           processing_status?: string | null
           questions_pdf_url?: string | null
+          questions_text?: string | null
           status?: string
           subject?: string | null
           time_limit_minutes?: number | null

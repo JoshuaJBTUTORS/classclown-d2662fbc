@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -63,51 +62,48 @@ serve(async (req) => {
 
     console.log('Found assessment:', assessment.title, 'Subject:', assessment.subject || 'Unknown');
 
-    // Process PDFs with improved content extraction
+    // Get content from text fields or fallback to PDFs
     let questionsContent = '';
     let answersContent = '';
-    let hasPDFs = false;
+    let contentSource = 'text';
 
-    if (assessment.questions_pdf_url) {
-      console.log('Processing questions PDF:', assessment.questions_pdf_url);
-      const result = await downloadAndExtractPDF(supabase, assessment.questions_pdf_url, 'questions');
-      questionsContent = result.content;
-      hasPDFs = hasPDFs || result.success;
-      console.log('Questions extraction result:', { 
-        success: result.success, 
-        contentLength: questionsContent.length,
-        preview: questionsContent.substring(0, 200) + '...'
-      });
-    }
-
-    if (assessment.answers_pdf_url) {
-      console.log('Processing answers PDF:', assessment.answers_pdf_url);
-      const result = await downloadAndExtractPDF(supabase, assessment.answers_pdf_url, 'answers');
-      answersContent = result.content;
-      hasPDFs = hasPDFs || result.success;
-      console.log('Answers extraction result:', { 
-        success: result.success, 
-        contentLength: answersContent.length,
-        preview: answersContent.substring(0, 200) + '...'
-      });
-    }
-
-    // Only use sample content if no PDFs were provided at all
-    if (!assessment.questions_pdf_url && !assessment.answers_pdf_url) {
-      console.log('No PDFs provided, generating sample content based on assessment metadata');
+    if (assessment.questions_text && assessment.answers_text) {
+      // Use text content directly
+      questionsContent = assessment.questions_text;
+      answersContent = assessment.answers_text;
+      console.log('Using provided text content');
+    } else if (assessment.questions_pdf_url || assessment.answers_pdf_url) {
+      // Fallback to PDF processing for existing assessments
+      contentSource = 'pdf';
+      console.log('Falling back to PDF processing for legacy assessment');
+      
+      if (assessment.questions_pdf_url) {
+        const result = await downloadAndExtractPDF(supabase, assessment.questions_pdf_url, 'questions');
+        questionsContent = result.content;
+      }
+      
+      if (assessment.answers_pdf_url) {
+        const result = await downloadAndExtractPDF(supabase, assessment.answers_pdf_url, 'answers');
+        answersContent = result.content;
+      }
+    } else {
+      // Generate sample content if no content provided
+      console.log('No content provided, generating sample content');
       questionsContent = generateSampleQuestionContent(assessment);
       answersContent = generateSampleAnswerContent(assessment);
-    } else if (!hasPDFs) {
-      // PDFs were provided but extraction failed
-      console.error('PDF extraction failed for all provided files');
-      throw new Error('Failed to extract content from provided PDF files. Please ensure PDFs contain readable text.');
+      contentSource = 'sample';
     }
 
-    console.log('Final content lengths:', {
+    console.log('Content lengths:', {
       questions: questionsContent.length,
       answers: answersContent.length,
-      usingPDFs: hasPDFs
+      source: contentSource
     });
+
+    // Validate content
+    if (questionsContent.length < 50 || answersContent.length < 50) {
+      throw new Error('Insufficient content provided. Please ensure both questions and answers have meaningful content.');
+    }
 
     // Process with AI (OpenAI)
     const aiResponse = await processWithAI(questionsContent, answersContent, openaiKey, assessment);
@@ -359,7 +355,7 @@ function cleanJsonString(content: string): string {
 
 async function processWithAI(questionsContent: string, answersContent: string, openaiKey: string, assessment: any) {
   const prompt = `
-You are an expert assessment processor specializing in educational content analysis. I will provide you with the actual content extracted from assessment materials (questions and answers PDFs).
+You are an expert assessment processor specializing in educational content analysis. I will provide you with the actual content from assessment materials (questions and answers).
 
 Your task is to carefully analyze the PROVIDED CONTENT and return a structured JSON response. DO NOT generate generic or sample content - extract and process only what is actually in the documents.
 
@@ -395,18 +391,18 @@ Assessment Context:
 - Subject: ${assessment.subject || 'Unknown'}
 - Exam Board: ${assessment.exam_board || 'Unknown'}
 
-ACTUAL QUESTIONS CONTENT FROM PDF:
+ACTUAL QUESTIONS CONTENT:
 ${questionsContent}
 
-ACTUAL ANSWERS/MARKING SCHEME CONTENT FROM PDF:
+ACTUAL ANSWERS/MARKING SCHEME CONTENT:
 ${answersContent}
 
 CRITICAL INSTRUCTIONS:
-1. Extract questions EXACTLY as they appear in the documents
-2. Use the actual subject matter from the PDFs - if the content is about biology/science, DO NOT label it as mathematics
+1. Extract questions EXACTLY as they appear in the content
+2. Use the actual subject matter from the content - if the content is about biology/science, DO NOT label it as mathematics
 3. Match questions to their corresponding answers from the marking scheme
 4. Determine question types based on the actual content structure
-5. Extract marking schemes directly from the answers PDF
+5. Extract marking schemes directly from the answers content
 6. If content is unclear, set confidence_score lower
 7. Return ONLY valid JSON without markdown formatting
 8. Pay special attention to the subject - analyze the content to determine if it's Biology, Chemistry, Physics, Mathematics, etc.
@@ -414,7 +410,7 @@ CRITICAL INSTRUCTIONS:
 Analyze the actual content above and extract the real questions and answers. Make sure the subject field reflects the actual content of the exam papers.
 `;
 
-  console.log('Sending request to OpenAI with actual PDF content...');
+  console.log('Sending request to OpenAI with actual content...');
   console.log('Content preview - Questions:', questionsContent.substring(0, 200));
   console.log('Content preview - Answers:', answersContent.substring(0, 200));
 

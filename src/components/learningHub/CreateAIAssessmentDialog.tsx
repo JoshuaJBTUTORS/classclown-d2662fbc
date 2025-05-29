@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -33,15 +34,13 @@ interface CreateAIAssessmentDialogProps {
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  questionsFile: z.instanceof(File).optional(),
-  answersFile: z.instanceof(File).optional(),
+  questionsText: z.string().min(50, "Questions content must be at least 50 characters"),
+  answersText: z.string().min(50, "Answers content must be at least 50 characters"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface UploadStatus {
-  questionsFile: 'idle' | 'uploading' | 'completed' | 'error';
-  answersFile: 'idle' | 'uploading' | 'completed' | 'error';
+interface ProcessingStatus {
   processing: 'idle' | 'processing' | 'completed' | 'error';
 }
 
@@ -51,63 +50,29 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
   onSuccess 
 }) => {
   const { toast } = useToast();
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
-    questionsFile: 'idle',
-    answersFile: 'idle',
+  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>({
     processing: 'idle',
   });
-  const [questionsFile, setQuestionsFile] = useState<File | null>(null);
-  const [answersFile, setAnswersFile] = useState<File | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      questionsText: "",
+      answersText: "",
     },
   });
 
-  const uploadFile = async (file: File, folder: string): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}/${Date.now()}.${fileExt}`;
-    
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-    
-    const filePath = `${user.user.id}/${fileName}`;
-    
-    const { error } = await supabase.storage
-      .from('assessment-files')
-      .upload(filePath, file);
-    
-    if (error) throw error;
-    
-    return filePath;
-  };
-
   const createAssessmentMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      if (!questionsFile || !answersFile) {
-        throw new Error('Both questions and answers files are required');
-      }
-
-      // Upload questions file
-      setUploadStatus(prev => ({ ...prev, questionsFile: 'uploading' }));
-      const questionsPdfUrl = await uploadFile(questionsFile, 'questions');
-      setUploadStatus(prev => ({ ...prev, questionsFile: 'completed' }));
-
-      // Upload answers file
-      setUploadStatus(prev => ({ ...prev, answersFile: 'uploading' }));
-      const answersPdfUrl = await uploadFile(answersFile, 'answers');
-      setUploadStatus(prev => ({ ...prev, answersFile: 'completed' }));
-
-      // Create assessment record
+      // Create assessment record with text content
       const { data: user } = await supabase.auth.getUser();
       const { data: assessment, error } = await supabase
         .from('ai_assessments')
         .insert({
           title: values.title,
-          questions_pdf_url: questionsPdfUrl,
-          answers_pdf_url: answersPdfUrl,
+          questions_text: values.questionsText,
+          answers_text: values.answersText,
           processing_status: 'pending',
           is_ai_generated: true,
           created_by: user.user?.id,
@@ -120,7 +85,7 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
       if (error) throw error;
 
       // Start AI processing
-      setUploadStatus(prev => ({ ...prev, processing: 'processing' }));
+      setProcessingStatus({ processing: 'processing' });
       
       const { error: processError } = await supabase.functions.invoke('ai-process-assessment', {
         body: { assessmentId: assessment.id }
@@ -131,7 +96,7 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
         // Don't throw here - let the background process handle it
       }
 
-      setUploadStatus(prev => ({ ...prev, processing: 'completed' }));
+      setProcessingStatus({ processing: 'completed' });
       return assessment;
     },
     onSuccess: () => {
@@ -148,46 +113,18 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
         description: error.message,
         variant: "destructive",
       });
-      setUploadStatus({
-        questionsFile: 'error',
-        answersFile: 'error',
-        processing: 'error',
-      });
+      setProcessingStatus({ processing: 'error' });
     },
   });
 
   const handleClose = () => {
     form.reset();
-    setQuestionsFile(null);
-    setAnswersFile(null);
-    setUploadStatus({
-      questionsFile: 'idle',
-      answersFile: 'idle',
-      processing: 'idle',
-    });
+    setProcessingStatus({ processing: 'idle' });
     onClose();
-  };
-
-  const handleFileSelect = (file: File, type: 'questions' | 'answers') => {
-    if (file.type !== 'application/pdf') {
-      toast({
-        title: "Invalid file type",
-        description: "Please select a PDF file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (type === 'questions') {
-      setQuestionsFile(file);
-    } else {
-      setAnswersFile(file);
-    }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'uploading':
       case 'processing':
         return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
       case 'completed':
@@ -199,17 +136,15 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
     }
   };
 
-  const isProcessing = uploadStatus.questionsFile === 'uploading' || 
-                     uploadStatus.answersFile === 'uploading' || 
-                     uploadStatus.processing === 'processing';
+  const isProcessing = processingStatus.processing === 'processing';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Create AI-Powered Assessment</DialogTitle>
           <p className="text-sm text-gray-600">
-            Upload your questions PDF and answer sheet - AI will automatically extract and structure everything for you.
+            Paste your exam questions and answer scheme below - AI will automatically extract and structure everything for you.
           </p>
         </DialogHeader>
         
@@ -223,7 +158,7 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
                   <FormLabel>Assessment Title</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="e.g., GCSE Maths Paper 1 - June 2023" 
+                      placeholder="e.g., GCSE Biology Paper 1 - June 2023" 
                       {...field} 
                     />
                   </FormControl>
@@ -232,90 +167,85 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Questions File Upload */}
-              <Card className="border-dashed">
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    {getStatusIcon(uploadStatus.questionsFile)}
-                    <h3 className="font-medium">Questions PDF</h3>
-                    <p className="text-sm text-gray-500">Upload the exam paper with questions</p>
-                    
-                    {questionsFile ? (
-                      <div className="text-sm">
-                        <p className="font-medium">{questionsFile.name}</p>
-                        <p className="text-gray-500">{(questionsFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleFileSelect(file, 'questions');
-                          }}
-                          disabled={isProcessing}
-                        />
-                        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors">
-                          <Upload className="h-4 w-4" />
-                          Select PDF
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Questions Text Input */}
+              <FormField
+                control={form.control}
+                name="questionsText"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Exam Questions</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder={`Paste your exam questions here, for example:
 
-              {/* Answers File Upload */}
-              <Card className="border-dashed">
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    {getStatusIcon(uploadStatus.answersFile)}
-                    <h3 className="font-medium">Answer Sheet PDF</h3>
-                    <p className="text-sm text-gray-500">Upload the marking scheme or answers</p>
-                    
-                    {answersFile ? (
-                      <div className="text-sm">
-                        <p className="font-medium">{answersFile.name}</p>
-                        <p className="text-gray-500">{(answersFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleFileSelect(file, 'answers');
-                          }}
-                          disabled={isProcessing}
-                        />
-                        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-600 rounded-md hover:bg-green-100 transition-colors">
-                          <Upload className="h-4 w-4" />
-                          Select PDF
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+BIOLOGY EXAM PAPER
+Time: 90 minutes
+Total Marks: 60
+
+Question 1 (10 marks)
+Describe the structure and function of the cell membrane.
+
+Question 2 (15 marks)
+Explain the process of photosynthesis and its importance in ecosystems.
+
+Question 3 (20 marks)
+Compare and contrast mitosis and meiosis...`}
+                        className="min-h-[200px] font-mono text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Answers Text Input */}
+              <FormField
+                control={form.control}
+                name="answersText"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marking Scheme / Answer Key</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder={`Paste your marking scheme here, for example:
+
+BIOLOGY EXAM PAPER - MARKING SCHEME
+
+Question 1 (10 marks)
+Expected Answer: Cell membrane structure and function
+- Phospholipid bilayer structure (3 marks)
+- Selective permeability (3 marks)
+- Transport mechanisms (4 marks)
+
+Question 2 (15 marks)
+Expected Answer: Photosynthesis process
+- Light reactions (5 marks)
+- Calvin cycle (5 marks)
+- Ecosystem importance (5 marks)...`}
+                        className="min-h-[200px] font-mono text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Processing Status */}
-            {uploadStatus.processing !== 'idle' && (
+            {processingStatus.processing !== 'idle' && (
               <Card className="bg-blue-50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    {getStatusIcon(uploadStatus.processing)}
+                    {getStatusIcon(processingStatus.processing)}
                     <div>
                       <p className="font-medium">AI Processing</p>
                       <p className="text-sm text-gray-600">
-                        {uploadStatus.processing === 'processing' 
-                          ? 'AI is extracting questions and analyzing your files...'
-                          : uploadStatus.processing === 'completed'
+                        {processingStatus.processing === 'processing' 
+                          ? 'AI is extracting questions and analyzing your content...'
+                          : processingStatus.processing === 'completed'
                           ? 'Processing completed successfully!'
                           : 'Processing encountered an error.'
                         }
@@ -332,7 +262,7 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
               </Button>
               <Button 
                 type="submit" 
-                disabled={!questionsFile || !answersFile || isProcessing}
+                disabled={isProcessing}
               >
                 {isProcessing ? (
                   <>
