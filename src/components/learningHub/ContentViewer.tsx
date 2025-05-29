@@ -8,12 +8,21 @@ import AIAssessmentViewer from './AIAssessmentViewer';
 interface ContentViewerProps {
   lesson: CourseLesson;
   isLoading?: boolean;
+  onContentTypeChange?: (contentType: string) => void;
 }
 
 const ContentViewer: React.FC<ContentViewerProps> = ({ 
   lesson, 
-  isLoading = false
+  isLoading = false,
+  onContentTypeChange
 }) => {
+  // Notify parent component about content type change
+  React.useEffect(() => {
+    if (onContentTypeChange && lesson.content_type) {
+      onContentTypeChange(lesson.content_type);
+    }
+  }, [lesson.content_type, onContentTypeChange]);
+
   // This renders the appropriate content based on content_type
   const renderContent = () => {
     if (isLoading) {

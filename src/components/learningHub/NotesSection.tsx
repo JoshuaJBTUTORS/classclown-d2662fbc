@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit2, Trash2, BookOpen } from 'lucide-react';
@@ -14,18 +13,25 @@ interface NotesSectionProps {
   courseId: string;
   lessonId?: string;
   lessonTitle?: string;
+  contentType?: string;
 }
 
 const NotesSection: React.FC<NotesSectionProps> = ({ 
   courseId, 
   lessonId, 
-  lessonTitle 
+  lessonTitle,
+  contentType
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedNote, setSelectedNote] = useState<CourseNote | null>(null);
+
+  // Don't render flash cards section for quiz or ai-assessment content
+  if (contentType === 'quiz' || contentType === 'ai-assessment') {
+    return null;
+  }
 
   // Fetch notes
   const { data: notes = [], isLoading } = useQuery({
