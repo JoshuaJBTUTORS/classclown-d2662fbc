@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen, Gift, RefreshCw, CheckCircle, Clock, Play, Home } from 'lucide-react';
+import { ChevronLeft, PenSquare, BookOpen, Gift, RefreshCw, CheckCircle, Clock, Play, Home, SidebarClose, SidebarOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +29,7 @@ const CourseDetail: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { toast } = useToast();
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
@@ -297,7 +299,7 @@ const CourseDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-full mx-auto px-6 py-6">
         {/* Enhanced Header */}
         <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 shadow-xl">
           <div className="flex items-center justify-between mb-6">
@@ -413,24 +415,53 @@ const CourseDetail: React.FC = () => {
           </div>
         </div>
         
-        {/* Course content layout with improved styling */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Enhanced sidebar */}
-          <div className="col-span-3">
-            <div className="sticky top-6">
-              <CourseSidebar 
-                modules={modules || []}
-                studentProgress={studentProgress || []}
-                onSelectLesson={handleLessonSelect}
-                currentLessonId={activeLessonId || undefined}
-                isAdmin={hasAdminPrivileges}
-                isPurchased={canAccessFullCourse}
-              />
+        {/* Course content layout with improved space utilization */}
+        <div className="flex gap-6">
+          {/* Enhanced sidebar with toggle */}
+          {!sidebarCollapsed && (
+            <div className="w-80 flex-shrink-0">
+              <div className="sticky top-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900">Course Content</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSidebarCollapsed(true)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <SidebarClose className="h-4 w-4" />
+                  </Button>
+                </div>
+                <CourseSidebar 
+                  modules={modules || []}
+                  studentProgress={studentProgress || []}
+                  onSelectLesson={handleLessonSelect}
+                  currentLessonId={activeLessonId || undefined}
+                  isAdmin={hasAdminPrivileges}
+                  isPurchased={canAccessFullCourse}
+                />
+              </div>
             </div>
-          </div>
+          )}
           
-          {/* Enhanced content viewer */}
-          <div className="col-span-6">
+          {/* Sidebar toggle button when collapsed */}
+          {sidebarCollapsed && (
+            <div className="flex-shrink-0">
+              <div className="sticky top-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSidebarCollapsed(false)}
+                  className="bg-white/80 backdrop-blur-sm border-white/20 hover:bg-white/90"
+                >
+                  <SidebarOpen className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Enhanced content viewer with flexible width */}
+          <div className="flex-1 min-w-0">
             {activeLesson ? (
               <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
                 <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
@@ -467,8 +498,8 @@ const CourseDetail: React.FC = () => {
             )}
           </div>
 
-          {/* Enhanced notes section */}
-          <div className="col-span-3">
+          {/* Enhanced notes section with fixed width */}
+          <div className="w-80 flex-shrink-0">
             <div className="sticky top-6">
               <NotesSection 
                 courseId={courseId!}
