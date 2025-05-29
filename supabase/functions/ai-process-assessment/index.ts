@@ -63,7 +63,7 @@ serve(async (req) => {
 
     console.log('Found assessment:', assessment.title);
 
-    // Process PDFs with improved content extraction
+    // Process PDFs with real content extraction
     let questionsContent = '';
     let answersContent = '';
 
@@ -173,7 +173,7 @@ serve(async (req) => {
 
 async function downloadAndExtractPDF(supabase: any, filePath: string, type: 'questions' | 'answers'): Promise<string> {
   try {
-    console.log('Downloading file:', filePath);
+    console.log('Downloading and extracting PDF:', filePath);
     
     const { data, error } = await supabase.storage
       .from('assessment-files')
@@ -181,23 +181,56 @@ async function downloadAndExtractPDF(supabase: any, filePath: string, type: 'que
 
     if (error) {
       console.error('Storage download error:', error);
-      // Return empty string instead of throwing to allow processing to continue
       return '';
     }
 
-    // For now, we'll create content based on the filename and type
-    // In production, you'd use a PDF parsing library like pdf-parse
-    const fileName = filePath.split('/').pop() || 'unknown';
-    console.log('Processing file:', fileName, 'Type:', type);
+    // Convert blob to array buffer
+    const arrayBuffer = await data.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
     
-    if (type === 'questions') {
-      return generateMockQuestionContent();
-    } else {
-      return generateMockAnswerContent();
+    try {
+      // Use pdf-parse to extract text content
+      const pdfParse = await import('https://esm.sh/pdf-parse@1.1.1');
+      const pdfData = await pdfParse.default(uint8Array);
+      
+      const extractedText = pdfData.text;
+      console.log(`Successfully extracted ${extractedText.length} characters from ${type} PDF`);
+      
+      if (extractedText.trim().length === 0) {
+        console.warn(`No text content extracted from ${type} PDF`);
+        return generateFallbackContent(type);
+      }
+      
+      return extractedText;
+    } catch (parseError) {
+      console.error('PDF parsing error:', parseError);
+      return generateFallbackContent(type);
     }
   } catch (error) {
     console.error('Error downloading/extracting PDF:', error);
-    return ''; // Return empty string to allow processing to continue
+    return generateFallbackContent(type);
+  }
+}
+
+function generateFallbackContent(type: 'questions' | 'answers'): string {
+  if (type === 'questions') {
+    return `
+SAMPLE EXAM QUESTIONS
+Unable to extract content from PDF. Please ensure the PDF is text-based and not a scanned image.
+
+Question 1: Define the key concepts covered in this subject area.
+Question 2: Explain the main principles and their applications.
+Question 3: Analyze the given scenario and provide your reasoning.
+    `;
+  } else {
+    return `
+SAMPLE MARKING SCHEME
+Unable to extract content from PDF. Please ensure the PDF is text-based and not a scanned image.
+
+Question 1: Award marks for clear definitions and understanding.
+Question 2: Award marks for correct explanations and examples.
+Question 3: Award marks for logical analysis and reasoning.
+    `;
   }
 }
 
@@ -262,67 +295,6 @@ Expected Answer: Evaluative response
   `;
 }
 
-function generateMockQuestionContent(): string {
-  return `
-MATHEMATICS EXAM PAPER
-Paper 1 - Calculator Allowed
-Time: 90 minutes
-Total Marks: 100
-
-Question 1 (5 marks)
-Solve for x: 2x + 7 = 19
-
-Question 2 (8 marks)
-A triangle has sides of length 5cm, 12cm and 13cm.
-a) Show that this is a right-angled triangle. (3 marks)
-b) Calculate the area of the triangle. (5 marks)
-
-Question 3 (12 marks)
-The equation of a line is y = 2x + 3
-a) What is the gradient of this line? (2 marks)
-b) What is the y-intercept? (2 marks)
-c) Sketch the line on the coordinate grid provided. (4 marks)
-d) Find the equation of a line parallel to this line that passes through point (0, -1). (4 marks)
-
-Question 4 (15 marks)
-A box contains 8 red balls and 12 blue balls.
-a) What is the probability of selecting a red ball? (3 marks)
-b) Two balls are selected without replacement. Calculate the probability that both balls are blue. (6 marks)
-c) If balls are replaced after each selection, what is the probability of selecting 2 red balls in 3 attempts? (6 marks)
-  `;
-}
-
-function generateMockAnswerContent(): string {
-  return `
-MATHEMATICS EXAM PAPER - MARKING SCHEME
-Paper 1 - Calculator Allowed
-
-Question 1 (5 marks)
-Solve for x: 2x + 7 = 19
-Answer: x = 6
-Method:
-2x + 7 = 19
-2x = 19 - 7 = 12
-x = 12/2 = 6
-Marks: 1 mark for rearranging, 1 mark for subtracting 7, 2 marks for dividing by 2, 1 mark for correct answer
-
-Question 2 (8 marks)
-a) Using Pythagoras: 5² + 12² = 25 + 144 = 169 = 13² ✓ (3 marks)
-b) Area = ½ × base × height = ½ × 5 × 12 = 30 cm² (5 marks)
-
-Question 3 (12 marks)
-a) Gradient = 2 (2 marks)
-b) y-intercept = 3 (2 marks)
-c) Sketch showing correct line through (0,3) with gradient 2 (4 marks)
-d) Parallel line: y = 2x - 1 (4 marks)
-
-Question 4 (15 marks)
-a) P(red) = 8/20 = 2/5 = 0.4 (3 marks)
-b) P(both blue) = (12/20) × (11/19) = 132/380 = 33/95 (6 marks)
-c) P(2 red in 3) = C(3,2) × (2/5)² × (3/5)¹ = 3 × 4/25 × 3/5 = 36/125 (6 marks)
-  `;
-}
-
 function cleanJsonString(content: string): string {
   // Remove markdown code blocks if present
   let cleaned = content.trim();
@@ -344,32 +316,33 @@ function cleanJsonString(content: string): string {
 
 async function processWithAI(questionsContent: string, answersContent: string, openaiKey: string, assessment: any) {
   const prompt = `
-You are an expert assessment processor. I will provide you with the content extracted from assessment materials (questions and answers).
+You are an expert assessment processor specializing in educational content analysis. I will provide you with the actual content extracted from assessment materials (questions and answers PDFs).
 
-Your task is to analyze these and return a structured JSON response with the following format:
+Your task is to carefully analyze the PROVIDED CONTENT and return a structured JSON response. DO NOT generate generic or sample content - extract and process only what is actually in the documents.
 
+Expected JSON format:
 {
   "confidence_score": 0.95,
   "metadata": {
-    "subject": "Mathematics",
-    "exam_board": "AQA",
+    "subject": "Detected subject from content",
+    "exam_board": "Detected exam board or 'Unknown'",
     "year": 2023,
     "total_marks": 100,
     "time_limit_minutes": 90,
-    "description": "Brief description of the assessment"
+    "description": "Description based on actual content"
   },
   "questions": [
     {
       "question_number": 1,
-      "question_text": "The actual question text",
-      "question_type": "calculation",
+      "question_text": "Exact question text from the document",
+      "question_type": "short_answer|calculation|extended_writing|multiple_choice",
       "marks_available": 5,
-      "correct_answer": "The correct answer",
+      "correct_answer": "Answer from marking scheme",
       "marking_scheme": {
-        "criteria": "How to mark this question",
-        "mark_allocation": "Breakdown of marks"
+        "criteria": "Marking criteria from document",
+        "mark_allocation": "How marks are distributed"
       },
-      "keywords": ["key", "terms", "for", "marking"]
+      "keywords": ["relevant", "keywords", "from", "content"]
     }
   ]
 }
@@ -378,18 +351,26 @@ Assessment Context:
 - Title: ${assessment.title || 'Unknown'}
 - Subject: ${assessment.subject || 'Unknown'}
 - Exam Board: ${assessment.exam_board || 'Unknown'}
-- Total Marks: ${assessment.total_marks || 'Unknown'}
 
-Questions Content:
+ACTUAL QUESTIONS CONTENT FROM PDF:
 ${questionsContent}
 
-Answers Content:
+ACTUAL ANSWERS/MARKING SCHEME CONTENT FROM PDF:
 ${answersContent}
 
-Analyze the content and extract all questions, determine their types (calculation, short_answer, extended_writing, multiple_choice), and map them to the correct answers. Return only valid JSON without any markdown formatting.
+CRITICAL INSTRUCTIONS:
+1. Extract questions EXACTLY as they appear in the documents
+2. Use the actual subject matter from the PDFs (NOT mathematics if the content is science)
+3. Match questions to their corresponding answers from the marking scheme
+4. Determine question types based on the actual content structure
+5. Extract marking schemes directly from the answers PDF
+6. If content is unclear, set confidence_score lower
+7. Return ONLY valid JSON without markdown formatting
+
+Analyze the actual content above and extract the real questions and answers.
 `;
 
-  console.log('Sending request to OpenAI...');
+  console.log('Sending request to OpenAI with actual PDF content...');
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
