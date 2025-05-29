@@ -414,6 +414,19 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <p>{question.question_text}</p>
+        
+        {/* Display question image if it exists */}
+        {question.image_url && (
+          <div className="my-4">
+            <img 
+              src={question.image_url} 
+              alt={`Question ${question.question_number} image`}
+              className="max-w-full h-auto rounded-lg shadow-sm border"
+              style={{ maxHeight: '400px' }}
+            />
+          </div>
+        )}
+        
         {question.question_type === 'multiple_choice' ? (
           <MultipleChoiceQuestion
             question={question}
