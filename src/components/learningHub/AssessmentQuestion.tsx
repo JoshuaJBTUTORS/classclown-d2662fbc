@@ -29,21 +29,29 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
   studentAnswer,
   onAnswerChange,
 }) => {
-  const choices = question.marking_scheme?.choices || ['A', 'B', 'C', 'D'];
+  // Get options from marking scheme or fallback to default
+  const options = question.marking_scheme?.options || {
+    A: 'Option A',
+    B: 'Option B', 
+    C: 'Option C',
+    D: 'Option D'
+  };
 
   return (
     <RadioGroup
-      defaultValue={studentAnswer}
+      value={studentAnswer}
       onValueChange={(value) => onAnswerChange(question.id, value)}
+      className="space-y-3"
     >
-      <div className="grid gap-2">
-        {choices.map((choice: string) => (
-          <div className="flex items-center space-x-2" key={choice}>
-            <RadioGroupItem value={choice} id={`choice-${choice}`} />
-            <Label htmlFor={`choice-${choice}`}>{choice}</Label>
-          </div>
-        ))}
-      </div>
+      {Object.entries(options).map(([key, value]) => (
+        <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50" key={key}>
+          <RadioGroupItem value={key} id={`choice-${key}`} className="mt-1" />
+          <Label htmlFor={`choice-${key}`} className="flex-1 cursor-pointer">
+            <span className="font-medium mr-2">{key}.</span>
+            {value}
+          </Label>
+        </div>
+      ))}
     </RadioGroup>
   );
 };
@@ -67,7 +75,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p>{question.question_text}</p>
+        <p className="text-gray-800 leading-relaxed">{question.question_text}</p>
         
         {/* Display question image if it exists */}
         {question.image_url && (
@@ -81,22 +89,31 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
           </div>
         )}
         
-        {question.question_type === 'multiple_choice' ? (
-          <MultipleChoiceQuestion
-            question={question}
-            studentAnswer={studentAnswer}
-            onAnswerChange={onAnswerChange}
-          />
-        ) : (
-          <Textarea
-            placeholder="Enter your answer here..."
-            value={studentAnswer}
-            onChange={(e) => onAnswerChange(question.id, e.target.value)}
-            disabled={isMarking}
-          />
-        )}
+        <div className="space-y-4">
+          {question.question_type === 'multiple_choice' ? (
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-3">Select your answer:</p>
+              <MultipleChoiceQuestion
+                question={question}
+                studentAnswer={studentAnswer}
+                onAnswerChange={onAnswerChange}
+              />
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">Your answer:</p>
+              <Textarea
+                placeholder="Enter your answer here..."
+                value={studentAnswer}
+                onChange={(e) => onAnswerChange(question.id, e.target.value)}
+                disabled={isMarking}
+                className="min-h-[120px]"
+              />
+            </div>
+          )}
+        </div>
         
-        <div className="flex justify-center">
+        <div className="flex justify-center pt-4">
           <Button 
             onClick={onMark} 
             disabled={isMarking || !studentAnswer.trim()}
