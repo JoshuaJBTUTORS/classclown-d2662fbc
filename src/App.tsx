@@ -25,6 +25,8 @@ import Invite from '@/pages/Invite';
 import NotFound from '@/pages/NotFound';
 import Unauthorized from '@/pages/Unauthorized';
 import Reports from '@/pages/Reports';
+import AssessmentPreview from '@/pages/AssessmentPreview';
+import AssessmentEdit from '@/pages/AssessmentEdit';
 import StudentJoinPage from '@/components/lessons/StudentJoinPage';
 
 import './App.css';
@@ -118,6 +120,18 @@ function App() {
                 <Route path="/course/:id/edit" element={
                   <ProtectedRoute allowedRoles={['admin', 'owner']}>
                     <CourseEdit />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/assessment/:id/preview" element={
+                  <ProtectedRoute>
+                    <AssessmentPreview />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/assessment/:id/edit" element={
+                  <ProtectedRoute allowedRoles={['owner']}>
+                    <AssessmentEdit />
                   </ProtectedRoute>
                 } />
                 

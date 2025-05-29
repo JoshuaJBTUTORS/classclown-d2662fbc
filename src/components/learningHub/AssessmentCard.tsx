@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { 
   MoreHorizontal, 
   Edit, 
@@ -34,6 +35,7 @@ interface AssessmentCardProps {
 
 const AssessmentCard: React.FC<AssessmentCardProps> = ({ assessment, onUpdate }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const updateStatusMutation = useMutation({
@@ -123,13 +125,13 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({ assessment, onUpdate })
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={() => window.location.href = `/assessment/${assessment.id}/edit`}
+                onClick={() => navigate(`/assessment/${assessment.id}/edit`)}
               >
                 <Edit className="mr-2 h-4 w-4" />
                 <span>Edit</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => window.location.href = `/assessment/${assessment.id}/preview`}
+                onClick={() => navigate(`/assessment/${assessment.id}/preview`)}
               >
                 <Eye className="mr-2 h-4 w-4" />
                 <span>Preview</span>
@@ -220,14 +222,14 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({ assessment, onUpdate })
               variant="outline" 
               size="sm" 
               className="flex-1"
-              onClick={() => window.location.href = `/assessment/${assessment.id}/preview`}
+              onClick={() => navigate(`/assessment/${assessment.id}/preview`)}
             >
               Preview
             </Button>
             <Button 
               size="sm" 
               className="flex-1"
-              onClick={() => window.location.href = `/assessment/${assessment.id}/edit`}
+              onClick={() => navigate(`/assessment/${assessment.id}/edit`)}
             >
               Edit
             </Button>
