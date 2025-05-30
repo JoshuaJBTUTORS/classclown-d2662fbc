@@ -1,266 +1,184 @@
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, PenSquare, BookOpen, Gift, RefreshCw, CheckCircle, Clock, Play, Home, SidebarClose, SidebarOpen } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/contexts/AuthContext';
 import { learningHubService } from '@/services/learningHubService';
-import { paymentService } from '@/services/paymentService';
-import { Course, CourseModule } from '@/types/course';
+import { useAuth } from '@/contexts/AuthContext';
 import CourseSidebar from '@/components/learningHub/CourseSidebar';
 import ContentViewer from '@/components/learningHub/ContentViewer';
 import ProgressBar from '@/components/learningHub/ProgressBar';
-import NotesSection from '@/components/learningHub/NotesSection';
+import { CourseLesson, CourseModule } from '@/types/course';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Lock, ShoppingCart } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
+import NotesSection from '@/components/learningHub/NotesSection';
 
 const CourseDetail: React.FC = () => {
-  const { id: courseId } = useParams<{ id: string }>();
+  const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { isAdmin, isOwner, isTutor, user } = useAuth();
+  const { user, userRole, isOwner, isAdmin } = useAuth();
+  
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [isPurchased, setIsPurchased] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [currentContentType, setCurrentContentType] = useState<string | undefined>(undefined);
-  const { toast } = useToast();
+  const [contentType, setContentType] = useState<string>('');
 
-  const hasAdminPrivileges = isAdmin || isOwner || isTutor;
+  console.log('🔍 CourseDetail Debug Info:');
+  console.log('- User:', user?.email);
+  console.log('- User Role:', userRole);
+  console.log('- Is Owner:', isOwner);
+  console.log('- Is Admin:', isAdmin);
+  console.log('- Course ID:', courseId);
 
-  // Function to refresh purchase status
-  const refreshPurchaseStatus = async () => {
-    console.log("Refreshing purchase status for course:", courseId);
-    if (user && courseId && course?.status === 'published') {
-      try {
-        const purchased = await paymentService.checkCoursePurchase(courseId);
-        console.log("Purchase status refreshed:", purchased);
-        setIsPurchased(purchased);
-        return purchased;
-      } catch (error) {
-        console.error('Error checking purchase status:', error);
-        return false;
-      }
-    }
-    return false;
-  };
+  const isTutor = userRole === 'tutor';
+  const hasAdminPrivileges = isOwner || isAdmin || isTutor;
 
-  // Manual refresh button handler
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      const purchased = await refreshPurchaseStatus();
-      if (purchased) {
-        toast({
-          title: "Course access verified!",
-          description: "You now have access to this course.",
-        });
-      } else {
-        toast({
-          title: "No active subscription found",
-          description: "If you just completed payment, please try again in a few moments.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error refreshing status",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  console.log('- Is Tutor:', isTutor);
+  console.log('- Has Admin Privileges:', hasAdminPrivileges);
 
-  // Check for payment success/failure in URL params and verify payment
-  useEffect(() => {
-    const handlePaymentVerification = async () => {
-      const paymentStatus = searchParams.get('payment');
-      const sessionId = searchParams.get('session_id');
-      
-      console.log("Payment verification check:", { paymentStatus, sessionId, isVerifyingPayment });
-      
-      if (paymentStatus === 'success' && sessionId && !isVerifyingPayment) {
-        setIsVerifyingPayment(true);
-        console.log("Starting payment verification with session ID:", sessionId);
-        
-        try {
-          console.log('Calling verify-course-payment with session ID:', sessionId);
-          const verificationResult = await paymentService.verifyCoursePayment(sessionId);
-          console.log('Payment verification result:', verificationResult);
-          
-          if (verificationResult.success) {
-            toast({
-              title: "Subscription started!",
-              description: "Your 7-day free trial has begun. You now have full access to this course.",
-            });
-            
-            // Refresh purchase status to grant immediate access
-            console.log('Refreshing purchase status after successful verification');
-            const purchased = await refreshPurchaseStatus();
-            console.log('Purchase status after verification:', purchased);
-            
-            if (purchased) {
-              console.log('Purchase status updated successfully');
-            } else {
-              console.warn('Purchase status not updated despite successful verification');
-              // Add a small delay and try again
-              setTimeout(async () => {
-                const retryPurchased = await refreshPurchaseStatus();
-                console.log('Retry purchase status:', retryPurchased);
-              }, 2000);
-            }
-          } else {
-            console.error('Payment verification failed:', verificationResult);
-            toast({
-              title: "Payment verification failed",
-              description: verificationResult.message || "There was an issue verifying your payment. Please contact support.",
-              variant: "destructive",
-            });
-          }
-        } catch (error) {
-          console.error('Payment verification error:', error);
-          toast({
-            title: "Payment verification error",
-            description: "There was an error verifying your payment. Please contact support if the issue persists.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsVerifyingPayment(false);
-          // Clean up URL parameters
-          const newSearchParams = new URLSearchParams(searchParams);
-          newSearchParams.delete('payment');
-          newSearchParams.delete('session_id');
-          setSearchParams(newSearchParams, { replace: true });
-        }
-      } else if (paymentStatus === 'cancelled') {
-        console.log("Payment was cancelled");
-        toast({
-          title: "Subscription cancelled",
-          description: "Your subscription was cancelled. You can try again anytime.",
-          variant: "destructive",
-        });
-        // Clean up URL parameters
-        const newSearchParams = new URLSearchParams(searchParams);
-        newSearchParams.delete('payment');
-        setSearchParams(newSearchParams, { replace: true });
-      }
-    };
-
-    handlePaymentVerification();
-  }, [searchParams, toast, isVerifyingPayment]);
-
-  // Fetch course details
-  const { data: course, isLoading: courseLoading, error: courseError } = useQuery({
+  // Fetch course data
+  const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ['course', courseId],
     queryFn: () => learningHubService.getCourseById(courseId!),
     enabled: !!courseId,
   });
 
-  // Fetch course modules and lessons
-  const { data: modules, isLoading: modulesLoading, error: modulesError } = useQuery({
+  // Fetch modules and lessons
+  const { data: modules = [], isLoading: modulesLoading } = useQuery({
     queryKey: ['course-modules', courseId],
     queryFn: () => learningHubService.getCourseModules(courseId!),
     enabled: !!courseId,
   });
 
-  // Check purchase status
-  useEffect(() => {
-    refreshPurchaseStatus();
-  }, [courseId, user, course?.status]);
+  console.log('📚 Modules loaded:', modules.length);
+  modules.forEach((module, index) => {
+    console.log(`- Module ${index + 1}: ${module.title} (${module.lessons?.length || 0} lessons)`);
+    module.lessons?.forEach((lesson, lessonIndex) => {
+      console.log(`  - Lesson ${lessonIndex + 1}: ${lesson.title} (preview: ${lesson.is_preview})`);
+    });
+  });
 
-  // Fetch student progress with corrected query key
-  const { data: studentProgress, isLoading: progressLoading } = useQuery({
+  // Check if user has purchased the course
+  const { data: isPurchased = false } = useQuery({
+    queryKey: ['course-purchase', courseId, user?.id],
+    queryFn: async () => {
+      if (!user?.id || !courseId) return false;
+      return learningHubService.hasUserPurchasedCourse(user.id, courseId);
+    },
+    enabled: !!user?.id && !!courseId,
+  });
+
+  console.log('💰 Course purchased:', isPurchased);
+
+  // Fetch student progress if authenticated
+  const { data: studentProgress = [] } = useQuery({
     queryKey: ['student-progress', user?.email, courseId],
-    queryFn: () => learningHubService.getStudentProgress(user!.email, courseId!),
+    queryFn: () => learningHubService.getStudentProgress(user!.email!, courseId),
     enabled: !!user?.email && !!courseId,
   });
 
-  // Fetch course completion percentage using user email
-  const { data: courseProgress } = useQuery({
-    queryKey: ['course-progress', courseId, user?.email],
-    queryFn: () => learningHubService.getCourseProgress(courseId!, user!.email),
-    enabled: !!user?.email && !!courseId,
-  });
+  console.log('📈 Student progress entries:', studentProgress.length);
 
-  // Set initial active module and lesson when data loads
-  React.useEffect(() => {
-    if (modules && modules.length > 0 && !activeModuleId) {
-      setActiveModuleId(modules[0].id);
+  const canAccessFullCourse = hasAdminPrivileges || isPurchased;
+
+  console.log('🔓 Can access full course:', canAccessFullCourse);
+
+  // Find active module and lesson
+  const activeModule = useMemo(() => {
+    const found = modules.find(m => m.id === activeModuleId);
+    console.log('🎯 Active module found:', found?.title || 'None');
+    return found;
+  }, [modules, activeModuleId]);
+
+  const activeLesson = useMemo(() => {
+    if (!activeModule || !activeLessonId) {
+      console.log('❌ No active lesson: module or lesson ID missing');
+      console.log('- Active module ID:', activeModuleId);
+      console.log('- Active lesson ID:', activeLessonId);
+      return null;
+    }
+    
+    const found = activeModule.lessons?.find(l => l.id === activeLessonId);
+    console.log('🎯 Active lesson found:', found?.title || 'None');
+    return found || null;
+  }, [activeModule, activeLessonId]);
+
+  // Initialize first accessible lesson
+  useEffect(() => {
+    if (modules.length > 0 && !activeModuleId) {
+      console.log('🚀 Initializing first accessible lesson...');
       
-      if (modules[0].lessons && modules[0].lessons.length > 0) {
-        // Find the first accessible lesson (preview or purchased)
-        const firstAccessibleLesson = modules[0].lessons.find(lesson => 
-          lesson.is_preview || isPurchased || hasAdminPrivileges
-        );
-        if (firstAccessibleLesson) {
-          setActiveLessonId(firstAccessibleLesson.id);
+      for (const module of modules) {
+        console.log(`🔍 Checking module: ${module.title}`);
+        
+        if (module.lessons && module.lessons.length > 0) {
+          for (const lesson of module.lessons) {
+            const isAccessible = hasAdminPrivileges || isPurchased || lesson.is_preview;
+            console.log(`  - Lesson: ${lesson.title}`);
+            console.log(`    - Is preview: ${lesson.is_preview}`);
+            console.log(`    - Has admin privileges: ${hasAdminPrivileges}`);
+            console.log(`    - Is purchased: ${isPurchased}`);
+            console.log(`    - Is accessible: ${isAccessible}`);
+            
+            if (isAccessible) {
+              console.log(`✅ Setting active lesson: ${lesson.title} in module: ${module.title}`);
+              setActiveModuleId(module.id);
+              setActiveLessonId(lesson.id);
+              return;
+            }
+          }
         }
       }
+      
+      console.log('❌ No accessible lessons found!');
     }
-  }, [modules, activeModuleId, isPurchased, hasAdminPrivileges]);
+  }, [modules, activeModuleId, hasAdminPrivileges, isPurchased]);
 
   // Handle lesson selection
-  const handleLessonSelect = (lesson: any) => {
-    setActiveLessonId(lesson.id);
+  const handleSelectLesson = (lesson: CourseLesson) => {
+    console.log('🎯 Selecting lesson:', lesson.title);
+    
+    const module = modules.find(m => m.lessons?.some(l => l.id === lesson.id));
+    if (module) {
+      console.log('📁 Found module for lesson:', module.title);
+      setActiveModuleId(module.id);
+      setActiveLessonId(lesson.id);
+    } else {
+      console.error('❌ Could not find module for lesson:', lesson.title);
+    }
   };
 
-  // Handle content type change
-  const handleContentTypeChange = (contentType: string) => {
-    setCurrentContentType(contentType);
-  };
+  // Calculate course progress
+  const courseProgress = useMemo(() => {
+    const totalLessons = modules.reduce((total, module) => total + (module.lessons?.length || 0), 0);
+    const completedLessons = studentProgress.filter(progress => progress.status === 'completed').length;
+    return totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  }, [modules, studentProgress]);
 
-  // Find active content
-  const activeModule = modules?.find(m => m.id === activeModuleId);
-  const activeLesson = activeModule?.lessons?.find(l => l.id === activeLessonId);
-
-  // Count total lessons
-  const totalLessons = modules?.reduce((total, module) => total + (module.lessons?.length || 0), 0) || 0;
-  const completedLessons = studentProgress?.filter(p => p.status === 'completed').length || 0;
-
-  const formatPrice = (priceInPence: number) => {
-    return `£${(priceInPence / 100).toFixed(2)}`;
-  };
-
-  const handleStartTrial = () => {
-    setShowPaymentModal(true);
+  const handlePurchaseSuccess = () => {
+    setShowPaymentModal(false);
+    toast({
+      title: "Purchase successful!",
+      description: "You now have full access to this course.",
+    });
+    // Refresh the purchase status
+    window.location.reload();
   };
 
   if (courseLoading || modulesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center mb-6">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/')} 
-              className="mr-2"
-            >
-              <Home className="mr-1 h-4 w-4" />
-              Home
-            </Button>
-          </div>
-          
-          <div className="flex flex-col gap-4 mb-6">
-            <Skeleton className="h-10 w-3/4" />
-            <Skeleton className="h-6 w-1/2" />
-          </div>
-          
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-3">
-              <Skeleton className="h-[600px] w-full" />
+      <div className="container mx-auto py-8 px-4">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-1">
+              <div className="h-96 bg-gray-200 rounded"></div>
             </div>
-            <div className="col-span-9">
-              <Skeleton className="h-[600px] w-full" />
+            <div className="lg:col-span-3">
+              <div className="h-96 bg-gray-200 rounded"></div>
             </div>
           </div>
         </div>
@@ -268,266 +186,194 @@ const CourseDetail: React.FC = () => {
     );
   }
 
-  if (courseError || modulesError || !course) {
+  if (!course) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center mb-6">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/')} 
-              className="mr-2"
-            >
-              <Home className="mr-1 h-4 w-4" />
-              Home
-            </Button>
-          </div>
-          
-          <div className="bg-white border border-red-200 rounded-xl p-8 text-center">
-            <BookOpen className="mx-auto h-16 w-16 text-red-300 mb-6" />
-            <h3 className="text-xl font-semibold text-red-800 mb-3">Error loading course</h3>
-            <p className="text-red-600 mb-6">Please try again later or contact support if the issue persists.</p>
-            <Button onClick={() => navigate('/learning-hub')} className="bg-rose-600 hover:bg-rose-700">
-              Return to Learning Hub
-            </Button>
-          </div>
-        </div>
+      <div className="container mx-auto py-8 px-4 text-center">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Course not found</h1>
+        <Button onClick={() => navigate('/learning-hub')} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Learning Hub
+        </Button>
       </div>
     );
   }
 
-  const canAccessFullCourse = hasAdminPrivileges || isPurchased;
-  const showTrialButton = course?.status === 'published' && !canAccessFullCourse && user && !isVerifyingPayment;
+  console.log('🎬 Final render state:');
+  console.log('- Active lesson:', activeLesson?.title || 'None');
+  console.log('- Can access full course:', canAccessFullCourse);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-      <div className="max-w-full mx-auto px-6 py-2">
-        {/* Ultra Compact Header */}
-        <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-lg p-3 mb-3 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/')} 
-                className="text-gray-600 hover:text-gray-900 hover:bg-white/60 px-2 py-1 h-7 text-xs"
-              >
-                <Home className="mr-1 h-3 w-3" />
-                Home
-              </Button>
-              <div className="h-3 w-px bg-gray-300" />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/learning-hub')} 
-                className="text-gray-600 hover:text-gray-900 hover:bg-white/60 px-2 py-1 h-7 text-xs"
-              >
-                <ChevronLeft className="mr-1 h-3 w-3" />
-                All Courses
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {isVerifyingPayment && (
-                <Badge variant="outline" className="text-rose-600 border-rose-300 bg-rose-50/80 backdrop-blur-sm text-xs px-2 py-0.5">
-                  Verifying payment...
-                </Badge>
-              )}
-              
-              {!canAccessFullCourse && (
-                <Button 
-                  onClick={handleManualRefresh}
-                  disabled={isRefreshing}
-                  variant="outline"
-                  size="sm"
-                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs px-2 py-1 h-7"
-                >
-                  <RefreshCw className={`mr-1 h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  {isRefreshing ? 'Checking...' : 'Refresh Access'}
-                </Button>
-              )}
-              
-              {showTrialButton && (
-                <Button 
-                  onClick={handleStartTrial}
-                  size="sm"
-                  className="bg-gradient-to-r from-emerald-600 to-rose-600 hover:from-emerald-700 hover:to-rose-700 text-white px-3 shadow-lg text-xs h-7"
-                >
-                  <Gift className="mr-1 h-3 w-3" />
-                  Start Free Trial - {formatPrice(course.price || 899)}/month
-                </Button>
-              )}
-              
-              {hasAdminPrivileges && (
-                <Button 
-                  onClick={() => navigate(`/course/${courseId}/edit`)}
-                  variant="outline"
-                  size="sm"
-                  className="border-white/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-xs px-2 py-1 h-7"
-                >
-                  <PenSquare className="mr-1 h-3 w-3" />
-                  Edit Course
-                </Button>
-              )}
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Course Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto py-6 px-4">
+          <div className="flex items-center justify-between mb-4">
+            <Button 
+              onClick={() => navigate('/learning-hub')} 
+              variant="ghost" 
+              className="text-gray-600 hover:text-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Learning Hub
+            </Button>
           </div>
           
-          {/* Ultra Compact Course Info */}
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Badge className="bg-rose-100/80 text-rose-700 border-rose-200/50 backdrop-blur-sm text-xs px-1.5 py-0.5">{course?.subject || "General"}</Badge>
-                <Badge 
-                  variant="outline" 
-                  className={`text-xs px-1.5 py-0.5 ${course?.status === 'published' ? 'text-green-700 border-green-200/50 bg-green-50/80 backdrop-blur-sm' : 'text-gray-600 border-gray-200/50 bg-gray-50/80 backdrop-blur-sm'}`}
-                >
-                  {course?.status}
-                </Badge>
-                {isPurchased && (
-                  <Badge className="bg-green-500/90 text-white backdrop-blur-sm text-xs px-1.5 py-0.5">
-                    <CheckCircle className="mr-1 h-2 w-2" />
-                    Subscribed
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{course.title}</h1>
+              {course.description && (
+                <p className="text-gray-600 text-lg">{course.description}</p>
+              )}
+              <div className="flex items-center gap-4 mt-4">
+                {course.subject && (
+                  <Badge variant="outline" className="text-sm">
+                    {course.subject}
                   </Badge>
                 )}
-                {!canAccessFullCourse && course?.status === 'published' && (
-                  <Badge variant="outline" className="text-orange-600 border-orange-300/50 bg-orange-50/80 backdrop-blur-sm text-xs px-1.5 py-0.5">
-                    <Play className="mr-1 h-2 w-2" />
-                    Preview Mode
+                {course.difficulty_level && (
+                  <Badge variant="outline" className="text-sm">
+                    {course.difficulty_level}
                   </Badge>
                 )}
+                <span className="text-sm text-gray-500">
+                  {modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
+                </span>
               </div>
-              
-              <h1 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-1 truncate">{course?.title}</h1>
-              <p className="text-gray-600 text-xs mb-2 line-clamp-1 leading-relaxed">{course?.description}</p>
             </div>
             
-            {/* Inline compact progress */}
-            {user && !progressLoading && totalLessons > 0 && (
-              <div className="ml-4 flex items-center gap-3 bg-gray-50/80 backdrop-blur-sm rounded-md px-3 py-1.5 border border-white/20">
+            {!canAccessFullCourse && (
+              <div className="flex flex-col items-end gap-2">
                 <div className="text-right">
-                  <div className="text-xs font-semibold text-gray-700">Progress</div>
-                  <div className="text-xs text-gray-500">{completedLessons}/{totalLessons} lessons</div>
+                  <p className="text-2xl font-bold text-gray-900">
+                    £{((course.price || 0) / 100).toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-500">One-time payment</p>
                 </div>
-                <div className="w-16">
-                  <ProgressBar 
-                    current={completedLessons}
-                    total={totalLessons}
-                    className="w-full h-1.5"
-                  />
-                  <div className="mt-0.5 text-xs text-gray-500 text-center">
-                    {Math.round((completedLessons / totalLessons) * 100)}%
-                  </div>
-                </div>
+                <Button 
+                  onClick={() => setShowPaymentModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Purchase Course
+                </Button>
               </div>
             )}
           </div>
+          
+          {canAccessFullCourse && (
+            <div className="mt-4">
+              <ProgressBar progress={courseProgress} />
+            </div>
+          )}
         </div>
-        
-        {/* Course content layout */}
-        <div className="flex gap-4">
-          {/* Enhanced sidebar with toggle */}
-          {!sidebarCollapsed && (
-            <div className="w-80 flex-shrink-0">
-              <div className="sticky top-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900 text-sm">Course Content</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSidebarCollapsed(true)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <SidebarClose className="h-4 w-4" />
-                  </Button>
-                </div>
-                <CourseSidebar 
-                  modules={modules || []}
-                  studentProgress={studentProgress || []}
-                  onSelectLesson={handleLessonSelect}
-                  currentLessonId={activeLessonId || undefined}
-                  isAdmin={hasAdminPrivileges}
-                  isPurchased={canAccessFullCourse}
-                />
-              </div>
-            </div>
-          )}
-          
-          {/* Sidebar toggle button when collapsed */}
-          {sidebarCollapsed && (
-            <div className="flex-shrink-0">
-              <div className="sticky top-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSidebarCollapsed(false)}
-                  className="bg-white/80 backdrop-blur-sm border-white/20 hover:bg-white/90"
-                >
-                  <SidebarOpen className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {/* Enhanced content viewer - Now takes full width */}
-          <div className="flex-1 min-w-0">
-            <div className="space-y-4">
-              {/* Main content area */}
-              {activeLesson ? (
-                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg overflow-hidden">
-                  <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-rose-50/80">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900 mb-1">{activeLesson.title}</h2>
-                        {activeLesson.description && (
-                          <p className="text-gray-600 text-sm leading-relaxed">{activeLesson.description}</p>
-                        )}
-                      </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto py-6 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <CourseSidebar
+              modules={modules}
+              studentProgress={studentProgress}
+              onSelectLesson={handleSelectLesson}
+              currentLessonId={activeLessonId || undefined}
+              isAdmin={hasAdminPrivileges}
+              isPurchased={canAccessFullCourse}
+            />
+          </div>
+
+          {/* Content Area */}
+          <div className="lg:col-span-3 space-y-6">
+            {activeLesson ? (
+              <>
+                {/* Lesson Header */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        {activeLesson.title}
+                      </h2>
+                      {activeLesson.description && (
+                        <p className="text-gray-600">{activeLesson.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      {activeLesson.is_preview && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Preview
+                        </Badge>
+                      )}
                       {activeLesson.duration_minutes && (
-                        <div className="flex items-center gap-2 text-gray-500 bg-white/60 px-2 py-1 rounded-md backdrop-blur-sm">
-                          <Clock className="h-3 w-3" />
-                          <span className="text-xs font-medium">{activeLesson.duration_minutes} min</span>
-                        </div>
+                        <Badge variant="outline" className="text-sm">
+                          {activeLesson.duration_minutes} min
+                        </Badge>
                       )}
                     </div>
                   </div>
-                  <ContentViewer 
-                    lesson={activeLesson} 
-                    isLoading={false}
-                    onContentTypeChange={handleContentTypeChange}
-                  />
                 </div>
-              ) : (
-                <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-xl p-8 text-center shadow-lg">
-                  <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-800 mb-3">No lesson selected</h3>
-                  <p className="text-gray-600 max-w-md mx-auto text-sm leading-relaxed">
-                    {modules && modules.length > 0 
-                      ? "Select a lesson from the course content to start learning"
-                      : "No content available for this course yet"}
-                  </p>
-                </div>
-              )}
-              
-              {/* Flash cards section below the content */}
-              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg overflow-hidden">
-                <NotesSection 
-                  courseId={courseId!}
-                  lessonId={activeLessonId || undefined}
-                  lessonTitle={activeLesson?.title}
-                  contentType={currentContentType}
+
+                {/* Content Viewer */}
+                <ContentViewer 
+                  lesson={activeLesson} 
+                  onContentTypeChange={setContentType}
                 />
-              </div>
-            </div>
+
+                {/* Notes Section - only show for video content */}
+                {contentType === 'video' && user && (
+                  <NotesSection 
+                    courseId={courseId!}
+                    lessonId={activeLesson.id}
+                  />
+                )}
+              </>
+            ) : (
+              <Card className="h-96">
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+                  {!canAccessFullCourse ? (
+                    <>
+                      <Lock className="h-16 w-16 text-gray-300 mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        Course Locked
+                      </h3>
+                      <p className="text-gray-500 mb-6 max-w-md">
+                        Purchase this course to access all lessons and unlock your learning potential.
+                      </p>
+                      <Button 
+                        onClick={() => setShowPaymentModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Purchase Course
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <ArrowLeft className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        No lesson selected
+                      </h3>
+                      <p className="text-gray-500">
+                        Select a lesson from the course content to start learning
+                      </p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
-      
-      {course && (
+
+      {/* Payment Modal */}
+      {showPaymentModal && course && (
         <CoursePaymentModal
           course={course}
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePurchaseSuccess}
         />
       )}
     </div>
