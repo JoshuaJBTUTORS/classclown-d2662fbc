@@ -17,7 +17,7 @@ import { toast } from '@/hooks/use-toast';
 import NotesSection from '@/components/learningHub/NotesSection';
 
 const CourseDetail: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, userRole, isOwner, isAdmin } = useAuth();
   
