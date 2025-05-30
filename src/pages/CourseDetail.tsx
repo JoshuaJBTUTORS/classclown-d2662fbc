@@ -268,7 +268,7 @@ const CourseDetail: React.FC = () => {
               
               {hasAdminPrivileges && (
                 <Button 
-                  onClick={() => navigate(`/course-edit/${courseId}`)} 
+                  onClick={() => navigate(`/course/${courseId}/edit`)} 
                   variant="outline"
                   className="text-gray-600 hover:text-gray-800"
                 >
