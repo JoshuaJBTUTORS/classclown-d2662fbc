@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -9,7 +8,7 @@ import ContentViewer from '@/components/learningHub/ContentViewer';
 import ProgressBar from '@/components/learningHub/ProgressBar';
 import { CourseLesson, CourseModule } from '@/types/course';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Lock, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Lock, ShoppingCart, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
@@ -257,14 +256,27 @@ const CourseDetail: React.FC = () => {
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto py-6 px-4">
           <div className="flex items-center justify-between mb-4">
-            <Button 
-              onClick={() => navigate('/learning-hub')} 
-              variant="ghost" 
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Learning Hub
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => navigate('/learning-hub')} 
+                variant="ghost" 
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Learning Hub
+              </Button>
+              
+              {hasAdminPrivileges && (
+                <Button 
+                  onClick={() => navigate(`/course-edit/${courseId}`)} 
+                  variant="outline"
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Course
+                </Button>
+              )}
+            </div>
           </div>
           
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
