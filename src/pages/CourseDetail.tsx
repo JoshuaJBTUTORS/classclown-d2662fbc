@@ -26,12 +26,15 @@ const CourseDetail: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [contentType, setContentType] = useState<string>('');
 
+  // Enhanced debugging
   console.log('🔍 CourseDetail Debug Info:');
+  console.log('- URL courseId param:', courseId);
+  console.log('- courseId type:', typeof courseId);
+  console.log('- courseId length:', courseId?.length);
   console.log('- User:', user?.email);
   console.log('- User Role:', userRole);
   console.log('- Is Owner:', isOwner);
   console.log('- Is Admin:', isAdmin);
-  console.log('- Course ID:', courseId);
 
   const isTutor = userRole === 'tutor';
   const hasAdminPrivileges = isOwner || isAdmin || isTutor;
@@ -39,12 +42,32 @@ const CourseDetail: React.FC = () => {
   console.log('- Is Tutor:', isTutor);
   console.log('- Has Admin Privileges:', hasAdminPrivileges);
 
-  // Fetch course data
-  const { data: course, isLoading: courseLoading } = useQuery({
+  // Fetch course data with enhanced debugging
+  const { data: course, isLoading: courseLoading, error: courseError } = useQuery({
     queryKey: ['course', courseId],
-    queryFn: () => learningHubService.getCourseById(courseId!),
+    queryFn: async () => {
+      console.log('🔄 Fetching course with ID:', courseId);
+      if (!courseId) {
+        console.error('❌ No courseId provided to query');
+        throw new Error('No course ID provided');
+      }
+      try {
+        const result = await learningHubService.getCourseById(courseId);
+        console.log('✅ Course fetched successfully:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Error fetching course:', error);
+        throw error;
+      }
+    },
     enabled: !!courseId,
   });
+
+  // Log course fetch results
+  console.log('📚 Course fetch state:');
+  console.log('- Course loading:', courseLoading);
+  console.log('- Course error:', courseError);
+  console.log('- Course data:', course);
 
   // Fetch modules and lessons
   const { data: modules = [], isLoading: modulesLoading } = useQuery({
@@ -170,7 +193,9 @@ const CourseDetail: React.FC = () => {
     window.location.reload();
   };
 
+  // Enhanced error handling and debugging
   if (courseLoading || modulesLoading) {
+    console.log('⏳ Still loading course or modules...');
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="animate-pulse">
@@ -188,10 +213,32 @@ const CourseDetail: React.FC = () => {
     );
   }
 
+  if (courseError) {
+    console.error('💥 Course error details:', courseError);
+    return (
+      <div className="container mx-auto py-8 px-4 text-center">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Error loading course</h1>
+        <p className="text-gray-600 mb-4">
+          {courseError instanceof Error ? courseError.message : 'An unknown error occurred'}
+        </p>
+        <p className="text-sm text-gray-500 mb-6">Course ID: {courseId}</p>
+        <Button onClick={() => navigate('/learning-hub')} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Learning Hub
+        </Button>
+      </div>
+    );
+  }
+
   if (!course) {
+    console.error('❌ No course data received');
     return (
       <div className="container mx-auto py-8 px-4 text-center">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Course not found</h1>
+        <p className="text-gray-600 mb-4">
+          The course you're looking for doesn't exist or has been removed.
+        </p>
+        <p className="text-sm text-gray-500 mb-6">Course ID: {courseId}</p>
         <Button onClick={() => navigate('/learning-hub')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Learning Hub
