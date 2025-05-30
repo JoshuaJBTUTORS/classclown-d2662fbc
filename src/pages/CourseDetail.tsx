@@ -66,7 +66,7 @@ const CourseDetail: React.FC = () => {
     queryKey: ['course-purchase', courseId, user?.id],
     queryFn: async () => {
       if (!user?.id || !courseId) return false;
-      return learningHubService.hasUserPurchasedCourse(user.id, courseId);
+      return learningHubService.checkCoursePurchase(courseId);
     },
     enabled: !!user?.id && !!courseId,
   });
@@ -110,6 +110,8 @@ const CourseDetail: React.FC = () => {
   useEffect(() => {
     if (modules.length > 0 && !activeModuleId) {
       console.log('🚀 Initializing first accessible lesson...');
+      console.log('- Has admin privileges at initialization:', hasAdminPrivileges);
+      console.log('- Is purchased at initialization:', isPurchased);
       
       for (const module of modules) {
         console.log(`🔍 Checking module: ${module.title}`);
@@ -262,7 +264,11 @@ const CourseDetail: React.FC = () => {
           
           {canAccessFullCourse && (
             <div className="mt-4">
-              <ProgressBar progress={courseProgress} />
+              <ProgressBar 
+                current={studentProgress.filter(p => p.status === 'completed').length}
+                total={modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)}
+                label="Course Progress"
+              />
             </div>
           )}
         </div>
@@ -373,7 +379,6 @@ const CourseDetail: React.FC = () => {
           course={course}
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
-          onSuccess={handlePurchaseSuccess}
         />
       )}
     </div>
