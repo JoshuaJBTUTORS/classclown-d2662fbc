@@ -5,6 +5,8 @@ import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import ProgressChart from '@/components/progress/ProgressChart';
 import AttendanceChart from '@/components/progress/AttendanceChart';
+import AIAssessmentChart from '@/components/progress/AIAssessmentChart';
+import AIAssessmentProgress from '@/components/progress/AIAssessmentProgress';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,7 +26,7 @@ const Progress: React.FC = () => {
     dateRange: { from: null, to: null },
     selectedStudents: [],
     selectedSubjects: [],
-    selectedChild: 'all' // Default to all children
+    selectedChild: 'all'
   });
 
   const { userRole, user } = useAuth();
@@ -108,6 +110,18 @@ const Progress: React.FC = () => {
               />
               
               <AttendanceChart 
+                filters={filters}
+                userRole={userRole}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <AIAssessmentChart 
+                filters={filters}
+                userRole={userRole}
+              />
+              
+              <AIAssessmentProgress 
                 filters={filters}
                 userRole={userRole}
               />
