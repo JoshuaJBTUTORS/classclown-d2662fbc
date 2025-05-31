@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle, Lock, Play, FileText, Brain, Video, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -202,7 +201,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   }, [modules]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm">
+    <div className="w-full h-full flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-gray-200 flex-shrink-0">
         <h3 className="font-semibold text-lg text-gray-900">Course Content</h3>
         <p className="text-sm text-gray-600 mt-1">
@@ -210,8 +209,8 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
         </p>
       </div>
       
-      <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ScrollArea className="h-full max-h-[calc(100vh-350px)]">
           <div className="p-2">
             {modules.length === 0 ? (
               <div className="text-center p-6">

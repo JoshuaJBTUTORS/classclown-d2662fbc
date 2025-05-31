@@ -333,11 +333,11 @@ const CourseDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto py-6 px-4 h-[calc(100vh-300px)]">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
-          {/* Sidebar */}
-          <div className="lg:col-span-1 h-full">
+      {/* Main Content - Fixed height container */}
+      <div className="container mx-auto py-6 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 280px)' }}>
+          {/* Sidebar - Fixed height with scrolling */}
+          <div className="lg:col-span-1 h-full overflow-hidden">
             <CourseSidebar
               modules={modules}
               studentProgress={studentProgress}
@@ -348,60 +348,62 @@ const CourseDetail: React.FC = () => {
             />
           </div>
 
-          {/* Content Area */}
-          <div className="lg:col-span-3 space-y-6 h-full overflow-y-auto">
-            {activeLesson ? (
-              <>
-                {/* Content Viewer */}
-                <ContentViewer 
-                  lesson={activeLesson} 
-                  onContentTypeChange={setContentType}
-                />
-
-                {/* Notes Section - only show for video content */}
-                {contentType === 'video' && user && (
-                  <NotesSection 
-                    courseId={courseId!}
-                    lessonId={activeLesson.id}
+          {/* Content Area - Scrollable */}
+          <div className="lg:col-span-3 h-full overflow-y-auto">
+            <div className="space-y-6">
+              {activeLesson ? (
+                <>
+                  {/* Content Viewer */}
+                  <ContentViewer 
+                    lesson={activeLesson} 
+                    onContentTypeChange={setContentType}
                   />
-                )}
-              </>
-            ) : (
-              <Card className="h-96">
-                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                  {!canAccessFullCourse ? (
-                    <>
-                      <Lock className="h-16 w-16 text-gray-300 mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                        Course Locked
-                      </h3>
-                      <p className="text-gray-500 mb-6 max-w-md">
-                        Purchase this course to access all lessons and unlock your learning potential.
-                      </p>
-                      <Button 
-                        onClick={() => setShowPaymentModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Purchase Course
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <ArrowLeft className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                        No lesson selected
-                      </h3>
-                      <p className="text-gray-500">
-                        Select a lesson from the course content to start learning
-                      </p>
-                    </>
+
+                  {/* Notes Section - only show for video content */}
+                  {contentType === 'video' && user && (
+                    <NotesSection 
+                      courseId={courseId!}
+                      lessonId={activeLesson.id}
+                    />
                   )}
-                </CardContent>
-              </Card>
-            )}
+                </>
+              ) : (
+                <Card className="h-96">
+                  <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+                    {!canAccessFullCourse ? (
+                      <>
+                        <Lock className="h-16 w-16 text-gray-300 mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                          Course Locked
+                        </h3>
+                        <p className="text-gray-500 mb-6 max-w-md">
+                          Purchase this course to access all lessons and unlock your learning potential.
+                        </p>
+                        <Button 
+                          onClick={() => setShowPaymentModal(true)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Purchase Course
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                          <ArrowLeft className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                          No lesson selected
+                        </h3>
+                        <p className="text-gray-500">
+                          Select a lesson from the course content to start learning
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
