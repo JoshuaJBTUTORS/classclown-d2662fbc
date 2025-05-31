@@ -73,19 +73,27 @@ export const learningHubService = {
     if (error) throw error;
   },
 
-  // Module methods
+  // Module methods - Fixed ordering for lessons
   getCourseModules: async (courseId: string): Promise<CourseModule[]> => {
     const { data, error } = await supabase
       .from('course_modules')
       .select(`
         *,
-        lessons:course_lessons(*)
+        lessons:course_lessons(*) 
       `)
       .eq('course_id', courseId)
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data as CourseModule[];
+    
+    // Ensure lessons within each module are sorted by position
+    const sortedData = data.map(module => ({
+      ...module,
+      lessons: module.lessons?.sort((a: CourseLesson, b: CourseLesson) => a.position - b.position) || []
+    }));
+    
+    console.log('📚 getCourseModules - returning sorted data:', sortedData);
+    return sortedData as CourseModule[];
   },
 
   createModule: async (module: Partial<CourseModule>): Promise<CourseModule> => {
@@ -471,7 +479,7 @@ export const learningHubService = {
     if (error) throw error;
   },
 
-  // Reordering methods
+  // Reordering methods - Fixed to ensure proper cache invalidation
   reorderModules: async (courseId: string, moduleOrders: { id: string; position: number }[]): Promise<void> => {
     console.log('Reordering modules:', moduleOrders);
     

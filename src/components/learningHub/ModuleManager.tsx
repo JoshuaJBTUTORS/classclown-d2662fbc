@@ -92,11 +92,15 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
     },
   });
 
+  // Fixed reorderModulesMutation with proper cache invalidation
   const reorderModulesMutation = useMutation({
     mutationFn: (moduleOrders: { id: string; position: number }[]) => 
       learningHubService.reorderModules(courseId, moduleOrders),
     onSuccess: () => {
+      // Invalidate all related queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['course-modules', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons'] });
       toast({
         title: "Modules reordered",
         description: "Module order has been updated successfully",
@@ -150,8 +154,9 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
     }));
   };
 
+  // Improved drag handlers with better logging
   const handleDragStart = (e: React.DragEvent, moduleId: string) => {
-    console.log('Drag start:', moduleId);
+    console.log('📦 Module drag start:', moduleId);
     setDraggedModuleId(moduleId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', moduleId);
@@ -184,7 +189,7 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
 
   const handleDrop = (e: React.DragEvent, targetModuleId: string) => {
     e.preventDefault();
-    console.log('Drop on:', targetModuleId, 'from:', draggedModuleId);
+    console.log('📦 Module drop on:', targetModuleId, 'from:', draggedModuleId);
     
     setDragOverModuleId(null);
     
@@ -196,7 +201,7 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
     const draggedIndex = modules.findIndex(m => m.id === draggedModuleId);
     const targetIndex = modules.findIndex(m => m.id === targetModuleId);
     
-    console.log('Dragged index:', draggedIndex, 'Target index:', targetIndex);
+    console.log('📦 Module dragged index:', draggedIndex, 'Target index:', targetIndex);
     
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedModuleId(null);
@@ -214,13 +219,13 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
       position: index
     }));
 
-    console.log('New module order:', moduleOrders);
+    console.log('📦 New module order:', moduleOrders);
     reorderModulesMutation.mutate(moduleOrders);
     setDraggedModuleId(null);
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    console.log('Drag end');
+    console.log('📦 Module drag end');
     // Reset visual feedback
     const target = e.target as HTMLElement;
     target.style.opacity = '1';
@@ -285,7 +290,8 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
         </div>
       ) : (
         <div className="space-y-4">
-          {modules?.map((module) => (
+          {/* Ensure modules are sorted by position in edit view */}
+          {modules?.sort((a, b) => a.position - b.position).map((module) => (
             <Card 
               key={module.id} 
               className={`relative transition-all duration-200 cursor-move ${
