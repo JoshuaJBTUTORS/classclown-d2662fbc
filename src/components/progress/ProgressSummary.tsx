@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Calendar, BookOpen } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, BookOpen, Brain } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -10,7 +11,6 @@ interface ProgressSummaryProps {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
     selectedSubjects: string[];
-    selectedChild: string;
   };
   userRole: string;
 }
@@ -20,6 +20,9 @@ interface SummaryStats {
   attendanceRate: number;
   totalHomework: number;
   improvementTrend: number;
+  averageAssessmentScore: number;
+  totalAssessments: number;
+  assessmentImprovementTrend: number;
 }
 
 const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) => {
@@ -27,62 +30,35 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     averageScore: 0,
     attendanceRate: 0,
     totalHomework: 0,
-    improvementTrend: 0
+    improvementTrend: 0,
+    averageAssessmentScore: 0,
+    totalAssessments: 0,
+    assessmentImprovementTrend: 0
   });
   const [loading, setLoading] = useState(true);
-  const { user, parentProfile } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchSummaryStats();
-  }, [filters, user, userRole, parentProfile]);
+  }, [filters, user, userRole]);
 
   const fetchSummaryStats = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Get student ID for student role
-      let studentId = null;
       let studentIds: number[] = [];
 
+      // Get student IDs for homework data
       if (userRole === 'student') {
         const { data: studentData } = await supabase
           .from('students')
           .select('id')
           .eq('email', user.email)
           .maybeSingle();
-        studentId = studentData?.id;
-        if (studentId) studentIds = [studentId];
-      }
-
-      // Get children IDs for parent role
-      if (userRole === 'parent' && parentProfile) {
-        const { data: childrenData } = await supabase
-          .from('students')
-          .select('id')
-          .eq('parent_id', parentProfile.id);
-
-        if (childrenData && childrenData.length > 0) {
-          let allChildrenIds = childrenData.map(child => child.id);
-          
-          // If a specific child is selected, filter to just that child
-          if (filters.selectedChild !== 'all') {
-            const selectedChildId = parseInt(filters.selectedChild);
-            studentIds = allChildrenIds.filter(id => id === selectedChildId);
-          } else {
-            studentIds = allChildrenIds;
-          }
-        } else {
-          // If no children found, set empty stats
-          setStats({
-            averageScore: 0,
-            attendanceRate: 0,
-            totalHomework: 0,
-            improvementTrend: 0
-          });
-          setLoading(false);
-          return;
-        }
+        if (studentData) studentIds = [studentData.id];
+      } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
+        studentIds = filters.selectedStudents.map(id => parseInt(id));
       }
 
       // Fetch homework statistics
@@ -92,12 +68,8 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .not('percentage_score', 'is', null)
         .order('submitted_at', { ascending: true });
 
-      if (userRole === 'student' && studentId) {
-        homeworkQuery = homeworkQuery.eq('student_id', studentId);
-      } else if (userRole === 'parent' && studentIds.length > 0) {
+      if (studentIds.length > 0) {
         homeworkQuery = homeworkQuery.in('student_id', studentIds);
-      } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
-        homeworkQuery = homeworkQuery.in('student_id', filters.selectedStudents.map(id => parseInt(id)));
       }
 
       if (filters.dateRange.from) {
@@ -110,6 +82,38 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       const { data: homeworkData, error: homeworkError } = await homeworkQuery;
       if (homeworkError) throw homeworkError;
 
+      // Fetch assessment statistics
+      let assessmentQuery = supabase
+        .from('assessment_sessions')
+        .select(`
+          total_marks_achieved,
+          total_marks_available,
+          completed_at,
+          assessment:ai_assessments(subject)
+        `)
+        .eq('status', 'completed')
+        .not('completed_at', 'is', null)
+        .not('total_marks_available', 'is', null)
+        .gt('total_marks_available', 0)
+        .order('completed_at', { ascending: true });
+
+      // Filter assessments by user
+      if (userRole === 'student' || userRole === 'parent') {
+        assessmentQuery = assessmentQuery.eq('user_id', user.id);
+      } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
+        assessmentQuery = assessmentQuery.in('user_id', filters.selectedStudents);
+      }
+
+      if (filters.dateRange.from) {
+        assessmentQuery = assessmentQuery.gte('completed_at', filters.dateRange.from.toISOString());
+      }
+      if (filters.dateRange.to) {
+        assessmentQuery = assessmentQuery.lte('completed_at', filters.dateRange.to.toISOString());
+      }
+
+      const { data: assessmentData, error: assessmentError } = await assessmentQuery;
+      if (assessmentError) throw assessmentError;
+
       // Fetch attendance statistics
       let attendanceQuery = supabase
         .from('lesson_attendance')
@@ -118,30 +122,36 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
           lesson:lessons(start_time, subject)
         `);
 
-      if (userRole === 'student' && studentId) {
-        attendanceQuery = attendanceQuery.eq('student_id', studentId);
-      } else if (userRole === 'parent' && studentIds.length > 0) {
+      if (studentIds.length > 0) {
         attendanceQuery = attendanceQuery.in('student_id', studentIds);
-      } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
-        attendanceQuery = attendanceQuery.in('student_id', filters.selectedStudents.map(id => parseInt(id)));
       }
 
       const { data: attendanceData, error: attendanceError } = await attendanceQuery;
       if (attendanceError) throw attendanceError;
 
-      // Calculate statistics
+      // Calculate homework statistics
       const totalHomework = homeworkData?.length || 0;
       const averageScore = totalHomework > 0 
         ? Math.round(homeworkData!.reduce((sum, hw) => sum + hw.percentage_score, 0) / totalHomework)
         : 0;
 
+      // Calculate assessment statistics
+      const totalAssessments = assessmentData?.length || 0;
+      const averageAssessmentScore = totalAssessments > 0
+        ? Math.round(assessmentData!.reduce((sum, assessment) => {
+            const percentage = (assessment.total_marks_achieved / assessment.total_marks_available) * 100;
+            return sum + percentage;
+          }, 0) / totalAssessments)
+        : 0;
+
+      // Calculate attendance statistics
       const totalLessons = attendanceData?.length || 0;
       const attendedLessons = attendanceData?.filter(a => a.attendance_status === 'present').length || 0;
       const attendanceRate = totalLessons > 0 
         ? Math.round((attendedLessons / totalLessons) * 100)
         : 0;
 
-      // Calculate improvement trend (comparing first half vs second half of data)
+      // Calculate homework improvement trend
       let improvementTrend = 0;
       if (homeworkData && homeworkData.length >= 4) {
         const midpoint = Math.floor(homeworkData.length / 2);
@@ -154,11 +164,34 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         improvementTrend = Math.round(secondHalfAvg - firstHalfAvg);
       }
 
+      // Calculate assessment improvement trend
+      let assessmentImprovementTrend = 0;
+      if (assessmentData && assessmentData.length >= 4) {
+        const midpoint = Math.floor(assessmentData.length / 2);
+        const firstHalf = assessmentData.slice(0, midpoint);
+        const secondHalf = assessmentData.slice(midpoint);
+        
+        const firstHalfAvg = firstHalf.reduce((sum, assessment) => {
+          const percentage = (assessment.total_marks_achieved / assessment.total_marks_available) * 100;
+          return sum + percentage;
+        }, 0) / firstHalf.length;
+        
+        const secondHalfAvg = secondHalf.reduce((sum, assessment) => {
+          const percentage = (assessment.total_marks_achieved / assessment.total_marks_available) * 100;
+          return sum + percentage;
+        }, 0) / secondHalf.length;
+        
+        assessmentImprovementTrend = Math.round(secondHalfAvg - firstHalfAvg);
+      }
+
       setStats({
         averageScore,
         attendanceRate,
         totalHomework,
-        improvementTrend
+        improvementTrend,
+        averageAssessmentScore,
+        totalAssessments,
+        assessmentImprovementTrend
       });
     } catch (error) {
       console.error('Error fetching summary stats:', error);
@@ -170,8 +203,8 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i} className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
             <CardContent className="p-6">
               <div className="animate-pulse">
@@ -187,11 +220,18 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
   const statCards = [
     {
-      title: "Average Score",
+      title: "Homework Average",
       value: `${stats.averageScore}%`,
       icon: BookOpen,
       color: "text-blue-600",
       bgColor: "bg-blue-50"
+    },
+    {
+      title: "Assessment Average",
+      value: `${stats.averageAssessmentScore}%`,
+      icon: Brain,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
     },
     {
       title: "Attendance Rate",
@@ -204,20 +244,27 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       title: "Total Homework",
       value: stats.totalHomework.toString(),
       icon: BookOpen,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
     },
     {
-      title: "Improvement",
-      value: `${stats.improvementTrend > 0 ? '+' : ''}${stats.improvementTrend}%`,
-      icon: stats.improvementTrend >= 0 ? TrendingUp : TrendingDown,
-      color: stats.improvementTrend >= 0 ? "text-green-600" : "text-red-600",
-      bgColor: stats.improvementTrend >= 0 ? "bg-green-50" : "bg-red-50"
+      title: "Total Assessments",
+      value: stats.totalAssessments.toString(),
+      icon: Brain,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50"
+    },
+    {
+      title: "Overall Improvement",
+      value: `${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) > 0 ? '+' : ''}${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2)}%`,
+      icon: Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? TrendingUp : TrendingDown,
+      color: Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "text-green-600" : "text-red-600",
+      bgColor: Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "bg-green-50" : "bg-red-50"
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
       {statCards.map((card, index) => (
         <Card key={index} className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200 group">
           <CardContent className="p-6">

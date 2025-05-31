@@ -5,100 +5,76 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Filter, X, Users } from 'lucide-react';
+import { CalendarIcon, Filter, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface ProgressFiltersProps {
   filters: {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
     selectedSubjects: string[];
-    selectedChild: string;
   };
   onFiltersChange: (filters: any) => void;
   userRole: string;
 }
 
-interface Student {
-  id: number;
-  first_name: string;
-  last_name: string;
-}
-
-interface Child {
-  id: number;
+interface User {
+  id: string;
   first_name: string;
   last_name: string;
 }
 
 const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersChange, userRole }) => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [children, setChildren] = useState<Child[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
-  const { parentProfile } = useAuth();
 
   useEffect(() => {
     if (userRole === 'owner') {
-      fetchStudents();
-    }
-    if (userRole === 'parent') {
-      fetchChildren();
+      fetchUsers();
     }
     fetchSubjects();
-  }, [userRole, parentProfile]);
+  }, [userRole]);
 
-  const fetchStudents = async () => {
+  const fetchUsers = async () => {
     try {
       const { data, error } = await supabase
-        .from('students')
+        .from('profiles')
         .select('id, first_name, last_name')
         .order('first_name');
 
       if (error) throw error;
-      setStudents(data || []);
+      setUsers(data || []);
     } catch (error) {
-      console.error('Error fetching students:', error);
-      toast.error('Failed to load students');
-    }
-  };
-
-  const fetchChildren = async () => {
-    if (!parentProfile) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('id, first_name, last_name')
-        .eq('parent_id', parentProfile.id)
-        .order('first_name');
-
-      if (error) throw error;
-      setChildren(data || []);
-      
-      // Auto-select single child
-      if (data && data.length === 1) {
-        onFiltersChange({ selectedChild: data[0].id.toString() });
-      }
-    } catch (error) {
-      console.error('Error fetching children:', error);
-      toast.error('Failed to load children');
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
     }
   };
 
   const fetchSubjects = async () => {
     try {
-      const { data, error } = await supabase
+      // Get subjects from lessons
+      const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
         .select('subject')
         .not('subject', 'is', null);
 
-      if (error) throw error;
+      if (lessonError) throw lessonError;
+
+      // Get subjects from assessments
+      const { data: assessmentData, error: assessmentError } = await supabase
+        .from('ai_assessments')
+        .select('subject')
+        .not('subject', 'is', null);
+
+      if (assessmentError) throw assessmentError;
       
-      const uniqueSubjects = [...new Set(data?.map(l => l.subject).filter(Boolean))];
+      const lessonSubjects = lessonData?.map(l => l.subject).filter(Boolean) || [];
+      const assessmentSubjects = assessmentData?.map(a => a.subject).filter(Boolean) || [];
+      const uniqueSubjects = [...new Set([...lessonSubjects, ...assessmentSubjects])];
+      
       setSubjects(uniqueSubjects);
     } catch (error) {
       console.error('Error fetching subjects:', error);
@@ -110,8 +86,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     onFiltersChange({
       dateRange: { from: null, to: null },
       selectedStudents: [],
-      selectedSubjects: [],
-      selectedChild: 'all'
+      selectedSubjects: []
     });
   };
 
@@ -119,10 +94,9 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     filters.dateRange.from || 
     filters.dateRange.to || 
     filters.selectedStudents.length > 0 || 
-    filters.selectedSubjects.length > 0 ||
-    (userRole === 'parent' && filters.selectedChild !== 'all');
+    filters.selectedSubjects.length > 0;
 
-  if (userRole === 'student') {
+  if (userRole === 'student' || userRole === 'parent') {
     return (
       <Card>
         <CardHeader>
@@ -287,35 +261,10 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
             </Popover>
           </div>
 
-          {/* Child Filter - Only for parents */}
-          {userRole === 'parent' && (
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium text-gray-700">Child</label>
-              <Select
-                value={filters.selectedChild}
-                onValueChange={(value) => 
-                  onFiltersChange({ selectedChild: value })
-                }
-              >
-                <SelectTrigger className="w-[200px] border-gray-200 hover:bg-gray-50">
-                  <SelectValue placeholder="Select child" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All children</SelectItem>
-                  {children.map(child => (
-                    <SelectItem key={child.id} value={child.id.toString()}>
-                      {child.first_name} {child.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Student Filter - Only for owners */}
+          {/* User Filter - Only for owners */}
           {userRole === 'owner' && (
             <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium text-gray-700">Students</label>
+              <label className="text-sm font-medium text-gray-700">Users</label>
               <Select
                 value={filters.selectedStudents[0] || "all"}
                 onValueChange={(value) => 
@@ -325,13 +274,13 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                 }
               >
                 <SelectTrigger className="w-[200px] border-gray-200 hover:bg-gray-50">
-                  <SelectValue placeholder="All students" />
+                  <SelectValue placeholder="All users" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All students</SelectItem>
-                  {students.map(student => (
-                    <SelectItem key={student.id} value={student.id.toString()}>
-                      {student.first_name} {student.last_name}
+                  <SelectItem value="all">All users</SelectItem>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.first_name} {user.last_name}
                     </SelectItem>
                   ))}
                 </SelectContent>

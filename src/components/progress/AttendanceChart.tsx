@@ -12,7 +12,6 @@ interface AttendanceChartProps {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
     selectedSubjects: string[];
-    selectedChild: string;
   };
   userRole: string;
 }
@@ -27,11 +26,11 @@ interface AttendanceData {
 const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) => {
   const [data, setData] = useState<AttendanceData[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, parentProfile } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchAttendanceData();
-  }, [filters, user, userRole, parentProfile]);
+  }, [filters, user, userRole]);
 
   const fetchAttendanceData = async () => {
     if (!user) return;
@@ -73,41 +72,19 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
         }
       }
 
-      // Filter by parent's children for parent role
-      if (userRole === 'parent' && parentProfile) {
-        const { data: childrenData } = await supabase
-          .from('students')
-          .select('id')
-          .eq('parent_id', parentProfile.id);
-
-        if (childrenData && childrenData.length > 0) {
-          let childrenIds = childrenData.map(child => child.id);
-          
-          // If a specific child is selected, filter to just that child
-          if (filters.selectedChild !== 'all') {
-            const selectedChildId = parseInt(filters.selectedChild);
-            childrenIds = childrenIds.filter(id => id === selectedChildId);
-          }
-          
-          if (childrenIds.length > 0) {
-            query = query.in('student_id', childrenIds);
-          } else {
-            setData([]);
-            setLoading(false);
-            return;
-          }
-        } else {
-          console.log('No children found for parent:', parentProfile.id);
-          setData([]);
-          setLoading(false);
-          return;
-        }
-      }
-
       // Apply owner filters
       if (userRole === 'owner') {
         if (filters.selectedStudents.length > 0) {
-          query = query.in('student_id', filters.selectedStudents.map(id => parseInt(id)));
+          // Convert user IDs to student IDs for attendance filtering
+          const { data: studentData } = await supabase
+            .from('students')
+            .select('id, user_id')
+            .in('user_id', filters.selectedStudents);
+
+          if (studentData && studentData.length > 0) {
+            const studentIds = studentData.map(s => s.id);
+            query = query.in('student_id', studentIds);
+          }
         }
       }
 
@@ -217,7 +194,6 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
         <CardTitle className="font-playfair text-xl text-gray-900">Attendance Tracking</CardTitle>
         <CardDescription className="text-gray-600">
           {userRole === 'owner' ? 'Student attendance rates by week' : 
-           userRole === 'parent' ? 'Your children\'s attendance rates by week' :
            'Your attendance rates by week'}
         </CardDescription>
       </CardHeader>

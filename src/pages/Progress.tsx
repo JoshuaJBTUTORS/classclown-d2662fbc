@@ -5,6 +5,7 @@ import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import ProgressChart from '@/components/progress/ProgressChart';
 import AttendanceChart from '@/components/progress/AttendanceChart';
+import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +16,6 @@ interface ProgressFilters {
   dateRange: { from: Date | null; to: Date | null };
   selectedStudents: string[];
   selectedSubjects: string[];
-  selectedChild: string; // Add selectedChild for parent filtering
 }
 
 const Progress: React.FC = () => {
@@ -23,8 +23,7 @@ const Progress: React.FC = () => {
   const [filters, setFilters] = useState<ProgressFilters>({
     dateRange: { from: null, to: null },
     selectedStudents: [],
-    selectedSubjects: [],
-    selectedChild: 'all' // Default to all children
+    selectedSubjects: []
   });
 
   const { userRole, user } = useAuth();
@@ -37,7 +36,7 @@ const Progress: React.FC = () => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  // Check if user has access to progress tracking - now includes parents
+  // Check if user has access to progress tracking
   if (userRole !== 'student' && userRole !== 'owner' && userRole !== 'parent') {
     return (
       <div className="flex min-h-screen bg-background">
@@ -60,7 +59,7 @@ const Progress: React.FC = () => {
 
   const getPageTitle = () => {
     if (userRole === 'parent') {
-      return "Your Children's Progress";
+      return "Your Progress";
     } else if (userRole === 'student') {
       return "Your Progress";
     } else {
@@ -70,9 +69,9 @@ const Progress: React.FC = () => {
 
   const getSubtitle = () => {
     if (userRole === 'parent') {
-      return "Track your children's homework and attendance progress";
+      return "Track your homework, attendance, and assessment progress";
     } else if (userRole === 'student') {
-      return "View your homework and attendance progress";
+      return "View your homework, attendance, and assessment progress";
     } else {
       return "Track student progress and performance analytics";
     }
@@ -101,13 +100,18 @@ const Progress: React.FC = () => {
               userRole={userRole}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <ProgressChart 
                 filters={filters}
                 userRole={userRole}
               />
               
               <AttendanceChart 
+                filters={filters}
+                userRole={userRole}
+              />
+
+              <AssessmentProgressChart 
                 filters={filters}
                 userRole={userRole}
               />

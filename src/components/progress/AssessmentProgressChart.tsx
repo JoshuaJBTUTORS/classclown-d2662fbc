@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -5,9 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-import { BookOpen } from 'lucide-react';
+import { Brain } from 'lucide-react';
 
-interface ProgressChartProps {
+interface AssessmentProgressChartProps {
   filters: {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
@@ -16,99 +17,84 @@ interface ProgressChartProps {
   userRole: string;
 }
 
-interface HomeworkScore {
+interface AssessmentScore {
   date: string;
   percentage: number;
   subject: string;
-  homework_title: string;
+  assessment_title: string;
   student_name?: string;
 }
 
-const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
-  const [data, setData] = useState<HomeworkScore[]>([]);
+const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filters, userRole }) => {
+  const [data, setData] = useState<AssessmentScore[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchHomeworkProgress();
+    fetchAssessmentProgress();
   }, [filters, user, userRole]);
 
-  const fetchHomeworkProgress = async () => {
+  const fetchAssessmentProgress = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
       let query = supabase
-        .from('homework_submissions')
+        .from('assessment_sessions')
         .select(`
-          percentage_score,
-          submitted_at,
-          homework:homework(
+          completed_at,
+          total_marks_achieved,
+          total_marks_available,
+          user_id,
+          assessment:ai_assessments(
             title,
-            lesson:lessons(
-              subject,
-              title
-            )
+            subject
           ),
-          student:students(
-            id,
+          profiles(
             first_name,
             last_name
           )
         `)
-        .not('percentage_score', 'is', null)
-        .order('submitted_at', { ascending: true });
+        .eq('status', 'completed')
+        .not('completed_at', 'is', null)
+        .not('total_marks_available', 'is', null)
+        .gt('total_marks_available', 0)
+        .order('completed_at', { ascending: true });
 
-      // Filter by student for student role
-      if (userRole === 'student') {
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('id')
-          .eq('email', user.email)
-          .maybeSingle();
-
-        if (studentData) {
-          query = query.eq('student_id', studentData.id);
-        }
+      // Filter by user for students and parents
+      if (userRole === 'student' || userRole === 'parent') {
+        query = query.eq('user_id', user.id);
       }
 
       // Apply owner filters
-      if (userRole === 'owner') {
-        if (filters.selectedStudents.length > 0) {
-          // Convert user IDs to student IDs for homework filtering
-          const { data: studentData } = await supabase
-            .from('students')
-            .select('id, user_id')
-            .in('user_id', filters.selectedStudents);
-
-          if (studentData && studentData.length > 0) {
-            const studentIds = studentData.map(s => s.id);
-            query = query.in('student_id', studentIds);
-          }
-        }
+      if (userRole === 'owner' && filters.selectedStudents.length > 0) {
+        query = query.in('user_id', filters.selectedStudents);
       }
 
       // Apply date range filter
       if (filters.dateRange.from) {
-        query = query.gte('submitted_at', filters.dateRange.from.toISOString());
+        query = query.gte('completed_at', filters.dateRange.from.toISOString());
       }
       if (filters.dateRange.to) {
-        query = query.lte('submitted_at', filters.dateRange.to.toISOString());
+        query = query.lte('completed_at', filters.dateRange.to.toISOString());
       }
 
-      const { data: submissions, error } = await query;
+      const { data: sessions, error } = await query;
 
       if (error) throw error;
 
-      const chartData = submissions?.map(submission => ({
-        date: format(parseISO(submission.submitted_at), 'MMM dd'),
-        percentage: submission.percentage_score,
-        subject: submission.homework.lesson.subject || 'General',
-        homework_title: submission.homework.title,
-        student_name: userRole === 'owner' 
-          ? `${submission.student.first_name} ${submission.student.last_name}`
-          : undefined
-      })) || [];
+      const chartData = sessions?.map(session => {
+        const percentage = Math.round((session.total_marks_achieved / session.total_marks_available) * 100);
+        return {
+          date: format(parseISO(session.completed_at), 'MMM dd'),
+          percentage,
+          subject: session.assessment?.subject || 'General',
+          assessment_title: session.assessment?.title || 'Assessment',
+          student_name: userRole === 'owner' 
+            ? `${session.profiles?.first_name || ''} ${session.profiles?.last_name || ''}`.trim()
+            : undefined
+        };
+      }) || [];
 
       // Filter by subject if specified
       const filteredData = filters.selectedSubjects.length > 0
@@ -117,8 +103,8 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
 
       setData(filteredData);
     } catch (error) {
-      console.error('Error fetching homework progress:', error);
-      toast.error('Failed to load homework progress');
+      console.error('Error fetching assessment progress:', error);
+      toast.error('Failed to load assessment progress');
     } finally {
       setLoading(false);
     }
@@ -128,11 +114,11 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-[#e94b7f]">
+        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-[#8b5cf6]">
           <p className="font-semibold text-gray-900 mb-2">{label}</p>
-          <p className="text-[#e94b7f] font-medium">Score: {data.percentage}%</p>
+          <p className="text-[#8b5cf6] font-medium">Score: {data.percentage}%</p>
           <p className="text-sm text-gray-600 mt-1">Subject: {data.subject}</p>
-          <p className="text-sm text-gray-600">{data.homework_title}</p>
+          <p className="text-sm text-gray-600">{data.assessment_title}</p>
           {data.student_name && (
             <p className="text-sm text-gray-600">Student: {data.student_name}</p>
           )}
@@ -146,12 +132,12 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
     return (
       <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader className="pb-4">
-          <CardTitle className="font-playfair text-xl text-gray-900">Homework Progress</CardTitle>
-          <CardDescription className="text-gray-600">Loading homework scores...</CardDescription>
+          <CardTitle className="font-playfair text-xl text-gray-900">Assessment Progress</CardTitle>
+          <CardDescription className="text-gray-600">Loading assessment scores...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-80 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e94b7f]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8b5cf6]"></div>
           </div>
         </CardContent>
       </Card>
@@ -161,10 +147,10 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   return (
     <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
       <CardHeader className="pb-4">
-        <CardTitle className="font-playfair text-xl text-gray-900">Homework Progress</CardTitle>
+        <CardTitle className="font-playfair text-xl text-gray-900">Assessment Progress</CardTitle>
         <CardDescription className="text-gray-600">
-          {userRole === 'owner' ? 'Student homework scores over time' : 
-           'Your homework scores over time'}
+          {userRole === 'owner' ? 'Student assessment scores over time' : 
+           'Your assessment scores over time'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -191,18 +177,18 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
                 <Line 
                   type="monotone" 
                   dataKey="percentage" 
-                  stroke="#e94b7f" 
+                  stroke="#8b5cf6" 
                   strokeWidth={3}
-                  dot={{ fill: '#e94b7f', strokeWidth: 2, r: 5 }}
-                  activeDot={{ r: 7, stroke: '#e94b7f', strokeWidth: 2, fill: '#fff' }}
+                  dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 5 }}
+                  activeDot={{ r: 7, stroke: '#8b5cf6', strokeWidth: 2, fill: '#fff' }}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">
-                <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-400">No homework data available</p>
+                <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-400">No assessment data available</p>
                 <p className="text-sm text-gray-400 mt-1">for the selected filters</p>
               </div>
             </div>
@@ -213,4 +199,4 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   );
 };
 
-export default ProgressChart;
+export default AssessmentProgressChart;
