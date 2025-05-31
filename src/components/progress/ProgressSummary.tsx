@@ -48,11 +48,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
   };
 
   const fetchHomeworkAverage = async () => {
-    let query = supabase
-      .from('homework_submissions')
-      .select('percentage_score, student:students(id, first_name, last_name)')
-      .not('percentage_score', 'is', null);
-
     if (userRole === 'student') {
       const { data: studentData } = await supabase
         .from('students')
@@ -61,8 +56,20 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .maybeSingle();
 
       if (studentData) {
-        query = query.eq('student_id', studentData.id);
+        const { data: submissions } = await supabase
+          .from('homework_submissions')
+          .select('percentage_score, student:students(id, first_name, last_name)')
+          .eq('student_id', studentData.id)
+          .not('percentage_score', 'is', null);
+
+        if (submissions && submissions.length > 0) {
+          const average = submissions.reduce((sum, sub) => sum + sub.percentage_score, 0) / submissions.length;
+          setHomeworkAverage(Math.round(average));
+        } else {
+          setHomeworkAverage(0);
+        }
       }
+      return;
     }
 
     if (userRole === 'parent' && parentProfile) {
@@ -72,34 +79,64 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        const validUserIds: string[] = childrenData
-          .map(child => child.user_id)
-          .filter((userId): userId is string => userId !== null);
+        let targetUserIds: string[] = [];
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
           if (selectedChild?.user_id) {
-            const selectedUserIds: string[] = [selectedChild.user_id];
-            query = query.in('user_id', selectedUserIds);
+            targetUserIds = [selectedChild.user_id];
           } else {
             setHomeworkAverage(0);
             return;
           }
-        } else if (validUserIds.length > 0) {
-          query = query.in('user_id', validUserIds);
+        } else {
+          targetUserIds = childrenData
+            .map(child => child.user_id)
+            .filter((userId): userId is string => userId !== null);
+        }
+
+        if (targetUserIds.length > 0) {
+          const { data: submissions } = await supabase
+            .from('homework_submissions')
+            .select('percentage_score, student:students(id, first_name, last_name)')
+            .in('user_id', targetUserIds)
+            .not('percentage_score', 'is', null);
+
+          if (submissions && submissions.length > 0) {
+            const average = submissions.reduce((sum, sub) => sum + sub.percentage_score, 0) / submissions.length;
+            setHomeworkAverage(Math.round(average));
+          } else {
+            setHomeworkAverage(0);
+          }
         } else {
           setHomeworkAverage(0);
-          return;
         }
       }
+      return;
     }
 
     if (userRole === 'owner' && filters.selectedStudents.length > 0) {
-      query = query.in('student_id', filters.selectedStudents.map(id => parseInt(id)));
+      const { data: submissions } = await supabase
+        .from('homework_submissions')
+        .select('percentage_score, student:students(id, first_name, last_name)')
+        .in('student_id', filters.selectedStudents.map(id => parseInt(id)))
+        .not('percentage_score', 'is', null);
+
+      if (submissions && submissions.length > 0) {
+        const average = submissions.reduce((sum, sub) => sum + sub.percentage_score, 0) / submissions.length;
+        setHomeworkAverage(Math.round(average));
+      } else {
+        setHomeworkAverage(0);
+      }
+      return;
     }
 
-    const { data: submissions } = await query;
+    // Default case
+    const { data: submissions } = await supabase
+      .from('homework_submissions')
+      .select('percentage_score, student:students(id, first_name, last_name)')
+      .not('percentage_score', 'is', null);
     
     if (submissions && submissions.length > 0) {
       const average = submissions.reduce((sum, sub) => sum + sub.percentage_score, 0) / submissions.length;
@@ -176,19 +213,34 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
   };
 
   const fetchAIAssessmentAverage = async () => {
-    let query = supabase
-      .from('assessment_sessions')
-      .select(`
-        total_marks_achieved,
-        total_marks_available,
-        user_id,
-        student:students(id, first_name, last_name)
-      `)
-      .eq('status', 'completed')
-      .not('completed_at', 'is', null);
-
     if (userRole === 'student') {
-      query = query.eq('user_id', user.id);
+      const { data: sessions } = await supabase
+        .from('assessment_sessions')
+        .select(`
+          total_marks_achieved,
+          total_marks_available,
+          user_id,
+          student:students(id, first_name, last_name)
+        `)
+        .eq('status', 'completed')
+        .eq('user_id', user.id)
+        .not('completed_at', 'is', null);
+
+      if (sessions && sessions.length > 0) {
+        const validSessions = sessions.filter(s => s.total_marks_available > 0);
+        if (validSessions.length > 0) {
+          const totalPercentage = validSessions.reduce((sum, session) => {
+            return sum + (session.total_marks_achieved / session.total_marks_available) * 100;
+          }, 0);
+          setAiAssessmentAverage(Math.round(totalPercentage / validSessions.length));
+        } else {
+          setAiAssessmentAverage(0);
+        }
+      } else {
+        setAiAssessmentAverage(0);
+      }
+      setHasLockedContent(false);
+      return;
     }
 
     if (userRole === 'parent' && parentProfile) {
@@ -198,35 +250,75 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        const validUserIds: string[] = childrenData
-          .map(child => child.user_id)
-          .filter((userId): userId is string => userId !== null);
+        let targetUserIds: string[] = [];
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
           if (selectedChild?.user_id) {
-            const selectedUserIds: string[] = [selectedChild.user_id];
-            query = query.in('user_id', selectedUserIds);
+            targetUserIds = [selectedChild.user_id];
           } else {
             setAiAssessmentAverage(0);
             setHasLockedContent(false);
             return;
           }
-        } else if (validUserIds.length > 0) {
-          query = query.in('user_id', validUserIds);
+        } else {
+          targetUserIds = childrenData
+            .map(child => child.user_id)
+            .filter((userId): userId is string => userId !== null);
+        }
+
+        if (targetUserIds.length > 0) {
+          const { data: sessions } = await supabase
+            .from('assessment_sessions')
+            .select(`
+              total_marks_achieved,
+              total_marks_available,
+              user_id,
+              student:students(id, first_name, last_name)
+            `)
+            .eq('status', 'completed')
+            .in('user_id', targetUserIds)
+            .not('completed_at', 'is', null);
+
+          if (sessions && sessions.length > 0) {
+            const hasLocked = userRole !== 'owner' && userRole !== 'admin';
+            setHasLockedContent(hasLocked);
+
+            const validSessions = sessions.filter(s => s.total_marks_available > 0);
+            if (validSessions.length > 0) {
+              const totalPercentage = validSessions.reduce((sum, session) => {
+                return sum + (session.total_marks_achieved / session.total_marks_available) * 100;
+              }, 0);
+              setAiAssessmentAverage(Math.round(totalPercentage / validSessions.length));
+            } else {
+              setAiAssessmentAverage(0);
+            }
+          } else {
+            setAiAssessmentAverage(0);
+            setHasLockedContent(false);
+          }
         } else {
           setAiAssessmentAverage(0);
           setHasLockedContent(false);
-          return;
         }
       }
+      return;
     }
 
-    const { data: sessions } = await query;
+    // Default case for owners and others
+    const { data: sessions } = await supabase
+      .from('assessment_sessions')
+      .select(`
+        total_marks_achieved,
+        total_marks_available,
+        user_id,
+        student:students(id, first_name, last_name)
+      `)
+      .eq('status', 'completed')
+      .not('completed_at', 'is', null);
     
     if (sessions && sessions.length > 0) {
-      // For demo purposes, simulate some locked content for non-owners
       const hasLocked = userRole !== 'owner' && userRole !== 'admin';
       setHasLockedContent(hasLocked);
 
