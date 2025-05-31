@@ -26,29 +26,62 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   // This renders the appropriate content based on content_type
   const renderContent = () => {
     if (isLoading) {
-      return <div className="p-8 text-center">Loading content...</div>;
+      return (
+        <div className="p-8 text-center bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="animate-pulse">
+            <div className="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-32 mx-auto"></div>
+          </div>
+        </div>
+      );
     }
     
     switch (lesson.content_type) {
       case 'video':
         return (
-          <VideoEmbed 
-            src={lesson.content_url || ''} 
-            title={lesson.title}
-          />
+          <div className="relative bg-black rounded-lg overflow-hidden">
+            <VideoEmbed 
+              src={lesson.content_url || ''} 
+              title={lesson.title}
+              className="rounded-lg overflow-hidden shadow-inner"
+            />
+          </div>
         );
       case 'quiz':
-        return <QuizEmbed src={lesson.content_url || ''} title={lesson.title} />;
+        return (
+          <div className="bg-white rounded-lg overflow-hidden">
+            <QuizEmbed 
+              src={lesson.content_url || ''} 
+              title={lesson.title} 
+              className="rounded-lg overflow-hidden"
+            />
+          </div>
+        );
       case 'ai-assessment':
-        return <AIAssessmentViewer assessmentId={lesson.content_url || ''} embedded={true} />;
+        return (
+          <div className="bg-white rounded-lg overflow-hidden">
+            <AIAssessmentViewer 
+              assessmentId={lesson.content_url || ''} 
+              embedded={true} 
+            />
+          </div>
+        );
       case 'text':
         return (
-          <div className="prose max-w-none p-6">
-            <div dangerouslySetInnerHTML={{ __html: lesson.content_text || '' }} />
+          <div className="bg-white rounded-lg">
+            <div className="prose max-w-none p-8 leading-relaxed">
+              <div dangerouslySetInnerHTML={{ __html: lesson.content_text || '' }} />
+            </div>
           </div>
         );
       default:
-        return <div>Unsupported content type: {lesson.content_type}</div>;
+        return (
+          <div className="bg-white p-8 text-center rounded-lg">
+            <div className="text-gray-500">
+              Unsupported content type: {lesson.content_type}
+            </div>
+          </div>
+        );
     }
   };
 

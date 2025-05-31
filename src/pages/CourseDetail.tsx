@@ -196,15 +196,17 @@ const CourseDetail: React.FC = () => {
   if (courseLoading || modulesLoading) {
     console.log('⏳ Still loading course or modules...');
     return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-1">
-              <div className="h-96 bg-gray-200 rounded"></div>
-            </div>
-            <div className="lg:col-span-3">
-              <div className="h-96 bg-gray-200 rounded"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+        <div className="container mx-auto py-8 px-4">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-1">
+                <div className="h-96 bg-gray-200 rounded-xl"></div>
+              </div>
+              <div className="lg:col-span-3">
+                <div className="h-96 bg-gray-200 rounded-xl"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -215,16 +217,22 @@ const CourseDetail: React.FC = () => {
   if (courseError) {
     console.error('💥 Course error details:', courseError);
     return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Error loading course</h1>
-        <p className="text-gray-600 mb-4">
-          {courseError instanceof Error ? courseError.message : 'An unknown error occurred'}
-        </p>
-        <p className="text-sm text-gray-500 mb-6">Course ID: {courseId}</p>
-        <Button onClick={() => navigate('/learning-hub')} variant="outline">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Learning Hub
-        </Button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+        <div className="container mx-auto py-8 px-4 text-center">
+          <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-8">
+              <h1 className="text-2xl font-bold text-red-600 mb-4">Error loading course</h1>
+              <p className="text-gray-600 mb-4">
+                {courseError instanceof Error ? courseError.message : 'An unknown error occurred'}
+              </p>
+              <p className="text-sm text-gray-500 mb-6">Course ID: {courseId}</p>
+              <Button onClick={() => navigate('/learning-hub')} variant="outline" className="hover:bg-gray-50">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Learning Hub
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -232,16 +240,22 @@ const CourseDetail: React.FC = () => {
   if (!course) {
     console.error('❌ No course data received');
     return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Course not found</h1>
-        <p className="text-gray-600 mb-4">
-          The course you're looking for doesn't exist or has been removed.
-        </p>
-        <p className="text-sm text-gray-500 mb-6">Course ID: {courseId}</p>
-        <Button onClick={() => navigate('/learning-hub')} variant="outline">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Learning Hub
-        </Button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+        <div className="container mx-auto py-8 px-4 text-center">
+          <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-8">
+              <h1 className="text-2xl font-bold text-gray-800 mb-4">Course not found</h1>
+              <p className="text-gray-600 mb-4">
+                The course you're looking for doesn't exist or has been removed.
+              </p>
+              <p className="text-sm text-gray-500 mb-6">Course ID: {courseId}</p>
+              <Button onClick={() => navigate('/learning-hub')} variant="outline" className="hover:bg-gray-50">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Learning Hub
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -251,16 +265,17 @@ const CourseDetail: React.FC = () => {
   console.log('- Can access full course:', canAccessFullCourse);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Course Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto py-6 px-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+      {/* Course Header - Made more compact and sleek */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
+        <div className="container mx-auto py-4 px-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
               <Button 
                 onClick={() => navigate('/learning-hub')} 
                 variant="ghost" 
-                className="text-gray-600 hover:text-gray-800"
+                size="sm"
+                className="text-gray-600 hover:text-gray-800 hover:bg-white/50 transition-all duration-200"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Learning Hub
@@ -270,7 +285,8 @@ const CourseDetail: React.FC = () => {
                 <Button 
                   onClick={() => navigate(`/course/${courseId}/edit`)} 
                   variant="outline"
-                  className="text-gray-600 hover:text-gray-800"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-white/50 hover:border-gray-300 transition-all duration-200"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Course
@@ -281,18 +297,20 @@ const CourseDetail: React.FC = () => {
           
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{course.title}</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+                {course.title}
+              </h1>
               {course.description && (
-                <p className="text-gray-600 text-lg">{course.description}</p>
+                <p className="text-gray-600 text-base lg:text-lg leading-relaxed">{course.description}</p>
               )}
-              <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-3 mt-3">
                 {course.subject && (
-                  <Badge variant="outline" className="text-sm">
+                  <Badge variant="outline" className="text-xs border-gray-300 bg-white/50">
                     {course.subject}
                   </Badge>
                 )}
                 {course.difficulty_level && (
-                  <Badge variant="outline" className="text-sm">
+                  <Badge variant="outline" className="text-xs border-gray-300 bg-white/50">
                     {course.difficulty_level}
                   </Badge>
                 )}
@@ -303,16 +321,16 @@ const CourseDetail: React.FC = () => {
             </div>
             
             {!canAccessFullCourse && (
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-col items-end gap-3">
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     £{((course.price || 0) / 100).toFixed(2)}
                   </p>
                   <p className="text-sm text-gray-500">One-time payment</p>
                 </div>
                 <Button 
                   onClick={() => setShowPaymentModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Purchase Course
@@ -333,55 +351,65 @@ const CourseDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content - Fixed height container */}
+      {/* Main Content - Enhanced styling */}
       <div className="container mx-auto py-6 px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 280px)' }}>
-          {/* Sidebar - Fixed height with scrolling */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 240px)' }}>
+          {/* Sidebar - Enhanced with subtle shadow */}
           <div className="lg:col-span-1 h-full overflow-hidden">
-            <CourseSidebar
-              modules={modules}
-              studentProgress={studentProgress}
-              onSelectLesson={handleSelectLesson}
-              currentLessonId={activeLessonId || undefined}
-              isAdmin={hasAdminPrivileges}
-              isPurchased={canAccessFullCourse}
-            />
+            <div className="h-full shadow-lg rounded-xl overflow-hidden">
+              <CourseSidebar
+                modules={modules}
+                studentProgress={studentProgress}
+                onSelectLesson={handleSelectLesson}
+                currentLessonId={activeLessonId || undefined}
+                isAdmin={hasAdminPrivileges}
+                isPurchased={canAccessFullCourse}
+              />
+            </div>
           </div>
 
-          {/* Content Area - Scrollable */}
+          {/* Content Area - Enhanced with modern styling */}
           <div className="lg:col-span-3 h-full overflow-y-auto">
             <div className="space-y-6">
               {activeLesson ? (
                 <>
-                  {/* Content Viewer */}
-                  <ContentViewer 
-                    lesson={activeLesson} 
-                    onContentTypeChange={setContentType}
-                  />
-
-                  {/* Notes Section - only show for video content */}
-                  {contentType === 'video' && user && (
-                    <NotesSection 
-                      courseId={courseId!}
-                      lessonId={activeLesson.id}
+                  {/* Content Viewer - Enhanced with rounded corners and shadow */}
+                  <div className="rounded-xl overflow-hidden shadow-lg">
+                    <ContentViewer 
+                      lesson={activeLesson} 
+                      onContentTypeChange={setContentType}
                     />
+                  </div>
+
+                  {/* Notes Section - Enhanced styling */}
+                  {contentType === 'video' && user && (
+                    <div className="rounded-xl overflow-hidden shadow-lg">
+                      <NotesSection 
+                        courseId={courseId!}
+                        lessonId={activeLesson.id}
+                      />
+                    </div>
                   )}
                 </>
               ) : (
-                <Card className="h-96">
+                <Card className="h-96 shadow-lg border-0 bg-white/80 backdrop-blur-sm rounded-xl">
                   <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
                     {!canAccessFullCourse ? (
                       <>
-                        <Lock className="h-16 w-16 text-gray-300 mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        <div className="relative mb-6">
+                          <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center shadow-inner">
+                            <Lock className="h-8 w-8 text-gray-400" />
+                          </div>
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">
                           Course Locked
                         </h3>
-                        <p className="text-gray-500 mb-6 max-w-md">
+                        <p className="text-gray-500 mb-6 max-w-md leading-relaxed">
                           Purchase this course to access all lessons and unlock your learning potential.
                         </p>
                         <Button 
                           onClick={() => setShowPaymentModal(true)}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
                           Purchase Course
@@ -389,13 +417,13 @@ const CourseDetail: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
                           <ArrowLeft className="h-8 w-8 text-gray-400" />
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">
                           No lesson selected
                         </h3>
-                        <p className="text-gray-500">
+                        <p className="text-gray-500 leading-relaxed">
                           Select a lesson from the course content to start learning
                         </p>
                       </>
