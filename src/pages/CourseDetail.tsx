@@ -352,7 +352,7 @@ const CourseDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content - Enhanced styling */}
+      {/* Main Content - Enhanced styling with subtle gradient background */}
       <div className="container mx-auto py-6 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 180px)' }}>
           {/* Sidebar - Enhanced with subtle shadow */}
@@ -369,9 +369,9 @@ const CourseDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Content Area - Enhanced with modern styling */}
-          <div className="lg:col-span-3 h-full overflow-y-auto">
-            <div className="space-y-6">
+          {/* Content Area - Enhanced with modern styling and subtle gradient */}
+          <div className="lg:col-span-3 h-full overflow-y-auto bg-gradient-to-br from-white/40 via-slate-50/30 to-rose-50/25 backdrop-blur-sm rounded-xl">
+            <div className="space-y-6 p-4">
               {activeLesson ? (
                 <>
                   {/* Content Viewer - Enhanced with rounded corners and shadow */}
