@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -82,7 +81,7 @@ const AIAssessmentProgress: React.FC<AIAssessmentProgressProps> = ({ filters, us
       if (userRole === 'parent' && parentProfile) {
         const { data: childrenData } = await supabase
           .from('students')
-          .select('user_id')
+          .select('id, user_id')
           .eq('parent_id', parentProfile.id);
 
         if (childrenData && childrenData.length > 0) {

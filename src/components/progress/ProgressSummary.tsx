@@ -68,19 +68,24 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     if (userRole === 'parent' && parentProfile) {
       const { data: childrenData } = await supabase
         .from('students')
-        .select('id')
+        .select('id, user_id')
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        let childrenIds = childrenData.map(child => child.id);
+        let childrenUserIds = childrenData.map(child => child.user_id).filter(Boolean);
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
-          childrenIds = childrenIds.filter(id => id === selectedChildId);
+          const selectedChild = childrenData.find(child => child.id === selectedChildId);
+          if (selectedChild?.user_id) {
+            childrenUserIds = [selectedChild.user_id];
+          } else {
+            childrenUserIds = [];
+          }
         }
         
-        if (childrenIds.length > 0) {
-          query = query.in('student_id', childrenIds);
+        if (childrenUserIds.length > 0) {
+          query = query.in('user_id', childrenUserIds);
         } else {
           setHomeworkAverage(0);
           return;
@@ -187,7 +192,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     if (userRole === 'parent' && parentProfile) {
       const { data: childrenData } = await supabase
         .from('students')
-        .select('user_id')
+        .select('id, user_id')
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {

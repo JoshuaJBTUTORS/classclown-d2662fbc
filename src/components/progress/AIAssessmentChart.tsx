@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -74,7 +73,7 @@ const AIAssessmentChart: React.FC<AIAssessmentChartProps> = ({ filters, userRole
       if (userRole === 'parent' && parentProfile) {
         const { data: childrenData } = await supabase
           .from('students')
-          .select('user_id')
+          .select('id, user_id')
           .eq('parent_id', parentProfile.id);
 
         if (childrenData && childrenData.length > 0) {
