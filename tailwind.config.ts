@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -21,7 +20,8 @@ export default {
 		extend: {
 			fontFamily: {
 				playfair: ['Playfair Display', 'serif'],
-				sans: ['Inter', 'sans-serif']
+				sans: ['Helvetica', 'Arial', 'sans-serif'],
+				sidebar: ['Inter', 'sans-serif']
 			},
 			colors: {
 				'logo-white': 'hsl(0, 0%, 98%)', // Adding custom logo-white color
