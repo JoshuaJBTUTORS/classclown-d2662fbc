@@ -80,31 +80,29 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        let targetUserIds: string[] = [];
+        // Build array of valid user IDs with explicit typing
+        const validUserIds: string[] = [];
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
           if (selectedChild?.user_id) {
-            targetUserIds = [selectedChild.user_id];
-          } else {
-            setHomeworkAverage(0);
-            return;
+            validUserIds.push(selectedChild.user_id);
           }
         } else {
-          targetUserIds = childrenData
-            .map(child => child.user_id)
-            .filter((userId): userId is string => userId !== null);
+          childrenData.forEach(child => {
+            if (child.user_id) {
+              validUserIds.push(child.user_id);
+            }
+          });
         }
 
-        if (targetUserIds.length > 0) {
-          // Split the query to avoid type instantiation issues
-          const submissionsQuery = supabase
+        if (validUserIds.length > 0) {
+          const { data: submissions } = await supabase
             .from('homework_submissions')
             .select('percentage_score, student:students(id, first_name, last_name)')
+            .in('user_id', validUserIds)
             .not('percentage_score', 'is', null);
-          
-          const { data: submissions } = await submissionsQuery.in('user_id', targetUserIds as string[]);
 
           if (submissions && submissions.length > 0) {
             const average = submissions.reduce((sum, sub) => sum + sub.percentage_score, 0) / submissions.length;
@@ -254,27 +252,25 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        let targetUserIds: string[] = [];
+        // Build array of valid user IDs with explicit typing
+        const validUserIds: string[] = [];
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
           if (selectedChild?.user_id) {
-            targetUserIds = [selectedChild.user_id];
-          } else {
-            setAiAssessmentAverage(0);
-            setHasLockedContent(false);
-            return;
+            validUserIds.push(selectedChild.user_id);
           }
         } else {
-          targetUserIds = childrenData
-            .map(child => child.user_id)
-            .filter((userId): userId is string => userId !== null);
+          childrenData.forEach(child => {
+            if (child.user_id) {
+              validUserIds.push(child.user_id);
+            }
+          });
         }
 
-        if (targetUserIds.length > 0) {
-          // Split the query to avoid type instantiation issues
-          const sessionsQuery = supabase
+        if (validUserIds.length > 0) {
+          const { data: sessions } = await supabase
             .from('assessment_sessions')
             .select(`
               total_marks_achieved,
@@ -283,12 +279,10 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
               student:students(id, first_name, last_name)
             `)
             .eq('status', 'completed')
+            .in('user_id', validUserIds)
             .not('completed_at', 'is', null);
-          
-          const { data: sessions } = await sessionsQuery.in('user_id', targetUserIds as string[]);
 
           if (sessions && sessions.length > 0) {
-            // Fix the role comparison logic
             const hasLocked = userRole === 'parent';
             setHasLockedContent(hasLocked);
 
@@ -326,7 +320,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       .not('completed_at', 'is', null);
     
     if (sessions && sessions.length > 0) {
-      // Fix the role comparison logic - check if user is NOT owner or admin
       const hasLocked = userRole !== 'owner' && userRole !== 'admin';
       setHasLockedContent(hasLocked);
 
