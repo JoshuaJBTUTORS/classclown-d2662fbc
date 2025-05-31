@@ -200,8 +200,8 @@ const CourseDetail: React.FC = () => {
         <div className="container mx-auto py-8 px-4">
           <div className="animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-1">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              <div className="lg:col-span-2">
                 <div className="h-96 bg-gray-200 rounded-xl"></div>
               </div>
               <div className="lg:col-span-3">
@@ -354,9 +354,9 @@ const CourseDetail: React.FC = () => {
 
       {/* Main Content - Enhanced styling with subtle gradient background */}
       <div className="container mx-auto py-6 px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 180px)' }}>
-          {/* Sidebar - Enhanced with subtle shadow */}
-          <div className="lg:col-span-1 h-full overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6" style={{ height: 'calc(100vh - 180px)' }}>
+          {/* Sidebar - Enhanced with subtle shadow - Now 40% width (2/5 columns) */}
+          <div className="lg:col-span-2 h-full overflow-hidden">
             <div className="h-full shadow-lg rounded-xl overflow-hidden">
               <CourseSidebar
                 modules={modules}
@@ -369,7 +369,7 @@ const CourseDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Content Area - Enhanced with modern styling and subtle gradient */}
+          {/* Content Area - Enhanced with modern styling and subtle gradient - Now 60% width (3/5 columns) */}
           <div className="lg:col-span-3 h-full overflow-y-auto bg-gradient-to-br from-white/40 via-slate-50/30 to-rose-50/25 backdrop-blur-sm rounded-xl">
             <div className="space-y-6 p-4">
               {activeLesson ? (
