@@ -334,10 +334,10 @@ const CourseDetail: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto py-6 px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="container mx-auto py-6 px-4 h-[calc(100vh-300px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 h-full">
             <CourseSidebar
               modules={modules}
               studentProgress={studentProgress}
@@ -349,35 +349,9 @@ const CourseDetail: React.FC = () => {
           </div>
 
           {/* Content Area */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-6 h-full overflow-y-auto">
             {activeLesson ? (
               <>
-                {/* Lesson Header */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        {activeLesson.title}
-                      </h2>
-                      {activeLesson.description && (
-                        <p className="text-gray-600">{activeLesson.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      {activeLesson.is_preview && (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          Preview
-                        </Badge>
-                      )}
-                      {activeLesson.duration_minutes && (
-                        <Badge variant="outline" className="text-sm">
-                          {activeLesson.duration_minutes} min
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
                 {/* Content Viewer */}
                 <ContentViewer 
                   lesson={activeLesson} 

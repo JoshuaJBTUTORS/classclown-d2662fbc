@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Course, CourseModule, CourseLesson, StudentProgress } from '@/types/course';
 import { CourseNote, CreateCourseNoteRequest, UpdateCourseNoteRequest } from '@/types/courseNotes';
@@ -86,10 +87,10 @@ export const learningHubService = {
     
     if (error) throw error;
     
-    // Ensure lessons within each module are sorted by position
+    // Ensure lessons within each module are sorted by position - fix type issue
     const sortedData = data.map(module => ({
       ...module,
-      lessons: module.lessons?.sort((a: CourseLesson, b: CourseLesson) => a.position - b.position) || []
+      lessons: (module.lessons || []).sort((a: any, b: any) => a.position - b.position) as CourseLesson[]
     }));
     
     console.log('📚 getCourseModules - returning sorted data:', sortedData);
