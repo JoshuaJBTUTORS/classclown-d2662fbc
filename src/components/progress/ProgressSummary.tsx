@@ -98,11 +98,13 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         }
 
         if (targetUserIds.length > 0) {
-          const { data: submissions } = await supabase
+          // Split the query to avoid type instantiation issues
+          const submissionsQuery = supabase
             .from('homework_submissions')
             .select('percentage_score, student:students(id, first_name, last_name)')
-            .in('user_id', targetUserIds as string[])
             .not('percentage_score', 'is', null);
+          
+          const { data: submissions } = await submissionsQuery.in('user_id', targetUserIds);
 
           if (submissions && submissions.length > 0) {
             const average = submissions.reduce((sum, sub) => sum + sub.percentage_score, 0) / submissions.length;
@@ -271,7 +273,8 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         }
 
         if (targetUserIds.length > 0) {
-          const { data: sessions } = await supabase
+          // Split the query to avoid type instantiation issues
+          const sessionsQuery = supabase
             .from('assessment_sessions')
             .select(`
               total_marks_achieved,
@@ -280,11 +283,13 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
               student:students(id, first_name, last_name)
             `)
             .eq('status', 'completed')
-            .in('user_id', targetUserIds as string[])
             .not('completed_at', 'is', null);
+          
+          const { data: sessions } = await sessionsQuery.in('user_id', targetUserIds);
 
           if (sessions && sessions.length > 0) {
-            const hasLocked = userRole !== 'owner' && userRole !== 'admin';
+            // Fix the role comparison logic
+            const hasLocked = userRole === 'parent';
             setHasLockedContent(hasLocked);
 
             const validSessions = sessions.filter(s => s.total_marks_available > 0);
@@ -321,6 +326,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       .not('completed_at', 'is', null);
     
     if (sessions && sessions.length > 0) {
+      // Fix the role comparison logic - check if user is NOT owner or admin
       const hasLocked = userRole !== 'owner' && userRole !== 'admin';
       setHasLockedContent(hasLocked);
 
