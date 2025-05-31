@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Video, FileQuestion, LinkIcon, FileText, Brain } from 'lucide-react';
+import { Plus, Edit, Trash2, Video, FileQuestion, LinkIcon, FileText, Brain, Grip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,8 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
   const queryClient = useQueryClient();
   const [isAddingLesson, setIsAddingLesson] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [draggedLessonId, setDraggedLessonId] = useState<string | null>(null);
+  const [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null);
   const [newLesson, setNewLesson] = useState<Partial<CourseLesson>>({
     title: '',
     description: '',
@@ -125,6 +127,26 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
     },
   });
 
+  const reorderLessonsMutation = useMutation({
+    mutationFn: (lessonOrders: { id: string; position: number }[]) => 
+      learningHubService.reorderLessons(moduleId, lessonOrders),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['moduleWithLessons', moduleId, courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      toast({
+        title: "Lessons reordered",
+        description: "Lesson order has been updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error reordering lessons",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateLesson = () => {
     if (!newLesson.title?.trim()) {
       toast({
@@ -181,6 +203,59 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
     if (window.confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
       deleteLessonMutation.mutate(id);
     }
+  };
+
+  const handleLessonDragStart = (e: React.DragEvent, lessonId: string) => {
+    setDraggedLessonId(lessonId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', lessonId);
+  };
+
+  const handleLessonDragOver = (e: React.DragEvent, lessonId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverLessonId(lessonId);
+  };
+
+  const handleLessonDragLeave = () => {
+    setDragOverLessonId(null);
+  };
+
+  const handleLessonDrop = (e: React.DragEvent, targetLessonId: string) => {
+    e.preventDefault();
+    setDragOverLessonId(null);
+    
+    if (!draggedLessonId || draggedLessonId === targetLessonId || !module?.lessons) {
+      setDraggedLessonId(null);
+      return;
+    }
+
+    const draggedIndex = module.lessons.findIndex(l => l.id === draggedLessonId);
+    const targetIndex = module.lessons.findIndex(l => l.id === targetLessonId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedLessonId(null);
+      return;
+    }
+
+    // Create new order
+    const reorderedLessons = [...module.lessons];
+    const [draggedLesson] = reorderedLessons.splice(draggedIndex, 1);
+    reorderedLessons.splice(targetIndex, 0, draggedLesson);
+
+    // Create position updates
+    const lessonOrders = reorderedLessons.map((lesson, index) => ({
+      id: lesson.id,
+      position: index
+    }));
+
+    reorderLessonsMutation.mutate(lessonOrders);
+    setDraggedLessonId(null);
+  };
+
+  const handleLessonDragEnd = () => {
+    setDraggedLessonId(null);
+    setDragOverLessonId(null);
   };
 
   const renderContentTypeIcon = (contentType: string) => {
@@ -382,8 +457,22 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
       ) : (
         <div className="space-y-2">
           {module.lessons.map((lesson) => (
-            <div key={lesson.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md">
+            <div 
+              key={lesson.id} 
+              className={`flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md transition-all duration-200 ${
+                draggedLessonId === lesson.id ? 'opacity-50 scale-95' : ''
+              } ${
+                dragOverLessonId === lesson.id ? 'ring-2 ring-primary ring-offset-1' : ''
+              }`}
+              draggable
+              onDragStart={(e) => handleLessonDragStart(e, lesson.id)}
+              onDragOver={(e) => handleLessonDragOver(e, lesson.id)}
+              onDragLeave={handleLessonDragLeave}
+              onDrop={(e) => handleLessonDrop(e, lesson.id)}
+              onDragEnd={handleLessonDragEnd}
+            >
               <div className="flex items-center">
+                <Grip className="h-4 w-4 mr-2 text-gray-400 cursor-grab active:cursor-grabbing" />
                 {renderContentTypeIcon(lesson.content_type)}
                 <span>{lesson.title}</span>
                 {lesson.duration_minutes > 0 && (

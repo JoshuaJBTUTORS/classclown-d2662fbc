@@ -24,6 +24,8 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
     description: ''
   });
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [draggedModuleId, setDraggedModuleId] = useState<string | null>(null);
+  const [dragOverModuleId, setDragOverModuleId] = useState<string | null>(null);
 
   const { data: modules, isLoading } = useQuery({
     queryKey: ['courseModules', courseId],
@@ -90,6 +92,25 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
     },
   });
 
+  const reorderModulesMutation = useMutation({
+    mutationFn: (moduleOrders: { id: string; position: number }[]) => 
+      learningHubService.reorderModules(courseId, moduleOrders),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courseModules', courseId] });
+      toast({
+        title: "Modules reordered",
+        description: "Module order has been updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error reordering modules",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateModule = () => {
     if (!newModule.title.trim()) {
       toast({
@@ -127,6 +148,59 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
       ...prev,
       [moduleId]: !prev[moduleId]
     }));
+  };
+
+  const handleDragStart = (e: React.DragEvent, moduleId: string) => {
+    setDraggedModuleId(moduleId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', moduleId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, moduleId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverModuleId(moduleId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverModuleId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetModuleId: string) => {
+    e.preventDefault();
+    setDragOverModuleId(null);
+    
+    if (!draggedModuleId || draggedModuleId === targetModuleId || !modules) {
+      setDraggedModuleId(null);
+      return;
+    }
+
+    const draggedIndex = modules.findIndex(m => m.id === draggedModuleId);
+    const targetIndex = modules.findIndex(m => m.id === targetModuleId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedModuleId(null);
+      return;
+    }
+
+    // Create new order
+    const reorderedModules = [...modules];
+    const [draggedModule] = reorderedModules.splice(draggedIndex, 1);
+    reorderedModules.splice(targetIndex, 0, draggedModule);
+
+    // Create position updates
+    const moduleOrders = reorderedModules.map((module, index) => ({
+      id: module.id,
+      position: index
+    }));
+
+    reorderModulesMutation.mutate(moduleOrders);
+    setDraggedModuleId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedModuleId(null);
+    setDragOverModuleId(null);
   };
 
   return (
@@ -186,23 +260,39 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
       ) : (
         <div className="space-y-4">
           {modules?.map((module) => (
-            <Card key={module.id} className="relative">
+            <Card 
+              key={module.id} 
+              className={`relative transition-all duration-200 ${
+                draggedModuleId === module.id ? 'opacity-50 scale-95' : ''
+              } ${
+                dragOverModuleId === module.id ? 'ring-2 ring-primary ring-offset-2' : ''
+              }`}
+              draggable
+              onDragStart={(e) => handleDragStart(e, module.id)}
+              onDragOver={(e) => handleDragOver(e, module.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, module.id)}
+              onDragEnd={handleDragEnd}
+            >
               <CardHeader className="pb-2">
                 <div className="flex justify-between">
-                  {editingModuleId === module.id ? (
-                    <Input
-                      className="font-semibold text-lg"
-                      value={module.title}
-                      onChange={(e) => handleUpdateModule(module.id, { title: e.target.value })}
-                    />
-                  ) : (
-                    <CardTitle className="flex items-center cursor-pointer" onClick={() => toggleModuleExpansion(module.id)}>
-                      {expandedModules[module.id] ? 
-                        <ChevronUp className="h-5 w-5 mr-2" /> : 
-                        <ChevronDown className="h-5 w-5 mr-2" />}
-                      {module.title}
-                    </CardTitle>
-                  )}
+                  <div className="flex items-center flex-1">
+                    <Grip className="h-5 w-5 mr-2 text-gray-400 cursor-grab active:cursor-grabbing" />
+                    {editingModuleId === module.id ? (
+                      <Input
+                        className="font-semibold text-lg"
+                        value={module.title}
+                        onChange={(e) => handleUpdateModule(module.id, { title: e.target.value })}
+                      />
+                    ) : (
+                      <CardTitle className="flex items-center cursor-pointer" onClick={() => toggleModuleExpansion(module.id)}>
+                        {expandedModules[module.id] ? 
+                          <ChevronUp className="h-5 w-5 mr-2" /> : 
+                          <ChevronDown className="h-5 w-5 mr-2" />}
+                        {module.title}
+                      </CardTitle>
+                    )}
+                  </div>
                   <div className="flex space-x-2">
                     {editingModuleId === module.id ? (
                       <Button size="sm" onClick={() => setEditingModuleId(null)}>

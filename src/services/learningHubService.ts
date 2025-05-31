@@ -470,4 +470,49 @@ export const learningHubService = {
     
     if (error) throw error;
   },
+
+  // Reordering methods
+  reorderModules: async (courseId: string, moduleOrders: { id: string; position: number }[]): Promise<void> => {
+    console.log('Reordering modules:', moduleOrders);
+    
+    // Update each module's position
+    const updates = moduleOrders.map(({ id, position }) => 
+      supabase
+        .from('course_modules')
+        .update({ position })
+        .eq('id', id)
+        .eq('course_id', courseId)
+    );
+    
+    const results = await Promise.all(updates);
+    
+    // Check for errors
+    const errors = results.filter(result => result.error);
+    if (errors.length > 0) {
+      console.error('Errors updating module positions:', errors);
+      throw new Error('Failed to reorder modules');
+    }
+  },
+
+  reorderLessons: async (moduleId: string, lessonOrders: { id: string; position: number }[]): Promise<void> => {
+    console.log('Reordering lessons:', lessonOrders);
+    
+    // Update each lesson's position
+    const updates = lessonOrders.map(({ id, position }) => 
+      supabase
+        .from('course_lessons')
+        .update({ position })
+        .eq('id', id)
+        .eq('module_id', moduleId)
+    );
+    
+    const results = await Promise.all(updates);
+    
+    // Check for errors
+    const errors = results.filter(result => result.error);
+    if (errors.length > 0) {
+      console.error('Errors updating lesson positions:', errors);
+      throw new Error('Failed to reorder lessons');
+    }
+  },
 };
