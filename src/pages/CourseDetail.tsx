@@ -266,19 +266,20 @@ const CourseDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-      {/* Course Header - Made more compact and sleek */}
+      {/* Course Header - Compact and sleek */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
-        <div className="container mx-auto py-4 px-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
+        <div className="container mx-auto py-2 px-4">
+          <div className="flex items-center justify-between">
+            {/* Left side - Navigation and course info */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
               <Button 
                 onClick={() => navigate('/learning-hub')} 
                 variant="ghost" 
                 size="sm"
-                className="text-gray-600 hover:text-gray-800 hover:bg-white/50 transition-all duration-200"
+                className="text-gray-600 hover:text-gray-800 hover:bg-white/50 transition-all duration-200 flex-shrink-0"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Learning Hub
+                Back
               </Button>
               
               {hasAdminPrivileges && (
@@ -286,61 +287,61 @@ const CourseDetail: React.FC = () => {
                   onClick={() => navigate(`/course/${courseId}/edit`)} 
                   variant="outline"
                   size="sm"
-                  className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-white/50 hover:border-gray-300 transition-all duration-200"
+                  className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-white/50 hover:border-gray-300 transition-all duration-200 flex-shrink-0"
                 >
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit Course
+                  Edit
                 </Button>
               )}
-            </div>
-          </div>
-          
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex-1">
-              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
-                {course.title}
-              </h1>
-              {course.description && (
-                <p className="text-gray-600 text-base lg:text-lg leading-relaxed">{course.description}</p>
-              )}
-              <div className="flex items-center gap-3 mt-3">
-                {course.subject && (
-                  <Badge variant="outline" className="text-xs border-gray-300 bg-white/50">
-                    {course.subject}
-                  </Badge>
-                )}
-                {course.difficulty_level && (
-                  <Badge variant="outline" className="text-xs border-gray-300 bg-white/50">
-                    {course.difficulty_level}
-                  </Badge>
-                )}
-                <span className="text-sm text-gray-500">
-                  {modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
-                </span>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
+                    {course.title}
+                  </h1>
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {course.subject && (
+                      <Badge variant="outline" className="text-xs border-gray-300 bg-white/50">
+                        {course.subject}
+                      </Badge>
+                    )}
+                    {course.difficulty_level && (
+                      <Badge variant="outline" className="text-xs border-gray-300 bg-white/50">
+                        {course.difficulty_level}
+                      </Badge>
+                    )}
+                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                      {modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
             
+            {/* Right side - Purchase section */}
             {!canAccessFullCourse && (
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex items-center gap-3 flex-shrink-0">
                 <div className="text-right">
-                  <p className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  <p className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     £{((course.price || 0) / 100).toFixed(2)}
                   </p>
-                  <p className="text-sm text-gray-500">One-time payment</p>
                 </div>
                 <Button 
                   onClick={() => setShowPaymentModal(true)}
+                  size="sm"
                   className="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Purchase Course
+                  Purchase
                 </Button>
               </div>
             )}
           </div>
           
+          {/* Progress bar - only show if user has access */}
           {canAccessFullCourse && (
-            <div className="mt-4">
+            <div className="mt-3">
               <ProgressBar 
                 current={studentProgress.filter(p => p.status === 'completed').length}
                 total={modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)}
@@ -353,7 +354,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Main Content - Enhanced styling */}
       <div className="container mx-auto py-6 px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 240px)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 180px)' }}>
           {/* Sidebar - Enhanced with subtle shadow */}
           <div className="lg:col-span-1 h-full overflow-hidden">
             <div className="h-full shadow-lg rounded-xl overflow-hidden">
