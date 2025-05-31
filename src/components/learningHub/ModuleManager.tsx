@@ -151,23 +151,41 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
   };
 
   const handleDragStart = (e: React.DragEvent, moduleId: string) => {
+    console.log('Drag start:', moduleId);
     setDraggedModuleId(moduleId);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', moduleId);
+    e.dataTransfer.setData('text/plain', moduleId);
+    
+    // Add some visual feedback
+    const target = e.target as HTMLElement;
+    target.style.opacity = '0.5';
   };
 
   const handleDragOver = (e: React.DragEvent, moduleId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDragOverModuleId(moduleId);
+    
+    // Only set drag over if it's different from current
+    if (dragOverModuleId !== moduleId) {
+      setDragOverModuleId(moduleId);
+    }
   };
 
-  const handleDragLeave = () => {
-    setDragOverModuleId(null);
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're actually leaving the element
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverModuleId(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, targetModuleId: string) => {
     e.preventDefault();
+    console.log('Drop on:', targetModuleId, 'from:', draggedModuleId);
+    
     setDragOverModuleId(null);
     
     if (!draggedModuleId || draggedModuleId === targetModuleId || !modules) {
@@ -178,12 +196,14 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
     const draggedIndex = modules.findIndex(m => m.id === draggedModuleId);
     const targetIndex = modules.findIndex(m => m.id === targetModuleId);
     
+    console.log('Dragged index:', draggedIndex, 'Target index:', targetIndex);
+    
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedModuleId(null);
       return;
     }
 
-    // Create new order
+    // Create new order array
     const reorderedModules = [...modules];
     const [draggedModule] = reorderedModules.splice(draggedIndex, 1);
     reorderedModules.splice(targetIndex, 0, draggedModule);
@@ -194,11 +214,17 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
       position: index
     }));
 
+    console.log('New module order:', moduleOrders);
     reorderModulesMutation.mutate(moduleOrders);
     setDraggedModuleId(null);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent) => {
+    console.log('Drag end');
+    // Reset visual feedback
+    const target = e.target as HTMLElement;
+    target.style.opacity = '1';
+    
     setDraggedModuleId(null);
     setDragOverModuleId(null);
   };
@@ -262,10 +288,10 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
           {modules?.map((module) => (
             <Card 
               key={module.id} 
-              className={`relative transition-all duration-200 ${
-                draggedModuleId === module.id ? 'opacity-50 scale-95' : ''
+              className={`relative transition-all duration-200 cursor-move ${
+                draggedModuleId === module.id ? 'opacity-50 scale-95 shadow-lg' : ''
               } ${
-                dragOverModuleId === module.id ? 'ring-2 ring-primary ring-offset-2' : ''
+                dragOverModuleId === module.id ? 'ring-2 ring-primary ring-offset-2 bg-blue-50' : ''
               }`}
               draggable
               onDragStart={(e) => handleDragStart(e, module.id)}
@@ -277,23 +303,30 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
               <CardHeader className="pb-2">
                 <div className="flex justify-between">
                   <div className="flex items-center flex-1">
-                    <Grip className="h-5 w-5 mr-2 text-gray-400 cursor-grab active:cursor-grabbing" />
+                    <Grip className="h-5 w-5 mr-2 text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0" />
                     {editingModuleId === module.id ? (
                       <Input
                         className="font-semibold text-lg"
                         value={module.title}
                         onChange={(e) => handleUpdateModule(module.id, { title: e.target.value })}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <CardTitle className="flex items-center cursor-pointer" onClick={() => toggleModuleExpansion(module.id)}>
+                      <CardTitle 
+                        className="flex items-center cursor-pointer flex-1" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleModuleExpansion(module.id);
+                        }}
+                      >
                         {expandedModules[module.id] ? 
-                          <ChevronUp className="h-5 w-5 mr-2" /> : 
-                          <ChevronDown className="h-5 w-5 mr-2" />}
+                          <ChevronUp className="h-5 w-5 mr-2 flex-shrink-0" /> : 
+                          <ChevronDown className="h-5 w-5 mr-2 flex-shrink-0" />}
                         {module.title}
                       </CardTitle>
                     )}
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                     {editingModuleId === module.id ? (
                       <Button size="sm" onClick={() => setEditingModuleId(null)}>
                         Done
@@ -321,6 +354,7 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ courseId }) => {
                         onChange={(e) => handleUpdateModule(module.id, { description: e.target.value })}
                         placeholder="Enter module description"
                         rows={3}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
                       <p className="text-gray-500">{module.description || 'No description provided.'}</p>

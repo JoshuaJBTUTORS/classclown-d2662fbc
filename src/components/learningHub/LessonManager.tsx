@@ -205,24 +205,46 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
     }
   };
 
+  // Fixed lesson drag and drop handlers
   const handleLessonDragStart = (e: React.DragEvent, lessonId: string) => {
+    e.stopPropagation(); // Prevent parent drag
+    console.log('Lesson drag start:', lessonId);
     setDraggedLessonId(lessonId);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', lessonId);
+    e.dataTransfer.setData('text/plain', lessonId);
+    
+    // Visual feedback
+    const target = e.target as HTMLElement;
+    target.style.opacity = '0.5';
   };
 
   const handleLessonDragOver = (e: React.DragEvent, lessonId: string) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent parent handling
     e.dataTransfer.dropEffect = 'move';
-    setDragOverLessonId(lessonId);
+    
+    if (dragOverLessonId !== lessonId) {
+      setDragOverLessonId(lessonId);
+    }
   };
 
-  const handleLessonDragLeave = () => {
-    setDragOverLessonId(null);
+  const handleLessonDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    // Only clear if we're actually leaving the element
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverLessonId(null);
+    }
   };
 
   const handleLessonDrop = (e: React.DragEvent, targetLessonId: string) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent parent handling
+    console.log('Lesson drop on:', targetLessonId, 'from:', draggedLessonId);
+    
     setDragOverLessonId(null);
     
     if (!draggedLessonId || draggedLessonId === targetLessonId || !module?.lessons) {
@@ -232,6 +254,8 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
 
     const draggedIndex = module.lessons.findIndex(l => l.id === draggedLessonId);
     const targetIndex = module.lessons.findIndex(l => l.id === targetLessonId);
+    
+    console.log('Lesson dragged index:', draggedIndex, 'Target index:', targetIndex);
     
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedLessonId(null);
@@ -249,11 +273,18 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
       position: index
     }));
 
+    console.log('New lesson order:', lessonOrders);
     reorderLessonsMutation.mutate(lessonOrders);
     setDraggedLessonId(null);
   };
 
-  const handleLessonDragEnd = () => {
+  const handleLessonDragEnd = (e: React.DragEvent) => {
+    e.stopPropagation();
+    console.log('Lesson drag end');
+    // Reset visual feedback
+    const target = e.target as HTMLElement;
+    target.style.opacity = '1';
+    
     setDraggedLessonId(null);
     setDragOverLessonId(null);
   };
@@ -456,13 +487,15 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
         </div>
       ) : (
         <div className="space-y-2">
-          {module.lessons.map((lesson) => (
+          {module.lessons
+            .sort((a, b) => a.position - b.position) // Ensure proper ordering
+            .map((lesson) => (
             <div 
               key={lesson.id} 
-              className={`flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md transition-all duration-200 ${
-                draggedLessonId === lesson.id ? 'opacity-50 scale-95' : ''
+              className={`flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md transition-all duration-200 cursor-move ${
+                draggedLessonId === lesson.id ? 'opacity-50 scale-95 shadow-lg' : ''
               } ${
-                dragOverLessonId === lesson.id ? 'ring-2 ring-primary ring-offset-1' : ''
+                dragOverLessonId === lesson.id ? 'ring-2 ring-primary ring-offset-1 bg-blue-50' : ''
               }`}
               draggable
               onDragStart={(e) => handleLessonDragStart(e, lesson.id)}
@@ -472,14 +505,14 @@ const LessonManager: React.FC<LessonManagerProps> = ({ moduleId, courseId }) => 
               onDragEnd={handleLessonDragEnd}
             >
               <div className="flex items-center">
-                <Grip className="h-4 w-4 mr-2 text-gray-400 cursor-grab active:cursor-grabbing" />
+                <Grip className="h-4 w-4 mr-2 text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0" />
                 {renderContentTypeIcon(lesson.content_type)}
                 <span>{lesson.title}</span>
                 {lesson.duration_minutes > 0 && (
                   <span className="ml-2 text-xs text-gray-500">{lesson.duration_minutes} min</span>
                 )}
               </div>
-              <div className="flex space-x-1">
+              <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
                 <Button size="sm" variant="ghost" onClick={() => setEditingLessonId(lesson.id === editingLessonId ? null : lesson.id)}>
                   <Edit className="h-4 w-4" />
                 </Button>
