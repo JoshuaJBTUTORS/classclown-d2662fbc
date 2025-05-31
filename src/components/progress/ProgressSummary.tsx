@@ -72,20 +72,22 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        let childrenUserIds = childrenData.map(child => child.user_id).filter(Boolean);
+        const validUserIds: string[] = childrenData
+          .map(child => child.user_id)
+          .filter((userId): userId is string => userId !== null);
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
           if (selectedChild?.user_id) {
-            childrenUserIds = [selectedChild.user_id];
+            const selectedUserIds: string[] = [selectedChild.user_id];
+            query = query.in('user_id', selectedUserIds);
           } else {
-            childrenUserIds = [];
+            setHomeworkAverage(0);
+            return;
           }
-        }
-        
-        if (childrenUserIds.length > 0) {
-          query = query.in('user_id', childrenUserIds);
+        } else if (validUserIds.length > 0) {
+          query = query.in('user_id', validUserIds);
         } else {
           setHomeworkAverage(0);
           return;
@@ -196,20 +198,23 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        let childrenUserIds = childrenData.map(child => child.user_id).filter(Boolean);
+        const validUserIds: string[] = childrenData
+          .map(child => child.user_id)
+          .filter((userId): userId is string => userId !== null);
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
           if (selectedChild?.user_id) {
-            childrenUserIds = [selectedChild.user_id];
+            const selectedUserIds: string[] = [selectedChild.user_id];
+            query = query.in('user_id', selectedUserIds);
           } else {
-            childrenUserIds = [];
+            setAiAssessmentAverage(0);
+            setHasLockedContent(false);
+            return;
           }
-        }
-        
-        if (childrenUserIds.length > 0) {
-          query = query.in('user_id', childrenUserIds);
+        } else if (validUserIds.length > 0) {
+          query = query.in('user_id', validUserIds);
         } else {
           setAiAssessmentAverage(0);
           setHasLockedContent(false);
