@@ -1,12 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-import { Brain } from 'lucide-react';
+import { Brain, Lock, ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { paymentService } from '@/services/paymentService';
 
 interface AssessmentProgressChartProps {
   filters: {
@@ -28,14 +30,47 @@ interface AssessmentScore {
 const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filters, userRole }) => {
   const [data, setData] = useState<AssessmentScore[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchAssessmentProgress();
-  }, [filters, user, userRole]);
+    checkEnrollmentAccess();
+  }, [user, userRole]);
+
+  useEffect(() => {
+    if (hasAccess) {
+      fetchAssessmentProgress();
+    } else {
+      setLoading(false);
+    }
+  }, [filters, user, userRole, hasAccess]);
+
+  const checkEnrollmentAccess = async () => {
+    if (!user) return;
+
+    setCheckingAccess(true);
+    try {
+      // Owners always have access
+      if (userRole === 'owner') {
+        setHasAccess(true);
+        return;
+      }
+
+      // Check if user has purchased any course
+      const purchases = await paymentService.getUserPurchases();
+      setHasAccess(purchases.length > 0);
+    } catch (error) {
+      console.error('Error checking enrollment access:', error);
+      setHasAccess(false);
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
 
   const fetchAssessmentProgress = async () => {
-    if (!user) return;
+    if (!user || !hasAccess) return;
 
     setLoading(true);
     try {
@@ -121,6 +156,10 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
     }
   };
 
+  const handleUnlockAccess = () => {
+    navigate('/learning-hub');
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -139,16 +178,64 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
     return null;
   };
 
-  if (loading) {
+  if (checkingAccess || loading) {
     return (
       <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader className="pb-4">
           <CardTitle className="font-playfair text-xl text-gray-900">Assessment Progress</CardTitle>
-          <CardDescription className="text-gray-600">Loading assessment scores...</CardDescription>
+          <CardDescription className="text-gray-600">
+            {checkingAccess ? 'Checking access...' : 'Loading assessment scores...'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-80 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8b5cf6]"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show locked state for users without course access
+  if (!hasAccess) {
+    return (
+      <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
+        <CardHeader className="pb-4">
+          <CardTitle className="font-playfair text-xl text-gray-900">Assessment Progress</CardTitle>
+          <CardDescription className="text-gray-600">
+            Course enrollment required to access assessment progress
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 flex items-center justify-center relative">
+            {/* Blurred background chart for visual effect */}
+            <div className="absolute inset-0 opacity-20 blur-sm">
+              <div className="h-full w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg flex items-center justify-center">
+                <Brain className="h-24 w-24 text-gray-300" />
+              </div>
+            </div>
+            
+            {/* Lock overlay */}
+            <div className="relative z-10 text-center bg-white rounded-lg p-8 border border-gray-200 shadow-lg max-w-sm">
+              <div className="flex justify-center mb-4">
+                <div className="p-3 rounded-full bg-purple-100">
+                  <Lock className="h-8 w-8 text-purple-600" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Unlock Assessment Progress
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Purchase any course to access your assessment progress tracking and detailed performance analytics.
+              </p>
+              <Button 
+                onClick={handleUnlockAccess}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Browse Courses
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

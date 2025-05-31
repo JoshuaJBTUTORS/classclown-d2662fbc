@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Calendar, BookOpen, Brain } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, BookOpen, Brain, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { paymentService } from '@/services/paymentService';
 
 interface ProgressSummaryProps {
   filters: {
@@ -36,11 +36,35 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     assessmentImprovementTrend: 0
   });
   const [loading, setLoading] = useState(true);
+  const [hasAssessmentAccess, setHasAssessmentAccess] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
+    checkAssessmentAccess();
+  }, [user, userRole]);
+
+  useEffect(() => {
     fetchSummaryStats();
-  }, [filters, user, userRole]);
+  }, [filters, user, userRole, hasAssessmentAccess]);
+
+  const checkAssessmentAccess = async () => {
+    if (!user) return;
+
+    try {
+      // Owners always have access
+      if (userRole === 'owner') {
+        setHasAssessmentAccess(true);
+        return;
+      }
+
+      // Check if user has purchased any course
+      const purchases = await paymentService.getUserPurchases();
+      setHasAssessmentAccess(purchases.length > 0);
+    } catch (error) {
+      console.error('Error checking assessment access:', error);
+      setHasAssessmentAccess(false);
+    }
+  };
 
   const fetchSummaryStats = async () => {
     if (!user) return;
@@ -82,37 +106,41 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       const { data: homeworkData, error: homeworkError } = await homeworkQuery;
       if (homeworkError) throw homeworkError;
 
-      // Fetch assessment statistics
-      let assessmentQuery = supabase
-        .from('assessment_sessions')
-        .select(`
-          total_marks_achieved,
-          total_marks_available,
-          completed_at,
-          assessment:ai_assessments(subject)
-        `)
-        .eq('status', 'completed')
-        .not('completed_at', 'is', null)
-        .not('total_marks_available', 'is', null)
-        .gt('total_marks_available', 0)
-        .order('completed_at', { ascending: true });
+      // Fetch assessment statistics only if user has access
+      let assessmentData = null;
+      if (hasAssessmentAccess) {
+        let assessmentQuery = supabase
+          .from('assessment_sessions')
+          .select(`
+            total_marks_achieved,
+            total_marks_available,
+            completed_at,
+            assessment:ai_assessments(subject)
+          `)
+          .eq('status', 'completed')
+          .not('completed_at', 'is', null)
+          .not('total_marks_available', 'is', null)
+          .gt('total_marks_available', 0)
+          .order('completed_at', { ascending: true });
 
-      // Filter assessments by user
-      if (userRole === 'student' || userRole === 'parent') {
-        assessmentQuery = assessmentQuery.eq('user_id', user.id);
-      } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
-        assessmentQuery = assessmentQuery.in('user_id', filters.selectedStudents);
-      }
+        // Filter assessments by user
+        if (userRole === 'student' || userRole === 'parent') {
+          assessmentQuery = assessmentQuery.eq('user_id', user.id);
+        } else if (userRole === 'owner' && filters.selectedStudents.length > 0) {
+          assessmentQuery = assessmentQuery.in('user_id', filters.selectedStudents);
+        }
 
-      if (filters.dateRange.from) {
-        assessmentQuery = assessmentQuery.gte('completed_at', filters.dateRange.from.toISOString());
-      }
-      if (filters.dateRange.to) {
-        assessmentQuery = assessmentQuery.lte('completed_at', filters.dateRange.to.toISOString());
-      }
+        if (filters.dateRange.from) {
+          assessmentQuery = assessmentQuery.gte('completed_at', filters.dateRange.from.toISOString());
+        }
+        if (filters.dateRange.to) {
+          assessmentQuery = assessmentQuery.lte('completed_at', filters.dateRange.to.toISOString());
+        }
 
-      const { data: assessmentData, error: assessmentError } = await assessmentQuery;
-      if (assessmentError) throw assessmentError;
+        const { data: assessments, error: assessmentError } = await assessmentQuery;
+        if (assessmentError) throw assessmentError;
+        assessmentData = assessments;
+      }
 
       // Fetch attendance statistics
       let attendanceQuery = supabase
@@ -228,10 +256,10 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     },
     {
       title: "Assessment Average",
-      value: `${stats.averageAssessmentScore}%`,
-      icon: Brain,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      value: hasAssessmentAccess ? `${stats.averageAssessmentScore}%` : "Locked",
+      icon: hasAssessmentAccess ? Brain : Lock,
+      color: hasAssessmentAccess ? "text-purple-600" : "text-gray-400",
+      bgColor: hasAssessmentAccess ? "bg-purple-50" : "bg-gray-50"
     },
     {
       title: "Attendance Rate",
@@ -249,17 +277,25 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     },
     {
       title: "Total Assessments",
-      value: stats.totalAssessments.toString(),
-      icon: Brain,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50"
+      value: hasAssessmentAccess ? stats.totalAssessments.toString() : "Locked",
+      icon: hasAssessmentAccess ? Brain : Lock,
+      color: hasAssessmentAccess ? "text-indigo-600" : "text-gray-400",
+      bgColor: hasAssessmentAccess ? "bg-indigo-50" : "bg-gray-50"
     },
     {
       title: "Overall Improvement",
-      value: `${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) > 0 ? '+' : ''}${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2)}%`,
-      icon: Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? TrendingUp : TrendingDown,
-      color: Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "text-green-600" : "text-red-600",
-      bgColor: Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "bg-green-50" : "bg-red-50"
+      value: hasAssessmentAccess 
+        ? `${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) > 0 ? '+' : ''}${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2)}%`
+        : `${stats.improvementTrend > 0 ? '+' : ''}${stats.improvementTrend}%`,
+      icon: hasAssessmentAccess 
+        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? TrendingUp : TrendingDown)
+        : (stats.improvementTrend >= 0 ? TrendingUp : TrendingDown),
+      color: hasAssessmentAccess 
+        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "text-green-600" : "text-red-600")
+        : (stats.improvementTrend >= 0 ? "text-green-600" : "text-red-600"),
+      bgColor: hasAssessmentAccess 
+        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "bg-green-50" : "bg-red-50")
+        : (stats.improvementTrend >= 0 ? "bg-green-50" : "bg-red-50")
     }
   ];
 
