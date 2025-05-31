@@ -80,28 +80,24 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        // Build array of valid user IDs with explicit typing
-        const validUserIds: string[] = [];
+        // Get student IDs for homework submissions (uses student_id, not user_id)
+        let studentIds: number[] = [];
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
-          if (selectedChild?.user_id) {
-            validUserIds.push(selectedChild.user_id);
+          if (selectedChild) {
+            studentIds = [selectedChild.id];
           }
         } else {
-          childrenData.forEach(child => {
-            if (child.user_id) {
-              validUserIds.push(child.user_id);
-            }
-          });
+          studentIds = childrenData.map(child => child.id);
         }
 
-        if (validUserIds.length > 0) {
+        if (studentIds.length > 0) {
           const { data: submissions } = await supabase
             .from('homework_submissions')
             .select('percentage_score, student:students(id, first_name, last_name)')
-            .in('user_id', validUserIds)
+            .in('student_id', studentIds)
             .not('percentage_score', 'is', null);
 
           if (submissions && submissions.length > 0) {
@@ -252,24 +248,22 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         .eq('parent_id', parentProfile.id);
 
       if (childrenData && childrenData.length > 0) {
-        // Build array of valid user IDs with explicit typing
-        const validUserIds: string[] = [];
+        // Get user IDs for assessment sessions (uses user_id)
+        let userIds: string[] = [];
         
         if (filters.selectedChild !== 'all') {
           const selectedChildId = parseInt(filters.selectedChild);
           const selectedChild = childrenData.find(child => child.id === selectedChildId);
           if (selectedChild?.user_id) {
-            validUserIds.push(selectedChild.user_id);
+            userIds = [selectedChild.user_id];
           }
         } else {
-          childrenData.forEach(child => {
-            if (child.user_id) {
-              validUserIds.push(child.user_id);
-            }
-          });
+          userIds = childrenData
+            .map(child => child.user_id)
+            .filter((id): id is string => id !== null);
         }
 
-        if (validUserIds.length > 0) {
+        if (userIds.length > 0) {
           const { data: sessions } = await supabase
             .from('assessment_sessions')
             .select(`
@@ -279,7 +273,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
               student:students(id, first_name, last_name)
             `)
             .eq('status', 'completed')
-            .in('user_id', validUserIds)
+            .in('user_id', userIds)
             .not('completed_at', 'is', null);
 
           if (sessions && sessions.length > 0) {
