@@ -104,7 +104,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
             .select('percentage_score, student:students(id, first_name, last_name)')
             .not('percentage_score', 'is', null);
           
-          const { data: submissions } = await submissionsQuery.in('user_id', targetUserIds);
+          const { data: submissions } = await submissionsQuery.in('user_id', targetUserIds as string[]);
 
           if (submissions && submissions.length > 0) {
             const average = submissions.reduce((sum, sub) => sum + sub.percentage_score, 0) / submissions.length;
@@ -285,7 +285,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
             .eq('status', 'completed')
             .not('completed_at', 'is', null);
           
-          const { data: sessions } = await sessionsQuery.in('user_id', targetUserIds);
+          const { data: sessions } = await sessionsQuery.in('user_id', targetUserIds as string[]);
 
           if (sessions && sessions.length > 0) {
             // Fix the role comparison logic
