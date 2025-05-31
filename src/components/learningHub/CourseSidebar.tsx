@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle, Lock, Play, FileText, Brain, Video, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -201,7 +202,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   }, [modules]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-gradient-to-br from-white/95 via-rose-50/40 to-pink-50/30 border border-gray-200 rounded-xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-gray-200 flex-shrink-0">
         <h3 className="font-semibold text-lg text-gray-900">Course Content</h3>
         <p className="text-sm text-gray-600 mt-1">
@@ -248,7 +249,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                     <div key={module.id} className="mb-2">
                       <button
                         onClick={() => toggleModule(module.id)}
-                        className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg text-left transition-colors"
+                        className="w-full flex items-center justify-between p-3 hover:bg-white/70 rounded-lg text-left transition-colors"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-1">
@@ -289,7 +290,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                                 className={`w-full text-left p-3 text-sm rounded-lg flex items-start transition-all ${
                                   isActive 
                                     ? 'bg-blue-50 border border-blue-200 shadow-sm' 
-                                    : 'hover:bg-gray-50'
+                                    : 'hover:bg-white/70'
                                 } ${!accessible ? 'opacity-60' : ''}`}
                               >
                                 <button
