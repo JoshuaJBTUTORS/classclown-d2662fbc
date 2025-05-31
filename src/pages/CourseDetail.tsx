@@ -266,8 +266,8 @@ const CourseDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-      {/* Course Header - Compact and sleek */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
+      {/* Course Header - Updated with subtle theme gradient */}
+      <div className="bg-gradient-to-r from-white/85 via-slate-50/80 to-rose-50/75 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
         <div className="container mx-auto py-2 px-4">
           <div className="flex items-center justify-between">
             {/* Left side - Navigation and course info */}
