@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, BookOpen, CircleCheck, Circle, Lock, Play, FileText, Brain, Video, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -256,7 +255,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
                               {moduleIndex + 1}
                             </span>
-                            <span className="font-semibold text-gray-900 truncate">{module.title}</span>
+                            <span className="font-semibold text-sm text-gray-900 truncate">{module.title}</span>
                           </div>
                           {totalCount > 0 && (
                             <div className="flex items-center gap-3 text-xs text-gray-600 ml-7">
@@ -319,7 +318,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                                         <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                                           {lessonIndex + 1}
                                         </span>
-                                        <span className={`font-medium line-clamp-2 ${
+                                        <span className={`font-medium text-xs line-clamp-2 ${
                                           isActive ? 'text-blue-700' : 'text-gray-900'
                                         }`}>
                                           {lesson.title}
