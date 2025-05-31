@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { BookOpen, Clock, TrendingUp, Brain, Lock } from 'lucide-react';
+import { UserRole } from '@/types/userRole';
 
 interface ProgressSummaryProps {
   filters: {
@@ -12,7 +13,7 @@ interface ProgressSummaryProps {
     selectedSubjects: string[];
     selectedChild: string;
   };
-  userRole: string;
+  userRole: UserRole;
 }
 
 const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) => {
@@ -100,7 +101,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
           const { data: submissions } = await supabase
             .from('homework_submissions')
             .select('percentage_score, student:students(id, first_name, last_name)')
-            .in('user_id', targetUserIds)
+            .in('user_id', targetUserIds as string[])
             .not('percentage_score', 'is', null);
 
           if (submissions && submissions.length > 0) {
@@ -117,10 +118,11 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     }
 
     if (userRole === 'owner' && filters.selectedStudents.length > 0) {
+      const studentIds = filters.selectedStudents.map(id => parseInt(id));
       const { data: submissions } = await supabase
         .from('homework_submissions')
         .select('percentage_score, student:students(id, first_name, last_name)')
-        .in('student_id', filters.selectedStudents.map(id => parseInt(id)))
+        .in('student_id', studentIds)
         .not('percentage_score', 'is', null);
 
       if (submissions && submissions.length > 0) {
@@ -278,7 +280,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
               student:students(id, first_name, last_name)
             `)
             .eq('status', 'completed')
-            .in('user_id', targetUserIds)
+            .in('user_id', targetUserIds as string[])
             .not('completed_at', 'is', null);
 
           if (sessions && sessions.length > 0) {
