@@ -49,10 +49,6 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
           assessment:ai_assessments(
             title,
             subject
-          ),
-          profiles(
-            first_name,
-            last_name
           )
         `)
         .eq('status', 'completed')
@@ -83,6 +79,23 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
 
       if (error) throw error;
 
+      // If we need student names for owners, fetch them separately
+      let userProfiles = {};
+      if (userRole === 'owner' && sessions && sessions.length > 0) {
+        const userIds = [...new Set(sessions.map(session => session.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', userIds);
+        
+        if (profiles) {
+          userProfiles = profiles.reduce((acc, profile) => {
+            acc[profile.id] = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+            return acc;
+          }, {});
+        }
+      }
+
       const chartData = sessions?.map(session => {
         const percentage = Math.round((session.total_marks_achieved / session.total_marks_available) * 100);
         return {
@@ -90,9 +103,7 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
           percentage,
           subject: session.assessment?.subject || 'General',
           assessment_title: session.assessment?.title || 'Assessment',
-          student_name: userRole === 'owner' 
-            ? `${session.profiles?.first_name || ''} ${session.profiles?.last_name || ''}`.trim()
-            : undefined
+          student_name: userRole === 'owner' ? userProfiles[session.user_id] || 'Unknown' : undefined
         };
       }) || [];
 
