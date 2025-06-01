@@ -316,13 +316,6 @@ const Auth = () => {
             </p>
           </div>
         </div>
-        
-        <CardTitle className="text-2xl font-bold text-center">
-          Start Learning
-        </CardTitle>
-        <CardDescription className="text-center">
-          Set up your account
-        </CardDescription>
       </CardHeader>
       
       <CardContent>
@@ -455,14 +448,6 @@ const Auth = () => {
             {isLoading ? 'Creating Account...' : 'Start Free'}
           </Button>
         </form>
-        
-        <div className="mt-6 p-4 bg-green-50 rounded-lg">
-          <h4 className="font-medium text-green-900 mb-2">What's Next?</h4>
-          <p className="text-sm text-green-800">
-            After creating your account, you'll have access to our Learning Hub resources. 
-            To unlock full tutoring features, you can book a free trial lesson with one of our expert tutors.
-          </p>
-        </div>
       </CardContent>
     </Card>
   );
