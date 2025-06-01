@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -272,12 +273,12 @@ const Auth = () => {
           </div>
         </form>
         
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Need Help?</h4>
-          <p className="text-sm text-blue-800 mb-2">
+        <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <h4 className="font-medium text-primary mb-2">Need Help?</h4>
+          <p className="text-sm text-primary/80 mb-2">
             Can't remember your login details? Our support team is here to help.
           </p>
-          <Button variant="outline" size="sm" className="text-blue-700 border-blue-300">
+          <Button variant="outline" size="sm" className="border-primary/30 text-primary hover:bg-primary/10">
             Contact Support
           </Button>
         </div>
