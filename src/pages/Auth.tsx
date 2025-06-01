@@ -318,11 +318,10 @@ const Auth = () => {
         </div>
         
         <CardTitle className="text-2xl font-bold text-center">
-          <GraduationCap className="inline mr-2 h-6 w-6" />
-          Join the Learning Hub
+          Start Learning
         </CardTitle>
         <CardDescription className="text-center">
-          Create your account to explore our educational resources
+          Set up your account
         </CardDescription>
       </CardHeader>
       
@@ -451,21 +450,6 @@ const Auth = () => {
               )}
             </div>
           </div>
-          
-          <div className="flex items-start space-x-2">
-            <input
-              type="checkbox"
-              id="acceptTerms"
-              className="mt-1"
-              {...registerForm.register('acceptTerms', { required: 'You must accept the terms and conditions' })}
-            />
-            <Label htmlFor="acceptTerms" className="text-sm leading-relaxed cursor-pointer">
-              I agree to the Terms and Conditions and Privacy Policy. I understand this account provides access to the Learning Hub with the option to book trial lessons.
-            </Label>
-          </div>
-          {registerForm.formState.errors.acceptTerms && (
-            <p className="text-red-500 text-sm">{registerForm.formState.errors.acceptTerms.message}</p>
-          )}
           
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Creating Account...' : 'Start Free'}
