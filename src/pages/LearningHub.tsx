@@ -6,11 +6,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/ui/PageTitle';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
-import { BookOpen, ChevronLeft, Brain, Search, Filter, Grid, List, Home, GraduationCap, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronLeft, Brain, Filter, Grid, List, Home, GraduationCap, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import CourseCard from '@/components/learningHub/CourseCard';
 import AIAssessmentManager from '@/components/learningHub/AIAssessmentManager';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +29,6 @@ const LearningHub: React.FC = () => {
   const { profile, isAdmin, isTutor, isOwner } = useAuth();
   const [activeSubject, setActiveSubject] = useState('All Courses');
   const [activeMainTab, setActiveMainTab] = useState('courses');
-  const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const { data: courses, isLoading, error } = useQuery({
@@ -38,18 +36,15 @@ const LearningHub: React.FC = () => {
     queryFn: learningHubService.getCourses,
   });
 
-  // Filter courses by selected subject and search term
+  // Filter courses by selected subject only
   const filteredCourses = courses?.filter((course: Course) => {
-    const matchesSubject = activeSubject === 'All Courses' || course.subject === activeSubject;
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSubject && matchesSearch;
+    return activeSubject === 'All Courses' || course.subject === activeSubject;
   });
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-primary/5">
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Enhanced Header with consistent branding */}
         <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 mb-6 shadow-xl">
@@ -112,7 +107,7 @@ const LearningHub: React.FC = () => {
           </div>
 
           <TabsContent value="courses" className="space-y-6">
-            {/* Enhanced Filters and Search */}
+            {/* Enhanced Filters */}
             <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-xl">
               <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
                 <div className="flex flex-wrap gap-3">
@@ -132,15 +127,6 @@ const LearningHub: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <Input
-                      placeholder="Search courses..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-12 w-80 h-12 rounded-xl border-gray-200/50 bg-white/60 backdrop-blur-sm focus:bg-white/80 transition-all"
-                    />
-                  </div>
                   <div className="flex items-center border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm">
                     <Button
                       variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -169,11 +155,6 @@ const LearningHub: React.FC = () => {
                 <div className="bg-white/60 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
                   <span className="font-medium text-gray-700">{filteredCourses.length} courses found</span>
                 </div>
-                {searchTerm && (
-                  <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 backdrop-blur-sm px-3 py-1">
-                    Searching: "{searchTerm}"
-                  </Badge>
-                )}
                 {activeSubject !== 'All Courses' && (
                   <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 backdrop-blur-sm px-3 py-1">
                     {activeSubject}
@@ -209,20 +190,16 @@ const LearningHub: React.FC = () => {
               <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
                 <BookOpen className="mx-auto h-20 w-20 text-gray-300 mb-6" />
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                  {searchTerm 
-                    ? `No courses found for "${searchTerm}"` 
-                    : activeSubject === 'All Courses' 
-                      ? "No courses available" 
-                      : `No ${activeSubject} courses available`}
+                  {activeSubject === 'All Courses' 
+                    ? "No courses available" 
+                    : `No ${activeSubject} courses available`}
                 </h3>
                 <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
                   {hasAdminPrivileges 
                     ? "Create your first course to get started with the learning platform." 
-                    : searchTerm
-                      ? "Try adjusting your search terms or browse all courses."
-                      : "Check back later for new courses and learning materials."}
+                    : "Check back later for new courses and learning materials."}
                 </p>
-                {hasAdminPrivileges && !searchTerm && (
+                {hasAdminPrivileges && (
                   <Button 
                     onClick={() => navigate('/create-course')}
                     className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-medium shadow-lg"
