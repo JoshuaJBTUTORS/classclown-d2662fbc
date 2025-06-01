@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,8 +39,8 @@ interface RegisterFormInputs {
   password: string;
   confirmPassword: string;
   phone?: string;
-  childFirstName: string;
-  childLastName: string;
+  studentFirstName: string;
+  studentLastName: string;
   acceptTerms: boolean;
 }
 
@@ -133,7 +132,7 @@ const Auth = () => {
       <CardContent className="space-y-6">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-            Does your child already study with JB Tutors?
+            Does your student already study with JB Tutors?
           </h2>
           <p className="text-gray-600">
             This helps us provide the right experience for your family
@@ -155,7 +154,7 @@ const Auth = () => {
                 Yes - Existing Student
               </h3>
               <p className="text-gray-600 mb-4">
-                My child is already a JB Tutors student
+                My student is already a JB Tutors student
               </p>
               <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
                 Sign in to access your existing account, lesson schedules, homework, and learning materials
@@ -379,30 +378,30 @@ const Auth = () => {
           </div>
           
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Child Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Student Information</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="childFirstName">Child's First Name *</Label>
+                <Label htmlFor="studentFirstName">Student's First Name *</Label>
                 <Input 
-                  id="childFirstName" 
+                  id="studentFirstName" 
                   placeholder="Emily" 
-                  {...registerForm.register('childFirstName', { required: 'Child\'s first name is required' })}
+                  {...registerForm.register('studentFirstName', { required: 'Student\'s first name is required' })}
                 />
-                {registerForm.formState.errors.childFirstName && (
-                  <p className="text-red-500 text-sm">{registerForm.formState.errors.childFirstName.message}</p>
+                {registerForm.formState.errors.studentFirstName && (
+                  <p className="text-red-500 text-sm">{registerForm.formState.errors.studentFirstName.message}</p>
                 )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="childLastName">Child's Last Name *</Label>
+                <Label htmlFor="studentLastName">Student's Last Name *</Label>
                 <Input 
-                  id="childLastName" 
+                  id="studentLastName" 
                   placeholder="Smith" 
-                  {...registerForm.register('childLastName', { required: 'Child\'s last name is required' })}
+                  {...registerForm.register('studentLastName', { required: 'Student\'s last name is required' })}
                 />
-                {registerForm.formState.errors.childLastName && (
-                  <p className="text-red-500 text-sm">{registerForm.formState.errors.childLastName.message}</p>
+                {registerForm.formState.errors.studentLastName && (
+                  <p className="text-red-500 text-sm">{registerForm.formState.errors.studentLastName.message}</p>
                 )}
               </div>
             </div>
@@ -484,7 +483,7 @@ const Auth = () => {
             <DialogTitle>Confirm: Existing JB Tutors Customer</DialogTitle>
             <DialogDescription className="space-y-4">
               <p>
-                Please confirm that your child already studies with JB Tutors and you have existing login credentials.
+                Please confirm that your student already studies with JB Tutors and you have existing login credentials.
               </p>
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-sm text-blue-800">
