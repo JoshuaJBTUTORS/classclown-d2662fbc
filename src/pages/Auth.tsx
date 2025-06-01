@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -235,7 +234,7 @@ const Auth = () => {
                       My student is already a JB Tutors student
                     </p>
                     <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
-                      Access your existing account, lesson schedules, homework, and learning materials
+                      Access your existing account, course schedules, homework, and learning materials
                     </div>
                   </CardContent>
                 </Card>
@@ -257,7 +256,7 @@ const Auth = () => {
                       We're new and want to explore the Learning Hub
                     </p>
                     <div className="text-sm text-primary bg-primary/5 rounded-lg p-3 border border-primary/20">
-                      <strong>🎓 Start with lessons from just £8.99/month</strong>
+                      <strong>🎓 Start with courses from just £8.99/month</strong>
                       <br />Create an account to explore our educational resources
                     </div>
                   </CardContent>
@@ -432,7 +431,7 @@ const Auth = () => {
                     Start Your Learning Journey
                   </h2>
                   <p className="text-lg font-semibold text-primary mb-1">
-                    🎓 Lessons from as little as £8.99 per month
+                    🎓 Courses from as little as £8.99 per month
                   </p>
                   <p className="text-sm text-gray-600">
                     No commitment • Cancel anytime • Expert tutors
