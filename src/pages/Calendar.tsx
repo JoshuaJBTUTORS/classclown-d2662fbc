@@ -13,10 +13,8 @@ const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
   const { openBookingModal } = useTrialBooking();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [filters, setFilters] = useState({
-    selectedStudents: [],
-    selectedTutors: []
-  });
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
 
   // If user has learning_hub_only role, show locked feature
   if (isLearningHubOnly) {
@@ -30,6 +28,11 @@ const Calendar = () => {
     );
   }
 
+  const filters = {
+    selectedStudents,
+    selectedTutors
+  };
+
   const { events, isLoading } = useCalendarData({
     userRole,
     userEmail: user?.email || null,
@@ -42,19 +45,24 @@ const Calendar = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleClearFilters = () => {
+    setSelectedStudents([]);
+    setSelectedTutors([]);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <CalendarHeader 
-          onRefresh={handleRefresh}
-          userRole={userRole}
-        />
+        <CalendarHeader />
         
         {(userRole === 'admin' || userRole === 'owner') && (
           <div className="mb-6">
             <CalendarFilters 
-              filters={filters}
-              onFiltersChange={setFilters}
+              selectedStudents={selectedStudents}
+              selectedTutors={selectedTutors}
+              onStudentFilterChange={setSelectedStudents}
+              onTutorFilterChange={setSelectedTutors}
+              onClearFilters={handleClearFilters}
             />
           </div>
         )}
