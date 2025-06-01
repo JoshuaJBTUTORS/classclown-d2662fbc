@@ -1,17 +1,35 @@
+import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import LockedFeature from '@/components/common/LockedFeature';
+import { useTrialBooking } from '@/hooks/useTrialBooking';
+import { BookOpen } from 'lucide-react';
 
-import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import HomeworkManager from '@/components/homework/HomeworkManager';
 import StudentHomeworkView from '@/components/homework/StudentHomeworkView';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
 
 const Homework: React.FC = () => {
+  const { isLearningHubOnly } = useAuth();
+  const { openBookingModal } = useTrialBooking();
+
+  // If user has learning_hub_only role, show locked feature
+  if (isLearningHubOnly) {
+    return (
+      <LockedFeature
+        featureName="Homework & Assignments"
+        featureIcon={<BookOpen className="h-16 w-16 text-gray-300" />}
+        description="Access homework assignments, submit work, and track your progress with personalized feedback from tutors."
+        onBookTrial={openBookingModal}
+      />
+    );
+  }
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [studentId, setStudentId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -26,7 +26,7 @@ const subjects = [
 
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
-  const { profile, isAdmin, isTutor, isOwner } = useAuth();
+  const { profile, isAdmin, isTutor, isOwner, isLearningHubOnly } = useAuth();
   const [activeSubject, setActiveSubject] = useState('All Courses');
   const [activeMainTab, setActiveMainTab] = useState('courses');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -66,7 +66,12 @@ const LearningHub: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Learning Hub</h1>
-                  <p className="text-gray-600 mt-1">Access educational resources and premium courses</p>
+                  <p className="text-gray-600 mt-1">
+                    {isLearningHubOnly 
+                      ? "Explore educational resources and book a trial lesson to unlock full access"
+                      : "Access educational resources and premium courses"
+                    }
+                  </p>
                 </div>
               </div>
             </div>
@@ -81,6 +86,26 @@ const LearningHub: React.FC = () => {
               </Button>
             )}
           </div>
+
+          {/* Welcome message for learning_hub_only users */}
+          {isLearningHubOnly && (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <GraduationCap className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Welcome to JB Tutors Learning Hub!</h3>
+                  <p className="text-gray-600 text-sm">
+                    Explore our educational resources. Ready for personalized tutoring? Book a free trial lesson to unlock calendar and homework features.
+                  </p>
+                </div>
+                <Button size="sm" className="ml-auto bg-green-600 hover:bg-green-700 text-white">
+                  Book Trial Lesson
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Enhanced Main tabs with consistent styling */}

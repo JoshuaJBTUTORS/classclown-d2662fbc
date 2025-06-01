@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
-export type AppRole = 'owner' | 'admin' | 'tutor' | 'student' | 'parent';
+export type AppRole = 'owner' | 'admin' | 'tutor' | 'student' | 'parent' | 'learning_hub_only';
 
 interface UserProfile {
   id: string;
@@ -34,6 +34,7 @@ interface AuthContextType {
   isTutor: boolean;
   isStudent: boolean;
   isParent: boolean;
+  isLearningHubOnly: boolean;
   signUp: (email: string, password: string, metadata?: { 
     first_name?: string, 
     last_name?: string, 
@@ -310,12 +311,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isTutor = userRole === 'tutor';
   const isStudent = userRole === 'student';
   const isParent = userRole === 'parent';
+  const isLearningHubOnly = userRole === 'learning_hub_only';
 
   console.log('🎭 AuthContext: Current role state:');
   console.log('- User Role:', userRole);
   console.log('- Is Admin:', isAdmin);
   console.log('- Is Owner:', isOwner);
   console.log('- Is Tutor:', isTutor);
+  console.log('- Is Learning Hub Only:', isLearningHubOnly);
 
   const value = {
     user,
@@ -328,6 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isTutor,
     isStudent,
     isParent,
+    isLearningHubOnly,
     signUp,
     signIn,
     signOut,
