@@ -41,7 +41,6 @@ interface RegisterFormInputs {
   phone?: string;
   studentFirstName: string;
   studentLastName: string;
-  acceptTerms: boolean;
 }
 
 const Auth = () => {
@@ -305,6 +304,19 @@ const Auth = () => {
             className="h-24 w-auto"
           />
         </div>
+        
+        {/* Pricing Marketing Banner */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 rounded-xl p-4 mb-6 border border-primary/20">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-primary mb-1">
+              🎓 Lessons from as little as £8.99 per month
+            </p>
+            <p className="text-sm text-gray-600">
+              No commitment • Cancel anytime • Expert tutors
+            </p>
+          </div>
+        </div>
+        
         <CardTitle className="text-2xl font-bold text-center">
           <GraduationCap className="inline mr-2 h-6 w-6" />
           Join the Learning Hub
@@ -456,7 +468,7 @@ const Auth = () => {
           )}
           
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Creating Account...' : 'Create Learning Hub Account'}
+            {isLoading ? 'Creating Account...' : 'Start Free'}
           </Button>
         </form>
         
