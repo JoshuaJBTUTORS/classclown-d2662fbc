@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addHours } from 'date-fns';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -64,19 +64,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   onSuccess, 
   preselectedTime = null
 }) => {
-  // Consolidated state
+  // State management
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
-  const [isGroupSession, setIsGroupSession] = useState(false);
-  const [isRecurring, setIsRecurring] = useState(false);
+  
+  // Refs to track initialization
+  const isInitializedRef = useRef(false);
+  const hasDataRef = useRef(false);
   
   // Lesson Space integration
   const { createRoom, isCreatingRoom } = useLessonSpace();
   
-  // Availability checking integration - manual only
+  // Availability checking integration
   const { checkAvailability, isChecking, checkResult, resetCheckResult } = useAvailabilityCheck();
   
   // Form schema
@@ -100,7 +102,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     path: ["studentId"]
   });
 
-  // Initialize form
+  // Initialize form with stable configuration
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -118,13 +120,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     },
   });
 
-  // Fetch data once when dialog opens
+  // Optimized data fetching - only fetch once per dialog session
   const fetchData = useCallback(async () => {
-    if (!isOpen || tutors.length > 0) return; // Only fetch if we don't have data
+    if (hasDataRef.current) return; // Don't fetch if we already have data
     
     setIsDataLoading(true);
     try {
-      // Fetch tutors and students in parallel
       const [tutorsResponse, studentsResponse] = await Promise.all([
         supabase
           .from('tutors')
@@ -149,16 +150,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       } else {
         setStudents(studentsResponse.data || []);
       }
+      
+      hasDataRef.current = true;
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setIsDataLoading(false);
     }
-  }, [isOpen, tutors.length]);
+  }, []);
 
-  // Reset form when dialog opens
+  // Reset form only when dialog opens/closes - simplified dependencies
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isInitializedRef.current) {
+      console.log('Initializing form for new dialog session');
+      
+      // Reset form with new values
       form.reset({
         title: "",
         description: "",
@@ -178,30 +184,17 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       });
       
       setSelectedStudents([]);
-      setIsGroupSession(false);
-      setIsRecurring(false);
       resetCheckResult();
       fetchData();
+      isInitializedRef.current = true;
+    } else if (!isOpen) {
+      // Reset initialization flag when dialog closes
+      isInitializedRef.current = false;
     }
   }, [isOpen, preselectedTime, form, resetCheckResult, fetchData]);
 
-  // Watch for form field changes (simplified)
-  const watchedIsGroup = form.watch('isGroup');
-  const watchedIsRecurring = form.watch('isRecurring');
-
-  useEffect(() => {
-    setIsGroupSession(!!watchedIsGroup);
-    if (!watchedIsGroup) {
-      setSelectedStudents([]);
-    }
-  }, [watchedIsGroup]);
-
-  useEffect(() => {
-    setIsRecurring(!!watchedIsRecurring);
-  }, [watchedIsRecurring]);
-
   // Manual availability check
-  const handleManualAvailabilityCheck = async () => {
+  const handleManualAvailabilityCheck = useCallback(async () => {
     const values = form.getValues();
     
     if (!values.tutorId || !values.date || !values.startTime || !values.endTime) {
@@ -219,7 +212,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
 
       let studentIds: number[] = [];
-      if (isGroupSession) {
+      if (values.isGroup) {
         studentIds = selectedStudents;
       } else if (values.studentId) {
         studentIds = [values.studentId];
@@ -234,11 +227,13 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     } catch (error) {
       console.error('Error performing availability check:', error);
     }
-  };
+  }, [form, selectedStudents, checkAvailability]);
 
-  // Handle selecting multiple students for group sessions
-  const handleStudentSelect = (studentId: number) => {
-    if (isGroupSession) {
+  // Handle student selection with useCallback to prevent re-renders
+  const handleStudentSelect = useCallback((studentId: number) => {
+    const isGroup = form.getValues('isGroup');
+    
+    if (isGroup) {
       setSelectedStudents(prev => {
         if (prev.includes(studentId)) {
           return prev.filter(id => id !== studentId);
@@ -249,10 +244,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     } else {
       form.setValue('studentId', studentId);
     }
-  };
+  }, [form]);
 
-  // Form submission
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  // Form submission with useCallback
+  const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
       
@@ -333,7 +328,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedStudents, createRoom, onClose, onSuccess]);
+
+  // Get current form values for rendering (avoiding form.watch to prevent re-renders)
+  const formValues = form.getValues();
 
   return (
     <Dialog 
@@ -462,7 +460,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                     <FormControl>
                       <Switch
                         checked={field.value}
-                        onCheckedChange={field.onChange}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (!checked) {
+                            setSelectedStudents([]);
+                          }
+                        }}
                       />
                     </FormControl>
                   </FormItem>
@@ -470,7 +473,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               />
             </div>
             
-            {isGroupSession ? (
+            {formValues.isGroup ? (
               <FormField
                 control={form.control}
                 name="studentId"
@@ -679,7 +682,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               )}
             />
 
-            {isRecurring && (
+            {formValues.isRecurring && (
               <div className="space-y-4 p-4 border rounded-md">
                 <FormField
                   control={form.control}
