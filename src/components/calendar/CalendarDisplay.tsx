@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -26,6 +25,12 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 
   const handleEventClick = (info: any) => {
     console.log("Event clicked:", info.event.id, info.event);
+    
+    // Don't open details for time off events
+    if (info.event.extendedProps.eventType === 'timeoff') {
+      return;
+    }
+    
     setSelectedLessonId(info.event.id);
     setIsDetailsOpen(true);
   };
@@ -68,9 +73,12 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     // This will trigger a refresh in the parent component
   };
 
-  // Simplified event color logic - use primary pink for all lessons
+  // Enhanced event color logic to differentiate time off events
   const getEventColor = (event: any) => {
-    return 'hsl(342 77% 60%)'; // Primary pink for all lessons
+    if (event.extendedProps.eventType === 'timeoff') {
+      return 'hsl(220 14% 50%)'; // Gray color for time off
+    }
+    return 'hsl(342 77% 60%)'; // Primary pink for lessons
   };
 
   // Helper function to truncate text intelligently
@@ -146,14 +154,18 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               eventClassNames={(info) => {
                 let classes = ['custom-calendar-event'];
                 
-                if (info.event.extendedProps.isRecurring || info.event.extendedProps.isRecurringInstance) {
-                  classes.push('recurring-event');
-                }
-                if (info.event.extendedProps.isGroup) {
-                  classes.push('group-event');
-                }
-                if (info.event.extendedProps.isCompleted) {
-                  classes.push('completed-event');
+                if (info.event.extendedProps.eventType === 'timeoff') {
+                  classes.push('time-off-event');
+                } else {
+                  if (info.event.extendedProps.isRecurring || info.event.extendedProps.isRecurringInstance) {
+                    classes.push('recurring-event');
+                  }
+                  if (info.event.extendedProps.isGroup) {
+                    classes.push('group-event');
+                  }
+                  if (info.event.extendedProps.isCompleted) {
+                    classes.push('completed-event');
+                  }
                 }
                 
                 return classes;
@@ -162,6 +174,28 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 const isMonthView = eventInfo.view.type === 'dayGridMonth';
                 const isWeekView = eventInfo.view.type === 'timeGridWeek';
                 const isDayView = eventInfo.view.type === 'timeGridDay';
+                const isTimeOff = eventInfo.event.extendedProps.eventType === 'timeoff';
+                
+                if (isTimeOff) {
+                  return (
+                    <div className="fc-event-main-frame p-0.5 min-h-0 overflow-hidden">
+                      <div className="fc-event-title-container flex flex-col gap-0 min-h-0">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="event-title text-[10px] leading-tight font-medium truncate min-w-0 text-white">
+                            {isMonthView ? 'Time Off' : eventInfo.event.title}
+                          </span>
+                        </div>
+                        {(isWeekView || isDayView) && (
+                          <div className="text-[10px] leading-tight opacity-75 truncate text-white">
+                            {eventInfo.event.extendedProps.tutorName}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Regular lesson event rendering
                 const isRecurring = eventInfo.event.extendedProps.isRecurring || 
                                   eventInfo.event.extendedProps.isRecurringInstance;
                 const isCompleted = eventInfo.event.extendedProps.isCompleted;
@@ -259,6 +293,13 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 info.el.style.backgroundColor = color;
                 info.el.style.borderColor = color;
                 info.el.style.color = 'white';
+                
+                // Add special styling for time off events
+                if (info.event.extendedProps.eventType === 'timeoff') {
+                  info.el.style.cursor = 'default';
+                  info.el.style.opacity = '0.8';
+                  info.el.style.fontStyle = 'italic';
+                }
               }}
             />
           </div>

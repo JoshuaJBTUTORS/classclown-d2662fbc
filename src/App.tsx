@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -28,6 +27,8 @@ import Reports from '@/pages/Reports';
 import AssessmentPreview from '@/pages/AssessmentPreview';
 import AssessmentEdit from '@/pages/AssessmentEdit';
 import StudentJoinPage from '@/components/lessons/StudentJoinPage';
+import TimeOff from '@/pages/TimeOff';
+import TimeOffRequests from '@/pages/TimeOffRequests';
 
 import './App.css';
 
@@ -90,6 +91,18 @@ function App() {
                 <Route path="/reports" element={
                   <ProtectedRoute allowedRoles={['owner']}>
                     <Reports />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/time-off" element={
+                  <ProtectedRoute allowedRoles={['tutor']}>
+                    <TimeOff />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/time-off-requests" element={
+                  <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                    <TimeOffRequests />
                   </ProtectedRoute>
                 } />
                 

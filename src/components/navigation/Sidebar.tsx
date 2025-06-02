@@ -10,7 +10,8 @@ import {
   Library,
   ChevronLeft,
   ChevronRight,
-  FileBarChart
+  FileBarChart,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       ];
     }
 
+    // For tutors, include time off requests
+    if (userRole === 'tutor') {
+      return [
+        { name: 'Dashboard', href: '/', icon: Home },
+        { name: 'Calendar', href: '/calendar', icon: Calendar },
+        { name: 'Students', href: '/students', icon: Users },
+        { name: 'Homework', href: '/homework', icon: BookMarked },
+        { name: 'Time Off', href: '/time-off', icon: Clock },
+        { name: 'Learning Hub', href: '/learning-hub', icon: Library },
+      ];
+    }
+
     // For all other roles, keep the original navigation with Dashboard first
     const baseNavigation = [
       { name: 'Dashboard', href: '/', icon: Home },
@@ -53,15 +66,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     ];
 
     // Add role-specific navigation items
-    if (userRole === 'admin' || userRole === 'owner' || userRole === 'tutor') {
-      baseNavigation.push({ name: 'Students', href: '/students', icon: Users });
-    }
-
     if (userRole === 'admin' || userRole === 'owner') {
+      baseNavigation.push({ name: 'Students', href: '/students', icon: Users });
       baseNavigation.push({ name: 'Tutors', href: '/tutors', icon: GraduationCap });
     }
 
     baseNavigation.push({ name: 'Homework', href: '/homework', icon: BookMarked });
+
+    // Add time off requests for admins and owners
+    if (userRole === 'admin' || userRole === 'owner') {
+      baseNavigation.push({ name: 'Time Off Requests', href: '/time-off-requests', icon: Clock });
+    }
 
     if (userRole === 'owner') {
       baseNavigation.push({ name: 'Progress', href: '/progress', icon: TrendingUp });

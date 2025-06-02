@@ -1017,6 +1017,59 @@ export type Database = {
           },
         ]
       }
+      time_off_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          end_date: string
+          id: string
+          reason: string
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          reason: string
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          reason?: string
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_off_requests_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_availability: {
         Row: {
           created_at: string | null
@@ -1153,6 +1206,10 @@ export type Database = {
           questions_answered: number
           total_questions: number
         }[]
+      }
+      get_current_tutor_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_current_user_parent_id: {
         Args: Record<PropertyKey, never>

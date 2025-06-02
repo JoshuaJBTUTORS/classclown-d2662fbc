@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ export const useCalendarData = ({
   filters 
 }: UseCalendarDataProps) => {
   const [rawLessons, setRawLessons] = useState<any[]>([]);
+  const [timeOffEvents, setTimeOffEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Memoize lesson IDs to prevent infinite re-renders
@@ -35,62 +37,87 @@ export const useCalendarData = ({
 
   // Memoize events to prevent unnecessary recalculations
   const events = useMemo(() => {
-    if (rawLessons.length === 0) return [];
+    const calendarEvents = [];
 
-    const calendarEvents = rawLessons.map(lesson => {
-      // Get completion status for this lesson
-      const completionInfo = completionData[lesson.id];
-      const isCompleted = completionInfo?.isCompleted || false;
+    // Add lesson events
+    if (rawLessons.length > 0) {
+      const lessonEvents = rawLessons.map(lesson => {
+        // Get completion status for this lesson
+        const completionInfo = completionData[lesson.id];
+        const isCompleted = completionInfo?.isCompleted || false;
 
-      let className = 'calendar-event';
-      if (isCompleted) {
-        className += ' completed-event';
-      }
-      
-      return {
-        id: lesson.id,
-        title: lesson.title,
-        start: lesson.start_time,
-        end: lesson.end_time,
-        className,
-        extendedProps: {
-          isRecurring: lesson.is_recurring,
-          recurrenceInterval: lesson.recurrence_interval,
-          recurrenceEndDate: lesson.recurrence_end_date,
-          description: lesson.description,
-          subject: lesson.subject,
-          userRole: userRole,
-          tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
-            id: lesson.tutor.id,
-            first_name: lesson.tutor.first_name,
-            last_name: lesson.tutor.last_name,
-            email: lesson.tutor.email
-          } : null,
-          students: lesson.lesson_students?.map(ls => ({
-            id: ls.student_id,
-            name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-          })) || [],
-          isCompleted: isCompleted,
-          completionDetails: completionInfo
+        let className = 'calendar-event';
+        if (isCompleted) {
+          className += ' completed-event';
         }
-      };
-    });
+        
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          start: lesson.start_time,
+          end: lesson.end_time,
+          className,
+          extendedProps: {
+            isRecurring: lesson.is_recurring,
+            recurrenceInterval: lesson.recurrence_interval,
+            recurrenceEndDate: lesson.recurrence_end_date,
+            description: lesson.description,
+            subject: lesson.subject,
+            userRole: userRole,
+            tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
+              id: lesson.tutor.id,
+              first_name: lesson.tutor.first_name,
+              last_name: lesson.tutor.last_name,
+              email: lesson.tutor.email
+            } : null,
+            students: lesson.lesson_students?.map(ls => ({
+              id: ls.student_id,
+              name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+            })) || [],
+            isCompleted: isCompleted,
+            completionDetails: completionInfo,
+            eventType: 'lesson'
+          }
+        };
+      });
 
-    // Add recurring events
-    for (const lesson of rawLessons) {
-      if (lesson.is_recurring && lesson.recurrence_interval) {
-        const recurringEvents = generateRecurringEvents(lesson, userRole, completionData);
-        calendarEvents.push(...recurringEvents);
+      calendarEvents.push(...lessonEvents);
+
+      // Add recurring events
+      for (const lesson of rawLessons) {
+        if (lesson.is_recurring && lesson.recurrence_interval) {
+          const recurringEvents = generateRecurringEvents(lesson, userRole, completionData);
+          calendarEvents.push(...recurringEvents);
+        }
       }
     }
 
+    // Add time off events
+    const timeOffCalendarEvents = timeOffEvents.map(timeOff => ({
+      id: `timeoff-${timeOff.id}`,
+      title: `Time Off - ${timeOff.tutor.first_name} ${timeOff.tutor.last_name}`,
+      start: timeOff.start_date,
+      end: timeOff.end_date,
+      className: 'time-off-event',
+      extendedProps: {
+        eventType: 'timeoff',
+        tutorName: `${timeOff.tutor.first_name} ${timeOff.tutor.last_name}`,
+        reason: timeOff.reason,
+        userRole: userRole,
+        isTimeOff: true
+      }
+    }));
+
+    calendarEvents.push(...timeOffCalendarEvents);
+
     return calendarEvents;
-  }, [rawLessons, userRole, completionData]);
+  }, [rawLessons, timeOffEvents, userRole, completionData]);
 
   useEffect(() => {
     const fetchEvents = async () => {
       if (!isAuthenticated || !userRole || !userEmail) {
         setRawLessons([]);
+        setTimeOffEvents([]);
         setIsLoading(false);
         return;
       }
@@ -264,6 +291,25 @@ export const useCalendarData = ({
         }
 
         setRawLessons(filteredData);
+
+        // Fetch approved time off events for calendar display
+        if (userRole === 'admin' || userRole === 'owner' || userRole === 'tutor') {
+          const { data: timeOffData, error: timeOffError } = await supabase
+            .from('time_off_requests')
+            .select(`
+              *,
+              tutor:tutors(first_name, last_name, email)
+            `)
+            .eq('status', 'approved');
+
+          if (timeOffError) {
+            console.error('Error fetching time off data:', timeOffError);
+          } else {
+            console.log("Time off events fetched:", timeOffData);
+            setTimeOffEvents(timeOffData || []);
+          }
+        }
+
       } catch (error) {
         console.error('Error fetching lessons:', error);
         toast.error('Failed to load lessons');
@@ -325,7 +371,8 @@ export const useCalendarData = ({
               name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
             })) || [],
             isCompleted: isCompleted,
-            completionDetails: completionInfo
+            completionDetails: completionInfo,
+            eventType: 'lesson'
           }
         });
       }
