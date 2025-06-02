@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, addHours } from 'date-fns';
 import { z } from 'zod';
@@ -63,22 +64,22 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   onSuccess, 
   preselectedTime = null
 }) => {
-  // State variables
+  // Consolidated state
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [isGroupSession, setIsGroupSession] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
-  const [isFetchingData, setIsFetchingData] = useState(false);
   
   // Lesson Space integration
   const { createRoom, isCreatingRoom } = useLessonSpace();
   
-  // Availability checking integration
+  // Availability checking integration - manual only
   const { checkAvailability, isChecking, checkResult, resetCheckResult } = useAvailabilityCheck();
   
-  // Form schema with validation
+  // Form schema
   const formSchema = z.object({
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
@@ -93,7 +94,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     recurrenceInterval: z.enum(['daily', 'weekly', 'monthly']).optional(),
     recurrenceEndDate: z.date().optional(),
   }).refine(data => {
-    // For group sessions, require at least one selected student
     return !data.isGroup || (data.isGroup && selectedStudents.length > 0);
   }, {
     message: "Select at least one student for group sessions",
@@ -109,25 +109,56 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       subject: "",
       tutorId: "",
       studentId: undefined,
-      date: preselectedTime ? preselectedTime.start : new Date(),
-      startTime: preselectedTime 
-        ? format(preselectedTime.start, "HH:mm") 
-        : format(new Date().setMinutes(0), "HH:mm"),
-      endTime: preselectedTime 
-        ? format(preselectedTime.end, "HH:mm") 
-        : format(addHours(new Date().setMinutes(0), 1), "HH:mm"),
+      date: new Date(),
+      startTime: format(new Date().setMinutes(0), "HH:mm"),
+      endTime: format(addHours(new Date().setMinutes(0), 1), "HH:mm"),
       isGroup: false,
       isRecurring: false,
       recurrenceInterval: 'weekly',
     },
   });
 
-  // Reset form when dialog opens/closes
+  // Fetch data once when dialog opens
+  const fetchData = useCallback(async () => {
+    if (!isOpen || tutors.length > 0) return; // Only fetch if we don't have data
+    
+    setIsDataLoading(true);
+    try {
+      // Fetch tutors and students in parallel
+      const [tutorsResponse, studentsResponse] = await Promise.all([
+        supabase
+          .from('tutors')
+          .select('*')
+          .eq('status', 'active')
+          .order('last_name', { ascending: true }),
+        supabase
+          .from('students')
+          .select('*')
+          .eq('status', 'active')
+          .order('last_name', { ascending: true })
+      ]);
+
+      if (tutorsResponse.error) {
+        console.error('Error fetching tutors:', tutorsResponse.error);
+      } else {
+        setTutors(tutorsResponse.data || []);
+      }
+
+      if (studentsResponse.error) {
+        console.error('Error fetching students:', studentsResponse.error);
+      } else {
+        setStudents(studentsResponse.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsDataLoading(false);
+    }
+  }, [isOpen, tutors.length]);
+
+  // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
-      console.log("AddLessonForm - Dialog opened, resetting form");
-      
-      // Initialize form with default values
       form.reset({
         title: "",
         description: "",
@@ -146,129 +177,62 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         recurrenceInterval: 'weekly',
       });
       
-      // Reset selected students array and availability check
       setSelectedStudents([]);
       setIsGroupSession(false);
       setIsRecurring(false);
       resetCheckResult();
-      
-      // Fetch data
       fetchData();
     }
-  }, [isOpen, preselectedTime, form, resetCheckResult]);
+  }, [isOpen, preselectedTime, form, resetCheckResult, fetchData]);
 
-  // Watch for form field changes
+  // Watch for form field changes (simplified)
+  const watchedIsGroup = form.watch('isGroup');
+  const watchedIsRecurring = form.watch('isRecurring');
+
   useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'isGroup') {
-        setIsGroupSession(!!value.isGroup);
-        if (!value.isGroup) {
-          setSelectedStudents([]);
-        }
-      }
-      if (name === 'isRecurring') {
-        setIsRecurring(!!value.isRecurring);
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
+    setIsGroupSession(!!watchedIsGroup);
+    if (!watchedIsGroup) {
+      setSelectedStudents([]);
+    }
+  }, [watchedIsGroup]);
 
-  // Debounced availability check when key fields change
   useEffect(() => {
-    const subscription = form.watch((value) => {
-      // Only check if we have the required fields
-      if (value.tutorId && value.date && value.startTime && value.endTime) {
-        // Debounce the check to avoid too many API calls
-        const timeoutId = setTimeout(() => {
-          performAvailabilityCheck(value);
-        }, 500);
-        
-        return () => clearTimeout(timeoutId);
-      } else {
-        // Reset check result if required fields are missing
-        resetCheckResult();
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form.watch, selectedStudents]);
+    setIsRecurring(!!watchedIsRecurring);
+  }, [watchedIsRecurring]);
 
-  // Perform availability check
-  const performAvailabilityCheck = useCallback(async (formValues: any) => {
-    if (!formValues.tutorId || !formValues.date || !formValues.startTime || !formValues.endTime) {
+  // Manual availability check
+  const handleManualAvailabilityCheck = async () => {
+    const values = form.getValues();
+    
+    if (!values.tutorId || !values.date || !values.startTime || !values.endTime) {
+      toast.error('Please fill in tutor, date, and time fields first');
       return;
     }
 
     try {
-      // Format the date and times into ISO strings
-      const startTime = new Date(formValues.date);
-      const [startHours, startMinutes] = formValues.startTime.split(':');
+      const startTime = new Date(values.date);
+      const [startHours, startMinutes] = values.startTime.split(':');
       startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
 
-      const endTime = new Date(formValues.date);
-      const [endHours, endMinutes] = formValues.endTime.split(':');
+      const endTime = new Date(values.date);
+      const [endHours, endMinutes] = values.endTime.split(':');
       endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
 
-      // Determine student IDs to check
       let studentIds: number[] = [];
       if (isGroupSession) {
         studentIds = selectedStudents;
-      } else if (formValues.studentId) {
-        studentIds = [formValues.studentId];
+      } else if (values.studentId) {
+        studentIds = [values.studentId];
       }
 
       await checkAvailability({
-        tutorId: formValues.tutorId,
+        tutorId: values.tutorId,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         studentIds: studentIds.length > 0 ? studentIds : undefined
       });
     } catch (error) {
       console.error('Error performing availability check:', error);
-    }
-  }, [checkAvailability, isGroupSession, selectedStudents]);
-
-  // Manual availability check button
-  const handleManualAvailabilityCheck = async () => {
-    const values = form.getValues();
-    await performAvailabilityCheck(values);
-  };
-
-  // Check if form has required fields for availability check
-  const canCheckAvailability = () => {
-    const values = form.getValues();
-    return !!(values.tutorId && values.date && values.startTime && values.endTime);
-  };
-
-  // Fetch tutors and students data
-  const fetchData = async () => {
-    setIsFetchingData(true);
-    try {
-      // Fetch tutors
-      const { data: tutorsData, error: tutorsError } = await supabase
-        .from('tutors')
-        .select('*')
-        .eq('status', 'active')
-        .order('last_name', { ascending: true });
-
-      if (tutorsError) throw tutorsError;
-      setTutors(tutorsData || []);
-
-      // Fetch active students
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('students')
-        .select('*')
-        .eq('status', 'active')
-        .order('last_name', { ascending: true });
-        
-      if (studentsError) throw studentsError;
-      setStudents(studentsData || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setIsFetchingData(false);
     }
   };
 
@@ -287,28 +251,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     }
   };
 
-  // Form submission with availability check
+  // Form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
       
-      // Perform final availability check before creating lesson
-      await performAvailabilityCheck(values);
-      
-      // Check if there are any conflicts that should prevent lesson creation
-      if (checkResult && !checkResult.isAvailable) {
-        const hasBlockingConflicts = checkResult.conflicts.some(
-          conflict => conflict.type === 'tutor_availability' || conflict.type === 'lesson_conflict'
-        );
-        
-        if (hasBlockingConflicts) {
-          toast.error('Cannot create lesson due to scheduling conflicts. Please resolve conflicts first.');
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      // Format the date and times into ISO strings
       const startTime = new Date(values.date);
       const [startHours, startMinutes] = values.startTime.split(':');
       startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
@@ -317,7 +264,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       const [endHours, endMinutes] = values.endTime.split(':');
       endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
       
-      // Create the lesson first
+      // Create the lesson
       const { data: lesson, error: lessonError } = await supabase
         .from('lessons')
         .insert({
@@ -340,8 +287,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       
       if (lessonError) throw lessonError;
 
-      // Automatically create Lesson Space room
-      console.log("Creating Lesson Space room for new lesson:", lesson.id);
+      // Create Lesson Space room
       const duration = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60));
       
       const roomResult = await createRoom({
@@ -352,28 +298,22 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       });
 
       if (!roomResult) {
-        console.warn("Failed to create Lesson Space room, but lesson was created successfully");
-        toast.error('Lesson created but failed to create online room');
-      } else {
-        console.log("Successfully created Lesson Space room:", roomResult);
+        console.warn("Failed to create Lesson Space room");
       }
       
-      // For group sessions, add multiple students
+      // Add students
       if (values.isGroup && selectedStudents.length > 0) {
-        // Create array of lesson_students objects
         const lessonStudentsData = selectedStudents.map(studentId => ({
           lesson_id: lesson.id,
           student_id: studentId
         }));
         
-        // Insert all students at once
         const { error: studentsError } = await supabase
           .from('lesson_students')
           .insert(lessonStudentsData);
         
         if (studentsError) throw studentsError;
       } else if (values.studentId) {
-        // Add single student to the lesson
         const { error: studentError } = await supabase
           .from('lesson_students')
           .insert({
@@ -384,14 +324,13 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         if (studentError) throw studentError;
       }
       
-      // Success! Close the dialog and reset form
-      setIsLoading(false);
-      toast.success('Lesson created successfully with online room!');
+      toast.success('Lesson created successfully!');
       onClose();
       onSuccess();
     } catch (error) {
       console.error('Error creating lesson:', error);
       toast.error('Failed to create lesson');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -409,7 +348,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         <DialogHeader>
           <DialogTitle>Schedule New Lesson</DialogTitle>
           <DialogDescription>
-            Create a new tutoring session with automatic availability checking. An online room will be created automatically.
+            Create a new tutoring session. An online room will be created automatically.
           </DialogDescription>
         </DialogHeader>
         
@@ -482,21 +421,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value || ""}
-                      disabled={isFetchingData}
+                      disabled={isDataLoading}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={isFetchingData ? "Loading tutors..." : "Select a tutor"} />
+                          <SelectValue placeholder={isDataLoading ? "Loading..." : "Select a tutor"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {isFetchingData ? (
-                          <div className="flex items-center justify-center p-2">
+                        {isDataLoading ? (
+                          <div className="flex items-center justify-center p-4">
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             <span>Loading tutors...</span>
                           </div>
                         ) : tutors.length === 0 ? (
-                          <div className="p-2 text-center text-muted-foreground">No tutors available</div>
+                          <div className="p-4 text-center text-muted-foreground">No tutors available</div>
                         ) : (
                           tutors.map((tutor) => (
                             <SelectItem key={tutor.id} value={tutor.id}>
@@ -539,13 +478,13 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                   <FormItem>
                     <FormLabel>Students (select multiple)</FormLabel>
                     <div className="border rounded-md p-2 max-h-[200px] overflow-y-auto bg-white">
-                      {isFetchingData ? (
+                      {isDataLoading ? (
                         <div className="flex items-center justify-center p-4">
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           <span>Loading students...</span>
                         </div>
                       ) : students.length === 0 ? (
-                        <div className="p-2 text-center text-muted-foreground">No students available</div>
+                        <div className="p-4 text-center text-muted-foreground">No students available</div>
                       ) : (
                         students.map((student) => {
                           const studentId = typeof student.id === 'string' 
@@ -592,21 +531,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                     <Select 
                       onValueChange={(value) => field.onChange(parseInt(value, 10))} 
                       value={field.value ? field.value.toString() : ""}
-                      disabled={isFetchingData}
+                      disabled={isDataLoading}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={isFetchingData ? "Loading students..." : "Select a student"} />
+                          <SelectValue placeholder={isDataLoading ? "Loading..." : "Select a student"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {isFetchingData ? (
-                          <div className="flex items-center justify-center p-2">
+                        {isDataLoading ? (
+                          <div className="flex items-center justify-center p-4">
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             <span>Loading students...</span>
                           </div>
                         ) : students.length === 0 ? (
-                          <div className="p-2 text-center text-muted-foreground">No students available</div>
+                          <div className="p-4 text-center text-muted-foreground">No students available</div>
                         ) : (
                           students.map((student) => {
                             const studentId = typeof student.id === 'string' 
@@ -694,16 +633,16 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               />
             </div>
 
-            {/* Availability Status Section */}
+            {/* Manual Availability Check Section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Availability Status</label>
+                <label className="text-sm font-medium">Availability Check</label>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleManualAvailabilityCheck}
-                  disabled={!canCheckAvailability() || isChecking}
+                  disabled={isChecking}
                   className="flex items-center gap-2"
                 >
                   {isChecking ? (
@@ -711,7 +650,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                   ) : (
                     <CheckCircle className="h-3 w-3" />
                   )}
-                  Check Now
+                  Check Availability
                 </Button>
               </div>
               
@@ -803,7 +742,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                             initialFocus
                           />
                         </PopoverContent>
-                      </Popover>
+                      </PopoverContent>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -822,16 +761,13 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || isFetchingData || isCreatingRoom}
-                className={checkResult && !checkResult.isAvailable ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                disabled={isLoading || isDataLoading || isCreatingRoom}
               >
                 {isLoading || isCreatingRoom ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {isCreatingRoom ? 'Creating room...' : 'Creating lesson...'}
                   </>
-                ) : checkResult && !checkResult.isAvailable ? (
-                  'Create Lesson (with conflicts)'
                 ) : (
                   'Create Lesson'
                 )}
