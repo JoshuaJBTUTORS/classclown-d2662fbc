@@ -36,13 +36,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Check, Loader2 } from 'lucide-react';
+import { CalendarIcon, Check, Loader2, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
 import { Student } from '@/types/student';
 import { Lesson } from '@/types/lesson';
 import { LESSON_SUBJECTS } from '@/constants/subjects';
+import { useAvailabilityCheck } from '@/hooks/useAvailabilityCheck';
+import AvailabilityStatus from './AvailabilityStatus';
 
 interface EditLessonFormProps {
   isOpen: boolean;
@@ -94,6 +96,9 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       isGroup: false,
     },
   });
+
+  // Availability checking integration
+  const { checkAvailability, isChecking, checkResult, resetCheckResult } = useAvailabilityCheck();
 
   // Fetch lesson details when the modal is opened
   useEffect(() => {
@@ -282,6 +287,43 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
         return [...prev, studentId];
       }
     });
+  };
+
+  // Manual availability check
+  const handleManualAvailabilityCheck = async () => {
+    const values = form.getValues();
+    
+    if (!values.tutorId || !values.date || !values.startTime || !values.endTime) {
+      toast.error('Please fill in tutor, date, and time fields first');
+      return;
+    }
+
+    try {
+      const startTime = new Date(values.date);
+      const [startHours, startMinutes] = values.startTime.split(':');
+      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
+
+      const endTime = new Date(values.date);
+      const [endHours, endMinutes] = values.endTime.split(':');
+      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
+
+      await checkAvailability({
+        tutorId: values.tutorId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        studentIds: selectedStudents.length > 0 ? selectedStudents : undefined,
+        excludeLessonId: lessonId || undefined
+      });
+    } catch (error) {
+      console.error('Error performing availability check:', error);
+    }
+  };
+
+  // Handle alternative tutor selection
+  const handleSelectAlternativeTutor = (tutorId: string, tutorName: string) => {
+    form.setValue('tutorId', tutorId);
+    resetCheckResult();
+    toast.success(`Switched to ${tutorName}`);
   };
 
   return (
@@ -512,6 +554,34 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+              </div>
+              
+              {/* Manual Availability Check Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Availability Check</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleManualAvailabilityCheck}
+                    disabled={isChecking}
+                    className="flex items-center gap-2"
+                  >
+                    {isChecking ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-3 w-3" />
+                    )}
+                    Check Availability
+                  </Button>
+                </div>
+                
+                <AvailabilityStatus
+                  isChecking={isChecking}
+                  checkResult={checkResult}
+                  onSelectAlternativeTutor={handleSelectAlternativeTutor}
                 />
               </div>
               

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addHours } from 'date-fns';
 import { z } from 'zod';
@@ -228,6 +227,13 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
       console.error('Error performing availability check:', error);
     }
   }, [form, selectedStudents, checkAvailability]);
+
+  // Handle alternative tutor selection
+  const handleSelectAlternativeTutor = useCallback((tutorId: string, tutorName: string) => {
+    form.setValue('tutorId', tutorId);
+    resetCheckResult();
+    toast.success(`Switched to ${tutorName}`);
+  }, [form, resetCheckResult]);
 
   // Handle student selection with useCallback to prevent re-renders
   const handleStudentSelect = useCallback((studentId: number) => {
@@ -660,6 +666,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               <AvailabilityStatus
                 isChecking={isChecking}
                 checkResult={checkResult}
+                onSelectAlternativeTutor={handleSelectAlternativeTutor}
               />
             </div>
             

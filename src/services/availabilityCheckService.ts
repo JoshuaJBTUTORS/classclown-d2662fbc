@@ -9,10 +9,20 @@ export interface AvailabilityCheckRequest {
   excludeLessonId?: string; // For editing existing lessons
 }
 
+export interface AlternativeTutor {
+  id: string;
+  first_name: string;
+  last_name: string;
+  availableSlots: string[];
+  hasConflict: boolean;
+}
+
 export interface AvailabilityCheckResult {
   isAvailable: boolean;
   conflicts: AvailabilityConflict[];
   suggestions?: string[];
+  alternativeTutors?: AlternativeTutor[];
+  hasAlternatives: boolean;
 }
 
 export interface AvailabilityConflict {
@@ -44,6 +54,98 @@ const isTimeWithinSlot = (
   const endTotalMinutes = endHours * 60 + endMinutes;
 
   return checkTotalMinutes >= startTotalMinutes && checkTotalMinutes < endTotalMinutes;
+};
+
+export const findAlternativeTutors = async (
+  originalTutorId: string,
+  startTime: string,
+  endTime: string,
+  studentIds?: number[]
+): Promise<AlternativeTutor[]> => {
+  const alternatives: AlternativeTutor[] = [];
+
+  try {
+    const startDate = parseISO(startTime);
+    const endDate = parseISO(endTime);
+    const dayOfWeek = getDayName(getDay(startDate));
+
+    console.log('Finding alternative tutors for:', { dayOfWeek, startTime, endTime });
+
+    // Get all active tutors except the original one
+    const { data: tutors, error: tutorsError } = await supabase
+      .from('tutors')
+      .select('id, first_name, last_name')
+      .eq('status', 'active')
+      .neq('id', originalTutorId);
+
+    if (tutorsError) throw tutorsError;
+
+    if (!tutors || tutors.length === 0) {
+      return alternatives;
+    }
+
+    // Check each tutor's availability
+    for (const tutor of tutors) {
+      try {
+        // Check tutor's basic availability for the day
+        const { data: availability, error: availError } = await supabase
+          .from('tutor_availability')
+          .select('*')
+          .eq('tutor_id', tutor.id)
+          .eq('day_of_week', dayOfWeek);
+
+        if (availError) continue;
+
+        if (!availability || availability.length === 0) continue;
+
+        // Check if the requested time falls within any availability slot
+        const availableSlots = availability
+          .filter(slot => {
+            const startWithinSlot = isTimeWithinSlot(startDate, slot.start_time, slot.end_time);
+            const endWithinSlot = isTimeWithinSlot(endDate, slot.start_time, slot.end_time);
+            return startWithinSlot && endWithinSlot;
+          })
+          .map(slot => `${slot.start_time} - ${slot.end_time}`);
+
+        if (availableSlots.length === 0) continue;
+
+        // Check for conflicts
+        const [tutorConflicts, timeOffConflicts, studentConflicts] = await Promise.all([
+          checkCalendarConflicts(tutor.id, startTime, endTime),
+          checkTimeOffConflicts(tutor.id, startTime, endTime),
+          studentIds ? checkStudentConflicts(studentIds, startTime, endTime) : []
+        ]);
+
+        const totalConflicts = tutorConflicts.length + timeOffConflicts.length + studentConflicts.length;
+        const hasConflict = totalConflicts > 0;
+
+        alternatives.push({
+          id: tutor.id,
+          first_name: tutor.first_name,
+          last_name: tutor.last_name,
+          availableSlots,
+          hasConflict
+        });
+
+      } catch (error) {
+        console.error(`Error checking tutor ${tutor.id}:`, error);
+        continue;
+      }
+    }
+
+    // Sort alternatives: conflict-free tutors first, then by name
+    alternatives.sort((a, b) => {
+      if (a.hasConflict !== b.hasConflict) {
+        return a.hasConflict ? 1 : -1;
+      }
+      return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+    });
+
+  } catch (error) {
+    console.error('Error finding alternative tutors:', error);
+  }
+
+  return alternatives;
 };
 
 export const checkTutorAvailability = async (
@@ -290,26 +392,55 @@ export const performFullAvailabilityCheck = async (
     ...studentConflicts
   );
 
+  // Find alternative tutors if there are tutor-specific conflicts
+  let alternativeTutors: AlternativeTutor[] = [];
+  const hasTutorConflicts = allConflicts.some(c => 
+    c.type === 'tutor_availability' || c.type === 'lesson_conflict' || c.type === 'time_off'
+  );
+
+  if (hasTutorConflicts) {
+    alternativeTutors = await findAlternativeTutors(
+      request.tutorId,
+      request.startTime,
+      request.endTime,
+      request.studentIds
+    );
+  }
+
   return {
     isAvailable: allConflicts.length === 0,
     conflicts: allConflicts,
-    suggestions: generateSuggestions(allConflicts)
+    suggestions: generateSuggestions(allConflicts, alternativeTutors.length > 0),
+    alternativeTutors,
+    hasAlternatives: alternativeTutors.length > 0
   };
 };
 
-const generateSuggestions = (conflicts: AvailabilityConflict[]): string[] => {
+const generateSuggestions = (conflicts: AvailabilityConflict[], hasAlternatives: boolean): string[] => {
   const suggestions: string[] = [];
 
   if (conflicts.some(c => c.type === 'tutor_availability')) {
-    suggestions.push('Check the tutor\'s availability schedule and select a time within their available hours');
+    if (hasAlternatives) {
+      suggestions.push('Consider selecting one of the alternative tutors below who are available at this time');
+    } else {
+      suggestions.push('Check the tutor\'s availability schedule and select a time within their available hours');
+    }
   }
 
   if (conflicts.some(c => c.type === 'lesson_conflict')) {
-    suggestions.push('Choose a different time slot or consider rescheduling the conflicting lesson');
+    if (hasAlternatives) {
+      suggestions.push('Switch to an alternative tutor or choose a different time slot');
+    } else {
+      suggestions.push('Choose a different time slot or consider rescheduling the conflicting lesson');
+    }
   }
 
   if (conflicts.some(c => c.type === 'time_off')) {
-    suggestions.push('Select a date when the tutor is not on approved time off');
+    if (hasAlternatives) {
+      suggestions.push('Select an alternative tutor or choose a date when the original tutor is not on time off');
+    } else {
+      suggestions.push('Select a date when the tutor is not on approved time off');
+    }
   }
 
   if (conflicts.some(c => c.type === 'student_conflict')) {
