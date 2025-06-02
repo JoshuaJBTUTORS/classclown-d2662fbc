@@ -742,7 +742,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                             initialFocus
                           />
                         </PopoverContent>
-                      </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
