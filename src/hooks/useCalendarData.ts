@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,12 +26,17 @@ export const useCalendarData = ({
   const [rawLessons, setRawLessons] = useState<any[]>([]);
   const [timeOffEvents, setTimeOffEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasErrored, setHasErrored] = useState(false);
 
-  // Fix: Create stable lessonIds memoization
+  // Fixed: Create stable lessonIds memoization with null safety
   const lessonIds = useMemo(() => {
-    return rawLessons.map(lesson => lesson.id);
+    if (!rawLessons || rawLessons.length === 0) {
+      return [];
+    }
+    return rawLessons.map(lesson => lesson?.id).filter(id => id != null);
   }, [rawLessons]);
 
+  // Wrap lesson completion hook in error boundary
   const { completionData } = useLessonCompletion(lessonIds);
 
   // Memoize events to prevent unnecessary recalculations
@@ -40,8 +44,10 @@ export const useCalendarData = ({
     const calendarEvents = [];
 
     // Add lesson events
-    if (rawLessons.length > 0) {
+    if (rawLessons && rawLessons.length > 0) {
       const lessonEvents = rawLessons.map(lesson => {
+        if (!lesson || !lesson.id) return null;
+        
         // Get completion status for this lesson
         const completionInfo = completionData[lesson.id];
         const isCompleted = completionInfo?.isCompleted || false;
@@ -53,7 +59,7 @@ export const useCalendarData = ({
         
         return {
           id: lesson.id,
-          title: lesson.title,
+          title: lesson.title || 'Untitled Lesson',
           start: lesson.start_time,
           end: lesson.end_time,
           className,
@@ -79,36 +85,42 @@ export const useCalendarData = ({
             eventType: 'lesson'
           }
         };
-      });
+      }).filter(event => event !== null);
 
       calendarEvents.push(...lessonEvents);
 
       // Add recurring events
       for (const lesson of rawLessons) {
-        if (lesson.is_recurring && lesson.recurrence_interval) {
+        if (lesson && lesson.is_recurring && lesson.recurrence_interval) {
           const recurringEvents = generateRecurringEvents(lesson, userRole, completionData);
           calendarEvents.push(...recurringEvents);
         }
       }
     }
 
-    // Add time off events
-    const timeOffCalendarEvents = timeOffEvents.map(timeOff => ({
-      id: `timeoff-${timeOff.id}`,
-      title: `Time Off - ${timeOff.tutor.first_name} ${timeOff.tutor.last_name}`,
-      start: timeOff.start_date,
-      end: timeOff.end_date,
-      className: 'time-off-event',
-      extendedProps: {
-        eventType: 'timeoff',
-        tutorName: `${timeOff.tutor.first_name} ${timeOff.tutor.last_name}`,
-        reason: timeOff.reason,
-        userRole: userRole,
-        isTimeOff: true
-      }
-    }));
+    // Add time off events with null safety
+    if (timeOffEvents && timeOffEvents.length > 0) {
+      const timeOffCalendarEvents = timeOffEvents.map(timeOff => {
+        if (!timeOff || !timeOff.id) return null;
+        
+        return {
+          id: `timeoff-${timeOff.id}`,
+          title: `Time Off - ${timeOff.tutor?.first_name || 'Unknown'} ${timeOff.tutor?.last_name || ''}`,
+          start: timeOff.start_date,
+          end: timeOff.end_date,
+          className: 'time-off-event',
+          extendedProps: {
+            eventType: 'timeoff',
+            tutorName: timeOff.tutor ? `${timeOff.tutor.first_name} ${timeOff.tutor.last_name}` : 'Unknown Tutor',
+            reason: timeOff.reason,
+            userRole: userRole,
+            isTimeOff: true
+          }
+        };
+      }).filter(event => event !== null);
 
-    calendarEvents.push(...timeOffCalendarEvents);
+      calendarEvents.push(...timeOffCalendarEvents);
+    }
 
     return calendarEvents;
   }, [rawLessons, timeOffEvents, userRole, completionData]);
@@ -123,6 +135,7 @@ export const useCalendarData = ({
       }
 
       try {
+        setHasErrored(false);
         console.log("Fetching lessons from Supabase for role:", userRole);
         let query;
 
@@ -135,7 +148,10 @@ export const useCalendarData = ({
 
           if (studentError) {
             console.error('Error fetching student data:', studentError);
-            toast.error('Failed to load student data');
+            if (!hasErrored) {
+              toast.error('Failed to load student data');
+              setHasErrored(true);
+            }
             setIsLoading(false);
             return;
           }
@@ -168,7 +184,10 @@ export const useCalendarData = ({
 
           if (parentError) {
             console.error('Error fetching parent data:', parentError);
-            toast.error('Failed to load parent data');
+            if (!hasErrored) {
+              toast.error('Failed to load parent data');
+              setHasErrored(true);
+            }
             setIsLoading(false);
             return;
           }
@@ -188,7 +207,10 @@ export const useCalendarData = ({
 
           if (studentError) {
             console.error('Error fetching parent\'s students:', studentError);
-            toast.error('Failed to load student data');
+            if (!hasErrored) {
+              toast.error('Failed to load student data');
+              setHasErrored(true);
+            }
             setIsLoading(false);
             return;
           }
@@ -223,7 +245,10 @@ export const useCalendarData = ({
 
           if (tutorError) {
             console.error('Error fetching tutor data:', tutorError);
-            toast.error('Failed to load tutor data');
+            if (!hasErrored) {
+              toast.error('Failed to load tutor data');
+              setHasErrored(true);
+            }
             setIsLoading(false);
             return;
           }
@@ -294,32 +319,41 @@ export const useCalendarData = ({
 
         // Fetch approved time off events for calendar display
         if (userRole === 'admin' || userRole === 'owner' || userRole === 'tutor') {
-          const { data: timeOffData, error: timeOffError } = await supabase
-            .from('time_off_requests')
-            .select(`
-              *,
-              tutor:tutors(first_name, last_name, email)
-            `)
-            .eq('status', 'approved');
+          try {
+            const { data: timeOffData, error: timeOffError } = await supabase
+              .from('time_off_requests')
+              .select(`
+                *,
+                tutor:tutors(first_name, last_name, email)
+              `)
+              .eq('status', 'approved');
 
-          if (timeOffError) {
-            console.error('Error fetching time off data:', timeOffError);
-          } else {
-            console.log("Time off events fetched:", timeOffData);
-            setTimeOffEvents(timeOffData || []);
+            if (timeOffError) {
+              console.error('Error fetching time off data:', timeOffError);
+            } else {
+              console.log("Time off events fetched:", timeOffData);
+              setTimeOffEvents(timeOffData || []);
+            }
+          } catch (timeOffFetchError) {
+            console.error('Failed to fetch time off events:', timeOffFetchError);
+            // Don't show error toast for time off, just log it
+            setTimeOffEvents([]);
           }
         }
 
       } catch (error) {
         console.error('Error fetching lessons:', error);
-        toast.error('Failed to load lessons');
+        if (!hasErrored) {
+          toast.error('Failed to load lessons');
+          setHasErrored(true);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchEvents();
-  }, [userRole, userEmail, isAuthenticated, refreshKey, filters]);
+  }, [userRole, userEmail, isAuthenticated, refreshKey, filters, hasErrored]);
 
   const generateRecurringEvents = (lesson, userRole, completionData) => {
     const events = [];

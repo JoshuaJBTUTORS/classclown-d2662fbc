@@ -15,14 +15,20 @@ export const useLessonCompletion = (lessonIds: string[]) => {
   const [completionData, setCompletionData] = useState<LessonCompletionData>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fix: Stable memoization using a simpler approach
+  // Fixed: Stable memoization using length and sorted string
   const stableLessonIds = useMemo(() => {
-    return lessonIds.slice().sort();
-  }, [lessonIds.length, lessonIds.join(',')]);
+    if (!lessonIds || lessonIds.length === 0) {
+      return [];
+    }
+    // Filter out null/undefined values and sort for stable comparison
+    const validIds = lessonIds.filter(id => id != null && id !== '');
+    return validIds.slice().sort();
+  }, [lessonIds?.length, lessonIds?.filter(id => id != null && id !== '').sort().join('|')]);
 
   useEffect(() => {
-    if (stableLessonIds.length === 0) {
+    if (!stableLessonIds || stableLessonIds.length === 0) {
       setCompletionData({});
+      setIsLoading(false);
       return;
     }
 
@@ -74,13 +80,15 @@ export const useLessonCompletion = (lessonIds: string[]) => {
         setCompletionData(newCompletionData);
       } catch (error) {
         console.error('Error fetching lesson completion data:', error);
+        // Set empty data on error to prevent infinite loops
+        setCompletionData({});
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCompletionData();
-  }, [stableLessonIds]);
+  }, [stableLessonIds.join('|')]); // Use pipe separator for more stability
 
   return { completionData, isLoading };
 };
