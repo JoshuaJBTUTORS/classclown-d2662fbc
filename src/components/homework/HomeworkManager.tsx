@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
@@ -187,8 +188,8 @@ const HomeworkManager: React.FC = () => {
         hw.title.toLowerCase().includes(query) ||
         (hw.description && hw.description.toLowerCase().includes(query)) ||
         hw.lesson.title.toLowerCase().includes(query) ||
-        (hw.lesson.tutor?.first_name?.toLowerCase().includes(query)) ||
-        (hw.lesson.tutor?.last_name?.toLowerCase().includes(query))
+        (hw.lesson.tutor?.first_name && hw.lesson.tutor.first_name.toLowerCase().includes(query)) ||
+        (hw.lesson.tutor?.last_name && hw.lesson.tutor.last_name.toLowerCase().includes(query))
       );
     }
     
