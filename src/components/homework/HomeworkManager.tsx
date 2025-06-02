@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
@@ -276,15 +274,15 @@ const HomeworkManager: React.FC = () => {
       return false;
     }
     
-    // Apply search filter
+    // Apply search filter with null safety
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      return (
-        sub.homework.title.toLowerCase().includes(query) ||
-        sub.homework.lesson.title.toLowerCase().includes(query) ||
-        sub.student.first_name.toLowerCase().includes(query) ||
-        sub.student.last_name.toLowerCase().includes(query)
-      );
+      const homeworkTitleMatch = sub.homework?.title?.toLowerCase()?.includes(query) || false;
+      const lessonTitleMatch = sub.homework?.lesson?.title?.toLowerCase()?.includes(query) || false;
+      const studentFirstNameMatch = sub.student?.first_name?.toLowerCase()?.includes(query) || false;
+      const studentLastNameMatch = sub.student?.last_name?.toLowerCase()?.includes(query) || false;
+      
+      return homeworkTitleMatch || lessonTitleMatch || studentFirstNameMatch || studentLastNameMatch;
     }
     
     return true;
@@ -299,6 +297,17 @@ const HomeworkManager: React.FC = () => {
     const firstName = tutor.first_name || '';
     const lastName = tutor.last_name || '';
     return `${firstName} ${lastName}`.trim() || 'Unknown Tutor';
+  };
+
+  // Helper function to safely get student name
+  const getStudentName = (submission: HomeworkSubmission) => {
+    const student = submission.student;
+    if (!student) {
+      return 'Unknown Student';
+    }
+    const firstName = student.first_name || '';
+    const lastName = student.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'Unknown Student';
   };
 
   return (
@@ -420,9 +429,9 @@ const HomeworkManager: React.FC = () => {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-base">{submission.homework.title}</CardTitle>
+                        <CardTitle className="text-base">{submission.homework?.title || 'Unknown Homework'}</CardTitle>
                         <CardDescription className="line-clamp-1">
-                          {submission.student.first_name} {submission.student.last_name}
+                          {getStudentName(submission)}
                         </CardDescription>
                       </div>
                       <Badge 
@@ -435,7 +444,7 @@ const HomeworkManager: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-sm text-muted-foreground mb-2">
-                      {submission.homework.lesson.title}
+                      {submission.homework?.lesson?.title || 'Unknown Lesson'}
                     </div>
                     
                     <div className="flex items-center justify-between">
@@ -491,4 +500,3 @@ const HomeworkManager: React.FC = () => {
 };
 
 export default HomeworkManager;
-
