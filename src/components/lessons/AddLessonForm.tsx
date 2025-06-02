@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, addHours } from 'date-fns';
 import { z } from 'zod';
@@ -38,13 +37,15 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Check, Loader2 } from 'lucide-react';
+import { CalendarIcon, Check, Loader2, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
 import { Student } from '@/types/student';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
+import { useAvailabilityCheck } from '@/hooks/useAvailabilityCheck';
 import { LESSON_SUBJECTS } from '@/constants/subjects';
+import AvailabilityStatus from './AvailabilityStatus';
 
 interface AddLessonFormProps {
   isOpen: boolean;
@@ -73,6 +74,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
   
   // Lesson Space integration
   const { createRoom, isCreatingRoom } = useLessonSpace();
+  
+  // Availability checking integration
+  const { checkAvailability, isChecking, checkResult, resetCheckResult } = useAvailabilityCheck();
   
   // Form schema with validation
   const formSchema = z.object({
@@ -142,15 +146,16 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         recurrenceInterval: 'weekly',
       });
       
-      // Reset selected students array
+      // Reset selected students array and availability check
       setSelectedStudents([]);
       setIsGroupSession(false);
       setIsRecurring(false);
+      resetCheckResult();
       
       // Fetch data
       fetchData();
     }
-  }, [isOpen, preselectedTime, form]);
+  }, [isOpen, preselectedTime, form, resetCheckResult]);
 
   // Watch for form field changes
   useEffect(() => {
@@ -169,6 +174,73 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     return () => subscription.unsubscribe();
   }, [form.watch]);
 
+  // Debounced availability check when key fields change
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      // Only check if we have the required fields
+      if (value.tutorId && value.date && value.startTime && value.endTime) {
+        // Debounce the check to avoid too many API calls
+        const timeoutId = setTimeout(() => {
+          performAvailabilityCheck(value);
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+      } else {
+        // Reset check result if required fields are missing
+        resetCheckResult();
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form.watch, selectedStudents]);
+
+  // Perform availability check
+  const performAvailabilityCheck = useCallback(async (formValues: any) => {
+    if (!formValues.tutorId || !formValues.date || !formValues.startTime || !formValues.endTime) {
+      return;
+    }
+
+    try {
+      // Format the date and times into ISO strings
+      const startTime = new Date(formValues.date);
+      const [startHours, startMinutes] = formValues.startTime.split(':');
+      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
+
+      const endTime = new Date(formValues.date);
+      const [endHours, endMinutes] = formValues.endTime.split(':');
+      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
+
+      // Determine student IDs to check
+      let studentIds: number[] = [];
+      if (isGroupSession) {
+        studentIds = selectedStudents;
+      } else if (formValues.studentId) {
+        studentIds = [formValues.studentId];
+      }
+
+      await checkAvailability({
+        tutorId: formValues.tutorId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        studentIds: studentIds.length > 0 ? studentIds : undefined
+      });
+    } catch (error) {
+      console.error('Error performing availability check:', error);
+    }
+  }, [checkAvailability, isGroupSession, selectedStudents]);
+
+  // Manual availability check button
+  const handleManualAvailabilityCheck = async () => {
+    const values = form.getValues();
+    await performAvailabilityCheck(values);
+  };
+
+  // Check if form has required fields for availability check
+  const canCheckAvailability = () => {
+    const values = form.getValues();
+    return !!(values.tutorId && values.date && values.startTime && values.endTime);
+  };
+
   // Fetch tutors and students data
   const fetchData = async () => {
     setIsFetchingData(true);
@@ -181,7 +253,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         .order('last_name', { ascending: true });
 
       if (tutorsError) throw tutorsError;
-      // Now we have a more flexible status field in our Tutor type
       setTutors(tutorsData || []);
 
       // Fetch active students
@@ -216,10 +287,26 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
     }
   };
 
-  // Form submission with automatic Lesson Space room creation
+  // Form submission with availability check
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
+      
+      // Perform final availability check before creating lesson
+      await performAvailabilityCheck(values);
+      
+      // Check if there are any conflicts that should prevent lesson creation
+      if (checkResult && !checkResult.isAvailable) {
+        const hasBlockingConflicts = checkResult.conflicts.some(
+          conflict => conflict.type === 'tutor_availability' || conflict.type === 'lesson_conflict'
+        );
+        
+        if (hasBlockingConflicts) {
+          toast.error('Cannot create lesson due to scheduling conflicts. Please resolve conflicts first.');
+          setIsLoading(false);
+          return;
+        }
+      }
       
       // Format the date and times into ISO strings
       const startTime = new Date(values.date);
@@ -318,11 +405,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
         }
       }}
     >
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Lesson</DialogTitle>
+          <DialogTitle>Schedule New Lesson</DialogTitle>
           <DialogDescription>
-            Create a new tutoring session. An online room will be automatically created.
+            Create a new tutoring session with automatic availability checking. An online room will be created automatically.
           </DialogDescription>
         </DialogHeader>
         
@@ -606,6 +693,33 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
                 )}
               />
             </div>
+
+            {/* Availability Status Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Availability Status</label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleManualAvailabilityCheck}
+                  disabled={!canCheckAvailability() || isChecking}
+                  className="flex items-center gap-2"
+                >
+                  {isChecking ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-3 w-3" />
+                  )}
+                  Check Now
+                </Button>
+              </div>
+              
+              <AvailabilityStatus
+                isChecking={isChecking}
+                checkResult={checkResult}
+              />
+            </div>
             
             <FormField
               control={form.control}
@@ -706,12 +820,18 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading || isFetchingData || isCreatingRoom}>
+              <Button 
+                type="submit" 
+                disabled={isLoading || isFetchingData || isCreatingRoom}
+                className={checkResult && !checkResult.isAvailable ? 'bg-orange-600 hover:bg-orange-700' : ''}
+              >
                 {isLoading || isCreatingRoom ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {isCreatingRoom ? 'Creating room...' : 'Creating lesson...'}
                   </>
+                ) : checkResult && !checkResult.isAvailable ? (
+                  'Create Lesson (with conflicts)'
                 ) : (
                   'Create Lesson'
                 )}

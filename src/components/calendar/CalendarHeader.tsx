@@ -1,16 +1,14 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, Info, CheckCircle } from 'lucide-react';
+import { CalendarPlus, Info } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
-import AvailabilityCheckDialog from './AvailabilityCheckDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 
 const CalendarHeader: React.FC = () => {
   const { userRole } = useAuth();
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
-  const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
 
   // Check if user is a student or parent (both have read-only access)
   const isStudentOrParent = userRole === 'student' || userRole === 'parent';
@@ -21,14 +19,6 @@ const CalendarHeader: React.FC = () => {
 
   const closeAddLessonDialog = () => {
     setShowAddLessonDialog(false);
-  };
-
-  const openAvailabilityDialog = () => {
-    setShowAvailabilityDialog(true);
-  };
-
-  const closeAvailabilityDialog = () => {
-    setShowAvailabilityDialog(false);
   };
 
   const handleLessonAdded = () => {
@@ -69,14 +59,6 @@ const CalendarHeader: React.FC = () => {
       {!isStudentOrParent && (
         <div className="flex gap-2">
           <Button 
-            variant="outline"
-            onClick={openAvailabilityDialog}
-            className="flex items-center gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            Check Availability
-          </Button>
-          <Button 
             onClick={openAddLessonDialog}
             className="flex items-center gap-2"
           >
@@ -88,17 +70,11 @@ const CalendarHeader: React.FC = () => {
 
       {/* Only show dialogs for tutors, admins, and owners */}
       {!isStudentOrParent && (
-        <>
-          <AvailabilityCheckDialog
-            isOpen={showAvailabilityDialog}
-            onClose={closeAvailabilityDialog}
-          />
-          <AddLessonForm 
-            isOpen={showAddLessonDialog} 
-            onClose={closeAddLessonDialog}
-            onSuccess={handleLessonAdded}
-          />
-        </>
+        <AddLessonForm 
+          isOpen={showAddLessonDialog} 
+          onClose={closeAddLessonDialog}
+          onSuccess={handleLessonAdded}
+        />
       )}
     </div>
   );
