@@ -28,10 +28,10 @@ export const useCalendarData = ({
   const [timeOffEvents, setTimeOffEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Memoize lesson IDs to prevent infinite re-renders
+  // Fix: Create stable lessonIds memoization
   const lessonIds = useMemo(() => {
     return rawLessons.map(lesson => lesson.id);
-  }, [rawLessons.length, rawLessons.map(l => l.id).join(',')]);
+  }, [rawLessons]);
 
   const { completionData } = useLessonCompletion(lessonIds);
 

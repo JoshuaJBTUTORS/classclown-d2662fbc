@@ -15,11 +15,13 @@ export const useLessonCompletion = (lessonIds: string[]) => {
   const [completionData, setCompletionData] = useState<LessonCompletionData>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Memoize the lesson IDs to prevent unnecessary re-fetches
-  const memoizedLessonIds = useMemo(() => lessonIds, [lessonIds.join(',')]);
+  // Fix: Stable memoization using a simpler approach
+  const stableLessonIds = useMemo(() => {
+    return lessonIds.slice().sort();
+  }, [lessonIds.length, lessonIds.join(',')]);
 
   useEffect(() => {
-    if (memoizedLessonIds.length === 0) {
+    if (stableLessonIds.length === 0) {
       setCompletionData({});
       return;
     }
@@ -31,7 +33,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
         const { data: attendanceData, error: attendanceError } = await supabase
           .from('lesson_attendance')
           .select('lesson_id, student_id')
-          .in('lesson_id', memoizedLessonIds);
+          .in('lesson_id', stableLessonIds);
 
         if (attendanceError) throw attendanceError;
 
@@ -39,7 +41,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
         const { data: homeworkData, error: homeworkError } = await supabase
           .from('homework')
           .select('lesson_id')
-          .in('lesson_id', memoizedLessonIds);
+          .in('lesson_id', stableLessonIds);
 
         if (homeworkError) throw homeworkError;
 
@@ -47,14 +49,14 @@ export const useLessonCompletion = (lessonIds: string[]) => {
         const { data: lessonStudentData, error: lessonStudentError } = await supabase
           .from('lesson_students')
           .select('lesson_id, student_id')
-          .in('lesson_id', memoizedLessonIds);
+          .in('lesson_id', stableLessonIds);
 
         if (lessonStudentError) throw lessonStudentError;
 
         // Process the data
         const newCompletionData: LessonCompletionData = {};
 
-        memoizedLessonIds.forEach(lessonId => {
+        stableLessonIds.forEach(lessonId => {
           const studentCount = lessonStudentData?.filter(ls => ls.lesson_id === lessonId).length || 0;
           const attendanceCount = attendanceData?.filter(att => att.lesson_id === lessonId).length || 0;
           const hasHomework = homeworkData?.some(hw => hw.lesson_id === lessonId) || false;
@@ -78,7 +80,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
     };
 
     fetchCompletionData();
-  }, [memoizedLessonIds]);
+  }, [stableLessonIds]);
 
   return { completionData, isLoading };
 };
