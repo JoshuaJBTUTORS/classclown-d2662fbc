@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -42,15 +43,15 @@ interface Homework {
       id: string;
       first_name: string;
       last_name: string;
-    };
-  };
+    } | null;
+  } | null;
   submissions: {
     id: string;
     student: {
       id: number;
       first_name: string;
       last_name: string;
-    };
+    } | null;
     status: string;
     submitted_at: string;
     percentage_score: number | null;
@@ -72,7 +73,7 @@ interface Submission {
     id: number;
     first_name: string;
     last_name: string;
-  };
+  } | null;
   homework: {
     id: string;
     title: string;
@@ -83,9 +84,9 @@ interface Submission {
         id: string;
         first_name: string;
         last_name: string;
-      };
-    };
-  };
+      } | null;
+    } | null;
+  } | null;
 }
 
 const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
@@ -122,28 +123,87 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      console.log('Fetching homework details for:', homeworkId);
+
+      // Fetch homework data
+      const { data: homeworkData, error: homeworkError } = await supabase
         .from('homework')
-        .select(`
-          *,
-          lesson:lessons(
-            title,
-            tutor:tutors(id, first_name, last_name)
-          ),
-          submissions:homework_submissions(
-            id,
-            student:students(id, first_name, last_name),
-            status,
-            submitted_at,
-            percentage_score
-          )
-        `)
+        .select('*')
         .eq('id', homeworkId)
         .single();
 
-      if (error) throw error;
+      if (homeworkError) throw homeworkError;
 
-      setHomework(data);
+      // Fetch lesson data separately
+      const { data: lessonData, error: lessonError } = await supabase
+        .from('lessons')
+        .select('id, title, tutor_id')
+        .eq('id', homeworkData.lesson_id)
+        .single();
+
+      if (lessonError) throw lessonError;
+
+      // Fetch tutor data separately
+      let tutorData = null;
+      if (lessonData?.tutor_id) {
+        const { data: tutorResult, error: tutorError } = await supabase
+          .from('tutors')
+          .select('id, first_name, last_name')
+          .eq('id', lessonData.tutor_id)
+          .single();
+
+        if (tutorError) {
+          console.error('Error fetching tutor:', tutorError);
+        } else {
+          tutorData = tutorResult;
+        }
+      }
+
+      // Fetch submissions for this homework
+      const { data: submissionsData, error: submissionsError } = await supabase
+        .from('homework_submissions')
+        .select('id, student_id, status, submitted_at, percentage_score')
+        .eq('homework_id', homeworkId);
+
+      if (submissionsError) throw submissionsError;
+
+      // Fetch student data for submissions
+      const studentIds = submissionsData?.map(sub => sub.student_id) || [];
+      let studentsData = [];
+      if (studentIds.length > 0) {
+        const { data: studentsResult, error: studentsError } = await supabase
+          .from('students')
+          .select('id, first_name, last_name')
+          .in('id', studentIds);
+
+        if (studentsError) {
+          console.error('Error fetching students:', studentsError);
+        } else {
+          studentsData = studentsResult || [];
+        }
+      }
+
+      // Build student map
+      const studentMap = new Map();
+      studentsData.forEach(student => {
+        studentMap.set(student.id, student);
+      });
+
+      // Combine homework data with related information
+      const processedHomework: Homework = {
+        ...homeworkData,
+        lesson: {
+          title: lessonData?.title || 'Unknown Lesson',
+          tutor: tutorData
+        },
+        submissions: submissionsData?.map(sub => ({
+          ...sub,
+          student: studentMap.get(sub.student_id) || null
+        })) || []
+      };
+
+      console.log('Processed homework data:', processedHomework);
+      setHomework(processedHomework);
     } catch (error) {
       console.error('Error fetching homework details:', error);
       toast.error('Failed to load homework details');
@@ -157,30 +217,98 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      console.log('Fetching submission details for:', submissionId);
+
+      // Fetch submission data
+      const { data: submissionData, error: submissionError } = await supabase
         .from('homework_submissions')
-        .select(`
-          *,
-          student:students(id, first_name, last_name),
-          homework:homework(
-            id,
-            title,
-            description,
-            lesson:lessons(
-              title,
-              tutor:tutors(id, first_name, last_name)
-            )
-          )
-        `)
+        .select('*')
         .eq('id', submissionId)
         .single();
 
-      if (error) throw error;
+      if (submissionError) throw submissionError;
 
-      setSubmission(data);
-      setFeedback(data.feedback || '');
-      setGrade(data.grade || '');
-      setPercentageScore(data.percentage_score || '');
+      // Fetch student data separately
+      let studentData = null;
+      if (submissionData.student_id) {
+        const { data: studentResult, error: studentError } = await supabase
+          .from('students')
+          .select('id, first_name, last_name')
+          .eq('id', submissionData.student_id)
+          .single();
+
+        if (studentError) {
+          console.error('Error fetching student:', studentError);
+        } else {
+          studentData = studentResult;
+        }
+      }
+
+      // Fetch homework data separately
+      let homeworkData = null;
+      if (submissionData.homework_id) {
+        const { data: hwResult, error: hwError } = await supabase
+          .from('homework')
+          .select('id, title, description, lesson_id')
+          .eq('id', submissionData.homework_id)
+          .single();
+
+        if (hwError) {
+          console.error('Error fetching homework:', hwError);
+        } else {
+          homeworkData = hwResult;
+        }
+      }
+
+      // Fetch lesson and tutor data if homework exists
+      let lessonData = null;
+      let tutorData = null;
+      if (homeworkData?.lesson_id) {
+        const { data: lessonResult, error: lessonError } = await supabase
+          .from('lessons')
+          .select('title, tutor_id')
+          .eq('id', homeworkData.lesson_id)
+          .single();
+
+        if (lessonError) {
+          console.error('Error fetching lesson:', lessonError);
+        } else {
+          lessonData = lessonResult;
+
+          if (lessonResult?.tutor_id) {
+            const { data: tutorResult, error: tutorError } = await supabase
+              .from('tutors')
+              .select('id, first_name, last_name')
+              .eq('id', lessonResult.tutor_id)
+              .single();
+
+            if (tutorError) {
+              console.error('Error fetching tutor:', tutorError);
+            } else {
+              tutorData = tutorResult;
+            }
+          }
+        }
+      }
+
+      // Combine submission data with related information
+      const processedSubmission: Submission = {
+        ...submissionData,
+        student: studentData,
+        homework: homeworkData ? {
+          ...homeworkData,
+          lesson: lessonData ? {
+            title: lessonData.title,
+            tutor: tutorData
+          } : null
+        } : null
+      };
+
+      console.log('Processed submission data:', processedSubmission);
+      setSubmission(processedSubmission);
+      setFeedback(processedSubmission.feedback || '');
+      setGrade(processedSubmission.grade || '');
+      setPercentageScore(processedSubmission.percentage_score || '');
     } catch (error) {
       console.error('Error fetching submission details:', error);
       toast.error('Failed to load submission details');
@@ -280,6 +408,31 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
     }
   };
 
+  const handleSubmissionClick = (submissionId: string) => {
+    onClose();
+    // Small delay to allow the current dialog to close before opening the new one
+    setTimeout(() => {
+      // This would need to be handled by the parent component
+      // For now, we'll just close and let the parent handle navigation
+      if (onUpdate) onUpdate();
+    }, 300);
+  };
+
+  // Helper functions for safe name display
+  const getTutorName = (tutor: { first_name: string; last_name: string } | null) => {
+    if (!tutor) return 'Unknown Tutor';
+    const firstName = tutor.first_name || '';
+    const lastName = tutor.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'Unknown Tutor';
+  };
+
+  const getStudentName = (student: { first_name: string; last_name: string } | null) => {
+    if (!student) return 'Unknown Student';
+    const firstName = student.first_name || '';
+    const lastName = student.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'Unknown Student';
+  };
+
   if (isEditing && homework) {
     return (
       <AssignHomeworkDialog
@@ -350,19 +503,19 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <h3 className="text-lg font-medium">{submission.homework.title}</h3>
+                  <h3 className="text-lg font-medium">{submission.homework?.title || 'Unknown Homework'}</h3>
                   <Badge variant={submission.status === 'graded' ? 'default' : 'outline'}>
                     {submission.status === 'graded' ? 'Graded' : 'Submitted'}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">{submission.homework.lesson.title}</p>
+                <p className="text-sm text-muted-foreground">{submission.homework?.lesson?.title || 'Unknown Lesson'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-sm font-medium mb-1">Student</h4>
                   <p className="text-sm">
-                    {submission.student.first_name} {submission.student.last_name}
+                    {getStudentName(submission.student)}
                   </p>
                 </div>
                 <div>
@@ -549,9 +702,9 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
             <div className="space-y-4">
               <div>
                 <h4 className="text-sm font-medium mb-1">Related Lesson</h4>
-                <p className="text-sm">{homework.lesson.title}</p>
+                <p className="text-sm">{homework.lesson?.title || 'Unknown Lesson'}</p>
                 <p className="text-sm text-muted-foreground">
-                  {homework.lesson.tutor.first_name} {homework.lesson.tutor.last_name}
+                  {getTutorName(homework.lesson?.tutor || null)}
                 </p>
               </div>
 
@@ -600,21 +753,11 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
                       <div 
                         key={submission.id}
                         className="flex items-center justify-between p-2 rounded-md border hover:bg-muted/50 cursor-pointer"
-                        onClick={() => {
-                          onClose();
-                          setTimeout(() => {
-                            setSubmission(null);
-                            setHomework(null);
-                          }, 300);
-                          setTimeout(() => {
-                            setSelectedSubmissionId(submission.id);
-                            setIsViewingHomework(true);
-                          }, 400);
-                        }}
+                        onClick={() => handleSubmissionClick(submission.id)}
                       >
                         <div>
                           <div className="font-medium text-sm">
-                            {submission.student.first_name} {submission.student.last_name}
+                            {getStudentName(submission.student)}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {format(parseISO(submission.submitted_at), 'MMM d, yyyy')}
@@ -645,16 +788,6 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
-
-const setSelectedSubmissionId = (id: string) => {
-  // This is a helper function used within the component
-  // that would be provided by the parent component
-};
-
-const setIsViewingHomework = (value: boolean) => {
-  // This is a helper function used within the component
-  // that would be provided by the parent component
 };
 
 export default ViewHomeworkDialog;
