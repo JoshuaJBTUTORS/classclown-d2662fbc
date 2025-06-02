@@ -35,7 +35,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
     const fetchCompletionData = async () => {
       setIsLoading(true);
       try {
-        // Fetch attendance data for all lessons
+        // Fetch attendance data for all lessons (RLS will filter automatically)
         const { data: attendanceData, error: attendanceError } = await supabase
           .from('lesson_attendance')
           .select('lesson_id, student_id')
@@ -43,7 +43,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
 
         if (attendanceError) throw attendanceError;
 
-        // Fetch homework data for all lessons
+        // Fetch homework data for all lessons (RLS will filter automatically)
         const { data: homeworkData, error: homeworkError } = await supabase
           .from('homework')
           .select('lesson_id')
@@ -51,7 +51,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
 
         if (homeworkError) throw homeworkError;
 
-        // Fetch student count for each lesson
+        // Fetch student count for each lesson (RLS will filter automatically)
         const { data: lessonStudentData, error: lessonStudentError } = await supabase
           .from('lesson_students')
           .select('lesson_id, student_id')
@@ -77,6 +77,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
           };
         });
 
+        console.log('Lesson completion data processed with RLS filtering:', newCompletionData);
         setCompletionData(newCompletionData);
       } catch (error) {
         console.error('Error fetching lesson completion data:', error);

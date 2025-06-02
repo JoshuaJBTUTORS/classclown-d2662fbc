@@ -99,9 +99,9 @@ const HomeworkManager: React.FC = () => {
   const fetchHomeworks = async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching homework assignments...');
+      console.log('Fetching homework assignments with RLS filtering...');
       
-      // Use a simpler query structure to avoid nested select issues
+      // RLS policies will automatically filter homework based on user permissions
       const { data: homeworkData, error: homeworkError } = await supabase
         .from('homework')
         .select('*')
@@ -113,13 +113,13 @@ const HomeworkManager: React.FC = () => {
       }
 
       if (!homeworkData || homeworkData.length === 0) {
-        console.log('No homework data found');
+        console.log('No homework data found (filtered by RLS)');
         setHomeworks([]);
         setIsLoading(false);
         return;
       }
 
-      // Fetch lesson data separately
+      // Fetch lesson data for the homework that the user can access
       const lessonIds = homeworkData.map(hw => hw.lesson_id);
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
@@ -131,7 +131,7 @@ const HomeworkManager: React.FC = () => {
         throw lessonError;
       }
 
-      // Fetch tutor data separately
+      // Fetch tutor data for the lessons
       const tutorIds = lessonData?.map(lesson => lesson.tutor_id).filter(Boolean) || [];
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
@@ -143,7 +143,7 @@ const HomeworkManager: React.FC = () => {
         throw tutorError;
       }
 
-      // Fetch submission counts
+      // Fetch submission counts for accessible homework
       const { data: submissionCounts, error: submissionError } = await supabase
         .from('homework_submissions')
         .select('homework_id')
@@ -191,7 +191,7 @@ const HomeworkManager: React.FC = () => {
         };
       });
       
-      console.log('Processed homework data:', processedData);
+      console.log('Processed homework data with RLS filtering:', processedData);
       setHomeworks(processedData);
     } catch (error) {
       console.error('Error fetching homework:', error);
@@ -203,6 +203,7 @@ const HomeworkManager: React.FC = () => {
   
   const fetchSubmissions = async () => {
     try {
+      // RLS policies will automatically filter submissions based on user permissions
       const { data, error } = await supabase
         .from('homework_submissions')
         .select(`
@@ -217,6 +218,7 @@ const HomeworkManager: React.FC = () => {
 
       if (error) throw error;
       
+      console.log('Fetched submissions with RLS filtering:', data?.length || 0, 'submissions');
       setSubmissions(data || []);
     } catch (error) {
       console.error('Error fetching submissions:', error);
@@ -360,6 +362,9 @@ const HomeworkManager: React.FC = () => {
             <div className="py-8 text-center">
               <Book className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
               <p className="text-muted-foreground">No homework assignments found</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                You can only see homework for lessons you teach or manage.
+              </p>
               <Button variant="outline" onClick={() => setIsAssigningHomework(true)} className="mt-4">
                 Assign New Homework
               </Button>
@@ -417,6 +422,9 @@ const HomeworkManager: React.FC = () => {
             <div className="py-8 text-center">
               <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
               <p className="text-muted-foreground">No homework submissions found</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                You can only see submissions for lessons you teach or manage.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

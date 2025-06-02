@@ -1207,11 +1207,27 @@ export type Database = {
           total_questions: number
         }[]
       }
+      can_access_homework: {
+        Args: { homework_lesson_id: string }
+        Returns: boolean
+      }
+      can_access_homework_submission: {
+        Args: { submission_homework_id: string; submission_student_id: number }
+        Returns: boolean
+      }
       get_current_tutor_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
       get_current_user_parent_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_student_id: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_current_user_tutor_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
