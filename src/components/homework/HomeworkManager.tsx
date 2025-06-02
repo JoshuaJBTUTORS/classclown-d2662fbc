@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
@@ -100,28 +101,99 @@ const HomeworkManager: React.FC = () => {
   const fetchHomeworks = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      console.log('Fetching homework assignments...');
+      
+      // Use a simpler query structure to avoid nested select issues
+      const { data: homeworkData, error: homeworkError } = await supabase
         .from('homework')
-        .select(`
-          *,
-          lesson:lessons(
-            title,
-            tutor:tutors(first_name, last_name)
-          ),
-          submission_count:homework_submissions(count)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching homework:', error);
-        throw error;
+      if (homeworkError) {
+        console.error('Error fetching homework:', homeworkError);
+        throw homeworkError;
       }
+
+      if (!homeworkData || homeworkData.length === 0) {
+        console.log('No homework data found');
+        setHomeworks([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch lesson data separately
+      const lessonIds = homeworkData.map(hw => hw.lesson_id);
+      const { data: lessonData, error: lessonError } = await supabase
+        .from('lessons')
+        .select('id, title, tutor_id')
+        .in('id', lessonIds);
+
+      if (lessonError) {
+        console.error('Error fetching lessons:', lessonError);
+        throw lessonError;
+      }
+
+      // Fetch tutor data separately
+      const tutorIds = lessonData?.map(lesson => lesson.tutor_id).filter(Boolean) || [];
+      const { data: tutorData, error: tutorError } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name')
+        .in('id', tutorIds);
+
+      if (tutorError) {
+        console.error('Error fetching tutors:', tutorError);
+        throw tutorError;
+      }
+
+      // Fetch submission counts
+      const { data: submissionCounts, error: submissionError } = await supabase
+        .from('homework_submissions')
+        .select('homework_id')
+        .in('homework_id', homeworkData.map(hw => hw.id));
+
+      if (submissionError) {
+        console.error('Error fetching submission counts:', submissionError);
+      }
+
+      // Build submission count map
+      const submissionCountMap = new Map();
+      submissionCounts?.forEach(sub => {
+        const count = submissionCountMap.get(sub.homework_id) || 0;
+        submissionCountMap.set(sub.homework_id, count + 1);
+      });
+
+      // Build tutor map
+      const tutorMap = new Map();
+      tutorData?.forEach(tutor => {
+        tutorMap.set(tutor.id, tutor);
+      });
+
+      // Build lesson map
+      const lessonMap = new Map();
+      lessonData?.forEach(lesson => {
+        const tutor = tutorMap.get(lesson.tutor_id);
+        lessonMap.set(lesson.id, {
+          title: lesson.title,
+          tutor: tutor || null
+        });
+      });
+
+      // Combine all data safely
+      const processedData: Homework[] = homeworkData.map(hw => {
+        const lesson = lessonMap.get(hw.lesson_id);
+        console.log(`Processing homework ${hw.id}, lesson:`, lesson);
+        
+        return {
+          ...hw,
+          lesson: lesson || {
+            title: 'Unknown Lesson',
+            tutor: null
+          },
+          submission_count: submissionCountMap.get(hw.id) || 0
+        };
+      });
       
-      const processedData = data.map((hw) => ({
-        ...hw,
-        submission_count: hw.submission_count[0]?.count || 0
-      }));
-      
+      console.log('Processed homework data:', processedData);
       setHomeworks(processedData);
     } catch (error) {
       console.error('Error fetching homework:', error);
@@ -147,7 +219,7 @@ const HomeworkManager: React.FC = () => {
 
       if (error) throw error;
       
-      setSubmissions(data);
+      setSubmissions(data || []);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       toast.error('Failed to load homework submissions');
@@ -181,16 +253,16 @@ const HomeworkManager: React.FC = () => {
       }
     }
     
-    // Apply search filter
+    // Apply search filter with additional null safety
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      return (
-        hw.title.toLowerCase().includes(query) ||
-        (hw.description && hw.description.toLowerCase().includes(query)) ||
-        hw.lesson.title.toLowerCase().includes(query) ||
-        (hw.lesson.tutor?.first_name && hw.lesson.tutor.first_name.toLowerCase().includes(query)) ||
-        (hw.lesson.tutor?.last_name && hw.lesson.tutor.last_name.toLowerCase().includes(query))
-      );
+      const titleMatch = hw.title?.toLowerCase()?.includes(query) || false;
+      const descriptionMatch = hw.description?.toLowerCase()?.includes(query) || false;
+      const lessonTitleMatch = hw.lesson?.title?.toLowerCase()?.includes(query) || false;
+      const tutorFirstNameMatch = hw.lesson?.tutor?.first_name?.toLowerCase()?.includes(query) || false;
+      const tutorLastNameMatch = hw.lesson?.tutor?.last_name?.toLowerCase()?.includes(query) || false;
+      
+      return titleMatch || descriptionMatch || lessonTitleMatch || tutorFirstNameMatch || tutorLastNameMatch;
     }
     
     return true;
@@ -217,6 +289,17 @@ const HomeworkManager: React.FC = () => {
     
     return true;
   });
+
+  // Helper function to safely get tutor name
+  const getTutorName = (homework: Homework) => {
+    const tutor = homework.lesson?.tutor;
+    if (!tutor) {
+      return 'Unknown Tutor';
+    }
+    const firstName = tutor.first_name || '';
+    const lastName = tutor.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'Unknown Tutor';
+  };
 
   return (
     <div className="space-y-6">
@@ -285,7 +368,7 @@ const HomeworkManager: React.FC = () => {
                       <div>
                         <CardTitle className="text-base">{homework.title}</CardTitle>
                         <CardDescription className="line-clamp-1">
-                          {homework.lesson.title}
+                          {homework.lesson?.title || 'Unknown Lesson'}
                         </CardDescription>
                       </div>
                       {homework.attachment_url && (
@@ -297,7 +380,7 @@ const HomeworkManager: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-sm text-muted-foreground mb-2">
-                      By {homework.lesson.tutor?.first_name || 'Unknown'} {homework.lesson.tutor?.last_name || 'Tutor'}
+                      By {getTutorName(homework)}
                     </div>
                     
                     <div className="flex items-center justify-between">
@@ -408,3 +491,4 @@ const HomeworkManager: React.FC = () => {
 };
 
 export default HomeworkManager;
+
