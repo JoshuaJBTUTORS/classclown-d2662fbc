@@ -53,7 +53,7 @@ interface Homework {
     tutor: {
       first_name: string;
       last_name: string;
-    };
+    } | null;
   };
   submission_count: number;
 }
@@ -187,8 +187,8 @@ const HomeworkManager: React.FC = () => {
         hw.title.toLowerCase().includes(query) ||
         (hw.description && hw.description.toLowerCase().includes(query)) ||
         hw.lesson.title.toLowerCase().includes(query) ||
-        hw.lesson.tutor.first_name.toLowerCase().includes(query) ||
-        hw.lesson.tutor.last_name.toLowerCase().includes(query)
+        (hw.lesson.tutor?.first_name && hw.lesson.tutor.first_name.toLowerCase().includes(query)) ||
+        (hw.lesson.tutor?.last_name && hw.lesson.tutor.last_name.toLowerCase().includes(query))
       );
     }
     
@@ -296,7 +296,7 @@ const HomeworkManager: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-sm text-muted-foreground mb-2">
-                      By {homework.lesson.tutor.first_name} {homework.lesson.tutor.last_name}
+                      By {homework.lesson.tutor?.first_name || 'Unknown'} {homework.lesson.tutor?.last_name || 'Tutor'}
                     </div>
                     
                     <div className="flex items-center justify-between">
