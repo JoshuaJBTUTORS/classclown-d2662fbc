@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO, isWithinInterval, isSameDay, getDay } from 'date-fns';
 
@@ -22,9 +21,9 @@ export interface AvailabilityConflict {
   details?: any;
 }
 
-// Helper function to get day of week (0 = Sunday, 1 = Monday, etc.)
+// Helper function to get day of week (0 = Sunday, 1 = Monday, etc.) with proper capitalization
 const getDayName = (dayNumber: number): string => {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return days[dayNumber];
 };
 
@@ -59,12 +58,16 @@ export const checkTutorAvailability = async (
     const endDate = parseISO(endTime);
     const dayOfWeek = getDayName(getDay(startDate));
 
+    console.log('Checking availability for:', { tutorId, dayOfWeek, startTime, endTime });
+
     // Get tutor's weekly availability
     const { data: availability, error } = await supabase
       .from('tutor_availability')
       .select('*')
       .eq('tutor_id', tutorId)
       .eq('day_of_week', dayOfWeek);
+
+    console.log('Availability query result:', { availability, error, dayOfWeek });
 
     if (error) throw error;
 
@@ -81,6 +84,7 @@ export const checkTutorAvailability = async (
     const isWithinAvailability = availability.some(slot => {
       const startWithinSlot = isTimeWithinSlot(startDate, slot.start_time, slot.end_time);
       const endWithinSlot = isTimeWithinSlot(endDate, slot.start_time, slot.end_time);
+      console.log('Checking slot:', { slot, startWithinSlot, endWithinSlot });
       return startWithinSlot && endWithinSlot;
     });
 
