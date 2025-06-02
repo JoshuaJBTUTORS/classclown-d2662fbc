@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,9 +91,12 @@ const TimeOffRequests = () => {
   const handleSubmitAction = () => {
     if (!selectedRequest || !actionType) return;
 
+    // Convert action type to status value
+    const status = actionType === 'approve' ? 'approved' : 'denied';
+
     updateRequestMutation.mutate({
       requestId: selectedRequest.id,
-      status: actionType,
+      status,
       adminNotes
     });
   };
