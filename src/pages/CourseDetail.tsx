@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,24 +9,28 @@ import ContentViewer from '@/components/learningHub/ContentViewer';
 import ProgressBar from '@/components/learningHub/ProgressBar';
 import { CourseLesson, CourseModule } from '@/types/course';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Lock, ShoppingCart, Edit } from 'lucide-react';
+import { ArrowLeft, Lock, ShoppingCart, Edit, Menu, BookOpen, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
 import { toast } from '@/hooks/use-toast';
 import NotesSection from '@/components/learningHub/NotesSection';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const CourseDetail: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, userRole, isOwner, isAdmin } = useAuth();
+  const isMobile = useIsMobile();
   
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [contentType, setContentType] = useState<string>('');
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
-  // Enhanced debugging
+  // Debug info
   console.log('🔍 CourseDetail Debug Info:');
   console.log('- URL courseId param:', courseId);
   console.log('- courseId type:', typeof courseId);
@@ -170,6 +175,10 @@ const CourseDetail: React.FC = () => {
       console.log('📁 Found module for lesson:', module.title);
       setActiveModuleId(module.id);
       setActiveLessonId(lesson.id);
+      // Close mobile sidebar when lesson is selected
+      if (isMobile) {
+        setShowMobileSidebar(false);
+      }
     } else {
       console.error('❌ Could not find module for lesson:', lesson.title);
     }
@@ -192,12 +201,67 @@ const CourseDetail: React.FC = () => {
     window.location.reload();
   };
 
-  // Enhanced error handling and debugging
+  // Find current lesson index and next/prev lessons
+  const currentLessonIndex = useMemo(() => {
+    if (!activeLesson) return { moduleIndex: -1, lessonIndex: -1 };
+    
+    let flatLessons: CourseLesson[] = [];
+    modules.forEach(module => {
+      if (module.lessons) {
+        flatLessons = [...flatLessons, ...module.lessons];
+      }
+    });
+    
+    return {
+      lessonIndex: flatLessons.findIndex(l => l.id === activeLesson.id),
+      totalLessons: flatLessons.length
+    };
+  }, [activeLesson, modules]);
+
+  // Navigate to next/previous lesson
+  const navigateToLesson = (direction: 'next' | 'prev') => {
+    let flatLessons: CourseLesson[] = [];
+    
+    modules.forEach(module => {
+      if (module.lessons) {
+        flatLessons = [...flatLessons, ...module.lessons];
+      }
+    });
+    
+    const { lessonIndex } = currentLessonIndex;
+    if (lessonIndex === -1) return;
+    
+    let newIndex = direction === 'next' ? lessonIndex + 1 : lessonIndex - 1;
+    
+    // Loop back to beginning if at end
+    if (newIndex >= flatLessons.length) {
+      newIndex = 0;
+    } else if (newIndex < 0) {
+      newIndex = flatLessons.length - 1;
+    }
+    
+    const newLesson = flatLessons[newIndex];
+    
+    if (newLesson) {
+      const isAccessible = hasAdminPrivileges || isPurchased || newLesson.is_preview;
+      
+      if (isAccessible) {
+        handleSelectLesson(newLesson);
+      } else {
+        toast({
+          title: "Lesson Locked",
+          description: "Purchase the course to access this lesson.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  // Enhanced error handling and loading states with mobile-friendly design
   if (courseLoading || modulesLoading) {
-    console.log('⏳ Still loading course or modules...');
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto py-4 sm:py-8 px-4">
           <div className="animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -218,10 +282,10 @@ const CourseDetail: React.FC = () => {
     console.error('💥 Course error details:', courseError);
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-        <div className="container mx-auto py-8 px-4 text-center">
+        <div className="container mx-auto py-4 sm:py-8 px-4 text-center">
           <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-8">
-              <h1 className="text-2xl font-bold text-red-600 mb-4">Error loading course</h1>
+            <CardContent className="p-6 sm:p-8">
+              <h1 className="text-xl sm:text-2xl font-bold text-red-600 mb-4">Error loading course</h1>
               <p className="text-gray-600 mb-4">
                 {courseError instanceof Error ? courseError.message : 'An unknown error occurred'}
               </p>
@@ -241,10 +305,10 @@ const CourseDetail: React.FC = () => {
     console.error('❌ No course data received');
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-        <div className="container mx-auto py-8 px-4 text-center">
+        <div className="container mx-auto py-4 sm:py-8 px-4 text-center">
           <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-8">
-              <h1 className="text-2xl font-bold text-gray-800 mb-4">Course not found</h1>
+            <CardContent className="p-6 sm:p-8">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Course not found</h1>
               <p className="text-gray-600 mb-4">
                 The course you're looking for doesn't exist or has been removed.
               </p>
@@ -260,26 +324,22 @@ const CourseDetail: React.FC = () => {
     );
   }
 
-  console.log('🎬 Final render state:');
-  console.log('- Active lesson:', activeLesson?.title || 'None');
-  console.log('- Can access full course:', canAccessFullCourse);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
-      {/* Course Header - Updated with subtle theme gradient */}
+      {/* Mobile-optimized Course Header */}
       <div className="bg-gradient-to-r from-white/85 via-slate-50/80 to-rose-50/75 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
-        <div className="container mx-auto py-2 px-4">
-          <div className="flex items-center justify-between">
-            {/* Left side - Navigation and course info */}
-            <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="container mx-auto py-2 sm:py-4 px-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            {/* Back button and title area */}
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:flex-1 min-w-0">
               <Button 
                 onClick={() => navigate('/learning-hub')} 
                 variant="ghost" 
                 size="sm"
-                className="text-gray-600 hover:text-gray-800 hover:bg-white/50 transition-all duration-200 flex-shrink-0"
+                className="text-gray-600 hover:text-gray-800 hover:bg-white/50 transition-all duration-200 flex-shrink-0 p-2 sm:px-3"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
               
               {hasAdminPrivileges && (
@@ -287,16 +347,43 @@ const CourseDetail: React.FC = () => {
                   onClick={() => navigate(`/course/${courseId}/edit`)} 
                   variant="outline"
                   size="sm"
-                  className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-white/50 hover:border-gray-300 transition-all duration-200 flex-shrink-0"
+                  className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-white/50 hover:border-gray-300 transition-all duration-200 flex-shrink-0 p-2 sm:px-3"
                 >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  <Edit className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
               )}
               
+              {/* Mobile: Course navigation button */}
+              {isMobile && (
+                <Sheet open={showMobileSidebar} onOpenChange={setShowMobileSidebar}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-white/50 hover:border-gray-300 transition-all duration-200 flex-shrink-0 p-2"
+                    >
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-full sm:w-96 p-0">
+                    <div className="h-full">
+                      <CourseSidebar
+                        modules={modules}
+                        studentProgress={studentProgress}
+                        onSelectLesson={handleSelectLesson}
+                        currentLessonId={activeLessonId || undefined}
+                        isAdmin={hasAdminPrivileges}
+                        isPurchased={canAccessFullCourse}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
+              
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
                     {course.title}
                   </h1>
                   
@@ -311,7 +398,7 @@ const CourseDetail: React.FC = () => {
                         {course.difficulty_level}
                       </Badge>
                     )}
-                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                    <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
                       {modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
                     </span>
                   </div>
@@ -319,18 +406,17 @@ const CourseDetail: React.FC = () => {
               </div>
             </div>
             
-            {/* Right side - Purchase section */}
+            {/* Purchase button/info area */}
             {!canAccessFullCourse && (
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="text-right">
-                  <p className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 mt-2 sm:mt-0">
+                <div className="text-left sm:text-right">
+                  <p className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     £{((course.price || 0) / 100).toFixed(2)}
                   </p>
                 </div>
-                <Button 
+                <Button
                   onClick={() => setShowPaymentModal(true)}
-                  size="sm"
-                  className="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Purchase
@@ -338,112 +424,180 @@ const CourseDetail: React.FC = () => {
               </div>
             )}
           </div>
-          
-          {/* Progress bar - only show if user has access */}
-          {canAccessFullCourse && (
-            <div className="mt-3">
-              <ProgressBar 
-                current={studentProgress.filter(p => p.status === 'completed').length}
-                total={modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)}
-                label="Course Progress"
-              />
+        </div>
+      </div>
+
+      {/* Course Progress Bar - Mobile Optimized */}
+      {user && (
+        <div className="bg-white/60 backdrop-blur-sm shadow-sm border-b border-gray-100">
+          <div className="container mx-auto px-4 py-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 max-w-xs sm:max-w-md">
+                <ProgressBar progress={courseProgress} />
+              </div>
+              <span className="text-xs sm:text-sm text-gray-600 font-medium whitespace-nowrap">
+                {courseProgress}% complete
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area with Mobile-First Design */}
+      <div className="container mx-auto py-4 sm:py-6 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
+          {/* Desktop Sidebar - Hidden on Mobile */}
+          {!isMobile && (
+            <div className="hidden lg:block lg:col-span-1">
+              <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-xl overflow-hidden shadow-lg sticky top-4">
+                <CourseSidebar
+                  modules={modules}
+                  studentProgress={studentProgress}
+                  onSelectLesson={handleSelectLesson}
+                  currentLessonId={activeLessonId || undefined}
+                  isAdmin={hasAdminPrivileges}
+                  isPurchased={canAccessFullCourse}
+                />
+              </div>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Main Content - Enhanced styling with subtle gradient background */}
-      <div className="container mx-auto py-6 px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6" style={{ height: 'calc(100vh - 180px)' }}>
-          {/* Sidebar - Enhanced with subtle shadow - Now 40% width (2/5 columns) */}
-          <div className="lg:col-span-2 h-full overflow-hidden">
-            <div className="h-full shadow-lg rounded-xl overflow-hidden">
-              <CourseSidebar
-                modules={modules}
-                studentProgress={studentProgress}
-                onSelectLesson={handleSelectLesson}
-                currentLessonId={activeLessonId || undefined}
-                isAdmin={hasAdminPrivileges}
-                isPurchased={canAccessFullCourse}
-              />
-            </div>
-          </div>
-
-          {/* Content Area - Enhanced with modern styling and subtle gradient - Now 60% width (3/5 columns) */}
-          <div className="lg:col-span-3 h-full overflow-y-auto bg-gradient-to-br from-white/40 via-slate-50/30 to-rose-50/25 backdrop-blur-sm rounded-xl">
-            <div className="space-y-6 p-4">
-              {activeLesson ? (
-                <>
-                  {/* Content Viewer - Enhanced with rounded corners and shadow */}
-                  <div className="rounded-xl overflow-hidden shadow-lg">
-                    <ContentViewer 
-                      lesson={activeLesson} 
-                      onContentTypeChange={setContentType}
+          
+          {/* Main Content Area - Expanded on Mobile */}
+          <div className="col-span-1 lg:col-span-4 space-y-4 sm:space-y-6">
+            {/* Lesson Navigation - Mobile Optimized */}
+            {activeLesson && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-4 sm:p-6 shadow-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1 min-w-0">
+                    {activeModule?.title && (
+                      <span className="text-gray-500 text-sm block sm:inline sm:mr-2">
+                        {activeModule.title} <span className="hidden sm:inline">—</span>
+                      </span>
+                    )}
+                    <span className="block sm:inline">{activeLesson.title}</span>
+                  </h2>
+                  
+                  {/* Mobile lesson counter */}
+                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                    <div className="text-xs text-gray-500">
+                      Lesson {currentLessonIndex.lessonIndex + 1} of {currentLessonIndex.totalLessons}
+                    </div>
+                    
+                    {/* Navigation buttons */}
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => navigateToLesson('prev')}
+                        className="h-8 w-8 p-0 rounded-full"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="sr-only">Previous lesson</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => navigateToLesson('next')}
+                        className="h-8 w-8 p-0 rounded-full"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                        <span className="sr-only">Next lesson</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Lock indicator for non-preview lessons */}
+                {!canAccessFullCourse && !activeLesson.is_preview && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-amber-700 text-sm flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    <p>This is a preview of a premium lesson. Purchase the course to unlock full access.</p>
+                  </div>
+                )}
+                
+                {/* Content Viewer - Improved for Mobile */}
+                <ContentViewer
+                  lesson={activeLesson}
+                  onContentTypeChange={setContentType}
+                />
+                
+                {/* Notes Section - Improved for Mobile */}
+                {user && (
+                  <div className={`pt-6 ${contentType === 'video' ? 'mt-0' : 'mt-4'}`}>
+                    <NotesSection
+                      courseId={courseId!}
+                      lessonId={activeLesson.id}
                     />
                   </div>
+                )}
 
-                  {/* Notes Section - Enhanced styling */}
-                  {contentType === 'video' && user && (
-                    <div className="rounded-xl overflow-hidden shadow-lg">
-                      <NotesSection 
-                        courseId={courseId!}
-                        lessonId={activeLesson.id}
-                      />
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Card className="h-96 shadow-lg border-0 bg-white/80 backdrop-blur-sm rounded-xl">
-                  <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                    {!canAccessFullCourse ? (
-                      <>
-                        <div className="relative mb-6">
-                          <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center shadow-inner">
-                            <Lock className="h-8 w-8 text-gray-400" />
-                          </div>
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                          Course Locked
-                        </h3>
-                        <p className="text-gray-500 mb-6 max-w-md leading-relaxed">
-                          Purchase this course to access all lessons and unlock your learning potential.
-                        </p>
-                        <Button 
-                          onClick={() => setShowPaymentModal(true)}
-                          className="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          Purchase Course
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                          <ArrowLeft className="h-8 w-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                          No lesson selected
-                        </h3>
-                        <p className="text-gray-500 leading-relaxed">
-                          Select a lesson from the course content to start learning
-                        </p>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                {/* Mobile: Next/Prev Navigation Buttons */}
+                <div className="flex items-center justify-between mt-6 sm:mt-8">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigateToLesson('prev')}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+                  <Button 
+                    onClick={() => navigateToLesson('next')}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* No lesson selected fallback - Mobile Optimized */}
+            {!activeLesson && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-8 sm:p-12 shadow-lg text-center">
+                <BookOpen className="mx-auto h-12 sm:h-16 w-12 sm:w-16 text-gray-300 mb-4" />
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Select a lesson to begin</h2>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Choose a lesson from the sidebar to start learning.
+                </p>
+                
+                {/* On mobile, show a button to open the course navigation */}
+                {isMobile && (
+                  <Button 
+                    onClick={() => setShowMobileSidebar(true)}
+                    variant="outline" 
+                    className="hover:bg-gray-50 border-gray-300"
+                  >
+                    <Menu className="h-4 w-4 mr-2" />
+                    View Course Content
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Payment Modal */}
+      
+      {/* Purchase Modal */}
       {showPaymentModal && course && (
         <CoursePaymentModal
           course={course}
-          isOpen={showPaymentModal}
+          open={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePurchaseSuccess}
         />
+      )}
+      
+      {/* Mobile: Floating button to access course navigation (only when a lesson is active) */}
+      {isMobile && activeLesson && (
+        <div className="fixed bottom-6 right-6">
+          <Button
+            onClick={() => setShowMobileSidebar(true)}
+            variant="default"
+            size="icon"
+            className="h-12 w-12 rounded-full shadow-lg bg-primary"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
       )}
     </div>
   );
