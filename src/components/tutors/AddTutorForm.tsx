@@ -36,6 +36,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { AvailabilitySlot } from '@/types/tutor';
+import { LESSON_SUBJECTS, EDUCATIONAL_STAGES } from '@/constants/subjects';
 
 interface AddTutorFormProps {
   isOpen: boolean;
@@ -49,12 +50,11 @@ const formSchema = z.object({
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email format." }),
   phone: z.string().optional(),
-  specialities: z.string().array().default([]),
+  subjects: z.string().array().default([]),
   bio: z.string().optional(),
   education: z.string().optional(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
   absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
-  newSpeciality: z.string().optional(),
   createAccount: z.boolean().default(false),
   sendInvite: z.boolean().default(false),
   availability: z.array(z.object({
@@ -81,32 +81,29 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       lastName: "",
       email: "",
       phone: "",
-      specialities: [],
+      subjects: [],
       bio: "",
       education: "",
       normal_hourly_rate: 25.00,
       absence_hourly_rate: 12.50,
-      newSpeciality: "",
       createAccount: false,
       sendInvite: false,
       availability: []
     },
   });
 
-  const handleAddSpeciality = () => {
-    const newSpeciality = form.getValues("newSpeciality");
-    if (!newSpeciality) return;
-    
-    const currentSpecialities = form.getValues("specialities");
-    if (currentSpecialities.includes(newSpeciality)) return;
-    
-    form.setValue("specialities", [...currentSpecialities, newSpeciality]);
-    form.setValue("newSpeciality", "");
+  const handleSubjectToggle = (subject: string) => {
+    const currentSubjects = form.getValues("subjects");
+    if (currentSubjects.includes(subject)) {
+      form.setValue("subjects", currentSubjects.filter(s => s !== subject));
+    } else {
+      form.setValue("subjects", [...currentSubjects, subject]);
+    }
   };
 
-  const handleRemoveSpeciality = (speciality: string) => {
-    const currentSpecialities = form.getValues("specialities");
-    form.setValue("specialities", currentSpecialities.filter(s => s !== speciality));
+  const handleRemoveSubject = (subject: string) => {
+    const currentSubjects = form.getValues("subjects");
+    form.setValue("subjects", currentSubjects.filter(s => s !== subject));
   };
 
   // Functions for availability management
@@ -225,7 +222,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           last_name: data.lastName,
           email: data.email,
           phone: data.phone,
-          specialities: data.specialities,
+          specialities: data.subjects, // Using subjects for the specialities field
           bio: data.bio,
           education: data.education,
           normal_hourly_rate: data.normal_hourly_rate,
@@ -502,55 +499,53 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               />
             </div>
 
-            <div className="space-y-2">
-              <FormLabel>Specialities</FormLabel>
+            <div className="space-y-4">
+              <FormLabel>Subjects</FormLabel>
+              
+              {/* Display selected subjects */}
               <div className="flex flex-wrap gap-1 mb-2">
-                {form.watch("specialities").map((speciality, index) => (
+                {form.watch("subjects").map((subject, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
-                    {speciality}
+                    {subject}
                     <button 
                       type="button" 
                       className="text-gray-500 hover:text-red-500" 
-                      onClick={() => handleRemoveSpeciality(speciality)}
+                      onClick={() => handleRemoveSubject(subject)}
                     >
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
                 ))}
-                {form.watch("specialities").length === 0 && (
-                  <span className="text-sm text-muted-foreground italic">No specialities added</span>
+                {form.watch("subjects").length === 0 && (
+                  <span className="text-sm text-muted-foreground italic">No subjects selected</span>
                 )}
               </div>
-              
-              <div className="flex gap-2">
-                <FormField
-                  control={form.control}
-                  name="newSpeciality"
-                  render={({ field }) => (
-                    <FormItem className="flex-grow">
-                      <FormControl>
-                        <Input 
-                          placeholder="Add speciality (e.g. Math, Physics)" 
-                          {...field} 
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddSpeciality();
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button 
-                  type="button" 
-                  onClick={handleAddSpeciality}
-                  variant="secondary"
-                >
-                  Add
-                </Button>
+
+              {/* Subject selection by educational stages */}
+              <div className="space-y-4">
+                {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
+                  <div key={stageKey} className="border rounded-lg p-4">
+                    <h4 className="font-medium text-sm mb-2">{stage.label}</h4>
+                    <p className="text-xs text-muted-foreground mb-3">{stage.description}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {stage.subjects.map((subject) => (
+                        <div key={subject} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`subject-${subject}`}
+                            checked={form.watch("subjects").includes(subject)}
+                            onCheckedChange={() => handleSubjectToggle(subject)}
+                          />
+                          <label
+                            htmlFor={`subject-${subject}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {subject}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
