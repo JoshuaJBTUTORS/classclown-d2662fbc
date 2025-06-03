@@ -89,9 +89,6 @@ const daysOfWeek = [
   'Sunday'
 ];
 
-// Create a flat list of all subjects for the dropdown
-const allSubjects = Object.values(EDUCATIONAL_STAGES).flatMap(stage => stage.subjects);
-
 const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
@@ -150,7 +147,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         email: tutor.email,
         phone: tutor.phone || "",
         bio: tutor.bio || "",
-        subjects: tutor.specialities || [], // Load from specialities field but use as subjects
+        subjects: tutor.specialities || [],
         status: tutor.status,
         normal_hourly_rate: tutor.normal_hourly_rate || 25.00,
         absence_hourly_rate: tutor.absence_hourly_rate || 12.50,
@@ -161,26 +158,17 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     }
   }, [tutor, form]);
 
-  const handleSubjectToggle = (subject: string) => {
-    const currentSubjects = form.getValues("subjects");
-    if (currentSubjects.includes(subject)) {
-      form.setValue("subjects", currentSubjects.filter(s => s !== subject));
-    } else {
-      form.setValue("subjects", [...currentSubjects, subject]);
-    }
-  };
-
-  const handleRemoveSubject = (subject: string) => {
-    const currentSubjects = form.getValues("subjects");
-    form.setValue("subjects", currentSubjects.filter(s => s !== subject));
-  };
-
   const handleSubjectSelect = (subject: string) => {
-    const currentSubjects = form.getValues("subjects");
+    const currentSubjects = form.getValues("subjects") || [];
     if (!currentSubjects.includes(subject)) {
       form.setValue("subjects", [...currentSubjects, subject]);
     }
     setSubjectsOpen(false);
+  };
+
+  const handleRemoveSubject = (subject: string) => {
+    const currentSubjects = form.getValues("subjects") || [];
+    form.setValue("subjects", currentSubjects.filter(s => s !== subject));
   };
 
   const addAvailabilitySlot = () => {
@@ -308,6 +296,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     }
   };
 
+  // Get current subjects with fallback to empty array
+  const currentSubjects = form.watch("subjects") || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -401,7 +392,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
               
               {/* Display selected subjects */}
               <div className="flex flex-wrap gap-1 mb-2">
-                {form.watch("subjects").map((subject, index) => (
+                {currentSubjects.map((subject, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
                     {subject}
                     <button 
@@ -413,7 +404,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                     </button>
                   </Badge>
                 ))}
-                {form.watch("subjects").length === 0 && (
+                {currentSubjects.length === 0 && (
                   <span className="text-sm text-muted-foreground italic">No subjects selected</span>
                 )}
               </div>
@@ -438,7 +429,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                     {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
                       <CommandGroup key={stageKey} heading={stage.label}>
                         {stage.subjects.map((subject) => {
-                          const isSelected = form.watch("subjects").includes(subject);
+                          const isSelected = currentSubjects.includes(subject);
                           return (
                             <CommandItem
                               key={subject}
