@@ -89,10 +89,14 @@ const daysOfWeek = [
   'Sunday'
 ];
 
+// Create a flat list of all subjects for the dropdown
+const allSubjects = Object.values(EDUCATIONAL_STAGES).flatMap(stage => stage.subjects);
+
 const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
   const [deletedAvailabilityIds, setDeletedAvailabilityIds] = useState<string[]>([]);
+  const [subjectsOpen, setSubjectsOpen] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -169,6 +173,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   const handleRemoveSubject = (subject: string) => {
     const currentSubjects = form.getValues("subjects");
     form.setValue("subjects", currentSubjects.filter(s => s !== subject));
+  };
+
+  const handleSubjectSelect = (subject: string) => {
+    const currentSubjects = form.getValues("subjects");
+    if (!currentSubjects.includes(subject)) {
+      form.setValue("subjects", [...currentSubjects, subject]);
+    }
+    setSubjectsOpen(false);
   };
 
   const addAvailabilitySlot = () => {
@@ -406,32 +418,53 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 )}
               </div>
 
-              {/* Subject selection by educational stages */}
-              <div className="space-y-4">
-                {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
-                  <div key={stageKey} className="border rounded-lg p-4">
-                    <h4 className="font-medium text-sm mb-2">{stage.label}</h4>
-                    <p className="text-xs text-muted-foreground mb-3">{stage.description}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {stage.subjects.map((subject) => (
-                        <div key={subject} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`subject-${subject}`}
-                            checked={form.watch("subjects").includes(subject)}
-                            onCheckedChange={() => handleSubjectToggle(subject)}
-                          />
-                          <label
-                            htmlFor={`subject-${subject}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {subject}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Subject selection dropdown */}
+              <Popover open={subjectsOpen} onOpenChange={setSubjectsOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={subjectsOpen}
+                    className="w-full justify-between"
+                  >
+                    Select subjects...
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" side="bottom" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search subjects..." className="h-9" />
+                    <CommandEmpty>No subjects found.</CommandEmpty>
+                    {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
+                      <CommandGroup key={stageKey} heading={stage.label}>
+                        {stage.subjects.map((subject) => {
+                          const isSelected = form.watch("subjects").includes(subject);
+                          return (
+                            <CommandItem
+                              key={subject}
+                              value={subject}
+                              onSelect={() => handleSubjectSelect(subject)}
+                              className={cn(
+                                "flex items-center gap-2",
+                                isSelected && "opacity-50 cursor-not-allowed"
+                              )}
+                              disabled={isSelected}
+                            >
+                              <Check
+                                className={cn(
+                                  "h-4 w-4",
+                                  isSelected ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {subject}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    ))}
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             
             {/* Availability Section */}
