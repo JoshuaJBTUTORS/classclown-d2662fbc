@@ -47,6 +47,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { EDUCATIONAL_STAGES } from '@/constants/subjects';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
@@ -55,14 +57,14 @@ interface EditTutorFormProps {
   onUpdate: (tutor: Tutor) => void;
 }
 
-// Update the schema to include hourly rates
+// Update the schema to use subjects instead of specialities
 const formSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   phone: z.string().optional(),
   bio: z.string().optional(),
-  specialities: z.array(z.string()).optional(),
+  subjects: z.array(z.string()).default([]),
   status: z.string(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
   absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
@@ -77,29 +79,6 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const specialitiesList = [
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "English Literature",
-  "History",
-  "Geography",
-  "Computer Science",
-  "Foreign Languages",
-  "Music",
-  "Art",
-  "Physical Education",
-  "Economics",
-  "Business Studies",
-  "Psychology",
-  "Sociology",
-  "Philosophy",
-  "Religious Studies",
-  "Drama",
-  "Media Studies",
-];
-
 const daysOfWeek = [
   'Monday',
   'Tuesday',
@@ -112,8 +91,6 @@ const daysOfWeek = [
 
 const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
-  const [selectedSpecialities, setSelectedSpecialities] = useState<string[]>([]);
-  const [specialitiesOpen, setSpecialitiesOpen] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
   const [deletedAvailabilityIds, setDeletedAvailabilityIds] = useState<string[]>([]);
 
@@ -125,7 +102,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       email: "",
       phone: "",
       bio: "",
-      specialities: [],
+      subjects: [],
       status: 'active',
       normal_hourly_rate: 25.00,
       absence_hourly_rate: 12.50,
@@ -169,17 +146,30 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         email: tutor.email,
         phone: tutor.phone || "",
         bio: tutor.bio || "",
-        specialities: tutor.specialities || [],
+        subjects: tutor.specialities || [], // Load from specialities field but use as subjects
         status: tutor.status,
         normal_hourly_rate: tutor.normal_hourly_rate || 25.00,
         absence_hourly_rate: tutor.absence_hourly_rate || 12.50,
         availability: []
       });
       
-      setSelectedSpecialities(tutor.specialities || []);
       fetchAvailability(tutor.id);
     }
   }, [tutor, form]);
+
+  const handleSubjectToggle = (subject: string) => {
+    const currentSubjects = form.getValues("subjects");
+    if (currentSubjects.includes(subject)) {
+      form.setValue("subjects", currentSubjects.filter(s => s !== subject));
+    } else {
+      form.setValue("subjects", [...currentSubjects, subject]);
+    }
+  };
+
+  const handleRemoveSubject = (subject: string) => {
+    const currentSubjects = form.getValues("subjects");
+    form.setValue("subjects", currentSubjects.filter(s => s !== subject));
+  };
 
   const addAvailabilitySlot = () => {
     const newSlot: AvailabilitySlot = {
@@ -227,7 +217,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
           email: data.email,
           phone: data.phone,
           bio: data.bio,
-          specialities: data.specialities,
+          specialities: data.subjects, // Save to existing specialities field
           status: data.status,
           normal_hourly_rate: data.normal_hourly_rate,
           absence_hourly_rate: data.absence_hourly_rate,
@@ -287,7 +277,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         email: data.email,
         phone: data.phone,
         bio: data.bio,
-        specialities: data.specialities,
+        specialities: data.subjects, // Update the specialities field with subjects data
         status: data.status,
         normal_hourly_rate: data.normal_hourly_rate,
         absence_hourly_rate: data.absence_hourly_rate,
@@ -304,26 +294,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleSpeciality = (speciality: string) => {
-    const isSelected = selectedSpecialities.includes(speciality);
-    
-    let updated: string[];
-    if (isSelected) {
-      updated = selectedSpecialities.filter(s => s !== speciality);
-    } else {
-      updated = [...selectedSpecialities, speciality];
-    }
-    
-    setSelectedSpecialities(updated);
-    form.setValue('specialities', updated);
-  };
-
-  const removeSpeciality = (speciality: string) => {
-    const updated = selectedSpecialities.filter(s => s !== speciality);
-    setSelectedSpecialities(updated);
-    form.setValue('specialities', updated);
   };
 
   return (
@@ -414,6 +384,56 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
               )}
             />
 
+            <div className="space-y-4">
+              <FormLabel>Subjects</FormLabel>
+              
+              {/* Display selected subjects */}
+              <div className="flex flex-wrap gap-1 mb-2">
+                {form.watch("subjects").map((subject, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
+                    {subject}
+                    <button 
+                      type="button" 
+                      className="text-gray-500 hover:text-red-500" 
+                      onClick={() => handleRemoveSubject(subject)}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {form.watch("subjects").length === 0 && (
+                  <span className="text-sm text-muted-foreground italic">No subjects selected</span>
+                )}
+              </div>
+
+              {/* Subject selection by educational stages */}
+              <div className="space-y-4">
+                {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
+                  <div key={stageKey} className="border rounded-lg p-4">
+                    <h4 className="font-medium text-sm mb-2">{stage.label}</h4>
+                    <p className="text-xs text-muted-foreground mb-3">{stage.description}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {stage.subjects.map((subject) => (
+                        <div key={subject} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`subject-${subject}`}
+                            checked={form.watch("subjects").includes(subject)}
+                            onCheckedChange={() => handleSubjectToggle(subject)}
+                          />
+                          <label
+                            htmlFor={`subject-${subject}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {subject}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
             {/* Availability Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -484,121 +504,49 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
               )}
             </div>
             
-            <FormField
-              control={form.control}
-              name="normal_hourly_rate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Normal Hourly Rate (£)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      min="0" 
-                      placeholder="25.00" 
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="absence_hourly_rate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Absence Hourly Rate (£)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      min="0" 
-                      placeholder="12.50" 
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="specialities"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Specialities</FormLabel>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedSpecialities.map((speciality) => (
-                      <Badge 
-                        key={speciality} 
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
-                        {speciality}
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-4 w-4 p-0 hover:bg-transparent"
-                          onClick={() => removeSpeciality(speciality)}
-                        >
-                          <X className="h-3 w-3" />
-                          <span className="sr-only">Remove</span>
-                        </Button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Popover open={specialitiesOpen} onOpenChange={setSpecialitiesOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className="justify-between w-full"
-                        >
-                          {selectedSpecialities.length > 0
-                            ? `${selectedSpecialities.length} selected`
-                            : "Select specialities"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0">
-                      <Command>
-                        <CommandInput placeholder="Search specialities..." />
-                        <CommandEmpty>No specialities found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto">
-                          {specialitiesList.map((speciality) => {
-                            const isSelected = selectedSpecialities.includes(speciality);
-                            return (
-                              <CommandItem
-                                key={speciality}
-                                value={speciality}
-                                onSelect={() => toggleSpeciality(speciality)}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    isSelected ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {speciality}
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="normal_hourly_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Normal Hourly Rate (£)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        placeholder="25.00" 
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="absence_hourly_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Absence Hourly Rate (£)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        placeholder="12.50" 
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <FormField
               control={form.control}
