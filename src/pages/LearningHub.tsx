@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -21,13 +20,13 @@ import { LESSON_SUBJECTS, LessonSubject } from '@/constants/subjects';
 const EDUCATION_LEVELS = {
   primary: {
     label: 'Primary Education',
-    subjects: ['11 Plus Maths', '11 Plus English', '11 Plus VR', '11 Plus NVR', 'Early KS2 Maths', 'Early KS2 English', 'KS2 Maths', 'KS2 English', 'Sats Maths', 'Sats English'] as LessonSubject[]
+    subjects: ['11 Plus Maths', '11 Plus English', '11 Plus VR', '11 Plus NVR', 'Early KS2 Maths', 'Early KS2 English', 'KS2 Maths', 'KS2 English', 'Sats Maths', 'Sats English'] as const
   },
   secondary: {
     label: 'Secondary Education', 
-    subjects: ['KS3 Maths', 'KS3 English', 'KS3 Science', 'GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'] as LessonSubject[]
+    subjects: ['KS3 Maths', 'KS3 English', 'KS3 Science', 'GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'] as const
   }
-};
+} as const;
 
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
@@ -47,8 +46,8 @@ const LearningHub: React.FC = () => {
 
   // Get subjects for current education level
   const getSubjectsForLevel = (level: string): LessonSubject[] => {
-    if (level === 'all') return LESSON_SUBJECTS;
-    return EDUCATION_LEVELS[level as keyof typeof EDUCATION_LEVELS]?.subjects || [];
+    if (level === 'all') return [...LESSON_SUBJECTS];
+    return [...(EDUCATION_LEVELS[level as keyof typeof EDUCATION_LEVELS]?.subjects || [])];
   };
 
   // Filter courses by education level, subject, search, and course status
