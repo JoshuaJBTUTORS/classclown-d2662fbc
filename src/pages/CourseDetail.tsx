@@ -173,10 +173,8 @@ const CourseDetail: React.FC = () => {
       console.log('📁 Found module for lesson:', module.title);
       setActiveModuleId(module.id);
       setActiveLessonId(lesson.id);
-      // Close mobile sidebar when lesson is selected
-      if (isMobile) {
-        setShowMobileSidebar(false);
-      }
+      // Close mobile sidebar when lesson is selected (responsive behavior)
+      setShowMobileSidebar(false);
     } else {
       console.error('❌ Could not find module for lesson:', lesson.title);
     }
