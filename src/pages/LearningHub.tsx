@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -5,25 +6,25 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/ui/PageTitle';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
-import { BookOpen, ChevronLeft, Brain, Filter, Grid, List, Home, GraduationCap, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronLeft, Brain, Filter, Grid, List, Home, GraduationCap, Sparkles, Search, School, Award } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CourseCard from '@/components/learningHub/CourseCard';
 import AIAssessmentManager from '@/components/learningHub/AIAssessmentManager';
 import { Badge } from '@/components/ui/badge';
-import { LESSON_SUBJECTS } from '@/constants/subjects';
-
-// Create subject categories from the LESSON_SUBJECTS array
-const subjects = [
-  'All Courses',
-  ...LESSON_SUBJECTS
-];
+import { EDUCATIONAL_STAGES, SUBJECT_AREAS, getSubjectArea } from '@/constants/subjects';
 
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
   const { profile, isAdmin, isTutor, isOwner, isLearningHubOnly } = useAuth();
-  const [activeSubject, setActiveSubject] = useState('All Courses');
+  const hasAdminPrivileges = isAdmin || isOwner || isTutor;
+  
+  const [activeStage, setActiveStage] = useState<string>('all');
+  const [activeSubjectArea, setActiveSubjectArea] = useState('All Subjects');
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeMainTab, setActiveMainTab] = useState('courses');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
@@ -32,12 +33,42 @@ const LearningHub: React.FC = () => {
     queryFn: learningHubService.getCourses,
   });
 
-  // Filter courses by selected subject only
+  // Filter courses by stage, subject area, and search query
   const filteredCourses = courses?.filter((course: Course) => {
-    return activeSubject === 'All Courses' || course.subject === activeSubject;
+    // Stage filter
+    if (activeStage !== 'all') {
+      const stageSubjects = EDUCATIONAL_STAGES[activeStage as keyof typeof EDUCATIONAL_STAGES]?.subjects || [];
+      if (!stageSubjects.includes(course.subject || '')) return false;
+    }
+    
+    // Subject area filter
+    if (activeSubjectArea !== 'All Subjects') {
+      const courseSubjectArea = getSubjectArea(course.subject || '');
+      if (courseSubjectArea !== activeSubjectArea) return false;
+    }
+    
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      return (
+        course.title.toLowerCase().includes(query) ||
+        course.description?.toLowerCase().includes(query) ||
+        course.subject?.toLowerCase().includes(query)
+      );
+    }
+    
+    return true;
   });
 
-  const hasAdminPrivileges = isAdmin || isOwner || isTutor;
+  const getStageIcon = (stageKey: string) => {
+    switch (stageKey) {
+      case '11_plus': return GraduationCap;
+      case 'ks2': return BookOpen;
+      case 'ks3': return School;
+      case 'gcse': return Award;
+      default: return BookOpen;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-primary/5">
@@ -128,57 +159,120 @@ const LearningHub: React.FC = () => {
           </div>
 
           <TabsContent value="courses" className="space-y-6">
-            {/* Enhanced Filters */}
+            {/* Smart Educational Stage Filters */}
             <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-xl">
-              <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-                <div className="flex flex-wrap gap-3">
-                  {subjects.map((subject) => (
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Choose Your Educational Stage</h2>
+                <p className="text-gray-600">Browse courses organized by UK education levels</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                <button
+                  onClick={() => setActiveStage('all')}
+                  className={`p-4 rounded-xl text-left transition-all duration-200 border backdrop-blur-sm ${
+                    activeStage === 'all'
+                      ? 'bg-primary text-white border-transparent shadow-lg'
+                      : 'bg-white/60 text-gray-700 hover:bg-white/80 border-gray-200/50 hover:border-primary/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <BookOpen className="h-5 w-5" />
+                    <span className="font-medium">All Courses</span>
+                  </div>
+                  <p className="text-sm opacity-80">View all available courses</p>
+                </button>
+                
+                {Object.entries(EDUCATIONAL_STAGES).map(([key, stage]) => {
+                  const IconComponent = getStageIcon(key);
+                  return (
                     <button
-                      key={subject}
-                      onClick={() => setActiveSubject(subject)}
-                      className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-200 border backdrop-blur-sm ${
-                        activeSubject === subject
+                      key={key}
+                      onClick={() => setActiveStage(key)}
+                      className={`p-4 rounded-xl text-left transition-all duration-200 border backdrop-blur-sm ${
+                        activeStage === key
                           ? 'bg-primary text-white border-transparent shadow-lg'
-                          : 'bg-white/60 text-gray-700 hover:bg-white/80 border-gray-200/50 hover:border-primary/30 hover:text-primary'
+                          : 'bg-white/60 text-gray-700 hover:bg-white/80 border-gray-200/50 hover:border-primary/30'
                       }`}
                     >
-                      {subject}
+                      <div className="flex items-center gap-3 mb-2">
+                        <IconComponent className="h-5 w-5" />
+                        <span className="font-medium">{stage.label}</span>
+                      </div>
+                      <p className="text-sm opacity-80">{stage.description}</p>
                     </button>
-                  ))}
+                  );
+                })}
+              </div>
+
+              {/* Secondary Filters */}
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                  <div className="flex-1 max-w-md">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Search courses..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 bg-white/60 backdrop-blur-sm border-gray-200/50"
+                      />
+                    </div>
+                  </div>
+                  
+                  <Select value={activeSubjectArea} onValueChange={setActiveSubjectArea}>
+                    <SelectTrigger className="w-full sm:w-48 bg-white/60 backdrop-blur-sm border-gray-200/50">
+                      <SelectValue placeholder="Subject area" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUBJECT_AREAS.map((area) => (
+                        <SelectItem key={area} value={area}>
+                          {area}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm">
-                    <Button
-                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                      className="rounded-r-none h-12 px-4"
-                    >
-                      <Grid className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === 'list' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                      className="rounded-l-none h-12 px-4"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex items-center border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="rounded-r-none h-12 px-4"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="rounded-l-none h-12 px-4"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
 
             {/* Enhanced Course Stats */}
             {filteredCourses && (
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-4 text-sm flex-wrap">
                 <div className="bg-white/60 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
                   <span className="font-medium text-gray-700">{filteredCourses.length} courses found</span>
                 </div>
-                {activeSubject !== 'All Courses' && (
+                {activeStage !== 'all' && (
                   <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 backdrop-blur-sm px-3 py-1">
-                    {activeSubject}
+                    {EDUCATIONAL_STAGES[activeStage as keyof typeof EDUCATIONAL_STAGES]?.label}
+                  </Badge>
+                )}
+                {activeSubjectArea !== 'All Subjects' && (
+                  <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 backdrop-blur-sm px-3 py-1">
+                    {activeSubjectArea}
+                  </Badge>
+                )}
+                {searchQuery && (
+                  <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 backdrop-blur-sm px-3 py-1">
+                    "{searchQuery}"
                   </Badge>
                 )}
               </div>
@@ -211,16 +305,17 @@ const LearningHub: React.FC = () => {
               <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
                 <BookOpen className="mx-auto h-20 w-20 text-gray-300 mb-6" />
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                  {activeSubject === 'All Courses' 
-                    ? "No courses available" 
-                    : `No ${activeSubject} courses available`}
+                  No courses found
                 </h3>
                 <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
-                  {hasAdminPrivileges 
-                    ? "Create your first course to get started with the learning platform." 
-                    : "Check back later for new courses and learning materials."}
+                  {searchQuery || activeStage !== 'all' || activeSubjectArea !== 'All Subjects'
+                    ? "Try adjusting your filters or search terms to find more courses."
+                    : hasAdminPrivileges 
+                      ? "Create your first course to get started with the learning platform." 
+                      : "Check back later for new courses and learning materials."
+                  }
                 </p>
-                {hasAdminPrivileges && (
+                {hasAdminPrivileges && !searchQuery && activeStage === 'all' && activeSubjectArea === 'All Subjects' && (
                   <Button 
                     onClick={() => navigate('/course/create')}
                     className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-medium shadow-lg"
