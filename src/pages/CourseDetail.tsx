@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -22,7 +21,6 @@ const CourseDetail: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, userRole, isOwner, isAdmin } = useAuth();
-  const isMobile = useIsMobile();
   
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -260,7 +258,7 @@ const CourseDetail: React.FC = () => {
   // Enhanced error handling and loading states with mobile-friendly design
   if (courseLoading || modulesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
         <div className="container mx-auto py-4 sm:py-8 px-4">
           <div className="animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
@@ -281,7 +279,7 @@ const CourseDetail: React.FC = () => {
   if (courseError) {
     console.error('💥 Course error details:', courseError);
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
         <div className="container mx-auto py-4 sm:py-8 px-4 text-center">
           <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6 sm:p-8">
@@ -304,7 +302,7 @@ const CourseDetail: React.FC = () => {
   if (!course) {
     console.error('❌ No course data received');
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
         <div className="container mx-auto py-4 sm:py-8 px-4 text-center">
           <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6 sm:p-8">
@@ -325,7 +323,7 @@ const CourseDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
       {/* Mobile-optimized Course Header */}
       <div className="bg-gradient-to-r from-white/85 via-slate-50/80 to-rose-50/75 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
         <div className="container mx-auto py-2 sm:py-4 px-4">
@@ -355,7 +353,7 @@ const CourseDetail: React.FC = () => {
               )}
               
               {/* Mobile: Course navigation button */}
-              {isMobile && (
+              <div className="block lg:hidden">
                 <Sheet open={showMobileSidebar} onOpenChange={setShowMobileSidebar}>
                   <SheetTrigger asChild>
                     <Button
@@ -379,7 +377,7 @@ const CourseDetail: React.FC = () => {
                     </div>
                   </SheetContent>
                 </Sheet>
-              )}
+              </div>
               
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -444,29 +442,27 @@ const CourseDetail: React.FC = () => {
       )}
 
       {/* Main Content Area with Mobile-First Design */}
-      <div className="container mx-auto py-4 sm:py-6 px-4">
+      <div className="container mx-auto py-4 sm:py-6 px-0 sm:px-4">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
           {/* Desktop Sidebar - Hidden on Mobile */}
-          {!isMobile && (
-            <div className="hidden lg:block lg:col-span-1">
-              <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-xl overflow-hidden shadow-lg sticky top-4">
-                <CourseSidebar
-                  modules={modules}
-                  studentProgress={studentProgress}
-                  onSelectLesson={handleSelectLesson}
-                  currentLessonId={activeLessonId || undefined}
-                  isAdmin={hasAdminPrivileges}
-                  isPurchased={canAccessFullCourse}
-                />
-              </div>
+          <div className="hidden lg:block lg:col-span-1">
+            <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-xl overflow-hidden shadow-lg sticky top-4">
+              <CourseSidebar
+                modules={modules}
+                studentProgress={studentProgress}
+                onSelectLesson={handleSelectLesson}
+                currentLessonId={activeLessonId || undefined}
+                isAdmin={hasAdminPrivileges}
+                isPurchased={canAccessFullCourse}
+              />
             </div>
-          )}
+          </div>
           
           {/* Main Content Area - Expanded on Mobile */}
           <div className="col-span-1 lg:col-span-4 space-y-4 sm:space-y-6">
             {/* Lesson Navigation - Mobile Optimized */}
             {activeLesson && (
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-4 sm:p-6 shadow-lg">
+              <div className="bg-white/90 backdrop-blur-sm rounded-none sm:rounded-xl border-0 sm:border border-gray-100 px-4 py-4 sm:p-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1 min-w-0">
                     {activeModule?.title && (
@@ -515,11 +511,13 @@ const CourseDetail: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Content Viewer - Improved for Mobile */}
-                <ContentViewer
-                  lesson={activeLesson}
-                  onContentTypeChange={setContentType}
-                />
+                {/* Content Viewer - Responsive for Mobile Video */}
+                <div className={contentType === 'video' ? '-mx-4 sm:mx-0' : ''}>
+                  <ContentViewer
+                    lesson={activeLesson}
+                    onContentTypeChange={setContentType}
+                  />
+                </div>
                 
                 {/* Notes Section - Improved for Mobile */}
                 {user && (
@@ -552,7 +550,7 @@ const CourseDetail: React.FC = () => {
             
             {/* No lesson selected fallback - Mobile Optimized */}
             {!activeLesson && (
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-8 sm:p-12 shadow-lg text-center">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-8 sm:p-12 shadow-lg text-center mx-4 sm:mx-0">
                 <BookOpen className="mx-auto h-12 sm:h-16 w-12 sm:w-16 text-gray-300 mb-4" />
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Select a lesson to begin</h2>
                 <p className="text-gray-600 mb-6 max-w-md mx-auto">
@@ -560,7 +558,7 @@ const CourseDetail: React.FC = () => {
                 </p>
                 
                 {/* On mobile, show a button to open the course navigation */}
-                {isMobile && (
+                <div className="block lg:hidden">
                   <Button 
                     onClick={() => setShowMobileSidebar(true)}
                     variant="outline" 
@@ -569,7 +567,7 @@ const CourseDetail: React.FC = () => {
                     <Menu className="h-4 w-4 mr-2" />
                     View Course Content
                   </Button>
-                )}
+                </div>
               </div>
             )}
           </div>
@@ -587,8 +585,8 @@ const CourseDetail: React.FC = () => {
       )}
       
       {/* Mobile: Floating button to access course navigation (only when a lesson is active) */}
-      {isMobile && activeLesson && (
-        <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-6 right-6 block lg:hidden">
+        {activeLesson && (
           <Button
             onClick={() => setShowMobileSidebar(true)}
             variant="default"
@@ -597,8 +595,8 @@ const CourseDetail: React.FC = () => {
           >
             <Menu className="h-6 w-6" />
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

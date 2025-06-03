@@ -4,7 +4,6 @@ import { CourseLesson } from '@/types/course';
 import VideoEmbed from './VideoEmbed';
 import QuizEmbed from './QuizEmbed';
 import AIAssessmentViewer from './AIAssessmentViewer';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ContentViewerProps {
   lesson: CourseLesson;
@@ -17,8 +16,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isLoading = false,
   onContentTypeChange
 }) => {
-  const isMobile = useIsMobile();
-
   // Notify parent component about content type change
   React.useEffect(() => {
     if (onContentTypeChange && lesson.content_type) {
@@ -42,11 +39,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     switch (lesson.content_type) {
       case 'video':
         return (
-          <div className="relative bg-black rounded-lg overflow-hidden">
+          <div className="relative bg-black -mx-4 sm:mx-0 sm:rounded-lg overflow-hidden">
             <VideoEmbed 
               src={lesson.content_url || ''} 
               title={lesson.title}
-              className="rounded-lg overflow-hidden shadow-inner aspect-video w-full"
+              className="w-screen sm:w-full aspect-video rounded-none sm:rounded-lg overflow-hidden shadow-inner"
             />
           </div>
         );

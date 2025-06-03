@@ -1,10 +1,8 @@
-
 import React, { useState } from 'react';
 import { CourseLesson, CourseModule, StudentProgress } from '@/types/course';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight, CheckCircle2, Clock, LockIcon, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CourseSidebarProps {
   modules: CourseModule[];
@@ -42,8 +40,6 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
     
     return initialExpanded;
   });
-  
-  const isMobile = useIsMobile();
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules(prev => ({

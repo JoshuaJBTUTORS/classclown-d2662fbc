@@ -43,7 +43,7 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({
       <iframe
         src={embedUrl}
         title={title}
-        className="w-full h-full rounded-md"
+        className="w-full h-full rounded-none sm:rounded-md"
         frameBorder="0"
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
