@@ -321,7 +321,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const renderMainContent = () => {
     if (assessmentLoading) {
       return (
-        <div className={embedded ? "p-6" : "container py-8"}>
+        <div className={embedded ? "p-2 sm:p-6" : "container py-8"}>
           <Skeleton className="h-8 w-64 mb-6" />
           <div className="space-y-6">
             <Skeleton className="h-32 w-full" />
@@ -333,7 +333,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
 
     if (assessmentError || !assessment) {
       return (
-        <div className={embedded ? "p-6" : "container py-8"}>
+        <div className={embedded ? "p-2 sm:p-6" : "container py-8"}>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Not Found</h1>
             <p className="text-gray-600 mb-6">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
@@ -349,7 +349,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     }
 
     return (
-      <div className={embedded ? "p-6" : "container py-8"}>
+      <div className={embedded ? "p-0" : "container py-8"}>
         {!embedded && (
           <Button 
             variant="ghost" 
@@ -361,11 +361,11 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
           </Button>
         )}
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-2xl">{assessment.title}</CardTitle>
+        <Card className={embedded ? "mb-2 sm:mb-6 border-0 sm:border shadow-none sm:shadow-sm rounded-none sm:rounded-lg" : "mb-6"}>
+          <CardHeader className={embedded ? "px-3 py-3 sm:px-6 sm:py-6" : ""}>
+            <CardTitle className={embedded ? "text-lg sm:text-2xl" : "text-2xl"}>{assessment.title}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className={embedded ? "px-3 pb-3 sm:px-6 sm:pb-6" : ""}>
             {session ? (
               <>
                 {/* Timer Section - Only show for timed assessments */}
@@ -398,6 +398,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                       isMarking={isMarking[questions[currentQuestionIndex].id]}
                       onMark={markCurrentQuestion}
                       feedback={feedback[questions[currentQuestionIndex].id]}
+                      embedded={embedded}
                     />
 
                     <AssessmentNavigation

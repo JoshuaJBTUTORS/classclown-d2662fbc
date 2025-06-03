@@ -507,8 +507,8 @@ const CourseDetail: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Content Viewer - Full width for mobile video */}
-                <div className={contentType === 'video' ? '-mx-4 sm:mx-0' : ''}>
+                {/* Content Viewer - Full width for mobile video and assessments */}
+                <div className={contentType === 'video' || contentType === 'ai-assessment' ? '-mx-4 sm:mx-0' : ''}>
                   <ContentViewer
                     lesson={activeLesson}
                     onContentTypeChange={setContentType}
@@ -517,7 +517,7 @@ const CourseDetail: React.FC = () => {
                 
                 {/* Notes Section */}
                 {user && (
-                  <div className={`pt-6 ${contentType === 'video' ? 'mt-0' : 'mt-4'}`}>
+                  <div className={`pt-6 ${contentType === 'video' || contentType === 'ai-assessment' ? 'mt-0' : 'mt-4'}`}>
                     <NotesSection
                       courseId={courseId!}
                       lessonId={activeLesson.id}

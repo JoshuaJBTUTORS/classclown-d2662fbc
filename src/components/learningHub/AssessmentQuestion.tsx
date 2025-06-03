@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,7 @@ interface AssessmentQuestionProps {
   isMarking?: boolean;
   onMark?: () => void;
   feedback?: any;
+  embedded?: boolean;
 }
 
 interface MultipleChoiceQuestionProps {
@@ -62,18 +64,19 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
   isMarking = false,
   onMark,
   feedback,
+  embedded = false,
 }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
+    <Card className={embedded ? "border-0 sm:border shadow-none sm:shadow-sm rounded-none sm:rounded-lg" : ""}>
+      <CardHeader className={embedded ? "px-0 py-2 sm:px-6 sm:py-6" : ""}>
+        <CardTitle className={embedded ? "text-base sm:text-lg" : ""}>
           <div className="flex items-center">
             <FileText className="mr-2 h-4 w-4" />
             Question {question.question_number} ({question.marks_available} marks)
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={embedded ? "px-0 pb-2 sm:px-6 sm:pb-6 space-y-4" : "space-y-4"}>
         <p className="text-gray-800 leading-relaxed">{question.question_text}</p>
         
         {/* Display question image if it exists */}

@@ -59,7 +59,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         );
       case 'ai-assessment':
         return (
-          <div className="bg-white rounded-lg overflow-hidden">
+          <div className="bg-white -mx-4 sm:mx-0 sm:rounded-lg overflow-hidden">
             <AIAssessmentViewer 
               assessmentId={lesson.content_url || ''} 
               embedded={true} 
