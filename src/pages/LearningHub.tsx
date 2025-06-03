@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +32,10 @@ const EDUCATION_LEVELS = {
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
   const { profile, isAdmin, isTutor, isOwner, isLearningHubOnly } = useAuth();
+  
+  // Move hasAdminPrivileges declaration here, right after useAuth
+  const hasAdminPrivileges = isAdmin || isOwner || isTutor;
+  
   const [activeEducationLevel, setActiveEducationLevel] = useState('all');
   const [activeSubject, setActiveSubject] = useState('All Subjects');
   const [activeMainTab, setActiveMainTab] = useState('courses');
