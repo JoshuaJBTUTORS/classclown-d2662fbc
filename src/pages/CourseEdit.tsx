@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,7 +20,16 @@ import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
 import ModuleManager from '@/components/learningHub/ModuleManager';
-import { LESSON_SUBJECTS } from '@/constants/subjects';
+import { LESSON_SUBJECTS, isValidLessonSubject, LessonSubject } from '@/constants/subjects';
+
+interface CourseEditFormData {
+  title: string;
+  description: string;
+  subject: string; // Allow empty string for form handling
+  difficulty_level: string;
+  cover_image_url: string;
+  status: 'draft' | 'published' | 'archived';
+}
 
 const CourseEdit: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
@@ -28,7 +38,7 @@ const CourseEdit: React.FC = () => {
   const queryClient = useQueryClient();
   
   // Course form state
-  const [courseData, setCourseData] = useState<Partial<Course>>({
+  const [courseData, setCourseData] = useState<CourseEditFormData>({
     title: '',
     description: '',
     subject: '',
@@ -82,7 +92,7 @@ const CourseEdit: React.FC = () => {
     },
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof CourseEditFormData, value: string) => {
     setCourseData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -96,7 +106,19 @@ const CourseEdit: React.FC = () => {
       return;
     }
 
-    updateCourseMutation.mutate(courseData);
+    // Transform form data to match Course interface
+    const updateData: Partial<Course> = {
+      title: courseData.title,
+      description: courseData.description,
+      subject: courseData.subject && isValidLessonSubject(courseData.subject) 
+        ? courseData.subject as LessonSubject 
+        : undefined,
+      difficulty_level: courseData.difficulty_level,
+      cover_image_url: courseData.cover_image_url,
+      status: courseData.status
+    };
+
+    updateCourseMutation.mutate(updateData);
   };
   
   if (isLoading) {
@@ -198,7 +220,7 @@ const CourseEdit: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium mb-1">Course Title</label>
                   <Input
-                    value={courseData.title || ''}
+                    value={courseData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     placeholder="Enter course title"
                     className="w-full"
@@ -208,7 +230,7 @@ const CourseEdit: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium mb-1">Subject</label>
                   <Select
-                    value={courseData.subject || ''}
+                    value={courseData.subject}
                     onValueChange={(value) => handleInputChange('subject', value)}
                   >
                     <SelectTrigger>
@@ -227,7 +249,7 @@ const CourseEdit: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium mb-1">Difficulty Level</label>
                   <Select
-                    value={courseData.difficulty_level || ''}
+                    value={courseData.difficulty_level}
                     onValueChange={(value) => handleInputChange('difficulty_level', value)}
                   >
                     <SelectTrigger>
@@ -244,7 +266,7 @@ const CourseEdit: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium mb-1">Cover Image URL</label>
                   <Input
-                    value={courseData.cover_image_url || ''}
+                    value={courseData.cover_image_url}
                     onChange={(e) => handleInputChange('cover_image_url', e.target.value)}
                     placeholder="Enter image URL"
                     className="w-full"
@@ -255,7 +277,7 @@ const CourseEdit: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <Textarea
-                  value={courseData.description || ''}
+                  value={courseData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Enter course description"
                   rows={5}
@@ -267,8 +289,8 @@ const CourseEdit: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium mb-1">Status</label>
                   <Select
-                    value={courseData.status || 'draft'}
-                    onValueChange={(value) => handleInputChange('status', value)}
+                    value={courseData.status}
+                    onValueChange={(value: 'draft' | 'published' | 'archived') => handleInputChange('status', value)}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Status" />

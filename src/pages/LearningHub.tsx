@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -39,7 +38,10 @@ const LearningHub: React.FC = () => {
     if (activeStage !== 'all') {
       const stageData = EDUCATIONAL_STAGES[activeStage as keyof typeof EDUCATIONAL_STAGES];
       if (!stageData || !course.subject || !isValidLessonSubject(course.subject)) return false;
-      if (!stageData.subjects.includes(course.subject as any)) return false;
+      
+      // Type-safe check if the course subject is in the stage's subjects array
+      const stageSubjects = stageData.subjects as readonly string[];
+      if (!stageSubjects.includes(course.subject)) return false;
     }
     
     // Subject area filter

@@ -22,12 +22,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
-import { LESSON_SUBJECTS } from '@/constants/subjects';
+import { LESSON_SUBJECTS, isValidLessonSubject } from '@/constants/subjects';
+import { CourseFormData } from '@/types/course';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters long' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long' }),
-  subject: z.string().min(1, { message: 'Please select a subject' }),
+  subject: z.string().min(1, { message: 'Please select a subject' }).refine((val) => isValidLessonSubject(val), {
+    message: 'Please select a valid subject'
+  }),
   difficulty_level: z.string().optional(),
   cover_image_url: z.string().url().optional().or(z.literal('')),
 });
@@ -68,10 +71,14 @@ const CourseCreate: React.FC = () => {
   });
 
   const onSubmit = (data: FormData) => {
-    createCourse.mutate({
+    // Transform form data to match Course interface
+    const courseData = {
       ...data,
-      status: 'draft',
-    });
+      subject: isValidLessonSubject(data.subject) ? data.subject : undefined,
+      status: 'draft' as const,
+    };
+    
+    createCourse.mutate(courseData);
   };
 
   return (
@@ -142,7 +149,7 @@ const CourseCreate: React.FC = () => {
                       <FormLabel>Subject</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -170,7 +177,7 @@ const CourseCreate: React.FC = () => {
                       <FormLabel>Difficulty Level (Optional)</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>

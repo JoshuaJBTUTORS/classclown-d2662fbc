@@ -1,4 +1,3 @@
-
 import { LessonSubject } from '@/constants/subjects';
 
 export interface Course {
@@ -12,6 +11,16 @@ export interface Course {
   price?: number; // Price in pence (e.g., 899 for £8.99)
   created_at: string;
   updated_at: string;
+}
+
+// Form interface for creating/editing courses - allows empty strings for form handling
+export interface CourseFormData {
+  title: string;
+  description: string;
+  subject: string; // Allows empty string for form placeholder
+  difficulty_level?: string;
+  cover_image_url: string;
+  status?: 'draft' | 'published' | 'archived';
 }
 
 export interface CourseModule {
