@@ -78,7 +78,7 @@ const LearningHub: React.FC = () => {
             
             {hasAdminPrivileges && activeMainTab === 'courses' && (
               <Button 
-                onClick={() => navigate('/create-course')}
+                onClick={() => navigate('/course/create')}
                 className="bg-primary hover:bg-primary/90 text-white px-6 shadow-lg"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
@@ -226,7 +226,7 @@ const LearningHub: React.FC = () => {
                 </p>
                 {hasAdminPrivileges && (
                   <Button 
-                    onClick={() => navigate('/create-course')}
+                    onClick={() => navigate('/course/create')}
                     className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-medium shadow-lg"
                   >
                     <Sparkles className="mr-2 h-5 w-5" />
