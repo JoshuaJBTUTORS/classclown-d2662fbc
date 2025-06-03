@@ -22,15 +22,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
-import { LESSON_SUBJECTS, isValidLessonSubject } from '@/constants/subjects';
-import { CourseFormData } from '@/types/course';
+import { LESSON_SUBJECTS, isValidLessonSubject, LessonSubject } from '@/constants/subjects';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters long' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long' }),
-  subject: z.string().min(1, { message: 'Please select a subject' }).refine((val) => isValidLessonSubject(val), {
-    message: 'Please select a valid subject'
-  }),
+  subject: z.string().optional(),
   difficulty_level: z.string().optional(),
   cover_image_url: z.string().url().optional().or(z.literal('')),
 });
@@ -46,7 +43,7 @@ const CourseCreate: React.FC = () => {
     defaultValues: {
       title: '',
       description: '',
-      subject: '',
+      subject: undefined,
       difficulty_level: '',
       cover_image_url: '',
     },
@@ -73,8 +70,11 @@ const CourseCreate: React.FC = () => {
   const onSubmit = (data: FormData) => {
     // Transform form data to match Course interface
     const courseData = {
-      ...data,
-      subject: isValidLessonSubject(data.subject) ? data.subject : undefined,
+      title: data.title,
+      description: data.description,
+      subject: data.subject && isValidLessonSubject(data.subject) ? data.subject as LessonSubject : undefined,
+      difficulty_level: data.difficulty_level,
+      cover_image_url: data.cover_image_url,
       status: 'draft' as const,
     };
     
@@ -149,7 +149,7 @@ const CourseCreate: React.FC = () => {
                       <FormLabel>Subject</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        value={field.value}
+                        value={field.value || ''}
                       >
                         <FormControl>
                           <SelectTrigger>
