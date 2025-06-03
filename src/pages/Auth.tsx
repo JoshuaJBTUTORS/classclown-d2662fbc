@@ -210,10 +210,10 @@ const Auth = () => {
             <CardContent className="space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Does your student already study with us?
+                  Are you already a JB Tutors member?
                 </h2>
                 <p className="text-gray-600">
-                  This helps us provide the right experience for your family
+                  This helps us provide the right experience for you
                 </p>
               </div>
               
@@ -229,10 +229,10 @@ const Auth = () => {
                       </div>
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      Yes - Existing Student
+                      Yes - Existing Member
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      My student is already a JB Tutors student
+                      I'm already a JB Tutors member
                     </p>
                     <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
                       Access your existing account, lesson schedules, homework, and learning materials
@@ -608,10 +608,10 @@ const Auth = () => {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-playfair text-xl">Confirm: Existing JB Tutors Customer</DialogTitle>
+            <DialogTitle className="font-playfair text-xl">Confirm: Existing JB Tutors Member</DialogTitle>
             <DialogDescription className="space-y-4">
               <p>
-                Please confirm that your student already studies with JB Tutors and you have existing login credentials.
+                Please confirm that you are already a JB Tutors member and have existing login credentials.
               </p>
               <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
                 <p className="text-sm text-primary/80">
