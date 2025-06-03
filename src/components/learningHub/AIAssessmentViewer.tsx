@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -321,8 +322,8 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const renderMainContent = () => {
     if (assessmentLoading) {
       return (
-        <div className={embedded ? "p-2 sm:p-6" : "container py-8"}>
-          <Skeleton className="h-8 w-64 mb-6" />
+        <div className={embedded ? "p-0" : "container py-8"}>
+          <Skeleton className="h-8 w-64 mb-6 mx-auto sm:mx-0" />
           <div className="space-y-6">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-48 w-full" />
@@ -333,7 +334,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
 
     if (assessmentError || !assessment) {
       return (
-        <div className={embedded ? "p-2 sm:p-6" : "container py-8"}>
+        <div className={embedded ? "p-0" : "container py-8"}>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Not Found</h1>
             <p className="text-gray-600 mb-6">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
@@ -361,11 +362,11 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
           </Button>
         )}
 
-        <Card className={embedded ? "mb-2 sm:mb-6 border-0 sm:border shadow-none sm:shadow-sm rounded-none sm:rounded-lg" : "mb-6"}>
-          <CardHeader className={embedded ? "px-3 py-3 sm:px-6 sm:py-6" : ""}>
-            <CardTitle className={embedded ? "text-lg sm:text-2xl" : "text-2xl"}>{assessment.title}</CardTitle>
+        <Card className={embedded ? "mb-0 border-0 shadow-none rounded-none" : "mb-6"}>
+          <CardHeader className={embedded ? "px-0 py-3" : ""}>
+            <CardTitle className={embedded ? "text-lg sm:text-2xl text-center sm:text-left" : "text-2xl"}>{assessment.title}</CardTitle>
           </CardHeader>
-          <CardContent className={embedded ? "px-3 pb-3 sm:px-6 sm:pb-6" : ""}>
+          <CardContent className={embedded ? "px-0 pb-0" : ""}>
             {session ? (
               <>
                 {/* Timer Section - Only show for timed assessments */}
@@ -386,8 +387,10 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                   </div>
                 ) : questions && questions.length > 0 ? (
                   <>
-                    <div className="mb-4">
-                      Question {currentQuestionIndex + 1} of {questions.length}
+                    <div className="mb-4 text-center sm:text-left">
+                      <div className="text-sm text-gray-600 mb-2">
+                        Question {currentQuestionIndex + 1} of {questions.length}
+                      </div>
                       <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
                     </div>
 

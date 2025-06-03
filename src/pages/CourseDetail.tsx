@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -377,11 +378,11 @@ const CourseDetail: React.FC = () => {
               
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate text-center sm:text-left">
                     {course.title}
                   </h1>
                   
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
                     {course.subject && (
                       <Badge variant="outline" className="text-xs border-gray-300 bg-white/50">
                         {course.subject}
@@ -403,7 +404,7 @@ const CourseDetail: React.FC = () => {
             {/* Purchase button/info area */}
             {!canAccessFullCourse && (
               <div className="flex items-center justify-between w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 mt-2 sm:mt-0">
-                <div className="text-left sm:text-right">
+                <div className="text-center sm:text-right">
                   <p className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     £{((course.price || 0) / 100).toFixed(2)}
                   </p>
@@ -460,7 +461,7 @@ const CourseDetail: React.FC = () => {
             {activeLesson && (
               <div className="bg-white/90 backdrop-blur-sm rounded-none sm:rounded-xl border-0 sm:border border-gray-100 px-4 py-4 sm:p-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1 min-w-0 text-center sm:text-left">
                     {activeModule?.title && (
                       <span className="text-gray-500 text-sm block sm:inline sm:mr-2">
                         {activeModule.title} <span className="hidden sm:inline">—</span>
@@ -471,7 +472,7 @@ const CourseDetail: React.FC = () => {
                   
                   {/* Mobile lesson counter */}
                   <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 text-center sm:text-left">
                       Lesson {currentLessonIndex.lessonIndex + 1} of {currentLessonIndex.totalLessons}
                     </div>
                     
@@ -501,9 +502,9 @@ const CourseDetail: React.FC = () => {
                 
                 {/* Lock indicator for non-preview lessons */}
                 {!canAccessFullCourse && !activeLesson.is_preview && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-amber-700 text-sm flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    <p>This is a preview of a premium lesson. Purchase the course to unlock full access.</p>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-amber-700 text-sm flex items-center gap-2 text-center sm:text-left">
+                    <Lock className="h-4 w-4 mx-auto sm:mx-0" />
+                    <p className="text-center sm:text-left">This is a preview of a premium lesson. Purchase the course to unlock full access.</p>
                   </div>
                 )}
                 
@@ -548,8 +549,8 @@ const CourseDetail: React.FC = () => {
             {!activeLesson && (
               <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-8 sm:p-12 shadow-lg text-center mx-4 sm:mx-0">
                 <BookOpen className="mx-auto h-12 sm:h-16 w-12 sm:w-16 text-gray-300 mb-4" />
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Select a lesson to begin</h2>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 text-center">Select a lesson to begin</h2>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto text-center">
                   Choose a lesson from the sidebar to start learning.
                 </p>
                 

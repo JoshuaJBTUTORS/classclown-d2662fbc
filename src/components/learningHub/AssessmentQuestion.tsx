@@ -67,25 +67,25 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
   embedded = false,
 }) => {
   return (
-    <Card className={embedded ? "border-0 sm:border shadow-none sm:shadow-sm rounded-none sm:rounded-lg" : ""}>
-      <CardHeader className={embedded ? "px-0 py-2 sm:px-6 sm:py-6" : ""}>
-        <CardTitle className={embedded ? "text-base sm:text-lg" : ""}>
-          <div className="flex items-center">
+    <Card className={embedded ? "border-0 shadow-none rounded-none" : ""}>
+      <CardHeader className={embedded ? "px-0 py-2" : ""}>
+        <CardTitle className={embedded ? "text-base sm:text-lg text-center sm:text-left" : ""}>
+          <div className="flex items-center justify-center sm:justify-start">
             <FileText className="mr-2 h-4 w-4" />
             Question {question.question_number} ({question.marks_available} marks)
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className={embedded ? "px-0 pb-2 sm:px-6 sm:pb-6 space-y-4" : "space-y-4"}>
-        <p className="text-gray-800 leading-relaxed">{question.question_text}</p>
+      <CardContent className={embedded ? "px-0 pb-2 space-y-4" : "space-y-4"}>
+        <p className="text-gray-800 leading-relaxed text-left">{question.question_text}</p>
         
         {/* Display question image if it exists */}
         {question.image_url && (
-          <div className="my-4">
+          <div className="my-4 text-center">
             <img 
               src={question.image_url} 
               alt={`Question ${question.question_number} image`}
-              className="max-w-full h-auto rounded-lg shadow-sm border"
+              className="max-w-full h-auto rounded-lg shadow-sm border mx-auto"
               style={{ maxHeight: '400px' }}
             />
           </div>
@@ -94,7 +94,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
         <div className="space-y-4">
           {question.question_type === 'multiple_choice' ? (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-3">Select your answer:</p>
+              <p className="text-sm font-medium text-gray-700 mb-3 text-center sm:text-left">Select your answer:</p>
               <MultipleChoiceQuestion
                 question={question}
                 studentAnswer={studentAnswer}
@@ -103,7 +103,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
             </div>
           ) : (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Your answer:</p>
+              <p className="text-sm font-medium text-gray-700 mb-2 text-center sm:text-left">Your answer:</p>
               <Textarea
                 placeholder="Enter your answer here..."
                 value={studentAnswer}
