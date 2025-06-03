@@ -454,76 +454,107 @@ const CourseDetail: React.FC = () => {
             </div>
           </div>
           
-          {/* Main Content Area - No padding on mobile for full-width experience */}
+          {/* Main Content Area */}
           <div className="col-span-1 lg:col-span-4 space-y-4 sm:space-y-6">
-            {/* Lesson Navigation - Full width on mobile */}
+            {/* Lesson Navigation */}
             {activeLesson && (
               <div className="bg-white/90 backdrop-blur-sm rounded-none sm:rounded-xl border-0 sm:border border-gray-100 px-4 py-4 sm:p-6 shadow-lg">
-                {/* Lesson Title - Full width on mobile, with navigation below */}
+                {/* Lesson Title and Course Navigation */}
                 <div className="flex flex-col gap-4 mb-4">
-                  {/* Title Row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1 min-w-0 text-center sm:text-left">
-                      {activeModule?.title && (
-                        <span className="text-gray-500 text-sm block sm:inline sm:mr-2">
-                          {activeModule.title} <span className="hidden sm:inline">—</span>
-                        </span>
-                      )}
-                      <span className="block sm:inline">{activeLesson.title}</span>
-                    </h2>
+                  {/* Title Row with Mobile Navigation Button */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+                          {activeModule?.title && (
+                            <span className="text-gray-500 text-sm block sm:inline sm:mr-2">
+                              {activeModule.title} <span className="hidden sm:inline">—</span>
+                            </span>
+                          )}
+                          <span className="block sm:inline">{activeLesson.title}</span>
+                        </h2>
+                      </div>
+                      
+                      {/* Mobile: Course navigation button next to title */}
+                      <div className="block lg:hidden flex-shrink-0">
+                        <Sheet open={showMobileSidebar} onOpenChange={setShowMobileSidebar}>
+                          <SheetTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-white/50 hover:border-gray-300 transition-all duration-200 p-2"
+                            >
+                              <Menu className="h-4 w-4" />
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent side="left" className="w-full sm:w-96 p-0">
+                            <div className="h-full">
+                              <CourseSidebar
+                                modules={modules}
+                                studentProgress={studentProgress}
+                                onSelectLesson={handleSelectLesson}
+                                currentLessonId={activeLessonId || undefined}
+                                isAdmin={hasAdminPrivileges}
+                                isPurchased={canAccessFullCourse}
+                              />
+                            </div>
+                          </SheetContent>
+                        </Sheet>
+                      </div>
+                      
+                      {/* Desktop navigation controls */}
+                      <div className="hidden sm:flex items-center gap-2">
+                        <div className="text-xs text-gray-500">
+                          Lesson {currentLessonIndex.lessonIndex + 1} of {currentLessonIndex.totalLessons}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => navigateToLesson('prev')}
+                            className="h-8 w-8 p-0 rounded-full"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            <span className="sr-only">Previous lesson</span>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => navigateToLesson('next')}
+                            className="h-8 w-8 p-0 rounded-full"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                            <span className="sr-only">Next lesson</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                     
-                    {/* Desktop navigation controls - shown only on larger screens */}
-                    <div className="hidden sm:flex items-center gap-2">
+                    {/* Mobile Navigation Row */}
+                    <div className="flex sm:hidden items-center justify-between">
                       <div className="text-xs text-gray-500">
                         Lesson {currentLessonIndex.lessonIndex + 1} of {currentLessonIndex.totalLessons}
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <Button 
                           variant="outline" 
-                          size="icon"
+                          size="sm"
                           onClick={() => navigateToLesson('prev')}
-                          className="h-8 w-8 p-0 rounded-full"
+                          className="h-8 px-3 text-xs"
                         >
-                          <ChevronLeft className="h-4 w-4" />
-                          <span className="sr-only">Previous lesson</span>
+                          <ChevronLeft className="h-3 w-3 mr-1" />
+                          Prev
                         </Button>
                         <Button 
                           variant="outline" 
-                          size="icon"
+                          size="sm"
                           onClick={() => navigateToLesson('next')}
-                          className="h-8 w-8 p-0 rounded-full"
+                          className="h-8 px-3 text-xs"
                         >
-                          <ChevronRight className="h-4 w-4" />
-                          <span className="sr-only">Next lesson</span>
+                          Next
+                          <ChevronRight className="h-3 w-3 ml-1" />
                         </Button>
                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* Mobile Navigation Row - shown only on mobile */}
-                  <div className="flex sm:hidden items-center justify-between">
-                    <div className="text-xs text-gray-500">
-                      Lesson {currentLessonIndex.lessonIndex + 1} of {currentLessonIndex.totalLessons}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigateToLesson('prev')}
-                        className="h-8 px-3 text-xs"
-                      >
-                        <ChevronLeft className="h-3 w-3 mr-1" />
-                        Prev
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigateToLesson('next')}
-                        className="h-8 px-3 text-xs"
-                      >
-                        Next
-                        <ChevronRight className="h-3 w-3 ml-1" />
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -536,8 +567,8 @@ const CourseDetail: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Content Viewer - Full width for mobile video and assessments */}
-                <div className={contentType === 'video' || contentType === 'ai-assessment' ? '-mx-4 sm:mx-0' : ''}>
+                {/* Content Viewer */}
+                <div>
                   <ContentViewer
                     lesson={activeLesson}
                     onContentTypeChange={setContentType}
@@ -546,7 +577,7 @@ const CourseDetail: React.FC = () => {
                 
                 {/* Notes Section */}
                 {user && (
-                  <div className={`pt-6 ${contentType === 'video' || contentType === 'ai-assessment' ? 'mt-0' : 'mt-4'}`}>
+                  <div className="pt-6">
                     <NotesSection
                       courseId={courseId!}
                       lessonId={activeLesson.id}
@@ -554,7 +585,7 @@ const CourseDetail: React.FC = () => {
                   </div>
                 )}
 
-                {/* Mobile: Next/Prev Navigation Buttons - Additional bottom navigation */}
+                {/* Bottom Navigation Buttons */}
                 <div className="flex items-center justify-between mt-6 sm:mt-8">
                   <Button 
                     variant="outline" 

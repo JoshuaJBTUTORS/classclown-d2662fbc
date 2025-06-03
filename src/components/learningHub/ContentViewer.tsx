@@ -39,11 +39,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     switch (lesson.content_type) {
       case 'video':
         return (
-          <div className="relative bg-black -mx-4 sm:mx-0 sm:rounded-lg overflow-hidden">
+          <div className="relative bg-black rounded-lg overflow-hidden">
             <VideoEmbed 
               src={lesson.content_url || ''} 
               title={lesson.title}
-              className="w-screen sm:w-full aspect-video rounded-none sm:rounded-lg overflow-hidden shadow-inner"
+              className="w-full aspect-video rounded-lg overflow-hidden shadow-inner"
             />
           </div>
         );
@@ -59,7 +59,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         );
       case 'ai-assessment':
         return (
-          <div className="bg-white px-2 sm:px-0 sm:rounded-lg overflow-hidden">
+          <div className="bg-white rounded-lg overflow-hidden">
             <AIAssessmentViewer 
               assessmentId={lesson.content_url || ''} 
               embedded={true} 
