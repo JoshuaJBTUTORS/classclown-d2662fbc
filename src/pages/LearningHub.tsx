@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -6,97 +5,36 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PageTitle from '@/components/ui/PageTitle';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
-import { BookOpen, ChevronLeft, Brain, Filter, Grid, List, Home, GraduationCap, Sparkles, Search } from 'lucide-react';
+import { BookOpen, ChevronLeft, Brain, Filter, Grid, List, Home, GraduationCap, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import CourseCard from '@/components/learningHub/CourseCard';
 import AIAssessmentManager from '@/components/learningHub/AIAssessmentManager';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LESSON_SUBJECTS, LessonSubject } from '@/constants/subjects';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
-// Education level categorization
-const EDUCATION_LEVELS = {
-  primary: {
-    label: 'Primary Education',
-    subjects: ['11 Plus Maths', '11 Plus English', '11 Plus VR', '11 Plus NVR', 'Early KS2 Maths', 'Early KS2 English', 'KS2 Maths', 'KS2 English', 'Sats Maths', 'Sats English'] as const
-  },
-  secondary: {
-    label: 'Secondary Education', 
-    subjects: ['KS3 Maths', 'KS3 English', 'KS3 Science', 'GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'] as const
-  }
-} as const;
+// Create subject categories from the LESSON_SUBJECTS array
+const subjects = [
+  'All Courses',
+  ...LESSON_SUBJECTS
+];
 
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
   const { profile, isAdmin, isTutor, isOwner, isLearningHubOnly } = useAuth();
-  
-  // Move hasAdminPrivileges declaration here, right after useAuth
-  const hasAdminPrivileges = isAdmin || isOwner || isTutor;
-  
-  const [activeEducationLevel, setActiveEducationLevel] = useState('all');
-  const [activeSubject, setActiveSubject] = useState('All Subjects');
+  const [activeSubject, setActiveSubject] = useState('All Courses');
   const [activeMainTab, setActiveMainTab] = useState('courses');
-  const [coursesTab, setCoursesTab] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
   
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses'],
     queryFn: learningHubService.getCourses,
   });
 
-  // Get subjects for current education level
-  const getSubjectsForLevel = (level: string): LessonSubject[] => {
-    if (level === 'all') return [...LESSON_SUBJECTS];
-    return [...(EDUCATION_LEVELS[level as keyof typeof EDUCATION_LEVELS]?.subjects || [])];
-  };
-
-  // Filter courses by education level, subject, search, and course status
+  // Filter courses by selected subject only
   const filteredCourses = courses?.filter((course: Course) => {
-    // Education level filter
-    if (activeEducationLevel !== 'all') {
-      const levelSubjects = getSubjectsForLevel(activeEducationLevel);
-      if (!course.subject || !levelSubjects.includes(course.subject)) return false;
-    }
-    
-    // Subject filter
-    if (activeSubject !== 'All Subjects' && course.subject !== activeSubject) {
-      return false;
-    }
-
-    // Search filter
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const matchesTitle = course.title.toLowerCase().includes(searchLower);
-      const matchesSubject = (course.subject || '').toLowerCase().includes(searchLower);
-      const matchesDescription = (course.description || '').toLowerCase().includes(searchLower);
-      if (!matchesTitle && !matchesSubject && !matchesDescription) return false;
-    }
-
-    // Course status filter (for admin users)
-    if (hasAdminPrivileges && coursesTab !== 'all') {
-      if (coursesTab === 'published' && course.status !== 'published') return false;
-      if (coursesTab === 'draft' && course.status !== 'draft') return false;
-    }
-
-    return true;
-  });
-
-  // Sort courses
-  const sortedCourses = filteredCourses?.sort((a, b) => {
-    switch (sortBy) {
-      case 'title':
-        return a.title.localeCompare(b.title);
-      case 'subject':
-        return (a.subject || '').localeCompare(b.subject || '');
-      case 'newest':
-      default:
-        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-    }
+    return activeSubject === 'All Courses' || course.subject === activeSubject;
   });
 
   const hasAdminPrivileges = isAdmin || isOwner || isTutor;
@@ -190,133 +128,61 @@ const LearningHub: React.FC = () => {
           </div>
 
           <TabsContent value="courses" className="space-y-6">
-            {/* Course Organization Tabs */}
-            <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl overflow-hidden">
-              <Tabs value={activeEducationLevel} onValueChange={(value) => {
-                setActiveEducationLevel(value);
-                setActiveSubject('All Subjects');
-              }}>
-                <div className="border-b border-gray-200/50">
-                  <TabsList className="h-14 bg-transparent p-0 w-full justify-start">
-                    <TabsTrigger 
-                      value="all" 
-                      className="px-6 py-3 text-gray-600 data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/20 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full font-medium"
+            {/* Enhanced Filters */}
+            <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-xl">
+              <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+                <div className="flex flex-wrap gap-3">
+                  {subjects.map((subject) => (
+                    <button
+                      key={subject}
+                      onClick={() => setActiveSubject(subject)}
+                      className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-200 border backdrop-blur-sm ${
+                        activeSubject === subject
+                          ? 'bg-primary text-white border-transparent shadow-lg'
+                          : 'bg-white/60 text-gray-700 hover:bg-white/80 border-gray-200/50 hover:border-primary/30 hover:text-primary'
+                      }`}
                     >
-                      All Courses
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="primary" 
-                      className="px-6 py-3 text-gray-600 data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/20 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full font-medium"
-                    >
-                      Primary Education
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="secondary" 
-                      className="px-6 py-3 text-gray-600 data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/20 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full font-medium"
-                    >
-                      Secondary Education
-                    </TabsTrigger>
-                    {hasAdminPrivileges && (
-                      <>
-                        <div className="h-8 w-px bg-gray-300 mx-2 self-center" />
-                        <Tabs value={coursesTab} onValueChange={setCoursesTab}>
-                          <TabsList className="h-10 bg-gray-100/50">
-                            <TabsTrigger value="all" className="text-xs px-3">All Status</TabsTrigger>
-                            <TabsTrigger value="published" className="text-xs px-3">Published</TabsTrigger>
-                            <TabsTrigger value="draft" className="text-xs px-3">Draft</TabsTrigger>
-                          </TabsList>
-                        </Tabs>
-                      </>
-                    )}
-                  </TabsList>
+                      {subject}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Search and Filters */}
-                <div className="p-6">
-                  <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
-                    <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                      <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                          placeholder="Search courses..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 bg-white/60 border-gray-200/50"
-                        />
-                      </div>
-                      
-                      <Select value={activeSubject} onValueChange={setActiveSubject}>
-                        <SelectTrigger className="w-full sm:w-[200px] bg-white/60 border-gray-200/50">
-                          <SelectValue placeholder="Select subject" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="All Subjects">All Subjects</SelectItem>
-                          {getSubjectsForLevel(activeEducationLevel).map((subject) => (
-                            <SelectItem key={subject} value={subject}>
-                              {subject}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-full sm:w-[140px] bg-white/60 border-gray-200/50">
-                          <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="newest">Newest First</SelectItem>
-                          <SelectItem value="title">Title A-Z</SelectItem>
-                          <SelectItem value="subject">Subject</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex items-center border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm">
-                      <Button
-                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setViewMode('grid')}
-                        className="rounded-r-none h-10 px-4"
-                      >
-                        <Grid className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={viewMode === 'list' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setViewMode('list')}
-                        className="rounded-l-none h-10 px-4"
-                      >
-                        <List className="h-4 w-4" />
-                      </Button>
-                    </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      className="rounded-r-none h-12 px-4"
+                    >
+                      <Grid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="rounded-l-none h-12 px-4"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  {/* Course Stats */}
-                  {sortedCourses && (
-                    <div className="flex items-center gap-4 text-sm mb-6">
-                      <div className="bg-white/60 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
-                        <span className="font-medium text-gray-700">{sortedCourses.length} courses found</span>
-                      </div>
-                      {activeEducationLevel !== 'all' && (
-                        <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 backdrop-blur-sm px-3 py-1">
-                          {EDUCATION_LEVELS[activeEducationLevel as keyof typeof EDUCATION_LEVELS]?.label}
-                        </Badge>
-                      )}
-                      {activeSubject !== 'All Subjects' && (
-                        <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 backdrop-blur-sm px-3 py-1">
-                          {activeSubject}
-                        </Badge>
-                      )}
-                      {searchQuery && (
-                        <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 backdrop-blur-sm px-3 py-1">
-                          Searching: "{searchQuery}"
-                        </Badge>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </Tabs>
+              </div>
             </div>
+
+            {/* Enhanced Course Stats */}
+            {filteredCourses && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                  <span className="font-medium text-gray-700">{filteredCourses.length} courses found</span>
+                </div>
+                {activeSubject !== 'All Courses' && (
+                  <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 backdrop-blur-sm px-3 py-1">
+                    {activeSubject}
+                  </Badge>
+                )}
+              </div>
+            )}
 
             {/* Enhanced Course Content */}
             {isLoading ? (
@@ -341,15 +207,13 @@ const LearningHub: React.FC = () => {
                 <h3 className="text-2xl font-bold text-red-800 mb-3">Error loading courses</h3>
                 <p className="text-red-600 text-lg">Please try again later or contact support if the issue persists.</p>
               </div>
-            ) : sortedCourses?.length === 0 ? (
+            ) : filteredCourses?.length === 0 ? (
               <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-12 text-center shadow-xl">
                 <BookOpen className="mx-auto h-20 w-20 text-gray-300 mb-6" />
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                  {searchQuery 
-                    ? `No courses found for "${searchQuery}"` 
-                    : activeSubject !== 'All Subjects'
-                    ? `No ${activeSubject} courses available`
-                    : "No courses available"}
+                  {activeSubject === 'All Courses' 
+                    ? "No courses available" 
+                    : `No ${activeSubject} courses available`}
                 </h3>
                 <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
                   {hasAdminPrivileges 
@@ -368,7 +232,7 @@ const LearningHub: React.FC = () => {
               </div>
             ) : (
               <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-                {sortedCourses?.map((course: Course) => (
+                {filteredCourses?.map((course: Course) => (
                   <CourseCard
                     key={course.id}
                     course={course}

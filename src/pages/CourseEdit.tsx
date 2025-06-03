@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
 import ModuleManager from '@/components/learningHub/ModuleManager';
-import { LESSON_SUBJECTS, LessonSubject } from '@/constants/subjects';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 const CourseEdit: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
@@ -31,7 +31,7 @@ const CourseEdit: React.FC = () => {
   const [courseData, setCourseData] = useState<Partial<Course>>({
     title: '',
     description: '',
-    subject: undefined,
+    subject: '',
     difficulty_level: '',
     cover_image_url: '',
     status: 'draft'
@@ -54,7 +54,7 @@ const CourseEdit: React.FC = () => {
       setCourseData({
         title: course.title,
         description: course.description || '',
-        subject: course.subject || undefined,
+        subject: course.subject || '',
         difficulty_level: course.difficulty_level || '',
         cover_image_url: course.cover_image_url || '',
         status: course.status
@@ -82,7 +82,7 @@ const CourseEdit: React.FC = () => {
     },
   });
 
-  const handleInputChange = (field: string, value: string | LessonSubject | undefined) => {
+  const handleInputChange = (field: string, value: string) => {
     setCourseData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -209,7 +209,7 @@ const CourseEdit: React.FC = () => {
                   <label className="block text-sm font-medium mb-1">Subject</label>
                   <Select
                     value={courseData.subject || ''}
-                    onValueChange={(value) => handleInputChange('subject', value as LessonSubject)}
+                    onValueChange={(value) => handleInputChange('subject', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select subject" />

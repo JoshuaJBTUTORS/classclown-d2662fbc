@@ -22,12 +22,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
-import { LESSON_SUBJECTS, LessonSubject } from '@/constants/subjects';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters long' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long' }),
-  subject: z.enum(LESSON_SUBJECTS).optional(),
+  subject: z.string().min(1, { message: 'Please select a subject' }),
   difficulty_level: z.string().optional(),
   cover_image_url: z.string().url().optional().or(z.literal('')),
 });
@@ -43,7 +43,7 @@ const CourseCreate: React.FC = () => {
     defaultValues: {
       title: '',
       description: '',
-      subject: undefined,
+      subject: '',
       difficulty_level: '',
       cover_image_url: '',
     },
