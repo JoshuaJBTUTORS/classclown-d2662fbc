@@ -15,17 +15,17 @@ import AIAssessmentManager from '@/components/learningHub/AIAssessmentManager';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LESSON_SUBJECTS } from '@/constants/subjects';
+import { LESSON_SUBJECTS, LessonSubject } from '@/constants/subjects';
 
 // Education level categorization
 const EDUCATION_LEVELS = {
   primary: {
     label: 'Primary Education',
-    subjects: ['11 Plus Maths', '11 Plus English', '11 Plus VR', '11 Plus NVR', 'Early KS2 Maths', 'Early KS2 English', 'KS2 Maths', 'KS2 English', 'Sats Maths', 'Sats English']
+    subjects: ['11 Plus Maths', '11 Plus English', '11 Plus VR', '11 Plus NVR', 'Early KS2 Maths', 'Early KS2 English', 'KS2 Maths', 'KS2 English', 'Sats Maths', 'Sats English'] as LessonSubject[]
   },
   secondary: {
     label: 'Secondary Education', 
-    subjects: ['KS3 Maths', 'KS3 English', 'KS3 Science', 'GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry']
+    subjects: ['KS3 Maths', 'KS3 English', 'KS3 Science', 'GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'] as LessonSubject[]
   }
 };
 
@@ -46,7 +46,7 @@ const LearningHub: React.FC = () => {
   });
 
   // Get subjects for current education level
-  const getSubjectsForLevel = (level: string) => {
+  const getSubjectsForLevel = (level: string): LessonSubject[] => {
     if (level === 'all') return LESSON_SUBJECTS;
     return EDUCATION_LEVELS[level as keyof typeof EDUCATION_LEVELS]?.subjects || [];
   };
@@ -56,7 +56,7 @@ const LearningHub: React.FC = () => {
     // Education level filter
     if (activeEducationLevel !== 'all') {
       const levelSubjects = getSubjectsForLevel(activeEducationLevel);
-      if (!levelSubjects.includes(course.subject || '')) return false;
+      if (!course.subject || !levelSubjects.includes(course.subject)) return false;
     }
     
     // Subject filter

@@ -1,3 +1,4 @@
+import { LessonSubject } from '@/constants/subjects';
 
 export interface Course {
   id: string;
@@ -5,7 +6,7 @@ export interface Course {
   description?: string;
   cover_image_url?: string;
   status: 'draft' | 'published' | 'archived';
-  subject?: string;
+  subject?: LessonSubject;
   difficulty_level?: string;
   price?: number; // Price in pence (e.g., 899 for £8.99)
   created_at: string;
