@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -13,15 +12,12 @@ import { Button } from '@/components/ui/button';
 import CourseCard from '@/components/learningHub/CourseCard';
 import AIAssessmentManager from '@/components/learningHub/AIAssessmentManager';
 import { Badge } from '@/components/ui/badge';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
-// Define subject categories
+// Create subject categories from the LESSON_SUBJECTS array
 const subjects = [
   'All Courses',
-  'GCSE Maths',
-  'GCSE English', 
-  'GCSE Biology',
-  'GCSE Chemistry',
-  'GCSE Physics',
+  ...LESSON_SUBJECTS
 ];
 
 const LearningHub: React.FC = () => {

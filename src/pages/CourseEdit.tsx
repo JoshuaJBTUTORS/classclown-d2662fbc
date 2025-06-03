@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
 import ModuleManager from '@/components/learningHub/ModuleManager';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 const CourseEdit: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
@@ -214,13 +215,11 @@ const CourseEdit: React.FC = () => {
                       <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="GCSE Maths">GCSE Maths</SelectItem>
-                      <SelectItem value="GCSE Science">GCSE Science</SelectItem>
-                      <SelectItem value="GCSE English">GCSE English</SelectItem>
-                      <SelectItem value="A-Level Maths">A-Level Maths</SelectItem>
-                      <SelectItem value="A-Level Physics">A-Level Physics</SelectItem>
-                      <SelectItem value="A-Level Chemistry">A-Level Chemistry</SelectItem>
-                      <SelectItem value="A-Level Biology">A-Level Biology</SelectItem>
+                      {LESSON_SUBJECTS.map((subject) => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

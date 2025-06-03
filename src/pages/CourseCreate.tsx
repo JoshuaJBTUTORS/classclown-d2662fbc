@@ -22,15 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
-
-const subjects = [
-  'GCSE Maths',
-  'GCSE English',
-  'GCSE Biology',
-  'GCSE Chemistry',
-  'GCSE Physics',
-  'Other',
-];
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters long' }),
@@ -158,7 +150,7 @@ const CourseCreate: React.FC = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {subjects.map((subject) => (
+                          {LESSON_SUBJECTS.map((subject) => (
                             <SelectItem key={subject} value={subject}>
                               {subject}
                             </SelectItem>
