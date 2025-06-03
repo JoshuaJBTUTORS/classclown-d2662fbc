@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import CourseCard from '@/components/learningHub/CourseCard';
 import AIAssessmentManager from '@/components/learningHub/AIAssessmentManager';
 import { Badge } from '@/components/ui/badge';
-import { EDUCATIONAL_STAGES, SUBJECT_AREAS, getSubjectArea } from '@/constants/subjects';
+import { EDUCATIONAL_STAGES, SUBJECT_AREAS, getSubjectArea, isValidLessonSubject } from '@/constants/subjects';
 
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
@@ -37,8 +37,9 @@ const LearningHub: React.FC = () => {
   const filteredCourses = courses?.filter((course: Course) => {
     // Stage filter
     if (activeStage !== 'all') {
-      const stageSubjects = EDUCATIONAL_STAGES[activeStage as keyof typeof EDUCATIONAL_STAGES]?.subjects || [];
-      if (!stageSubjects.includes(course.subject || '')) return false;
+      const stageData = EDUCATIONAL_STAGES[activeStage as keyof typeof EDUCATIONAL_STAGES];
+      if (!stageData || !course.subject || !isValidLessonSubject(course.subject)) return false;
+      if (!stageData.subjects.includes(course.subject as any)) return false;
     }
     
     // Subject area filter
