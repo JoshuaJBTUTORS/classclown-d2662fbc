@@ -10,8 +10,8 @@ const CalendarHeader: React.FC = () => {
   const { userRole } = useAuth();
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
-  // Check if user is a student or parent (both have read-only access)
-  const isStudentOrParent = userRole === 'student' || userRole === 'parent';
+  // Only allow admins and owners to schedule lessons
+  const canScheduleLessons = userRole === 'admin' || userRole === 'owner';
 
   const openAddLessonDialog = () => {
     setShowAddLessonDialog(true);
@@ -55,8 +55,8 @@ const CalendarHeader: React.FC = () => {
         </TooltipProvider>
       </div>
       
-      {/* Only show buttons for tutors, admins, and owners */}
-      {!isStudentOrParent && (
+      {/* Only show buttons for admins and owners */}
+      {canScheduleLessons && (
         <div className="flex gap-2">
           <Button 
             onClick={openAddLessonDialog}
@@ -68,8 +68,8 @@ const CalendarHeader: React.FC = () => {
         </div>
       )}
 
-      {/* Only show dialogs for tutors, admins, and owners */}
-      {!isStudentOrParent && (
+      {/* Only show dialogs for admins and owners */}
+      {canScheduleLessons && (
         <AddLessonForm 
           isOpen={showAddLessonDialog} 
           onClose={closeAddLessonDialog}
