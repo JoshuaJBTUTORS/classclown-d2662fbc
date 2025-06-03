@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,16 +9,23 @@ import { Course } from '@/types/course';
 
 interface CoursePaymentModalProps {
   course: Course;
-  isOpen: boolean;
+  isOpen?: boolean;
+  open?: boolean; // Alternative prop name for compatibility
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
   course,
   isOpen,
-  onClose
+  open,
+  onClose,
+  onSuccess
 }) => {
   const navigate = useNavigate();
+  
+  // Use either isOpen or open prop
+  const modalOpen = isOpen !== undefined ? isOpen : (open !== undefined ? open : false);
 
   const formatPrice = (priceInPence: number) => {
     return `£${(priceInPence / 100).toFixed(2)}`;
@@ -28,10 +34,13 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
   const handleStartTrial = () => {
     onClose();
     navigate(`/course/${course.id}/checkout`);
+    if (onSuccess) {
+      onSuccess();
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={modalOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
