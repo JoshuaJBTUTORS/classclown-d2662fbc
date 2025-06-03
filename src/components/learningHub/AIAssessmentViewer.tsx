@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -322,7 +321,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const renderMainContent = () => {
     if (assessmentLoading) {
       return (
-        <div className={embedded ? "p-0" : "container py-8"}>
+        <div className={embedded ? "p-2 sm:p-0" : "container py-8"}>
           <Skeleton className="h-8 w-64 mb-6 mx-auto sm:mx-0" />
           <div className="space-y-6">
             <Skeleton className="h-32 w-full" />
@@ -334,10 +333,10 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
 
     if (assessmentError || !assessment) {
       return (
-        <div className={embedded ? "p-0" : "container py-8"}>
+        <div className={embedded ? "p-2 sm:p-0" : "container py-8"}>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Not Found</h1>
-            <p className="text-gray-600 mb-6">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center sm:text-left">Assessment Not Found</h1>
+            <p className="text-gray-600 mb-6 text-center sm:text-left">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
             {!embedded && (
               <Button onClick={() => navigate('/learning-hub')}>
                 <ChevronLeft className="mr-2 h-4 w-4" />
@@ -350,7 +349,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     }
 
     return (
-      <div className={embedded ? "p-0" : "container py-8"}>
+      <div className={embedded ? "p-2 sm:p-0" : "container py-8"}>
         {!embedded && (
           <Button 
             variant="ghost" 
@@ -364,9 +363,9 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
 
         <Card className={embedded ? "mb-0 border-0 shadow-none rounded-none" : "mb-6"}>
           <CardHeader className={embedded ? "px-0 py-3" : ""}>
-            <CardTitle className={embedded ? "text-lg sm:text-2xl text-center sm:text-left" : "text-2xl"}>{assessment.title}</CardTitle>
+            <CardTitle className={embedded ? "text-lg sm:text-2xl text-center sm:text-left px-2 sm:px-0" : "text-2xl"}>{assessment.title}</CardTitle>
           </CardHeader>
-          <CardContent className={embedded ? "px-0 pb-0" : ""}>
+          <CardContent className={embedded ? "px-2 sm:px-0 pb-0" : ""}>
             {session ? (
               <>
                 {/* Timer Section - Only show for timed assessments */}
@@ -428,7 +427,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
               </>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">Ready to start the assessment?</p>
+                <p className="text-gray-600 mb-4 text-center sm:text-left">Ready to start the assessment?</p>
                 <Button onClick={startAssessment} disabled={assessmentLoading}>
                   Start Assessment
                 </Button>

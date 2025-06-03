@@ -47,7 +47,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
       {Object.entries(options).map(([key, value]) => (
         <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50" key={key}>
           <RadioGroupItem value={key} id={`choice-${key}`} className="mt-1" />
-          <Label htmlFor={`choice-${key}`} className="flex-1 cursor-pointer">
+          <Label htmlFor={`choice-${key}`} className="flex-1 cursor-pointer break-words">
             <span className="font-medium mr-2">{key}.</span>
             {String(value)}
           </Label>
@@ -77,7 +77,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className={embedded ? "px-0 pb-2 space-y-4" : "space-y-4"}>
-        <p className="text-gray-800 leading-relaxed text-left">{question.question_text}</p>
+        <p className="text-gray-800 leading-relaxed text-left break-words">{question.question_text}</p>
         
         {/* Display question image if it exists */}
         {question.image_url && (
@@ -109,7 +109,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
                 value={studentAnswer}
                 onChange={(e) => onAnswerChange(question.id, e.target.value)}
                 disabled={isMarking}
-                className="min-h-[120px]"
+                className="min-h-[120px] break-words"
               />
             </div>
           )}

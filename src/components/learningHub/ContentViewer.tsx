@@ -59,7 +59,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         );
       case 'ai-assessment':
         return (
-          <div className="bg-white -mx-4 sm:mx-0 sm:rounded-lg overflow-hidden">
+          <div className="bg-white px-2 sm:px-0 sm:rounded-lg overflow-hidden">
             <AIAssessmentViewer 
               assessmentId={lesson.content_url || ''} 
               embedded={true} 
@@ -77,7 +77,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       default:
         return (
           <div className="bg-white p-6 sm:p-8 text-center rounded-lg">
-            <div className="text-gray-500 text-sm sm:text-base">
+            <div className="text-gray-500 text-sm sm:text-base text-center sm:text-left">
               Unsupported content type: {lesson.content_type}
             </div>
           </div>
