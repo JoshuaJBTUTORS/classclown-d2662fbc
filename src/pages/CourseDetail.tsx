@@ -173,7 +173,6 @@ const CourseDetail: React.FC = () => {
       console.log('📁 Found module for lesson:', module.title);
       setActiveModuleId(module.id);
       setActiveLessonId(lesson.id);
-      // Close mobile sidebar when lesson is selected (responsive behavior)
       setShowMobileSidebar(false);
     } else {
       console.error('❌ Could not find module for lesson:', lesson.title);
@@ -193,7 +192,6 @@ const CourseDetail: React.FC = () => {
       title: "Purchase successful!",
       description: "You now have full access to this course.",
     });
-    // Refresh the purchase status
     window.location.reload();
   };
 
@@ -256,8 +254,8 @@ const CourseDetail: React.FC = () => {
   // Enhanced error handling and loading states with mobile-friendly design
   if (courseLoading || modulesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
-        <div className="container mx-auto py-4 sm:py-8 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+        <div className="mx-auto py-4 sm:py-8 px-4 sm:px-6 max-w-7xl">
           <div className="animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -277,8 +275,8 @@ const CourseDetail: React.FC = () => {
   if (courseError) {
     console.error('💥 Course error details:', courseError);
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
-        <div className="container mx-auto py-4 sm:py-8 px-4 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+        <div className="mx-auto py-4 sm:py-8 px-4 sm:px-6 max-w-7xl text-center">
           <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6 sm:p-8">
               <h1 className="text-xl sm:text-2xl font-bold text-red-600 mb-4">Error loading course</h1>
@@ -300,8 +298,8 @@ const CourseDetail: React.FC = () => {
   if (!course) {
     console.error('❌ No course data received');
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
-        <div className="container mx-auto py-4 sm:py-8 px-4 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+        <div className="mx-auto py-4 sm:py-8 px-4 sm:px-6 max-w-7xl text-center">
           <Card className="max-w-lg mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6 sm:p-8">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Course not found</h1>
@@ -321,10 +319,10 @@ const CourseDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 overflow-x-hidden">
-      {/* Mobile-optimized Course Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50">
+      {/* Mobile-optimized Course Header - Full width on mobile */}
       <div className="bg-gradient-to-r from-white/85 via-slate-50/80 to-rose-50/75 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
-        <div className="container mx-auto py-2 sm:py-4 px-4">
+        <div className="mx-auto py-2 sm:py-4 px-4 sm:px-6 max-w-7xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             {/* Back button and title area */}
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:flex-1 min-w-0">
@@ -423,10 +421,10 @@ const CourseDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Course Progress Bar - Mobile Optimized */}
+      {/* Course Progress Bar - Full width on mobile */}
       {user && (
         <div className="bg-white/60 backdrop-blur-sm shadow-sm border-b border-gray-100">
-          <div className="container mx-auto px-4 py-2">
+          <div className="mx-auto px-4 sm:px-6 py-2 max-w-7xl">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 max-w-xs sm:max-w-md">
                 <ProgressBar progress={courseProgress} />
@@ -439,8 +437,8 @@ const CourseDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content Area with Mobile-First Design */}
-      <div className="container mx-auto py-4 sm:py-6 px-0 sm:px-4">
+      {/* Main Content Area - Full width on mobile */}
+      <div className="mx-auto py-4 sm:py-6 px-0 sm:px-6 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
           {/* Desktop Sidebar - Hidden on Mobile */}
           <div className="hidden lg:block lg:col-span-1">
@@ -456,9 +454,9 @@ const CourseDetail: React.FC = () => {
             </div>
           </div>
           
-          {/* Main Content Area - Expanded on Mobile */}
+          {/* Main Content Area - No padding on mobile for full-width experience */}
           <div className="col-span-1 lg:col-span-4 space-y-4 sm:space-y-6">
-            {/* Lesson Navigation - Mobile Optimized */}
+            {/* Lesson Navigation - Full width on mobile */}
             {activeLesson && (
               <div className="bg-white/90 backdrop-blur-sm rounded-none sm:rounded-xl border-0 sm:border border-gray-100 px-4 py-4 sm:p-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
@@ -509,7 +507,7 @@ const CourseDetail: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Content Viewer - Responsive for Mobile Video */}
+                {/* Content Viewer - Full width for mobile video */}
                 <div className={contentType === 'video' ? '-mx-4 sm:mx-0' : ''}>
                   <ContentViewer
                     lesson={activeLesson}
@@ -517,7 +515,7 @@ const CourseDetail: React.FC = () => {
                   />
                 </div>
                 
-                {/* Notes Section - Improved for Mobile */}
+                {/* Notes Section */}
                 {user && (
                   <div className={`pt-6 ${contentType === 'video' ? 'mt-0' : 'mt-4'}`}>
                     <NotesSection
@@ -546,7 +544,7 @@ const CourseDetail: React.FC = () => {
               </div>
             )}
             
-            {/* No lesson selected fallback - Mobile Optimized */}
+            {/* No lesson selected fallback */}
             {!activeLesson && (
               <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-8 sm:p-12 shadow-lg text-center mx-4 sm:mx-0">
                 <BookOpen className="mx-auto h-12 sm:h-16 w-12 sm:w-16 text-gray-300 mb-4" />
@@ -582,7 +580,7 @@ const CourseDetail: React.FC = () => {
         />
       )}
       
-      {/* Mobile: Floating button to access course navigation (only when a lesson is active) */}
+      {/* Mobile: Floating button to access course navigation */}
       <div className="fixed bottom-6 right-6 block lg:hidden">
         {activeLesson && (
           <Button
