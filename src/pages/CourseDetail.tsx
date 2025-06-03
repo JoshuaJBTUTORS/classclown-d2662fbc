@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -460,41 +459,70 @@ const CourseDetail: React.FC = () => {
             {/* Lesson Navigation - Full width on mobile */}
             {activeLesson && (
               <div className="bg-white/90 backdrop-blur-sm rounded-none sm:rounded-xl border-0 sm:border border-gray-100 px-4 py-4 sm:p-6 shadow-lg">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1 min-w-0 text-center sm:text-left">
-                    {activeModule?.title && (
-                      <span className="text-gray-500 text-sm block sm:inline sm:mr-2">
-                        {activeModule.title} <span className="hidden sm:inline">—</span>
-                      </span>
-                    )}
-                    <span className="block sm:inline">{activeLesson.title}</span>
-                  </h2>
+                {/* Lesson Title - Full width on mobile, with navigation below */}
+                <div className="flex flex-col gap-4 mb-4">
+                  {/* Title Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1 min-w-0 text-center sm:text-left">
+                      {activeModule?.title && (
+                        <span className="text-gray-500 text-sm block sm:inline sm:mr-2">
+                          {activeModule.title} <span className="hidden sm:inline">—</span>
+                        </span>
+                      )}
+                      <span className="block sm:inline">{activeLesson.title}</span>
+                    </h2>
+                    
+                    {/* Desktop navigation controls - shown only on larger screens */}
+                    <div className="hidden sm:flex items-center gap-2">
+                      <div className="text-xs text-gray-500">
+                        Lesson {currentLessonIndex.lessonIndex + 1} of {currentLessonIndex.totalLessons}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => navigateToLesson('prev')}
+                          className="h-8 w-8 p-0 rounded-full"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          <span className="sr-only">Previous lesson</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => navigateToLesson('next')}
+                          className="h-8 w-8 p-0 rounded-full"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                          <span className="sr-only">Next lesson</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                   
-                  {/* Mobile lesson counter */}
-                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                    <div className="text-xs text-gray-500 text-center sm:text-left">
+                  {/* Mobile Navigation Row - shown only on mobile */}
+                  <div className="flex sm:hidden items-center justify-between">
+                    <div className="text-xs text-gray-500">
                       Lesson {currentLessonIndex.lessonIndex + 1} of {currentLessonIndex.totalLessons}
                     </div>
-                    
-                    {/* Navigation buttons */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <Button 
                         variant="outline" 
-                        size="icon"
+                        size="sm"
                         onClick={() => navigateToLesson('prev')}
-                        className="h-8 w-8 p-0 rounded-full"
+                        className="h-8 px-3 text-xs"
                       >
-                        <ChevronLeft className="h-4 w-4" />
-                        <span className="sr-only">Previous lesson</span>
+                        <ChevronLeft className="h-3 w-3 mr-1" />
+                        Prev
                       </Button>
                       <Button 
                         variant="outline" 
-                        size="icon"
+                        size="sm"
                         onClick={() => navigateToLesson('next')}
-                        className="h-8 w-8 p-0 rounded-full"
+                        className="h-8 px-3 text-xs"
                       >
-                        <ChevronRight className="h-4 w-4" />
-                        <span className="sr-only">Next lesson</span>
+                        Next
+                        <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
                   </div>
@@ -526,7 +554,7 @@ const CourseDetail: React.FC = () => {
                   </div>
                 )}
 
-                {/* Mobile: Next/Prev Navigation Buttons */}
+                {/* Mobile: Next/Prev Navigation Buttons - Additional bottom navigation */}
                 <div className="flex items-center justify-between mt-6 sm:mt-8">
                   <Button 
                     variant="outline" 
