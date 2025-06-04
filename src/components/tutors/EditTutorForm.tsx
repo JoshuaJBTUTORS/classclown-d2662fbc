@@ -142,7 +142,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   // Set form values when tutor changes
   useEffect(() => {
     if (tutor) {
-      const subjects = tutor.specialities || [];
+      const subjects = Array.isArray(tutor.specialities) ? tutor.specialities : [];
+      console.log('Setting tutor subjects:', subjects);
+      
       form.reset({
         first_name: tutor.first_name,
         last_name: tutor.last_name,
@@ -160,10 +162,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       setCurrentSubjects(subjects);
       
       fetchAvailability(tutor.id);
+    } else {
+      // Reset to empty state when no tutor
+      setCurrentSubjects([]);
     }
   }, [tutor, form]);
 
   const handleSubjectSelect = (subject: string) => {
+    console.log('Selecting subject:', subject, 'Current subjects:', currentSubjects);
     if (!currentSubjects.includes(subject)) {
       const newSubjects = [...currentSubjects, subject];
       form.setValue("subjects", newSubjects);
@@ -174,6 +180,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   };
 
   const handleRemoveSubject = (subject: string) => {
+    console.log('Removing subject:', subject, 'Current subjects:', currentSubjects);
     const newSubjects = currentSubjects.filter(s => s !== subject);
     form.setValue("subjects", newSubjects);
     setCurrentSubjects(newSubjects);
@@ -396,7 +403,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
             <div className="space-y-4">
               <FormLabel>Subjects</FormLabel>
               
-              {/* Display selected subjects with defensive rendering */}
+              {/* Display selected subjects */}
               <div className="flex flex-wrap gap-1 mb-2">
                 {currentSubjects.length > 0 ? currentSubjects.map((subject, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
@@ -431,33 +438,36 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <Command>
                     <CommandInput placeholder="Search subjects..." className="h-9" />
                     <CommandEmpty>No subjects found.</CommandEmpty>
-                    {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
-                      <CommandGroup key={stageKey} heading={stage.label}>
-                        {stage.subjects && Array.isArray(stage.subjects) ? stage.subjects.map((subject) => {
-                          const isSelected = currentSubjects.includes(subject);
-                          return (
-                            <CommandItem
-                              key={subject}
-                              value={subject}
-                              onSelect={() => handleSubjectSelect(subject)}
-                              className={cn(
-                                "flex items-center gap-2",
-                                isSelected && "opacity-50 cursor-not-allowed"
-                              )}
-                              disabled={isSelected}
-                            >
-                              <Check
+                    {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => {
+                      console.log('Rendering stage:', stageKey, 'subjects:', stage.subjects);
+                      return (
+                        <CommandGroup key={stageKey} heading={stage.label}>
+                          {stage.subjects.map((subject) => {
+                            const isSelected = currentSubjects.includes(subject);
+                            return (
+                              <CommandItem
+                                key={subject}
+                                value={subject}
+                                onSelect={() => handleSubjectSelect(subject)}
                                 className={cn(
-                                  "h-4 w-4",
-                                  isSelected ? "opacity-100" : "opacity-0"
+                                  "flex items-center gap-2",
+                                  isSelected && "opacity-50 cursor-not-allowed"
                                 )}
-                              />
-                              {subject}
-                            </CommandItem>
-                          );
-                        }) : null}
-                      </CommandGroup>
-                    ))}
+                                disabled={isSelected}
+                              >
+                                <Check
+                                  className={cn(
+                                    "h-4 w-4",
+                                    isSelected ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {subject}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      );
+                    })}
                   </Command>
                 </PopoverContent>
               </Popover>
