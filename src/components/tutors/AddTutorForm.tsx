@@ -531,29 +531,37 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
 
               {/* Subject selection by educational stages */}
               <div className="space-y-4">
-                {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
-                  <div key={stageKey} className="border rounded-lg p-4">
-                    <h4 className="font-medium text-sm mb-2">{stage.label}</h4>
-                    <p className="text-xs text-muted-foreground mb-3">{stage.description}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {stage.subjects.map((subject) => (
-                        <div key={subject} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`subject-${subject}`}
-                            checked={currentSubjects.includes(subject)}
-                            onCheckedChange={() => handleSubjectToggle(subject)}
-                          />
-                          <label
-                            htmlFor={`subject-${subject}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {subject}
-                          </label>
-                        </div>
-                      ))}
+                {EDUCATIONAL_STAGES && Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => {
+                  // Add defensive check for stage and stage.subjects
+                  if (!stage || !stage.subjects || !Array.isArray(stage.subjects)) {
+                    console.warn(`Invalid stage data for ${stageKey}:`, stage);
+                    return null;
+                  }
+                  
+                  return (
+                    <div key={stageKey} className="border rounded-lg p-4">
+                      <h4 className="font-medium text-sm mb-2">{stage.label || 'Unknown Stage'}</h4>
+                      <p className="text-xs text-muted-foreground mb-3">{stage.description || ''}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {stage.subjects.map((subject) => (
+                          <div key={subject} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`subject-${subject}`}
+                              checked={currentSubjects.includes(subject)}
+                              onCheckedChange={() => handleSubjectToggle(subject)}
+                            />
+                            <label
+                              htmlFor={`subject-${subject}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {subject}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
