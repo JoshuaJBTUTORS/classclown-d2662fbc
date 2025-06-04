@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -50,7 +50,7 @@ const formSchema = z.object({
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email format." }),
   phone: z.string().optional(),
-  subjects: z.string().array().default([]),
+  subjects: z.array(z.string()).default([]),
   bio: z.string().optional(),
   education: z.string().optional(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
@@ -92,18 +92,24 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     },
   });
 
+  // Use useMemo to ensure currentSubjects is always a stable array
+  const currentSubjects = useMemo(() => {
+    const subjects = form.watch("subjects");
+    return Array.isArray(subjects) ? subjects : [];
+  }, [form.watch("subjects")]);
+
   const handleSubjectToggle = (subject: string) => {
-    const currentSubjects = form.getValues("subjects") || [];
-    if (currentSubjects.includes(subject)) {
-      form.setValue("subjects", currentSubjects.filter(s => s !== subject));
+    const subjects = form.getValues("subjects") || [];
+    if (subjects.includes(subject)) {
+      form.setValue("subjects", subjects.filter(s => s !== subject));
     } else {
-      form.setValue("subjects", [...currentSubjects, subject]);
+      form.setValue("subjects", [...subjects, subject]);
     }
   };
 
   const handleRemoveSubject = (subject: string) => {
-    const currentSubjects = form.getValues("subjects") || [];
-    form.setValue("subjects", currentSubjects.filter(s => s !== subject));
+    const subjects = form.getValues("subjects") || [];
+    form.setValue("subjects", subjects.filter(s => s !== subject));
   };
 
   // Functions for availability management
@@ -401,9 +407,6 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     'Saturday',
     'Sunday'
   ];
-
-  // Get current subjects with fallback to empty array
-  const currentSubjects = form.watch("subjects") || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
