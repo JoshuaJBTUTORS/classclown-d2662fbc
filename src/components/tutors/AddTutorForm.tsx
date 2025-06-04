@@ -93,7 +93,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
   });
 
   const handleSubjectToggle = (subject: string) => {
-    const currentSubjects = form.getValues("subjects");
+    const currentSubjects = form.getValues("subjects") || [];
     if (currentSubjects.includes(subject)) {
       form.setValue("subjects", currentSubjects.filter(s => s !== subject));
     } else {
@@ -102,7 +102,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
   };
 
   const handleRemoveSubject = (subject: string) => {
-    const currentSubjects = form.getValues("subjects");
+    const currentSubjects = form.getValues("subjects") || [];
     form.setValue("subjects", currentSubjects.filter(s => s !== subject));
   };
 
@@ -402,6 +402,9 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     'Sunday'
   ];
 
+  // Get current subjects with fallback to empty array
+  const currentSubjects = form.watch("subjects") || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
@@ -504,7 +507,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               
               {/* Display selected subjects */}
               <div className="flex flex-wrap gap-1 mb-2">
-                {form.watch("subjects").map((subject, index) => (
+                {currentSubjects.map((subject, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
                     {subject}
                     <button 
@@ -516,7 +519,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                     </button>
                   </Badge>
                 ))}
-                {form.watch("subjects").length === 0 && (
+                {currentSubjects.length === 0 && (
                   <span className="text-sm text-muted-foreground italic">No subjects selected</span>
                 )}
               </div>
@@ -532,7 +535,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                         <div key={subject} className="flex items-center space-x-2">
                           <Checkbox
                             id={`subject-${subject}`}
-                            checked={form.watch("subjects").includes(subject)}
+                            checked={currentSubjects.includes(subject)}
                             onCheckedChange={() => handleSubjectToggle(subject)}
                           />
                           <label
