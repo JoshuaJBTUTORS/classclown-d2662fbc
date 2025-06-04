@@ -57,14 +57,13 @@ interface EditTutorFormProps {
   onUpdate: (tutor: Tutor) => void;
 }
 
-// Update the schema to use subjects instead of specialities
+// Updated schema without subjects
 const formSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   phone: z.string().optional(),
   bio: z.string().optional(),
-  subjects: z.array(z.string()).default([]),
   status: z.string(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
   absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
@@ -93,8 +92,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   const [loading, setLoading] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
   const [deletedAvailabilityIds, setDeletedAvailabilityIds] = useState<string[]>([]);
-  const [subjectsOpen, setSubjectsOpen] = useState(false);
-  const [currentSubjects, setCurrentSubjects] = useState<string[]>([]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -104,7 +101,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       email: "",
       phone: "",
       bio: "",
-      subjects: [], // Ensure this is always an array
       status: 'active',
       normal_hourly_rate: 25.00,
       absence_hourly_rate: 12.50,
@@ -142,50 +138,21 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   // Set form values when tutor changes
   useEffect(() => {
     if (tutor) {
-      const subjects = Array.isArray(tutor.specialities) ? tutor.specialities : [];
-      console.log('Setting tutor subjects:', subjects);
-      
       form.reset({
         first_name: tutor.first_name,
         last_name: tutor.last_name,
         email: tutor.email,
         phone: tutor.phone || "",
         bio: tutor.bio || "",
-        subjects: subjects,
         status: tutor.status,
         normal_hourly_rate: tutor.normal_hourly_rate || 25.00,
         absence_hourly_rate: tutor.absence_hourly_rate || 12.50,
         availability: []
       });
       
-      // Update the currentSubjects state
-      setCurrentSubjects(subjects);
-      
       fetchAvailability(tutor.id);
-    } else {
-      // Reset to empty state when no tutor
-      setCurrentSubjects([]);
     }
   }, [tutor, form]);
-
-  const handleSubjectSelect = (subject: string) => {
-    console.log('Selecting subject:', subject, 'Current subjects:', currentSubjects);
-    if (!currentSubjects.includes(subject)) {
-      const newSubjects = [...currentSubjects, subject];
-      form.setValue("subjects", newSubjects);
-      setCurrentSubjects(newSubjects);
-      form.trigger("subjects");
-    }
-    setSubjectsOpen(false);
-  };
-
-  const handleRemoveSubject = (subject: string) => {
-    console.log('Removing subject:', subject, 'Current subjects:', currentSubjects);
-    const newSubjects = currentSubjects.filter(s => s !== subject);
-    form.setValue("subjects", newSubjects);
-    setCurrentSubjects(newSubjects);
-    form.trigger("subjects");
-  };
 
   const addAvailabilitySlot = () => {
     const newSlot: AvailabilitySlot = {
@@ -233,7 +200,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
           email: data.email,
           phone: data.phone,
           bio: data.bio,
-          specialities: data.subjects, // Save to existing specialities field
           status: data.status,
           normal_hourly_rate: data.normal_hourly_rate,
           absence_hourly_rate: data.absence_hourly_rate,
@@ -285,7 +251,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         }
       }
       
-      // Update the tutor in the parent component
+      // Update the tutor in the parent component (keeping existing specialities)
       const updatedTutor: Tutor = {
         ...tutor,
         first_name: data.first_name,
@@ -293,7 +259,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         email: data.email,
         phone: data.phone,
         bio: data.bio,
-        specialities: data.subjects, // Update the specialities field with subjects data
         status: data.status,
         normal_hourly_rate: data.normal_hourly_rate,
         absence_hourly_rate: data.absence_hourly_rate,
@@ -399,79 +364,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 </FormItem>
               )}
             />
-
-            <div className="space-y-4">
-              <FormLabel>Subjects</FormLabel>
-              
-              {/* Display selected subjects */}
-              <div className="flex flex-wrap gap-1 mb-2">
-                {currentSubjects.length > 0 ? currentSubjects.map((subject, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
-                    {subject}
-                    <button 
-                      type="button" 
-                      className="text-gray-500 hover:text-red-500" 
-                      onClick={() => handleRemoveSubject(subject)}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )) : (
-                  <span className="text-sm text-muted-foreground italic">No subjects selected</span>
-                )}
-              </div>
-
-              {/* Subject selection dropdown */}
-              <Popover open={subjectsOpen} onOpenChange={setSubjectsOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={subjectsOpen}
-                    className="w-full justify-between"
-                  >
-                    Select subjects...
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" side="bottom" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search subjects..." className="h-9" />
-                    <CommandEmpty>No subjects found.</CommandEmpty>
-                    {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => {
-                      console.log('Rendering stage:', stageKey, 'subjects:', stage.subjects);
-                      return (
-                        <CommandGroup key={stageKey} heading={stage.label}>
-                          {stage.subjects.map((subject) => {
-                            const isSelected = currentSubjects.includes(subject);
-                            return (
-                              <CommandItem
-                                key={subject}
-                                value={subject}
-                                onSelect={() => handleSubjectSelect(subject)}
-                                className={cn(
-                                  "flex items-center gap-2",
-                                  isSelected && "opacity-50 cursor-not-allowed"
-                                )}
-                                disabled={isSelected}
-                              >
-                                <Check
-                                  className={cn(
-                                    "h-4 w-4",
-                                    isSelected ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {subject}
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      );
-                    })}
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
             
             {/* Availability Section */}
             <div className="space-y-4">
