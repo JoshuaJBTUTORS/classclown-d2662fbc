@@ -81,7 +81,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       lastName: "",
       email: "",
       phone: "",
-      subjects: [],
+      subjects: [], // Ensure this is always an array
       bio: "",
       education: "",
       normal_hourly_rate: 25.00,
@@ -92,13 +92,8 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     },
   });
 
-  // Watch subjects with a stable reference
-  const watchedSubjects = form.watch("subjects");
-  
-  // Use useMemo to ensure currentSubjects is always a stable array
-  const currentSubjects = useMemo(() => {
-    return Array.isArray(watchedSubjects) ? watchedSubjects : [];
-  }, [watchedSubjects]);
+  // Get current subjects with safe fallback - remove useMemo to prevent dependency issues
+  const currentSubjects = form.getValues("subjects") || [];
 
   const handleSubjectToggle = (subject: string) => {
     const subjects = form.getValues("subjects") || [];
@@ -107,11 +102,14 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     } else {
       form.setValue("subjects", [...subjects, subject]);
     }
+    // Force re-render by triggering validation
+    form.trigger("subjects");
   };
 
   const handleRemoveSubject = (subject: string) => {
     const subjects = form.getValues("subjects") || [];
     form.setValue("subjects", subjects.filter(s => s !== subject));
+    form.trigger("subjects");
   };
 
   // Functions for availability management
@@ -512,7 +510,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
               
               {/* Display selected subjects */}
               <div className="flex flex-wrap gap-1 mb-2">
-                {currentSubjects.map((subject, index) => (
+                {currentSubjects.length > 0 ? currentSubjects.map((subject, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
                     {subject}
                     <button 
@@ -523,8 +521,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
-                ))}
-                {currentSubjects.length === 0 && (
+                )) : (
                   <span className="text-sm text-muted-foreground italic">No subjects selected</span>
                 )}
               </div>
