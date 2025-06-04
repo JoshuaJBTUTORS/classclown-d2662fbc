@@ -92,11 +92,13 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     },
   });
 
+  // Watch subjects with a stable reference
+  const watchedSubjects = form.watch("subjects");
+  
   // Use useMemo to ensure currentSubjects is always a stable array
   const currentSubjects = useMemo(() => {
-    const subjects = form.watch("subjects");
-    return Array.isArray(subjects) ? subjects : [];
-  }, [form.watch("subjects")]);
+    return Array.isArray(watchedSubjects) ? watchedSubjects : [];
+  }, [watchedSubjects]);
 
   const handleSubjectToggle = (subject: string) => {
     const subjects = form.getValues("subjects") || [];
