@@ -103,13 +103,16 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       email: "",
       phone: "",
       bio: "",
-      subjects: [],
+      subjects: [], // Ensure this is always an array
       status: 'active',
       normal_hourly_rate: 25.00,
       absence_hourly_rate: 12.50,
       availability: []
     },
   });
+
+  // Get current subjects with safe fallback - remove reactive watching to prevent undefined errors
+  const currentSubjects = form.getValues("subjects") || [];
 
   const fetchAvailability = async (tutorId: string) => {
     if (!tutorId) return;
@@ -162,6 +165,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     const currentSubjects = form.getValues("subjects") || [];
     if (!currentSubjects.includes(subject)) {
       form.setValue("subjects", [...currentSubjects, subject]);
+      // Force re-render by triggering validation
+      form.trigger("subjects");
     }
     setSubjectsOpen(false);
   };
@@ -169,6 +174,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   const handleRemoveSubject = (subject: string) => {
     const currentSubjects = form.getValues("subjects") || [];
     form.setValue("subjects", currentSubjects.filter(s => s !== subject));
+    // Force re-render by triggering validation
+    form.trigger("subjects");
   };
 
   const addAvailabilitySlot = () => {
@@ -296,9 +303,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     }
   };
 
-  // Get current subjects with fallback to empty array
-  const currentSubjects = form.watch("subjects") || [];
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -390,9 +394,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
             <div className="space-y-4">
               <FormLabel>Subjects</FormLabel>
               
-              {/* Display selected subjects */}
+              {/* Display selected subjects with defensive rendering */}
               <div className="flex flex-wrap gap-1 mb-2">
-                {currentSubjects.map((subject, index) => (
+                {currentSubjects.length > 0 ? currentSubjects.map((subject, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
                     {subject}
                     <button 
@@ -403,8 +407,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
-                ))}
-                {currentSubjects.length === 0 && (
+                )) : (
                   <span className="text-sm text-muted-foreground italic">No subjects selected</span>
                 )}
               </div>
