@@ -94,6 +94,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
   const [deletedAvailabilityIds, setDeletedAvailabilityIds] = useState<string[]>([]);
   const [subjectsOpen, setSubjectsOpen] = useState(false);
+  const [currentSubjects, setCurrentSubjects] = useState<string[]>([]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -110,9 +111,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       availability: []
     },
   });
-
-  // Get current subjects with safe fallback - remove reactive watching to prevent undefined errors
-  const currentSubjects = form.getValues("subjects") || [];
 
   const fetchAvailability = async (tutorId: string) => {
     if (!tutorId) return;
@@ -144,37 +142,41 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   // Set form values when tutor changes
   useEffect(() => {
     if (tutor) {
+      const subjects = tutor.specialities || [];
       form.reset({
         first_name: tutor.first_name,
         last_name: tutor.last_name,
         email: tutor.email,
         phone: tutor.phone || "",
         bio: tutor.bio || "",
-        subjects: tutor.specialities || [],
+        subjects: subjects,
         status: tutor.status,
         normal_hourly_rate: tutor.normal_hourly_rate || 25.00,
         absence_hourly_rate: tutor.absence_hourly_rate || 12.50,
         availability: []
       });
       
+      // Update the currentSubjects state
+      setCurrentSubjects(subjects);
+      
       fetchAvailability(tutor.id);
     }
   }, [tutor, form]);
 
   const handleSubjectSelect = (subject: string) => {
-    const currentSubjects = form.getValues("subjects") || [];
     if (!currentSubjects.includes(subject)) {
-      form.setValue("subjects", [...currentSubjects, subject]);
-      // Force re-render by triggering validation
+      const newSubjects = [...currentSubjects, subject];
+      form.setValue("subjects", newSubjects);
+      setCurrentSubjects(newSubjects);
       form.trigger("subjects");
     }
     setSubjectsOpen(false);
   };
 
   const handleRemoveSubject = (subject: string) => {
-    const currentSubjects = form.getValues("subjects") || [];
-    form.setValue("subjects", currentSubjects.filter(s => s !== subject));
-    // Force re-render by triggering validation
+    const newSubjects = currentSubjects.filter(s => s !== subject);
+    form.setValue("subjects", newSubjects);
+    setCurrentSubjects(newSubjects);
     form.trigger("subjects");
   };
 
@@ -431,7 +433,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                     <CommandEmpty>No subjects found.</CommandEmpty>
                     {Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => (
                       <CommandGroup key={stageKey} heading={stage.label}>
-                        {stage.subjects.map((subject) => {
+                        {stage.subjects && Array.isArray(stage.subjects) ? stage.subjects.map((subject) => {
                           const isSelected = currentSubjects.includes(subject);
                           return (
                             <CommandItem
@@ -453,7 +455,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                               {subject}
                             </CommandItem>
                           );
-                        })}
+                        }) : null}
                       </CommandGroup>
                     ))}
                   </Command>
