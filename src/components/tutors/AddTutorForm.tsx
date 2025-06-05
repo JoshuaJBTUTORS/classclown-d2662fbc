@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,6 +36,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { AvailabilitySlot } from '@/types/tutor';
 import SubjectSelector from './SubjectSelector';
+import MultiSelectSubjects from './MultiSelectSubjects';
 
 interface AddTutorFormProps {
   isOpen: boolean;
@@ -513,7 +513,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                   <FormItem>
                     <FormLabel>Subjects</FormLabel>
                     <FormControl>
-                      <SubjectSelector
+                      <MultiSelectSubjects
                         selectedSubjectIds={field.value}
                         onSubjectsChange={field.onChange}
                       />

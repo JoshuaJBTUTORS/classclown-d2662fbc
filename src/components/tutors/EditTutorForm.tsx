@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import SubjectSelector from './SubjectSelector';
+import MultiSelectSubjects from './MultiSelectSubjects';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
@@ -408,7 +408,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                   <FormItem>
                     <FormLabel>Subjects</FormLabel>
                     <FormControl>
-                      <SubjectSelector
+                      <MultiSelectSubjects
                         selectedSubjectIds={field.value}
                         onSubjectsChange={field.onChange}
                       />
