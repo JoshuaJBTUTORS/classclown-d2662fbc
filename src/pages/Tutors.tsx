@@ -22,9 +22,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+interface TutorWithSubjects extends Tutor {
+  subjects?: string[];
+}
+
 const Tutors = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [tutors, setTutors] = useState<TutorWithSubjects[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddTutorOpen, setIsAddTutorOpen] = useState(false);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
@@ -40,21 +44,51 @@ const Tutors = () => {
   const fetchTutors = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: tutorsData, error: tutorsError } = await supabase
         .from('tutors')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching tutors:', error);
+      if (tutorsError) {
+        console.error('Error fetching tutors:', tutorsError);
         toast({
           title: "Error fetching tutors",
-          description: error.message || "Failed to load tutors.",
+          description: tutorsError.message || "Failed to load tutors.",
           variant: "destructive"
         });
-      } else {
-        setTutors(data || []);
+        return;
       }
+
+      // Fetch subjects for each tutor
+      const tutorsWithSubjects = await Promise.all(
+        (tutorsData || []).map(async (tutor) => {
+          const { data: subjectsData, error: subjectsError } = await supabase
+            .from('tutor_subjects')
+            .select(`
+              subjects (
+                name
+              )
+            `)
+            .eq('tutor_id', tutor.id);
+
+          if (subjectsError) {
+            console.error('Error fetching tutor subjects:', subjectsError);
+            return { ...tutor, subjects: [] };
+          }
+
+          const subjects = subjectsData?.map(ts => ts.subjects?.name).filter(Boolean) || [];
+          return { ...tutor, subjects };
+        })
+      );
+
+      setTutors(tutorsWithSubjects);
+    } catch (error) {
+      console.error('Error in fetchTutors:', error);
+      toast({
+        title: "Error fetching tutors",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +118,8 @@ const Tutors = () => {
     );
     // Close the edit dialog
     setIsEditTutorOpen(false);
+    // Refresh the list to get updated subjects
+    fetchTutors();
   };
 
   useEffect(() => {
@@ -120,17 +156,17 @@ const Tutors = () => {
                     <TableHead className="w-[100px]">Title</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Specialities</TableHead>
+                    <TableHead>Subjects</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tutors.map((tutor: Tutor) => (
+                  {tutors.map((tutor: TutorWithSubjects) => (
                     <TableRow key={tutor.id}>
                       <TableCell className="font-medium">{tutor.title || 'N/A'}</TableCell>
                       <TableCell>{tutor.first_name} {tutor.last_name}</TableCell>
                       <TableCell>{tutor.email}</TableCell>
-                      <TableCell>{tutor.specialities ? tutor.specialities.join(', ') : 'N/A'}</TableCell>
+                      <TableCell>{tutor.subjects && tutor.subjects.length > 0 ? tutor.subjects.join(', ') : 'N/A'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button 

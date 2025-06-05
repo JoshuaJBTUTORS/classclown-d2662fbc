@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
-import { Check, ChevronsUpDown, X, Plus, Clock } from 'lucide-react';
+import { Clock, Plus, X } from 'lucide-react';
 import { Tutor, AvailabilitySlot } from '@/types/tutor';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -34,21 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { EDUCATIONAL_STAGES } from '@/constants/subjects';
+import SubjectSelector from './SubjectSelector';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
@@ -57,7 +43,7 @@ interface EditTutorFormProps {
   onUpdate: (tutor: Tutor) => void;
 }
 
-// Updated schema without subjects
+// Updated schema with subjectIds
 const formSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
@@ -67,6 +53,7 @@ const formSchema = z.object({
   status: z.string(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
   absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
+  subjectIds: z.array(z.string()).default([]),
   availability: z.array(z.object({
     id: z.string(),
     day_of_week: z.string(),
@@ -92,6 +79,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   const [loading, setLoading] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
   const [deletedAvailabilityIds, setDeletedAvailabilityIds] = useState<string[]>([]);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -104,6 +92,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       status: 'active',
       normal_hourly_rate: 25.00,
       absence_hourly_rate: 12.50,
+      subjectIds: [],
       availability: []
     },
   });
@@ -135,6 +124,26 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     }
   };
 
+  const fetchTutorSubjects = async (tutorId: string) => {
+    if (!tutorId) return;
+
+    const { data, error } = await supabase
+      .from('tutor_subjects')
+      .select('subject_id')
+      .eq('tutor_id', tutorId);
+
+    if (error) {
+      console.error('Error fetching tutor subjects:', error);
+      return;
+    }
+
+    if (data) {
+      const subjectIds = data.map(ts => ts.subject_id);
+      setSelectedSubjectIds(subjectIds);
+      form.setValue('subjectIds', subjectIds);
+    }
+  };
+
   // Set form values when tutor changes
   useEffect(() => {
     if (tutor) {
@@ -147,10 +156,12 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         status: tutor.status,
         normal_hourly_rate: tutor.normal_hourly_rate || 25.00,
         absence_hourly_rate: tutor.absence_hourly_rate || 12.50,
+        subjectIds: [],
         availability: []
       });
       
       fetchAvailability(tutor.id);
+      fetchTutorSubjects(tutor.id);
     }
   }, [tutor, form]);
 
@@ -202,12 +213,36 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
           bio: data.bio,
           status: data.status,
           normal_hourly_rate: data.normal_hourly_rate,
-          absence_hourly_rate: data.absence_hourly_rate,
-          organization_id: tutor.organization_id
+          absence_hourly_rate: data.absence_hourly_rate
         })
         .eq('id', tutor.id);
         
       if (error) throw error;
+
+      // Handle subject updates
+      if (data.subjectIds) {
+        // First, delete all existing tutor-subject relationships
+        const { error: deleteError } = await supabase
+          .from('tutor_subjects')
+          .delete()
+          .eq('tutor_id', tutor.id);
+          
+        if (deleteError) console.error('Error deleting existing tutor subjects:', deleteError);
+
+        // Then insert new relationships
+        if (data.subjectIds.length > 0) {
+          const tutorSubjects = data.subjectIds.map(subjectId => ({
+            tutor_id: tutor.id,
+            subject_id: subjectId
+          }));
+
+          const { error: insertError } = await supabase
+            .from('tutor_subjects')
+            .insert(tutorSubjects);
+            
+          if (insertError) console.error('Error inserting tutor subjects:', insertError);
+        }
+      }
 
       // Handle availability updates
       if (data.availability && data.availability.length > 0) {
@@ -251,7 +286,7 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         }
       }
       
-      // Update the tutor in the parent component (keeping existing specialities)
+      // Update the tutor in the parent component
       const updatedTutor: Tutor = {
         ...tutor,
         first_name: data.first_name,
@@ -262,7 +297,6 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         status: data.status,
         normal_hourly_rate: data.normal_hourly_rate,
         absence_hourly_rate: data.absence_hourly_rate,
-        organization_id: tutor.organization_id,
         availability: availabilitySlots
       };
       
@@ -364,6 +398,26 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                 </FormItem>
               )}
             />
+
+            {/* Subject Selection */}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="subjectIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subjects</FormLabel>
+                    <FormControl>
+                      <SubjectSelector
+                        selectedSubjectIds={field.value}
+                        onSubjectsChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             {/* Availability Section */}
             <div className="space-y-4">

@@ -1017,6 +1017,33 @@ export type Database = {
           },
         ]
       }
+      subjects: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       time_off_requests: {
         Row: {
           admin_notes: string | null
@@ -1101,6 +1128,42 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tutor_availability_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_subjects: {
+        Row: {
+          created_at: string | null
+          id: string
+          subject_id: string
+          tutor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          subject_id: string
+          tutor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          subject_id?: string
+          tutor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_subjects_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "tutors"

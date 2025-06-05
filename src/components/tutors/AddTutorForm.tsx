@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,7 +19,6 @@ import {
 import {
   Form,
   FormControl,
-  FormField,
   FormItem,
   FormLabel,
   FormMessage,
@@ -34,9 +33,8 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { AvailabilitySlot } from '@/types/tutor';
-import { LESSON_SUBJECTS, EDUCATIONAL_STAGES } from '@/constants/subjects';
+import SubjectSelector from './SubjectSelector';
 
 interface AddTutorFormProps {
   isOpen: boolean;
@@ -50,7 +48,7 @@ const formSchema = z.object({
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email format." }),
   phone: z.string().optional(),
-  subjects: z.array(z.string()).default([]),
+  subjectIds: z.array(z.string()).default([]),
   bio: z.string().optional(),
   education: z.string().optional(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
@@ -81,7 +79,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       lastName: "",
       email: "",
       phone: "",
-      subjects: [], // Ensure this is always an array
+      subjectIds: [],
       bio: "",
       education: "",
       normal_hourly_rate: 25.00,
@@ -91,26 +89,6 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       availability: []
     },
   });
-
-  // Get current subjects with safe fallback - remove useMemo to prevent dependency issues
-  const currentSubjects = form.getValues("subjects") || [];
-
-  const handleSubjectToggle = (subject: string) => {
-    const subjects = form.getValues("subjects") || [];
-    if (subjects.includes(subject)) {
-      form.setValue("subjects", subjects.filter(s => s !== subject));
-    } else {
-      form.setValue("subjects", [...subjects, subject]);
-    }
-    // Force re-render by triggering validation
-    form.trigger("subjects");
-  };
-
-  const handleRemoveSubject = (subject: string) => {
-    const subjects = form.getValues("subjects") || [];
-    form.setValue("subjects", subjects.filter(s => s !== subject));
-    form.trigger("subjects");
-  };
 
   // Functions for availability management
   const addAvailabilitySlot = () => {
@@ -219,7 +197,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      // Insert tutor into tutors table
+      // Insert tutor into tutors table (without specialities)
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
         .insert({
@@ -228,7 +206,6 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           last_name: data.lastName,
           email: data.email,
           phone: data.phone,
-          specialities: data.subjects, // Using subjects for the specialities field
           bio: data.bio,
           education: data.education,
           normal_hourly_rate: data.normal_hourly_rate,
@@ -239,6 +216,27 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
         .single();
 
       if (tutorError) throw tutorError;
+
+      // Insert tutor-subject relationships
+      if (data.subjectIds.length > 0) {
+        const tutorSubjects = data.subjectIds.map(subjectId => ({
+          tutor_id: tutorData.id,
+          subject_id: subjectId
+        }));
+
+        const { error: subjectsError } = await supabase
+          .from('tutor_subjects')
+          .insert(tutorSubjects);
+
+        if (subjectsError) {
+          console.error('Error inserting tutor subjects:', subjectsError);
+          toast({
+            title: "Tutor created successfully",
+            description: "However, there was an issue saving subject selections.",
+            variant: "destructive"
+          });
+        }
+      }
 
       // Insert availability slots if any
       if (availabilitySlots.length > 0) {
@@ -506,60 +504,22 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
             </div>
 
             <div className="space-y-4">
-              <FormLabel>Subjects</FormLabel>
-              
-              {/* Display selected subjects */}
-              <div className="flex flex-wrap gap-1 mb-2">
-                {currentSubjects.length > 0 ? currentSubjects.map((subject, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1.5">
-                    {subject}
-                    <button 
-                      type="button" 
-                      className="text-gray-500 hover:text-red-500" 
-                      onClick={() => handleRemoveSubject(subject)}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )) : (
-                  <span className="text-sm text-muted-foreground italic">No subjects selected</span>
+              <FormField
+                control={form.control}
+                name="subjectIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subjects</FormLabel>
+                    <FormControl>
+                      <SubjectSelector
+                        selectedSubjectIds={field.value}
+                        onSubjectsChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-
-              {/* Subject selection by educational stages */}
-              <div className="space-y-4">
-                {EDUCATIONAL_STAGES && Object.entries(EDUCATIONAL_STAGES).map(([stageKey, stage]) => {
-                  // Add defensive check for stage and stage.subjects
-                  if (!stage || !stage.subjects || !Array.isArray(stage.subjects)) {
-                    console.warn(`Invalid stage data for ${stageKey}:`, stage);
-                    return null;
-                  }
-                  
-                  return (
-                    <div key={stageKey} className="border rounded-lg p-4">
-                      <h4 className="font-medium text-sm mb-2">{stage.label || 'Unknown Stage'}</h4>
-                      <p className="text-xs text-muted-foreground mb-3">{stage.description || ''}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {stage.subjects.map((subject) => (
-                          <div key={subject} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`subject-${subject}`}
-                              checked={currentSubjects.includes(subject)}
-                              onCheckedChange={() => handleSubjectToggle(subject)}
-                            />
-                            <label
-                              htmlFor={`subject-${subject}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {subject}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              />
             </div>
 
             <FormField
