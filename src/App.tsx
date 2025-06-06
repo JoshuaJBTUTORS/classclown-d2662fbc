@@ -6,6 +6,7 @@ import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import StudentDashboardRedirect from '@/components/routing/StudentDashboardRedirect';
+import Lessons from '@/pages/Lessons';
 
 // Page imports
 import Auth from '@/pages/Auth';
@@ -29,6 +30,7 @@ import AssessmentEdit from '@/pages/AssessmentEdit';
 import StudentJoinPage from '@/components/lessons/StudentJoinPage';
 import TimeOff from '@/pages/TimeOff';
 import TimeOffRequests from '@/pages/TimeOffRequests';
+import BookedTrialLessons from '@/pages/BookedTrialLessons';
 
 import './App.css';
 
@@ -63,6 +65,12 @@ function App() {
                     <Calendar />
                   </ProtectedRoute>
                 } />
+
+                <Route path="/lessons" element={
+                  <ProtectedRoute>
+                    <Lessons />
+                  </ProtectedRoute>
+                } />
                 
                 <Route path="/students" element={
                   <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
@@ -73,6 +81,12 @@ function App() {
                 <Route path="/tutors" element={
                   <ProtectedRoute allowedRoles={['admin', 'owner']}>
                     <Tutors />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/booked-trial-lessons" element={
+                  <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                    <BookedTrialLessons />
                   </ProtectedRoute>
                 } />
                 
