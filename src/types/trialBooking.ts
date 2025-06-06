@@ -28,8 +28,8 @@ export interface TrialBooking {
   lesson_id?: string;
   created_at: string;
   updated_at: string;
-  // Joined data
-  year_group?: YearGroup;
+  // Joined data - simplified to match what we actually query
+  year_group?: { id: string; display_name: string; };
   subject?: { id: string; name: string; };
   tutor?: { id: string; first_name: string; last_name: string; };
 }
