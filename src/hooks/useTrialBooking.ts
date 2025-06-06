@@ -30,18 +30,11 @@ export const useTrialBooking = () => {
       // This is now handled by the TrialBookingForm component
       console.log('Trial booking data:', data);
       
-      toast({
-        title: "Trial Lesson Request Submitted!",
-        description: "We'll contact you within 24 hours to schedule your free trial lesson.",
-      });
+      toast.success("Trial Lesson Request Submitted! We'll contact you within 24 hours to schedule your free trial lesson.");
       
       closeBookingModal();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit trial lesson request. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to submit trial lesson request. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

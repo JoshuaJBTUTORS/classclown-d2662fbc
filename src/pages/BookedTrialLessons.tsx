@@ -89,7 +89,14 @@ const BookedTrialLessons = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTrialBookings(data || []);
+      
+      // Cast the status to the correct type to fix TypeScript error
+      const processedData = (data || []).map(booking => ({
+        ...booking,
+        status: booking.status as 'pending' | 'approved' | 'rejected' | 'completed'
+      }));
+      
+      setTrialBookings(processedData);
     } catch (error) {
       console.error('Error fetching trial bookings:', error);
       toast.error('Failed to load trial bookings');
