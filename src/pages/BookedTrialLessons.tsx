@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -88,14 +89,7 @@ const BookedTrialLessons = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Cast the status to the correct type to fix TypeScript error
-      const processedData = (data || []).map(booking => ({
-        ...booking,
-        status: booking.status as 'pending' | 'approved' | 'rejected' | 'completed'
-      }));
-      
-      setTrialBookings(processedData);
+      setTrialBookings(data || []);
     } catch (error) {
       console.error('Error fetching trial bookings:', error);
       toast.error('Failed to load trial bookings');
@@ -223,7 +217,7 @@ const BookedTrialLessons = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+      <div className="flex flex-col flex-1 lg:pl-64">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
