@@ -1097,98 +1097,6 @@ export type Database = {
           },
         ]
       }
-      trial_bookings: {
-        Row: {
-          admin_notes: string | null
-          approved_at: string | null
-          approved_by: string | null
-          child_name: string
-          created_at: string
-          email: string
-          id: string
-          lesson_id: string | null
-          message: string | null
-          parent_name: string
-          phone: string | null
-          preferred_date: string | null
-          preferred_time: string | null
-          status: string
-          subject_id: string
-          tutor_id: string | null
-          updated_at: string
-          year_group_id: string
-        }
-        Insert: {
-          admin_notes?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          child_name: string
-          created_at?: string
-          email: string
-          id?: string
-          lesson_id?: string | null
-          message?: string | null
-          parent_name: string
-          phone?: string | null
-          preferred_date?: string | null
-          preferred_time?: string | null
-          status?: string
-          subject_id: string
-          tutor_id?: string | null
-          updated_at?: string
-          year_group_id: string
-        }
-        Update: {
-          admin_notes?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          child_name?: string
-          created_at?: string
-          email?: string
-          id?: string
-          lesson_id?: string | null
-          message?: string | null
-          parent_name?: string
-          phone?: string | null
-          preferred_date?: string | null
-          preferred_time?: string | null
-          status?: string
-          subject_id?: string
-          tutor_id?: string | null
-          updated_at?: string
-          year_group_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trial_bookings_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trial_bookings_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trial_bookings_tutor_id_fkey"
-            columns: ["tutor_id"]
-            isOneToOne: false
-            referencedRelation: "tutors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trial_bookings_year_group_id_fkey"
-            columns: ["year_group_id"]
-            isOneToOne: false
-            referencedRelation: "year_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tutor_availability: {
         Row: {
           created_at: string | null
@@ -1338,36 +1246,6 @@ export type Database = {
           is_primary?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
-        }
-        Relationships: []
-      }
-      year_groups: {
-        Row: {
-          created_at: string
-          description: string | null
-          display_name: string
-          id: string
-          name: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          display_name: string
-          id?: string
-          name: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          display_name?: string
-          id?: string
-          name?: string
-          sort_order?: number
-          updated_at?: string
         }
         Relationships: []
       }

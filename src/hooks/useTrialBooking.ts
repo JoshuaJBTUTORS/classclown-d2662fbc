@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface TrialBookingData {
   parentName: string;
@@ -27,7 +27,8 @@ export const useTrialBooking = () => {
   const submitTrialBooking = async (data: TrialBookingData) => {
     setIsSubmitting(true);
     try {
-      // This is now handled by the TrialBookingForm component
+      // Here you would typically send the data to your backend/CRM
+      // For now, we'll just show a success message
       console.log('Trial booking data:', data);
       
       toast({

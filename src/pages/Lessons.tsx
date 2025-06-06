@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -42,18 +43,9 @@ import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import { Lesson } from '@/types/lesson';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import TrialBookingForm from '@/components/trialBooking/TrialBookingForm';
-import { useTrialBookingManager } from '@/hooks/useTrialBookingManager';
 
 const Lessons = () => {
   const { userRole } = useAuth();
-  const { 
-    isTrialBookingOpen,
-    openTrialBooking,
-    closeTrialBooking,
-    handleTrialBookingSuccess
-  } = useTrialBookingManager();
-
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<Lesson[]>([]);
@@ -168,29 +160,19 @@ const Lessons = () => {
               subtitle="Manage all tuition sessions"
               className="mb-4 md:mb-0"
             />
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-1"
-                onClick={openTrialBooking}
-              >
-                <Users className="h-4 w-4" />
-                Book Trial Lesson
-              </Button>
-              {/* Only show action buttons for non-students */}
-              {!isStudent && (
-                <>
-                  <Button variant="outline" className="flex items-center gap-1">
-                    <Download className="h-4 w-4" />
-                    Export
-                  </Button>
-                  <Button className="flex items-center gap-2" onClick={() => setIsAddingLesson(true)}>
-                    <Plus className="h-4 w-4" />
-                    New Lesson
-                  </Button>
-                </>
-              )}
-            </div>
+            {/* Only show action buttons for non-students */}
+            {!isStudent && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="flex items-center gap-1">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+                <Button className="flex items-center gap-2" onClick={() => setIsAddingLesson(true)}>
+                  <Plus className="h-4 w-4" />
+                  New Lesson
+                </Button>
+              </div>
+            )}
           </div>
 
           <Card className="mb-8">
@@ -327,13 +309,6 @@ const Lessons = () => {
         lessonId={selectedLessonId}
         isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
-      />
-
-      {/* Trial Booking Form */}
-      <TrialBookingForm
-        isOpen={isTrialBookingOpen}
-        onClose={closeTrialBooking}
-        onSuccess={handleTrialBookingSuccess}
       />
     </div>
   );
