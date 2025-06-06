@@ -17,12 +17,12 @@ const Index = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} />
-      <div className="flex flex-col flex-1 lg:pl-0">
+      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <PageTitle 
             title="Dashboard" 
-            subtitle="Welcome to Class Clown - Your premium tuition service management platform."
+            subtitle="Welcome to JB Tutors - Your premium tuition service management platform."
           />
           <div className="space-y-6">
             <DashboardMetrics />
