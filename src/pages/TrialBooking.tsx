@@ -7,14 +7,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, GraduationCap, Users, Check } from 'lucide-react';
+import { Calendar, Clock, GraduationCap, Users, Check, ChevronRight, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useSubjects } from '@/hooks/useSubjects';
+import { useYearGroups } from '@/hooks/useYearGroups';
+import { useAvailableTutors } from '@/hooks/useAvailableTutors';
+import { useAvailableSlots } from '@/hooks/useAvailableSlots';
+import TutorSelector from '@/components/trialBooking/TutorSelector';
+import TimeSlotSelector from '@/components/trialBooking/TimeSlotSelector';
 
 const TrialBooking = () => {
   const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
   const [formData, setFormData] = useState({
     parentName: '',
     childName: '',
@@ -22,28 +30,30 @@ const TrialBooking = () => {
     phone: '',
     yearGroup: '',
     subject: '',
+    tutorId: '',
     preferredDate: '',
     preferredTime: '',
     message: ''
   });
 
-  const yearGroups = [
-    'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Year 6',
-    'Year 7', 'Year 8', 'Year 9', 'Year 10', 'Year 11', 'Year 12', 'Year 13'
-  ];
-
-  const subjects = [
-    'Mathematics', 'English', 'Science', 'Physics', 'Chemistry', 'Biology',
-    'History', 'Geography', 'French', 'Spanish', 'German', 'Computer Science',
-    'Art', 'Music', 'Drama', 'PE', 'Business Studies', 'Economics', 'Psychology'
-  ];
-
-  const timeSlots = [
-    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
-  ];
+  const { subjects, isLoading: subjectsLoading } = useSubjects();
+  const { yearGroups, isLoading: yearGroupsLoading } = useYearGroups();
+  const { tutors, isLoading: tutorsLoading } = useAvailableTutors(formData.subject);
+  const { slots, isLoading: slotsLoading } = useAvailableSlots(formData.tutorId, formData.preferredDate);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Reset dependent fields when parent changes
+    if (field === 'subject') {
+      setFormData(prev => ({ ...prev, tutorId: '', preferredDate: '', preferredTime: '' }));
+      setCurrentStep(2);
+    } else if (field === 'tutorId') {
+      setFormData(prev => ({ ...prev, preferredDate: '', preferredTime: '' }));
+      setCurrentStep(3);
+    } else if (field === 'preferredDate') {
+      setFormData(prev => ({ ...prev, preferredTime: '' }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,7 +61,6 @@ const TrialBooking = () => {
     setIsSubmitting(true);
 
     try {
-      // Get year group and subject IDs (we'll use placeholder UUIDs for now)
       const { error } = await supabase
         .from('trial_bookings')
         .insert({
@@ -62,8 +71,9 @@ const TrialBooking = () => {
           preferred_date: formData.preferredDate || null,
           preferred_time: formData.preferredTime || null,
           message: formData.message || null,
-          year_group_id: '00000000-0000-0000-0000-000000000001', // Placeholder
-          subject_id: '00000000-0000-0000-0000-000000000001', // Placeholder
+          year_group_id: formData.yearGroup || null,
+          subject_id: formData.subject || null,
+          tutor_id: formData.tutorId || null,
           status: 'pending'
         });
 
@@ -76,6 +86,16 @@ const TrialBooking = () => {
       toast.error('Failed to submit trial lesson request. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const canProceedToStep = (step: number) => {
+    switch (step) {
+      case 2: return formData.subject && formData.yearGroup;
+      case 3: return formData.tutorId;
+      case 4: return formData.preferredDate;
+      case 5: return formData.preferredTime && formData.parentName && formData.childName && formData.email;
+      default: return false;
     }
   };
 
@@ -97,17 +117,17 @@ const TrialBooking = () => {
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Check className="w-8 h-8 text-green-600" />
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Request Submitted!</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Booking Confirmed!</h1>
                 <p className="text-lg text-gray-600 mb-6">
-                  Thank you for your interest in Class Clown Tutoring. We've received your trial lesson request.
+                  Your trial lesson has been automatically scheduled with your selected tutor.
                 </p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold text-blue-900 mb-2">What happens next?</h3>
                   <ul className="text-blue-800 text-sm space-y-1">
-                    <li>• We'll review your request within 24 hours</li>
-                    <li>• Our team will contact you to confirm the trial lesson details</li>
-                    <li>• We'll match you with the perfect tutor for your child</li>
-                    <li>• You'll receive a confirmation email with all the details</li>
+                    <li>• You'll receive a confirmation email with lesson details</li>
+                    <li>• Your tutor will contact you before the lesson</li>
+                    <li>• Join the lesson at the scheduled time via our platform</li>
+                    <li>• No payment required - it's completely free!</li>
                   </ul>
                 </div>
                 <Button onClick={() => window.location.href = '/'} className="bg-[#e94b7f] hover:bg-[#d63d6f]">
@@ -126,172 +146,242 @@ const TrialBooking = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <img 
               src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
               alt="Class Clown Logo" 
               className="h-16 mx-auto mb-6" 
             />
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Book Your Free Trial Lesson
+              Smart Trial Lesson Booking
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Experience personalized tutoring with Class Clown. No commitment required - 
-              just exceptional learning tailored to your child's needs.
+              Find the perfect tutor and book your ideal time slot in just a few steps.
             </p>
           </div>
 
-          {/* Features */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-              <GraduationCap className="w-8 h-8 text-[#e94b7f] mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Expert Tutors</h3>
-              <p className="text-sm text-gray-600">Qualified teachers with proven track records</p>
-            </div>
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-              <Users className="w-8 h-8 text-[#e94b7f] mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Personalized Learning</h3>
-              <p className="text-sm text-gray-600">Tailored lessons to match your child's learning style</p>
-            </div>
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-              <Clock className="w-8 h-8 text-[#e94b7f] mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Flexible Scheduling</h3>
-              <p className="text-sm text-gray-600">Lessons that fit around your family's schedule</p>
+          {/* Progress Steps */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center space-x-4">
+              {[1, 2, 3, 4, 5].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step <= currentStep 
+                      ? 'bg-[#e94b7f] text-white' 
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {step}
+                  </div>
+                  {step < 5 && (
+                    <div className={`w-8 h-0.5 ${
+                      step < currentStep ? 'bg-[#e94b7f]' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Booking Form */}
-          <Card className="max-w-2xl mx-auto">
+          {/* Step Content */}
+          <Card className="max-w-3xl mx-auto">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">Trial Lesson Request</CardTitle>
+              <CardTitle>
+                {currentStep === 1 && "Select Subject & Year Group"}
+                {currentStep === 2 && "Choose Your Tutor"}
+                {currentStep === 3 && "Pick a Date"}
+                {currentStep === 4 && "Select Time Slot"}
+                {currentStep === 5 && "Contact Details & Confirmation"}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="parentName">Parent/Guardian Name *</Label>
-                    <Input
-                      id="parentName"
-                      value={formData.parentName}
-                      onChange={(e) => handleInputChange('parentName', e.target.value)}
-                      required
-                      placeholder="Your full name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="childName">Child's Name *</Label>
-                    <Input
-                      id="childName"
-                      value={formData.childName}
-                      onChange={(e) => handleInputChange('childName', e.target.value)}
-                      required
-                      placeholder="Child's full name"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email">Email Address *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      required
-                      placeholder="your.email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="07123 456789"
-                    />
+            <CardContent className="space-y-6">
+              {/* Step 1: Subject & Year Group */}
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="yearGroup">Year Group *</Label>
+                      <Select 
+                        value={formData.yearGroup} 
+                        onValueChange={(value) => handleInputChange('yearGroup', value)}
+                        disabled={yearGroupsLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={yearGroupsLoading ? "Loading..." : "Select year group"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {yearGroups.map((year) => (
+                            <SelectItem key={year.id} value={year.id}>
+                              {year.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="subject">Subject *</Label>
+                      <Select 
+                        value={formData.subject} 
+                        onValueChange={(value) => handleInputChange('subject', value)}
+                        disabled={subjectsLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={subjectsLoading ? "Loading..." : "Select subject"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjects.map((subject) => (
+                            <SelectItem key={subject.id} value={subject.id}>
+                              {subject.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="yearGroup">Year Group *</Label>
-                    <Select value={formData.yearGroup} onValueChange={(value) => handleInputChange('yearGroup', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year group" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {yearGroups.map((year) => (
-                          <SelectItem key={year} value={year}>{year}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="subject">Subject *</Label>
-                    <Select value={formData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select subject" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subjects.map((subject) => (
-                          <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              {/* Step 2: Tutor Selection */}
+              {currentStep === 2 && (
+                <TutorSelector
+                  tutors={tutors}
+                  selectedTutor={formData.tutorId}
+                  onTutorSelect={(tutorId) => handleInputChange('tutorId', tutorId)}
+                  isLoading={tutorsLoading}
+                />
+              )}
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="preferredDate">Preferred Date</Label>
-                    <Input
-                      id="preferredDate"
-                      type="date"
-                      value={formData.preferredDate}
-                      onChange={(e) => handleInputChange('preferredDate', e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="preferredTime">Preferred Time</Label>
-                    <Select value={formData.preferredTime} onValueChange={(value) => handleInputChange('preferredTime', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeSlots.map((time) => (
-                          <SelectItem key={time} value={time}>{time}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
+              {/* Step 3: Date Selection */}
+              {currentStep === 3 && (
                 <div>
-                  <Label htmlFor="message">Additional Information</Label>
-                  <Textarea
-                    id="message"
-                    value={formData.message}
-                    onChange={(e) => handleInputChange('message', e.target.value)}
-                    placeholder="Tell us about your child's learning goals, any specific areas they need help with, or any other requirements..."
-                    rows={4}
+                  <Label htmlFor="preferredDate">Preferred Date *</Label>
+                  <Input
+                    id="preferredDate"
+                    type="date"
+                    value={formData.preferredDate}
+                    onChange={(e) => handleInputChange('preferredDate', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="mt-2"
                   />
                 </div>
+              )}
 
-                <Button 
-                  type="submit" 
-                  className="w-full bg-[#e94b7f] hover:bg-[#d63d6f] text-white font-semibold py-3"
-                  disabled={isSubmitting}
+              {/* Step 4: Time Selection */}
+              {currentStep === 4 && (
+                <TimeSlotSelector
+                  slots={slots}
+                  selectedSlot={formData.preferredTime}
+                  onSlotSelect={(time) => handleInputChange('preferredTime', time)}
+                  selectedDate={formData.preferredDate}
+                  isLoading={slotsLoading}
+                />
+              )}
+
+              {/* Step 5: Contact Details */}
+              {currentStep === 5 && (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="parentName">Parent/Guardian Name *</Label>
+                      <Input
+                        id="parentName"
+                        value={formData.parentName}
+                        onChange={(e) => handleInputChange('parentName', e.target.value)}
+                        required
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="childName">Child's Name *</Label>
+                      <Input
+                        id="childName"
+                        value={formData.childName}
+                        onChange={(e) => handleInputChange('childName', e.target.value)}
+                        required
+                        placeholder="Child's full name"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        required
+                        placeholder="your.email@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="07123 456789"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="message">Additional Information</Label>
+                    <Textarea
+                      id="message"
+                      value={formData.message}
+                      onChange={(e) => handleInputChange('message', e.target.value)}
+                      placeholder="Tell us about your child's learning goals or any specific requirements..."
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Booking Summary */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-blue-900 mb-2">Booking Summary</h3>
+                    <div className="text-blue-800 text-sm space-y-1">
+                      <p><strong>Subject:</strong> {subjects.find(s => s.id === formData.subject)?.name}</p>
+                      <p><strong>Year Group:</strong> {yearGroups.find(y => y.id === formData.yearGroup)?.display_name}</p>
+                      <p><strong>Tutor:</strong> {tutors.find(t => t.id === formData.tutorId)?.first_name} {tutors.find(t => t.id === formData.tutorId)?.last_name}</p>
+                      <p><strong>Date:</strong> {formData.preferredDate}</p>
+                      <p><strong>Time:</strong> {formData.preferredTime}</p>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between pt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                  disabled={currentStep === 1}
+                  className="flex items-center gap-2"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Request Free Trial Lesson'}
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
                 </Button>
 
-                <p className="text-sm text-gray-500 text-center">
-                  By submitting this form, you agree to be contacted by Class Clown Tutoring regarding your trial lesson request.
-                </p>
-              </form>
+                {currentStep < 5 ? (
+                  <Button
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                    disabled={!canProceedToStep(currentStep + 1)}
+                    className="bg-[#e94b7f] hover:bg-[#d63d6f] flex items-center gap-2"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || !canProceedToStep(5)}
+                    className="bg-[#e94b7f] hover:bg-[#d63d6f] flex items-center gap-2"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Book Trial Lesson'}
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

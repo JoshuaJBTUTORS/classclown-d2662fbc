@@ -1113,10 +1113,10 @@ export type Database = {
           preferred_date: string | null
           preferred_time: string | null
           status: string
-          subject_id: string
+          subject_id: string | null
           tutor_id: string | null
           updated_at: string
-          year_group_id: string
+          year_group_id: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -1133,10 +1133,10 @@ export type Database = {
           preferred_date?: string | null
           preferred_time?: string | null
           status?: string
-          subject_id: string
+          subject_id?: string | null
           tutor_id?: string | null
           updated_at?: string
-          year_group_id: string
+          year_group_id?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -1153,10 +1153,10 @@ export type Database = {
           preferred_date?: string | null
           preferred_time?: string | null
           status?: string
-          subject_id?: string
+          subject_id?: string | null
           tutor_id?: string | null
           updated_at?: string
-          year_group_id?: string
+          year_group_id?: string | null
         }
         Relationships: [
           {
