@@ -58,7 +58,7 @@ interface TrialBooking {
   preferred_date?: string;
   preferred_time?: string;
   message?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  status: string;
   created_at: string;
   updated_at: string;
   admin_notes?: string;
@@ -133,7 +133,7 @@ const TrialBookings = () => {
 
       setBookings(prev => prev.map(booking => 
         booking.id === bookingId 
-          ? { ...booking, status: status as any, updated_at: new Date().toISOString() }
+          ? { ...booking, status, updated_at: new Date().toISOString() }
           : booking
       ));
 
