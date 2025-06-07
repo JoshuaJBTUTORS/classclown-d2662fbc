@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -29,6 +30,8 @@ import AssessmentEdit from '@/pages/AssessmentEdit';
 import StudentJoinPage from '@/components/lessons/StudentJoinPage';
 import TimeOff from '@/pages/TimeOff';
 import TimeOffRequests from '@/pages/TimeOffRequests';
+import TrialBooking from '@/pages/TrialBooking';
+import TrialBookings from '@/pages/TrialBookings';
 
 import './App.css';
 
@@ -42,6 +45,9 @@ function App() {
           <AuthProvider>
             <LearningHubProvider>
               <Routes>
+                {/* Public routes */}
+                <Route path="/book-trial" element={<TrialBooking />} />
+                
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/invite/:token" element={<Invite />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
@@ -103,6 +109,12 @@ function App() {
                 <Route path="/time-off-requests" element={
                   <ProtectedRoute allowedRoles={['admin', 'owner']}>
                     <TimeOffRequests />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/trial-bookings" element={
+                  <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                    <TrialBookings />
                   </ProtectedRoute>
                 } />
                 

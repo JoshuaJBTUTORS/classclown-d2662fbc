@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -11,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FileBarChart,
-  Clock
+  Clock,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -76,6 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     // Add time off requests for admins and owners
     if (userRole === 'admin' || userRole === 'owner') {
       baseNavigation.push({ name: 'Time Off Requests', href: '/time-off-requests', icon: Clock });
+      baseNavigation.push({ name: 'Trial Bookings', href: '/trial-bookings', icon: UserPlus });
     }
 
     if (userRole === 'owner') {
