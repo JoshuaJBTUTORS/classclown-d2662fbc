@@ -7,15 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, GraduationCap, Users, Check, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useYearGroups } from '@/hooks/useYearGroups';
-import { useAvailableTutors } from '@/hooks/useAvailableTutors';
-import { useAvailableSlots } from '@/hooks/useAvailableSlots';
-import TutorSelector from '@/components/trialBooking/TutorSelector';
-import TimeSlotSelector from '@/components/trialBooking/TimeSlotSelector';
+import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
+import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
 
 const TrialBooking = () => {
   const navigate = useNavigate();
@@ -30,7 +28,6 @@ const TrialBooking = () => {
     phone: '',
     yearGroup: '',
     subject: '',
-    tutorId: '',
     preferredDate: '',
     preferredTime: '',
     message: ''
@@ -38,19 +35,17 @@ const TrialBooking = () => {
 
   const { subjects, isLoading: subjectsLoading } = useSubjects();
   const { yearGroups, isLoading: yearGroupsLoading } = useYearGroups();
-  const { tutors, isLoading: tutorsLoading } = useAvailableTutors(formData.subject);
-  const { slots, isLoading: slotsLoading } = useAvailableSlots(formData.tutorId, formData.preferredDate);
+  const { slots, isLoading: slotsLoading } = useAggregatedAvailability(formData.subject, formData.preferredDate);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Reset dependent fields when parent changes
-    if (field === 'subject') {
-      setFormData(prev => ({ ...prev, tutorId: '', preferredDate: '', preferredTime: '' }));
-      setCurrentStep(2);
-    } else if (field === 'tutorId') {
+    if (field === 'subject' || field === 'yearGroup') {
       setFormData(prev => ({ ...prev, preferredDate: '', preferredTime: '' }));
-      setCurrentStep(3);
+      if (formData.subject && formData.yearGroup) {
+        setCurrentStep(2);
+      }
     } else if (field === 'preferredDate') {
       setFormData(prev => ({ ...prev, preferredTime: '' }));
     }
@@ -73,7 +68,7 @@ const TrialBooking = () => {
           message: formData.message || null,
           year_group_id: formData.yearGroup || null,
           subject_id: formData.subject || null,
-          tutor_id: formData.tutorId || null,
+          tutor_id: null, // Will be assigned during approval process
           status: 'pending'
         });
 
@@ -92,9 +87,7 @@ const TrialBooking = () => {
   const canProceedToStep = (step: number) => {
     switch (step) {
       case 2: return formData.subject && formData.yearGroup;
-      case 3: return formData.tutorId;
-      case 4: return formData.preferredDate;
-      case 5: return formData.preferredTime && formData.parentName && formData.childName && formData.email;
+      case 3: return formData.preferredDate && formData.preferredTime && formData.parentName && formData.childName && formData.email;
       default: return false;
     }
   };
@@ -119,13 +112,14 @@ const TrialBooking = () => {
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">Booking Confirmed!</h1>
                 <p className="text-lg text-gray-600 mb-6">
-                  Your trial lesson has been automatically scheduled with your selected tutor.
+                  Your trial lesson request has been submitted successfully.
                 </p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold text-blue-900 mb-2">What happens next?</h3>
                   <ul className="text-blue-800 text-sm space-y-1">
+                    <li>• We'll match you with the perfect tutor for your needs</li>
                     <li>• You'll receive a confirmation email with lesson details</li>
-                    <li>• Your tutor will contact you before the lesson</li>
+                    <li>• Your assigned tutor will contact you before the lesson</li>
                     <li>• Join the lesson at the scheduled time via our platform</li>
                     <li>• No payment required - it's completely free!</li>
                   </ul>
@@ -156,14 +150,14 @@ const TrialBooking = () => {
               Smart Trial Lesson Booking
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Find the perfect tutor and book your ideal time slot in just a few steps.
+              Tell us what you need and we'll find the perfect tutor and time slot for you.
             </p>
           </div>
 
           {/* Progress Steps */}
           <div className="flex justify-center mb-8">
             <div className="flex items-center space-x-4">
-              {[1, 2, 3, 4, 5].map((step) => (
+              {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     step <= currentStep 
@@ -172,7 +166,7 @@ const TrialBooking = () => {
                   }`}>
                     {step}
                   </div>
-                  {step < 5 && (
+                  {step < 3 && (
                     <div className={`w-8 h-0.5 ${
                       step < currentStep ? 'bg-[#e94b7f]' : 'bg-gray-200'
                     }`} />
@@ -186,11 +180,9 @@ const TrialBooking = () => {
           <Card className="max-w-3xl mx-auto">
             <CardHeader>
               <CardTitle>
-                {currentStep === 1 && "Select Subject & Year Group"}
-                {currentStep === 2 && "Choose Your Tutor"}
-                {currentStep === 3 && "Pick a Date"}
-                {currentStep === 4 && "Select Time Slot"}
-                {currentStep === 5 && "Contact Details & Confirmation"}
+                {currentStep === 1 && "What would you like to learn?"}
+                {currentStep === 2 && "When would you like your lesson?"}
+                {currentStep === 3 && "Contact Details & Confirmation"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -240,44 +232,20 @@ const TrialBooking = () => {
                 </div>
               )}
 
-              {/* Step 2: Tutor Selection */}
+              {/* Step 2: Date & Time Selection */}
               {currentStep === 2 && (
-                <TutorSelector
-                  tutors={tutors}
-                  selectedTutor={formData.tutorId}
-                  onTutorSelect={(tutorId) => handleInputChange('tutorId', tutorId)}
-                  isLoading={tutorsLoading}
-                />
-              )}
-
-              {/* Step 3: Date Selection */}
-              {currentStep === 3 && (
-                <div>
-                  <Label htmlFor="preferredDate">Preferred Date *</Label>
-                  <Input
-                    id="preferredDate"
-                    type="date"
-                    value={formData.preferredDate}
-                    onChange={(e) => handleInputChange('preferredDate', e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="mt-2"
-                  />
-                </div>
-              )}
-
-              {/* Step 4: Time Selection */}
-              {currentStep === 4 && (
-                <TimeSlotSelector
+                <DateTimeSelector
                   slots={slots}
-                  selectedSlot={formData.preferredTime}
-                  onSlotSelect={(time) => handleInputChange('preferredTime', time)}
                   selectedDate={formData.preferredDate}
+                  selectedTime={formData.preferredTime}
+                  onDateSelect={(date) => handleInputChange('preferredDate', date)}
+                  onTimeSelect={(time) => handleInputChange('preferredTime', time)}
                   isLoading={slotsLoading}
                 />
               )}
 
-              {/* Step 5: Contact Details */}
-              {currentStep === 5 && (
+              {/* Step 3: Contact Details */}
+              {currentStep === 3 && (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
@@ -343,9 +311,9 @@ const TrialBooking = () => {
                     <div className="text-blue-800 text-sm space-y-1">
                       <p><strong>Subject:</strong> {subjects.find(s => s.id === formData.subject)?.name}</p>
                       <p><strong>Year Group:</strong> {yearGroups.find(y => y.id === formData.yearGroup)?.display_name}</p>
-                      <p><strong>Tutor:</strong> {tutors.find(t => t.id === formData.tutorId)?.first_name} {tutors.find(t => t.id === formData.tutorId)?.last_name}</p>
                       <p><strong>Date:</strong> {formData.preferredDate}</p>
                       <p><strong>Time:</strong> {formData.preferredTime}</p>
+                      <p><strong>Tutor Assignment:</strong> We'll match you with the best available tutor</p>
                     </div>
                   </div>
                 </form>
@@ -363,7 +331,7 @@ const TrialBooking = () => {
                   Previous
                 </Button>
 
-                {currentStep < 5 ? (
+                {currentStep < 3 ? (
                   <Button
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={!canProceedToStep(currentStep + 1)}
@@ -375,7 +343,7 @@ const TrialBooking = () => {
                 ) : (
                   <Button
                     onClick={handleSubmit}
-                    disabled={isSubmitting || !canProceedToStep(5)}
+                    disabled={isSubmitting || !canProceedToStep(3)}
                     className="bg-[#e94b7f] hover:bg-[#d63d6f] flex items-center gap-2"
                   >
                     {isSubmitting ? 'Submitting...' : 'Book Trial Lesson'}
