@@ -37,7 +37,22 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
         const date = new Date(selectedDate);
         const dayName = format(date, 'EEEE').toLowerCase();
 
-        // Get all tutors who teach the subject
+        // First, get tutor IDs that teach the subject
+        const { data: tutorSubjects, error: tutorSubjectsError } = await supabase
+          .from('tutor_subjects')
+          .select('tutor_id')
+          .eq('subject_id', subjectId);
+
+        if (tutorSubjectsError) throw tutorSubjectsError;
+
+        if (!tutorSubjects || tutorSubjects.length === 0) {
+          setSlots([]);
+          return;
+        }
+
+        const tutorIds = tutorSubjects.map(ts => ts.tutor_id);
+
+        // Get all tutors who teach the subject and their availability
         const { data: availableTutors, error: tutorsError } = await supabase
           .from('tutors')
           .select(`
@@ -46,12 +61,7 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
           `)
           .eq('status', 'active')
           .eq('tutor_availability.day_of_week', dayName)
-          .in('id', 
-            supabase
-              .from('tutor_subjects')
-              .select('tutor_id')
-              .eq('subject_id', subjectId)
-          );
+          .in('id', tutorIds);
 
         if (tutorsError) throw tutorsError;
 
@@ -65,8 +75,6 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
-
-        const tutorIds = availableTutors.map(t => t.id);
 
         const { data: existingLessons, error: lessonsError } = await supabase
           .from('lessons')
