@@ -28,9 +28,9 @@ interface MultiSelectSubjectsProps {
 }
 
 const CATEGORY_LABELS = {
-  '11_plus': '11 Plus',
-  'ks2': 'Key Stage 2',
-  'ks3': 'Key Stage 3',
+  'entrance': '11 Plus / Entrance Exams',
+  'primary': 'Primary Education (KS1 & KS2)',
+  'secondary': 'Secondary Education (KS3)',
   'gcse': 'GCSE & Year 11'
 };
 

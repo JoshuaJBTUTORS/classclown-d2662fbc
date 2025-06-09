@@ -37,6 +37,8 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
         const date = new Date(selectedDate);
         const dayName = format(date, 'EEEE').toLowerCase();
 
+        console.log('Fetching availability for:', { subjectId, selectedDate, dayName });
+
         // First, get tutor IDs that teach the subject
         const { data: tutorSubjects, error: tutorSubjectsError } = await supabase
           .from('tutor_subjects')
@@ -46,26 +48,34 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
         if (tutorSubjectsError) throw tutorSubjectsError;
 
         if (!tutorSubjects || tutorSubjects.length === 0) {
+          console.log('No tutors found for subject:', subjectId);
           setSlots([]);
           return;
         }
 
         const tutorIds = tutorSubjects.map(ts => ts.tutor_id);
+        console.log('Found tutors for subject:', tutorIds);
 
         // Get all tutors who teach the subject and their availability
+        // Use case-insensitive comparison for day_of_week
         const { data: availableTutors, error: tutorsError } = await supabase
           .from('tutors')
           .select(`
             id,
+            first_name,
+            last_name,
             tutor_availability!inner(day_of_week, start_time, end_time)
           `)
           .eq('status', 'active')
-          .eq('tutor_availability.day_of_week', dayName)
+          .ilike('tutor_availability.day_of_week', dayName)
           .in('id', tutorIds);
 
         if (tutorsError) throw tutorsError;
 
+        console.log('Available tutors with availability:', availableTutors);
+
         if (!availableTutors || availableTutors.length === 0) {
+          console.log('No tutors available on:', dayName);
           setSlots([]);
           return;
         }
@@ -85,6 +95,8 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
           .in('status', ['scheduled', 'in_progress']);
 
         if (lessonsError) throw lessonsError;
+
+        console.log('Existing lessons:', existingLessons);
 
         // Create a map to track time slots and which tutors are available
         const timeSlotMap = new Map<string, { tutorIds: string[], datetime: Date }>();
@@ -144,6 +156,7 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
           }))
           .sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
 
+        console.log('Final aggregated slots:', aggregatedSlots);
         setSlots(aggregatedSlots);
       } catch (err) {
         console.error('Error fetching aggregated availability:', err);
