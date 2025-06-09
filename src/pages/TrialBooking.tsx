@@ -6,14 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, ChevronRight, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useSubjects } from '@/hooks/useSubjects';
-import { useYearGroups } from '@/hooks/useYearGroups';
 import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
 import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
+import MultiSelectSubjects from '@/components/tutors/MultiSelectSubjects';
 
 const TrialBooking = () => {
   const navigate = useNavigate();
@@ -26,24 +24,24 @@ const TrialBooking = () => {
     childName: '',
     email: '',
     phone: '',
-    yearGroup: '',
-    subject: '',
+    selectedSubjects: [] as string[],
     preferredDate: '',
     preferredTime: '',
     message: ''
   });
 
-  const { subjects, isLoading: subjectsLoading } = useSubjects();
-  const { yearGroups, isLoading: yearGroupsLoading } = useYearGroups();
-  const { slots, isLoading: slotsLoading } = useAggregatedAvailability(formData.subject, formData.preferredDate);
+  const { slots, isLoading: slotsLoading } = useAggregatedAvailability(
+    formData.selectedSubjects[0], // Use first selected subject for availability
+    formData.preferredDate
+  );
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Reset dependent fields when parent changes
-    if (field === 'subject' || field === 'yearGroup') {
+    // Reset dependent fields when subject changes
+    if (field === 'selectedSubjects') {
       setFormData(prev => ({ ...prev, preferredDate: '', preferredTime: '' }));
-      if (formData.subject && formData.yearGroup) {
+      if ((value as string[]).length > 0) {
         setCurrentStep(2);
       }
     } else if (field === 'preferredDate') {
@@ -66,8 +64,8 @@ const TrialBooking = () => {
           preferred_date: formData.preferredDate || null,
           preferred_time: formData.preferredTime || null,
           message: formData.message || null,
-          year_group_id: formData.yearGroup || null,
-          subject_id: formData.subject || null,
+          year_group_id: null, // No longer using year groups
+          subject_id: formData.selectedSubjects[0] || null, // Use first selected subject
           tutor_id: null, // Will be assigned during approval process
           status: 'pending'
         });
@@ -86,7 +84,7 @@ const TrialBooking = () => {
 
   const canProceedToStep = (step: number) => {
     switch (step) {
-      case 2: return formData.subject && formData.yearGroup;
+      case 2: return formData.selectedSubjects.length > 0;
       case 3: return formData.preferredDate && formData.preferredTime && formData.parentName && formData.childName && formData.email;
       default: return false;
     }
@@ -180,54 +178,26 @@ const TrialBooking = () => {
           <Card className="max-w-3xl mx-auto">
             <CardHeader>
               <CardTitle>
-                {currentStep === 1 && "What would you like to learn?"}
+                {currentStep === 1 && "What subject would you like to learn?"}
                 {currentStep === 2 && "When would you like your lesson?"}
                 {currentStep === 3 && "Contact Details & Confirmation"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Step 1: Subject & Year Group */}
+              {/* Step 1: Subject Selection */}
               {currentStep === 1 && (
                 <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="yearGroup">Year Group *</Label>
-                      <Select 
-                        value={formData.yearGroup} 
-                        onValueChange={(value) => handleInputChange('yearGroup', value)}
-                        disabled={yearGroupsLoading}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={yearGroupsLoading ? "Loading..." : "Select year group"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {yearGroups.map((year) => (
-                            <SelectItem key={year.id} value={year.id}>
-                              {year.display_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <div>
+                    <Label htmlFor="subjects">Select Subject(s) *</Label>
+                    <div className="mt-2">
+                      <MultiSelectSubjects
+                        selectedSubjectIds={formData.selectedSubjects}
+                        onSubjectsChange={(subjectIds) => handleInputChange('selectedSubjects', subjectIds)}
+                      />
                     </div>
-                    <div>
-                      <Label htmlFor="subject">Subject *</Label>
-                      <Select 
-                        value={formData.subject} 
-                        onValueChange={(value) => handleInputChange('subject', value)}
-                        disabled={subjectsLoading}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={subjectsLoading ? "Loading..." : "Select subject"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subjects.map((subject) => (
-                            <SelectItem key={subject.id} value={subject.id}>
-                              {subject.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Choose the subjects you'd like tutoring in. You can select multiple subjects.
+                    </p>
                   </div>
                 </div>
               )}
@@ -309,8 +279,7 @@ const TrialBooking = () => {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h3 className="font-semibold text-blue-900 mb-2">Booking Summary</h3>
                     <div className="text-blue-800 text-sm space-y-1">
-                      <p><strong>Subject:</strong> {subjects.find(s => s.id === formData.subject)?.name}</p>
-                      <p><strong>Year Group:</strong> {yearGroups.find(y => y.id === formData.yearGroup)?.display_name}</p>
+                      <p><strong>Subject:</strong> {formData.selectedSubjects.length > 0 ? `${formData.selectedSubjects.length} subject(s) selected` : 'None selected'}</p>
                       <p><strong>Date:</strong> {formData.preferredDate}</p>
                       <p><strong>Time:</strong> {formData.preferredTime}</p>
                       <p><strong>Tutor Assignment:</strong> We'll match you with the best available tutor</p>
