@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -84,9 +83,16 @@ const TrialBooking = () => {
 
   const canProceedToStep = (step: number) => {
     switch (step) {
-      case 2: return formData.selectedSubjects.length > 0;
-      case 3: return formData.preferredDate && formData.preferredTime && formData.parentName && formData.childName && formData.email;
-      default: return false;
+      case 2: 
+        return formData.selectedSubjects.length > 0;
+      case 3: 
+        // Fixed validation: Check that both date and time are selected, and required contact fields are filled
+        const hasDateAndTime = formData.preferredDate && formData.preferredTime;
+        const hasRequiredContactInfo = formData.parentName && formData.childName && formData.email;
+        console.log('Step 3 validation:', { hasDateAndTime, hasRequiredContactInfo, formData });
+        return hasDateAndTime && hasRequiredContactInfo;
+      default: 
+        return false;
     }
   };
 
