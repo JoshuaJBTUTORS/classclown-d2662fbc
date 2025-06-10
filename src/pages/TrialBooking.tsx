@@ -81,19 +81,26 @@ const TrialBooking = () => {
     }
   };
 
-  const canProceedToStep = (step: number) => {
-    switch (step) {
-      case 2: 
+  const isCurrentStepComplete = () => {
+    switch (currentStep) {
+      case 1: 
         return formData.selectedSubjects.length > 0;
+      case 2: 
+        return formData.preferredDate && formData.preferredTime;
       case 3: 
-        // Fixed validation: Check that both date and time are selected, and required contact fields are filled
-        const hasDateAndTime = formData.preferredDate && formData.preferredTime;
-        const hasRequiredContactInfo = formData.parentName && formData.childName && formData.email;
-        console.log('Step 3 validation:', { hasDateAndTime, hasRequiredContactInfo, formData });
-        return hasDateAndTime && hasRequiredContactInfo;
+        return formData.parentName && formData.childName && formData.email;
       default: 
         return false;
     }
+  };
+
+  const canSubmitFinalForm = () => {
+    return formData.selectedSubjects.length > 0 && 
+           formData.preferredDate && 
+           formData.preferredTime && 
+           formData.parentName && 
+           formData.childName && 
+           formData.email;
   };
 
   if (isSubmitted) {
@@ -309,7 +316,7 @@ const TrialBooking = () => {
                 {currentStep < 3 ? (
                   <Button
                     onClick={() => setCurrentStep(currentStep + 1)}
-                    disabled={!canProceedToStep(currentStep + 1)}
+                    disabled={!isCurrentStepComplete()}
                     className="bg-[#e94b7f] hover:bg-[#d63d6f] flex items-center gap-2"
                   >
                     Next
@@ -318,7 +325,7 @@ const TrialBooking = () => {
                 ) : (
                   <Button
                     onClick={handleSubmit}
-                    disabled={isSubmitting || !canProceedToStep(3)}
+                    disabled={isSubmitting || !canSubmitFinalForm()}
                     className="bg-[#e94b7f] hover:bg-[#d63d6f] flex items-center gap-2"
                   >
                     {isSubmitting ? 'Submitting...' : 'Book Trial Lesson'}
