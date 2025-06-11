@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { format, addMinutes } from 'date-fns';
+import { addMinutes } from 'date-fns';
 
 interface CreateTrialLessonData {
   bookingId: string;
@@ -20,9 +20,13 @@ interface TrialLessonResult {
 
 export const createTrialLesson = async (data: CreateTrialLessonData): Promise<TrialLessonResult> => {
   try {
+    console.log('Creating trial lesson with data:', data);
+    
     // Combine date and time
     const startDateTime = new Date(`${data.preferredDate}T${data.preferredTime}`);
     const endDateTime = addMinutes(startDateTime, 60); // Default 1 hour duration
+
+    console.log('Lesson times:', { startDateTime, endDateTime });
 
     // Create the trial lesson
     const { data: lessonData, error: lessonError } = await supabase
@@ -42,7 +46,12 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       .select()
       .single();
 
-    if (lessonError) throw lessonError;
+    if (lessonError) {
+      console.error('Lesson creation error:', lessonError);
+      throw new Error(`Failed to create lesson: ${lessonError.message}`);
+    }
+
+    console.log('Lesson created successfully:', lessonData);
 
     // Link student to lesson
     const { error: linkError } = await supabase
@@ -52,7 +61,14 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         student_id: data.studentId
       });
 
-    if (linkError) throw linkError;
+    if (linkError) {
+      console.error('Student linking error:', linkError);
+      // Clean up lesson if linking fails
+      await supabase.from('lessons').delete().eq('id', lessonData.id);
+      throw new Error(`Failed to link student to lesson: ${linkError.message}`);
+    }
+
+    console.log('Student linked to lesson successfully');
 
     // Update trial booking with lesson and approval details
     const { error: updateError } = await supabase
@@ -66,9 +82,13 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       })
       .eq('id', data.bookingId);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('Booking update error:', updateError);
+      // Don't throw here as the lesson was created successfully
+      console.warn('Lesson created but booking status update failed:', updateError.message);
+    }
 
-    console.log('Trial lesson created:', lessonData);
+    console.log('Trial lesson creation completed successfully');
 
     return {
       lessonId: lessonData.id,
@@ -79,7 +99,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     return {
       lessonId: '',
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };
