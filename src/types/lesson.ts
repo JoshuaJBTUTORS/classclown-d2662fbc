@@ -21,6 +21,9 @@ export interface Lesson {
   video_conference_link?: string | null;
   // Additional Lesson Space fields
   lesson_space_session_id?: string | null;
+  // Trial lesson fields
+  lesson_type?: 'regular' | 'trial' | 'makeup';
+  trial_booking_id?: string | null;
   tutor?: {
     id: string;
     first_name: string;

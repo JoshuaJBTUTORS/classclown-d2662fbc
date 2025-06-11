@@ -33,7 +33,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { 
   Calendar as CalendarIcon, 
@@ -44,10 +43,12 @@ import {
   X,
   Clock,
   Phone,
-  Mail
+  Mail,
+  UserPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import TrialBookingApprovalDialog from '@/components/trialBooking/TrialBookingApprovalDialog';
 
 interface TrialBooking {
   id: string;
@@ -62,6 +63,9 @@ interface TrialBooking {
   created_at: string;
   updated_at: string;
   admin_notes?: string;
+  subject_id?: string;
+  assigned_tutor_id?: string;
+  lesson_id?: string;
 }
 
 const TrialBookings = () => {
@@ -73,6 +77,7 @@ const TrialBookings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<TrialBooking | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isApprovalOpen, setIsApprovalOpen] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -144,6 +149,10 @@ const TrialBookings = () => {
     }
   };
 
+  const handleApprovalComplete = () => {
+    fetchBookings();
+  };
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -151,6 +160,11 @@ const TrialBookings = () => {
   const viewBookingDetails = (booking: TrialBooking) => {
     setSelectedBooking(booking);
     setIsDetailsOpen(true);
+  };
+
+  const openApprovalDialog = (booking: TrialBooking) => {
+    setSelectedBooking(booking);
+    setIsApprovalOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -299,10 +313,10 @@ const TrialBookings = () => {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => updateBookingStatus(booking.id, 'approved')}
+                                    onClick={() => openApprovalDialog(booking)}
                                     className="text-green-600 hover:text-green-800"
                                   >
-                                    <Check className="h-4 w-4" />
+                                    <UserPlus className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -411,6 +425,14 @@ const TrialBookings = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Approval Dialog */}
+      <TrialBookingApprovalDialog
+        booking={selectedBooking}
+        isOpen={isApprovalOpen}
+        onClose={() => setIsApprovalOpen(false)}
+        onApprovalComplete={handleApprovalComplete}
+      />
     </div>
   );
 };

@@ -671,6 +671,7 @@ export type Database = {
           lesson_space_room_id: string | null
           lesson_space_room_url: string | null
           lesson_space_space_id: string | null
+          lesson_type: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
           recurrence_interval: string | null
@@ -678,6 +679,7 @@ export type Database = {
           status: string
           subject: string | null
           title: string
+          trial_booking_id: string | null
           tutor_id: string
           updated_at: string | null
           video_conference_link: string | null
@@ -695,6 +697,7 @@ export type Database = {
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
           lesson_space_space_id?: string | null
+          lesson_type?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -702,6 +705,7 @@ export type Database = {
           status?: string
           subject?: string | null
           title: string
+          trial_booking_id?: string | null
           tutor_id: string
           updated_at?: string | null
           video_conference_link?: string | null
@@ -719,6 +723,7 @@ export type Database = {
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
           lesson_space_space_id?: string | null
+          lesson_type?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -726,12 +731,20 @@ export type Database = {
           status?: string
           subject?: string | null
           title?: string
+          trial_booking_id?: string | null
           tutor_id?: string
           updated_at?: string | null
           video_conference_link?: string | null
           video_conference_provider?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lessons_trial_booking_id_fkey"
+            columns: ["trial_booking_id"]
+            isOneToOne: false
+            referencedRelation: "trial_bookings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lessons_tutor_id_fkey"
             columns: ["tutor_id"]
@@ -782,6 +795,7 @@ export type Database = {
       }
       parents: {
         Row: {
+          account_type: string | null
           billing_address: string | null
           created_at: string
           email: string
@@ -795,6 +809,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_type?: string | null
           billing_address?: string | null
           created_at?: string
           email: string
@@ -808,6 +823,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_type?: string | null
           billing_address?: string | null
           created_at?: string
           email?: string
@@ -969,6 +985,7 @@ export type Database = {
       }
       students: {
         Row: {
+          account_type: string | null
           created_at: string | null
           email: string | null
           first_name: string | null
@@ -979,9 +996,11 @@ export type Database = {
           status: string | null
           student_id: string | null
           subjects: string | null
+          trial_status: string | null
           user_id: string | null
         }
         Insert: {
+          account_type?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string | null
@@ -992,9 +1011,11 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           subjects?: string | null
+          trial_status?: string | null
           user_id?: string | null
         }
         Update: {
+          account_type?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string | null
@@ -1005,6 +1026,7 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           subjects?: string | null
+          trial_status?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1102,6 +1124,7 @@ export type Database = {
           admin_notes: string | null
           approved_at: string | null
           approved_by: string | null
+          assigned_tutor_id: string | null
           child_name: string
           created_at: string
           email: string
@@ -1122,6 +1145,7 @@ export type Database = {
           admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          assigned_tutor_id?: string | null
           child_name: string
           created_at?: string
           email: string
@@ -1142,6 +1166,7 @@ export type Database = {
           admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          assigned_tutor_id?: string | null
           child_name?: string
           created_at?: string
           email?: string
@@ -1159,6 +1184,13 @@ export type Database = {
           year_group_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "trial_bookings_assigned_tutor_id_fkey"
+            columns: ["assigned_tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trial_bookings_lesson_id_fkey"
             columns: ["lesson_id"]
