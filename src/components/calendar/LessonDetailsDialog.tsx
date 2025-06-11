@@ -227,6 +227,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         end_time: format(instanceDate, "yyyy-MM-dd") + 
                   format(endDate, "'T'HH:mm:ss"),
         is_recurring_instance: true,
+        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
         students
       };
       
@@ -253,7 +254,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       tutor_id: "",
       is_recurring: true,
       is_recurring_instance: true,
-      recurrence_interval: "weekly"
+      recurrence_interval: "weekly",
+      lesson_type: 'regular'
     };
     
     setLesson(placeholderLesson);
@@ -300,6 +302,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         
       const processedLesson: Lesson = {
         ...data,
+        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
         students
       };
       

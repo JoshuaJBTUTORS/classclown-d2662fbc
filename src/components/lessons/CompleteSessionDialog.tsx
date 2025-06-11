@@ -147,6 +147,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
 
       const transformedLesson: Lesson = {
         ...lessonData,
+        lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
         students,
       };
 

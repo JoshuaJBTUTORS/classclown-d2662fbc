@@ -90,6 +90,7 @@ const Lessons = () => {
         const students = lesson.lesson_students.map((ls: any) => ls.student);
         return {
           ...lesson,
+          lesson_type: (lesson.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
           students,
           lesson_students: undefined
         };

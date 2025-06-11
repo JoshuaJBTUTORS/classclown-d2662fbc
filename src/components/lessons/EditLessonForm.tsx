@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { z } from 'zod';
@@ -131,7 +132,12 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       
       if (error) throw error;
       
-      setLesson(data);
+      const processedLesson: Lesson = {
+        ...data,
+        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular'
+      };
+      
+      setLesson(processedLesson);
       
       // Parse dates for the form
       const startDate = parseISO(data.start_time);
