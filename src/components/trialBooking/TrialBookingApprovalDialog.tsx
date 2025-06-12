@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { createTrialAccounts } from '@/services/trialAccountService';
+import { createTrialStudent } from '@/services/trialAccountService';
 import { createTrialLesson } from '@/services/trialLessonService';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -123,9 +122,9 @@ const TrialBookingApprovalDialog: React.FC<TrialBookingApprovalDialogProps> = ({
     try {
       console.log('Starting approval process for booking:', booking.id);
       
-      // Step 1: Create trial accounts
-      toast.info('Creating trial accounts...');
-      const accountResult = await createTrialAccounts({
+      // Step 1: Create trial student account (standalone, no parent)
+      toast.info('Creating trial student account...');
+      const accountResult = await createTrialStudent({
         parent_name: booking.parent_name,
         child_name: booking.child_name,
         email: booking.email,
@@ -133,10 +132,10 @@ const TrialBookingApprovalDialog: React.FC<TrialBookingApprovalDialogProps> = ({
       });
 
       if (!accountResult.success) {
-        throw new Error(accountResult.error || 'Failed to create trial accounts');
+        throw new Error(accountResult.error || 'Failed to create trial student');
       }
 
-      console.log('Trial accounts created successfully');
+      console.log('Trial student created successfully');
       
       // Step 2: Create trial lesson
       toast.info('Creating trial lesson...');
@@ -201,7 +200,7 @@ const TrialBookingApprovalDialog: React.FC<TrialBookingApprovalDialogProps> = ({
         {currentStep === 'processing' && (
           <div className="text-center py-8">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-            <p className="text-lg font-medium">Creating trial accounts and lesson...</p>
+            <p className="text-lg font-medium">Creating trial student and lesson...</p>
             <p className="text-sm text-muted-foreground">This may take a few moments</p>
           </div>
         )}
@@ -210,7 +209,7 @@ const TrialBookingApprovalDialog: React.FC<TrialBookingApprovalDialogProps> = ({
           <div className="text-center py-8">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <p className="text-lg font-medium text-green-700">Trial lesson approved successfully!</p>
-            <p className="text-sm text-muted-foreground">Accounts have been created and lesson scheduled</p>
+            <p className="text-sm text-muted-foreground">Trial student created and lesson scheduled</p>
           </div>
         )}
 
