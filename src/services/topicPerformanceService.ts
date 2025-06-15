@@ -3,82 +3,43 @@ import { supabase } from '@/integrations/supabase/client';
 import { assessmentImprovementService, WeakTopic, RecommendedLesson } from './assessmentImprovementService';
 import { TopicPerformanceData } from '@/components/learningHub/TopicPerformanceHeatMap';
 
-// Topic mapping system to group related keywords under broader topics
-const TOPIC_MAPPINGS = {
-  // Biology topics
-  'Microscopes': [
-    'microscope', 'microscopy', 'magnification', 'resolution', 'objective lens', 
-    'eyepiece', 'stage', 'slide', 'stage clips', 'focus knob', 'coarse focus', 
-    'fine focus', 'light microscope', 'electron microscope', 'staining'
-  ],
-  'Cell Biology': [
-    'cell', 'cells', 'membrane', 'nucleus', 'cytoplasm', 'organelle', 'organelles',
-    'mitochondria', 'chloroplast', 'vacuole', 'cell wall', 'cell membrane'
-  ],
-  'Enzymes': [
-    'enzyme', 'enzymes', 'active site', 'substrate', 'catalyst', 'protein',
-    'denatured', 'optimum temperature', 'optimum ph'
-  ],
-  'Respiration': [
-    'respiration', 'cellular respiration', 'aerobic', 'anaerobic', 'glucose',
-    'oxygen', 'carbon dioxide', 'atp', 'energy'
-  ],
-  'Photosynthesis': [
-    'photosynthesis', 'chlorophyll', 'light reaction', 'carbon fixation',
-    'glucose production', 'sunlight', 'water', 'carbon dioxide'
-  ],
-  'Genetics': [
-    'genetics', 'dna', 'genes', 'chromosomes', 'inheritance', 'alleles',
-    'dominant', 'recessive', 'genotype', 'phenotype'
-  ],
-  'Evolution': [
-    'evolution', 'natural selection', 'adaptation', 'variation', 'mutation',
-    'species', 'fossil', 'darwin'
-  ],
-  'Ecology': [
-    'ecology', 'ecosystem', 'food chain', 'food web', 'predator', 'prey',
-    'population', 'community', 'habitat', 'biodiversity'
-  ],
-  'Cell Division': [
-    'mitosis', 'meiosis', 'cell division', 'chromosome', 'sister chromatids',
-    'spindle fibers', 'cytokinesis'
-  ],
-  
-  // Mathematics topics
-  'Algebra': [
-    'algebra', 'equations', 'variables', 'linear', 'quadratic', 'polynomial',
-    'factoring', 'solving', 'x', 'y'
-  ],
-  'Geometry': [
-    'geometry', 'shapes', 'angles', 'triangles', 'circles', 'area', 'perimeter',
-    'volume', 'surface area', 'coordinate geometry'
-  ],
-  'Statistics': [
-    'statistics', 'mean', 'median', 'mode', 'range', 'data', 'graphs',
-    'probability', 'frequency', 'distribution'
-  ],
-  'Calculus': [
-    'calculus', 'derivatives', 'integrals', 'limits', 'differentiation',
-    'integration', 'rate of change'
-  ],
-  'Fractions': [
-    'fractions', 'numerator', 'denominator', 'mixed numbers', 'improper fractions',
-    'equivalent fractions', 'simplifying'
-  ],
-  'Percentages': [
-    'percentages', 'percent', '%', 'decimal', 'proportion', 'ratio'
-  ]
-};
-
-// Reverse mapping for quick lookup
-const KEYWORD_TO_TOPIC: Record<string, string> = {};
-Object.entries(TOPIC_MAPPINGS).forEach(([topic, keywords]) => {
-  keywords.forEach(keyword => {
-    KEYWORD_TO_TOPIC[keyword.toLowerCase()] = topic;
-  });
-});
+// Cache for module data to avoid repeated database calls
+let moduleCache: Record<string, string[]> = {};
+let moduleCacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const topicPerformanceService = {
+  // Get available modules for a specific subject
+  async getSubjectModules(subject: string): Promise<string[]> {
+    const now = Date.now();
+    const cacheKey = subject.toLowerCase();
+    
+    // Check if we have fresh cached data
+    if (moduleCache[cacheKey] && (now - moduleCacheTimestamp) < CACHE_DURATION) {
+      return moduleCache[cacheKey];
+    }
+
+    try {
+      const { data: modules, error } = await supabase
+        .from('course_modules')
+        .select('title, courses(subject)')
+        .eq('courses.subject', subject);
+
+      if (error) throw error;
+
+      const moduleNames = modules?.map(m => m.title).filter(Boolean) || [];
+      
+      // Update cache
+      moduleCache[cacheKey] = moduleNames;
+      moduleCacheTimestamp = now;
+      
+      return moduleNames;
+    } catch (error) {
+      console.error('Error fetching subject modules:', error);
+      return [];
+    }
+  },
+
   // Get aggregated topic performance data for the current user
   async getUserTopicPerformance(): Promise<TopicPerformanceData[]> {
     const { data: user } = await supabase.auth.getUser();
@@ -123,7 +84,7 @@ export const topicPerformanceService = {
   },
 
   // Build topic data from existing improvement records
-  buildTopicDataFromImprovements(sessions: any[], improvements: any[]): TopicPerformanceData[] {
+  async buildTopicDataFromImprovements(sessions: any[], improvements: any[]): Promise<TopicPerformanceData[]> {
     const topicMap = new Map<string, {
       topic: string;
       subject: string;
@@ -136,16 +97,16 @@ export const topicPerformanceService = {
     }>();
 
     // Process each improvement record
-    improvements?.forEach(improvement => {
+    for (const improvement of improvements) {
       const session = sessions.find(s => s.id === improvement.session_id);
-      if (!session || !session.ai_assessments?.subject) return;
+      if (!session || !session.ai_assessments?.subject) continue;
 
       const weakTopics = (improvement.weak_topics as unknown) as WeakTopic[];
       const recommendedLessons = (improvement.recommended_lessons as unknown) as RecommendedLesson[];
 
-      weakTopics.forEach(weakTopic => {
-        // Map the topic to broader category
-        const mappedTopic = this.mapToTopicCategory(weakTopic.topic, session.ai_assessments.subject);
+      for (const weakTopic of weakTopics) {
+        // Map the topic to broader category using subject-specific modules
+        const mappedTopic = await this.mapToTopicCategory(weakTopic.topic, session.ai_assessments.subject);
         const key = `${mappedTopic}_${session.ai_assessments.subject}`;
         
         if (!topicMap.has(key)) {
@@ -182,8 +143,8 @@ export const topicPerformanceService = {
               type: lesson.content_type === 'video' ? 'video' : 'text'
             });
           });
-      });
-    });
+      }
+    }
 
     return this.convertTopicMapToArray(topicMap);
   },
@@ -223,9 +184,9 @@ export const topicPerformanceService = {
     }>();
 
     // Process each response and extract topics from keywords
-    responses.forEach(response => {
+    for (const response of responses) {
       const session = sessions.find(s => s.id === response.session_id);
-      if (!session || !response.assessment_questions) return;
+      if (!session || !response.assessment_questions) continue;
 
       const question = response.assessment_questions;
       const subject = session.ai_assessments?.subject || 'Unknown';
@@ -233,9 +194,9 @@ export const topicPerformanceService = {
       const confidenceScore = response.confidence_score || 5;
 
       // Extract and map topics from keywords and question content
-      const topics = this.extractAndMapTopics(question, response, subject);
+      const topics = await this.extractAndMapTopics(question, response, subject);
 
-      topics.forEach(topic => {
+      for (const topic of topics) {
         const key = `${topic}_${subject}`;
         
         if (!topicMap.has(key)) {
@@ -260,8 +221,8 @@ export const topicPerformanceService = {
         if (session.completed_at && session.completed_at > topicData.lastAttempt) {
           topicData.lastAttempt = session.completed_at;
         }
-      });
-    });
+      }
+    }
 
     return Array.from(topicMap.values()).map(topicData => {
       const errorRate = topicData.totalQuestions > 0 
@@ -288,22 +249,35 @@ export const topicPerformanceService = {
     .sort((a, b) => b.errorRate - a.errorRate);
   },
 
-  // Map individual keywords/topics to broader categories
-  mapToTopicCategory(rawTopic: string, subject: string): string {
+  // Map individual keywords/topics to broader categories using subject-specific modules
+  async mapToTopicCategory(rawTopic: string, subject: string): Promise<string> {
     const normalized = rawTopic.toLowerCase().trim();
     
-    // Check direct mapping first
-    if (KEYWORD_TO_TOPIC[normalized]) {
-      return KEYWORD_TO_TOPIC[normalized];
+    // Get modules for this specific subject
+    const subjectModules = await this.getSubjectModules(subject);
+    
+    // Check for direct matches with module names
+    for (const moduleName of subjectModules) {
+      const moduleWords = moduleName.toLowerCase().split(' ');
+      const topicWords = normalized.split(' ');
+      
+      // Check if the topic contains any of the module words or vice versa
+      if (moduleWords.some(word => normalized.includes(word)) || 
+          topicWords.some(word => moduleName.toLowerCase().includes(word))) {
+        return moduleName;
+      }
     }
 
-    // Check for partial matches in topic mappings
-    for (const [topicCategory, keywords] of Object.entries(TOPIC_MAPPINGS)) {
+    // Create subject-specific keyword mappings based on available modules
+    const keywordMappings = this.createSubjectSpecificMappings(subjectModules, subject);
+    
+    // Check keyword mappings
+    for (const [module, keywords] of Object.entries(keywordMappings)) {
       if (keywords.some(keyword => 
         normalized.includes(keyword.toLowerCase()) || 
         keyword.toLowerCase().includes(normalized)
       )) {
-        return topicCategory;
+        return module;
       }
     }
 
@@ -311,8 +285,98 @@ export const topicPerformanceService = {
     return rawTopic.charAt(0).toUpperCase() + rawTopic.slice(1);
   },
 
-  // Extract and map topics from question data with improved categorization
-  extractAndMapTopics(question: any, response: any, subject: string): string[] {
+  // Create subject-specific keyword mappings based on available modules
+  createSubjectSpecificMappings(modules: string[], subject: string): Record<string, string[]> {
+    const mappings: Record<string, string[]> = {};
+    
+    // Create mappings based on actual modules for this subject
+    modules.forEach(module => {
+      const moduleKey = module;
+      const moduleLower = module.toLowerCase();
+      
+      // Biology-specific mappings
+      if (subject.toLowerCase().includes('biology') || subject.toLowerCase().includes('science')) {
+        if (moduleLower.includes('microscope') || moduleLower.includes('cell')) {
+          mappings[moduleKey] = [
+            'microscope', 'microscopy', 'magnification', 'resolution', 'objective lens', 
+            'eyepiece', 'stage', 'slide', 'stage clips', 'focus knob', 'coarse focus', 
+            'fine focus', 'light microscope', 'electron microscope', 'staining',
+            'cell', 'cells', 'membrane', 'nucleus', 'cytoplasm', 'organelle', 'organelles',
+            'mitochondria', 'chloroplast', 'vacuole', 'cell wall', 'cell membrane'
+          ];
+        } else if (moduleLower.includes('enzyme')) {
+          mappings[moduleKey] = [
+            'enzyme', 'enzymes', 'active site', 'substrate', 'catalyst', 'protein',
+            'denatured', 'optimum temperature', 'optimum ph'
+          ];
+        } else if (moduleLower.includes('respiration')) {
+          mappings[moduleKey] = [
+            'respiration', 'cellular respiration', 'aerobic', 'anaerobic', 'glucose',
+            'oxygen', 'carbon dioxide', 'atp', 'energy'
+          ];
+        } else if (moduleLower.includes('photosynthesis')) {
+          mappings[moduleKey] = [
+            'photosynthesis', 'chlorophyll', 'light reaction', 'carbon fixation',
+            'glucose production', 'sunlight', 'water', 'carbon dioxide'
+          ];
+        } else if (moduleLower.includes('genetic') || moduleLower.includes('inheritance')) {
+          mappings[moduleKey] = [
+            'genetics', 'dna', 'genes', 'chromosomes', 'inheritance', 'alleles',
+            'dominant', 'recessive', 'genotype', 'phenotype'
+          ];
+        } else if (moduleLower.includes('evolution')) {
+          mappings[moduleKey] = [
+            'evolution', 'natural selection', 'adaptation', 'variation', 'mutation',
+            'species', 'fossil', 'darwin'
+          ];
+        } else if (moduleLower.includes('ecology') || moduleLower.includes('ecosystem')) {
+          mappings[moduleKey] = [
+            'ecology', 'ecosystem', 'food chain', 'food web', 'predator', 'prey',
+            'population', 'community', 'habitat', 'biodiversity'
+          ];
+        }
+      }
+      
+      // Mathematics-specific mappings
+      if (subject.toLowerCase().includes('math') || subject.toLowerCase().includes('maths')) {
+        if (moduleLower.includes('algebra')) {
+          mappings[moduleKey] = [
+            'algebra', 'equations', 'variables', 'linear', 'quadratic', 'polynomial',
+            'factoring', 'solving', 'x', 'y'
+          ];
+        } else if (moduleLower.includes('geometry')) {
+          mappings[moduleKey] = [
+            'geometry', 'shapes', 'angles', 'triangles', 'circles', 'area', 'perimeter',
+            'volume', 'surface area', 'coordinate geometry'
+          ];
+        } else if (moduleLower.includes('statistic') || moduleLower.includes('probability')) {
+          mappings[moduleKey] = [
+            'statistics', 'mean', 'median', 'mode', 'range', 'data', 'graphs',
+            'probability', 'frequency', 'distribution'
+          ];
+        } else if (moduleLower.includes('calculus')) {
+          mappings[moduleKey] = [
+            'calculus', 'derivatives', 'integrals', 'limits', 'differentiation',
+            'integration', 'rate of change'
+          ];
+        } else if (moduleLower.includes('fraction')) {
+          mappings[moduleKey] = [
+            'fractions', 'numerator', 'denominator', 'mixed numbers', 'improper fractions',
+            'equivalent fractions', 'simplifying'
+          ];
+        } else if (moduleLower.includes('percentage') || moduleLower.includes('ratio')) {
+          mappings[moduleKey] = [
+            'percentages', 'percent', '%', 'decimal', 'proportion', 'ratio'
+          ];
+        }
+      }
+    });
+    
+    return mappings;
+  },
+
+  // Extract and map topics from question data with subject-specific categorization
+  async extractAndMapTopics(question: any, response: any, subject: string): Promise<string[]> {
     const rawTopics = new Set<string>();
 
     // Add keywords as topics
@@ -328,28 +392,35 @@ export const topicPerformanceService = {
     if (response.ai_feedback) {
       const feedback = response.ai_feedback.toLowerCase();
       
-      // Look for topic mappings in feedback
-      Object.entries(TOPIC_MAPPINGS).forEach(([topic, keywords]) => {
+      // Get subject-specific modules and their keywords
+      const subjectModules = await this.getSubjectModules(subject);
+      const keywordMappings = this.createSubjectSpecificMappings(subjectModules, subject);
+      
+      // Look for module-specific keywords in feedback
+      Object.entries(keywordMappings).forEach(([module, keywords]) => {
         if (keywords.some(keyword => feedback.includes(keyword.toLowerCase()))) {
-          rawTopics.add(topic);
+          rawTopics.add(module);
         }
       });
     }
 
-    // Extract from question text
+    // Extract from question text using subject-specific approach
     const questionText = question.question_text.toLowerCase();
-    Object.entries(TOPIC_MAPPINGS).forEach(([topic, keywords]) => {
+    const subjectModules = await this.getSubjectModules(subject);
+    const keywordMappings = this.createSubjectSpecificMappings(subjectModules, subject);
+    
+    Object.entries(keywordMappings).forEach(([module, keywords]) => {
       if (keywords.some(keyword => questionText.includes(keyword.toLowerCase()))) {
-        rawTopics.add(topic);
+        rawTopics.add(module);
       }
     });
 
     // Map raw topics to categories and remove duplicates
     const mappedTopics = new Set<string>();
-    rawTopics.forEach(rawTopic => {
-      const mappedTopic = this.mapToTopicCategory(rawTopic, subject);
+    for (const rawTopic of rawTopics) {
+      const mappedTopic = await this.mapToTopicCategory(rawTopic, subject);
       mappedTopics.add(mappedTopic);
-    });
+    }
 
     return Array.from(mappedTopics);
   },
