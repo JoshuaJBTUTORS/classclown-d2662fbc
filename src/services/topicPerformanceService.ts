@@ -489,7 +489,7 @@ export const topicPerformanceService = {
         confidenceScore: avgConfidenceScore,
         assessmentCount: topicData.assessmentCount,
         lastAttempt: topicData.lastAttempt,
-        recommendedLessons: Array.from(topicData.recommendedLessons?.values() || [])
+        recommendedLessons: Array.from(topicData.recommendedLessons?.values() || []) as { id: string; title: string; type: 'video' | 'text' }[]
       };
     })
     .filter(topic => topic.totalQuestions > 0)
