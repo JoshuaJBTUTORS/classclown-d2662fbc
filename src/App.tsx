@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { LearningHubProvider } from "@/contexts/LearningHubContext";
@@ -61,6 +61,10 @@ const App = () => (
                 <Route path="/trial-booking" element={<TrialBooking />} />
                 <Route path="/invite/:token" element={<Invite />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
+
+                {/* Redirect old course URLs to learning hub */}
+                <Route path="/course/:id" element={<Navigate to="/learning-hub/course/:id" replace />} />
+                <Route path="/course/:id/edit" element={<Navigate to="/course/:id/edit" replace />} />
 
                 {/* Learning Hub routes */}
                 <Route path="/learning-hub" element={<LearningHubLayout />}>
