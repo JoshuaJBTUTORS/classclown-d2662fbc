@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,15 +6,19 @@ import { Brain, TrendingUp, Target, Award, BookOpen, RefreshCw } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import TopicPerformanceHeatMap from '@/components/learningHub/TopicPerformanceHeatMap';
-import AssessmentImprovementDashboard from '@/components/learningHub/AssessmentImprovementDashboard';
+import CourseSelector from '@/components/learningHub/CourseSelector';
+import CourseGradeCard from '@/components/learningHub/CourseGradeCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { topicPerformanceService } from '@/services/topicPerformanceService';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const LearningHubAssessments = () => {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const navigate = useNavigate();
   const [selectedTopic, setSelectedTopic] = useState<any>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedCourseName, setSelectedCourseName] = useState<string>('');
   const [isGeneratingImprovements, setIsGeneratingImprovements] = useState(false);
 
   const assessmentFilters = {
@@ -24,32 +27,113 @@ const LearningHubAssessments = () => {
     selectedSubjects: []
   };
 
-  // Mock stats - these could be calculated from actual assessment data
-  const stats = {
-    totalAssessments: 12,
-    averageScore: 78,
-    improvementRate: 15,
-    completionRate: 89
+  // Get course-specific stats
+  const { data: courseStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['course-assessment-stats', selectedCourseId, user?.id],
+    queryFn: async () => {
+      if (!user || !selectedCourseId) return null;
+
+      // Get course details
+      const { data: course } = await supabase
+        .from('courses')
+        .select('subject, title')
+        .eq('id', selectedCourseId)
+        .single();
+
+      if (!course) return null;
+
+      // Get assessment sessions for this course
+      const { data: sessions } = await supabase
+        .from('assessment_sessions')
+        .select(`
+          total_marks_achieved,
+          total_marks_available,
+          completed_at,
+          ai_assessments(subject)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .not('completed_at', 'is', null);
+
+      // Filter by course subject
+      const courseSessions = sessions?.filter(session => 
+        session.ai_assessments?.subject === course.subject
+      ) || [];
+
+      if (courseSessions.length === 0) {
+        return {
+          totalAssessments: 0,
+          averageScore: 0,
+          improvementRate: 0,
+          completionRate: 0
+        };
+      }
+
+      const scores = courseSessions.map(session => {
+        const achieved = Number(session.total_marks_achieved) || 0;
+        const available = Number(session.total_marks_available) || 1;
+        return (achieved / available) * 100;
+      });
+
+      const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      
+      // Calculate improvement (last 3 vs first 3)
+      const improvementRate = courseSessions.length >= 3 ? 
+        Math.round(scores.slice(-3).reduce((a, b) => a + b, 0) / 3 - scores.slice(0, 3).reduce((a, b) => a + b, 0) / 3) : 0;
+
+      return {
+        totalAssessments: courseSessions.length,
+        averageScore,
+        improvementRate,
+        completionRate: 100 // All sessions are completed
+      };
+    },
+    enabled: !!user && !!selectedCourseId,
+  });
+
+  // Default stats for when no course is selected
+  const defaultStats = {
+    totalAssessments: 0,
+    averageScore: 0,
+    improvementRate: 0,
+    completionRate: 0
   };
 
-  // Get topic performance data
+  const stats = courseStats || defaultStats;
+
+  // Get topic performance data for selected course
   const { data: topicPerformance, isLoading: topicLoading, refetch: refetchTopics } = useQuery({
-    queryKey: ['topic-performance'],
-    queryFn: topicPerformanceService.getUserTopicPerformance,
+    queryKey: ['topic-performance', selectedCourseId],
+    queryFn: () => topicPerformanceService.getUserTopicPerformance(selectedCourseId || undefined),
   });
 
   // Get worst performing topics for improvement section
   const { data: worstTopics } = useQuery({
-    queryKey: ['worst-topics'],
-    queryFn: () => topicPerformanceService.getWorstPerformingTopics(5),
+    queryKey: ['worst-topics', selectedCourseId],
+    queryFn: () => topicPerformanceService.getWorstPerformingTopics(5, selectedCourseId || undefined),
   });
+
+  // Update course name when selection changes
+  useEffect(() => {
+    if (selectedCourseId) {
+      supabase
+        .from('courses')
+        .select('title')
+        .eq('id', selectedCourseId)
+        .single()
+        .then(({ data }) => {
+          if (data) setSelectedCourseName(data.title);
+        });
+    } else {
+      setSelectedCourseName('');
+    }
+  }, [selectedCourseId]);
 
   const handleTopicClick = (topic: any) => {
     setSelectedTopic(topic);
   };
 
   const handleLessonClick = (lessonId: string) => {
-    // Navigate to the specific lesson
     navigate(`/learning-hub/lesson/${lessonId}`);
   };
 
@@ -57,7 +141,6 @@ const LearningHubAssessments = () => {
     setIsGeneratingImprovements(true);
     try {
       await topicPerformanceService.generateMissingImprovements();
-      // Refetch data after generating improvements
       refetchTopics();
     } catch (error) {
       console.error('Failed to generate missing improvements:', error);
@@ -75,7 +158,12 @@ const LearningHubAssessments = () => {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Assessment Center</h1>
-          <p className="text-gray-600 mt-1">Track your assessment performance and progress</p>
+          <p className="text-gray-600 mt-1">
+            {selectedCourseId 
+              ? `Track your assessment performance for ${selectedCourseName}`
+              : 'Select a course to view detailed assessment analytics'
+            }
+          </p>
         </div>
         <div className="ml-auto">
           <Button
@@ -89,6 +177,18 @@ const LearningHubAssessments = () => {
           </Button>
         </div>
       </div>
+
+      {/* Course Selection */}
+      <CourseSelector 
+        selectedCourseId={selectedCourseId}
+        onCourseChange={setSelectedCourseId}
+      />
+
+      {/* Working At Grade Card */}
+      <CourseGradeCard 
+        courseId={selectedCourseId}
+        courseName={selectedCourseName}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -128,7 +228,9 @@ const LearningHubAssessments = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Improvement</p>
-                <p className="text-2xl font-bold text-gray-900">+{stats.improvementRate}%</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.improvementRate > 0 ? '+' : ''}{stats.improvementRate}%
+                </p>
               </div>
             </div>
           </CardContent>
@@ -158,19 +260,37 @@ const LearningHubAssessments = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Assessment Progress Chart */}
+          {/* Assessment Progress Chart - course filtered */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Assessment Performance Over Time</CardTitle>
               <CardDescription>
-                Track your progress and improvement across all assessments
+                {selectedCourseId 
+                  ? `Track your progress and improvement for ${selectedCourseName}`
+                  : 'Select a course to see course-specific performance trends'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AssessmentProgressChart 
-                filters={assessmentFilters} 
-                userRole={userRole || 'student'} 
-              />
+              {selectedCourseId ? (
+                <AssessmentProgressChart 
+                  filters={{
+                    ...assessmentFilters,
+                    selectedSubjects: [] // Will be filtered by course in the component
+                  }} 
+                  userRole={userRole || 'student'} 
+                />
+              ) : (
+                <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Course</h3>
+                    <p className="text-gray-600">
+                      Choose a course above to see your assessment performance over time.
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -180,7 +300,7 @@ const LearningHubAssessments = () => {
               <CardHeader>
                 <CardTitle className="text-xl">Areas Needing Attention</CardTitle>
                 <CardDescription>
-                  Topics with the highest error rates that could benefit from additional study
+                  Topics with the highest error rates in {selectedCourseName || 'the selected course'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -205,7 +325,7 @@ const LearningHubAssessments = () => {
         </TabsContent>
 
         <TabsContent value="topics" className="space-y-6">
-          {/* Topic Performance Heat Map */}
+          {/* Topic Performance Heat Map - course filtered */}
           {topicLoading ? (
             <Card>
               <CardContent className="p-8">
@@ -215,12 +335,24 @@ const LearningHubAssessments = () => {
                 </div>
               </CardContent>
             </Card>
-          ) : (
+          ) : selectedCourseId ? (
             <TopicPerformanceHeatMap
               data={topicPerformance || []}
               onTopicClick={handleTopicClick}
               onLessonClick={handleLessonClick}
             />
+          ) : (
+            <Card>
+              <CardContent className="p-8">
+                <div className="text-center">
+                  <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Course</h3>
+                  <p className="text-gray-600">
+                    Choose a course above to see detailed topic performance analysis.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
@@ -235,6 +367,7 @@ const LearningHubAssessments = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* ... keep existing code (focused recommendations display) the same ... */}
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div className="text-center p-4 bg-red-50 rounded-lg">
@@ -288,15 +421,23 @@ const LearningHubAssessments = () => {
               <CardHeader>
                 <CardTitle className="text-xl">Assessment Improvement Recommendations</CardTitle>
                 <CardDescription>
-                  Click on a topic in the Topic Analysis tab to see specific recommendations
+                  {selectedCourseId 
+                    ? `Click on a topic in the Topic Analysis tab to see specific recommendations for ${selectedCourseName}`
+                    : 'Select a course and click on a topic to see personalized study recommendations'
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
                   <Target className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Topic for Recommendations</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {selectedCourseId ? 'Select a Topic for Recommendations' : 'Choose a Course and Topic'}
+                  </h3>
                   <p className="text-gray-600">
-                    Go to the Topic Analysis tab and click on any topic to see personalized study recommendations
+                    {selectedCourseId 
+                      ? 'Go to the Topic Analysis tab and click on any topic to see personalized study recommendations'
+                      : 'First select a course above, then go to Topic Analysis to see recommendations'
+                    }
                   </p>
                 </div>
               </CardContent>

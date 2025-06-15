@@ -40,13 +40,12 @@ export const topicPerformanceService = {
     }
   },
 
-  // Get aggregated topic performance data for the current user
-  async getUserTopicPerformance(): Promise<TopicPerformanceData[]> {
+  // Get aggregated topic performance data for the current user with optional course filtering
+  async getUserTopicPerformance(courseId?: string): Promise<TopicPerformanceData[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
-    // Get all completed assessment sessions for the user
-    const { data: sessions, error: sessionsError } = await supabase
+    let query = supabase
       .from('assessment_sessions')
       .select(`
         id,
@@ -61,7 +60,39 @@ export const topicPerformanceService = {
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false });
 
+    // If courseId is provided, filter by course
+    if (courseId) {
+      // Get assessments for the specific course by matching subject
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select('subject')
+        .eq('id', courseId)
+        .single();
+
+      if (courseError) throw courseError;
+      if (!course) return [];
+
+      // Filter sessions by course subject
+      const { data: sessions, error: sessionsError } = await query;
+      if (sessionsError) throw sessionsError;
+
+      const filteredSessions = sessions?.filter(session => 
+        session.ai_assessments?.subject === course.subject
+      ) || [];
+
+      return this.processSessionsForTopicPerformance(filteredSessions);
+    }
+
+    // Get all completed assessment sessions for the user
+    const { data: sessions, error: sessionsError } = await query;
     if (sessionsError) throw sessionsError;
+    if (!sessions || sessions.length === 0) return [];
+
+    return this.processSessionsForTopicPerformance(sessions);
+  },
+
+  // Process sessions for topic performance (extracted from getUserTopicPerformance)
+  async processSessionsForTopicPerformance(sessions: any[]): Promise<TopicPerformanceData[]> {
     if (!sessions || sessions.length === 0) return [];
 
     // Try to get improvement data first
@@ -134,15 +165,17 @@ export const topicPerformanceService = {
         }
 
         // Add recommended lessons for this topic
-        recommendedLessons
-          .filter(lesson => Array.isArray(lesson.topics_covered) && lesson.topics_covered.includes(weakTopic.topic))
-          .forEach(lesson => {
-            topicData.recommendedLessons.set(lesson.lesson_id, {
-              id: lesson.lesson_id,
-              title: lesson.title,
-              type: lesson.content_type === 'video' ? 'video' : 'text'
+        if (Array.isArray(recommendedLessons)) {
+          recommendedLessons
+            .filter(lesson => Array.isArray(lesson.topics_covered) && lesson.topics_covered.includes(weakTopic.topic))
+            .forEach(lesson => {
+              topicData.recommendedLessons.set(lesson.lesson_id, {
+                id: lesson.lesson_id,
+                title: lesson.title,
+                type: lesson.content_type === 'video' ? 'video' : 'text'
+              });
             });
-          });
+        }
       }
     }
 
@@ -190,7 +223,19 @@ export const topicPerformanceService = {
 
       const question = response.assessment_questions;
       const subject = session.ai_assessments?.subject || 'Unknown';
-      const isCorrect = response.marks_awarded >= question.marks_available;
+      
+      // Fix the isCorrect calculation with proper type safety
+      const marksAwarded = Number(response.marks_awarded) || 0;
+      const marksAvailable = Number(question.marks_available) || 1;
+      const isCorrect = marksAwarded >= marksAvailable;
+      
+      console.log('Question scoring:', {
+        questionId: question.id,
+        marksAwarded,
+        marksAvailable,
+        isCorrect
+      });
+      
       const confidenceScore = response.confidence_score || 5;
 
       // Extract and map topics from keywords and question content
@@ -273,7 +318,7 @@ export const topicPerformanceService = {
     
     // Check keyword mappings
     for (const [module, keywords] of Object.entries(keywordMappings)) {
-      if (keywords.some(keyword => 
+      if (Array.isArray(keywords) && keywords.some((keyword: string) => 
         normalized.includes(keyword.toLowerCase()) || 
         keyword.toLowerCase().includes(normalized)
       )) {
@@ -494,9 +539,9 @@ export const topicPerformanceService = {
     return allTopics.filter(topic => topic.subject === subject);
   },
 
-  // Get the worst performing topics across all subjects
-  async getWorstPerformingTopics(limit: number = 10): Promise<TopicPerformanceData[]> {
-    const allTopics = await this.getUserTopicPerformance();
+  // Get the worst performing topics across all subjects or for a specific course
+  async getWorstPerformingTopics(limit: number = 10, courseId?: string): Promise<TopicPerformanceData[]> {
+    const allTopics = await this.getUserTopicPerformance(courseId);
     return allTopics
       .filter(topic => topic.errorRate > 25)
       .slice(0, limit);
