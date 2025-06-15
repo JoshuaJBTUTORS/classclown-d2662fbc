@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { Legend, PolarAngleAxis, PolarGrid, Radar, RadarChart, Tooltip, PolarRadiusAxis } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -119,7 +120,7 @@ const ModulePerformanceRadarChart: React.FC<ModulePerformanceRadarChartProps> = 
           <CardDescription>Performance across modules in {courseName || 'the selected course'}</CardDescription>
         </CardHeader>
         <CardContent className="h-96 p-0">
-          <div className="h-full flex items-center justify-center rounded-lg bg-background-alt">
+          <div className="h-full flex items-center justify-center rounded-lg">
             <div className="text-center p-4">
               <Brain className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">No Performance Data Yet</h3>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -327,7 +328,7 @@ const LearningHubAssessments = () => {
                 <CardDescription>Select a course to see a breakdown of your module performance.</CardDescription>
               </CardHeader>
               <CardContent className="h-96">
-                <div className="h-full flex items-center justify-center bg-background-alt rounded-lg">
+                <div className="h-full flex items-center justify-center rounded-lg">
                   <div className="text-center">
                     <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Course</h3>
