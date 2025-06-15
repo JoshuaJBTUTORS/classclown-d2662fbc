@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RevisionSchedule, RevisionSession, RevisionProgress, RevisionSetupData } from '@/types/revision';
+import { topicPerformanceService } from './topicPerformanceService';
 
 export const revisionCalendarService = {
   // Get user's revision schedules
@@ -37,24 +37,55 @@ export const revisionCalendarService = {
 
     if (error) throw error;
     
-    // Generate sessions for this schedule
-    await this.generateRevisionSessions(data.id, setupData);
+    // Generate sessions for this schedule, passing user ID for smart scheduling
+    await this.generateRevisionSessions(data.id, setupData, user.user.id);
     
     return data as RevisionSchedule;
   },
 
   // Generate revision sessions based on schedule
-  async generateRevisionSessions(scheduleId: string, setupData: RevisionSetupData): Promise<void> {
+  async generateRevisionSessions(scheduleId: string, setupData: RevisionSetupData, userId: string): Promise<void> {
     const { data: purchasedCourses } = await supabase
       .from('course_purchases')
       .select('course_id, courses(id, title, subject)')
+      .eq('user_id', userId)
       .eq('status', 'completed');
 
-    if (!purchasedCourses) return;
+    if (!purchasedCourses || purchasedCourses.length === 0) return;
 
-    const availableCourses = purchasedCourses
-      .filter(purchase => purchase.courses && setupData.selectedSubjects.includes(purchase.courses.subject))
-      .map(purchase => purchase.courses);
+    let availableCourses = purchasedCourses
+      .map(purchase => purchase.courses)
+      .filter((course): course is { id: string; title: string; subject: string; } => 
+        course !== null && setupData.selectedSubjects.includes(course.subject)
+      );
+
+    // --- Smart Scheduling Logic ---
+    try {
+      const allWeakTopics = await topicPerformanceService.getUserTopicPerformance(undefined, userId);
+      
+      if (allWeakTopics && allWeakTopics.length > 0) {
+          const subjectScores: { [key: string]: number } = {};
+
+          allWeakTopics.forEach(topic => {
+              if (setupData.selectedSubjects.includes(topic.subject)) {
+                  if (!subjectScores[topic.subject]) {
+                      subjectScores[topic.subject] = 0;
+                  }
+                  // Weighting by error rate
+                  subjectScores[topic.subject] += topic.errorRate;
+              }
+          });
+
+          availableCourses.sort((a, b) => {
+              const scoreA = subjectScores[a.subject] || 0;
+              const scoreB = subjectScores[b.subject] || 0;
+              return scoreB - scoreA; // Sort descending by weakness score
+          });
+      }
+    } catch (error) {
+        console.error("Could not fetch weak topics for smart scheduling, falling back to default.", error);
+    }
+    // --- End of Smart Scheduling Logic ---
 
     // Calculate session duration and distribution
     const sessionsPerWeek = setupData.selectedDays.length;

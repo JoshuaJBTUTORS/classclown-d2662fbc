@@ -8,9 +8,12 @@ import { Calendar, Plus, Target, TrendingUp, Clock, BookOpen } from 'lucide-reac
 import { revisionCalendarService } from '@/services/revisionCalendarService';
 import RevisionSetupWizard from '@/components/learningHub/RevisionSetupWizard';
 import RevisionCalendar from '@/components/learningHub/RevisionCalendar';
+import { topicPerformanceService } from '@/services/topicPerformanceService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LearningHubRevision = () => {
   const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const { user } = useAuth();
 
   // Fetch revision schedules
   const { data: schedules, refetch: refetchSchedules } = useQuery({
@@ -25,6 +28,13 @@ const LearningHubRevision = () => {
   });
 
   const activeSchedule = schedules?.find(s => s.status === 'active');
+
+  // Fetch all worst performing topics for the revision planner
+  const { data: allWorstTopics, isLoading: allWorstTopicsLoading } = useQuery({
+      queryKey: ['worst-topics-all', user?.id],
+      queryFn: () => topicPerformanceService.getWorstPerformingTopics(20),
+      enabled: !!user,
+  });
 
   // Calculate stats
   const stats = React.useMemo(() => {
@@ -72,6 +82,8 @@ const LearningHubRevision = () => {
         <RevisionSetupWizard
           onComplete={handleSetupComplete}
           onCancel={() => setShowSetupWizard(false)}
+          worstTopics={allWorstTopics}
+          worstTopicsLoading={allWorstTopicsLoading}
         />
       </div>
     );

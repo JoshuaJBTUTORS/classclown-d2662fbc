@@ -1,9 +1,8 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, TrendingUp, Target, Award, BookOpen, RefreshCw } from 'lucide-react';
+import { Brain, TrendingUp, Target, Award, BookOpen, RefreshCw, Calendar, Plus, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import TopicPerformanceHeatMap from '@/components/learningHub/TopicPerformanceHeatMap';
@@ -14,6 +13,10 @@ import { topicPerformanceService } from '@/services/topicPerformanceService';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ModulePerformanceRadarChart from '@/components/learningHub/ModulePerformanceRadarChart';
+import RevisionSetupWizard from '@/components/learningHub/RevisionSetupWizard';
+import RevisionCalendar from '@/components/learningHub/RevisionCalendar';
+import { revisionCalendarService } from '@/services/revisionCalendarService';
+import { Badge } from '@/components/ui/badge';
 
 const LearningHubAssessments = () => {
   const { userRole, user } = useAuth();
@@ -22,6 +25,7 @@ const LearningHubAssessments = () => {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedCourseName, setSelectedCourseName] = useState<string>('');
   const [isGeneratingImprovements, setIsGeneratingImprovements] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
 
   const assessmentFilters = {
     dateRange: { from: null, to: null },
@@ -121,6 +125,62 @@ const LearningHubAssessments = () => {
     queryKey: ['worst-topics', selectedCourseId],
     queryFn: () => topicPerformanceService.getWorstPerformingTopics(5, selectedCourseId || undefined),
   });
+
+  // --- Revision Planner Data ---
+  const { data: schedules, refetch: refetchSchedules } = useQuery({
+    queryKey: ['revision-schedules'],
+    queryFn: () => revisionCalendarService.getRevisionSchedules(),
+  });
+  const { data: revisionSessions } = useQuery({
+    queryKey: ['revision-sessions'],
+    queryFn: () => revisionCalendarService.getRevisionSessions(),
+  });
+  const { data: allWorstTopics, isLoading: allWorstTopicsLoading } = useQuery({
+    queryKey: ['worst-topics-all', user?.id],
+    queryFn: () => topicPerformanceService.getWorstPerformingTopics(20),
+    enabled: !!user,
+  });
+
+  const activeSchedule = schedules?.find(s => s.status === 'active');
+
+  const revisionStats = useMemo(() => {
+    if (!revisionSessions) return { total: 0, completed: 0, upcoming: 0, streak: 0 };
+    
+    const today = new Date().toISOString().split('T')[0];
+    const completed = revisionSessions.filter(s => s.status === 'completed').length;
+    const upcoming = revisionSessions.filter(s => s.session_date >= today && s.status === 'scheduled').length;
+    
+    const completedSessions = revisionSessions
+      .filter(s => s.status === 'completed')
+      .sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime());
+    
+    let streak = 0;
+    if (completedSessions.length > 0) {
+      let currentDate = new Date();
+      if (completedSessions.some(s => new Date(s.session_date).toDateString() === currentDate.toDateString())) {
+        streak = 1;
+      }
+      currentDate.setDate(currentDate.getDate() - 1);
+      
+      let consecutive = true;
+      while(consecutive && completedSessions.length > 0) {
+        if (completedSessions.some(s => new Date(s.session_date).toDateString() === currentDate.toDateString())) {
+          streak++;
+          currentDate.setDate(currentDate.getDate() - 1);
+        } else {
+          consecutive = false;
+        }
+      }
+    }
+    
+    return { total: revisionSessions.length, completed, upcoming, streak };
+  }, [revisionSessions]);
+
+  const handleSetupComplete = () => {
+    setShowSetupWizard(false);
+    refetchSchedules();
+  };
+  // --- End Revision Planner Data ---
 
   // Update course name when selection changes
   useEffect(() => {
@@ -262,10 +322,11 @@ const LearningHubAssessments = () => {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Performance Overview</TabsTrigger>
           <TabsTrigger value="topics">Topic Analysis</TabsTrigger>
           <TabsTrigger value="improvements">Recommendations</TabsTrigger>
+          <TabsTrigger value="revision-schedule">Revision Schedule</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -485,6 +546,105 @@ const LearningHubAssessments = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="revision-schedule" className="space-y-6">
+          {showSetupWizard ? (
+            <RevisionSetupWizard
+              onComplete={handleSetupComplete}
+              onCancel={() => setShowSetupWizard(false)}
+              worstTopics={allWorstTopics}
+              worstTopicsLoading={allWorstTopicsLoading}
+            />
+          ) : !activeSchedule ? (
+            <div className="text-center py-12">
+              <Card>
+                <CardContent className="p-8">
+                  <div className="max-w-md mx-auto">
+                    <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-6" />
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">No Revision Schedule</h3>
+                    <p className="text-gray-600 mb-8">
+                      Create a personalized revision schedule based on your performance to stay on track.
+                    </p>
+                    <Button onClick={() => setShowSetupWizard(true)} size="lg">
+                      <Target className="h-4 w-4 mr-2" />
+                      Create Your Smart Schedule
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg"><Calendar className="h-5 w-5 text-blue-600" /></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Total Sessions</p>
+                        <p className="text-2xl font-bold text-gray-900">{revisionStats.total}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg"><Target className="h-5 w-5 text-green-600" /></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Completed</p>
+                        <p className="text-2xl font-bold text-gray-900">{revisionStats.completed}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 rounded-lg"><Clock className="h-5 w-5 text-orange-600" /></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Upcoming</p>
+                        <p className="text-2xl font-bold text-gray-900">{revisionStats.upcoming}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 rounded-lg"><TrendingUp className="h-5 w-5 text-purple-600" /></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Day Streak</p>
+                        <p className="text-2xl font-bold text-gray-900">{revisionStats.streak}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Current Schedule Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{activeSchedule.name}</span>
+                    <Badge variant="default">{activeSchedule.status}</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2"><Calendar className="h-4 w-4" /><span>{activeSchedule.selected_days.length} days/week</span></div>
+                      <div className="flex items-center gap-2"><Clock className="h-4 w-4" /><span>{activeSchedule.weekly_hours} hours/week</span></div>
+                      <div className="flex items-center gap-2"><BookOpen className="h-4 w-4" /><span>Started {new Date(activeSchedule.start_date).toLocaleDateString()}</span></div>
+                    </div>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RevisionCalendar />
+                </CardContent>
+              </Card>
+            </>
           )}
         </TabsContent>
       </Tabs>

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,13 +14,16 @@ import { learningHubService } from '@/services/learningHubService';
 import { revisionCalendarService } from '@/services/revisionCalendarService';
 import { RevisionSetupData } from '@/types/revision';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface RevisionSetupWizardProps {
   onComplete: () => void;
   onCancel: () => void;
+  worstTopics?: any[];
+  worstTopicsLoading?: boolean;
 }
 
-const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, onCancel }) => {
+const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, onCancel, worstTopics, worstTopicsLoading }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [setupData, setSetupData] = useState<RevisionSetupData>({
     selectedDays: [],
@@ -68,6 +70,39 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
     
     return Array.from(subjectSet);
   }, [purchasedCourses, allCourses]);
+
+  const subjectWeakness = useMemo(() => {
+    if (!worstTopics) return {};
+    const weakness: { [subject: string]: { totalErrorRate: number; count: number } } = {};
+    worstTopics.forEach(topic => {
+      if (!weakness[topic.subject]) {
+        weakness[topic.subject] = { totalErrorRate: 0, count: 0 };
+      }
+      weakness[topic.subject].totalErrorRate += topic.errorRate;
+      weakness[topic.subject].count += 1;
+    });
+
+    const result: { [subject: string]: { avgErrorRate: number; topics: number } } = {};
+    for (const subject in weakness) {
+      result[subject] = {
+        avgErrorRate: Math.round(weakness[subject].totalErrorRate / weakness[subject].count),
+        topics: weakness[subject].count
+      };
+    }
+    return result;
+  }, [worstTopics]);
+
+  useEffect(() => {
+    if (currentStep === 3 && availableSubjects.length > 0 && worstTopics && Object.keys(subjectWeakness).length > 0) {
+      const weakSubjects = availableSubjects.filter(subject => subjectWeakness[subject]?.avgErrorRate > 40);
+      if (weakSubjects.length > 0) {
+        setSetupData(prev => ({
+          ...prev,
+          selectedSubjects: Array.from(new Set([...prev.selectedSubjects, ...weakSubjects]))
+        }));
+      }
+    }
+  }, [currentStep, availableSubjects, worstTopics, subjectWeakness]);
 
   const handleDayToggle = (dayId: string) => {
     setSetupData(prev => ({
@@ -200,6 +235,13 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium mb-4">Select Subjects to Revise</h3>
+                {worstTopicsLoading && <p className="text-sm text-gray-500">Analyzing performance...</p>}
+                {worstTopics && Object.keys(subjectWeakness).length > 0 && (
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
+                        <h4 className="font-medium text-amber-900 mb-2">Smart Recommendation</h4>
+                        <p className="text-sm text-amber-800">We've pre-selected subjects where you have the most room for improvement.</p>
+                    </div>
+                )}
                 {availableSubjects.length === 0 ? (
                   <div className="text-center py-8">
                     <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -224,9 +266,14 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
                           checked={setupData.selectedSubjects.includes(subject)}
                           onChange={() => handleSubjectToggle(subject)}
                         />
-                        <Label htmlFor={subject} className="cursor-pointer">
+                        <Label htmlFor={subject} className="cursor-pointer flex-grow">
                           {subject}
                         </Label>
+                        {subjectWeakness[subject] && (
+                          <Badge variant="destructive" className="ml-2">
+                            {subjectWeakness[subject].avgErrorRate}% error
+                          </Badge>
+                        )}
                       </div>
                     ))}
                   </div>
