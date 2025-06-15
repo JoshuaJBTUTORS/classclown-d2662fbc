@@ -135,7 +135,7 @@ export const topicPerformanceService = {
 
         // Add recommended lessons for this topic
         recommendedLessons
-          .filter(lesson => lesson.topics_covered.includes(weakTopic.topic))
+          .filter(lesson => Array.isArray(lesson.topics_covered) && lesson.topics_covered.includes(weakTopic.topic))
           .forEach(lesson => {
             topicData.recommendedLessons.set(lesson.lesson_id, {
               id: lesson.lesson_id,
@@ -180,7 +180,7 @@ export const topicPerformanceService = {
       assessmentCount: number;
       confidenceScores: number[];
       lastAttempt: string;
-      recommendedLessons: Array<{ id: string; title: string; type: 'video' | 'text' }>;
+      recommendedLessons: { id: string; title: string; type: 'video' | 'text' }[];
     }>();
 
     // Process each response and extract topics from keywords
@@ -379,9 +379,9 @@ export const topicPerformanceService = {
   async extractAndMapTopics(question: any, response: any, subject: string): Promise<string[]> {
     const rawTopics = new Set<string>();
 
-    // Add keywords as topics
-    if (Array.isArray(question.keywords)) {
-      question.keywords.forEach(keyword => {
+    // Add keywords as topics (with proper type checking)
+    if (question.keywords && Array.isArray(question.keywords)) {
+      question.keywords.forEach((keyword: unknown) => {
         if (typeof keyword === 'string' && keyword.length > 2) {
           rawTopics.add(keyword.toLowerCase());
         }
@@ -398,7 +398,7 @@ export const topicPerformanceService = {
       
       // Look for module-specific keywords in feedback
       Object.entries(keywordMappings).forEach(([module, keywords]) => {
-        if (keywords.some(keyword => feedback.includes(keyword.toLowerCase()))) {
+        if (Array.isArray(keywords) && keywords.some(keyword => feedback.includes(keyword.toLowerCase()))) {
           rawTopics.add(module);
         }
       });
@@ -410,7 +410,7 @@ export const topicPerformanceService = {
     const keywordMappings = this.createSubjectSpecificMappings(subjectModules, subject);
     
     Object.entries(keywordMappings).forEach(([module, keywords]) => {
-      if (keywords.some(keyword => questionText.includes(keyword.toLowerCase()))) {
+      if (Array.isArray(keywords) && keywords.some(keyword => questionText.includes(keyword.toLowerCase()))) {
         rawTopics.add(module);
       }
     });
