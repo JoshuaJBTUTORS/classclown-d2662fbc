@@ -142,7 +142,6 @@ const TopicPerformanceHeatMap: React.FC<TopicPerformanceHeatMapProps> = ({
                   dataKey="size"
                   aspectRatio={4/3}
                   stroke="#fff"
-                  strokeWidth={2}
                 >
                   {treeMapData.map((entry, index) => (
                     <Cell 
