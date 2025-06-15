@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -10,14 +9,11 @@ import {
   GraduationCap,
   Home,
   Calendar,
-  Menu
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
-  SidebarProvider,
   Sidebar,
-  SidebarTrigger,
   SidebarContent,
   SidebarGroup,
   SidebarGroupLabel,
@@ -65,81 +61,61 @@ const navigationItems = [
 
 const LearningHubSidebar = () => {
   const location = useLocation();
-  const isMobile = useIsMobile();
-
-  // Debug: Trace sidebar rendering
-  console.log('[LearningHubSidebar] Rendered', { path: location.pathname, isMobile });
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <Sidebar collapsible="offcanvas">
-          <SidebarContent>
-            {/* Header */}
-            <div className="flex items-center gap-3 p-6 border-b border-gray-200">
-              <div className="p-2 bg-gradient-to-r from-primary/20 to-primary/30 rounded-lg">
-                <GraduationCap className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">Learning Hub</h2>
-                <p className="text-sm text-gray-600">Your Education Portal</p>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <SidebarGroup>
-              <SidebarGroupLabel className="sr-only">Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navigationItems.map(item => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={item.exact ? location.pathname === item.href : location.pathname.startsWith(item.href)}
-                      >
-                        <Link to={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            <Separator className="my-2" />
-
-            {/* Footer */}
-            <SidebarFooter>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                asChild
-              >
-                <Link to="/">
-                  <Home className="h-4 w-4 mr-2" />
-                  Back to Main App
-                </Link>
-              </Button>
-            </SidebarFooter>
-          </SidebarContent>
-        </Sidebar>
-        {/* SidebarTrigger Hamburger for mobile header, hidden on desktop */}
-        {isMobile && (
-          <div className="fixed top-4 left-4 z-50 block md:hidden">
-            <SidebarTrigger>
-              <Button size="icon" className="bg-white border shadow">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Open sidebar</span>
-              </Button>
-            </SidebarTrigger>
+    <Sidebar collapsible="offcanvas">
+      <SidebarContent>
+        {/* Header */}
+        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
+          <div className="p-2 bg-gradient-to-r from-primary/20 to-primary/30 rounded-lg">
+            <GraduationCap className="h-6 w-6 text-primary" />
           </div>
-        )}
-      </div>
-    </SidebarProvider>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Learning Hub</h2>
+            <p className="text-sm text-gray-600">Your Education Portal</p>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="sr-only">Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems.map(item => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={item.exact ? location.pathname === item.href : location.pathname.startsWith(item.href)}
+                  >
+                    <Link to={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <Separator className="my-2" />
+
+        {/* Footer */}
+        <SidebarFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            asChild
+          >
+            <Link to="/">
+              <Home className="h-4 w-4 mr-2" />
+              Back to Main App
+            </Link>
+          </Button>
+        </SidebarFooter>
+      </SidebarContent>
+    </Sidebar>
   );
 };
 
 export default LearningHubSidebar;
-
