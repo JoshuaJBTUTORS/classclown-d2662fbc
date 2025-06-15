@@ -7,6 +7,13 @@ let moduleCache: Record<string, string[]> = {};
 let moduleCacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+export interface ModulePerformanceData {
+  module: string;
+  performance: number;
+  totalQuestions: number;
+  correctAnswers: number;
+}
+
 export const topicPerformanceService = {
   // Get available modules for a specific subject
   async getSubjectModules(subject: string): Promise<string[]> {
@@ -37,6 +44,53 @@ export const topicPerformanceService = {
       console.error('Error fetching subject modules:', error);
       return [];
     }
+  },
+
+  // Get module performance for a specific course
+  async getCourseModulePerformance(courseId: string | null): Promise<ModulePerformanceData[]> {
+    if (!courseId) {
+        return [];
+    }
+
+    // 1. Get all modules for the course, ordered by position
+    const { data: modules, error: modulesError } = await supabase
+        .from('course_modules')
+        .select('title')
+        .eq('course_id', courseId)
+        .order('position');
+
+    if (modulesError) {
+        console.error('Error fetching course modules:', modulesError);
+        throw modulesError;
+    }
+    
+    const moduleNames = modules?.map(m => m.title) || [];
+    const modulePerformanceMap = new Map<string, { totalQuestions: number; correctAnswers: number }>();
+
+    // Initialize map with all modules to ensure all are included in the result, in order.
+    moduleNames.forEach(name => {
+        modulePerformanceMap.set(name, { totalQuestions: 0, correctAnswers: 0 });
+    });
+
+    // 2. Get topic performance data for the course.
+    const topicPerformanceData = await this.getUserTopicPerformance(courseId);
+
+    // 3. Aggregate topic performance into module performance
+    topicPerformanceData.forEach(topicData => {
+        if (modulePerformanceMap.has(topicData.topic)) {
+            const current = modulePerformanceMap.get(topicData.topic)!;
+            current.totalQuestions += topicData.totalQuestions;
+            current.correctAnswers += topicData.correctAnswers;
+        }
+    });
+    
+    // 4. Format the data, ensuring original order is maintained
+    return Array.from(modulePerformanceMap.entries()).map(([module, data]) => ({
+      module,
+      totalQuestions: data.totalQuestions,
+      correctAnswers: data.correctAnswers,
+      performance: data.totalQuestions > 0 ? Math.round((data.correctAnswers / data.totalQuestions) * 100) : 0,
+    }));
   },
 
   // Get aggregated topic performance data for the current user with optional course filtering
@@ -403,7 +457,7 @@ export const topicPerformanceService = {
             'calculus', 'derivatives', 'integrals', 'limits', 'differentiation',
             'integration', 'rate of change'
           ];
-        } else if (moduleLower.includes('fraction')) {
+        } else if (moduleLower.includes('fraction') || moduleLower.includes('fraction')) {
           mappings[moduleKey] = [
             'fractions', 'numerator', 'denominator', 'mixed numbers', 'improper fractions',
             'equivalent fractions', 'simplifying'

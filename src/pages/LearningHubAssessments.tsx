@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { topicPerformanceService } from '@/services/topicPerformanceService';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import ModulePerformanceRadarChart from '@/components/learningHub/ModulePerformanceRadarChart';
 
 const LearningHubAssessments = () => {
   const { userRole, user } = useAuth();
@@ -105,6 +106,13 @@ const LearningHubAssessments = () => {
   const { data: topicPerformance, isLoading: topicLoading, refetch: refetchTopics } = useQuery({
     queryKey: ['topic-performance', selectedCourseId],
     queryFn: () => topicPerformanceService.getUserTopicPerformance(selectedCourseId || undefined),
+  });
+
+  // Get module performance for radar chart
+  const { data: modulePerformance, isLoading: modulePerformanceLoading } = useQuery({
+    queryKey: ['module-performance', selectedCourseId],
+    queryFn: () => topicPerformanceService.getCourseModulePerformance(selectedCourseId),
+    enabled: !!selectedCourseId,
   });
 
   // Get worst performing topics for improvement section
@@ -293,6 +301,47 @@ const LearningHubAssessments = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Module Performance Radar Chart */}
+          {selectedCourseId ? (
+            modulePerformanceLoading ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">Module Performance Overview</CardTitle>
+                  <CardDescription>Calculating performance...</CardDescription>
+                </CardHeader>
+                <CardContent className="h-96 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading module performance data...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <ModulePerformanceRadarChart 
+                data={modulePerformance || []} 
+                courseName={selectedCourseName} 
+              />
+            )
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Module Performance Overview</CardTitle>
+                <CardDescription>Select a course to see a breakdown of your module performance.</CardDescription>
+              </CardHeader>
+              <CardContent className="h-96">
+                <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Course</h3>
+                    <p className="text-gray-600">
+                      Choose a course above to see your module performance radar chart.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Topic Performance Summary */}
           {worstTopics && worstTopics.length > 0 && (
