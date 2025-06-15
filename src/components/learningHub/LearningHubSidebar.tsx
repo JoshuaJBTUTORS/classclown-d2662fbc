@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -23,7 +24,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const navigationItems = [
   {
@@ -64,9 +64,9 @@ const LearningHubSidebar = () => {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarContent>
+      <SidebarContent className="bg-white border-r border-gray-200 shadow-lg z-20 min-h-screen md:min-h-0">
         {/* Header */}
-        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3 p-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 via-white to-white">
           <div className="p-2 bg-gradient-to-r from-primary/20 to-primary/30 rounded-lg">
             <GraduationCap className="h-6 w-6 text-primary" />
           </div>
