@@ -284,7 +284,6 @@ export const revisionCalendarService = {
 
     if (findError) {
       console.error('[resetActiveSchedule] Error finding active schedule:', findError);
-      // Rethrow so UI can display
       throw new Error(`Error finding schedule: ${findError.message || findError}`);
     }
     if (!activeSchedule) {
@@ -296,24 +295,21 @@ export const revisionCalendarService = {
       throw new Error('Schedule does not belong to current user');
     }
 
-    // Log attempted operation
-    console.log('[resetActiveSchedule] Attempting to soft-delete schedule ID:', activeSchedule.id);
-    const now = new Date().toISOString();
-
-    const { error: updateError } = await supabase
+    // Hard delete the schedule (and cascade to sessions)
+    console.log('[resetActiveSchedule] Deleting schedule ID:', activeSchedule.id);
+    const { error: deleteError } = await supabase
       .from('revision_schedules')
-      .update({ deleted_at: now })
+      .delete()
       .eq('id', activeSchedule.id);
-    
-    if (updateError) {
-      // Log detailed Supabase PostgREST error
-      console.error('[resetActiveSchedule] ERROR updating revision_schedules:', updateError);
+
+    if (deleteError) {
+      console.error('[resetActiveSchedule] ERROR deleting revision_schedules:', deleteError);
       let friendly =
-        updateError.message?.includes('row-level security') ?
-        'You do not have permission to reset this schedule (RLS policy violation). Are you signed in as the correct user?' :
-        `Supabase error: ${updateError.message}`;
+        deleteError.message?.includes('row-level security') ?
+        'You do not have permission to delete this schedule (RLS policy violation). Are you signed in as the correct user?' :
+        `Supabase error: ${deleteError.message}`;
       throw new Error(`[RESET FAILED] ${friendly}`);
     }
-    console.log('[resetActiveSchedule] Successfully marked schedule as deleted:', activeSchedule.id);
+    console.log('[resetActiveSchedule] Successfully deleted schedule:', activeSchedule.id);
   }
 };
