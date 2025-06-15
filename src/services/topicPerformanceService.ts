@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { assessmentImprovementService, WeakTopic, RecommendedLesson } from './assessmentImprovementService';
 import { TopicPerformanceData } from '@/components/learningHub/TopicPerformanceHeatMap';
@@ -277,7 +276,7 @@ export const topicPerformanceService = {
         confidenceScore: avgConfidenceScore,
         assessmentCount: topicData.assessmentCount,
         lastAttempt: topicData.lastAttempt,
-        recommendedLessons: Array.from(topicData.recommendedLessons.values())
+        recommendedLessons: Array.from(topicData.recommendedLessons?.values() || [])
       };
     })
     .filter(topic => topic.totalQuestions > 0)
