@@ -84,12 +84,17 @@ const LearningHubRevision = () => {
         description: "Your revision schedule has been reset.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      // Enhanced error handling: show exact error message if available
+      let message = error?.message || 'Failed to reset schedule for an unknown reason.';
       toast({
-        title: "Error",
-        description: `Failed to reset schedule: ${error.message}`,
+        title: "Reset Failed",
+        description: message,
         variant: "destructive",
+        duration: 9000,
       });
+      // Also log to console for development
+      console.error('[LearningHubRevision] Schedule reset error:', error);
     }
   });
 

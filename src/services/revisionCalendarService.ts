@@ -266,27 +266,54 @@ export const revisionCalendarService = {
   },
 
   async resetActiveSchedule(): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    // Log authentication and schedule finding steps for diagnosis
+    const { data: user, error: userError } = await supabase.auth.getUser();
+    if (!user.user) {
+      console.error('[resetActiveSchedule] No authenticated user found.', userError);
+      throw new Error('User not authenticated');
+    }
+    console.log('[resetActiveSchedule] Authenticated user ID:', user.user.id);
 
     const { data: activeSchedule, error: findError } = await supabase
       .from('revision_schedules')
-      .select('id')
+      .select('id, user_id, status')
       .eq('user_id', user.user.id)
       .eq('status', 'active')
       .is('deleted_at', null)
-      .single();
+      .maybeSingle();
 
-    if (findError || !activeSchedule) {
-      console.warn("No active schedule to reset.");
+    if (findError) {
+      console.error('[resetActiveSchedule] Error finding active schedule:', findError);
+      // Rethrow so UI can display
+      throw new Error(`Error finding schedule: ${findError.message || findError}`);
+    }
+    if (!activeSchedule) {
+      console.warn('[resetActiveSchedule] No active schedule found for user:', user.user.id);
       return;
     }
+    if (activeSchedule.user_id !== user.user.id) {
+      console.error('[resetActiveSchedule] Schedule user_id does not match current user! Schedule:', activeSchedule, 'User:', user.user.id);
+      throw new Error('Schedule does not belong to current user');
+    }
+
+    // Log attempted operation
+    console.log('[resetActiveSchedule] Attempting to soft-delete schedule ID:', activeSchedule.id);
+    const now = new Date().toISOString();
 
     const { error: updateError } = await supabase
       .from('revision_schedules')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: now })
       .eq('id', activeSchedule.id);
     
-    if (updateError) throw updateError;
+    if (updateError) {
+      // Log detailed Supabase PostgREST error
+      console.error('[resetActiveSchedule] ERROR updating revision_schedules:', updateError);
+      let friendly =
+        updateError.message?.includes('row-level security') ?
+        'You do not have permission to reset this schedule (RLS policy violation). Are you signed in as the correct user?' :
+        `Supabase error: ${updateError.message}`;
+      throw new Error(`[RESET FAILED] ${friendly}`);
+    }
+    console.log('[resetActiveSchedule] Successfully marked schedule as deleted:', activeSchedule.id);
   }
 };
