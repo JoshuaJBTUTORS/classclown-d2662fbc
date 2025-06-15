@@ -332,7 +332,7 @@ const LearningHubAssessments = () => {
                     <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Course</h3>
                   </div>
-                </CardContent>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -410,7 +410,6 @@ const LearningHubAssessments = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* ... keep existing code (focused recommendations display) the same ... */}
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div className="text-center p-4 bg-red-50 rounded-lg">
