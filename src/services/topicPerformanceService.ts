@@ -142,7 +142,7 @@ export const topicPerformanceService = {
       assessmentCount: number;
       confidenceScores: number[];
       lastAttempt: string;
-      recommendedLessons: Map<string, { id: string; title: string; type: 'video' | 'text' }>;
+      recommendedLessons: Array<{ id: string; title: string; type: 'video' | 'text' }>;
     }>();
 
     // Process each response and extract topics from keywords
@@ -171,7 +171,7 @@ export const topicPerformanceService = {
             assessmentCount: 1,
             confidenceScores: [],
             lastAttempt: session.completed_at || '',
-            recommendedLessons: new Map()
+            recommendedLessons: []
           });
         }
 
@@ -187,7 +187,29 @@ export const topicPerformanceService = {
       });
     });
 
-    return this.convertTopicMapToArray(topicMap);
+    return Array.from(topicMap.values()).map(topicData => {
+      const errorRate = topicData.totalQuestions > 0 
+        ? ((topicData.totalQuestions - topicData.correctAnswers) / topicData.totalQuestions) * 100
+        : 0;
+
+      const avgConfidenceScore = topicData.confidenceScores.length > 0
+        ? topicData.confidenceScores.reduce((a, b) => a + b, 0) / topicData.confidenceScores.length
+        : 0;
+
+      return {
+        topic: topicData.topic,
+        subject: topicData.subject,
+        totalQuestions: topicData.totalQuestions,
+        correctAnswers: topicData.correctAnswers,
+        errorRate,
+        confidenceScore: avgConfidenceScore,
+        assessmentCount: topicData.assessmentCount,
+        lastAttempt: topicData.lastAttempt,
+        recommendedLessons: topicData.recommendedLessons
+      };
+    })
+    .filter(topic => topic.totalQuestions > 0)
+    .sort((a, b) => b.errorRate - a.errorRate);
   },
 
   // Extract topics from question data
