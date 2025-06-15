@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface WeakTopic {
@@ -94,8 +93,8 @@ export const assessmentImprovementService = {
     
     return {
       ...data,
-      weak_topics: data.weak_topics as WeakTopic[],
-      recommended_lessons: data.recommended_lessons as RecommendedLesson[]
+      weak_topics: (data.weak_topics as unknown) as WeakTopic[],
+      recommended_lessons: (data.recommended_lessons as unknown) as RecommendedLesson[]
     } as AssessmentImprovement;
   },
 
@@ -112,8 +111,8 @@ export const assessmentImprovementService = {
     
     return {
       ...data,
-      weak_topics: data.weak_topics as WeakTopic[],
-      recommended_lessons: data.recommended_lessons as RecommendedLesson[]
+      weak_topics: (data.weak_topics as unknown) as WeakTopic[],
+      recommended_lessons: (data.recommended_lessons as unknown) as RecommendedLesson[]
     } as AssessmentImprovement;
   },
 
