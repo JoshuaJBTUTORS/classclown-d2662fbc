@@ -1,13 +1,12 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { paymentService } from '@/services/paymentService';
+import SelectableCourseCard from './SelectableCourseCard';
 
 interface Course {
   id: string;
@@ -96,12 +95,17 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
     return (
       <Card className="mb-6">
         <CardContent className="p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-4">
             <Skeleton className="h-10 w-10 rounded-lg" />
             <div className="flex-1">
-              <Skeleton className="h-4 w-32 mb-2" />
-              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-5 w-48 mb-2" />
+              <Skeleton className="h-4 w-64" />
             </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-lg" />
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -157,55 +161,32 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
     );
   }
 
-  const handleValueChange = (value: string) => {
-    if (value === 'all-courses') {
-      onCourseChange(null);
-    } else {
-      onCourseChange(value);
-    }
-  };
-
   return (
-    <Card className="mb-6">
+    <Card className="mb-6 bg-gray-50/50">
       <CardContent className="p-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-blue-100 rounded-lg">
             <BookOpen className="h-6 w-6 text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <label className="text-sm font-medium text-gray-900 block mb-2">
-              Select Course to Analyze
-              {userRole === 'owner' && (
-                <span className="text-xs text-blue-600 ml-2">
-                  (Owner: {courses.length} courses available)
-                </span>
-              )}
-            </label>
-            <Select 
-              value={selectedCourseId || 'all-courses'} 
-              onValueChange={handleValueChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choose a course..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-courses">All Courses</SelectItem>
-                {courses.map((course) => (
-                  <SelectItem key={course.id} value={course.id}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{course.title}</span>
-                      <span className="text-xs text-gray-500">
-                        {course.subject}
-                        {userRole === 'owner' && (course as any).status && (
-                          <span className="ml-1 text-blue-500">({(course as any).status})</span>
-                        )}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <h2 className="text-xl font-semibold text-gray-900">Select a Course to Analyze</h2>
+            <p className="text-sm text-gray-600">Click a card to view detailed analytics for a specific course or for all courses combined.</p>
           </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <SelectableCourseCard
+            isAllCoursesCard
+            isSelected={selectedCourseId === null}
+            onClick={() => onCourseChange(null)}
+          />
+          {courses.map((course) => (
+            <SelectableCourseCard
+              key={course.id}
+              course={course}
+              isSelected={selectedCourseId === course.id}
+              onClick={() => onCourseChange(course.id)}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>
