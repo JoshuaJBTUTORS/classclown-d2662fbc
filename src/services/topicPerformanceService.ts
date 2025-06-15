@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { assessmentImprovementService, WeakTopic, RecommendedLesson } from './assessmentImprovementService';
 import { TopicPerformanceData } from '@/components/learningHub/TopicPerformanceHeatMap';
@@ -13,6 +12,7 @@ export interface ModulePerformanceData {
   performance: number;
   totalMarks: number;
   achievedMarks: number;
+  isAssessed: boolean;
 }
 
 // Helper function to map assessment title to a module name
@@ -105,11 +105,11 @@ export const topicPerformanceService = {
     }
     
     const moduleNames = modules?.map(m => m.title) || [];
-    const modulePerformanceMap = new Map<string, { totalMarks: number; achievedMarks: number }>();
+    const modulePerformanceMap = new Map<string, { totalMarks: number; achievedMarks: number; isAssessed: boolean }>();
 
-    // Initialize map with all modules
+    // Initialize map with all modules, marked as not assessed
     moduleNames.forEach(name => {
-        modulePerformanceMap.set(name, { totalMarks: 0, achievedMarks: 0 });
+        modulePerformanceMap.set(name, { totalMarks: 0, achievedMarks: 0, isAssessed: false });
     });
 
     // 2. Get the subject for the given course to filter assessments
@@ -125,6 +125,7 @@ export const topicPerformanceService = {
         module,
         ...data,
         performance: 0,
+        isAssessed: false,
       }));
     }
 
@@ -158,6 +159,7 @@ export const topicPerformanceService = {
           const currentData = modulePerformanceMap.get(matchedModule)!;
           currentData.totalMarks += session.total_marks_available || 0;
           currentData.achievedMarks += session.total_marks_achieved || 0;
+          currentData.isAssessed = true; // Mark this module as assessed
         } else {
           console.warn(`Could not map assessment "${assessmentTitle}" to any module in course ${courseId}.`);
         }
@@ -165,12 +167,16 @@ export const topicPerformanceService = {
     }
 
     // 5. Format the data for the chart
-    return Array.from(modulePerformanceMap.entries()).map(([module, data]) => ({
-      module,
-      totalMarks: data.totalMarks,
-      achievedMarks: data.achievedMarks,
-      performance: data.totalMarks > 0 ? Math.round((data.achievedMarks / data.totalMarks) * 100) : 0,
-    }));
+    return Array.from(modulePerformanceMap.entries()).map(([module, data]) => {
+      const performance = data.totalMarks > 0 ? Math.round((data.achievedMarks / data.totalMarks) * 100) : 0;
+      return {
+        module,
+        totalMarks: data.totalMarks,
+        achievedMarks: data.achievedMarks,
+        performance: data.isAssessed ? performance : 10, // Assign base level for unassessed
+        isAssessed: data.isAssessed,
+      };
+    });
   },
 
   // Get aggregated topic performance data for the current user with optional course filtering
