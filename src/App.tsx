@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -84,7 +83,7 @@ const App = () => (
                 </Route>
 
                 {/* Protected main app routes */}
-                <Route path="/" element={<ProtectedRoute><StudentDashboardRedirect><Index /></StudentDashboardRedirect></ProtectedRoute>} />
+                <Route path="/" element={<ProtectedRoute><StudentDashboardRedirect /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                 <Route path="/tutors" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><Tutors /></ProtectedRoute>} />
                 <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
