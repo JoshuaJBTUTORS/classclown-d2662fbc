@@ -14,6 +14,19 @@ import { Calendar as CalendarIcon, CheckCircle, Clock, SkipForward } from 'lucid
 import { revisionCalendarService } from '@/services/revisionCalendarService';
 import { RevisionSession } from '@/types/revision';
 
+const getSessionColor = (status: RevisionSession['status']) => {
+  switch (status) {
+    case 'completed':
+      return '#22c55e'; // green
+    case 'skipped':
+      return '#f59e0b'; // amber
+    case 'rescheduled':
+      return '#3b82f6'; // blue
+    default:
+      return '#6366f1'; // indigo
+  }
+};
+
 const RevisionCalendar: React.FC = () => {
   const [selectedSession, setSelectedSession] = useState<RevisionSession | null>(null);
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
@@ -41,19 +54,6 @@ const RevisionCalendar: React.FC = () => {
       }
     }));
   }, [sessions]);
-
-  const getSessionColor = (status: RevisionSession['status']) => {
-    switch (status) {
-      case 'completed':
-        return '#22c55e'; // green
-      case 'skipped':
-        return '#f59e0b'; // amber
-      case 'rescheduled':
-        return '#3b82f6'; // blue
-      default:
-        return '#6366f1'; // indigo
-    }
-  };
 
   const handleEventClick = (eventInfo: any) => {
     const session = eventInfo.event.extendedProps.session;
