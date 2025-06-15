@@ -173,7 +173,7 @@ export const topicPerformanceService = {
         module,
         totalMarks: data.totalMarks,
         achievedMarks: data.achievedMarks,
-        performance: data.isAssessed ? performance : 10, // Assign base level for unassessed
+        performance: data.isAssessed ? performance : 0, // Assign 0 for unassessed
         isAssessed: data.isAssessed,
       };
     });
