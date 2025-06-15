@@ -77,6 +77,7 @@ export default {
 				'performance-low': 'hsl(var(--performance-low))',
         'performance-medium': 'hsl(var(--performance-medium))',
         'performance-high': 'hsl(var(--performance-high))',
+        'background-alt': 'hsl(var(--background-alt))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
