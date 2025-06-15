@@ -322,10 +322,8 @@ const LearningHubAssessments = () => {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Performance Overview</TabsTrigger>
-          <TabsTrigger value="topics">Topic Analysis</TabsTrigger>
-          <TabsTrigger value="improvements">Recommendations</TabsTrigger>
           <TabsTrigger value="revision-schedule">Revision Schedule</TabsTrigger>
         </TabsList>
 
@@ -423,126 +421,6 @@ const LearningHubAssessments = () => {
                       </div>
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="topics" className="space-y-6">
-          {/* Topic Performance Heat Map - course filtered */}
-          {topicLoading ? (
-            <Card>
-              <CardContent className="p-8">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading topic performance data...</p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : selectedCourseId ? (
-            <TopicPerformanceHeatMap
-              data={topicPerformance || []}
-              onTopicClick={handleTopicClick}
-              onLessonClick={handleLessonClick}
-            />
-          ) : (
-            <Card>
-              <CardContent className="p-8">
-                <div className="text-center">
-                  <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Course</h3>
-                  <p className="text-gray-600">
-                    Choose a course above to see detailed topic performance analysis.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="improvements" className="space-y-6">
-          {/* Improvement Recommendations */}
-          {selectedTopic ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Focused Recommendations for {selectedTopic.topic}</CardTitle>
-                <CardDescription>
-                  Specific lessons and resources to improve your performance in this topic
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <p className="text-2xl font-bold text-red-600">{Math.round(selectedTopic.errorRate)}%</p>
-                      <p className="text-sm text-red-700">Error Rate</p>
-                    </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">{selectedTopic.correctAnswers}/{selectedTopic.totalQuestions}</p>
-                      <p className="text-sm text-blue-700">Questions Correct</p>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">{Math.round(selectedTopic.confidenceScore)}/10</p>
-                      <p className="text-sm text-green-700">Confidence</p>
-                    </div>
-                  </div>
-
-                  {selectedTopic.recommendedLessons.length > 0 ? (
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900">Recommended Resources:</h4>
-                      {selectedTopic.recommendedLessons.map((lesson: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            {lesson.type === 'video' ? (
-                              <div className="p-2 bg-blue-100 rounded-lg">
-                                <BookOpen className="h-4 w-4 text-blue-600" />
-                              </div>
-                            ) : (
-                              <div className="p-2 bg-green-100 rounded-lg">
-                                <BookOpen className="h-4 w-4 text-green-600" />
-                              </div>
-                            )}
-                            <span className="font-medium">{lesson.title}</span>
-                          </div>
-                          <button
-                            onClick={() => handleLessonClick(lesson.id)}
-                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-                          >
-                            Study Now
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-600">No specific lesson recommendations available for this topic yet.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Assessment Improvement Recommendations</CardTitle>
-                <CardDescription>
-                  {selectedCourseId 
-                    ? `Click on a topic in the Topic Analysis tab to see specific recommendations for ${selectedCourseName}`
-                    : 'Select a course and click on a topic to see personalized study recommendations'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Target className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {selectedCourseId ? 'Select a Topic for Recommendations' : 'Choose a Course and Topic'}
-                  </h3>
-                  <p className="text-gray-600">
-                    {selectedCourseId 
-                      ? 'Go to the Topic Analysis tab and click on any topic to see personalized study recommendations'
-                      : 'First select a course above, then go to Topic Analysis to see recommendations'
-                    }
-                  </p>
                 </div>
               </CardContent>
             </Card>
