@@ -17,8 +17,8 @@ const CustomTooltip = ({ active, payload }: any) => {
       <div className="p-2 bg-background border rounded-lg shadow-lg text-sm">
         <p className="font-bold mb-1">{data.module}</p>
         <p className="text-primary">{`Performance: ${data.performance}%`}</p>
-        {data.totalQuestions > 0 && (
-          <p className="text-muted-foreground text-xs">{`(${data.correctAnswers}/${data.totalQuestions} questions correct)`}</p>
+        {data.totalMarks > 0 && (
+          <p className="text-muted-foreground text-xs">{`(${data.achievedMarks}/${data.totalMarks} marks)`}</p>
         )}
       </div>
     );
@@ -31,8 +31,8 @@ const ModulePerformanceRadarChart: React.FC<ModulePerformanceRadarChartProps> = 
     module: item.module,
     performance: item.performance,
     fullMark: 100,
-    totalQuestions: item.totalQuestions,
-    correctAnswers: item.correctAnswers,
+    totalMarks: item.totalMarks,
+    achievedMarks: item.achievedMarks,
   }));
   
   const hasPerformanceData = chartData.some(d => d.performance > 0);

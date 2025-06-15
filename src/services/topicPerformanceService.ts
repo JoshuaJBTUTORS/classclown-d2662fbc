@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { assessmentImprovementService, WeakTopic, RecommendedLesson } from './assessmentImprovementService';
 import { TopicPerformanceData } from '@/components/learningHub/TopicPerformanceHeatMap';
@@ -10,9 +11,36 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 export interface ModulePerformanceData {
   module: string;
   performance: number;
-  totalQuestions: number;
-  correctAnswers: number;
+  totalMarks: number;
+  achievedMarks: number;
 }
+
+// Helper function to map assessment title to a module name
+const mapAssessmentTitleToModule = (assessmentTitle: string, moduleNames: string[]): string | null => {
+  if (!assessmentTitle) return null;
+  
+  // Normalize title: lowercase, remove prefix, handle '&'
+  const cleanTitle = assessmentTitle
+    .toLowerCase()
+    .replace('assessment -', '')
+    .replace(/&/g, 'and')
+    .trim();
+
+  // Find the best match from the list of official module names
+  for (const moduleName of moduleNames) {
+    const cleanModuleName = moduleName
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .trim();
+
+    // If assessment title contains module name or vice-versa, we have a match
+    if (cleanTitle.includes(cleanModuleName) || cleanModuleName.includes(cleanTitle)) {
+      return moduleName; // Return the canonical module name
+    }
+  }
+  
+  return null;
+};
 
 export const topicPerformanceService = {
   // Get available modules for a specific subject
@@ -52,7 +80,10 @@ export const topicPerformanceService = {
         return [];
     }
 
-    // 1. Get all modules for the course, ordered by position
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('User not authenticated');
+
+    // 1. Get all modules for the course to get canonical names and order
     const { data: modules, error: modulesError } = await supabase
         .from('course_modules')
         .select('title')
@@ -65,31 +96,71 @@ export const topicPerformanceService = {
     }
     
     const moduleNames = modules?.map(m => m.title) || [];
-    const modulePerformanceMap = new Map<string, { totalQuestions: number; correctAnswers: number }>();
+    const modulePerformanceMap = new Map<string, { totalMarks: number; achievedMarks: number }>();
 
-    // Initialize map with all modules to ensure all are included in the result, in order.
+    // Initialize map with all modules
     moduleNames.forEach(name => {
-        modulePerformanceMap.set(name, { totalQuestions: 0, correctAnswers: 0 });
+        modulePerformanceMap.set(name, { totalMarks: 0, achievedMarks: 0 });
     });
 
-    // 2. Get topic performance data for the course.
-    const topicPerformanceData = await this.getUserTopicPerformance(courseId);
+    // 2. Get the subject for the given course to filter assessments
+    const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select('subject')
+        .eq('id', courseId)
+        .single();
+      
+    if (courseError || !course) {
+      console.error('Error fetching course details or course not found:', courseError);
+      return Array.from(modulePerformanceMap.entries()).map(([module, data]) => ({
+        module,
+        ...data,
+        performance: 0,
+      }));
+    }
 
-    // 3. Aggregate topic performance into module performance
-    topicPerformanceData.forEach(topicData => {
-        if (modulePerformanceMap.has(topicData.topic)) {
-            const current = modulePerformanceMap.get(topicData.topic)!;
-            current.totalQuestions += topicData.totalQuestions;
-            current.correctAnswers += topicData.correctAnswers;
+    // 3. Get all user's completed assessment sessions for the course's subject
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('assessment_sessions')
+      .select(`
+        total_marks_achieved,
+        total_marks_available,
+        ai_assessments!inner(title, subject)
+      `)
+      .eq('user_id', user.user.id)
+      .eq('status', 'completed')
+      .not('completed_at', 'is', null)
+      .eq('ai_assessments.subject', course.subject);
+
+    if (sessionsError) {
+      console.error('Error fetching assessment sessions:', sessionsError);
+      throw sessionsError;
+    }
+
+    // 4. Aggregate performance data by mapping sessions to modules
+    if (sessions) {
+      sessions.forEach(session => {
+        const assessmentTitle = session.ai_assessments?.title;
+        if (!assessmentTitle) return;
+
+        const matchedModule = mapAssessmentTitleToModule(assessmentTitle, moduleNames);
+
+        if (matchedModule && modulePerformanceMap.has(matchedModule)) {
+          const currentData = modulePerformanceMap.get(matchedModule)!;
+          currentData.totalMarks += session.total_marks_available || 0;
+          currentData.achievedMarks += session.total_marks_achieved || 0;
+        } else {
+          console.warn(`Could not map assessment "${assessmentTitle}" to any module in course ${courseId}.`);
         }
-    });
-    
-    // 4. Format the data, ensuring original order is maintained
+      });
+    }
+
+    // 5. Format the data for the chart
     return Array.from(modulePerformanceMap.entries()).map(([module, data]) => ({
       module,
-      totalQuestions: data.totalQuestions,
-      correctAnswers: data.correctAnswers,
-      performance: data.totalQuestions > 0 ? Math.round((data.correctAnswers / data.totalQuestions) * 100) : 0,
+      totalMarks: data.totalMarks,
+      achievedMarks: data.achievedMarks,
+      performance: data.totalMarks > 0 ? Math.round((data.achievedMarks / data.totalMarks) * 100) : 0,
     }));
   },
 
