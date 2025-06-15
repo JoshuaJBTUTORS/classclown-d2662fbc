@@ -18,27 +18,27 @@ export interface ModulePerformanceData {
 // Helper function to map assessment title to a module name
 const mapAssessmentTitleToModule = (assessmentTitle: string, moduleNames: string[]): string | null => {
   if (!assessmentTitle) return null;
-  
-  // Normalize title: lowercase, remove prefix, handle '&'
+
+  // Normalize title: remove "Assessment - " prefix and trim.
   const cleanTitle = assessmentTitle
-    .toLowerCase()
-    .replace('assessment -', '')
-    .replace(/&/g, 'and')
+    .replace(/^Assessment\s*-\s*/i, '') // Case-insensitive prefix removal
     .trim();
 
-  // Find the best match from the list of official module names
-  for (const moduleName of moduleNames) {
-    const cleanModuleName = moduleName
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .trim();
-
-    // If assessment title contains module name or vice-versa, we have a match
-    if (cleanTitle.includes(cleanModuleName) || cleanModuleName.includes(cleanTitle)) {
-      return moduleName; // Return the canonical module name
-    }
+  // First, try for an exact (case-insensitive) match.
+  const exactMatch = moduleNames.find(name => name.toLowerCase() === cleanTitle.toLowerCase());
+  if (exactMatch) {
+    console.log(`[mapAssessmentTitleToModule] Exact match found: "${assessmentTitle}" -> "${exactMatch}"`);
+    return exactMatch;
   }
   
+  // As a fallback, try a 'contains' match if no exact match is found.
+  const containsMatch = moduleNames.find(name => cleanTitle.toLowerCase().includes(name.toLowerCase()));
+  if (containsMatch) {
+    console.log(`[mapAssessmentTitleToModule] Contains match found: "${assessmentTitle}" -> "${containsMatch}"`);
+    return containsMatch;
+  }
+
+  console.warn(`[mapAssessmentTitleToModule] Could not map assessment title: "${assessmentTitle}"`);
   return null;
 };
 
