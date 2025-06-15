@@ -1,22 +1,13 @@
-
 import * as React from 'react';
-import { Legend, PolarAngleAxis, PolarGrid, Radar, RadarChart, Tooltip, PolarRadiusAxis } from 'recharts';
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart, Tooltip, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ModulePerformanceData } from '@/services/topicPerformanceService';
 import { Brain, Star, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { ChartContainer } from '@/components/ui/chart';
 
 interface ModulePerformanceRadarChartProps {
   data: ModulePerformanceData[];
   courseName: string;
 }
-
-const chartConfig = {
-  performance: {
-    label: "Performance",
-    color: "hsl(var(--chart-1))",
-  },
-};
 
 const getPerformanceTier = (score: number) => {
   if (score >= 75) return 'high';
@@ -41,17 +32,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     
     if (!data.isAssessed) {
       return (
-        <div className="p-3 bg-background border rounded-lg shadow-xl text-sm animate-fade-in">
-          <p className="font-bold mb-1">{label}</p>
-          <p className="text-muted-foreground">Assessment not completed yet.</p>
+        <div className="p-3 bg-white border rounded-lg shadow-xl text-sm animate-fade-in">
+          <p className="font-bold mb-1 text-gray-900">{label}</p>
+          <p className="text-gray-500">Assessment not completed yet.</p>
         </div>
       );
     }
 
     return (
-      <div className="p-3 bg-background border rounded-lg shadow-xl text-sm animate-fade-in space-y-1">
+      <div className="p-3 bg-white border rounded-lg shadow-xl text-sm animate-fade-in space-y-1">
         <div className="flex items-center justify-between">
-            <p className="font-bold flex items-center gap-2">
+            <p className="font-bold flex items-center gap-2 text-gray-900">
               {label}
               {data.performance >= 85 && <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />}
             </p>
@@ -59,7 +50,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         </div>
         <p style={{ color: performanceColors[getPerformanceTier(data.performance)] }}>{`Performance: ${data.performance}%`}</p>
         {data.totalMarks > 0 && (
-          <p className="text-muted-foreground text-xs">{`(${data.achievedMarks}/${data.totalMarks} marks)`}</p>
+          <p className="text-gray-500 text-xs">{`(${data.achievedMarks}/${data.totalMarks} marks)`}</p>
         )}
       </div>
     );
@@ -114,17 +105,17 @@ const ModulePerformanceRadarChart: React.FC<ModulePerformanceRadarChartProps> = 
 
   if (!hasAnyAssessedData) {
     return (
-      <Card className="relative overflow-hidden">
+      <Card className="relative overflow-hidden bg-white">
         <CardHeader>
-          <CardTitle className="text-xl">Your Quest Awaits!</CardTitle>
-          <CardDescription>Performance across modules in {courseName || 'the selected course'}</CardDescription>
+          <CardTitle className="text-xl text-gray-900">Your Quest Awaits!</CardTitle>
+          <CardDescription className="text-gray-600">Performance across modules in {courseName || 'the selected course'}</CardDescription>
         </CardHeader>
         <CardContent className="h-96 p-0">
           <div className="h-full flex items-center justify-center rounded-lg">
             <div className="text-center p-4">
-              <Brain className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No Performance Data Yet</h3>
-              <p className="text-muted-foreground max-w-xs mx-auto">
+              <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Performance Data Yet</h3>
+              <p className="text-gray-600 max-w-xs mx-auto">
                 Complete your first assessment to reveal your Module Mastery Map and start your journey!
               </p>
             </div>
@@ -135,13 +126,13 @@ const ModulePerformanceRadarChart: React.FC<ModulePerformanceRadarChartProps> = 
   }
 
   return (
-    <Card>
+    <Card className="bg-white">
       <CardHeader>
-        <CardTitle className="text-xl">Module Mastery Map</CardTitle>
-        <CardDescription>Your performance across modules in {courseName}. This helps identify strengths and areas to conquer.</CardDescription>
+        <CardTitle className="text-xl text-gray-900">Module Mastery Map</CardTitle>
+        <CardDescription className="text-gray-600">Your performance across modules in {courseName}. This helps identify strengths and areas to conquer.</CardDescription>
       </CardHeader>
       <CardContent className="pt-4 h-96">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-full">
+        <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData}>
             <defs>
               <radialGradient id="performance-gradient" cx="50%" cy="50%" r="50%">
@@ -150,7 +141,7 @@ const ModulePerformanceRadarChart: React.FC<ModulePerformanceRadarChartProps> = 
               </radialGradient>
             </defs>
             <PolarGrid gridType="circle" stroke="hsl(var(--primary) / 0.2)" />
-            <PolarAngleAxis dataKey="module" tick={{ fontSize: 12, fillOpacity: 0.8 }} className="fill-foreground" />
+            <PolarAngleAxis dataKey="module" tick={{ fontSize: 12, fill: '#1f2937' }} />
             <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "transparent" }} axisLine={{ stroke: "transparent" }} />
             <Radar
               name="Performance"
@@ -165,7 +156,7 @@ const ModulePerformanceRadarChart: React.FC<ModulePerformanceRadarChartProps> = 
               cursor={{ fill: "hsl(var(--primary))", fillOpacity: 0.1 }}
             />
           </RadarChart>
-        </ChartContainer>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
