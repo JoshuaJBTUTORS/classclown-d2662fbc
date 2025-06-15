@@ -253,7 +253,7 @@ export const topicPerformanceService = {
             assessmentCount: 1,
             confidenceScores: [],
             lastAttempt: session.completed_at || '',
-            recommendedLessons: []
+            recommendedLessons: [] as { id: string; title: string; type: 'video' | 'text' }[]
           });
         }
 
