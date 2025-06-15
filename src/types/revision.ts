@@ -1,4 +1,3 @@
-
 export interface RevisionSchedule {
   id: string;
   user_id: string;
@@ -10,6 +9,9 @@ export interface RevisionSchedule {
   status: 'active' | 'paused' | 'completed';
   created_at: string;
   updated_at: string;
+  study_technique: 'pomodoro' | 'subject_rotation' | '60_10_rule' | 'none';
+  daily_start_time: string;
+  deleted_at?: string;
 }
 
 export interface RevisionSession {
@@ -26,6 +28,7 @@ export interface RevisionSession {
   completed_at?: string;
   created_at: string;
   updated_at: string;
+  session_type: 'study' | 'break';
 }
 
 export interface RevisionProgress {
@@ -46,4 +49,6 @@ export interface RevisionSetupData {
   startDate: Date;
   endDate?: Date;
   name: string;
+  studyTechnique: 'pomodoro' | 'subject_rotation' | '60_10_rule' | 'none';
+  dailyStartTime: string;
 }

@@ -950,36 +950,45 @@ export type Database = {
       revision_schedules: {
         Row: {
           created_at: string
+          daily_start_time: string
+          deleted_at: string | null
           end_date: string | null
           id: string
           name: string
           selected_days: string[]
           start_date: string
           status: string
+          study_technique: Database["public"]["Enums"]["study_technique_enum"]
           updated_at: string
           user_id: string
           weekly_hours: number
         }
         Insert: {
           created_at?: string
+          daily_start_time?: string
+          deleted_at?: string | null
           end_date?: string | null
           id?: string
           name?: string
           selected_days: string[]
           start_date: string
           status?: string
+          study_technique?: Database["public"]["Enums"]["study_technique_enum"]
           updated_at?: string
           user_id: string
           weekly_hours: number
         }
         Update: {
           created_at?: string
+          daily_start_time?: string
+          deleted_at?: string | null
           end_date?: string | null
           id?: string
           name?: string
           selected_days?: string[]
           start_date?: string
           status?: string
+          study_technique?: Database["public"]["Enums"]["study_technique_enum"]
           updated_at?: string
           user_id?: string
           weekly_hours?: number
@@ -997,6 +1006,7 @@ export type Database = {
           id: string
           schedule_id: string
           session_date: string
+          session_type: string
           start_time: string
           status: string
           subject: string
@@ -1012,6 +1022,7 @@ export type Database = {
           id?: string
           schedule_id: string
           session_date: string
+          session_type?: string
           start_time: string
           status?: string
           subject: string
@@ -1027,6 +1038,7 @@ export type Database = {
           id?: string
           schedule_id?: string
           session_date?: string
+          session_type?: string
           start_time?: string
           status?: string
           subject?: string
@@ -1685,6 +1697,11 @@ export type Database = {
         | "student"
         | "parent"
         | "learning_hub_only"
+      study_technique_enum:
+        | "pomodoro"
+        | "subject_rotation"
+        | "60_10_rule"
+        | "none"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1807,6 +1824,12 @@ export const Constants = {
         "student",
         "parent",
         "learning_hub_only",
+      ],
+      study_technique_enum: [
+        "pomodoro",
+        "subject_rotation",
+        "60_10_rule",
+        "none",
       ],
     },
   },

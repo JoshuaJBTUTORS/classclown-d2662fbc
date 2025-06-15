@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Clock, BookOpen, Target } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CalendarIcon, Clock, BookOpen, Target, BrainCircuit, Coffee } from 'lucide-react';
 import { format } from 'date-fns';
 import { paymentService } from '@/services/paymentService';
 import { learningHubService } from '@/services/learningHubService';
@@ -32,7 +32,9 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
     weeklyHours: 5,
     selectedSubjects: [],
     startDate: new Date(),
-    name: 'My Revision Schedule'
+    name: 'My Revision Schedule',
+    studyTechnique: 'none',
+    dailyStartTime: '09:00',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { userRole } = useAuth();
@@ -57,6 +59,13 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
     { id: 'friday', label: 'Friday' },
     { id: 'saturday', label: 'Saturday' },
     { id: 'sunday', label: 'Sunday' }
+  ];
+
+  const studyTechniques = [
+    { id: 'none', label: 'Default', description: 'Standard, evenly-spaced study sessions.' },
+    { id: 'subject_rotation', label: 'Subject Rotation', description: 'Larger blocks for different subjects each day.' },
+    { id: 'pomodoro', label: 'Pomodoro Technique', description: '25 min study, 5 min break intervals.' },
+    { id: '60_10_rule', label: 'The 60/10 Rule', description: '60 min study, 10 min break intervals.' },
   ];
 
   // Get available subjects from purchased courses
@@ -106,7 +115,7 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
   }, [worstTopics]);
 
   useEffect(() => {
-    if (currentStep === 3 && availableSubjects.length > 0 && worstTopics && Object.keys(subjectWeakness).length > 0) {
+    if (currentStep === 4 && availableSubjects.length > 0 && worstTopics && Object.keys(subjectWeakness).length > 0) {
       const weakSubjects = availableSubjects.filter(subject => subjectWeakness[subject]?.avgErrorRate > 40);
       if (weakSubjects.length > 0) {
         setSetupData(prev => ({
@@ -152,10 +161,12 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
       case 1:
         return setupData.selectedDays.length > 0;
       case 2:
-        return setupData.weeklyHours > 0;
+        return setupData.studyTechnique && setupData.dailyStartTime;
       case 3:
-        return setupData.selectedSubjects.length > 0;
+        return setupData.weeklyHours > 0;
       case 4:
+        return setupData.selectedSubjects.length > 0;
+      case 5:
         return setupData.name.trim().length > 0;
       default:
         return false;
@@ -171,7 +182,7 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
             Create Revision Schedule
           </CardTitle>
           <CardDescription>
-            Step {currentStep} of 4: Set up your personalized revision calendar
+            Step {currentStep} of 5: Set up your personalized revision calendar
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -207,6 +218,53 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
           )}
 
           {currentStep === 2 && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium mb-4">Choose a Study Technique</h3>
+                <RadioGroup
+                  value={setupData.studyTechnique}
+                  onValueChange={(value) => setSetupData(prev => ({
+                    ...prev,
+                    studyTechnique: value as RevisionSetupData['studyTechnique']
+                  }))}
+                  className="gap-4"
+                >
+                  {studyTechniques.map((technique) => (
+                    <Label
+                      key={technique.id}
+                      htmlFor={technique.id}
+                      className={cn(
+                        "flex flex-col items-start space-x-2 p-4 rounded-lg border cursor-pointer transition-colors",
+                        setupData.studyTechnique === technique.id
+                          ? "bg-primary/10 border-primary"
+                          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <RadioGroupItem value={technique.id} id={technique.id} />
+                        <div className="flex flex-col">
+                           <span className="font-semibold">{technique.label}</span>
+                           <span className="text-sm text-gray-600">{technique.description}</span>
+                        </div>
+                      </div>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+              <div>
+                <Label htmlFor="dailyStartTime">Daily Start Time</Label>
+                <Input
+                  id="dailyStartTime"
+                  type="time"
+                  value={setupData.dailyStartTime}
+                  onChange={(e) => setSetupData(prev => ({ ...prev, dailyStartTime: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium mb-4">Weekly Study Hours</h3>
@@ -233,7 +291,7 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
                     </div>
                     <p className="text-sm text-blue-700 mt-1">
                       {setupData.selectedDays.length > 0 && setupData.weeklyHours > 0 ? (
-                        `~${Math.round((setupData.weeklyHours / setupData.selectedDays.length) * 60)} minutes per session`
+                        `~${Math.round((setupData.weeklyHours / setupData.selectedDays.length) * 60)} minutes of study per day`
                       ) : (
                         'Select days and hours to see preview'
                       )}
@@ -244,7 +302,7 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
             </div>
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium mb-4">Select Subjects to Revise</h3>
@@ -305,7 +363,7 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
             </div>
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium mb-4">Schedule Details</h3>
@@ -356,7 +414,8 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
                       <li>• {setupData.selectedDays.length} days per week</li>
                       <li>• {setupData.weeklyHours} hours total per week</li>
                       <li>• {setupData.selectedSubjects.length} subjects selected</li>
-                      <li>• Starting {format(setupData.startDate, "MMM dd, yyyy")}</li>
+                      <li>• Using '{studyTechniques.find(t => t.id === setupData.studyTechnique)?.label}' technique</li>
+                      <li>• Starting {format(setupData.startDate, "MMM dd, yyyy")} at {setupData.dailyStartTime}</li>
                     </ul>
                   </div>
                 </div>
@@ -372,7 +431,7 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
               {currentStep === 1 ? 'Cancel' : 'Back'}
             </Button>
             
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <Button
                 onClick={() => setCurrentStep(prev => prev + 1)}
                 disabled={!canProceed()}

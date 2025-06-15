@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RevisionSchedule, RevisionSession, RevisionProgress, RevisionSetupData } from '@/types/revision';
 import { topicPerformanceService } from './topicPerformanceService';
@@ -27,7 +26,9 @@ export const revisionCalendarService = {
       selected_days: setupData.selectedDays,
       start_date: setupData.startDate.toISOString().split('T')[0],
       end_date: setupData.endDate?.toISOString().split('T')[0] || null,
-      status: 'active' as const
+      status: 'active' as const,
+      study_technique: setupData.studyTechnique,
+      daily_start_time: setupData.dailyStartTime,
     };
 
     const { data, error } = await supabase
@@ -121,58 +122,99 @@ export const revisionCalendarService = {
         return;
     }
 
-    // Calculate session duration and distribution
-    const sessionsPerWeek = setupData.selectedDays.length;
-    const hoursPerSession = setupData.weeklyHours / sessionsPerWeek;
-    const minutesPerSession = Math.round(hoursPerSession * 60);
-
-    // Generate sessions for the next 12 weeks (or until end date)
-    const sessions: any[] = [];
+    const sessions: Omit<RevisionSession, 'id' | 'created_at' | 'updated_at' | 'completion_notes' | 'completed_at'>[] = [];
     const startDate = new Date(setupData.startDate);
-    const endDate = setupData.endDate || new Date(startDate.getTime() + (12 * 7 * 24 * 60 * 60 * 1000));
-
+    const endDate = setupData.endDate || new Date(new Date().setDate(startDate.getDate() + 84)); // 12 weeks
     let currentDate = new Date(startDate);
     let courseIndex = 0;
+    
+    const totalWeeklyMinutes = setupData.weeklyHours * 60;
+    const minutesPerDay = totalWeeklyMinutes / (setupData.selectedDays.length || 1);
 
-    while (currentDate <= endDate && availableCourses.length > 0) {
+    while (currentDate <= endDate) {
       const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       
       if (setupData.selectedDays.includes(dayName)) {
         const course = availableCourses[courseIndex % availableCourses.length];
-        const startTime = '09:00'; // Default start time
-        const endTime = this.addMinutesToTime(startTime, minutesPerSession);
+        let currentTime = setupData.dailyStartTime;
+        
+        let minutesScheduledForDay = 0;
 
-        sessions.push({
-          schedule_id: scheduleId,
-          course_id: course.id,
-          subject: course.subject,
-          session_date: currentDate.toISOString().split('T')[0],
-          start_time: startTime,
-          end_time: endTime,
-          duration_minutes: minutesPerSession,
-          status: 'scheduled'
-        });
+        if (setupData.studyTechnique === 'pomodoro') {
+          let pomodoroCount = 0;
+          while(minutesScheduledForDay < minutesPerDay) {
+            const studyDuration = 25;
+            const studyEndTime = this.addMinutesToTime(currentTime, studyDuration);
+            sessions.push({ schedule_id: scheduleId, course_id: course.id, subject: course.subject, session_date: currentDate.toISOString().split('T')[0], start_time: currentTime, end_time: studyEndTime, duration_minutes: studyDuration, status: 'scheduled', session_type: 'study' });
+            minutesScheduledForDay += studyDuration;
+            pomodoroCount++;
+            
+            const breakDuration = pomodoroCount % 4 === 0 ? 15 : 5;
+            const breakStartTime = studyEndTime;
+            const breakEndTime = this.addMinutesToTime(breakStartTime, breakDuration);
+            sessions.push({ schedule_id: scheduleId, course_id: course.id, subject: course.subject, session_date: currentDate.toISOString().split('T')[0], start_time: breakStartTime, end_time: breakEndTime, duration_minutes: breakDuration, status: 'scheduled', session_type: 'break' });
+
+            currentTime = breakEndTime;
+            if (minutesScheduledForDay >= minutesPerDay) break;
+          }
+        } else if (setupData.studyTechnique === '60_10_rule') {
+           while(minutesScheduledForDay < minutesPerDay) {
+            const studyDuration = 60;
+            const studyEndTime = this.addMinutesToTime(currentTime, studyDuration);
+            sessions.push({ schedule_id: scheduleId, course_id: course.id, subject: course.subject, session_date: currentDate.toISOString().split('T')[0], start_time: currentTime, end_time: studyEndTime, duration_minutes: studyDuration, status: 'scheduled', session_type: 'study' });
+            minutesScheduledForDay += studyDuration;
+
+            const breakDuration = 10;
+            const breakStartTime = studyEndTime;
+            const breakEndTime = this.addMinutesToTime(breakStartTime, breakDuration);
+            sessions.push({ schedule_id: scheduleId, course_id: course.id, subject: course.subject, session_date: currentDate.toISOString().split('T')[0], start_time: breakStartTime, end_time: breakEndTime, duration_minutes: breakDuration, status: 'scheduled', session_type: 'break' });
+            
+            currentTime = breakEndTime;
+            if (minutesScheduledForDay >= minutesPerDay) break;
+           }
+        } else { // 'subject_rotation' or 'none'
+            const sessionDuration = Math.round(minutesPerDay);
+            if (sessionDuration > 0) {
+              const endTime = this.addMinutesToTime(currentTime, sessionDuration);
+              sessions.push({ schedule_id: scheduleId, course_id: course.id, subject: course.subject, session_date: currentDate.toISOString().split('T')[0], start_time: currentTime, end_time: endTime, duration_minutes: sessionDuration, status: 'scheduled', session_type: 'study' });
+            }
+        }
 
         courseIndex++;
       }
-
       currentDate.setDate(currentDate.getDate() + 1);
     }
-
+    
     if (sessions.length > 0) {
-      const { error } = await supabase
-        .from('revision_sessions')
-        .insert(sessions);
-
+      const { error } = await supabase.from('revision_sessions').insert(sessions);
       if (error) throw error;
     }
   },
 
   // Get revision sessions for calendar display
   async getRevisionSessions(): Promise<RevisionSession[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return [];
+
+    const { data: activeSchedules, error: schedulesError } = await supabase
+      .from('revision_schedules')
+      .select('id')
+      .eq('user_id', user.user.id)
+      .eq('status', 'active')
+      .is('deleted_at', null);
+
+    if (schedulesError) {
+      console.error('Error fetching active schedules:', schedulesError);
+      return [];
+    };
+    if (!activeSchedules || activeSchedules.length === 0) return [];
+
+    const scheduleIds = activeSchedules.map(s => s.id);
+
     const { data, error } = await supabase
       .from('revision_sessions')
       .select('*')
+      .in('schedule_id', scheduleIds)
       .order('session_date', { ascending: true });
 
     if (error) throw error;
@@ -221,5 +263,30 @@ export const revisionCalendarService = {
     const newHours = Math.floor(totalMinutes / 60) % 24;
     const newMins = totalMinutes % 60;
     return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
+  },
+
+  async resetActiveSchedule(): Promise<void> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('User not authenticated');
+
+    const { data: activeSchedule, error: findError } = await supabase
+      .from('revision_schedules')
+      .select('id')
+      .eq('user_id', user.user.id)
+      .eq('status', 'active')
+      .is('deleted_at', null)
+      .single();
+
+    if (findError || !activeSchedule) {
+      console.warn("No active schedule to reset.");
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from('revision_schedules')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', activeSchedule.id);
+    
+    if (updateError) throw updateError;
   }
 };

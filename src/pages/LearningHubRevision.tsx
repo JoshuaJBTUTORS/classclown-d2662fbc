@@ -1,22 +1,25 @@
-
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Plus, Target, TrendingUp, Clock, BookOpen } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Calendar, Plus, Target, TrendingUp, Clock, BookOpen, Trash2, BrainCircuit } from 'lucide-react';
 import { revisionCalendarService } from '@/services/revisionCalendarService';
 import RevisionSetupWizard from '@/components/learningHub/RevisionSetupWizard';
 import RevisionCalendar from '@/components/learningHub/RevisionCalendar';
 import { topicPerformanceService } from '@/services/topicPerformanceService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 
 const LearningHubRevision = () => {
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch revision schedules
-  const { data: schedules, refetch: refetchSchedules } = useQuery({
+  const { data: schedules, refetch: refetchSchedules, isLoading: schedulesLoading } = useQuery({
     queryKey: ['revision-schedules'],
     queryFn: () => revisionCalendarService.getRevisionSchedules(),
   });
@@ -71,12 +74,35 @@ const LearningHubRevision = () => {
     };
   }, [sessions]);
 
+  const resetScheduleMutation = useMutation({
+    mutationFn: revisionCalendarService.resetActiveSchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['revision-schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['revision-sessions'] });
+      toast({
+        title: "Schedule Reset",
+        description: "Your revision schedule has been reset.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to reset schedule: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleSetupComplete = () => {
     setShowSetupWizard(false);
     refetchSchedules();
   };
 
-  if (showSetupWizard) {
+  if (schedulesLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  if (showSetupWizard || (!activeSchedule && !schedulesLoading)) {
     return (
       <div className="p-6">
         <RevisionSetupWizard
@@ -184,14 +210,38 @@ const LearningHubRevision = () => {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Current Schedule</span>
-                <Badge variant="default">{activeSchedule.status}</Badge>
+                <div className="flex items-center gap-4">
+                   <Badge variant="default">{activeSchedule.status}</Badge>
+                   <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Reset
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete your current schedule and all its planned sessions. You will be able to create a new one.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => resetScheduleMutation.mutate()}>
+                          Yes, reset schedule
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardTitle>
               <CardDescription>
                 {activeSchedule.name}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">
@@ -208,6 +258,12 @@ const LearningHubRevision = () => {
                   <BookOpen className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">
                     Started {new Date(activeSchedule.start_date).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <BrainCircuit className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm capitalize">
+                    {activeSchedule.study_technique.replace('_', ' ')}
                   </span>
                 </div>
               </div>
