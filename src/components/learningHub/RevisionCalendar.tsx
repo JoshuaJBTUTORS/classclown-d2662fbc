@@ -22,7 +22,7 @@ const RevisionCalendar: React.FC = () => {
   // Fetch revision sessions
   const { data: sessions, refetch } = useQuery({
     queryKey: ['revision-sessions'],
-    queryFn: revisionCalendarService.getRevisionSessions,
+    queryFn: () => revisionCalendarService.getRevisionSessions(),
   });
 
   // Convert sessions to FullCalendar events

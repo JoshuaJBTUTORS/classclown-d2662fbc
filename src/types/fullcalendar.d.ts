@@ -40,6 +40,8 @@ declare module '@fullcalendar/react' {
     allDaySlot?: boolean;
     slotDuration?: string;
     slotLabelInterval?: string;
+    slotMinTime?: string;
+    slotMaxTime?: string;
     expandRows?: boolean;
     stickyHeaderDates?: boolean;
     nowIndicator?: boolean;

@@ -63,14 +63,16 @@ const App = () => (
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
                 {/* Learning Hub routes */}
-                <Route path="/learning-hub" element={<LearningHubLayout><LearningHubDashboard /></LearningHubLayout>} />
-                <Route path="/learning-hub/my-courses" element={<LearningHubLayout><LearningHubMyCourses /></LearningHubLayout>} />
-                <Route path="/learning-hub/assessments" element={<LearningHubLayout><LearningHubAssessments /></LearningHubLayout>} />
-                <Route path="/learning-hub/revision" element={<LearningHubLayout><LearningHubRevision /></LearningHubLayout>} />
-                <Route path="/learning-hub/progress" element={<LearningHubLayout><Progress /></LearningHubLayout>} />
-                <Route path="/learning-hub/library" element={<LearningHubLayout><LearningHub /></LearningHubLayout>} />
-                <Route path="/learning-hub/course/:id" element={<LearningHubLayout><CourseDetail /></LearningHubLayout>} />
-                <Route path="/learning-hub/checkout/:courseId" element={<LearningHubLayout><CourseCheckout /></LearningHubLayout>} />
+                <Route path="/learning-hub" element={<LearningHubLayout />}>
+                  <Route index element={<LearningHubDashboard />} />
+                  <Route path="my-courses" element={<LearningHubMyCourses />} />
+                  <Route path="assessments" element={<LearningHubAssessments />} />
+                  <Route path="revision" element={<LearningHubRevision />} />
+                  <Route path="progress" element={<Progress />} />
+                  <Route path="library" element={<LearningHub />} />
+                  <Route path="course/:id" element={<CourseDetail />} />
+                  <Route path="checkout/:courseId" element={<CourseCheckout />} />
+                </Route>
 
                 {/* Protected main app routes */}
                 <Route path="/" element={<ProtectedRoute><StudentDashboardRedirect><Index /></StudentDashboardRedirect></ProtectedRoute>} />

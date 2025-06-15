@@ -11,7 +11,7 @@ export const revisionCalendarService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as RevisionSchedule[];
   },
 
   // Create a new revision schedule
@@ -40,7 +40,7 @@ export const revisionCalendarService = {
     // Generate sessions for this schedule
     await this.generateRevisionSessions(data.id, setupData);
     
-    return data;
+    return data as RevisionSchedule;
   },
 
   // Generate revision sessions based on schedule
@@ -104,19 +104,14 @@ export const revisionCalendarService = {
   },
 
   // Get revision sessions for calendar display
-  async getRevisionSessions(scheduleId?: string): Promise<RevisionSession[]> {
-    let query = supabase
+  async getRevisionSessions(): Promise<RevisionSession[]> {
+    const { data, error } = await supabase
       .from('revision_sessions')
       .select('*')
       .order('session_date', { ascending: true });
 
-    if (scheduleId) {
-      query = query.eq('schedule_id', scheduleId);
-    }
-
-    const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as RevisionSession[];
   },
 
   // Update session status

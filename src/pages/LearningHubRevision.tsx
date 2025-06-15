@@ -15,13 +15,13 @@ const LearningHubRevision = () => {
   // Fetch revision schedules
   const { data: schedules, refetch: refetchSchedules } = useQuery({
     queryKey: ['revision-schedules'],
-    queryFn: revisionCalendarService.getRevisionSchedules,
+    queryFn: () => revisionCalendarService.getRevisionSchedules(),
   });
 
   // Fetch revision sessions for stats
   const { data: sessions } = useQuery({
     queryKey: ['revision-sessions'],
-    queryFn: revisionCalendarService.getRevisionSessions,
+    queryFn: () => revisionCalendarService.getRevisionSessions(),
   });
 
   const activeSchedule = schedules?.find(s => s.status === 'active');
