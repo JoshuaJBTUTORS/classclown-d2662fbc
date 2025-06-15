@@ -97,7 +97,7 @@ const CustomDot = (props: any) => {
           }
           .pulsing-dot-anim { animation: pulse-dot 2s ease-in-out infinite; }
       `}</style>
-      <circle className="pulsing-dot-anim" cx={cx} cy={cy} fill="hsl(var(--muted-foreground))" />
+      <circle className="pulsing-dot-anim" cx={cx} cy={cy} fill="hsl(var(--primary))" />
     </g>
   );
 };
@@ -145,12 +145,12 @@ const ModulePerformanceRadarChart: React.FC<ModulePerformanceRadarChartProps> = 
           <RadarChart data={chartData}>
             <defs>
               <radialGradient id="performance-gradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
               </radialGradient>
             </defs>
-            <PolarGrid gridType="circle" className="stroke-border/80" />
-            <PolarAngleAxis dataKey="module" tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+            <PolarGrid gridType="circle" stroke="hsl(var(--primary) / 0.2)" />
+            <PolarAngleAxis dataKey="module" tick={{ fontSize: 12, fillOpacity: 0.8 }} className="fill-foreground" />
             <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "transparent" }} axisLine={{ stroke: "transparent" }} />
             <Radar
               name="Performance"

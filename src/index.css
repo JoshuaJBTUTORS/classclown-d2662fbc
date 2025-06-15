@@ -33,9 +33,9 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --performance-low: 0 84.2% 60.2%;
-    --performance-medium: 43 74% 66%;
-    --performance-high: 173 58% 39%;
+    --performance-low: 0 100% 67%;
+    --performance-medium: 38 92% 56%;
+    --performance-high: 145 63% 49%;
   }
 
   .dark {
@@ -64,9 +64,9 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --performance-low: 0 72.2% 50.6%;
-    --performance-medium: 43 74% 56%;
-    --performance-high: 160 60% 45%;
+    --performance-low: 0 90% 65%;
+    --performance-medium: 38 90% 60%;
+    --performance-high: 145 60% 55%;
   }
 }
 
