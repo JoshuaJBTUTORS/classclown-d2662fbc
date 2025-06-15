@@ -447,6 +447,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
             bestScore={bestScore}
             assessmentTitle={assessment.title}
             isFirstAttempt={!bestScore || bestScore.completed_sessions === 0}
+            sessionId={session?.id} // Pass the session ID for improvement analysis
           />
         )}
       </div>

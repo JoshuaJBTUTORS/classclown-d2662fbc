@@ -84,6 +84,47 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_improvements: {
+        Row: {
+          created_at: string
+          id: string
+          improvement_summary: string | null
+          recommended_lessons: Json
+          session_id: string
+          updated_at: string
+          user_id: string
+          weak_topics: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          improvement_summary?: string | null
+          recommended_lessons?: Json
+          session_id: string
+          updated_at?: string
+          user_id: string
+          weak_topics?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          improvement_summary?: string | null
+          recommended_lessons?: Json
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+          weak_topics?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_improvements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_questions: {
         Row: {
           assessment_id: string
