@@ -19,26 +19,35 @@ export interface ModulePerformanceData {
 const mapAssessmentTitleToModule = (assessmentTitle: string, moduleNames: string[]): string | null => {
   if (!assessmentTitle) return null;
 
-  // Normalize title: remove "Assessment - " prefix and trim.
-  const cleanTitle = assessmentTitle
+  const normalize = (str: string) => str.toLowerCase().replace(/&/g, 'and').trim();
+
+  // Clean the assessment title by removing prefix and then normalize it
+  const cleanAssessmentTitle = assessmentTitle
     .replace(/^Assessment\s*-\s*/i, '') // Case-insensitive prefix removal
     .trim();
+  
+  const normalizedAssessmentTitle = normalize(cleanAssessmentTitle);
 
-  // First, try for an exact (case-insensitive) match.
-  const exactMatch = moduleNames.find(name => name.toLowerCase() === cleanTitle.toLowerCase());
+  // 1. Exact match on normalized strings
+  const exactMatch = moduleNames.find(moduleName => normalize(moduleName) === normalizedAssessmentTitle);
   if (exactMatch) {
-    console.log(`[mapAssessmentTitleToModule] Exact match found: "${assessmentTitle}" -> "${exactMatch}"`);
+    console.log(`[mapAssessmentTitleToModule] Exact match found for "${assessmentTitle}" -> "${exactMatch}"`);
     return exactMatch;
   }
-  
-  // As a fallback, try a 'contains' match if no exact match is found.
-  const containsMatch = moduleNames.find(name => cleanTitle.toLowerCase().includes(name.toLowerCase()));
+
+  // 2. Contains match as a fallback
+  const containsMatch = moduleNames.find(moduleName => {
+    const normalizedModuleName = normalize(moduleName);
+    if (!normalizedModuleName || !normalizedAssessmentTitle) return false;
+    return normalizedAssessmentTitle.includes(normalizedModuleName) || normalizedModuleName.includes(normalizedAssessmentTitle);
+  });
+
   if (containsMatch) {
-    console.log(`[mapAssessmentTitleToModule] Contains match found: "${assessmentTitle}" -> "${containsMatch}"`);
+    console.log(`[mapAssessmentTitleToModule] Contains match found for "${assessmentTitle}" -> "${containsMatch}"`);
     return containsMatch;
   }
 
-  console.warn(`[mapAssessmentTitleToModule] Could not map assessment title: "${assessmentTitle}"`);
+  console.warn(`[mapAssessmentTitleToModule] Could not map assessment title: "${assessmentTitle}". Normalized to "${normalizedAssessmentTitle}". Available modules: [${moduleNames.join(', ')}]`);
   return null;
 };
 
