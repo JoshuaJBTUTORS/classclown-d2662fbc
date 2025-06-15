@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { LearningHubProvider } from "@/contexts/LearningHubContext";
@@ -46,6 +46,12 @@ import LearningHubLayout from "./components/learningHub/LearningHubLayout";
 
 const queryClient = new QueryClient();
 
+// Redirect component for course URLs
+const CourseRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/learning-hub/course/${id}`} replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -63,8 +69,7 @@ const App = () => (
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
                 {/* Redirect old course URLs to learning hub */}
-                <Route path="/course/:id" element={<Navigate to="/learning-hub/course/:id" replace />} />
-                <Route path="/course/:id/edit" element={<Navigate to="/course/:id/edit" replace />} />
+                <Route path="/course/:id" element={<CourseRedirect />} />
 
                 {/* Learning Hub routes */}
                 <Route path="/learning-hub" element={<LearningHubLayout />}>
