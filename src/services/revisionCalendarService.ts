@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { RevisionSchedule, RevisionSession, RevisionProgress, RevisionSetupData } from '@/types/revision';
 import { topicPerformanceService } from './topicPerformanceService';
@@ -45,23 +46,51 @@ export const revisionCalendarService = {
 
   // Generate revision sessions based on schedule
   async generateRevisionSessions(scheduleId: string, setupData: RevisionSetupData, userId: string): Promise<void> {
-    const { data: purchasedCourses } = await supabase
-      .from('course_purchases')
-      .select('course_id, courses(id, title, subject)')
+    // Get user role
+    const { data: userRoleData } = await supabase
+      .from('user_roles')
+      .select('role')
       .eq('user_id', userId)
-      .eq('status', 'completed');
+      .single();
 
-    if (!purchasedCourses || purchasedCourses.length === 0) return;
+    const userRole = userRoleData?.role;
 
-    let availableCourses = purchasedCourses
-      .map(purchase => purchase.courses)
+    let allCoursesForUser: ({ id: string; title: string; subject: string; } | null)[] = [];
+
+    if (userRole === 'owner' || userRole === 'admin') {
+      const { data: courses, error: coursesError } = await supabase
+        .from('courses')
+        .select('id, title, subject')
+        .in('subject', setupData.selectedSubjects);
+
+      if (coursesError) throw coursesError;
+      allCoursesForUser = courses || [];
+    } else { // student, parent, or other roles
+      const { data: purchasedCourses } = await supabase
+        .from('course_purchases')
+        .select('course_id, courses(id, title, subject)')
+        .eq('user_id', userId)
+        .eq('status', 'completed');
+      
+      if (purchasedCourses) {
+        allCoursesForUser = purchasedCourses.map(p => p.courses);
+      }
+    }
+    
+    if (allCoursesForUser.length === 0) {
+      console.warn("No courses found for this user to generate a revision schedule.");
+      return;
+    }
+
+    let availableCourses = allCoursesForUser
       .filter((course): course is { id: string; title: string; subject: string; } => 
         course !== null && setupData.selectedSubjects.includes(course.subject)
       );
 
     // --- Smart Scheduling Logic ---
     try {
-      const allWeakTopics = await topicPerformanceService.getUserTopicPerformance(undefined, userId);
+      // FIX: getUserTopicPerformance expects 0-1 arguments, not 2.
+      const allWeakTopics = await topicPerformanceService.getUserTopicPerformance();
       
       if (allWeakTopics && allWeakTopics.length > 0) {
           const subjectScores: { [key: string]: number } = {};
@@ -86,6 +115,11 @@ export const revisionCalendarService = {
         console.error("Could not fetch weak topics for smart scheduling, falling back to default.", error);
     }
     // --- End of Smart Scheduling Logic ---
+
+    if (availableCourses.length === 0) {
+        console.warn("No available courses for selected subjects to generate revision sessions.");
+        return;
+    }
 
     // Calculate session duration and distribution
     const sessionsPerWeek = setupData.selectedDays.length;

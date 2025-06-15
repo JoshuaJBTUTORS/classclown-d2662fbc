@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { revisionCalendarService } from '@/services/revisionCalendarService';
 import { RevisionSetupData } from '@/types/revision';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface RevisionSetupWizardProps {
   onComplete: () => void;
@@ -33,6 +35,7 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
     name: 'My Revision Schedule'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userRole } = useAuth();
 
   // Fetch purchased courses
   const { data: purchasedCourses } = useQuery({
@@ -58,18 +61,28 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
 
   // Get available subjects from purchased courses
   const availableSubjects = React.useMemo(() => {
-    if (!purchasedCourses || !allCourses) return [];
-    
+    if (!allCourses) return [];
+
     const subjectSet = new Set<string>();
-    purchasedCourses.forEach(purchase => {
-      const course = allCourses.find(c => c.id === purchase.course_id);
-      if (course?.subject) {
-        subjectSet.add(course.subject);
-      }
-    });
+
+    if (userRole === 'owner' || userRole === 'admin') {
+      allCourses.forEach(course => {
+        if (course.subject) {
+          subjectSet.add(course.subject);
+        }
+      });
+    } else {
+      if (!purchasedCourses) return [];
+      purchasedCourses.forEach(purchase => {
+        const course = allCourses.find(c => c.id === purchase.course_id);
+        if (course?.subject) {
+          subjectSet.add(course.subject);
+        }
+      });
+    }
     
     return Array.from(subjectSet);
-  }, [purchasedCourses, allCourses]);
+  }, [purchasedCourses, allCourses, userRole]);
 
   const subjectWeakness = useMemo(() => {
     if (!worstTopics) return {};
@@ -245,8 +258,18 @@ const RevisionSetupWizard: React.FC<RevisionSetupWizardProps> = ({ onComplete, o
                 {availableSubjects.length === 0 ? (
                   <div className="text-center py-8">
                     <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600">No purchased courses found</p>
-                    <p className="text-sm text-gray-500">Purchase courses first to create revision schedules</p>
+                    <p className="text-gray-600">
+                      {userRole === 'owner' || userRole === 'admin' 
+                        ? 'No courses have been created.'
+                        : 'No purchased courses found'
+                      }
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {userRole === 'owner' || userRole === 'admin' 
+                        ? 'Create courses first to set up revision schedules.'
+                        : 'Purchase courses first to create revision schedules.'
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
