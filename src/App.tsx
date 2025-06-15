@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -35,6 +34,11 @@ import TrialBookings from '@/pages/TrialBookings';
 
 import './App.css';
 
+import LearningHubLayout from '@/components/learningHub/LearningHubLayout';
+import LearningHubDashboard from '@/pages/LearningHubDashboard';
+import LearningHubMyCourses from '@/pages/LearningHubMyCourses';
+import LearningHubAssessments from '@/pages/LearningHubAssessments';
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -64,6 +68,56 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Learning Hub Routes with dedicated layout */}
+                <Route path="/learning-hub" element={
+                  <ProtectedRoute>
+                    <LearningHubLayout>
+                      <LearningHubDashboard />
+                    </LearningHubLayout>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/learning-hub/my-courses" element={
+                  <ProtectedRoute>
+                    <LearningHubLayout>
+                      <LearningHubMyCourses />
+                    </LearningHubLayout>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/learning-hub/assessments" element={
+                  <ProtectedRoute>
+                    <LearningHubLayout>
+                      <LearningHubAssessments />
+                    </LearningHubLayout>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/learning-hub/library" element={
+                  <ProtectedRoute>
+                    <LearningHubLayout>
+                      <LearningHub />
+                    </LearningHubLayout>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/learning-hub/course/:id" element={
+                  <ProtectedRoute>
+                    <LearningHubLayout>
+                      <CourseDetail />
+                    </LearningHubLayout>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/learning-hub/course/:id/checkout" element={
+                  <ProtectedRoute>
+                    <LearningHubLayout>
+                      <CourseCheckout />
+                    </LearningHubLayout>
+                  </ProtectedRoute>
+                } />
+                
+                {/* Main App Routes */}
                 <Route path="/calendar" element={
                   <ProtectedRoute>
                     <Calendar />
@@ -115,12 +169,6 @@ function App() {
                 <Route path="/trial-bookings" element={
                   <ProtectedRoute allowedRoles={['admin', 'owner']}>
                     <TrialBookings />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/learning-hub" element={
-                  <ProtectedRoute>
-                    <LearningHub />
                   </ProtectedRoute>
                 } />
                 

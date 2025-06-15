@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -13,7 +12,12 @@ import {
   ChevronRight,
   FileBarChart,
   Clock,
-  UserPlus
+  UserPlus,
+  LayoutDashboard,
+  CalendarX,
+  BookOpen,
+  Book,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -27,6 +31,75 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const location = useLocation();
   const { userRole } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const navigationItems = [
+    {
+      title: 'Dashboard',
+      href: '/',
+      icon: LayoutDashboard,
+      allowedRoles: ['admin', 'owner', 'tutor']
+    },
+    {
+      title: 'Calendar',
+      href: '/calendar',
+      icon: Calendar,
+      allowedRoles: ['admin', 'owner', 'tutor', 'student', 'parent']
+    },
+    {
+      title: 'Students',
+      href: '/students',
+      icon: Users,
+      allowedRoles: ['admin', 'owner', 'tutor']
+    },
+    {
+      title: 'Tutors',
+      href: '/tutors',
+      icon: GraduationCap,
+      allowedRoles: ['admin', 'owner']
+    },
+    {
+      title: 'Homework',
+      href: '/homework',
+      icon: BookOpen,
+      allowedRoles: ['admin', 'owner', 'tutor', 'student', 'parent']
+    },
+    {
+      title: 'Progress',
+      href: '/progress',
+      icon: TrendingUp,
+      allowedRoles: ['student', 'owner', 'parent']
+    },
+    {
+      title: 'Learning Hub',
+      href: '/learning-hub',
+      icon: Book,
+      allowedRoles: ['admin', 'owner', 'tutor', 'student', 'parent']
+    },
+    {
+      title: 'Reports',
+      href: '/reports',
+      icon: BarChart3,
+      allowedRoles: ['owner']
+    },
+    {
+      title: 'Time Off',
+      href: '/time-off',
+      icon: CalendarX,
+      allowedRoles: ['tutor']
+    },
+    {
+      title: 'Time Off Requests',
+      href: '/time-off-requests',
+      icon: Clock,
+      allowedRoles: ['admin', 'owner']
+    },
+    {
+      title: 'Trial Bookings',
+      href: '/trial-bookings',
+      icon: Calendar,
+      allowedRoles: ['admin', 'owner']
+    }
+  ];
 
   const getNavigation = () => {
     // For students, start with Progress and exclude Dashboard
