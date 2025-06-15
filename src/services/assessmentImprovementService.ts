@@ -40,7 +40,7 @@ export const assessmentImprovementService = {
       .from('assessment_sessions')
       .select(`
         *,
-        ai_assessments(id, title, subject, course_id)
+        ai_assessments(id, title, subject)
       `)
       .eq('id', sessionId)
       .single();
@@ -91,7 +91,12 @@ export const assessmentImprovementService = {
       .single();
 
     if (error) throw error;
-    return data as AssessmentImprovement;
+    
+    return {
+      ...data,
+      weak_topics: data.weak_topics as WeakTopic[],
+      recommended_lessons: data.recommended_lessons as RecommendedLesson[]
+    } as AssessmentImprovement;
   },
 
   // Get existing improvement recommendations for a session
@@ -103,7 +108,13 @@ export const assessmentImprovementService = {
       .maybeSingle();
 
     if (error) throw error;
-    return data as AssessmentImprovement | null;
+    if (!data) return null;
+    
+    return {
+      ...data,
+      weak_topics: data.weak_topics as WeakTopic[],
+      recommended_lessons: data.recommended_lessons as RecommendedLesson[]
+    } as AssessmentImprovement;
   },
 
   // Analyze incorrect responses to identify weak topics
