@@ -104,6 +104,14 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
     );
   }
 
+  const handleValueChange = (value: string) => {
+    if (value === 'all-courses') {
+      onCourseChange(null);
+    } else {
+      onCourseChange(value);
+    }
+  };
+
   return (
     <Card className="mb-6">
       <CardContent className="p-4">
@@ -115,12 +123,15 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
             <label className="text-sm font-medium text-gray-900 block mb-2">
               Select Course to Analyze
             </label>
-            <Select value={selectedCourseId || ''} onValueChange={(value) => onCourseChange(value || null)}>
+            <Select 
+              value={selectedCourseId || 'all-courses'} 
+              onValueChange={handleValueChange}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Choose a course..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Courses</SelectItem>
+                <SelectItem value="all-courses">All Courses</SelectItem>
                 {courses.map((course) => (
                   <SelectItem key={course.id} value={course.id}>
                     <div className="flex flex-col">
