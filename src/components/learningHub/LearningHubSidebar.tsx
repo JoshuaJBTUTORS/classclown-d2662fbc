@@ -9,7 +9,8 @@ import {
   TrendingUp, 
   Library,
   GraduationCap,
-  Home
+  Home,
+  Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -33,6 +34,11 @@ const LearningHubSidebar = () => {
       title: 'Assessments',
       href: '/learning-hub/assessments',
       icon: Brain
+    },
+    {
+      title: 'Revision Calendar',
+      href: '/learning-hub/revision',
+      icon: Calendar
     },
     {
       title: 'Progress',

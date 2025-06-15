@@ -865,6 +865,149 @@ export type Database = {
         }
         Relationships: []
       }
+      revision_progress: {
+        Row: {
+          confidence_level: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          session_id: string
+          time_spent_minutes: number | null
+          topics_covered: string[] | null
+          user_id: string
+        }
+        Insert: {
+          confidence_level?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          session_id: string
+          time_spent_minutes?: number | null
+          topics_covered?: string[] | null
+          user_id: string
+        }
+        Update: {
+          confidence_level?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          session_id?: string
+          time_spent_minutes?: number | null
+          topics_covered?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revision_progress_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "revision_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revision_schedules: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          name: string
+          selected_days: string[]
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+          weekly_hours: number
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          selected_days: string[]
+          start_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          weekly_hours: number
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          selected_days?: string[]
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          weekly_hours?: number
+        }
+        Relationships: []
+      }
+      revision_sessions: {
+        Row: {
+          completed_at: string | null
+          completion_notes: string | null
+          course_id: string
+          created_at: string
+          duration_minutes: number
+          end_time: string
+          id: string
+          schedule_id: string
+          session_date: string
+          start_time: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_notes?: string | null
+          course_id: string
+          created_at?: string
+          duration_minutes: number
+          end_time: string
+          id?: string
+          schedule_id: string
+          session_date: string
+          start_time: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completion_notes?: string | null
+          course_id?: string
+          created_at?: string
+          duration_minutes?: number
+          end_time?: string
+          id?: string
+          schedule_id?: string
+          session_date?: string
+          start_time?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revision_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revision_sessions_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "revision_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_progress: {
         Row: {
           completed_at: string | null
