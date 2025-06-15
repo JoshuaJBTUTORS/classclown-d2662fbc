@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, TrendingUp, Target, Award, BookOpen } from 'lucide-react';
+import { Brain, TrendingUp, Target, Award, BookOpen, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import TopicPerformanceHeatMap from '@/components/learningHub/TopicPerformanceHeatMap';
 import AssessmentImprovementDashboard from '@/components/learningHub/AssessmentImprovementDashboard';
@@ -15,6 +16,7 @@ const LearningHubAssessments = () => {
   const { userRole } = useAuth();
   const navigate = useNavigate();
   const [selectedTopic, setSelectedTopic] = useState<any>(null);
+  const [isGeneratingImprovements, setIsGeneratingImprovements] = useState(false);
 
   const assessmentFilters = {
     dateRange: { from: null, to: null },
@@ -31,7 +33,7 @@ const LearningHubAssessments = () => {
   };
 
   // Get topic performance data
-  const { data: topicPerformance, isLoading: topicLoading } = useQuery({
+  const { data: topicPerformance, isLoading: topicLoading, refetch: refetchTopics } = useQuery({
     queryKey: ['topic-performance'],
     queryFn: topicPerformanceService.getUserTopicPerformance,
   });
@@ -51,6 +53,19 @@ const LearningHubAssessments = () => {
     navigate(`/learning-hub/lesson/${lessonId}`);
   };
 
+  const handleGenerateMissingImprovements = async () => {
+    setIsGeneratingImprovements(true);
+    try {
+      await topicPerformanceService.generateMissingImprovements();
+      // Refetch data after generating improvements
+      refetchTopics();
+    } catch (error) {
+      console.error('Failed to generate missing improvements:', error);
+    } finally {
+      setIsGeneratingImprovements(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -61,6 +76,17 @@ const LearningHubAssessments = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Assessment Center</h1>
           <p className="text-gray-600 mt-1">Track your assessment performance and progress</p>
+        </div>
+        <div className="ml-auto">
+          <Button
+            onClick={handleGenerateMissingImprovements}
+            disabled={isGeneratingImprovements}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isGeneratingImprovements ? 'animate-spin' : ''}`} />
+            {isGeneratingImprovements ? 'Generating...' : 'Refresh Analysis'}
+          </Button>
         </div>
       </div>
 

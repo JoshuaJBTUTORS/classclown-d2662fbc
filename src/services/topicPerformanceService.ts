@@ -28,7 +28,7 @@ export const topicPerformanceService = {
     if (sessionsError) throw sessionsError;
     if (!sessions || sessions.length === 0) return [];
 
-    // Get all improvement data for these sessions
+    // Try to get improvement data first
     const sessionIds = sessions.map(s => s.id);
     const { data: improvements, error: improvementsError } = await supabase
       .from('assessment_improvements')
@@ -37,7 +37,18 @@ export const topicPerformanceService = {
 
     if (improvementsError) throw improvementsError;
 
-    // Aggregate topic performance data
+    // If we have improvement data, use the existing logic
+    if (improvements && improvements.length > 0) {
+      return this.buildTopicDataFromImprovements(sessions, improvements);
+    }
+
+    // If no improvement data exists, extract directly from student responses
+    console.log('No improvement data found, extracting from student responses...');
+    return this.buildTopicDataFromResponses(sessions);
+  },
+
+  // Build topic data from existing improvement records
+  buildTopicDataFromImprovements(sessions: any[], improvements: any[]): TopicPerformanceData[] {
     const topicMap = new Map<string, {
       topic: string;
       subject: string;
@@ -97,7 +108,135 @@ export const topicPerformanceService = {
       });
     });
 
-    // Convert map to array and calculate derived metrics
+    return this.convertTopicMapToArray(topicMap);
+  },
+
+  // Build topic data directly from student responses when improvement data is missing
+  async buildTopicDataFromResponses(sessions: any[]): Promise<TopicPerformanceData[]> {
+    const sessionIds = sessions.map(s => s.id);
+
+    // Get all student responses with question details
+    const { data: responses, error: responsesError } = await supabase
+      .from('student_responses')
+      .select(`
+        *,
+        assessment_questions(
+          id,
+          question_text,
+          keywords,
+          marks_available,
+          correct_answer,
+          question_type
+        )
+      `)
+      .in('session_id', sessionIds);
+
+    if (responsesError) throw responsesError;
+    if (!responses || responses.length === 0) return [];
+
+    const topicMap = new Map<string, {
+      topic: string;
+      subject: string;
+      totalQuestions: number;
+      correctAnswers: number;
+      assessmentCount: number;
+      confidenceScores: number[];
+      lastAttempt: string;
+      recommendedLessons: Map<string, { id: string; title: string; type: 'video' | 'text' }>;
+    }>();
+
+    // Process each response and extract topics from keywords
+    responses.forEach(response => {
+      const session = sessions.find(s => s.id === response.session_id);
+      if (!session || !response.assessment_questions) return;
+
+      const question = response.assessment_questions;
+      const subject = session.ai_assessments?.subject || 'Unknown';
+      const keywords = Array.isArray(question.keywords) ? question.keywords : [];
+      const isCorrect = response.marks_awarded >= question.marks_available;
+      const confidenceScore = response.confidence_score || 5;
+
+      // Extract topics from keywords and question content
+      const topics = this.extractTopicsFromQuestion(question, response);
+
+      topics.forEach(topic => {
+        const key = `${topic}_${subject}`;
+        
+        if (!topicMap.has(key)) {
+          topicMap.set(key, {
+            topic,
+            subject,
+            totalQuestions: 0,
+            correctAnswers: 0,
+            assessmentCount: 1,
+            confidenceScores: [],
+            lastAttempt: session.completed_at || '',
+            recommendedLessons: new Map()
+          });
+        }
+
+        const topicData = topicMap.get(key)!;
+        topicData.totalQuestions += 1;
+        if (isCorrect) topicData.correctAnswers += 1;
+        topicData.confidenceScores.push(confidenceScore);
+
+        // Update last attempt if this session is more recent
+        if (session.completed_at && session.completed_at > topicData.lastAttempt) {
+          topicData.lastAttempt = session.completed_at;
+        }
+      });
+    });
+
+    return this.convertTopicMapToArray(topicMap);
+  },
+
+  // Extract topics from question data
+  extractTopicsFromQuestion(question: any, response: any): string[] {
+    const topics: string[] = [];
+
+    // Add keywords as topics
+    if (Array.isArray(question.keywords)) {
+      topics.push(...question.keywords.map(k => String(k).toLowerCase()));
+    }
+
+    // Extract topics from AI feedback if available
+    if (response.ai_feedback) {
+      const feedback = response.ai_feedback.toLowerCase();
+      const commonTopics = [
+        'enzymes', 'proteins', 'cells', 'membrane', 'respiration', 'photosynthesis',
+        'genetics', 'evolution', 'ecology', 'metabolism', 'mitosis', 'meiosis',
+        'vacuole', 'organelle', 'nucleus', 'chloroplast', 'mitochondria',
+        'microscopy', 'magnification', 'resolution', 'staining',
+        'temperature', 'ph', 'variables', 'control', 'experiment',
+        'algebra', 'geometry', 'calculus', 'statistics', 'probability',
+        'fractions', 'decimals', 'percentages', 'equations'
+      ];
+
+      commonTopics.forEach(topic => {
+        if (feedback.includes(topic)) {
+          topics.push(topic);
+        }
+      });
+    }
+
+    // Extract from question text
+    const questionText = question.question_text.toLowerCase();
+    const biologicalTerms = [
+      'active site', 'substrate', 'enzyme', 'protein', 'cell sap',
+      'objective lens', 'focus knob', 'magnification', 'microscope'
+    ];
+
+    biologicalTerms.forEach(term => {
+      if (questionText.includes(term)) {
+        topics.push(term.replace(' ', '_'));
+      }
+    });
+
+    return [...new Set(topics)].filter(topic => topic.length > 2);
+  },
+
+  // Convert topic map to array with calculated metrics
+  convertTopicMapToArray(topicMap: Map<string, any>): TopicPerformanceData[] {
     return Array.from(topicMap.values()).map(topicData => {
       const errorRate = topicData.totalQuestions > 0 
         ? ((topicData.totalQuestions - topicData.correctAnswers) / topicData.totalQuestions) * 100
@@ -119,8 +258,44 @@ export const topicPerformanceService = {
         recommendedLessons: Array.from(topicData.recommendedLessons.values())
       };
     })
-    .filter(topic => topic.totalQuestions > 0) // Only include topics with actual data
-    .sort((a, b) => b.errorRate - a.errorRate); // Sort by error rate (worst first)
+    .filter(topic => topic.totalQuestions > 0)
+    .sort((a, b) => b.errorRate - a.errorRate);
+  },
+
+  // Generate missing improvement data for existing sessions
+  async generateMissingImprovements(): Promise<void> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('User not authenticated');
+
+    // Get completed sessions without improvement data
+    const { data: sessions } = await supabase
+      .from('assessment_sessions')
+      .select('id')
+      .eq('user_id', user.user.id)
+      .eq('status', 'completed')
+      .not('completed_at', 'is', null);
+
+    if (!sessions) return;
+
+    const { data: existingImprovements } = await supabase
+      .from('assessment_improvements')
+      .select('session_id')
+      .in('session_id', sessions.map(s => s.id));
+
+    const existingSessionIds = new Set(existingImprovements?.map(i => i.session_id) || []);
+    const missingSessions = sessions.filter(s => !existingSessionIds.has(s.id));
+
+    console.log(`Found ${missingSessions.length} sessions without improvement data`);
+
+    // Generate improvement data for missing sessions
+    for (const session of missingSessions) {
+      try {
+        await assessmentImprovementService.generateImprovements(session.id);
+        console.log(`Generated improvement data for session ${session.id}`);
+      } catch (error) {
+        console.error(`Failed to generate improvement for session ${session.id}:`, error);
+      }
+    }
   },
 
   // Get topic performance for a specific subject
@@ -133,7 +308,7 @@ export const topicPerformanceService = {
   async getWorstPerformingTopics(limit: number = 10): Promise<TopicPerformanceData[]> {
     const allTopics = await this.getUserTopicPerformance();
     return allTopics
-      .filter(topic => topic.errorRate > 25) // Only topics with significant error rates
+      .filter(topic => topic.errorRate > 25)
       .slice(0, limit);
   }
 };
