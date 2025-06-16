@@ -96,17 +96,57 @@ export const paymentService = {
     }
   },
 
-  // Check if user has purchased a course
+  // Create customer portal session for subscription management
+  createCustomerPortal: async (): Promise<{ url: string }> => {
+    console.log('Creating customer portal session');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      
+      if (error) {
+        console.error('Customer portal creation error:', error);
+        throw error;
+      }
+      
+      console.log('Customer portal session created successfully');
+      return data;
+    } catch (error) {
+      console.error('Customer portal service error:', error);
+      throw error;
+    }
+  },
+
+  // Sync subscription status with Stripe
+  syncSubscriptionStatus: async (): Promise<{ message: string }> => {
+    console.log('Syncing subscription status');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-subscription-status');
+      
+      if (error) {
+        console.error('Subscription sync error:', error);
+        throw error;
+      }
+      
+      console.log('Subscription status synced successfully');
+      return data;
+    } catch (error) {
+      console.error('Subscription sync service error:', error);
+      throw error;
+    }
+  },
+
+  // Check if user has purchased a course with enhanced status checking
   checkCoursePurchase: async (courseId: string): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
     const { data, error } = await supabase
       .from('course_purchases')
-      .select('id')
+      .select('id, status')
       .eq('course_id', courseId)
       .eq('user_id', user.id)
-      .eq('status', 'completed')
+      .in('status', ['completed', 'past_due']) // Allow access for past_due to give grace period
       .maybeSingle();
     
     if (error) {
@@ -117,7 +157,7 @@ export const paymentService = {
     return !!data;
   },
 
-  // Get user's purchased courses
+  // Get user's purchased courses with status information
   getUserPurchases: async (): Promise<CoursePurchase[]> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
@@ -126,7 +166,6 @@ export const paymentService = {
       .from('course_purchases')
       .select('*')
       .eq('user_id', user.id)
-      .eq('status', 'completed')
       .order('purchase_date', { ascending: false });
     
     if (error) {
@@ -135,5 +174,26 @@ export const paymentService = {
     }
     
     return data as CoursePurchase[];
+  },
+
+  // Get subscription status for a user
+  getSubscriptionStatus: async (): Promise<{
+    hasActiveSubscription: boolean;
+    subscriptions: CoursePurchase[];
+    needsPaymentUpdate: boolean;
+  }> => {
+    const purchases = await paymentService.getUserPurchases();
+    
+    const activeSubscriptions = purchases.filter(p => 
+      p.status === 'completed' || p.status === 'past_due'
+    );
+    
+    const needsPaymentUpdate = purchases.some(p => p.status === 'past_due');
+    
+    return {
+      hasActiveSubscription: activeSubscriptions.length > 0,
+      subscriptions: activeSubscriptions,
+      needsPaymentUpdate
+    };
   },
 };
