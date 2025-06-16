@@ -1,11 +1,11 @@
 
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, 
   BookOpen, 
   Brain, 
-  TrendingUp, 
   Library,
   GraduationCap,
   Home,
@@ -38,7 +38,7 @@ const navigationItems = [
     icon: BookOpen
   },
   {
-    title: 'Assessments',
+    title: 'Personal Growth',
     href: '/learning-hub/assessments',
     icon: Brain
   },
@@ -46,11 +46,6 @@ const navigationItems = [
     title: 'Revision Calendar',
     href: '/learning-hub/revision',
     icon: Calendar
-  },
-  {
-    title: 'Progress',
-    href: '/learning-hub/progress',
-    icon: TrendingUp
   },
   {
     title: 'Course Library',
@@ -119,3 +114,4 @@ const LearningHubSidebar = () => {
 };
 
 export default LearningHubSidebar;
+
