@@ -29,6 +29,7 @@ const CourseDetail = () => {
   const { toast } = useToast();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<any>(null);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -90,12 +91,19 @@ const CourseDetail = () => {
   const handleStartLearning = () => {
     if (hasPurchased) {
       // Find first lesson and start
-      if (modules && modules.length > 0 && modules[0].lessons.length > 0) {
-        setSelectedLessonId(modules[0].lessons[0].id);
+      if (modules && modules.length > 0 && modules[0].lessons && modules[0].lessons.length > 0) {
+        const firstLesson = modules[0].lessons[0];
+        setSelectedLessonId(firstLesson.id);
+        setSelectedLesson(firstLesson);
       }
     } else {
       setShowPaymentModal(true);
     }
+  };
+
+  const handleLessonSelect = (lesson: any) => {
+    setSelectedLessonId(lesson.id);
+    setSelectedLesson(lesson);
   };
 
   if (isLoading || !course) {
@@ -108,17 +116,17 @@ const CourseDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {selectedLessonId ? (
+      {selectedLessonId && selectedLesson ? (
         <CourseAccessControl courseId={course.id}>
           <div className="flex h-screen">
             <CourseSidebar 
-              course={course} 
               modules={modules || []}
-              selectedLessonId={selectedLessonId}
-              onLessonSelect={setSelectedLessonId}
+              onSelectLesson={handleLessonSelect}
+              currentLessonId={selectedLessonId}
+              isPurchased={hasPurchased}
             />
             <div className="flex-1">
-              <ContentViewer lessonId={selectedLessonId} />
+              <ContentViewer lesson={selectedLesson} />
             </div>
           </div>
         </CourseAccessControl>
@@ -217,7 +225,7 @@ const CourseDetail = () => {
                 Course Content
               </CardTitle>
               <CardDescription>
-                {modules?.length || 0} modules • {modules?.reduce((acc, mod) => acc + mod.lessons.length, 0) || 0} lessons
+                {modules?.length || 0} modules • {modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0} lessons
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -230,14 +238,14 @@ const CourseDetail = () => {
                           Module {index + 1}: {module.title}
                         </h4>
                         <span className="text-sm text-gray-500">
-                          {module.lessons.length} lessons
+                          {module.lessons?.length || 0} lessons
                         </span>
                       </div>
                       {module.description && (
                         <p className="text-sm text-gray-600 mb-3">{module.description}</p>
                       )}
                       <div className="space-y-2">
-                        {module.lessons.slice(0, 3).map((lesson) => (
+                        {module.lessons?.slice(0, 3).map((lesson) => (
                           <div key={lesson.id} className="flex items-center gap-3 text-sm">
                             {lesson.is_preview ? (
                               <Play className="h-4 w-4 text-green-500" />
@@ -250,9 +258,9 @@ const CourseDetail = () => {
                             </span>
                           </div>
                         ))}
-                        {module.lessons.length > 3 && (
+                        {(module.lessons?.length || 0) > 3 && (
                           <p className="text-sm text-gray-500 ml-7">
-                            +{module.lessons.length - 3} more lessons
+                            +{(module.lessons?.length || 0) - 3} more lessons
                           </p>
                         )}
                       </div>

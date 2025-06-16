@@ -18,11 +18,12 @@ const LearningHubDashboard = () => {
     queryFn: learningHubService.getCourses,
   });
 
-  const { data: userProgress } = useQuery({
-    queryKey: ['user-progress', user?.id],
-    queryFn: () => learningHubService.getUserProgress(user?.id || ''),
-    enabled: !!user?.id,
-  });
+  // Mock user progress data since the service method doesn't exist yet
+  const userProgress = {
+    completedCourses: 0,
+    thisWeekHours: 0,
+    assessmentsCompleted: 0
+  };
 
   const featuredCourses = courses?.filter(course => course.status === 'published').slice(0, 3) || [];
 
