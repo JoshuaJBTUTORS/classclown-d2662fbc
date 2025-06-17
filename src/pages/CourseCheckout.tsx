@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import EmbeddedPaymentForm from '@/components/learningHub/EmbeddedPaymentForm';
 
 const CourseCheckout = () => {
-  const { id } = useParams<{ id: string }>();
+  const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [paymentData, setPaymentData] = useState<{
@@ -22,9 +22,9 @@ const CourseCheckout = () => {
   const [isLoadingPayment, setIsLoadingPayment] = useState(false);
 
   const { data: course, isLoading } = useQuery({
-    queryKey: ['course', id],
-    queryFn: () => learningHubService.getCourseById(id!),
-    enabled: !!id,
+    queryKey: ['course', courseId],
+    queryFn: () => learningHubService.getCourseById(courseId!),
+    enabled: !!courseId,
   });
 
   useEffect(() => {
@@ -47,7 +47,7 @@ const CourseCheckout = () => {
         description: "Unable to initialize payment. Please try again.",
         variant: "destructive",
       });
-      navigate(`/course/${course.id}`);
+      navigate(`/learning-hub/course/${course.id}`);
     } finally {
       setIsLoadingPayment(false);
     }
@@ -67,7 +67,7 @@ const CourseCheckout = () => {
         description: "Your subscription is now active. Enjoy your 7-day free trial!",
       });
 
-      navigate(`/course/${course.id}`);
+      navigate(`/learning-hub/course/${course.id}`);
     } catch (error) {
       console.error('Error completing subscription:', error);
       toast({
@@ -106,7 +106,7 @@ const CourseCheckout = () => {
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/course/${course.id}`)}
+            onClick={() => navigate(`/learning-hub/course/${course.id}`)}
             className="mb-6 p-0 h-auto font-normal text-gray-600 hover:text-primary hover:bg-transparent"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
