@@ -414,35 +414,6 @@ const LearningHubAssessments = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Quick Topic Performance Summary */}
-          {worstTopics && worstTopics.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Areas Needing Attention</CardTitle>
-                <CardDescription>
-                  Topics with the highest error rates in {selectedCourseName || 'the selected course'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3">
-                  {worstTopics.slice(0, 3).map((topic, index) => (
-                    <div key={topic.topic} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                      <div>
-                        <span className="font-medium text-red-900">{topic.topic}</span>
-                        <p className="text-sm text-red-700">
-                          {Math.round(topic.errorRate)}% error rate • {topic.subject}
-                        </p>
-                      </div>
-                      <div className="text-sm text-red-600">
-                        {topic.correctAnswers}/{topic.totalQuestions} correct
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="revision-schedule" className="space-y-6">
