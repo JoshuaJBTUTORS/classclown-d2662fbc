@@ -1,26 +1,31 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { RevisionSchedule, RevisionSession, RevisionProgress, RevisionSetupData } from '@/types/revision';
 import { topicPerformanceService } from './topicPerformanceService';
 
 export const revisionCalendarService = {
-  // Get user's revision schedules
+  // Get user's revision schedules - ALWAYS filtered by current user
   async getRevisionSchedules(): Promise<RevisionSchedule[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('revision_schedules')
       .select('*')
+      .eq('user_id', user.user.id) // CRITICAL: Filter by current user
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return (data || []) as RevisionSchedule[];
   },
 
-  // Create a new revision schedule
+  // Create a new revision schedule - ALWAYS for current user
   async createRevisionSchedule(setupData: RevisionSetupData): Promise<RevisionSchedule> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const scheduleData = {
-      user_id: user.user.id,
+      user_id: user.user.id, // CRITICAL: Always use current user ID
       name: setupData.name,
       weekly_hours: setupData.weeklyHours,
       selected_days: setupData.selectedDays,
@@ -45,7 +50,7 @@ export const revisionCalendarService = {
     return data as RevisionSchedule;
   },
 
-  // Generate revision sessions based on schedule
+  // Generate revision sessions based on schedule - ALWAYS for specific user
   async generateRevisionSessions(scheduleId: string, setupData: RevisionSetupData, userId: string): Promise<void> {
     // Get user role
     const { data: userRoleData } = await supabase
@@ -59,13 +64,17 @@ export const revisionCalendarService = {
     let allCoursesForUser: ({ id: string; title: string; subject: string; } | null)[] = [];
 
     if (userRole === 'owner' || userRole === 'admin') {
-      const { data: courses, error: coursesError } = await supabase
-        .from('courses')
-        .select('id, title, subject')
-        .in('subject', setupData.selectedSubjects);
-
-      if (coursesError) throw coursesError;
-      allCoursesForUser = courses || [];
+      // Even for owners/admins, only include courses they have purchased for revision
+      // This ensures personal growth data is truly personal
+      const { data: purchasedCourses } = await supabase
+        .from('course_purchases')
+        .select('course_id, courses(id, title, subject)')
+        .eq('user_id', userId)
+        .eq('status', 'completed');
+      
+      if (purchasedCourses) {
+        allCoursesForUser = purchasedCourses.map(p => p.courses);
+      }
     } else { // student, parent, or other roles
       const { data: purchasedCourses } = await supabase
         .from('course_purchases')
@@ -79,7 +88,7 @@ export const revisionCalendarService = {
     }
     
     if (allCoursesForUser.length === 0) {
-      console.warn("No courses found for this user to generate a revision schedule.");
+      console.warn("No purchased courses found for this user to generate a revision schedule.");
       return;
     }
 
@@ -90,7 +99,7 @@ export const revisionCalendarService = {
 
     // --- Smart Scheduling Logic ---
     try {
-      // FIX: getUserTopicPerformance expects 0-1 arguments, not 2.
+      // Get user-specific weak topics for smart scheduling
       const allWeakTopics = await topicPerformanceService.getUserTopicPerformance();
       
       if (allWeakTopics && allWeakTopics.length > 0) {
@@ -191,7 +200,7 @@ export const revisionCalendarService = {
     }
   },
 
-  // Get revision sessions for calendar display
+  // Get revision sessions for calendar display - ALWAYS filtered by current user
   async getRevisionSessions(): Promise<RevisionSession[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
@@ -199,7 +208,7 @@ export const revisionCalendarService = {
     const { data: activeSchedules, error: schedulesError } = await supabase
       .from('revision_schedules')
       .select('id')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.user.id) // CRITICAL: Filter by current user
       .eq('status', 'active')
       .is('deleted_at', null);
 
@@ -241,7 +250,7 @@ export const revisionCalendarService = {
     if (error) throw error;
   },
 
-  // Add revision progress
+  // Add revision progress - ALWAYS for current user
   async addRevisionProgress(progressData: Omit<RevisionProgress, 'id' | 'created_at'>): Promise<void> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
@@ -250,7 +259,7 @@ export const revisionCalendarService = {
       .from('revision_progress')
       .insert({
         ...progressData,
-        user_id: user.user.id
+        user_id: user.user.id // CRITICAL: Always use current user ID
       });
 
     if (error) throw error;
@@ -265,8 +274,8 @@ export const revisionCalendarService = {
     return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
   },
 
+  // Reset active schedule - ONLY for current user
   async resetActiveSchedule(): Promise<void> {
-    // Log authentication and schedule finding steps for diagnosis
     const { data: user, error: userError } = await supabase.auth.getUser();
     if (!user.user) {
       console.error('[resetActiveSchedule] No authenticated user found.', userError);
@@ -277,7 +286,7 @@ export const revisionCalendarService = {
     const { data: activeSchedule, error: findError } = await supabase
       .from('revision_schedules')
       .select('id, user_id, status')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.user.id) // CRITICAL: Filter by current user
       .eq('status', 'active')
       .is('deleted_at', null)
       .maybeSingle();
@@ -300,7 +309,8 @@ export const revisionCalendarService = {
     const { error: deleteError } = await supabase
       .from('revision_schedules')
       .delete()
-      .eq('id', activeSchedule.id);
+      .eq('id', activeSchedule.id)
+      .eq('user_id', user.user.id); // Double-check user ownership
 
     if (deleteError) {
       console.error('[resetActiveSchedule] ERROR deleting revision_schedules:', deleteError);

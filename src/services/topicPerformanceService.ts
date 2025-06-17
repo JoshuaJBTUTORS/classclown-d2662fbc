@@ -83,7 +83,7 @@ export const topicPerformanceService = {
     }
   },
 
-  // Get module performance for a specific course
+  // Get module performance for a specific course - ALWAYS filtered by current user
   async getCourseModulePerformance(courseId: string | null): Promise<ModulePerformanceData[]> {
     if (!courseId) {
         return [];
@@ -129,7 +129,7 @@ export const topicPerformanceService = {
       }));
     }
 
-    // 3. Get all user's completed assessment sessions for the course's subject
+    // 3. Get CURRENT USER's completed assessment sessions for the course's subject
     const { data: sessions, error: sessionsError } = await supabase
       .from('assessment_sessions')
       .select(`
@@ -137,7 +137,7 @@ export const topicPerformanceService = {
         total_marks_available,
         ai_assessments!inner(title, subject)
       `)
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.user.id) // CRITICAL: Filter by current user
       .eq('status', 'completed')
       .not('completed_at', 'is', null)
       .eq('ai_assessments.subject', course.subject);
@@ -179,7 +179,7 @@ export const topicPerformanceService = {
     });
   },
 
-  // Get aggregated topic performance data for the current user with optional course filtering
+  // Get aggregated topic performance data for the CURRENT USER with optional course filtering
   async getUserTopicPerformance(courseId?: string): Promise<TopicPerformanceData[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
@@ -194,7 +194,7 @@ export const topicPerformanceService = {
         total_marks_available,
         ai_assessments(subject, title)
       `)
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.user.id) // CRITICAL: Filter by current user
       .eq('status', 'completed')
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false });
@@ -222,7 +222,7 @@ export const topicPerformanceService = {
       return this.processSessionsForTopicPerformance(filteredSessions);
     }
 
-    // Get all completed assessment sessions for the user
+    // Get all completed assessment sessions for the current user
     const { data: sessions, error: sessionsError } = await query;
     if (sessionsError) throw sessionsError;
     if (!sessions || sessions.length === 0) return [];
@@ -636,16 +636,16 @@ export const topicPerformanceService = {
     .sort((a, b) => b.errorRate - a.errorRate);
   },
 
-  // Generate missing improvement data for existing sessions
+  // Generate missing improvement data for existing sessions - CURRENT USER ONLY
   async generateMissingImprovements(): Promise<void> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
-    // Get completed sessions without improvement data
+    // Get completed sessions without improvement data for CURRENT USER
     const { data: sessions } = await supabase
       .from('assessment_sessions')
       .select('id')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.user.id) // CRITICAL: Filter by current user
       .eq('status', 'completed')
       .not('completed_at', 'is', null);
 
@@ -672,13 +672,13 @@ export const topicPerformanceService = {
     }
   },
 
-  // Get topic performance for a specific subject
+  // Get topic performance for a specific subject - CURRENT USER ONLY
   async getSubjectTopicPerformance(subject: string): Promise<TopicPerformanceData[]> {
     const allTopics = await this.getUserTopicPerformance();
     return allTopics.filter(topic => topic.subject === subject);
   },
 
-  // Get the worst performing topics across all subjects or for a specific course
+  // Get the worst performing topics across all subjects or for a specific course - CURRENT USER ONLY
   async getWorstPerformingTopics(limit: number = 10, courseId?: string): Promise<TopicPerformanceData[]> {
     const allTopics = await this.getUserTopicPerformance(courseId);
     return allTopics

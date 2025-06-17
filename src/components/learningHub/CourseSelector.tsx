@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,33 +23,16 @@ interface CourseSelectorProps {
 const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCourseChange }) => {
   const { user, userRole } = useAuth();
 
-  // Get user's accessible courses
+  // Get user's accessible courses - only purchased courses for all users
   const { data: courses, isLoading, error } = useQuery({
-    queryKey: ['user-courses', user?.id, userRole],
+    queryKey: ['user-purchased-courses', user?.id],
     queryFn: async () => {
       if (!user) return [];
 
-      console.log('🔍 CourseSelector: Fetching courses for user role:', userRole);
+      console.log('🔍 CourseSelector: Fetching purchased courses for user:', user.id);
 
-      // Owners can see all courses (including drafts for testing)
-      if (userRole === 'owner') {
-        const { data, error } = await supabase
-          .from('courses')
-          .select('id, title, subject, status')
-          .order('title');
-
-        console.log('👑 Owner courses query result:', { data, error });
-
-        if (error) {
-          console.error('❌ Error fetching owner courses:', error);
-          throw error;
-        }
-        return data || [];
-      }
-
-      // Regular users can only see purchased courses
       try {
-        console.log('👤 Fetching purchased courses for regular user');
+        // For all users (including owners), only show purchased courses in Personal Growth
         const purchases = await paymentService.getUserPurchases();
         console.log('💰 User purchases:', purchases);
         
@@ -144,16 +128,8 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
             <div>
               <h3 className="font-medium text-gray-900">No Courses Available</h3>
               <p className="text-sm text-gray-600">
-                {userRole === 'owner' 
-                  ? 'No courses found in the database. Create some courses first.'
-                  : 'Purchase a course to access assessment analytics.'
-                }
+                You haven't purchased any courses yet. Visit the course library to get started.
               </p>
-              {userRole === 'owner' && (
-                <p className="text-xs text-blue-600 mt-1">
-                  Debug: User role: {userRole}, User ID: {user?.id}
-                </p>
-              )}
             </div>
           </div>
         </CardContent>
@@ -170,7 +146,7 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-semibold text-gray-900">Select a Course to Analyze</h2>
-            <p className="text-sm text-gray-600">Click a card to view detailed analytics for a specific course or for all courses combined.</p>
+            <p className="text-sm text-gray-600">Click a card to view detailed analytics for a specific course or for all your courses combined.</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

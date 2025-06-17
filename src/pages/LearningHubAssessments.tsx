@@ -27,13 +27,16 @@ const LearningHubAssessments = () => {
   const [isGeneratingImprovements, setIsGeneratingImprovements] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
 
+  // Ensure only authenticated users can access this data
+  const isAuthenticated = !!user;
+
   const assessmentFilters = {
     dateRange: { from: null, to: null },
-    selectedStudents: [],
+    selectedStudents: user ? [user.id] : [], // Filter by current user only
     selectedSubjects: []
   };
 
-  // Get course-specific stats
+  // Get course-specific stats - filtered by user
   const { data: courseStats, isLoading: statsLoading } = useQuery({
     queryKey: ['course-assessment-stats', selectedCourseId, user?.id],
     queryFn: async () => {
@@ -48,7 +51,7 @@ const LearningHubAssessments = () => {
 
       if (!course) return null;
 
-      // Get assessment sessions for this course
+      // Get assessment sessions for this course - FILTERED BY USER
       const { data: sessions } = await supabase
         .from('assessment_sessions')
         .select(`
@@ -57,7 +60,7 @@ const LearningHubAssessments = () => {
           completed_at,
           ai_assessments(subject)
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', user.id) // CRITICAL: Filter by current user
         .eq('status', 'completed')
         .not('completed_at', 'is', null);
 
@@ -94,7 +97,7 @@ const LearningHubAssessments = () => {
         completionRate: 100 // All sessions are completed
       };
     },
-    enabled: !!user && !!selectedCourseId,
+    enabled: isAuthenticated && !!selectedCourseId,
   });
 
   // Default stats for when no course is selected
@@ -107,38 +110,42 @@ const LearningHubAssessments = () => {
 
   const stats = courseStats || defaultStats;
 
-  // Get topic performance data for selected course
+  // Get topic performance data for selected course - user filtered
   const { data: topicPerformance, isLoading: topicLoading, refetch: refetchTopics } = useQuery({
-    queryKey: ['topic-performance', selectedCourseId],
+    queryKey: ['topic-performance', selectedCourseId, user?.id],
     queryFn: () => topicPerformanceService.getUserTopicPerformance(selectedCourseId || undefined),
+    enabled: isAuthenticated,
   });
 
-  // Get module performance for radar chart
+  // Get module performance for radar chart - user filtered
   const { data: modulePerformance, isLoading: modulePerformanceLoading } = useQuery({
-    queryKey: ['module-performance', selectedCourseId],
+    queryKey: ['module-performance', selectedCourseId, user?.id],
     queryFn: () => topicPerformanceService.getCourseModulePerformance(selectedCourseId),
-    enabled: !!selectedCourseId,
+    enabled: isAuthenticated && !!selectedCourseId,
   });
 
-  // Get worst performing topics for improvement section
+  // Get worst performing topics for improvement section - user filtered
   const { data: worstTopics } = useQuery({
-    queryKey: ['worst-topics', selectedCourseId],
+    queryKey: ['worst-topics', selectedCourseId, user?.id],
     queryFn: () => topicPerformanceService.getWorstPerformingTopics(5, selectedCourseId || undefined),
+    enabled: isAuthenticated,
   });
 
-  // --- Revision Planner Data ---
+  // --- Revision Planner Data - User Filtered ---
   const { data: schedules, refetch: refetchSchedules } = useQuery({
-    queryKey: ['revision-schedules'],
+    queryKey: ['revision-schedules', user?.id],
     queryFn: () => revisionCalendarService.getRevisionSchedules(),
+    enabled: isAuthenticated,
   });
   const { data: revisionSessions } = useQuery({
-    queryKey: ['revision-sessions'],
+    queryKey: ['revision-sessions', user?.id],
     queryFn: () => revisionCalendarService.getRevisionSessions(),
+    enabled: isAuthenticated,
   });
   const { data: allWorstTopics, isLoading: allWorstTopicsLoading } = useQuery({
     queryKey: ['worst-topics-all', user?.id],
     queryFn: () => topicPerformanceService.getWorstPerformingTopics(20),
-    enabled: !!user,
+    enabled: isAuthenticated,
   });
 
   const activeSchedule = schedules?.find(s => s.status === 'active');
@@ -197,6 +204,17 @@ const LearningHubAssessments = () => {
       setSelectedCourseName('');
     }
   }, [selectedCourseId]);
+
+  // Don't render if user is not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please log in to access your assessment data</h1>
+        </div>
+      </div>
+    );
+  }
 
   const handleTopicClick = (topic: any) => {
     setSelectedTopic(topic);
@@ -328,7 +346,7 @@ const LearningHubAssessments = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Assessment Progress Chart - course filtered */}
+          {/* Assessment Progress Chart - course and user filtered */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Assessment Performance Over Time</CardTitle>
