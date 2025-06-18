@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -38,6 +37,108 @@ export const useCalendarData = ({
   // Wrap lesson completion hook in error boundary
   const { completionData } = useLessonCompletion(lessonIds);
 
+  // Move generateRecurringEvents function before useMemo to fix hoisting issue
+  const generateRecurringEvents = (lesson: any, userRole: AppRole | null, completionData: any) => {
+    const events = [];
+    
+    try {
+      // Safety checks
+      if (!lesson || !lesson.start_time || !lesson.end_time || !lesson.recurrence_interval) {
+        console.warn('Invalid lesson data for recurring events:', lesson);
+        return events;
+      }
+
+      console.log('Generating recurring events for lesson:', lesson.id, lesson.recurrence_interval);
+      
+      const startDate = parseISO(lesson.start_time);
+      const endDate = parseISO(lesson.end_time);
+      const recurrenceEndDate = lesson.recurrence_end_date 
+        ? parseISO(lesson.recurrence_end_date) 
+        : addDays(startDate, 90);
+
+      // Validate dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error('Invalid date format in lesson:', lesson);
+        return events;
+      }
+
+      const durationMs = endDate.getTime() - startDate.getTime();
+      
+      let currentDate = startDate;
+      let eventCount = 0;
+      const MAX_EVENTS = 365; // Safety limit to prevent infinite loops
+      
+      while (currentDate <= recurrenceEndDate && eventCount < MAX_EVENTS) {
+        if (format(currentDate, 'yyyy-MM-dd') !== format(startDate, 'yyyy-MM-dd')) {
+          const instanceStartDate = new Date(currentDate);
+          const instanceEndDate = new Date(instanceStartDate.getTime() + durationMs);
+          const instanceId = `${lesson.id}-${format(currentDate, 'yyyy-MM-dd')}`;
+          
+          // Recurring instances are typically not completed (they inherit from main lesson)
+          const completionInfo = completionData[lesson.id];
+          const isCompleted = completionInfo?.isCompleted || false;
+          
+          let className = 'recurring-instance';
+          if (isCompleted) {
+            className += ' completed-event';
+          }
+          
+          events.push({
+            id: instanceId,
+            title: lesson.title,
+            start: instanceStartDate.toISOString(),
+            end: instanceEndDate.toISOString(),
+            className,
+            extendedProps: {
+              isRecurringInstance: true,
+              originalLessonId: lesson.id,
+              description: lesson.description,
+              subject: lesson.subject,
+              userRole: userRole,
+              tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
+                id: lesson.tutor.id,
+                first_name: lesson.tutor.first_name,
+                last_name: lesson.tutor.last_name,
+                email: lesson.tutor.email
+              } : null,
+              students: lesson.lesson_students?.map((ls: any) => ({
+                id: ls.student_id,
+                name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+              })) || [],
+              isCompleted: isCompleted,
+              completionDetails: completionInfo,
+              eventType: 'lesson'
+            }
+          });
+
+          eventCount++;
+        }
+        
+        if (lesson.recurrence_interval === 'daily') {
+          currentDate = addDays(currentDate, 1);
+        } else if (lesson.recurrence_interval === 'weekly') {
+          currentDate = addDays(currentDate, 7);
+        } else if (lesson.recurrence_interval === 'biweekly') {
+          currentDate = addDays(currentDate, 14);
+        } else if (lesson.recurrence_interval === 'monthly') {
+          currentDate = addDays(currentDate, 30);
+        } else {
+          currentDate = addDays(currentDate, 7);
+        }
+      }
+
+      if (eventCount >= MAX_EVENTS) {
+        console.warn(`Recurring event generation stopped at ${MAX_EVENTS} events for lesson ${lesson.id}`);
+      }
+      
+      console.log(`Generated ${events.length} recurring events for lesson ${lesson.id}`);
+      return events;
+    } catch (error) {
+      console.error('Error generating recurring events for lesson:', lesson.id, error);
+      return events;
+    }
+  };
+
   // Memoize events to prevent unnecessary recalculations
   const events = useMemo(() => {
     const calendarEvents = [];
@@ -75,7 +176,7 @@ export const useCalendarData = ({
               last_name: lesson.tutor.last_name,
               email: lesson.tutor.email
             } : null,
-            students: lesson.lesson_students?.map(ls => ({
+            students: lesson.lesson_students?.map((ls: any) => ({
               id: ls.student_id,
               name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
             })) || [],
@@ -288,78 +389,6 @@ export const useCalendarData = ({
 
     fetchEvents();
   }, [userRole, userEmail, isAuthenticated, refreshKey, filters]);
-
-  const generateRecurringEvents = (lesson, userRole, completionData) => {
-    const events = [];
-    const startDate = parseISO(lesson.start_time);
-    const endDate = parseISO(lesson.end_time);
-    const recurrenceEndDate = lesson.recurrence_end_date 
-      ? parseISO(lesson.recurrence_end_date) 
-      : addDays(startDate, 90);
-
-    const durationMs = endDate.getTime() - startDate.getTime();
-    
-    let currentDate = startDate;
-    
-    while (currentDate <= recurrenceEndDate) {
-      if (format(currentDate, 'yyyy-MM-dd') !== format(startDate, 'yyyy-MM-dd')) {
-        const instanceStartDate = new Date(currentDate);
-        const instanceEndDate = new Date(instanceStartDate.getTime() + durationMs);
-        const instanceId = `${lesson.id}-${format(currentDate, 'yyyy-MM-dd')}`;
-        
-        // Recurring instances are typically not completed (they inherit from main lesson)
-        const completionInfo = completionData[lesson.id];
-        const isCompleted = completionInfo?.isCompleted || false;
-        
-        let className = 'recurring-instance';
-        if (isCompleted) {
-          className += ' completed-event';
-        }
-        
-        events.push({
-          id: instanceId,
-          title: lesson.title,
-          start: instanceStartDate.toISOString(),
-          end: instanceEndDate.toISOString(),
-          className,
-          extendedProps: {
-            isRecurringInstance: true,
-            originalLessonId: lesson.id,
-            description: lesson.description,
-            subject: lesson.subject,
-            userRole: userRole,
-            tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
-              id: lesson.tutor.id,
-              first_name: lesson.tutor.first_name,
-              last_name: lesson.tutor.last_name,
-              email: lesson.tutor.email
-            } : null,
-            students: lesson.lesson_students?.map(ls => ({
-              id: ls.student_id,
-              name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
-            })) || [],
-            isCompleted: isCompleted,
-            completionDetails: completionInfo,
-            eventType: 'lesson'
-          }
-        });
-      }
-      
-      if (lesson.recurrence_interval === 'daily') {
-        currentDate = addDays(currentDate, 1);
-      } else if (lesson.recurrence_interval === 'weekly') {
-        currentDate = addDays(currentDate, 7);
-      } else if (lesson.recurrence_interval === 'biweekly') {
-        currentDate = addDays(currentDate, 14);
-      } else if (lesson.recurrence_interval === 'monthly') {
-        currentDate = addDays(currentDate, 30);
-      } else {
-        currentDate = addDays(currentDate, 7);
-      }
-    }
-    
-    return events;
-  };
 
   return {
     events,
