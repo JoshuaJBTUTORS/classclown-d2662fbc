@@ -17,26 +17,26 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
   courseId,
   children
 }) => {
-  const { user } = useAuth();
+  const { user, isOwner } = useAuth();
 
   const { data: hasPurchased, isLoading } = useQuery({
     queryKey: ['course-purchase', courseId, user?.id],
     queryFn: () => paymentService.checkCoursePurchase(courseId),
-    enabled: !!user && !!courseId,
+    enabled: !!user && !!courseId && !isOwner, // Skip check if user is owner
   });
 
   const { data: subscriptionStatus } = useQuery({
     queryKey: ['subscription-status', user?.id],
     queryFn: paymentService.getSubscriptionStatus,
-    enabled: !!user,
+    enabled: !!user && !isOwner, // Skip check if user is owner
   });
 
   // Sync subscription status on mount
   React.useEffect(() => {
-    if (user) {
+    if (user && !isOwner) {
       paymentService.syncSubscriptionStatus().catch(console.error);
     }
-  }, [user]);
+  }, [user, isOwner]);
 
   if (!user) {
     return (
@@ -52,6 +52,11 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
         </CardHeader>
       </Card>
     );
+  }
+
+  // Owners have full access to all courses
+  if (isOwner) {
+    return <>{children}</>;
   }
 
   if (isLoading) {

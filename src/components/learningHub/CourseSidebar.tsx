@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { CourseLesson, CourseModule, StudentProgress } from '@/types/course';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight, CheckCircle2, Clock, LockIcon, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CourseSidebarProps {
   modules: CourseModule[];
@@ -21,6 +23,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
   isAdmin = false,
   isPurchased = false,
 }) => {
+  const { isOwner } = useAuth();
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>(() => {
     // Auto-expand first module and current module by default
     const initialExpanded: Record<string, boolean> = {};
@@ -60,7 +63,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
       return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
     } else if (status === 'in_progress') {
       return <Clock className="h-4 w-4 text-amber-500" />;
-    } else if (!isPurchased && !isAdmin && !lesson.is_preview) {
+    } else if (!isPurchased && !isAdmin && !isOwner && !lesson.is_preview) {
       return <LockIcon className="h-4 w-4 text-gray-400" />;
     } else if (lesson.content_type === 'video') {
       return <PlayCircle className="h-4 w-4 text-blue-500" />;
@@ -104,7 +107,7 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
               <div className="pl-8 pr-3 pb-2">
                 {module.lessons.map((lesson) => {
                   const isActive = currentLessonId === lesson.id;
-                  const canAccess = isAdmin || isPurchased || lesson.is_preview;
+                  const canAccess = isAdmin || isOwner || isPurchased || lesson.is_preview;
                   const status = getLessonStatus(lesson.id);
                   
                   return (

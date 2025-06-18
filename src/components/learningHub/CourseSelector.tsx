@@ -21,42 +21,60 @@ interface CourseSelectorProps {
 }
 
 const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCourseChange }) => {
-  const { user, userRole } = useAuth();
+  const { user, userRole, isOwner } = useAuth();
 
-  // Get user's accessible courses - only purchased courses for all users
+  // Get user's accessible courses
   const { data: courses, isLoading, error } = useQuery({
-    queryKey: ['user-purchased-courses', user?.id],
+    queryKey: ['user-accessible-courses', user?.id, userRole],
     queryFn: async () => {
       if (!user) return [];
 
-      console.log('🔍 CourseSelector: Fetching purchased courses for user:', user.id);
+      console.log('🔍 CourseSelector: Fetching accessible courses for user:', user.id, 'role:', userRole);
 
       try {
-        // For all users (including owners), only show purchased courses in Personal Growth
-        const purchases = await paymentService.getUserPurchases();
-        console.log('💰 User purchases:', purchases);
-        
-        const courseIds = purchases.map(p => p.course_id);
+        if (isOwner) {
+          // Owners can see all published courses
+          console.log('👑 Owner access: Fetching all published courses');
+          const { data, error } = await supabase
+            .from('courses')
+            .select('id, title, subject')
+            .eq('status', 'published')
+            .order('title');
 
-        if (courseIds.length === 0) {
-          console.log('📝 No purchases found for user');
-          return [];
+          if (error) {
+            console.error('❌ Error fetching all courses for owner:', error);
+            throw error;
+          }
+
+          console.log('📚 All published courses for owner:', data);
+          return data || [];
+        } else {
+          // Regular users only see purchased courses
+          const purchases = await paymentService.getUserPurchases();
+          console.log('💰 User purchases:', purchases);
+          
+          const courseIds = purchases.map(p => p.course_id);
+
+          if (courseIds.length === 0) {
+            console.log('📝 No purchases found for user');
+            return [];
+          }
+
+          const { data, error } = await supabase
+            .from('courses')
+            .select('id, title, subject')
+            .in('id', courseIds)
+            .eq('status', 'published')
+            .order('title');
+
+          console.log('🛒 Purchased courses query result:', { data, error });
+
+          if (error) {
+            console.error('❌ Error fetching purchased courses:', error);
+            throw error;
+          }
+          return data || [];
         }
-
-        const { data, error } = await supabase
-          .from('courses')
-          .select('id, title, subject')
-          .in('id', courseIds)
-          .eq('status', 'published')
-          .order('title');
-
-        console.log('🛒 Purchased courses query result:', { data, error });
-
-        if (error) {
-          console.error('❌ Error fetching purchased courses:', error);
-          throw error;
-        }
-        return data || [];
       } catch (error) {
         console.error('❌ Error fetching user courses:', error);
         return [];
@@ -72,6 +90,7 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
     coursesCount: courses?.length,
     courses,
     userRole,
+    isOwner,
     userId: user?.id
   });
 
@@ -128,7 +147,10 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
             <div>
               <h3 className="font-medium text-gray-900">No Courses Available</h3>
               <p className="text-sm text-gray-600">
-                You haven't purchased any courses yet. Visit the course library to get started.
+                {isOwner 
+                  ? 'No published courses found. Create some courses to get started.'
+                  : 'You haven\'t purchased any courses yet. Visit the course library to get started.'
+                }
               </p>
             </div>
           </div>
@@ -146,7 +168,12 @@ const CourseSelector: React.FC<CourseSelectorProps> = ({ selectedCourseId, onCou
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-semibold text-gray-900">Select a Course to Analyze</h2>
-            <p className="text-sm text-gray-600">Click a card to view detailed analytics for a specific course or for all your courses combined.</p>
+            <p className="text-sm text-gray-600">
+              {isOwner 
+                ? 'As an owner, you can view analytics for all published courses.'
+                : 'Click a card to view detailed analytics for a specific course or for all your courses combined.'
+              }
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
