@@ -13,13 +13,16 @@ const CourseCheckout = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [paymentData, setPaymentData] = useState<{
-    client_secret: string;
-    customer_id: string;
+  const [subscriptionData, setSubscriptionData] = useState<{
+    subscription_id: string;
+    client_secret?: string;
+    status: string;
+    trial_end?: string;
     course_title: string;
     amount: number;
+    requires_payment_method: boolean;
   } | null>(null);
-  const [isLoadingPayment, setIsLoadingPayment] = useState(false);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -28,39 +31,47 @@ const CourseCheckout = () => {
   });
 
   useEffect(() => {
-    if (course && !paymentData) {
-      initializePayment();
+    if (course && !subscriptionData) {
+      initializeSubscription();
     }
   }, [course]);
 
-  const initializePayment = async () => {
+  const initializeSubscription = async () => {
     if (!course) return;
     
-    setIsLoadingPayment(true);
+    setIsLoadingSubscription(true);
     try {
-      const data = await paymentService.createPaymentIntent(course.id);
-      setPaymentData(data);
+      const data = await paymentService.createSubscriptionWithTrial(course.id);
+      setSubscriptionData(data);
+      
+      // If subscription is already active (trial), redirect immediately
+      if (data.status === 'trialing') {
+        toast({
+          title: "Free trial activated!",
+          description: "Your 7-day free trial has started. Enjoy full access to the course!",
+        });
+        navigate(`/learning-hub/course/${course.id}`);
+        return;
+      }
+      
     } catch (error) {
-      console.error('Error creating payment intent:', error);
+      console.error('Error creating subscription:', error);
       toast({
-        title: "Payment Error",
-        description: "Unable to initialize payment. Please try again.",
+        title: "Subscription Error",
+        description: "Unable to start your subscription. Please try again.",
         variant: "destructive",
       });
-      navigate(`/learning-hub/course/${course.id}`);
+      navigate(`/course/${course.id}`);
     } finally {
-      setIsLoadingPayment(false);
+      setIsLoadingSubscription(false);
     }
   };
 
   const handlePaymentSuccess = async () => {
-    if (!paymentData || !course) return;
+    if (!subscriptionData || !course) return;
 
     try {
-      await paymentService.completeSubscription(
-        paymentData.client_secret.split('_secret_')[0],
-        course.id
-      );
+      await paymentService.completeSubscriptionSetup(subscriptionData.subscription_id);
 
       toast({
         title: "Welcome aboard!",
@@ -69,10 +80,10 @@ const CourseCheckout = () => {
 
       navigate(`/learning-hub/course/${course.id}`);
     } catch (error) {
-      console.error('Error completing subscription:', error);
+      console.error('Error completing subscription setup:', error);
       toast({
-        title: "Subscription Error",
-        description: "Payment successful but there was an issue activating your subscription. Please contact support.",
+        title: "Setup Error",
+        description: "Payment method saved but there was an issue completing setup. Please contact support.",
         variant: "destructive",
       });
     }
@@ -80,7 +91,7 @@ const CourseCheckout = () => {
 
   const handlePaymentError = (error: string) => {
     toast({
-      title: "Payment Failed",
+      title: "Payment Setup Failed",
       description: error,
       variant: "destructive",
     });
@@ -157,7 +168,7 @@ const CourseCheckout = () => {
               <span className="font-semibold text-primary">7-Day Free Trial</span>
             </div>
             <p className="text-sm text-primary/80">
-              Start learning immediately with full access. Cancel anytime during your trial period with no charges.
+              Start learning immediately with full access. No charges during your trial period - cancel anytime.
             </p>
           </div>
         </div>
@@ -181,27 +192,30 @@ const CourseCheckout = () => {
         </div>
       </div>
 
-      {/* Right Panel - Payment Form */}
+      {/* Right Panel - Subscription Setup */}
       <div className="lg:w-3/5 bg-white p-8 lg:p-12">
         <div className="max-w-lg">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete subscription</h2>
-            <p className="text-gray-600">Start your 7-day free trial today</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Start your free trial</h2>
+            <p className="text-gray-600">7 days free, then {subscriptionData ? formatPrice(subscriptionData.amount) : '£8.99'}/month</p>
           </div>
 
-          {/* Payment Form */}
-          {paymentData ? (
+          {/* Payment Form or Loading */}
+          {subscriptionData && subscriptionData.requires_payment_method && subscriptionData.client_secret ? (
             <EmbeddedPaymentForm
-              clientSecret={paymentData.client_secret}
-              customerId={paymentData.customer_id}
-              courseTitle={paymentData.course_title}
-              amount={paymentData.amount}
+              clientSecret={subscriptionData.client_secret}
+              customerId=""
+              courseTitle={subscriptionData.course_title}
+              amount={subscriptionData.amount}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
             />
           ) : (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-gray-600">
+                {isLoadingSubscription ? "Setting up your subscription..." : "Processing..."}
+              </span>
             </div>
           )}
         </div>

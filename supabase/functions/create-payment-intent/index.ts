@@ -15,7 +15,7 @@ serve(async (req) => {
   }
   
   try {
-    console.log("Starting create-payment-intent function");
+    console.log("Starting create-subscription-with-trial function");
     
     const { courseId } = await req.json();
     
@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error("Course ID is required");
     }
 
-    console.log("Processing payment intent for course:", courseId);
+    console.log("Processing subscription with trial for course:", courseId);
 
     // Create Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
@@ -107,33 +107,85 @@ serve(async (req) => {
       console.log("New customer created:", customerId);
     }
 
-    // Create a Payment Intent for the subscription setup
-    console.log("Creating Stripe Payment Intent");
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: course.price || 899, // £8.99 per month
-      currency: "gbp",
+    // Create subscription with 7-day free trial
+    console.log("Creating Stripe subscription with trial");
+    const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      setup_future_usage: "off_session", // For future subscription payments
+      items: [{
+        price_data: {
+          currency: "gbp",
+          product_data: { 
+            name: `${course.title} Subscription`,
+            description: `Monthly access to ${course.title} course`
+          },
+          unit_amount: course.price || 899, // £8.99 per month
+          recurring: {
+            interval: "month",
+          },
+        },
+      }],
+      trial_period_days: 7, // 7-day free trial
+      payment_behavior: 'default_incomplete',
+      payment_settings: { save_default_payment_method: 'on_subscription' },
+      expand: ['latest_invoice.payment_intent'],
       metadata: {
         course_id: courseId,
         user_id: user.id,
-        subscription_flow: "true",
       },
     });
 
-    console.log("Payment Intent created successfully:", paymentIntent.id);
+    console.log("Subscription created with trial:", subscription.id);
+
+    // Create Supabase client using service role key to bypass RLS
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    // Create purchase record immediately with trial status
+    const { error: insertError } = await supabaseService
+      .from('course_purchases')
+      .insert({
+        user_id: user.id,
+        course_id: courseId,
+        stripe_session_id: subscription.id,
+        stripe_payment_intent_id: subscription.latest_invoice?.payment_intent?.id || null,
+        amount_paid: course.price || 899,
+        currency: 'gbp',
+        status: subscription.status === 'trialing' ? 'completed' : 'pending'
+      });
+
+    if (insertError) {
+      console.error("Database insert error:", insertError);
+      // Try to cancel the subscription if DB insert fails
+      try {
+        await stripe.subscriptions.cancel(subscription.id);
+      } catch (cancelError) {
+        console.error("Failed to cancel subscription after DB error:", cancelError);
+      }
+      throw new Error("Failed to record subscription in database");
+    }
+
+    console.log("Purchase record created successfully");
+
+    // Get client secret for payment setup if needed
+    const clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
 
     return new Response(JSON.stringify({ 
-      client_secret: paymentIntent.client_secret,
-      customer_id: customerId,
+      subscription_id: subscription.id,
+      client_secret: clientSecret,
+      status: subscription.status,
+      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       course_title: course.title,
-      amount: course.price || 899
+      amount: course.price || 899,
+      requires_payment_method: subscription.status === 'incomplete'
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error in create-payment-intent function:", error);
+    console.error("Error in create-subscription-with-trial function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

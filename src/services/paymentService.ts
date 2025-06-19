@@ -3,14 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { CoursePurchase } from '@/types/course';
 
 export const paymentService = {
-  // Create a Payment Intent for embedded checkout
-  createPaymentIntent: async (courseId: string): Promise<{ 
-    client_secret: string; 
-    customer_id: string; 
+  // Create a subscription with trial period
+  createSubscriptionWithTrial: async (courseId: string): Promise<{ 
+    subscription_id: string;
+    client_secret?: string;
+    status: string;
+    trial_end?: string;
     course_title: string; 
-    amount: number; 
+    amount: number;
+    requires_payment_method: boolean;
   }> => {
-    console.log('Creating payment intent for course:', courseId);
+    console.log('Creating subscription with trial for course:', courseId);
     
     try {
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
@@ -18,25 +21,25 @@ export const paymentService = {
       });
       
       if (error) {
-        console.error('Payment intent creation error:', error);
+        console.error('Subscription creation error:', error);
         throw error;
       }
       
-      console.log('Payment intent created successfully');
+      console.log('Subscription with trial created successfully');
       return data;
     } catch (error) {
-      console.error('Payment intent service error:', error);
+      console.error('Subscription service error:', error);
       throw error;
     }
   },
 
-  // Complete subscription after successful payment
-  completeSubscription: async (paymentIntentId: string, courseId: string): Promise<{ success: boolean; message: string }> => {
-    console.log('Completing subscription for payment intent:', paymentIntentId);
+  // Complete subscription setup (mainly for status updates)
+  completeSubscriptionSetup: async (subscriptionId: string): Promise<{ success: boolean; message: string }> => {
+    console.log('Completing subscription setup:', subscriptionId);
     
     try {
       const { data, error } = await supabase.functions.invoke('complete-subscription', {
-        body: { paymentIntentId, courseId }
+        body: { subscriptionId }
       });
       
       if (error) {
@@ -44,12 +47,34 @@ export const paymentService = {
         throw error;
       }
       
-      console.log('Subscription completed successfully');
+      console.log('Subscription setup completed successfully');
       return data;
     } catch (error) {
       console.error('Subscription completion service error:', error);
       throw error;
     }
+  },
+
+  // Legacy method - kept for backwards compatibility
+  createPaymentIntent: async (courseId: string): Promise<{ 
+    client_secret: string; 
+    customer_id: string; 
+    course_title: string; 
+    amount: number; 
+  }> => {
+    console.log('Creating payment intent for course (legacy):', courseId);
+    return this.createSubscriptionWithTrial(courseId).then(data => ({
+      client_secret: data.client_secret || '',
+      customer_id: '',
+      course_title: data.course_title,
+      amount: data.amount
+    }));
+  },
+
+  // Legacy method - kept for backwards compatibility  
+  completeSubscription: async (paymentIntentId: string, courseId: string): Promise<{ success: boolean; message: string }> => {
+    console.log('Completing subscription (legacy):', paymentIntentId);
+    return this.completeSubscriptionSetup(paymentIntentId);
   },
 
   // Create a Stripe checkout session for course purchase (legacy method)

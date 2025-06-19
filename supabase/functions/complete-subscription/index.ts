@@ -14,11 +14,13 @@ serve(async (req) => {
   }
   
   try {
-    const { paymentIntentId, courseId } = await req.json();
+    const { subscriptionId } = await req.json();
     
-    if (!paymentIntentId || !courseId) {
-      throw new Error("Payment Intent ID and Course ID are required");
+    if (!subscriptionId) {
+      throw new Error("Subscription ID is required");
     }
+
+    console.log("Completing subscription setup:", subscriptionId);
 
     // Create Supabase client using the service role key to bypass RLS
     const supabaseClient = createClient(
@@ -55,59 +57,38 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Retrieve the payment intent to verify it was successful
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    // Retrieve the subscription to verify it exists and get its status
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     
-    if (paymentIntent.status !== 'succeeded') {
-      throw new Error("Payment was not successful");
+    if (!subscription) {
+      throw new Error("Subscription not found");
     }
 
-    const customerId = paymentIntent.customer as string;
-    
-    // Create a subscription for the customer
-    const subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{
-        price_data: {
-          currency: "gbp",
-          product_data: { 
-            name: `Course Subscription`,
-          },
-          unit_amount: paymentIntent.amount,
-          recurring: {
-            interval: "month",
-          },
-        },
-      }],
-      trial_period_days: 7, // 7-day free trial
-      metadata: {
-        course_id: courseId,
-        user_id: user.id,
-      },
-    });
+    console.log("Subscription status:", subscription.status);
 
-    // Create purchase record
-    const { error: insertError } = await supabaseClient
+    // Update the purchase record with the latest subscription status
+    const { error: updateError } = await supabaseClient
       .from('course_purchases')
-      .insert({
-        user_id: user.id,
-        course_id: courseId,
-        stripe_payment_intent_id: paymentIntent.id,
-        stripe_session_id: subscription.id,
-        amount_paid: paymentIntent.amount,
-        currency: paymentIntent.currency,
-        status: 'completed'
-      });
+      .update({
+        status: (subscription.status === 'active' || subscription.status === 'trialing') ? 'completed' : subscription.status,
+        stripe_payment_intent_id: subscription.latest_invoice?.payment_intent || subscription.id
+      })
+      .eq('stripe_session_id', subscriptionId)
+      .eq('user_id', user.id);
 
-    if (insertError) {
-      throw insertError;
+    if (updateError) {
+      console.error("Database update error:", updateError);
+      throw new Error("Failed to update subscription status in database");
     }
+
+    console.log("Subscription status updated successfully");
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Subscription created successfully",
-        subscription_id: subscription.id 
+        message: "Subscription setup completed successfully",
+        subscription_status: subscription.status,
+        trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
