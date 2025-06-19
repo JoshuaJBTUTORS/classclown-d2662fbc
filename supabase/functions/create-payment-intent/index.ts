@@ -72,13 +72,21 @@ serve(async (req) => {
       .select('*')
       .eq('course_id', courseId)
       .eq('user_id', user.id)
-      .eq('status', 'completed')
+      .in('status', ['completed', 'trialing'])
       .maybeSingle();
 
     if (existingPurchase) {
       return new Response(
-        JSON.stringify({ error: "Course already purchased" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          subscription_id: existingPurchase.stripe_session_id,
+          status: 'active',
+          trial_end: null,
+          course_title: course.title,
+          amount: course.price || 899,
+          requires_payment_method: false,
+          message: "Course already purchased"
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -150,7 +158,7 @@ serve(async (req) => {
         user_id: user.id,
         course_id: courseId,
         stripe_session_id: subscription.id,
-        stripe_payment_intent_id: subscription.latest_invoice?.payment_intent?.id || null,
+        stripe_payment_intent_id: subscription.latest_invoice?.payment_intent?.id || subscription.id,
         amount_paid: course.price || 899,
         currency: 'gbp',
         status: subscription.status === 'trialing' ? 'completed' : 'pending'
@@ -170,7 +178,13 @@ serve(async (req) => {
     console.log("Purchase record created successfully");
 
     // Get client secret for payment setup if needed
-    const clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
+    let clientSecret = null;
+    if (subscription.latest_invoice && typeof subscription.latest_invoice === 'object') {
+      const invoice = subscription.latest_invoice as any;
+      if (invoice.payment_intent && typeof invoice.payment_intent === 'object') {
+        clientSecret = invoice.payment_intent.client_secret;
+      }
+    }
 
     return new Response(JSON.stringify({ 
       subscription_id: subscription.id,

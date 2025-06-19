@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CoursePurchase } from '@/types/course';
 
@@ -63,18 +62,19 @@ export const paymentService = {
     amount: number; 
   }> => {
     console.log('Creating payment intent for course (legacy):', courseId);
-    return this.createSubscriptionWithTrial(courseId).then(data => ({
+    const data = await paymentService.createSubscriptionWithTrial(courseId);
+    return {
       client_secret: data.client_secret || '',
       customer_id: '',
       course_title: data.course_title,
       amount: data.amount
-    }));
+    };
   },
 
   // Legacy method - kept for backwards compatibility  
   completeSubscription: async (paymentIntentId: string, courseId: string): Promise<{ success: boolean; message: string }> => {
     console.log('Completing subscription (legacy):', paymentIntentId);
-    return this.completeSubscriptionSetup(paymentIntentId);
+    return paymentService.completeSubscriptionSetup(paymentIntentId);
   },
 
   // Create a Stripe checkout session for course purchase (legacy method)
