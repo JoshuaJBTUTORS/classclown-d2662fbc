@@ -21,8 +21,10 @@ const CourseCheckout = () => {
     course_title: string;
     amount: number;
     requires_payment_method: boolean;
+    message?: string;
   } | null>(null);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+  const [hasStartedTrial, setHasStartedTrial] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -30,18 +32,50 @@ const CourseCheckout = () => {
     enabled: !!courseId,
   });
 
+  // Check if user already has access on component mount
   useEffect(() => {
-    if (course && !subscriptionData) {
-      initializeSubscription();
+    if (course && !hasStartedTrial) {
+      checkExistingAccess();
     }
   }, [course]);
 
-  const initializeSubscription = async () => {
+  const checkExistingAccess = async () => {
     if (!course) return;
     
+    try {
+      const hasAccess = await paymentService.checkCoursePurchase(course.id);
+      if (hasAccess) {
+        toast({
+          title: "Access Already Available",
+          description: "You already have access to this course!",
+        });
+        navigate(`/learning-hub/course/${course.id}`);
+      }
+    } catch (error) {
+      console.error('Error checking course access:', error);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    if (!course || hasStartedTrial) return;
+    
     setIsLoadingSubscription(true);
+    setHasStartedTrial(true);
+    
     try {
       const data = await paymentService.createSubscriptionWithTrial(course.id);
+      
+      console.log('Subscription response:', data);
+      
+      if (data.message === "Course already purchased") {
+        toast({
+          title: "Access Already Available",
+          description: "You already have access to this course!",
+        });
+        navigate(`/learning-hub/course/${course.id}`);
+        return;
+      }
+      
       setSubscriptionData(data);
       
       // If subscription is already active (trial), redirect immediately
@@ -56,12 +90,12 @@ const CourseCheckout = () => {
       
     } catch (error) {
       console.error('Error creating subscription:', error);
+      setHasStartedTrial(false);
       toast({
         title: "Subscription Error",
-        description: "Unable to start your subscription. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to start your subscription. Please try again.",
         variant: "destructive",
       });
-      navigate(`/course/${course.id}`);
     } finally {
       setIsLoadingSubscription(false);
     }
@@ -95,6 +129,7 @@ const CourseCheckout = () => {
       description: error,
       variant: "destructive",
     });
+    setHasStartedTrial(false);
   };
 
   const formatPrice = (priceInPence: number) => {
@@ -197,11 +232,40 @@ const CourseCheckout = () => {
         <div className="max-w-lg">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Start your free trial</h2>
-            <p className="text-gray-600">7 days free, then {subscriptionData ? formatPrice(subscriptionData.amount) : '£8.99'}/month</p>
+            <p className="text-gray-600">7 days free, then {course.price ? formatPrice(course.price) : '£8.99'}/month</p>
           </div>
 
+          {/* Show start trial button if no subscription data yet */}
+          {!subscriptionData && !hasStartedTrial && (
+            <div className="space-y-6">
+              <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
+                <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
+                <p className="text-gray-600 mb-4">
+                  Click below to start your 7-day free trial. You'll only need to add a payment method to continue after the trial period.
+                </p>
+                <Button
+                  onClick={handleStartTrial}
+                  disabled={isLoadingSubscription}
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
+                >
+                  {isLoadingSubscription ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Starting trial...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Start 7-Day Free Trial
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Payment Form or Loading */}
-          {subscriptionData && subscriptionData.requires_payment_method && subscriptionData.client_secret ? (
+          {subscriptionData && subscriptionData.requires_payment_method && subscriptionData.client_secret && (
             <EmbeddedPaymentForm
               clientSecret={subscriptionData.client_secret}
               customerId=""
@@ -210,11 +274,14 @@ const CourseCheckout = () => {
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
             />
-          ) : (
+          )}
+
+          {/* Loading state */}
+          {hasStartedTrial && !subscriptionData && (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               <span className="ml-3 text-gray-600">
-                {isLoadingSubscription ? "Setting up your subscription..." : "Processing..."}
+                Setting up your subscription...
               </span>
             </div>
           )}

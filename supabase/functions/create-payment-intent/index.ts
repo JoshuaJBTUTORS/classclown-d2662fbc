@@ -122,10 +122,7 @@ serve(async (req) => {
       items: [{
         price_data: {
           currency: "gbp",
-          product_data: { 
-            name: `${course.title} Subscription`,
-            description: `Monthly access to ${course.title} course`
-          },
+          product: `${course.title} Subscription`,
           unit_amount: course.price || 899, // £8.99 per month
           recurring: {
             interval: "month",
