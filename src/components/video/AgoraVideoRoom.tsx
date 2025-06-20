@@ -121,17 +121,17 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           if (newState === 'CONNECTED') {
             setConnectionStatus('connected');
             setConnectionError(null);
-            addDebugLog('✅ Successfully connected to Agora');
+            addDebugLog('✅ Connection state event: CONNECTED');
             toast.success('Connected to video conference');
           } else if (newState === 'FAILED' || newState === 'DISCONNECTED') {
             setConnectionStatus('failed');
             const errorMsg = `Connection ${newState.toLowerCase()}: ${reason}`;
             setConnectionError(errorMsg);
-            addDebugLog('❌ Connection failed', { newState, reason });
+            addDebugLog('❌ Connection state event: FAILED/DISCONNECTED', { newState, reason });
             toast.error(`Connection failed: ${reason}`);
           } else if (newState === 'CONNECTING') {
             setConnectionStatus('connecting');
-            addDebugLog('🔄 Connection in progress...');
+            addDebugLog('🔄 Connection state event: CONNECTING');
           }
         });
 
@@ -234,6 +234,17 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         
         addDebugLog('✅ Successfully joined channel', { result: joinResult });
 
+        // CRITICAL FIX: Manually set connection status after successful join
+        // The connection-state-changed event might not fire consistently
+        setTimeout(() => {
+          if (mounted && connectionStatus === 'connecting') {
+            addDebugLog('🔧 Manual connection status fix - setting to connected');
+            setConnectionStatus('connected');
+            setConnectionError(null);
+            toast.success('Connected to video conference');
+          }
+        }, 1000);
+
         // Publish local tracks if available
         if (localAudioTrack || localVideoTrack) {
           const tracksToPublish = [localAudioTrack, localVideoTrack].filter(Boolean);
@@ -267,7 +278,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       mounted = false;
       // Cleanup will be handled by handleLeave
     };
-  }, [appId, channel, token, uid, userRole, addDebugLog]);
+  }, [appId, channel, token, uid, userRole, addDebugLog, connectionStatus]);
 
   const toggleAudio = useCallback(() => {
     setIsAudioEnabled(prev => {
