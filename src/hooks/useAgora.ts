@@ -10,6 +10,9 @@ interface AgoraRoomData {
   uid: number;
   appId: string;
   role?: 'publisher' | 'subscriber';
+  netlessRoomUuid?: string;
+  netlessRoomToken?: string;
+  netlessAppIdentifier?: string;
 }
 
 interface CreateRoomParams {
@@ -28,8 +31,8 @@ export const useAgora = () => {
     try {
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
+          action: 'create-room',
           lessonId: params.lessonId,
-          action: 'create_room',
           userRole: 'tutor'
         }
       });
@@ -47,7 +50,10 @@ export const useAgora = () => {
           rtcToken: data.rtcToken,
           rtmToken: data.rtmToken,
           uid: data.uid,
-          appId: data.appId
+          appId: data.appId,
+          netlessRoomUuid: data.netlessRoomUuid,
+          netlessRoomToken: data.netlessRoomToken,
+          netlessAppIdentifier: data.netlessAppIdentifier
         };
       } else {
         toast.error('Failed to create online room');
@@ -67,9 +73,9 @@ export const useAgora = () => {
     try {
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
+          action: 'get-tokens',
           lessonId,
-          action: 'get_tokens',
-          userRole
+          userRole: userRole === 'parent' ? 'student' : userRole
         }
       });
 
@@ -86,7 +92,10 @@ export const useAgora = () => {
           rtmToken: data.rtmToken,
           uid: data.uid,
           appId: data.appId,
-          role: data.role
+          role: data.role,
+          netlessRoomUuid: data.netlessRoomUuid,
+          netlessRoomToken: data.netlessRoomToken,
+          netlessAppIdentifier: data.netlessAppIdentifier
         };
       } else {
         toast.error('Failed to get room access');
@@ -105,8 +114,8 @@ export const useAgora = () => {
     try {
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
-          lessonId,
-          action: 'start_recording'
+          action: 'start_recording',
+          lessonId
         }
       });
 
@@ -134,8 +143,8 @@ export const useAgora = () => {
     try {
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
-          lessonId,
-          action: 'stop_recording'
+          action: 'stop_recording',
+          lessonId
         }
       });
 

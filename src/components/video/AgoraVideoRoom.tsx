@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   useJoin,
@@ -24,6 +25,11 @@ interface AgoraVideoRoomProps {
   uid: number;
   userRole: 'tutor' | 'student';
   lessonTitle: string;
+  netlessCredentials?: {
+    roomUuid: string;
+    roomToken: string;
+    appIdentifier: string;
+  };
   onLeave: () => void;
 }
 
@@ -34,6 +40,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   uid,
   userRole,
   lessonTitle,
+  netlessCredentials,
   onLeave
 }) => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -62,12 +69,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     uid: uid,
   }, isJoined);
 
-  const [netlessCredentials, setNetlessCredentials] = useState<{
-    roomUuid: string;
-    roomToken: string;
-    appIdentifier: string;
-  } | null>(null);
-
   useEffect(() => {
     // Auto-join when component mounts
     setIsJoined(true);
@@ -77,9 +78,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     // In production, you'd get a separate RTM token from your backend
     setRtmToken(token);
 
-    // Load Netless whiteboard credentials from lesson data
-    loadNetlessCredentials();
-
     return () => {
       // Cleanup when component unmounts
       setIsJoined(false);
@@ -88,26 +86,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       }
     };
   }, [token]);
-
-  const loadNetlessCredentials = async () => {
-    try {
-      // This would typically come from your lesson data or API call
-      // For now, we'll simulate loading from the lesson context
-      const lessonId = channel.replace('lesson_', ''); // Extract lesson ID from channel name
-      
-      // In a real implementation, you'd fetch this from your backend
-      // For demo, we'll use placeholder values that would come from the database
-      const mockCredentials = {
-        roomUuid: 'demo-room-uuid',
-        roomToken: 'demo-room-token',
-        appIdentifier: 'demo-app-identifier'
-      };
-      
-      setNetlessCredentials(mockCredentials);
-    } catch (error) {
-      console.error('Failed to load Netless credentials:', error);
-    }
-  };
 
   // Play remote audio tracks
   useEffect(() => {

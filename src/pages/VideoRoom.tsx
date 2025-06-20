@@ -50,11 +50,6 @@ const VideoRoom: React.FC = () => {
         throw new Error('Lesson not found');
       }
 
-      // Check if lesson has Agora room
-      if (!lessonData.agora_channel_name || !lessonData.agora_token) {
-        throw new Error('Video conference room not available');
-      }
-
       setLesson(lessonData);
 
       // Get fresh tokens for the user - map admin/owner to tutor for Agora roles
@@ -110,6 +105,13 @@ const VideoRoom: React.FC = () => {
   // Map admin/owner roles to tutor for the video room UI
   const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
 
+  // Prepare Netless credentials if available
+  const netlessCredentials = agoraCredentials.netlessRoomUuid ? {
+    roomUuid: agoraCredentials.netlessRoomUuid,
+    roomToken: agoraCredentials.netlessRoomToken,
+    appIdentifier: agoraCredentials.netlessAppIdentifier
+  } : undefined;
+
   return (
     <AgoraRTCProvider client={agoraClient}>
       <AgoraVideoRoom
@@ -119,6 +121,7 @@ const VideoRoom: React.FC = () => {
         uid={agoraCredentials.uid}
         userRole={videoRoomRole}
         lessonTitle={lesson.title}
+        netlessCredentials={netlessCredentials}
         onLeave={handleLeaveRoom}
       />
     </AgoraRTCProvider>
