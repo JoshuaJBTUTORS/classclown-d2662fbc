@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { toast } from 'sonner';
 import VideoRoomHeader from './VideoRoomHeader';
@@ -41,6 +41,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [currentUid, setCurrentUid] = useState<number>(uid);
   
   // Agora client and tracks
   const [agoraClient, setAgoraClient] = useState<any>(null);
@@ -49,6 +50,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [screenTrack, setScreenTrack] = useState<any>(null);
   const [remoteUsers, setRemoteUsers] = useState<any[]>([]);
   const [rtmToken, setRtmToken] = useState<string>('');
+  
+  // Refs for managing initialization state
+  const isInitializingRef = useRef(false);
+  const mountedRef = useRef(true);
   
   const { startRecording, stopRecording } = useAgora();
 
@@ -60,13 +65,62 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     setDebugLogs(prev => [...prev.slice(-10), logMessage]); // Keep last 10 logs
   }, []);
 
+  // Generate unique UID to avoid conflicts
+  const generateUniqueUid = useCallback((baseUid: number): number => {
+    const timestamp = Date.now() % 100000; // Last 5 digits of timestamp
+    const uniqueUid = baseUid + timestamp;
+    addDebugLog('🔢 Generated unique UID', { original: baseUid, unique: uniqueUid });
+    return uniqueUid;
+  }, [addDebugLog]);
+
+  // Cleanup function to properly disconnect and clean up resources
+  const cleanupAgora = useCallback(async () => {
+    addDebugLog('🧹 Starting Agora cleanup...');
+    
+    try {
+      // Stop local tracks
+      if (localAudioTrack) {
+        localAudioTrack.close();
+        setLocalAudioTrack(null);
+        addDebugLog('🎤 Local audio track closed');
+      }
+      if (localVideoTrack) {
+        localVideoTrack.close();
+        setLocalVideoTrack(null);
+        addDebugLog('📹 Local video track closed');
+      }
+      if (screenTrack) {
+        screenTrack.close();
+        setScreenTrack(null);
+        addDebugLog('🖥️ Screen track closed');
+      }
+      
+      // Leave channel and disconnect client
+      if (agoraClient) {
+        await agoraClient.leave();
+        setAgoraClient(null);
+        addDebugLog('🚪 Left Agora channel and cleaned up client');
+      }
+      
+      // Reset state
+      setRemoteUsers([]);
+      setConnectionStatus('connecting');
+      setConnectionError(null);
+      
+    } catch (error) {
+      addDebugLog('⚠️ Error during cleanup', { error: error.message });
+    }
+  }, [agoraClient, localAudioTrack, localVideoTrack, screenTrack, addDebugLog]);
+
   // Connection timeout handler
   useEffect(() => {
     if (connectionStatus === 'connecting') {
       const timeout = setTimeout(() => {
-        addDebugLog('❌ CONNECTION TIMEOUT after 10 seconds');
-        setConnectionStatus('failed');
-        setConnectionError('Connection timeout - Unable to connect to Agora servers after 10 seconds');
+        if (mountedRef.current) {
+          addDebugLog('❌ CONNECTION TIMEOUT after 10 seconds');
+          setConnectionStatus('failed');
+          setConnectionError('Connection timeout - Unable to connect to Agora servers after 10 seconds');
+        }
       }, 10000);
 
       return () => clearTimeout(timeout);
@@ -75,18 +129,30 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
 
   // Initialize Agora client and connect
   useEffect(() => {
-    let mounted = true;
+    // Prevent multiple simultaneous initializations
+    if (isInitializingRef.current) {
+      addDebugLog('⚠️ Initialization already in progress, skipping...');
+      return;
+    }
+
+    mountedRef.current = true;
     
     const initializeAgora = async () => {
+      // Set initialization guard
+      isInitializingRef.current = true;
+      
       try {
         addDebugLog('🚀 STARTING Agora initialization', {
           appId: appId?.substring(0, 8) + '...',
           channel,
-          uid,
+          uid: currentUid,
           userRole,
           tokenLength: token?.length,
           tokenPrefix: token?.substring(0, 15) + '...'
         });
+
+        // Cleanup any existing connection first
+        await cleanupAgora();
 
         // Validate parameters immediately
         if (!appId || appId.length !== 32) {
@@ -110,7 +176,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           role: userRole === 'tutor' ? 'host' : 'audience'
         });
 
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         setAgoraClient(client);
         addDebugLog('✅ Agora client created', { mode: 'rtc', codec: 'vp8', role: userRole });
 
@@ -206,7 +272,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             AgoraRTC.createCameraVideoTrack()
           ]);
 
-          if (!mounted) {
+          if (!mountedRef.current) {
             audioTrack?.close();
             videoTrack?.close();
             return;
@@ -225,19 +291,19 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           appId: appId.substring(0, 8) + '...',
           channel,
           token: token.substring(0, 15) + '...',
-          uid
+          uid: currentUid
         });
 
-        const joinResult = await client.join(appId, channel, token, uid);
+        const joinResult = await client.join(appId, channel, token, currentUid);
         
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         
         addDebugLog('✅ Successfully joined channel', { result: joinResult });
 
         // CRITICAL FIX: Manually set connection status after successful join
         // The connection-state-changed event might not fire consistently
         setTimeout(() => {
-          if (mounted && connectionStatus === 'connecting') {
+          if (mountedRef.current && connectionStatus === 'connecting') {
             addDebugLog('🔧 Manual connection status fix - setting to connected');
             setConnectionStatus('connected');
             setConnectionError(null);
@@ -258,27 +324,47 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         addDebugLog('🎉 Agora initialization complete');
 
       } catch (error: any) {
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         
         addDebugLog('❌ CRITICAL: Agora initialization failed', {
           error: error.message,
           code: error.code,
           stack: error.stack
         });
+
+        // Special handling for UID_CONFLICT error
+        if (error.code === 'UID_CONFLICT') {
+          addDebugLog('🔄 UID_CONFLICT detected, retrying with new UID...');
+          const newUid = generateUniqueUid(uid);
+          setCurrentUid(newUid);
+          // The effect will re-run with the new UID
+          return;
+        }
         
         setConnectionStatus('failed');
         setConnectionError(`Initialization failed: ${error.message}`);
         toast.error(`Failed to connect: ${error.message}`);
+      } finally {
+        // Clear initialization guard
+        isInitializingRef.current = false;
       }
     };
 
     initializeAgora();
 
     return () => {
-      mounted = false;
-      // Cleanup will be handled by handleLeave
+      mountedRef.current = false;
+      isInitializingRef.current = false;
     };
-  }, [appId, channel, token, uid, userRole, addDebugLog, connectionStatus]);
+  }, [appId, channel, token, currentUid, userRole, addDebugLog, cleanupAgora, generateUniqueUid, uid]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      cleanupAgora();
+    };
+  }, [cleanupAgora]);
 
   const toggleAudio = useCallback(() => {
     setIsAudioEnabled(prev => {
@@ -373,27 +459,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const handleLeave = useCallback(async () => {
     try {
       addDebugLog('🚪 Leaving channel and cleaning up...');
-      
-      // Stop local tracks
-      if (localAudioTrack) {
-        localAudioTrack.close();
-        setLocalAudioTrack(null);
-      }
-      if (localVideoTrack) {
-        localVideoTrack.close();
-        setLocalVideoTrack(null);
-      }
-      if (screenTrack) {
-        screenTrack.close();
-        setScreenTrack(null);
-      }
-      
-      // Leave channel
-      if (agoraClient) {
-        await agoraClient.leave();
-        addDebugLog('✅ Left Agora channel');
-      }
-      
+      await cleanupAgora();
       toast.success('Left video conference');
       onLeave();
     } catch (error) {
@@ -401,7 +467,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       toast.error('Error leaving conference');
       onLeave();
     }
-  }, [agoraClient, localAudioTrack, localVideoTrack, screenTrack, onLeave, addDebugLog]);
+  }, [cleanupAgora, onLeave, addDebugLog]);
 
   const handleRetryConnection = useCallback(() => {
     addDebugLog('🔄 Manual retry requested');
@@ -409,9 +475,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     setConnectionError(null);
     setDebugLogs([]);
     
-    // Force remount by changing a key prop would be better, but for now:
-    window.location.reload();
-  }, [addDebugLog]);
+    // Generate new UID for retry
+    const newUid = generateUniqueUid(uid);
+    setCurrentUid(newUid);
+  }, [addDebugLog, generateUniqueUid, uid]);
 
   const totalParticipants = remoteUsers.length + 1;
 
@@ -428,7 +495,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             <div className="space-y-1 text-gray-600">
               <p><strong>Channel:</strong> {channel}</p>
               <p><strong>App ID:</strong> {appId?.substring(0, 8)}...</p>
-              <p><strong>UID:</strong> {uid}</p>
+              <p><strong>UID:</strong> {currentUid}</p>
               <p><strong>Token:</strong> {token?.substring(0, 15)}...</p>
               <p><strong>Role:</strong> {userRole}</p>
             </div>
@@ -470,7 +537,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               <div className="space-y-1 text-gray-600">
                 <p><strong>Channel:</strong> {channel}</p>
                 <p><strong>App ID:</strong> {appId?.substring(0, 8)}... (Length: {appId?.length})</p>
-                <p><strong>UID:</strong> {uid}</p>
+                <p><strong>UID:</strong> {currentUid}</p>
                 <p><strong>Token Length:</strong> {token?.length}</p>
                 <p><strong>Role:</strong> {userRole}</p>
               </div>
@@ -512,7 +579,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Debug indicator */}
       <div className="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-800 px-3 py-2 rounded text-sm font-medium">
-        🐛 DEBUG MODE: Connection Successful
+        🐛 DEBUG MODE: Connection Successful (UID: {currentUid})
       </div>
 
       {/* Header */}
@@ -530,7 +597,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         <AgoraChatPanel
           rtmToken={rtmToken}
           channelName={channel}
-          userId={uid.toString()}
+          userId={currentUid.toString()}
           userName={userRole === 'tutor' ? 'Teacher' : 'Student'}
           userRole={userRole}
         />
@@ -543,7 +610,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             roomUuid={netlessCredentials?.roomUuid}
             roomToken={netlessCredentials?.roomToken}
             appIdentifier={netlessCredentials?.appIdentifier}
-            userId={uid.toString()}
+            userId={currentUid.toString()}
           />
         </div>
 
