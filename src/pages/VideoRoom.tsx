@@ -56,7 +56,7 @@ const VideoRoom: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log('🧪 [TEST] Using FRESH official Agora token for correct channel');
+      console.log('🔄 Loading video room credentials for lesson:', lessonId);
 
       // Fetch lesson details
       const { data: lessonData, error: lessonError } = await supabase
@@ -76,33 +76,29 @@ const VideoRoom: React.FC = () => {
         throw new Error('Lesson not found');
       }
 
-      console.log('Lesson data loaded:', lessonData);
+      console.log('📚 Lesson data loaded:', lessonData.title);
       setLesson(lessonData);
 
-      // TEST: Use the FRESH official Agora token for the correct channel
-      const freshOfficialToken = '007eJxSYAjb6fWJdZfXXmv2fd83C5WXr9z+XMgp48sHC5WXr9z+XMgp48sHC87nVRles38rMBhZmhoYJpslmRokG5iYWyRaGCeZJBukGRibpRoamZkbfJgTmtEQyMjQYl/OzMjAyMDCwMgA4jOBSWYwyQImtRlyUouL8/PiTU2STBJTLCzjDYxTTeJNUlOM4i3NDU3ijY0NLVOTTJIMjc3TGBgAAQAA///pTS1a';
+      // Get tokens using the proper agora-integration edge function
+      console.log('🔑 Fetching Agora credentials via edge function...');
+      const credentials = await getTokens(lessonId, videoRoomRole);
       
-      // Create test credentials with FRESH token for exact channel match
-      const testCredentials = {
-        appId: '29501c6b50c04f60a84c1ec705a7a67d', // Your Agora App ID
-        channelName: `lesson_${lessonId.replace(/-/g, '_')}`, // This should be: lesson_54b4ad89_03e4_4ed2_9714_3319eb4b137f
-        rtcToken: freshOfficialToken,
-        uid: Math.floor(Math.random() * 1000000) + 1000,
-        rtmToken: freshOfficialToken, // Using same token for RTM for testing
-      };
+      if (!credentials) {
+        throw new Error('Failed to get Agora credentials from edge function');
+      }
 
-      console.log('🧪 [TEST] Using FRESH official Agora token for exact channel:', {
-        appId: testCredentials.appId.substring(0, 8) + '...',
-        channelName: testCredentials.channelName,
-        uid: testCredentials.uid,
-        freshTokenLength: freshOfficialToken.length,
-        tokenPrefix: freshOfficialToken.substring(0, 20) + '...',
-        channelMatch: testCredentials.channelName === 'lesson_54b4ad89_03e4_4ed2_9714_3319eb4b137f'
+      console.log('✅ Agora credentials received:', {
+        appId: credentials.appId?.substring(0, 8) + '...',
+        channelName: credentials.channelName,
+        uid: credentials.uid,
+        hasRtcToken: !!credentials.rtcToken,
+        hasNetless: !!credentials.netlessRoomUuid,
+        tokenLength: credentials.rtcToken?.length
       });
       
-      setAgoraCredentials(testCredentials);
+      setAgoraCredentials(credentials);
     } catch (error: any) {
-      console.error('Error loading video room:', error);
+      console.error('❌ Error loading video room:', error);
       setError(error.message);
       toast.error(error.message);
     } finally {
@@ -119,19 +115,20 @@ const VideoRoom: React.FC = () => {
     
     setIsRegenerating(true);
     try {
-      const agoraRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole || 'student');
-      
-      const credentials = await regenerateTokens(lessonId, agoraRole as 'tutor' | 'student');
+      console.log('🔄 Regenerating tokens via edge function...');
+      const credentials = await regenerateTokens(lessonId, videoRoomRole);
       
       if (credentials) {
         setAgoraCredentials(credentials);
         setError(null);
+        toast.success('Credentials regenerated successfully');
         
         // Refresh lesson data to get updated tokens
         await loadVideoRoom();
       }
-    } catch (error) {
-      console.error('Error regenerating tokens:', error);
+    } catch (error: any) {
+      console.error('❌ Error regenerating tokens:', error);
+      toast.error('Failed to regenerate credentials');
     } finally {
       setIsRegenerating(false);
     }
@@ -148,10 +145,10 @@ const VideoRoom: React.FC = () => {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <div className="text-center">
-            <p className="text-gray-600 font-medium">🧪 Testing FRESH official Agora token...</p>
-            <p className="text-sm text-gray-500 mt-1">Channel: {lesson?.title}</p>
+            <p className="text-gray-600 font-medium">Connecting to video conference...</p>
+            <p className="text-sm text-gray-500 mt-1">Lesson: {lesson?.title}</p>
             <p className="text-xs text-gray-400 mt-1">
-              {isLoadingNetless ? 'Loading whiteboard...' : 'Fresh token for correct channel'}
+              {isLoadingNetless ? 'Loading whiteboard...' : 'Getting credentials from Agora...'}
             </p>
           </div>
         </div>
@@ -172,14 +169,30 @@ const VideoRoom: React.FC = () => {
               {error || 'Video conference not available'}
             </p>
             <div className="text-sm text-gray-600 space-y-1">
-              <p><strong>🧪 TEST MODE:</strong> Using FRESH official Agora token</p>
               <p><strong>Lesson:</strong> {lessonId}</p>
-              <p><strong>Channel:</strong> lesson_54b4ad89_03e4_4ed2_9714_3319eb4b137f</p>
+              <p><strong>User Role:</strong> {videoRoomRole}</p>
               {netlessError && <p><strong>Whiteboard:</strong> {netlessError}</p>}
             </div>
             <div className="space-y-3 mt-6">
-              <Button onClick={handleRetry} className="w-full">
-                Try Again
+              <Button onClick={handleRetry} className="w-full" disabled={isRegenerating}>
+                {isRegenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Regenerating...
+                  </>
+                ) : (
+                  'Try Again'
+                )}
+              </Button>
+              <Button onClick={handleRegenerateTokens} variant="outline" className="w-full" disabled={isRegenerating}>
+                {isRegenerating ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    Regenerating Tokens...
+                  </>
+                ) : (
+                  'Regenerate Tokens'
+                )}
               </Button>
               {netlessError && (
                 <Button onClick={regenerateNetlessToken} variant="outline" className="w-full">
@@ -196,21 +209,18 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  console.log('🧪 [TEST] Rendering video room with FRESH official Agora token:', {
-    appId: agoraCredentials.appId,
+  console.log('🎉 Rendering video room with edge function credentials:', {
+    appId: agoraCredentials.appId?.substring(0, 8) + '...',
     channel: agoraCredentials.channelName,
     uid: agoraCredentials.uid,
     role: videoRoomRole,
     tokenValid: !!agoraCredentials.rtcToken,
     hasNetless: !!netlessCredentials,
-    tokenIsFresh: true
+    usingEdgeFunction: true
   });
 
   return (
     <AgoraRTCProvider client={agoraClient}>
-      <div className="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-800 px-3 py-2 rounded text-sm font-medium">
-        🧪 TEST MODE: Using FRESH Official Agora Token
-      </div>
       <AgoraVideoRoom
         appId={agoraCredentials.appId}
         channel={agoraCredentials.channelName}
