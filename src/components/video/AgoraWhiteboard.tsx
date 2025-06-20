@@ -70,22 +70,22 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
     
     switch (tool) {
       case 'selector':
-        room.setMemberState({ currentApplianceName: 'selector' });
+        room.setMemberState({ currentApplianceName: 'clicker' as any });
         break;
       case 'pen':
-        room.setMemberState({ currentApplianceName: 'pencil' });
+        room.setMemberState({ currentApplianceName: 'pen' as any });
         break;
       case 'rectangle':
-        room.setMemberState({ currentApplianceName: 'rectangle' });
+        room.setMemberState({ currentApplianceName: 'shape' as any });
         break;
       case 'circle':
-        room.setMemberState({ currentApplianceName: 'ellipse' });
+        room.setMemberState({ currentApplianceName: 'shape' as any });
         break;
       case 'eraser':
-        room.setMemberState({ currentApplianceName: 'eraser' });
+        room.setMemberState({ currentApplianceName: 'eraser' as any });
         break;
       case 'text':
-        room.setMemberState({ currentApplianceName: 'text' });
+        room.setMemberState({ currentApplianceName: 'text' as any });
         break;
     }
   };

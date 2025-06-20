@@ -109,7 +109,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         if (localCameraTrack) {
           await agoraEngine.unpublish([localCameraTrack]);
         }
-        await agoraEngine.publish([newScreenTrack]);
+        // Cast to any to avoid type conflicts
+        await agoraEngine.publish([newScreenTrack as any]);
         setScreenTrack(newScreenTrack);
         setIsScreenSharing(true);
         toast.success('Screen sharing started');
