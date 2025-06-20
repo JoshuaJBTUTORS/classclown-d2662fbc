@@ -52,6 +52,9 @@ enable_confirmations = false
 [functions.stripe-webhooks]
 verify_jwt = false
 
+[functions.agora-integration]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328
