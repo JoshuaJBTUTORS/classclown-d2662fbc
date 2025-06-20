@@ -14,6 +14,13 @@ import Lessons from './pages/Lessons';
 import Auth from './pages/Auth';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
+import LearningHub from './pages/LearningHub';
+import LearningHubLayout from './components/learningHub/LearningHubLayout';
+import LearningHubDashboard from './pages/LearningHubDashboard';
+import LearningHubMyCourses from './pages/LearningHubMyCourses';
+import LearningHubSettings from './pages/LearningHubSettings';
+import LearningHubRevision from './pages/LearningHubRevision';
+import LearningHubAssessments from './pages/LearningHubAssessments';
 
 function App() {
   const queryClient = new QueryClient();
@@ -75,7 +82,7 @@ function App() {
                   }
                 />
                 
-                {/* Add the new video room route */}
+                {/* Video room route */}
                 <Route 
                   path="/video-room/:lessonId" 
                   element={
@@ -84,6 +91,23 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
+
+                {/* Learning Hub routes */}
+                <Route
+                  path="/learning-hub"
+                  element={
+                    <ProtectedRoute>
+                      <LearningHubLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<LearningHub />} />
+                  <Route path="dashboard" element={<LearningHubDashboard />} />
+                  <Route path="my-courses" element={<LearningHubMyCourses />} />
+                  <Route path="assessments" element={<LearningHubAssessments />} />
+                  <Route path="revision" element={<LearningHubRevision />} />
+                  <Route path="settings" element={<LearningHubSettings />} />
+                </Route>
               </Routes>
               <Toaster />
             </LearningHubProvider>
