@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   useJoin,
   useLocalCameraTrack,
@@ -50,9 +50,12 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [isJoined, setIsJoined] = useState(false);
   const [rtmToken, setRtmToken] = useState<string>('');
   const [screenTrack, setScreenTrack] = useState<any>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting');
 
   const { startRecording, stopRecording } = useAgora();
   const agoraEngine = useRTCClient();
+  
+  // Create local tracks following Agora SDK patterns
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(isAudioEnabled);
   const { localCameraTrack } = useLocalCameraTrack(isVideoEnabled);
   const remoteUsers = useRemoteUsers();
@@ -61,7 +64,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   // Publish local tracks
   usePublish([localMicrophoneTrack, localCameraTrack]);
 
-  // Join the channel
+  // Join the channel following Agora documentation
   useJoin({
     appid: appId,
     channel: channel,
@@ -69,54 +72,121 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     uid: uid,
   }, isJoined);
 
+  // Setup event listeners following Agora best practices
   useEffect(() => {
+    if (!agoraEngine) return;
+
+    const handleUserPublished = async (user: any, mediaType: 'audio' | 'video') => {
+      console.log('User published:', user.uid, mediaType);
+      await agoraEngine.subscribe(user, mediaType);
+      
+      if (mediaType === 'video') {
+        console.log('Remote video track available for user:', user.uid);
+      }
+      if (mediaType === 'audio') {
+        user.audioTrack?.play();
+      }
+    };
+
+    const handleUserUnpublished = (user: any, mediaType: 'audio' | 'video') => {
+      console.log('User unpublished:', user.uid, mediaType);
+    };
+
+    const handleConnectionStateChanged = (newState: string, reason: string) => {
+      console.log('Connection state changed:', newState, reason);
+      if (newState === 'CONNECTED') {
+        setConnectionStatus('connected');
+      } else if (newState === 'FAILED' || newState === 'DISCONNECTED') {
+        setConnectionStatus('failed');
+      }
+    };
+
+    // Set up event listeners
+    agoraEngine.on('user-published', handleUserPublished);
+    agoraEngine.on('user-unpublished', handleUserUnpublished);
+    agoraEngine.on('connection-state-changed', handleConnectionStateChanged);
+
+    return () => {
+      agoraEngine.off('user-published', handleUserPublished);
+      agoraEngine.off('user-unpublished', handleUserUnpublished);
+      agoraEngine.off('connection-state-changed', handleConnectionStateChanged);
+    };
+  }, [agoraEngine]);
+
+  // Initialize connection
+  useEffect(() => {
+    console.log('Initializing Agora Video Room with credentials:', {
+      appId,
+      channel,
+      uid,
+      userRole
+    });
+    
     // Auto-join when component mounts
     setIsJoined(true);
-    toast.success('Joined video conference');
-
-    // For demo purposes, we'll use the RTC token as RTM token
-    // In production, you'd get a separate RTM token from your backend
-    setRtmToken(token);
+    setRtmToken(token); // Use RTC token as RTM token for now
+    
+    toast.success('Connecting to video conference...');
 
     return () => {
       // Cleanup when component unmounts
-      setIsJoined(false);
       if (screenTrack) {
         screenTrack.close();
       }
     };
-  }, [token]);
+  }, [appId, channel, token, uid]);
+
+  // Handle connection status changes
+  useEffect(() => {
+    if (connectionStatus === 'connected') {
+      toast.success('Successfully joined video conference');
+    } else if (connectionStatus === 'failed') {
+      toast.error('Failed to connect to video conference');
+    }
+  }, [connectionStatus]);
 
   // Play remote audio tracks
   useEffect(() => {
-    audioTracks.map((track) => track.play());
+    audioTracks.forEach((track) => {
+      track.play();
+    });
   }, [audioTracks]);
 
-  const toggleAudio = () => {
-    setIsAudioEnabled(!isAudioEnabled);
-    toast.success(isAudioEnabled ? 'Microphone muted' : 'Microphone unmuted');
-  };
+  const toggleAudio = useCallback(() => {
+    setIsAudioEnabled(prev => {
+      const newState = !prev;
+      toast.success(newState ? 'Microphone unmuted' : 'Microphone muted');
+      return newState;
+    });
+  }, []);
 
-  const toggleVideo = () => {
-    setIsVideoEnabled(!isVideoEnabled);
-    toast.success(isVideoEnabled ? 'Camera turned off' : 'Camera turned on');
-  };
+  const toggleVideo = useCallback(() => {
+    setIsVideoEnabled(prev => {
+      const newState = !prev;
+      toast.success(newState ? 'Camera turned on' : 'Camera turned off');
+      return newState;
+    });
+  }, []);
 
-  const toggleScreenShare = async () => {
-    if (!agoraEngine) return;
+  const toggleScreenShare = useCallback(async () => {
+    if (!agoraEngine) {
+      toast.error('Video engine not ready');
+      return;
+    }
 
     try {
       if (!isScreenSharing) {
-        // Start screen sharing using AgoraRTC directly
+        // Start screen sharing using AgoraRTC
         const newScreenTrack = await AgoraRTC.createScreenVideoTrack({
           encoderConfig: "1080p_1",
         });
         
+        // Unpublish camera and publish screen
         if (localCameraTrack) {
           await agoraEngine.unpublish([localCameraTrack]);
         }
-        // Cast to any to avoid type conflicts
         await agoraEngine.publish([newScreenTrack as any]);
+        
         setScreenTrack(newScreenTrack);
         setIsScreenSharing(true);
         toast.success('Screen sharing started');
@@ -127,9 +197,12 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           screenTrack.close();
           setScreenTrack(null);
         }
+        
+        // Re-publish camera
         if (localCameraTrack) {
           await agoraEngine.publish([localCameraTrack]);
         }
+        
         setIsScreenSharing(false);
         toast.success('Screen sharing stopped');
       }
@@ -137,10 +210,13 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       console.error('Screen sharing error:', error);
       toast.error('Failed to toggle screen sharing');
     }
-  };
+  }, [agoraEngine, localCameraTrack, screenTrack, isScreenSharing]);
 
-  const toggleRecording = async () => {
-    if (userRole !== 'tutor') return;
+  const toggleRecording = useCallback(async () => {
+    if (userRole !== 'tutor') {
+      toast.error('Only tutors can control recording');
+      return;
+    }
 
     try {
       if (!isRecording) {
@@ -158,23 +234,62 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       console.error('Recording error:', error);
       toast.error('Failed to toggle recording');
     }
-  };
+  }, [userRole, isRecording, startRecording, stopRecording, channel]);
 
-  const handleManageParticipants = () => {
-    // This would open a participant management dialog
+  const handleManageParticipants = useCallback(() => {
     toast.info('Participant management coming soon');
-  };
+  }, []);
 
-  const handleLeave = () => {
-    if (screenTrack) {
-      screenTrack.close();
+  const handleLeave = useCallback(async () => {
+    try {
+      // Clean up local tracks
+      if (screenTrack) {
+        screenTrack.close();
+        setScreenTrack(null);
+      }
+      
+      // Leave the channel
+      setIsJoined(false);
+      
+      toast.success('Left video conference');
+      onLeave();
+    } catch (error) {
+      console.error('Error leaving channel:', error);
+      toast.error('Error leaving conference');
+      onLeave();
     }
-    setIsJoined(false);
-    toast.success('Left video conference');
-    onLeave();
-  };
+  }, [screenTrack, onLeave]);
 
   const totalParticipants = remoteUsers.length + 1;
+
+  // Show connection status
+  if (connectionStatus === 'connecting') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Connecting to video conference...</p>
+          <p className="text-sm text-gray-500 mt-2">Channel: {channel}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (connectionStatus === 'failed') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Failed to connect to video conference</p>
+          <button 
+            onClick={() => setIsJoined(true)}
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

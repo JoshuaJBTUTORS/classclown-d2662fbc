@@ -41,17 +41,25 @@ export const useAgora = () => {
 
       if (error) {
         console.error('Error creating Agora room:', error);
-        toast.error('Failed to create online room');
+        const errorMessage = error.message || 'Failed to create online room';
+        toast.error(errorMessage);
         return null;
       }
 
       console.log('Agora room creation response:', data);
 
       if (data?.success) {
+        // Validate the response data
+        if (!data.appId || !data.channelName || !data.rtcToken) {
+          console.error('Invalid room creation response:', data);
+          toast.error('Invalid room configuration received');
+          return null;
+        }
+
         toast.success('Online room created successfully!');
         
         // Wait a moment for the database to update
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         return {
           channelName: data.channelName,
@@ -65,7 +73,8 @@ export const useAgora = () => {
         };
       } else {
         console.error('Room creation failed:', data);
-        toast.error(data?.error || 'Failed to create online room');
+        const errorMessage = data?.error || 'Failed to create online room';
+        toast.error(errorMessage);
         return null;
       }
     } catch (error) {
@@ -92,13 +101,21 @@ export const useAgora = () => {
 
       if (error) {
         console.error('Error getting Agora tokens:', error);
-        toast.error('Failed to get room access');
+        const errorMessage = error.message || 'Failed to get room access';
+        toast.error(errorMessage);
         return null;
       }
 
       console.log('Agora tokens response:', data);
 
       if (data?.success) {
+        // Validate the response data
+        if (!data.appId || !data.channelName || !data.rtcToken) {
+          console.error('Invalid token response:', data);
+          toast.error('Invalid room credentials received');
+          return null;
+        }
+
         return {
           channelName: data.channelName,
           rtcToken: data.rtcToken,
@@ -112,7 +129,8 @@ export const useAgora = () => {
         };
       } else {
         console.error('Token generation failed:', data);
-        toast.error(data?.error || 'Failed to get room access');
+        const errorMessage = data?.error || 'Failed to get room access';
+        toast.error(errorMessage);
         return null;
       }
     } catch (error) {
