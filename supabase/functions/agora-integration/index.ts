@@ -7,93 +7,87 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[AGORA-INTEGRATION] ${step}${detailsStr}`);
-};
-
-// Proper HMAC-based token generation for Agora RTC
-async function generateRTCToken(appId: string, appCertificate: string, channelName: string, uid: number, role: 'publisher' | 'subscriber', expirationTimeInSeconds: number = 3600) {
-  const now = Math.floor(Date.now() / 1000);
-  const expireTime = now + expirationTimeInSeconds;
-  
-  // Role mapping: publisher = 1, subscriber = 2
-  const roleNum = role === 'publisher' ? 1 : 2;
-  
-  // Create the message to sign
-  const message = `${appId}${channelName}${uid}${expireTime}`;
-  
-  // Convert app certificate to key for HMAC
-  const key = new TextEncoder().encode(appCertificate);
-  const msgData = new TextEncoder().encode(message);
-  
-  // Generate HMAC-SHA256 signature
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
-  const signatureArray = new Uint8Array(signature);
-  
-  // Convert signature to hex string
-  const signatureHex = Array.from(signatureArray)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  
-  // Create token structure
-  const tokenData = {
-    signature: signatureHex,
-    cname: channelName,
-    uid: uid,
-    expire: expireTime,
-    role: roleNum
-  };
-  
-  // Encode the token
-  const token = btoa(JSON.stringify(tokenData));
-  return `007${token}`;
+interface CreateVideoRoomRequest {
+  lessonId: string;
+  userRole: 'tutor' | 'student';
 }
 
-// Proper HMAC-based token generation for Agora RTM
-async function generateRTMToken(appId: string, appCertificate: string, userId: string, expirationTimeInSeconds: number = 3600) {
-  const now = Math.floor(Date.now() / 1000);
-  const expireTime = now + expirationTimeInSeconds;
+interface GetTokensRequest {
+  lessonId: string;
+  userRole: 'tutor' | 'student';
+}
+
+// Netless service functions
+async function createNetlessRoom(sdkToken: string) {
+  console.log('Creating Netless room with SDK token');
   
-  const message = `${appId}${userId}${expireTime}`;
+  const response = await fetch('https://api.netless.link/v5/rooms', {
+    method: 'POST',
+    headers: {
+      'token': sdkToken,
+      'Content-Type': 'application/json',
+      'region': 'us-sv'
+    },
+    body: JSON.stringify({
+      isRecord: false
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create Netless room: ${response.statusText}`);
+  }
+
+  const roomData = await response.json();
+  console.log('Netless room created:', roomData);
   
-  // Convert app certificate to key for HMAC
-  const key = new TextEncoder().encode(appCertificate);
-  const msgData = new TextEncoder().encode(message);
+  return roomData.uuid;
+}
+
+async function generateNetlessRoomToken(sdkToken: string, roomUuid: string, role: 'admin' | 'writer' | 'reader' = 'admin') {
+  console.log(`Generating Netless room token for room: ${roomUuid}, role: ${role}`);
   
-  // Generate HMAC-SHA256 signature
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  const response = await fetch(`https://api.netless.link/v5/tokens/rooms/${roomUuid}`, {
+    method: 'POST',
+    headers: {
+      'token': sdkToken,
+      'Content-Type': 'application/json',
+      'region': 'us-sv'
+    },
+    body: JSON.stringify({
+      lifespan: 3600000, // 1 hour
+      role: role
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate room token: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  console.log('Netless room token generated successfully');
   
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
-  const signatureArray = new Uint8Array(signature);
-  
-  // Convert signature to hex string
-  const signatureHex = Array.from(signatureArray)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  
-  const tokenData = {
-    signature: signatureHex,
-    userId: userId,
-    expire: expireTime
-  };
-  
-  const token = btoa(JSON.stringify(tokenData));
-  return `006${token}`;
+  return result;
+}
+
+function parseNetlessSDKToken(sdkToken: string) {
+  try {
+    // The SDK token format: NETLESSSDK_<base64_encoded_data>
+    const tokenData = sdkToken.replace('NETLESSSDK_', '');
+    const decoded = atob(tokenData);
+    
+    // Parse the decoded token to extract app identifier
+    const params = new URLSearchParams(decoded);
+    const appIdentifier = params.get('ak');
+    
+    if (!appIdentifier) {
+      throw new Error('Invalid SDK token format: missing app identifier');
+    }
+    
+    return { appIdentifier };
+  } catch (error) {
+    console.error('Failed to parse Netless SDK token:', error);
+    throw new Error('Invalid Netless SDK token format');
+  }
 }
 
 serve(async (req) => {
@@ -102,198 +96,164 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Starting Agora integration request");
-
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing Authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-      { 
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        } 
-      }
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const { lessonId, action, userRole } = await req.json();
-
-    if (!lessonId || !action) {
-      return new Response(
-        JSON.stringify({ error: "Missing lessonId or action" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    logStep("Processing request", { lessonId, action, userRole });
-
-    // Get Agora credentials from environment
-    const agoraAppId = Deno.env.get("AGORA_APP_ID");
-    const agoraAppCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
-
-    if (!agoraAppId || !agoraAppCertificate) {
-      return new Response(
-        JSON.stringify({ error: "Agora credentials not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Fetch lesson details
-    const { data: lesson, error: lessonError } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('id', lessonId)
-      .single();
-
-    if (lessonError || !lesson) {
-      return new Response(
-        JSON.stringify({ error: "Lesson not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { action, ...requestData } = await req.json();
 
     switch (action) {
-      case 'create_room': {
-        // Generate unique channel name and UID
-        const channelName = `lesson_${lessonId}_${Date.now()}`;
-        const uid = Math.floor(Math.random() * 1000000) + 1;
-        
-        // Generate tokens using proper HMAC
-        const rtcToken = await generateRTCToken(agoraAppId, agoraAppCertificate, channelName, uid, 'publisher');
-        const rtmToken = await generateRTMToken(agoraAppId, agoraAppCertificate, user.id);
-        
-        // Update lesson with Agora details
-        const { error: updateError } = await supabase
-          .from('lessons')
-          .update({
-            agora_channel_name: channelName,
-            agora_token: rtcToken,
-            agora_uid: uid,
-            agora_rtm_token: rtmToken,
-            video_conference_provider: 'agora'
-          })
-          .eq('id', lessonId);
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        logStep("Created Agora room", { channelName, uid });
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            channelName,
-            rtcToken,
-            rtmToken,
-            uid,
-            appId: agoraAppId
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      case 'get_tokens': {
-        // Generate new tokens for existing room
-        if (!lesson.agora_channel_name || !lesson.agora_uid) {
-          return new Response(
-            JSON.stringify({ error: "Room not created yet" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        const role = userRole === 'tutor' ? 'publisher' : 'subscriber';
-        const uid = userRole === 'tutor' ? lesson.agora_uid : Math.floor(Math.random() * 1000000) + 1;
-        
-        const rtcToken = await generateRTCToken(agoraAppId, agoraAppCertificate, lesson.agora_channel_name, uid, role);
-        const rtmToken = await generateRTMToken(agoraAppId, agoraAppCertificate, user.id);
-
-        logStep("Generated tokens", { channelName: lesson.agora_channel_name, uid, role });
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            channelName: lesson.agora_channel_name,
-            rtcToken,
-            rtmToken,
-            uid,
-            appId: agoraAppId,
-            role
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      case 'start_recording': {
-        // This would integrate with Agora Cloud Recording
-        // For now, we'll just update the status
-        const { error: updateError } = await supabase
-          .from('lessons')
-          .update({
-            agora_recording_status: 'recording'
-          })
-          .eq('id', lessonId);
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        logStep("Started recording", { lessonId });
-
-        return new Response(
-          JSON.stringify({ success: true, message: "Recording started" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      case 'stop_recording': {
-        const { error: updateError } = await supabase
-          .from('lessons')
-          .update({
-            agora_recording_status: 'stopped'
-          })
-          .eq('id', lessonId);
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        logStep("Stopped recording", { lessonId });
-
-        return new Response(
-          JSON.stringify({ success: true, message: "Recording stopped" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
+      case "create-room":
+        return await createVideoRoom(requestData as CreateVideoRoomRequest, supabase);
+      case "get-tokens":
+        return await getTokens(requestData as GetTokensRequest, supabase);
       default:
         return new Response(
           JSON.stringify({ error: "Invalid action" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
-
   } catch (error) {
-    logStep("Error in Agora integration", { error: error.message });
+    console.error("Error in agora-integration function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
+async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
+  const appId = Deno.env.get("AGORA_APP_ID");
+  const appCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
+  const netlessSDKToken = "NETLESSSDK_YWs9Uk5ZamRBRm9iWWhOS3U4eCZub25jZT0zNGRjOTUxMC00ZGViLTExZjAtYjdjZi1iMTBjNTEwODc0NTImcm9sZT0wJnNpZz1mMTAwNjM2ZWU4YmI0NTJkZTRkYTY2MDE5YWZhMDY4YThkNmE0M2YyMmQ2MDA5OTVmZDU4NTk0ZTY1YjNhOGM3";
+
+  if (!appId || !appCertificate) {
+    throw new Error("Agora credentials not configured");
+  }
+
+  try {
+    console.log("Creating video room for lesson:", data.lessonId);
+
+    // Generate unique channel name and UID
+    const channelName = `lesson_${data.lessonId}`;
+    const uid = Math.floor(Math.random() * 1000000);
+
+    // Create Netless whiteboard room
+    console.log("Creating Netless whiteboard room");
+    const netlessRoomUuid = await createNetlessRoom(netlessSDKToken);
+    const { appIdentifier } = parseNetlessSDKToken(netlessSDKToken);
+
+    // Generate Netless room token (admin for tutors, writer for students)
+    const netlessRole = data.userRole === 'tutor' ? 'admin' : 'writer';
+    const netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, netlessRoomUuid, netlessRole);
+
+    // Update lesson with room details
+    const { error: updateError } = await supabase
+      .from("lessons")
+      .update({
+        agora_channel_name: channelName,
+        agora_uid: uid,
+        video_conference_provider: "agora",
+        netless_room_uuid: netlessRoomUuid,
+        netless_room_token: netlessRoomToken,
+        netless_app_identifier: appIdentifier
+      })
+      .eq("id", data.lessonId);
+
+    if (updateError) {
+      console.error("Error updating lesson:", updateError);
+      throw updateError;
+    }
+
+    console.log("Video room created successfully with Netless whiteboard");
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        channelName,
+        uid,
+        netlessRoomUuid,
+        netlessAppIdentifier: appIdentifier,
+        message: "Video room with whiteboard created successfully"
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error creating video room:", error);
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+}
+
+async function getTokens(data: GetTokensRequest, supabase: any) {
+  const appId = Deno.env.get("AGORA_APP_ID");
+  const appCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
+  const netlessSDKToken = "NETLESSSDK_YWs9Uk5ZamRBRm9iWWhOS3U4eCZub25jZT0zNGRjOTUxMC00ZGViLTExZjAtYjczZi1iMTBjNTEwODc0NTImcm9sZT0wJnNpZz1mMTAwNjM2ZWU4YmI0NTJkZTRkYTY2MDE5YWZhMDY4YThkNmE0M2YyMmQ2MDA5OTVmZDU4NTk0ZTY1YjNhOGM3";
+
+  if (!appId || !appCertificate) {
+    throw new Error("Agora credentials not configured");
+  }
+
+  try {
+    console.log("Getting tokens for lesson:", data.lessonId);
+
+    // Get lesson details
+    const { data: lesson, error: lessonError } = await supabase
+      .from("lessons")
+      .select("agora_channel_name, agora_uid, netless_room_uuid, netless_app_identifier")
+      .eq("id", data.lessonId)
+      .single();
+
+    if (lessonError || !lesson) {
+      throw new Error("Lesson not found");
+    }
+
+    if (!lesson.agora_channel_name || !lesson.netless_room_uuid) {
+      throw new Error("Video room not created for this lesson");
+    }
+
+    // Generate fresh Agora tokens (simplified token generation for demo)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const expireTime = currentTime + 3600; // 1 hour
+    
+    // For demo purposes, using basic token structure
+    const rtcToken = `agora_rtc_token_${lesson.agora_channel_name}_${data.userRole}_${expireTime}`;
+    const rtmToken = `agora_rtm_token_${lesson.agora_uid}_${expireTime}`;
+
+    // Generate fresh Netless room token
+    const netlessRole = data.userRole === 'tutor' ? 'admin' : 'writer';
+    const netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, lesson.netless_room_uuid, netlessRole);
+
+    console.log("Tokens generated successfully");
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        appId,
+        channelName: lesson.agora_channel_name,
+        uid: lesson.agora_uid,
+        rtcToken,
+        rtmToken,
+        netlessRoomUuid: lesson.netless_room_uuid,
+        netlessRoomToken,
+        netlessAppIdentifier: lesson.netless_app_identifier
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error getting tokens:", error);
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+}

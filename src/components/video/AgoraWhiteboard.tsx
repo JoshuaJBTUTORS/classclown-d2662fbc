@@ -4,33 +4,42 @@ import { WhiteWebSdk, Room, RoomPhase } from 'white-web-sdk';
 import { Button } from '@/components/ui/button';
 import { Pen, Square, Circle, Type, Eraser, Trash2, Undo, Redo, Hand } from 'lucide-react';
 
-interface AgoraWhiteboardProps {
+interface NetlessWhiteboardProps {
   isReadOnly?: boolean;
   userRole: 'tutor' | 'student';
-  roomToken?: string;
   roomUuid?: string;
+  roomToken?: string;
+  appIdentifier?: string;
   userId: string;
 }
 
-const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({ 
+const NetlessWhiteboard: React.FC<NetlessWhiteboardProps> = ({ 
   isReadOnly = false, 
   userRole,
-  roomToken = 'demo-token',
-  roomUuid = 'demo-room',
+  roomUuid,
+  roomToken,
+  appIdentifier,
   userId
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [phase, setPhase] = useState<RoomPhase>(RoomPhase.Connecting);
   const [activeTool, setActiveTool] = useState<string>('selector');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!whiteboardRef.current) return;
+    if (!whiteboardRef.current || !roomUuid || !roomToken || !appIdentifier) {
+      setError('Missing whiteboard configuration');
+      return;
+    }
 
     const initWhiteboard = async () => {
       try {
+        console.log('Initializing Netless whiteboard with:', { roomUuid, appIdentifier });
+        
         const whiteWebSdk = new WhiteWebSdk({
-          appIdentifier: 'demo-app-id', // This should come from environment
+          appIdentifier: appIdentifier,
+          region: "us-sv", // Set to US Silicon Valley region
           useMobXState: true,
         });
 
@@ -45,12 +54,20 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
         roomInstance.bindHtmlElement(whiteboardRef.current);
         
         roomInstance.callbacks.on('onPhaseChanged', (phase) => {
+          console.log('Whiteboard phase changed:', phase);
           setPhase(phase);
         });
 
+        roomInstance.callbacks.on('onRoomStateChanged', (modifyState) => {
+          console.log('Room state changed:', modifyState);
+        });
+
         setRoom(roomInstance);
+        setError(null);
+        console.log('Whiteboard initialized successfully');
       } catch (error) {
         console.error('Failed to initialize whiteboard:', error);
+        setError(error instanceof Error ? error.message : 'Failed to initialize whiteboard');
       }
     };
 
@@ -58,52 +75,80 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
 
     return () => {
       if (room) {
+        console.log('Disconnecting from whiteboard');
         room.disconnect();
       }
     };
-  }, [roomToken, roomUuid, isReadOnly, userRole, userId]);
+  }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
 
   const handleToolChange = (tool: string) => {
     if (!room || isReadOnly || userRole !== 'tutor') return;
     
     setActiveTool(tool);
     
-    switch (tool) {
-      case 'selector':
-        room.setMemberState({ currentApplianceName: 'clicker' as any });
-        break;
-      case 'pen':
-        room.setMemberState({ currentApplianceName: 'pen' as any });
-        break;
-      case 'rectangle':
-        room.setMemberState({ currentApplianceName: 'shape' as any });
-        break;
-      case 'circle':
-        room.setMemberState({ currentApplianceName: 'shape' as any });
-        break;
-      case 'eraser':
-        room.setMemberState({ currentApplianceName: 'eraser' as any });
-        break;
-      case 'text':
-        room.setMemberState({ currentApplianceName: 'text' as any });
-        break;
+    try {
+      switch (tool) {
+        case 'selector':
+          room.setMemberState({ currentApplianceName: 'clicker' as any });
+          break;
+        case 'pen':
+          room.setMemberState({ currentApplianceName: 'pen' as any });
+          break;
+        case 'rectangle':
+          room.setMemberState({ currentApplianceName: 'rectangle' as any });
+          break;
+        case 'circle':
+          room.setMemberState({ currentApplianceName: 'ellipse' as any });
+          break;
+        case 'eraser':
+          room.setMemberState({ currentApplianceName: 'eraser' as any });
+          break;
+        case 'text':
+          room.setMemberState({ currentApplianceName: 'text' as any });
+          break;
+      }
+    } catch (error) {
+      console.error('Error changing tool:', error);
     }
   };
 
   const handleUndo = () => {
     if (!room || isReadOnly || userRole !== 'tutor') return;
-    room.undo();
+    try {
+      room.undo();
+    } catch (error) {
+      console.error('Error undoing:', error);
+    }
   };
 
   const handleRedo = () => {
     if (!room || isReadOnly || userRole !== 'tutor') return;
-    room.redo();
+    try {
+      room.redo();
+    } catch (error) {
+      console.error('Error redoing:', error);
+    }
   };
 
   const handleClear = () => {
     if (!room || isReadOnly || userRole !== 'tutor') return;
-    room.cleanCurrentScene();
+    try {
+      room.cleanCurrentScene();
+    } catch (error) {
+      console.error('Error clearing whiteboard:', error);
+    }
   };
+
+  if (error) {
+    return (
+      <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+        <div className="text-center p-6">
+          <p className="text-red-600 mb-2">Whiteboard Error</p>
+          <p className="text-gray-600 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isReadOnly || userRole === 'student') {
     return (
@@ -193,4 +238,4 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
   );
 };
 
-export default AgoraWhiteboard;
+export default NetlessWhiteboard;

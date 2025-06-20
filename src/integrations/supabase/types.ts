@@ -738,6 +738,9 @@ export type Database = {
           lesson_space_room_url: string | null
           lesson_space_space_id: string | null
           lesson_type: string | null
+          netless_app_identifier: string | null
+          netless_room_token: string | null
+          netless_room_uuid: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
           recurrence_interval: string | null
@@ -771,6 +774,9 @@ export type Database = {
           lesson_space_room_url?: string | null
           lesson_space_space_id?: string | null
           lesson_type?: string | null
+          netless_app_identifier?: string | null
+          netless_room_token?: string | null
+          netless_room_uuid?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -804,6 +810,9 @@ export type Database = {
           lesson_space_room_url?: string | null
           lesson_space_space_id?: string | null
           lesson_type?: string | null
+          netless_app_identifier?: string | null
+          netless_room_token?: string | null
+          netless_room_uuid?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
