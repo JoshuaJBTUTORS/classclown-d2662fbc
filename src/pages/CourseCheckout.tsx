@@ -99,7 +99,7 @@ const CourseCheckout = () => {
       // Create a form and submit it to trigger the server-side redirect
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = `${supabase.supabaseUrl}/functions/v1/create-checkout-session`;
+      form.action = `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/create-checkout-session`;
       form.style.display = 'none';
       
       // Add course ID
@@ -109,42 +109,29 @@ const CourseCheckout = () => {
       courseInput.value = course.id;
       form.appendChild(courseInput);
       
-      // Add authorization header as hidden input (we'll handle this differently)
-      // Instead, let's use the Supabase invoke method but handle redirect properly
+      // Add authorization token
+      const authInput = document.createElement('input');
+      authInput.type = 'hidden';
+      authInput.name = 'authorization';
+      authInput.value = `Bearer ${session.access_token}`;
+      form.appendChild(authInput);
+      
+      // Add API key
+      const apikeyInput = document.createElement('input');
+      apikeyInput.type = 'hidden';
+      apikeyInput.name = 'apikey';
+      apikeyInput.value = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqeGJ4a3BlZ2NubmZqYnN4YXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MTE2NzIsImV4cCI6MjA2MzI4NzY3Mn0.QFNyi5omwRMPiL_nJlUOHo5ATwXd14PdQHfoG7oTnwA';
+      form.appendChild(apikeyInput);
       
       document.body.appendChild(form);
+      form.submit();
       
-      // Actually, let's use a simpler approach - direct API call that returns redirect URL
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': supabase.supabaseKey,
-        },
-        body: JSON.stringify({ courseId: course.id }),
-      });
-
-      // Check if it's a redirect response
-      if (response.status === 303) {
-        const location = response.headers.get('Location');
-        if (location) {
-          console.log('Redirecting to Stripe checkout:', location);
-          window.location.href = location;
-          return;
+      // Clean up the form after submission
+      setTimeout(() => {
+        if (form.parentNode) {
+          document.body.removeChild(form);
         }
-      }
-
-      // If not a redirect, check for JSON response
-      if (response.headers.get('content-type')?.includes('application/json')) {
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-      }
-
-      // Clean up the form
-      document.body.removeChild(form);
+      }, 1000);
       
     } catch (error) {
       console.error('Error creating checkout session:', error);
