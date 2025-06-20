@@ -46,10 +46,10 @@ import LearningHubLayout from "./components/learningHub/LearningHubLayout";
 
 const queryClient = new QueryClient();
 
-// Redirect component for course URLs
-const CourseRedirect = () => {
+// Redirect component for old learning hub course URLs
+const LearningHubCourseRedirect = () => {
   const { id } = useParams();
-  return <Navigate to={`/learning-hub/course/${id}`} replace />;
+  return <Navigate to={`/course/${id}`} replace />;
 };
 
 const App = () => (
@@ -68,8 +68,9 @@ const App = () => (
                 <Route path="/invite/:token" element={<Invite />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
-                {/* Redirect old course URLs to learning hub */}
-                <Route path="/course/:id" element={<CourseRedirect />} />
+                {/* Standalone Course Detail route - outside any layout */}
+                <Route path="/course/:id" element={<CourseDetail />} />
+                <Route path="/checkout/:courseId" element={<CourseCheckout />} />
 
                 {/* Learning Hub routes */}
                 <Route path="/learning-hub" element={<LearningHubLayout />}>
@@ -79,8 +80,9 @@ const App = () => (
                   <Route path="revision" element={<LearningHubRevision />} />
                   <Route path="progress" element={<Progress />} />
                   <Route path="library" element={<LearningHub />} />
-                  <Route path="course/:id" element={<CourseDetail />} />
-                  <Route path="checkout/:courseId" element={<CourseCheckout />} />
+                  {/* Redirect old nested course URLs to standalone route */}
+                  <Route path="course/:id" element={<LearningHubCourseRedirect />} />
+                  <Route path="checkout/:courseId" element={<Navigate to="/checkout/:courseId" replace />} />
                 </Route>
 
                 {/* Protected main app routes */}
