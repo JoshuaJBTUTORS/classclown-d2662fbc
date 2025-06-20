@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +13,7 @@ const CourseCheckout = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isOwner } = useAuth();
+  const { isOwner, user, profile } = useAuth();
   const [searchParams] = useSearchParams();
   const [paymentData, setPaymentData] = useState<{
     clientSecret: string;
@@ -134,6 +133,12 @@ const CourseCheckout = () => {
   const formatPrice = (priceInPence: number) => {
     return `£${(priceInPence / 100).toFixed(2)}`;
   };
+
+  // Extract user information for pre-filling the form
+  const userEmail = user?.email || '';
+  const userName = profile ? 
+    `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
+    '';
 
   if (isLoading || !course) {
     return (
@@ -266,6 +271,8 @@ const CourseCheckout = () => {
               customerId={paymentData.customerId}
               courseTitle={paymentData.courseTitle}
               amount={paymentData.amount}
+              userEmail={userEmail}
+              userName={userName}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
             />

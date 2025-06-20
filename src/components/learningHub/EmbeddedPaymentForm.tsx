@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
 import {
@@ -24,6 +23,8 @@ interface PaymentFormProps {
   customerId: string;
   courseTitle: string;
   amount: number;
+  userEmail: string;
+  userName: string;
   onSuccess: () => void;
   onError: (error: string) => void;
 }
@@ -33,6 +34,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   customerId,
   courseTitle,
   amount,
+  userEmail,
+  userName,
   onSuccess,
   onError,
 }) => {
@@ -41,8 +44,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
-  const [emailForReceipt, setEmailForReceipt] = useState('');
-  const [billingName, setBillingName] = useState('');
+  const [emailForReceipt, setEmailForReceipt] = useState(userEmail);
+  const [billingName, setBillingName] = useState(userName);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -275,6 +278,8 @@ interface EmbeddedPaymentFormProps {
   customerId: string;
   courseTitle: string;
   amount: number;
+  userEmail: string;
+  userName: string;
   onSuccess: () => void;
   onError: (error: string) => void;
 }
