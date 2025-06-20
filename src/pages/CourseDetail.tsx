@@ -5,6 +5,7 @@ import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
 import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
 import ContentViewer from '@/components/learningHub/ContentViewer';
@@ -13,6 +14,7 @@ import CourseSidebar from '@/components/learningHub/CourseSidebar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
   Play, 
   Clock, 
@@ -23,7 +25,8 @@ import {
   Lock,
   Gift,
   Crown,
-  ArrowLeft
+  ArrowLeft,
+  Menu
 } from 'lucide-react';
 
 const CourseDetail = () => {
@@ -32,9 +35,11 @@ const CourseDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isOwner } = useAuth();
+  const isMobile = useIsMobile();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -107,6 +112,10 @@ const CourseDetail = () => {
   const handleLessonSelect = (lesson: any) => {
     setSelectedLessonId(lesson.id);
     setSelectedLesson(lesson);
+    // Close mobile sidebar when lesson is selected
+    if (isMobile) {
+      setMobileSidebarOpen(false);
+    }
   };
 
   const handleBackToCourse = () => {
@@ -142,35 +151,62 @@ const CourseDetail = () => {
         </Button>
       </div>
 
+      {/* Mobile Menu Button - Only visible on mobile when viewing lesson */}
+      {isMobile && selectedLessonId && selectedLesson && (
+        <div className="fixed top-4 right-4 z-30">
+          <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 text-gray-700 hover:text-pink-600 shadow-sm"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-80">
+              <CourseSidebar
+                modules={modules || []}
+                onSelectLesson={handleLessonSelect}
+                currentLessonId={selectedLessonId}
+                isAdmin={isOwner}
+                isPurchased={hasAccess}
+              />
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
+
       {selectedLessonId && selectedLesson ? (
         <CourseAccessControl courseId={course.id}>
           {/* Full Screen Layout with Course Sidebar */}
           <div className="fixed inset-0 bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100 pt-16">
             <div className="flex h-full">
-              {/* Course Sidebar - Fixed Width */}
-              <div className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
-                {/* Sidebar Content */}
-                <div className="flex-1 overflow-hidden">
-                  <CourseSidebar
-                    modules={modules || []}
-                    onSelectLesson={handleLessonSelect}
-                    currentLessonId={selectedLessonId}
-                    isAdmin={isOwner}
-                    isPurchased={hasAccess}
-                  />
+              {/* Desktop Sidebar - Hidden on mobile */}
+              {!isMobile && (
+                <div className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+                  <div className="flex-1 overflow-hidden">
+                    <CourseSidebar
+                      modules={modules || []}
+                      onSelectLesson={handleLessonSelect}
+                      currentLessonId={selectedLessonId}
+                      isAdmin={isOwner}
+                      isPurchased={hasAccess}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Main Content Area - Single Column Layout */}
+              {/* Main Content Area - Full width on mobile */}
               <div className="flex-1 overflow-y-auto">
-                <div className="h-full p-6">
+                <div className={`h-full ${isMobile ? 'p-4' : 'p-6'}`}>
                   <div className="max-w-4xl mx-auto space-y-6">
-                    {/* Lesson Title */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 p-6">
+                    {/* Lesson Title - More compact on mobile */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 p-4 md:p-6">
                       <Badge variant="outline" className="mb-3 border-pink-200 text-pink-700 bg-pink-50">
                         {course.subject}
                       </Badge>
-                      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                      <h1 className={`font-bold text-gray-900 mb-2 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
                         {selectedLesson.title}
                       </h1>
                       <p className="text-gray-600 leading-relaxed">
@@ -212,11 +248,11 @@ const CourseDetail = () => {
       ) : (
         <div className="pt-16 px-4">
           <div className="container mx-auto py-8">
-            {/* Course Header */}
-            <div className="bg-white rounded-lg shadow-sm border p-8 mb-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Course Header - Responsive layout */}
+            <div className="bg-white rounded-lg shadow-sm border p-4 md:p-8 mb-8">
+              <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
                 <div>
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
                     <Badge variant="blue">{course.subject}</Badge>
                     <Badge variant="outline">{course.difficulty_level}</Badge>
                     {isOwner && (
@@ -227,15 +263,15 @@ const CourseDetail = () => {
                     )}
                   </div>
                   
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                  <h1 className={`font-bold text-gray-900 mb-4 ${isMobile ? 'text-3xl' : 'text-4xl'}`}>
                     {course.title}
                   </h1>
                   
-                  <p className="text-lg text-gray-600 mb-6">
+                  <p className={`text-gray-600 mb-6 ${isMobile ? 'text-base' : 'text-lg'}`}>
                     {course.description}
                   </p>
                   
-                  <div className="flex items-center gap-6 text-sm text-gray-500 mb-6">
+                  <div className={`flex items-center gap-6 text-sm text-gray-500 mb-6 ${isMobile ? 'flex-wrap gap-4' : ''}`}>
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
                       <span>1,200+ students</span>
@@ -251,13 +287,13 @@ const CourseDetail = () => {
                   </div>
 
                   {hasAccess ? (
-                    <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90">
+                    <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90 w-full md:w-auto">
                       <Play className="h-5 w-5 mr-2" />
                       {isOwner ? 'Access Course (Admin)' : 'Continue Learning'}
                     </Button>
                   ) : (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3">
+                      <div className={`flex items-center gap-3 ${isMobile ? 'flex-col items-start' : ''}`}>
                         <div className="text-3xl font-bold text-primary">
                           {formatPrice(course.price || 899)}<span className="text-base font-normal text-gray-600">/month</span>
                         </div>
@@ -267,7 +303,7 @@ const CourseDetail = () => {
                         </div>
                       </div>
                       
-                      <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90">
+                      <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90 w-full md:w-auto">
                         <Gift className="h-5 w-5 mr-2" />
                         Start Free Trial
                       </Button>
@@ -279,7 +315,8 @@ const CourseDetail = () => {
                   )}
                 </div>
                 
-                <div className="bg-gray-50 rounded-lg p-6">
+                {/* Benefits section - Stack on mobile */}
+                <div className="bg-gray-50 rounded-lg p-4 md:p-6">
                   <h3 className="font-semibold text-gray-900 mb-4">What you'll learn</h3>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
@@ -303,7 +340,7 @@ const CourseDetail = () => {
               </div>
             </div>
 
-            {/* Course Content Preview */}
+            {/* Course Content Preview - Responsive */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
