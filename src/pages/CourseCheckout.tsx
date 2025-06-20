@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ const CourseCheckout = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isOwner } = useAuth();
   const [subscriptionData, setSubscriptionData] = useState<{
     subscription_id: string;
     client_secret?: string;
@@ -31,12 +33,23 @@ const CourseCheckout = () => {
     enabled: !!courseId,
   });
 
+  // Redirect owners directly to course content
+  useEffect(() => {
+    if (course && isOwner) {
+      toast({
+        title: "Admin Access",
+        description: "Redirecting to course content with full access.",
+      });
+      navigate(`/learning-hub/course/${course.id}`);
+    }
+  }, [course, isOwner, navigate, toast]);
+
   // Check if user already has access on component mount
   useEffect(() => {
-    if (course) {
+    if (course && !isOwner) {
       checkExistingAccess();
     }
-  }, [course]);
+  }, [course, isOwner]);
 
   const checkExistingAccess = async () => {
     if (!course) return;
@@ -133,6 +146,15 @@ const CourseCheckout = () => {
   };
 
   if (isLoading || !course) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Don't render checkout content for owners (they get redirected)
+  if (isOwner) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -278,3 +300,4 @@ const CourseCheckout = () => {
 };
 
 export default CourseCheckout;
+

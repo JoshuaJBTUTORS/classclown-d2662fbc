@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
 import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
@@ -20,13 +21,15 @@ import {
   Users, 
   CheckCircle,
   Lock,
-  Gift
+  Gift,
+  Crown
 } from 'lucide-react';
 
 const CourseDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { isOwner } = useAuth();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
@@ -46,7 +49,7 @@ const CourseDetail = () => {
   const { data: hasPurchased } = useQuery({
     queryKey: ['course-purchase', id],
     queryFn: () => paymentService.checkCoursePurchase(id!),
-    enabled: !!id,
+    enabled: !!id && !isOwner, // Skip check for owners
   });
 
   // Handle payment success/cancellation from URL params
@@ -89,7 +92,8 @@ const CourseDetail = () => {
   };
 
   const handleStartLearning = () => {
-    if (hasPurchased) {
+    // Owners always have access, regular users need to check purchase status
+    if (isOwner || hasPurchased) {
       // Find first lesson and start
       if (modules && modules.length > 0 && modules[0].lessons && modules[0].lessons.length > 0) {
         const firstLesson = modules[0].lessons[0];
@@ -114,6 +118,9 @@ const CourseDetail = () => {
     );
   }
 
+  // Determine if user has access (owner always has access)
+  const hasAccess = isOwner || hasPurchased;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {selectedLessonId && selectedLesson ? (
@@ -123,7 +130,7 @@ const CourseDetail = () => {
               modules={modules || []}
               onSelectLesson={handleLessonSelect}
               currentLessonId={selectedLessonId}
-              isPurchased={hasPurchased}
+              isPurchased={hasAccess}
             />
             <div className="flex-1">
               <ContentViewer lesson={selectedLesson} />
@@ -139,6 +146,12 @@ const CourseDetail = () => {
                 <div className="flex items-center gap-2 mb-4">
                   <Badge variant="blue">{course.subject}</Badge>
                   <Badge variant="outline">{course.difficulty_level}</Badge>
+                  {isOwner && (
+                    <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Admin Access
+                    </Badge>
+                  )}
                 </div>
                 
                 <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -164,10 +177,10 @@ const CourseDetail = () => {
                   </div>
                 </div>
 
-                {hasPurchased ? (
+                {hasAccess ? (
                   <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90">
                     <Play className="h-5 w-5 mr-2" />
-                    Continue Learning
+                    {isOwner ? 'Access Course (Admin)' : 'Continue Learning'}
                   </Button>
                 ) : (
                   <div className="space-y-3">
@@ -247,14 +260,18 @@ const CourseDetail = () => {
                       <div className="space-y-2">
                         {module.lessons?.slice(0, 3).map((lesson) => (
                           <div key={lesson.id} className="flex items-center gap-3 text-sm">
-                            {lesson.is_preview ? (
+                            {lesson.is_preview || isOwner ? (
                               <Play className="h-4 w-4 text-green-500" />
                             ) : (
                               <Lock className="h-4 w-4 text-gray-400" />
                             )}
-                            <span className={lesson.is_preview ? "text-green-700" : "text-gray-600"}>
+                            <span className={lesson.is_preview || isOwner ? "text-green-700" : "text-gray-600"}>
                               {lesson.title}
-                              {lesson.is_preview && <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Preview</span>}
+                              {(lesson.is_preview || isOwner) && (
+                                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                  {isOwner ? 'Admin' : 'Preview'}
+                                </span>
+                              )}
                             </span>
                           </div>
                         ))}
@@ -293,3 +310,4 @@ const CourseDetail = () => {
 };
 
 export default CourseDetail;
+
