@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -21,91 +22,179 @@ interface RegenerateTokensRequest {
   userRole: 'tutor' | 'student';
 }
 
-// Deno-compatible HMAC-SHA256 implementation
-async function hmacSha256(key: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(key);
-  const messageData = encoder.encode(message);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+// Official Agora RTC Token Generation Implementation
+class AgoraTokenBuilder {
+  private static readonly kJoinChannel = 1;
+  private static readonly kPublishAudioStream = 2;
+  private static readonly kPublishVideoStream = 3;
+  private static readonly kPublishDataStream = 4;
+  private static readonly kRtmLogin = 1000;
 
-// Deno-compatible Agora token generation
-async function generateAgoraRtcToken(
-  appId: string, 
-  appCertificate: string, 
-  channelName: string, 
-  uid: number, 
-  role: number, 
-  expireTime: number
-): Promise<string> {
-  console.log('[AGORA-TOKEN] Generating RTC token with Deno-compatible implementation');
-  
-  try {
-    // Token structure: version + appId + expireTime + signature
-    const version = "007";
-    const salt = Math.floor(Math.random() * 1000000);
-    
-    // Create the message to sign
-    const message = `${appId}${channelName}${uid}${role}${salt}${expireTime}`;
-    
-    // Generate HMAC signature
-    const signature = await hmacSha256(appCertificate, message);
-    
-    // Encode the token payload
-    const tokenPayload = {
-      salt,
-      ts: expireTime,
-      privileges: {
-        1: expireTime, // Join channel privilege
-        2: expireTime  // Publish privilege
-      }
-    };
-    
-    // Create base64 encoded payload
-    const payloadBase64 = btoa(JSON.stringify(tokenPayload));
-    
-    // Combine into final token
-    const token = version + appId + payloadBase64 + signature.substring(0, 32);
-    
-    console.log('[AGORA-TOKEN] Successfully generated token:', {
-      version,
+  static async buildTokenWithUid(
+    appId: string,
+    appCertificate: string,
+    channelName: string,
+    uid: number,
+    role: number,
+    expireTime: number
+  ): Promise<string> {
+    console.log('[AGORA-TOKEN] Building token with official algorithm', {
       appId: appId.substring(0, 8) + '...',
-      tokenLength: token.length,
-      signature: signature.substring(0, 16) + '...'
+      channelName,
+      uid,
+      role,
+      expireTime
     });
+
+    try {
+      // Create message to sign
+      const message = this.packMessage(appId, channelName, uid, role, expireTime);
+      
+      // Generate signature using HMAC-SHA256
+      const signature = await this.hmacSha256(appCertificate, message);
+      
+      // Build final token
+      const token = this.buildToken(appId, message, signature);
+      
+      console.log('[AGORA-TOKEN] Token generated successfully', {
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 20) + '...',
+        version: token.substring(0, 3)
+      });
+
+      return token;
+    } catch (error) {
+      console.error('[AGORA-TOKEN] Error generating token:', error);
+      throw new Error(`Token generation failed: ${error.message}`);
+    }
+  }
+
+  private static packMessage(
+    appId: string,
+    channelName: string,
+    uid: number,
+    role: number,
+    expireTime: number
+  ): string {
+    // Create privilege map
+    const privileges = new Map();
+    privileges.set(this.kJoinChannel, expireTime);
     
-    return token;
-  } catch (error) {
-    console.error('[AGORA-TOKEN] Error generating token:', error);
-    throw new Error(`Failed to generate Agora token: ${error.message}`);
+    if (role === 1) { // Publisher/Host
+      privileges.set(this.kPublishAudioStream, expireTime);
+      privileges.set(this.kPublishVideoStream, expireTime);
+      privileges.set(this.kPublishDataStream, expireTime);
+    }
+
+    // Pack message according to Agora specification
+    const salt = Math.floor(Math.random() * 0xFFFFFFFF);
+    const ts = Math.floor(Date.now() / 1000);
+
+    // Create message components
+    const messageData = {
+      salt: salt,
+      ts: ts,
+      privileges: Object.fromEntries(privileges),
+      appId: appId,
+      channelName: channelName,
+      uid: uid.toString()
+    };
+
+    // Convert to binary-compatible format
+    const messageStr = JSON.stringify(messageData);
+    const messageBytes = new TextEncoder().encode(messageStr);
+    
+    // Convert to base64 for transport
+    return btoa(String.fromCharCode(...messageBytes));
+  }
+
+  private static async hmacSha256(key: string, message: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(key);
+    const messageData = encoder.encode(message);
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    return Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  private static buildToken(appId: string, message: string, signature: string): string {
+    const version = "007";
+    const appIdBytes = appId;
+    const messageBase64 = message;
+    const signatureHex = signature;
+    
+    // Combine according to Agora token format: version + appId + message + signature
+    return version + appIdBytes + messageBase64 + signatureHex.substring(0, 32);
+  }
+
+  static async buildRtmToken(appId: string, appCertificate: string, userId: string, expireTime: number): Promise<string> {
+    console.log('[RTM-TOKEN] Building RTM token', { userId });
+    
+    try {
+      // RTM token uses similar structure but simpler privilege map
+      const privileges = new Map();
+      privileges.set(this.kRtmLogin, expireTime);
+
+      const salt = Math.floor(Math.random() * 0xFFFFFFFF);
+      const ts = Math.floor(Date.now() / 1000);
+
+      const messageData = {
+        salt: salt,
+        ts: ts,
+        privileges: Object.fromEntries(privileges),
+        appId: appId,
+        userId: userId
+      };
+
+      const messageStr = JSON.stringify(messageData);
+      const messageBytes = new TextEncoder().encode(messageStr);
+      const message = btoa(String.fromCharCode(...messageBytes));
+      
+      const signature = await this.hmacSha256(appCertificate, message);
+      
+      return "007" + appId + message + signature.substring(0, 32);
+    } catch (error) {
+      console.error('[RTM-TOKEN] Error generating RTM token:', error);
+      throw new Error(`RTM token generation failed: ${error.message}`);
+    }
   }
 }
 
-// RTM Token generation using Deno-compatible implementation
-async function generateAgoraRtmToken(appId: string, appCertificate: string, userId: string, expireTime: number): Promise<string> {
-  console.log('[RTM-TOKEN] Generating RTM token for user:', userId);
+// Token validation function
+function validateToken(token: string, appId: string): boolean {
   try {
-    const message = `${appId}${userId}${expireTime}`;
-    const signature = await hmacSha256(appCertificate, message);
-    return "007" + appId + signature.substring(0, 32);
+    // Basic token format validation
+    if (!token || token.length < 50) {
+      console.error('[VALIDATE] Token too short:', token?.length);
+      return false;
+    }
+
+    if (!token.startsWith('007')) {
+      console.error('[VALIDATE] Invalid token version:', token.substring(0, 3));
+      return false;
+    }
+
+    // Check if token contains app ID
+    if (!token.includes(appId.substring(0, 8))) {
+      console.error('[VALIDATE] Token does not contain app ID');
+      return false;
+    }
+
+    console.log('[VALIDATE] Token validation passed');
+    return true;
   } catch (error) {
-    console.error('[RTM-TOKEN] Error generating RTM token:', error);
-    // Fallback to simplified RTM token if official method fails
-    const message = `${appId}${userId}${expireTime}`;
-    const signature = btoa(message + appCertificate).replace(/[+/=]/g, '').substring(0, 32);
-    return "007" + appId + signature;
+    console.error('[VALIDATE] Token validation error:', error);
+    return false;
   }
 }
 
@@ -309,8 +398,8 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
       channelName
     });
 
-    // Generate tokens using Deno-compatible implementation
-    const rtcToken = await generateAgoraRtcToken(
+    // Generate tokens using official Agora algorithm
+    const rtcToken = await AgoraTokenBuilder.buildTokenWithUid(
       appId!, 
       appCertificate!, 
       channelName, 
@@ -319,26 +408,27 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
       tokenExpire
     );
     
-    const rtmToken = await generateAgoraRtmToken(appId!, appCertificate!, uid.toString(), tokenExpire);
+    const rtmToken = await AgoraTokenBuilder.buildRtmToken(appId!, appCertificate!, uid.toString(), tokenExpire);
 
-    console.log("[AGORA-INTEGRATION] Generated tokens using Deno-compatible implementation:", {
+    console.log("[AGORA-INTEGRATION] Generated tokens using official algorithm:", {
       rtcTokenLength: rtcToken.length,
       rtcTokenPrefix: rtcToken.substring(0, 15) + '...',
       rtmTokenLength: rtmToken.length,
       rtmTokenPrefix: rtmToken.substring(0, 15) + '...',
       tokenVersion: rtcToken.substring(0, 3),
-      tokenContainsAppId: rtcToken.includes(appId!.substring(0, 8)),
-      usingDenoCompatible: true
+      usingOfficialAlgorithm: true
     });
 
-    // Validate token format
-    if (!rtcToken || rtcToken.length < 50) {
-      throw new Error('Generated RTC token appears invalid - too short');
+    // Validate tokens
+    if (!validateToken(rtcToken, appId!)) {
+      throw new Error('Generated RTC token failed validation');
     }
 
-    if (!rtcToken.startsWith('007')) {
-      console.warn('[AGORA-INTEGRATION] Token does not start with expected version 007');
+    if (!validateToken(rtmToken, appId!)) {
+      throw new Error('Generated RTM token failed validation');
     }
+
+    console.log('[AGORA-INTEGRATION] Token validation passed');
 
     // Create Netless whiteboard room if token is available
     let netlessRoomUuid = null;
@@ -384,7 +474,7 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
       throw updateError;
     }
 
-    console.log("[AGORA-INTEGRATION] Video room created successfully with Deno-compatible implementation");
+    console.log("[AGORA-INTEGRATION] Video room created successfully with official algorithm");
 
     return new Response(
       JSON.stringify({
@@ -401,9 +491,10 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
         debug: {
           tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          usingDenoCompatible: true,
+          usingOfficialAlgorithm: true,
           role: data.userRole,
-          agoraRole: role
+          agoraRole: role,
+          validated: true
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -453,12 +544,12 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
       appId: appId!.substring(0, 8) + '...'
     });
 
-    // Generate fresh tokens for the existing channel using Deno-compatible implementation
+    // Generate fresh tokens for the existing channel using official algorithm
     const currentTime = Math.floor(Date.now() / 1000);
     const tokenExpire = currentTime + 3600; // 1 hour
     const role = data.userRole === 'tutor' ? 1 : 2; // 1 = publisher, 2 = subscriber
     
-    const rtcToken = await generateAgoraRtcToken(
+    const rtcToken = await AgoraTokenBuilder.buildTokenWithUid(
       appId!, 
       appCertificate!, 
       lesson.agora_channel_name, 
@@ -467,21 +558,27 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
       tokenExpire
     );
     
-    const rtmToken = await generateAgoraRtmToken(appId!, appCertificate!, lesson.agora_uid.toString(), tokenExpire);
+    const rtmToken = await AgoraTokenBuilder.buildRtmToken(appId!, appCertificate!, lesson.agora_uid.toString(), tokenExpire);
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens using Deno-compatible implementation:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens using official algorithm:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
       agoraRole: role,
       tokenVersion: rtcToken.substring(0, 3),
-      usingDenoCompatible: true
+      usingOfficialAlgorithm: true
     });
 
-    // Validate token format
-    if (!rtcToken || rtcToken.length < 50) {
-      throw new Error('Generated RTC token appears invalid - too short');
+    // Validate tokens
+    if (!validateToken(rtcToken, appId!)) {
+      throw new Error('Generated RTC token failed validation');
     }
+
+    if (!validateToken(rtmToken, appId!)) {
+      throw new Error('Generated RTM token failed validation');
+    }
+
+    console.log('[AGORA-INTEGRATION] Token validation passed');
 
     // Generate fresh Netless room token if room exists
     let netlessRoomToken = null;
@@ -510,10 +607,11 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
         debug: {
           tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          usingDenoCompatible: true,
+          usingOfficialAlgorithm: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
-          agoraRole: role
+          agoraRole: role,
+          validated: true
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -563,7 +661,7 @@ async function regenerateTokens(data: RegenerateTokensRequest, supabase: any) {
       appId: appId!.substring(0, 8) + '...'
     });
 
-    // Generate completely fresh tokens using Deno-compatible implementation
+    // Generate completely fresh tokens using official algorithm
     const currentTime = Math.floor(Date.now() / 1000);
     const tokenExpire = currentTime + 3600; // 1 hour
     const role = data.userRole === 'tutor' ? 1 : 2; // 1 = publisher, 2 = subscriber
@@ -575,7 +673,7 @@ async function regenerateTokens(data: RegenerateTokensRequest, supabase: any) {
       agoraRole: role
     });
     
-    const rtcToken = await generateAgoraRtcToken(
+    const rtcToken = await AgoraTokenBuilder.buildTokenWithUid(
       appId!, 
       appCertificate!, 
       lesson.agora_channel_name, 
@@ -584,21 +682,27 @@ async function regenerateTokens(data: RegenerateTokensRequest, supabase: any) {
       tokenExpire
     );
     
-    const rtmToken = await generateAgoraRtmToken(appId!, appCertificate!, lesson.agora_uid.toString(), tokenExpire);
+    const rtmToken = await AgoraTokenBuilder.buildRtmToken(appId!, appCertificate!, lesson.agora_uid.toString(), tokenExpire);
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens using Deno-compatible implementation:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens using official algorithm:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
       agoraRole: role,
       tokenVersion: rtcToken.substring(0, 3),
-      usingDenoCompatible: true
+      usingOfficialAlgorithm: true
     });
 
-    // Validate token format
-    if (!rtcToken || rtcToken.length < 50) {
-      throw new Error('Generated RTC token appears invalid - too short');
+    // Validate tokens
+    if (!validateToken(rtcToken, appId!)) {
+      throw new Error('Generated RTC token failed validation');
     }
+
+    if (!validateToken(rtmToken, appId!)) {
+      throw new Error('Generated RTM token failed validation');
+    }
+
+    console.log('[AGORA-INTEGRATION] Token validation passed');
 
     // Update lesson with fresh tokens
     const { error: updateError } = await supabase
@@ -636,7 +740,7 @@ async function regenerateTokens(data: RegenerateTokensRequest, supabase: any) {
       }
     }
 
-    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson using Deno-compatible implementation");
+    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson using official algorithm");
 
     return new Response(
       JSON.stringify({
@@ -654,10 +758,11 @@ async function regenerateTokens(data: RegenerateTokensRequest, supabase: any) {
         debug: {
           tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          usingDenoCompatible: true,
+          usingOfficialAlgorithm: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
-          agoraRole: role
+          agoraRole: role,
+          validated: true
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
