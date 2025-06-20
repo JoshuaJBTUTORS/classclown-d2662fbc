@@ -147,9 +147,10 @@ const CourseDetail = () => {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100">
       {selectedLessonId && selectedLesson ? (
         <CourseAccessControl courseId={course.id}>
-          <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100">
-            <div className="flex h-screen">
-              {/* Course Sidebar */}
+          {/* Full Screen Layout - No Sidebar Padding */}
+          <div className="fixed inset-0 bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100 z-50">
+            <div className="flex h-full">
+              {/* Course Sidebar - Fixed Width */}
               <div className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
                 {/* Header with Back Button */}
                 <div className="p-4 border-b border-gray-200">
@@ -175,9 +176,9 @@ const CourseDetail = () => {
                 </div>
               </div>
 
-              {/* Main Content Area */}
+              {/* Main Content Area - Full Remaining Width */}
               <div className="flex-1 overflow-y-auto">
-                <div className="container mx-auto p-6">
+                <div className="h-full p-6">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
                     {/* Left Column - Course Content Details */}
                     <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 p-6">
