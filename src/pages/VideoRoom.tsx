@@ -53,8 +53,9 @@ const VideoRoom: React.FC = () => {
 
       setLesson(lessonData);
 
-      // Get fresh tokens for the user
-      const credentials = await getTokens(lessonId, userRole || 'student');
+      // Get fresh tokens for the user - map admin/owner to tutor for Agora roles
+      const agoraRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole || 'student');
+      const credentials = await getTokens(lessonId, agoraRole as 'tutor' | 'student');
       
       if (!credentials) {
         throw new Error('Failed to get video conference access');
@@ -102,13 +103,16 @@ const VideoRoom: React.FC = () => {
     );
   }
 
+  // Map admin/owner roles to tutor for the video room UI
+  const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
+
   return (
     <AgoraVideoRoom
       appId={agoraCredentials.appId}
       channel={agoraCredentials.channelName}
       token={agoraCredentials.rtcToken}
       uid={agoraCredentials.uid}
-      userRole={userRole as 'tutor' | 'student'}
+      userRole={videoRoomRole}
       lessonTitle={lesson.title}
       onLeave={handleLeaveRoom}
     />
