@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import AgoraRTC from 'agora-rtc-sdk-ng';
+import { AgoraRTCProvider } from 'agora-rtc-react';
 
 const VideoRoom: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -20,6 +22,7 @@ const VideoRoom: React.FC = () => {
   const [agoraCredentials, setAgoraCredentials] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [agoraClient] = useState(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }));
 
   useEffect(() => {
     if (!user || !lessonId) {
@@ -107,15 +110,17 @@ const VideoRoom: React.FC = () => {
   const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
 
   return (
-    <AgoraVideoRoom
-      appId={agoraCredentials.appId}
-      channel={agoraCredentials.channelName}
-      token={agoraCredentials.rtcToken}
-      uid={agoraCredentials.uid}
-      userRole={videoRoomRole}
-      lessonTitle={lesson.title}
-      onLeave={handleLeaveRoom}
-    />
+    <AgoraRTCProvider client={agoraClient}>
+      <AgoraVideoRoom
+        appId={agoraCredentials.appId}
+        channel={agoraCredentials.channelName}
+        token={agoraCredentials.rtcToken}
+        uid={agoraCredentials.uid}
+        userRole={videoRoomRole}
+        lessonTitle={lesson.title}
+        onLeave={handleLeaveRoom}
+      />
+    </AgoraRTCProvider>
   );
 };
 
