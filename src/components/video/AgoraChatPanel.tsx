@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, MessageCircle, Users } from 'lucide-react';
-import AgoraRTM from 'agora-rtm-sdk';
 
 interface Message {
   id: string;
@@ -30,8 +29,6 @@ const AgoraChatPanel: React.FC<AgoraChatPanelProps> = ({
   userName,
   userRole
 }) => {
-  const [rtmClient, setRtmClient] = useState<any>(null);
-  const [rtmChannel, setRtmChannel] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -39,110 +36,38 @@ const AgoraChatPanel: React.FC<AgoraChatPanelProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const initRTM = async () => {
-      try {
-        const client = AgoraRTM.createInstance('your-app-id'); // This should come from environment
-        
-        await client.login({ uid: userId, token: rtmToken });
-        const channel = client.createChannel(channelName);
-        
-        // Set up event listeners
-        channel.on('ChannelMessage', (message: any, memberId: string) => {
-          const newMsg: Message = {
-            id: Date.now().toString(),
-            text: message.text,
-            senderId: memberId,
-            senderName: memberId === userId ? userName : `User ${memberId}`,
-            timestamp: new Date(),
-            type: 'message'
-          };
-          setMessages(prev => [...prev, newMsg]);
-        });
-
-        channel.on('MemberJoined', (memberId: string) => {
-          const systemMsg: Message = {
-            id: Date.now().toString(),
-            text: `${memberId} joined the session`,
-            senderId: 'system',
-            senderName: 'System',
-            timestamp: new Date(),
-            type: 'system'
-          };
-          setMessages(prev => [...prev, systemMsg]);
-          setOnlineUsers(prev => [...prev, memberId]);
-        });
-
-        channel.on('MemberLeft', (memberId: string) => {
-          const systemMsg: Message = {
-            id: Date.now().toString(),
-            text: `${memberId} left the session`,
-            senderId: 'system',
-            senderName: 'System',
-            timestamp: new Date(),
-            type: 'system'
-          };
-          setMessages(prev => [...prev, systemMsg]);
-          setOnlineUsers(prev => prev.filter(id => id !== memberId));
-        });
-
-        await channel.join();
-        
-        setRtmClient(client);
-        setRtmChannel(channel);
-        setIsConnected(true);
-
-        // Add welcome message
-        const welcomeMsg: Message = {
-          id: Date.now().toString(),
-          text: `Welcome to the lesson chat!`,
-          senderId: 'system',
-          senderName: 'System',
-          timestamp: new Date(),
-          type: 'system'
-        };
-        setMessages([welcomeMsg]);
-
-      } catch (error) {
-        console.error('RTM initialization failed:', error);
-      }
+    // Add welcome message
+    const welcomeMsg: Message = {
+      id: Date.now().toString(),
+      text: `Welcome to the lesson chat!`,
+      senderId: 'system',
+      senderName: 'System',
+      timestamp: new Date(),
+      type: 'system'
     };
-
-    initRTM();
-
-    return () => {
-      if (rtmChannel) {
-        rtmChannel.leave();
-      }
-      if (rtmClient) {
-        rtmClient.logout();
-      }
-    };
-  }, [rtmToken, channelName, userId, userName]);
+    setMessages([welcomeMsg]);
+    setIsConnected(true);
+    setOnlineUsers([userId]);
+  }, [userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !rtmChannel || !isConnected) return;
+  const sendMessage = () => {
+    if (!newMessage.trim() || !isConnected) return;
 
-    try {
-      await rtmChannel.sendMessage({ text: newMessage });
-      
-      const message: Message = {
-        id: Date.now().toString(),
-        text: newMessage,
-        senderId: userId,
-        senderName: userName,
-        timestamp: new Date(),
-        type: 'message'
-      };
-      
-      setMessages(prev => [...prev, message]);
-      setNewMessage('');
-    } catch (error) {
-      console.error('Failed to send message:', error);
-    }
+    const message: Message = {
+      id: Date.now().toString(),
+      text: newMessage,
+      senderId: userId,
+      senderName: userName,
+      timestamp: new Date(),
+      type: 'message'
+    };
+    
+    setMessages(prev => [...prev, message]);
+    setNewMessage('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -162,7 +87,7 @@ const AgoraChatPanel: React.FC<AgoraChatPanelProps> = ({
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Users className="h-3 w-3" />
-          <span>{onlineUsers.length + 1} participants online</span>
+          <span>{onlineUsers.length} participants online</span>
           {!isConnected && <span className="text-red-500">(Connecting...)</span>}
         </div>
       </div>

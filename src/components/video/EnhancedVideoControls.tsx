@@ -11,7 +11,7 @@ import {
   MonitorOff,
   Users,
   UserX,
-  Record,
+  Circle,
   Square
 } from 'lucide-react';
 
@@ -101,7 +101,7 @@ const EnhancedVideoControls: React.FC<EnhancedVideoControlsProps> = ({
               {isRecording ? (
                 <Square className="h-5 w-5" />
               ) : (
-                <Record className="h-5 w-5" />
+                <Circle className="h-5 w-5" />
               )}
             </Button>
 

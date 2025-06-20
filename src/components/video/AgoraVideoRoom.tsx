@@ -96,16 +96,23 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
 
     try {
       if (!isScreenSharing) {
-        // Start screen sharing
-        const screenTrack = await agoraEngine.createScreenVideoTrack();
-        await agoraEngine.unpublish([localCameraTrack]);
+        // Start screen sharing - using the correct API
+        const screenTrack = await agoraEngine.createScreenVideoTrack({
+          encoderConfig: "1080p_1",
+        });
+        
+        if (localCameraTrack) {
+          await agoraEngine.unpublish([localCameraTrack]);
+        }
         await agoraEngine.publish([screenTrack]);
         setIsScreenSharing(true);
         toast.success('Screen sharing started');
       } else {
         // Stop screen sharing
         await agoraEngine.unpublish();
-        await agoraEngine.publish([localCameraTrack]);
+        if (localCameraTrack) {
+          await agoraEngine.publish([localCameraTrack]);
+        }
         setIsScreenSharing(false);
         toast.success('Screen sharing stopped');
       }
@@ -178,6 +185,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             userRole={userRole}
             roomToken="demo-whiteboard-token"
             roomUuid="demo-whiteboard-room"
+            userId={uid.toString()}
           />
         </div>
 

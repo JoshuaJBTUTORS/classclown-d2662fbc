@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share, Record } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share, Circle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface VideoRoomHeaderProps {
@@ -39,7 +39,7 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
             </h1>
             {isRecording && (
               <Badge variant="destructive" className="flex items-center gap-1">
-                <Record className="h-3 w-3" />
+                <Circle className="h-3 w-3" />
                 Recording
               </Badge>
             )}

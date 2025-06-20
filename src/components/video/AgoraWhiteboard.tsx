@@ -9,13 +9,15 @@ interface AgoraWhiteboardProps {
   userRole: 'tutor' | 'student';
   roomToken?: string;
   roomUuid?: string;
+  userId: string;
 }
 
 const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({ 
   isReadOnly = false, 
   userRole,
   roomToken = 'demo-token',
-  roomUuid = 'demo-room'
+  roomUuid = 'demo-room',
+  userId
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const [room, setRoom] = useState<Room | null>(null);
@@ -35,6 +37,7 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
         const roomInstance = await whiteWebSdk.joinRoom({
           uuid: roomUuid,
           roomToken: roomToken,
+          uid: userId,
           isWritable: !isReadOnly && userRole === 'tutor',
           disableNewPencil: false,
         });
@@ -58,7 +61,7 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
         room.disconnect();
       }
     };
-  }, [roomToken, roomUuid, isReadOnly, userRole]);
+  }, [roomToken, roomUuid, isReadOnly, userRole, userId]);
 
   const handleToolChange = (tool: string) => {
     if (!room || isReadOnly || userRole !== 'tutor') return;
@@ -67,7 +70,7 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
     
     switch (tool) {
       case 'selector':
-        room.setMemberState({ currentApplianceName: 'selector' });
+        room.setMemberState({ currentApplianceName: 'clicker' });
         break;
       case 'pen':
         room.setMemberState({ currentApplianceName: 'pencil' });
