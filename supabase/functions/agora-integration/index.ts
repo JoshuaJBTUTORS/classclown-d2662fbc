@@ -12,51 +12,83 @@ const logStep = (step: string, details?: any) => {
   console.log(`[AGORA-INTEGRATION] ${step}${detailsStr}`);
 };
 
-// Generate RTC Token for video/audio
-function generateRTCToken(appId: string, appCertificate: string, channelName: string, uid: number, role: 'publisher' | 'subscriber', expirationTimeInSeconds: number = 3600) {
+// Proper HMAC-based token generation for Agora RTC
+async function generateRTCToken(appId: string, appCertificate: string, channelName: string, uid: number, role: 'publisher' | 'subscriber', expirationTimeInSeconds: number = 3600) {
   const now = Math.floor(Date.now() / 1000);
   const expireTime = now + expirationTimeInSeconds;
   
   // Role mapping: publisher = 1, subscriber = 2
   const roleNum = role === 'publisher' ? 1 : 2;
   
-  // Create message
-  const message = appId + channelName + uid.toString() + expireTime.toString();
+  // Create the message to sign
+  const message = `${appId}${channelName}${uid}${expireTime}`;
   
-  // Generate signature using Web Crypto API
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(appCertificate);
-  const messageData = encoder.encode(message);
+  // Convert app certificate to key for HMAC
+  const key = new TextEncoder().encode(appCertificate);
+  const msgData = new TextEncoder().encode(message);
   
-  // Simple hash for demo - in production you'd want proper HMAC
-  const signature = btoa(message + appCertificate).slice(0, 32);
+  // Generate HMAC-SHA256 signature
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
   
-  // Create token
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  const signatureArray = new Uint8Array(signature);
+  
+  // Convert signature to hex string
+  const signatureHex = Array.from(signatureArray)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  
+  // Create token structure
   const tokenData = {
-    signature,
+    signature: signatureHex,
     cname: channelName,
-    uid,
+    uid: uid,
     expire: expireTime,
     role: roleNum
   };
   
+  // Encode the token
   const token = btoa(JSON.stringify(tokenData));
   return `007${token}`;
 }
 
-// Generate RTM Token for messaging
-function generateRTMToken(appId: string, appCertificate: string, userId: string, expirationTimeInSeconds: number = 3600) {
+// Proper HMAC-based token generation for Agora RTM
+async function generateRTMToken(appId: string, appCertificate: string, userId: string, expirationTimeInSeconds: number = 3600) {
   const now = Math.floor(Date.now() / 1000);
   const expireTime = now + expirationTimeInSeconds;
   
-  const message = appId + userId + expireTime.toString();
+  const message = `${appId}${userId}${expireTime}`;
   
-  // Simple hash for demo - in production you'd want proper HMAC
-  const signature = btoa(message + appCertificate).slice(0, 32);
+  // Convert app certificate to key for HMAC
+  const key = new TextEncoder().encode(appCertificate);
+  const msgData = new TextEncoder().encode(message);
+  
+  // Generate HMAC-SHA256 signature
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  const signatureArray = new Uint8Array(signature);
+  
+  // Convert signature to hex string
+  const signatureHex = Array.from(signatureArray)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
   
   const tokenData = {
-    signature,
-    userId,
+    signature: signatureHex,
+    userId: userId,
     expire: expireTime
   };
   
@@ -142,9 +174,9 @@ serve(async (req) => {
         const channelName = `lesson_${lessonId}_${Date.now()}`;
         const uid = Math.floor(Math.random() * 1000000) + 1;
         
-        // Generate tokens
-        const rtcToken = generateRTCToken(agoraAppId, agoraAppCertificate, channelName, uid, 'publisher');
-        const rtmToken = generateRTMToken(agoraAppId, agoraAppCertificate, user.id);
+        // Generate tokens using proper HMAC
+        const rtcToken = await generateRTCToken(agoraAppId, agoraAppCertificate, channelName, uid, 'publisher');
+        const rtmToken = await generateRTMToken(agoraAppId, agoraAppCertificate, user.id);
         
         // Update lesson with Agora details
         const { error: updateError } = await supabase
@@ -189,8 +221,8 @@ serve(async (req) => {
         const role = userRole === 'tutor' ? 'publisher' : 'subscriber';
         const uid = userRole === 'tutor' ? lesson.agora_uid : Math.floor(Math.random() * 1000000) + 1;
         
-        const rtcToken = generateRTCToken(agoraAppId, agoraAppCertificate, lesson.agora_channel_name, uid, role);
-        const rtmToken = generateRTMToken(agoraAppId, agoraAppCertificate, user.id);
+        const rtcToken = await generateRTCToken(agoraAppId, agoraAppCertificate, lesson.agora_channel_name, uid, role);
+        const rtmToken = await generateRTMToken(agoraAppId, agoraAppCertificate, user.id);
 
         logStep("Generated tokens", { channelName: lesson.agora_channel_name, uid, role });
 

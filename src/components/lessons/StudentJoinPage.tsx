@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -241,6 +240,13 @@ const StudentJoinPage: React.FC = () => {
   };
 
   const handleJoinLesson = () => {
+    // Handle Agora rooms differently - navigate to internal video room
+    if (lesson?.video_conference_provider === 'agora' && lesson?.agora_channel_name) {
+      navigate(`/video-room/${lessonId}`);
+      return;
+    }
+
+    // Handle Lesson Space rooms
     const inviteUrl = getStudentInviteUrl();
     console.log('Attempting to join lesson with URL:', inviteUrl);
     if (inviteUrl) {
@@ -282,105 +288,106 @@ const StudentJoinPage: React.FC = () => {
     );
   }
 
-  // Check if lesson has Lesson Space configured
-  const studentInviteUrl = getStudentInviteUrl();
-  if (studentInviteUrl && lesson.video_conference_provider === 'lesson_space') {
-    return (
-      <>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <Video className="h-8 w-8 text-blue-600" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl">Join Lesson</CardTitle>
-              <p className="text-muted-foreground">
-                You're about to join your online lesson
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <div>
-                  <h3 className="font-medium text-lg">{lesson.title}</h3>
-                  <p className="text-sm text-muted-foreground">{lesson.description}</p>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}</span>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>
-                    Teacher: {lesson.tutor?.first_name} {lesson.tutor?.last_name}
-                  </span>
-                </div>
+  // Check if lesson has video conference capability (updated to include Agora)
+  const hasVideoConference = lesson?.video_conference_link || 
+                            lesson?.lesson_space_room_url || 
+                            lesson?.lesson_space_room_id ||
+                            (lesson?.agora_channel_name && lesson?.agora_token);
 
-                {lesson.is_group && (
+  // Update the main return JSX to handle Agora rooms
+  if (hasVideoConference) {
+    const isAgoraRoom = lesson?.video_conference_provider === 'agora' && lesson?.agora_channel_name;
+    const isLessonSpaceRoom = lesson?.video_conference_provider === 'lesson_space' && getStudentInviteUrl();
+
+    if (isAgoraRoom || isLessonSpaceRoom) {
+      return (
+        <>
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            <Card className="w-full max-w-lg">
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="bg-blue-100 p-3 rounded-full">
+                    <Video className="h-8 w-8 text-blue-600" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl">Join Lesson</CardTitle>
+                <p className="text-muted-foreground">
+                  You're about to join your online lesson
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-medium text-lg">{lesson.title}</h3>
+                    <p className="text-sm text-muted-foreground">{lesson.description}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}</span>
+                  </div>
+                  
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>Group lesson • {lesson.lesson_students?.length || 0} students</span>
+                    <span>
+                      Teacher: {lesson.tutor?.first_name} {lesson.tutor?.last_name}
+                    </span>
                   </div>
-                )}
-              </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Welcome, {studentData.first_name}!</strong>
-                  <br />
-                  Please review and accept the camera/microphone requirements before joining.
-                </p>
-              </div>
+                  {lesson.is_group && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>Group lesson • {lesson.lesson_students?.length || 0} students</span>
+                    </div>
+                  )}
+                </div>
 
-              <div className="bg-gray-50 p-3 rounded border">
-                <p className="text-xs text-gray-600 font-mono">
-                  Debug: Student URL will be: {studentInviteUrl}
-                </p>
-                <p className="text-xs text-gray-600 font-mono mt-1">
-                  Room ID: {lesson?.lesson_space_room_id || 'Not found'}
-                </p>
-                <p className="text-xs text-gray-600 font-mono mt-1">
-                  Space ID: {lesson?.lesson_space_space_id || 'Not found'}
-                </p>
-              </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Welcome, {studentData.first_name}!</strong>
+                    <br />
+                    {isAgoraRoom 
+                      ? 'Please review and accept the camera/microphone requirements before joining the video conference.'
+                      : 'Please review and accept the camera/microphone requirements before joining.'
+                    }
+                  </p>
+                </div>
 
-              <Button
-                onClick={handleStartConsentFlow}
-                className="w-full"
-                size="lg"
-              >
-                <ExternalLink className="h-5 w-5 mr-2" />
-                Review Requirements & Join Lesson
-              </Button>
-
-              <div className="text-center">
                 <Button
-                  onClick={() => navigate('/calendar')}
-                  variant="ghost"
-                  size="sm"
+                  onClick={handleStartConsentFlow}
+                  className="w-full"
+                  size="lg"
                 >
-                  Go Back to Calendar
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  Review Requirements & Join Lesson
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        <LessonConsentDialog
-          isOpen={showConsentDialog}
-          onClose={() => setShowConsentDialog(false)}
-          onAccept={handleConsentAccepted}
-          lesson={lesson}
-          studentName={studentData?.first_name || 'Student'}
-        />
-      </>
-    );
+                <div className="text-center">
+                  <Button
+                    onClick={() => navigate('/calendar')}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    Go Back to Calendar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <LessonConsentDialog
+            isOpen={showConsentDialog}
+            onClose={() => setShowConsentDialog(false)}
+            onAccept={handleConsentAccepted}
+            lesson={lesson}
+            studentName={studentData?.first_name || 'Student'}
+          />
+        </>
+      );
+    }
   }
 
-  // Fallback for lessons without Lesson Space
+  // Fallback for lessons without video conference
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-lg">

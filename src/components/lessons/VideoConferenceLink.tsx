@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -88,24 +87,9 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  // Generate Agora meeting URL with proper app ID from environment
-  const generateAgoraUrl = () => {
-    if (provider === 'agora' && agoraChannelName && agoraToken) {
-      // For demo purposes, create a simple Agora web URL
-      // In production, you'd want to redirect to your own Agora integration page
-      const role = userRole === 'tutor' ? 'host' : 'audience';
-      // Use the passed agoraAppId or fallback to a demo value
-      const appId = agoraAppId || 'demo_app_id';
-      return `https://webdemo.agora.io/basicVideoCall/index.html?appid=${appId}&channel=${agoraChannelName}&token=${agoraToken}&role=${role}`;
-    }
-    return null;
-  };
-
-  // Generate the correct URL based on user role and provider
+  // Update the getCorrectUrl function
   const getCorrectUrl = () => {
-    if (provider === 'agora') {
-      return generateAgoraUrl();
-    } else if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
+    if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
       if (userRole === 'student') {
         // Students get the simple invite URL
         return `https://www.thelessonspace.com/space/${spaceId}`;
@@ -118,13 +102,19 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleJoinLesson = () => {
-    // For students and parents, redirect to consent flow
-    if ((userRole === 'student') && lessonId) {
+    // Handle Agora rooms differently - navigate to internal video room
+    if (provider === 'agora' && hasAgoraRoom && lessonId) {
+      navigate(`/video-room/${lessonId}`);
+      return;
+    }
+
+    // For students and parents with other providers, redirect to consent flow
+    if ((userRole === 'student') && lessonId && provider !== 'agora') {
       navigate(`/join-lesson/${lessonId}`);
       return;
     }
 
-    // For tutors, admins, and owners, join directly
+    // For tutors, admins, and owners with non-Agora providers, join directly
     const urlToUse = getCorrectUrl();
     if (urlToUse) {
       window.open(urlToUse, '_blank');
