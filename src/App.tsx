@@ -52,6 +52,12 @@ const LearningHubCourseRedirect = () => {
   return <Navigate to={`/course/${id}`} replace />;
 };
 
+// Redirect component for learning hub checkout URLs
+const LearningHubCheckoutRedirect = () => {
+  const { courseId } = useParams();
+  return <Navigate to={`/checkout/${courseId}`} replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -68,7 +74,7 @@ const App = () => (
                 <Route path="/invite/:token" element={<Invite />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
-                {/* Standalone Course Detail route - outside any layout */}
+                {/* Standalone Course Detail and Checkout routes - outside any layout */}
                 <Route path="/course/:id" element={<CourseDetail />} />
                 <Route path="/checkout/:courseId" element={<CourseCheckout />} />
 
@@ -82,7 +88,7 @@ const App = () => (
                   <Route path="library" element={<LearningHub />} />
                   {/* Redirect old nested course URLs to standalone route */}
                   <Route path="course/:id" element={<LearningHubCourseRedirect />} />
-                  <Route path="checkout/:courseId" element={<Navigate to="/checkout/:courseId" replace />} />
+                  <Route path="checkout/:courseId" element={<LearningHubCheckoutRedirect />} />
                 </Route>
 
                 {/* Protected main app routes */}

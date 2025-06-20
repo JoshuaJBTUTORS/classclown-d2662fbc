@@ -34,7 +34,7 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
 
   const handleStartTrial = () => {
     onClose();
-    navigate(`/learning-hub/checkout/${course.id}`);
+    navigate(`/checkout/${course.id}`);
     if (onSuccess) {
       onSuccess();
     }
