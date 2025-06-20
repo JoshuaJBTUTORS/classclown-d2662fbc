@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
@@ -14,6 +14,7 @@ const CourseCheckout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isOwner } = useAuth();
+  const [searchParams] = useSearchParams();
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
 
   const { data: course, isLoading } = useQuery({
@@ -21,6 +22,17 @@ const CourseCheckout = () => {
     queryFn: () => learningHubService.getCourseById(courseId!),
     enabled: !!courseId,
   });
+
+  // Handle checkout cancellation
+  useEffect(() => {
+    if (searchParams.get('canceled') === 'true') {
+      toast({
+        title: "Checkout Cancelled",
+        description: "You can return to complete your subscription anytime.",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams, toast]);
 
   // Redirect owners directly to course content
   useEffect(() => {
@@ -65,7 +77,7 @@ const CourseCheckout = () => {
     try {
       const data = await paymentService.createSubscriptionWithTrial(course.id);
       
-      console.log('Subscription response:', data);
+      console.log('Checkout session response:', data);
       
       if (data.message === "Course already purchased") {
         toast({
@@ -76,16 +88,15 @@ const CourseCheckout = () => {
         return;
       }
 
-      // For native Stripe trials, user gets immediate access
-      toast({
-        title: "Free trial activated!",
-        description: "Your 3-day free trial has started. Enjoy full access to the course!",
-      });
-      
-      navigate(`/course/${course.id}`);
+      if (data.checkout_url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
       
     } catch (error) {
-      console.error('Error creating subscription:', error);
+      console.error('Error creating checkout session:', error);
       toast({
         title: "Subscription Error",
         description: error instanceof Error ? error.message : "Unable to start your subscription. Please try again.",
@@ -176,7 +187,7 @@ const CourseCheckout = () => {
               <span className="font-semibold text-primary">3-Day Free Trial</span>
             </div>
             <p className="text-sm text-primary/80">
-              Start learning immediately with full access. No charges during your trial period - cancel anytime.
+              Start learning immediately with full access. Payment details required but no charges during your trial period.
             </p>
           </div>
         </div>
@@ -212,8 +223,7 @@ const CourseCheckout = () => {
             <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
               <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
               <p className="text-gray-600 mb-4">
-                Click below to start your 3-day free trial with immediate access to all course content. 
-                You can cancel anytime during the trial period.
+                Click below to proceed to secure checkout. You'll enter your payment details but won't be charged during the 3-day trial period.
               </p>
               <Button
                 onClick={handleStartTrial}
@@ -223,7 +233,7 @@ const CourseCheckout = () => {
                 {isLoadingSubscription ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Starting trial...
+                    Redirecting to checkout...
                   </>
                 ) : (
                   <>
@@ -237,7 +247,7 @@ const CourseCheckout = () => {
             <div className="text-center text-sm text-gray-500">
               <p>
                 After your trial ends, you'll be charged {course.price ? formatPrice(course.price) : '£12.99'} monthly. 
-                You can cancel or manage your subscription anytime in your account settings.
+                You can cancel or manage your subscription anytime.
               </p>
             </div>
           </div>

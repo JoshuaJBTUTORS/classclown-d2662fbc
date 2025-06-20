@@ -1,20 +1,17 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CoursePurchase } from '@/types/course';
 
 export const paymentService = {
-  // Create a subscription with trial period
+  // Create a checkout session with trial period
   createSubscriptionWithTrial: async (courseId: string): Promise<{ 
-    subscription_id: string;
-    client_secret?: string;
-    status: string;
-    trial_end?: string;
+    checkout_url?: string;
+    session_id?: string;
     course_title: string; 
     amount: number;
     requires_payment_method: boolean;
     message?: string;
   }> => {
-    console.log('Creating subscription with trial for course:', courseId);
+    console.log('Creating checkout session with trial for course:', courseId);
     
     try {
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
@@ -22,25 +19,25 @@ export const paymentService = {
       });
       
       if (error) {
-        console.error('Subscription creation error:', error);
+        console.error('Checkout session creation error:', error);
         throw error;
       }
       
-      console.log('Subscription with trial created successfully');
+      console.log('Checkout session created successfully');
       return data;
     } catch (error) {
-      console.error('Subscription service error:', error);
+      console.error('Checkout session service error:', error);
       throw error;
     }
   },
 
-  // Complete subscription setup (mainly for status updates)
-  completeSubscriptionSetup: async (subscriptionId: string): Promise<{ success: boolean; message: string }> => {
-    console.log('Completing subscription setup:', subscriptionId);
+  // Complete subscription setup after checkout
+  completeSubscriptionSetup: async (sessionId: string): Promise<{ success: boolean; message: string }> => {
+    console.log('Completing subscription setup:', sessionId);
     
     try {
       const { data, error } = await supabase.functions.invoke('complete-subscription', {
-        body: { subscriptionId }
+        body: { sessionId }
       });
       
       if (error) {
@@ -66,7 +63,7 @@ export const paymentService = {
     console.log('Creating payment intent for course (legacy):', courseId);
     const data = await paymentService.createSubscriptionWithTrial(courseId);
     return {
-      client_secret: data.client_secret || '',
+      client_secret: data.checkout_url || '',
       customer_id: '',
       course_title: data.course_title,
       amount: data.amount
