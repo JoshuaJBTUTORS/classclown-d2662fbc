@@ -51,6 +51,8 @@ serve(async (req) => {
       throw new Error("Missing required metadata");
     }
 
+    console.log("Metadata extracted:", { course_id, user_id, course_title, trial_days });
+
     // Get course details to find the Stripe price ID
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
@@ -59,8 +61,11 @@ serve(async (req) => {
       .single();
 
     if (courseError || !course) {
+      console.error("Course fetch error:", courseError);
       throw new Error("Course not found");
     }
+
+    console.log("Course details:", { stripe_price_id: course.stripe_price_id, price: course.price });
 
     // Create subscription with trial period
     const subscription = await stripe.subscriptions.create({
@@ -77,31 +82,45 @@ serve(async (req) => {
       },
     });
 
-    console.log("Subscription created:", subscription.id);
+    console.log("Subscription created:", subscription.id, "Status:", subscription.status);
 
-    // Record the purchase in the database
+    // Determine the subscription status for our database
+    let dbStatus = 'trialing';
+    if (subscription.status === 'active' && !subscription.trial_end) {
+      dbStatus = 'completed';
+    } else if (subscription.status === 'trialing' || (subscription.status === 'active' && subscription.trial_end)) {
+      dbStatus = 'trialing';
+    }
+
+    const trialEndDate = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
+
+    // Record the purchase in the database with the correct subscription ID
     const { error: purchaseError } = await supabaseClient
       .from('course_purchases')
       .insert({
         course_id,
         user_id,
         stripe_subscription_id: subscription.id,
-        status: 'trialing',
+        status: dbStatus,
         purchase_date: new Date().toISOString(),
-        trial_end: new Date(subscription.trial_end! * 1000).toISOString(),
+        trial_end: trialEndDate,
+        amount_paid: course.price || 1299,
+        currency: 'gbp',
       });
 
     if (purchaseError) {
       console.error("Error recording purchase:", purchaseError);
-      throw new Error("Failed to record purchase");
+      throw new Error(`Failed to record purchase: ${purchaseError.message}`);
     }
 
-    console.log("Purchase recorded successfully");
+    console.log("Purchase recorded successfully with subscription ID:", subscription.id);
 
     return new Response(JSON.stringify({ 
       success: true,
       message: "Subscription created successfully with trial period",
       subscription_id: subscription.id,
+      status: dbStatus,
+      trial_end: trialEndDate,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

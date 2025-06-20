@@ -171,14 +171,16 @@ export const paymentService = {
     }
   },
 
-  // Check if user has purchased a course - now includes trialing status
+  // Check if user has purchased a course - now includes trialing status and subscription-based purchases
   checkCoursePurchase: async (courseId: string): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
+    console.log('Checking course purchase for user:', user.id, 'course:', courseId);
+
     const { data, error } = await supabase
       .from('course_purchases')
-      .select('id, status')
+      .select('id, status, stripe_subscription_id, stripe_session_id, stripe_payment_intent_id')
       .eq('course_id', courseId)
       .eq('user_id', user.id)
       .in('status', ['completed', 'past_due', 'trialing']) // Include trialing status
@@ -189,7 +191,10 @@ export const paymentService = {
       return false;
     }
     
-    return !!data;
+    const hasAccess = !!data;
+    console.log('Course access check result:', { hasAccess, purchaseData: data });
+    
+    return hasAccess;
   },
 
   // Get user's purchased courses with status information
@@ -211,7 +216,7 @@ export const paymentService = {
     return data as CoursePurchase[];
   },
 
-  // Get subscription status for a user - now includes trialing
+  // Get subscription status for a user - now includes trialing and subscription-based purchases
   getSubscriptionStatus: async (): Promise<{
     hasActiveSubscription: boolean;
     subscriptions: CoursePurchase[];
