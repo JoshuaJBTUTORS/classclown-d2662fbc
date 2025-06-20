@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,8 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
 import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
-import CourseSidebar from '@/components/learningHub/CourseSidebar';
 import ContentViewer from '@/components/learningHub/ContentViewer';
+import NotesSection from '@/components/learningHub/NotesSection';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +21,10 @@ import {
   CheckCircle,
   Lock,
   Gift,
-  Crown
+  Crown,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 const CourseDetail = () => {
@@ -33,6 +35,7 @@ const CourseDetail = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [showModulesList, setShowModulesList] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -110,6 +113,11 @@ const CourseDetail = () => {
     setSelectedLesson(lesson);
   };
 
+  const handleBackToCourse = () => {
+    setSelectedLessonId(null);
+    setSelectedLesson(null);
+  };
+
   if (isLoading || !course) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -122,18 +130,135 @@ const CourseDetail = () => {
   const hasAccess = isOwner || hasPurchased;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100">
       {selectedLessonId && selectedLesson ? (
         <CourseAccessControl courseId={course.id}>
-          <div className="flex h-screen">
-            <CourseSidebar 
-              modules={modules || []}
-              onSelectLesson={handleLessonSelect}
-              currentLessonId={selectedLessonId}
-              isPurchased={hasAccess}
-            />
-            <div className="flex-1">
-              <ContentViewer lesson={selectedLesson} />
+          <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100">
+            {/* Collapsed Sidebar with Back Button */}
+            <div className="fixed left-0 top-0 z-40 h-screen w-16 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+              <div className="p-4">
+                <Button
+                  onClick={handleBackToCourse}
+                  variant="ghost"
+                  size="icon"
+                  className="w-8 h-8 text-gray-600 hover:text-pink-600 hover:bg-pink-50"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              <div className="flex-1 px-2">
+                <Button
+                  onClick={() => setShowModulesList(!showModulesList)}
+                  variant="ghost"
+                  size="icon"
+                  className="w-full h-8 text-gray-600 hover:text-pink-600 hover:bg-pink-50 mb-2"
+                >
+                  {showModulesList ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+                
+                {showModulesList && (
+                  <div className="absolute left-16 top-20 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">Course Modules</h3>
+                      {modules?.map((module, index) => (
+                        <div key={module.id} className="mb-4">
+                          <h4 className="font-medium text-sm text-gray-800 mb-2">
+                            Module {index + 1}: {module.title}
+                          </h4>
+                          <div className="space-y-1">
+                            {module.lessons?.map((lesson) => (
+                              <button
+                                key={lesson.id}
+                                onClick={() => {
+                                  handleLessonSelect(lesson);
+                                  setShowModulesList(false);
+                                }}
+                                className={`w-full text-left text-xs p-2 rounded hover:bg-pink-50 transition-colors ${
+                                  selectedLessonId === lesson.id ? 'bg-pink-100 text-pink-700' : 'text-gray-600'
+                                }`}
+                              >
+                                {lesson.title}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="ml-16 min-h-screen">
+              <div className="container mx-auto p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                  {/* Left Column - Course Content Details */}
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 p-6">
+                    <div className="mb-6">
+                      <Badge variant="outline" className="mb-3 border-pink-200 text-pink-700 bg-pink-50">
+                        {course.subject}
+                      </Badge>
+                      <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                        {selectedLesson.title}
+                      </h1>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {selectedLesson.description || "Continue with this lesson to master the concepts."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{selectedLesson.duration_minutes || 10} min</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-4 w-4" />
+                          <span>{selectedLesson.content_type || 'video'}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-3">Learning Objectives</h3>
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-gray-700">Understand core concepts</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-gray-700">Apply knowledge practically</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-gray-700">Complete exercises</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Video and Flash Cards */}
+                  <div className="space-y-6">
+                    {/* Video Content */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
+                      <ContentViewer lesson={selectedLesson} />
+                    </div>
+
+                    {/* Flash Cards Section */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
+                      <NotesSection 
+                        courseId={course.id}
+                        lessonId={selectedLesson.id}
+                        lessonTitle={selectedLesson.title}
+                        contentType={selectedLesson.content_type}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </CourseAccessControl>
@@ -310,4 +435,3 @@ const CourseDetail = () => {
 };
 
 export default CourseDetail;
-
