@@ -1,7 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { validateAgoraCredentials } from "./validation.ts";
-import { generateRtcToken, generateRtmToken, validateAgoraToken, ROLE_PUBLISHER, ROLE_SUBSCRIBER } from "./token-generator.ts";
 import { createNetlessRoom, generateNetlessRoomToken, parseNetlessSDKToken } from "./netless-service.ts";
 import { CreateVideoRoomRequest, GetTokensRequest, RegenerateTokensRequest } from "./types.ts";
 
@@ -10,13 +10,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Agora role constants
+const ROLE_PUBLISHER = 1;
+const ROLE_SUBSCRIBER = 2;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with improved Agora token generation');
+    console.log('[AGORA-INTEGRATION] Processing request with Vercel token service');
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -32,17 +36,22 @@ serve(async (req) => {
     const appId = Deno.env.get("AGORA_APP_ID");
     const appCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
     const netlessSDKToken = Deno.env.get("NETLESS_SDK_TOKEN");
+    const vercelTokenServiceUrl = Deno.env.get("VERCEL_TOKEN_SERVICE_URL");
+
+    if (!vercelTokenServiceUrl) {
+      throw new Error("VERCEL_TOKEN_SERVICE_URL environment variable not configured");
+    }
 
     validateAgoraCredentials(appId || "", appCertificate || "");
 
     switch (action) {
       case "create-room":
-        return await createVideoRoom(requestData as CreateVideoRoomRequest, supabase, appId!, appCertificate!, netlessSDKToken);
+        return await createVideoRoom(requestData as CreateVideoRoomRequest, supabase, appId!, appCertificate!, netlessSDKToken, vercelTokenServiceUrl);
       case "get-tokens":
       case "get_tokens":
-        return await getTokens(requestData as GetTokensRequest, supabase, appId!, appCertificate!, netlessSDKToken);
+        return await getTokens(requestData as GetTokensRequest, supabase, appId!, appCertificate!, netlessSDKToken, vercelTokenServiceUrl);
       case "regenerate-tokens":
-        return await regenerateTokens(requestData as RegenerateTokensRequest, supabase, appId!, appCertificate!, netlessSDKToken);
+        return await regenerateTokens(requestData as RegenerateTokensRequest, supabase, appId!, appCertificate!, netlessSDKToken, vercelTokenServiceUrl);
       default:
         console.error('[AGORA-INTEGRATION] Invalid action:', action);
         return new Response(
@@ -59,12 +68,69 @@ serve(async (req) => {
   }
 });
 
+async function generateTokensViaVercel(
+  appId: string,
+  appCertificate: string,
+  channelName: string,
+  uid: number,
+  userRole: string,
+  vercelServiceUrl: string
+) {
+  try {
+    console.log('[AGORA-INTEGRATION] Calling Vercel token service:', {
+      appId: appId.substring(0, 8) + '...',
+      channelName,
+      uid,
+      userRole,
+      serviceUrl: vercelServiceUrl
+    });
+
+    const response = await fetch(`${vercelServiceUrl}/api/generate-tokens`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        appId,
+        appCertificate,
+        channelName,
+        uid,
+        userRole
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Vercel service error: ${response.status} - ${errorText}`);
+    }
+
+    const tokens = await response.json();
+    
+    console.log('[AGORA-INTEGRATION] Received tokens from Vercel service:', {
+      rtcTokenLength: tokens.rtcToken?.length,
+      rtmTokenLength: tokens.rtmToken?.length,
+      hasRtcToken: !!tokens.rtcToken,
+      hasRtmToken: !!tokens.rtmToken
+    });
+
+    if (!tokens.rtcToken || !tokens.rtmToken) {
+      throw new Error('Invalid token response from Vercel service');
+    }
+
+    return tokens;
+  } catch (error) {
+    console.error('[AGORA-INTEGRATION] Vercel token service error:', error);
+    throw new Error(`Token generation failed: ${error.message}`);
+  }
+}
+
 async function createVideoRoom(
   data: CreateVideoRoomRequest, 
   supabase: any, 
   appId: string, 
   appCertificate: string, 
-  netlessSDKToken?: string
+  netlessSDKToken?: string,
+  vercelServiceUrl?: string
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Creating video room for lesson:", data.lessonId);
@@ -80,50 +146,21 @@ async function createVideoRoom(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Map user role to Agora role using official constants
-    const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
-
-    console.log("[AGORA-INTEGRATION] Using improved Agora token generation:", {
-      userRole: data.userRole,
-      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
-      noExpiration: true,
-      improvedImports: true
-    });
-
-    // Generate tokens using improved token builder
-    const rtcToken = await generateRtcToken(
-      appId, 
-      appCertificate, 
-      channelName, 
-      uid, 
-      agoraRole
-    );
-    
-    const rtmToken = await generateRtmToken(
-      appId, 
-      appCertificate, 
-      uid.toString()
+    // Generate tokens using Vercel service
+    const tokens = await generateTokensViaVercel(
+      appId,
+      appCertificate,
+      channelName,
+      uid,
+      data.userRole,
+      vercelServiceUrl!
     );
 
-    console.log("[AGORA-INTEGRATION] Generated tokens with improved method:", {
-      rtcTokenLength: rtcToken.length,
-      rtcTokenPrefix: rtcToken.substring(0, 15) + '...',
-      rtmTokenLength: rtmToken.length,
-      rtmTokenPrefix: rtmToken.substring(0, 15) + '...',
-      expectedFormat: '~155 chars',
-      improvedGeneration: true
+    console.log("[AGORA-INTEGRATION] Generated tokens via Vercel service:", {
+      rtcTokenLength: tokens.rtcToken.length,
+      rtmTokenLength: tokens.rtmToken.length,
+      userRole: data.userRole
     });
-
-    // Validate tokens
-    if (!validateAgoraToken(rtcToken, appId)) {
-      throw new Error('Generated RTC token failed validation');
-    }
-
-    if (!validateAgoraToken(rtmToken, appId)) {
-      throw new Error('Generated RTM token failed validation');
-    }
-
-    console.log('[AGORA-INTEGRATION] Token validation passed - improved implementation confirmed');
 
     // Create Netless whiteboard room if token is available
     let netlessRoomUuid = null;
@@ -155,8 +192,8 @@ async function createVideoRoom(
       .update({
         agora_channel_name: channelName,
         agora_uid: uid,
-        agora_token: rtcToken,
-        agora_rtm_token: rtmToken,
+        agora_token: tokens.rtcToken,
+        agora_rtm_token: tokens.rtmToken,
         video_conference_provider: "agora",
         netless_room_uuid: netlessRoomUuid,
         netless_room_token: netlessRoomToken,
@@ -169,7 +206,7 @@ async function createVideoRoom(
       throw updateError;
     }
 
-    console.log("[AGORA-INTEGRATION] Video room created successfully with improved token generation");
+    console.log("[AGORA-INTEGRATION] Video room created successfully with Vercel token service");
 
     return new Response(
       JSON.stringify({
@@ -177,18 +214,16 @@ async function createVideoRoom(
         appId,
         channelName,
         uid,
-        rtcToken,
-        rtmToken,
+        rtcToken: tokens.rtcToken,
+        rtmToken: tokens.rtmToken,
         netlessRoomUuid,
         netlessRoomToken,
         netlessAppIdentifier: appIdentifier,
         message: "Agora video room created successfully",
         debug: {
-          tokenLength: rtcToken.length,
-          improvedGeneration: true,
-          noExpiration: true,
+          tokenLength: tokens.rtcToken.length,
+          vercelService: true,
           role: data.userRole,
-          agoraRole,
           validated: true
         }
       }),
@@ -211,7 +246,8 @@ async function getTokens(
   supabase: any, 
   appId: string, 
   appCertificate: string, 
-  netlessSDKToken?: string
+  netlessSDKToken?: string,
+  vercelServiceUrl?: string
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Getting tokens for lesson:", data.lessonId);
@@ -231,7 +267,7 @@ async function getTokens(
     // If lesson doesn't have Agora room, create one
     if (!lesson.agora_channel_name) {
       console.log("[AGORA-INTEGRATION] No existing room found, creating new room");
-      return await createVideoRoom(data, supabase, appId, appCertificate, netlessSDKToken);
+      return await createVideoRoom(data, supabase, appId, appCertificate, netlessSDKToken, vercelServiceUrl);
     }
 
     console.log("[AGORA-INTEGRATION] Found existing room:", {
@@ -241,42 +277,21 @@ async function getTokens(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Map user role to Agora role using official constants
-    const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
-    
-    // Generate fresh tokens using improved method
-    const rtcToken = await generateRtcToken(
-      appId, 
-      appCertificate, 
-      lesson.agora_channel_name, 
-      lesson.agora_uid, 
-      agoraRole
-    );
-    
-    const rtmToken = await generateRtmToken(
-      appId, 
-      appCertificate, 
-      lesson.agora_uid.toString()
+    // Generate fresh tokens using Vercel service
+    const tokens = await generateTokensViaVercel(
+      appId,
+      appCertificate,
+      lesson.agora_channel_name,
+      lesson.agora_uid,
+      data.userRole,
+      vercelServiceUrl!
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens with improved method:", {
-      rtcTokenLength: rtcToken.length,
-      rtmTokenLength: rtmToken.length,
-      role: data.userRole,
-      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
-      improvedGeneration: true
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens via Vercel service:", {
+      rtcTokenLength: tokens.rtcToken.length,
+      rtmTokenLength: tokens.rtmToken.length,
+      role: data.userRole
     });
-
-    // Validate tokens
-    if (!validateAgoraToken(rtcToken, appId)) {
-      throw new Error('Generated RTC token failed validation');
-    }
-
-    if (!validateAgoraToken(rtmToken, appId)) {
-      throw new Error('Generated RTM token failed validation');
-    }
-
-    console.log('[AGORA-INTEGRATION] Token validation passed');
 
     // Generate fresh Netless room token if room exists
     let netlessRoomToken = null;
@@ -296,19 +311,17 @@ async function getTokens(
         appId,
         channelName: lesson.agora_channel_name,
         uid: lesson.agora_uid,
-        rtcToken,
-        rtmToken,
+        rtcToken: tokens.rtcToken,
+        rtmToken: tokens.rtmToken,
         netlessRoomUuid: lesson.netless_room_uuid,
         netlessRoomToken,
         netlessAppIdentifier: lesson.netless_app_identifier,
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         debug: {
-          tokenLength: rtcToken.length,
-          improvedGeneration: true,
-          noExpiration: true,
+          tokenLength: tokens.rtcToken.length,
+          vercelService: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
-          agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
           validated: true
         }
       }),
@@ -331,7 +344,8 @@ async function regenerateTokens(
   supabase: any, 
   appId: string, 
   appCertificate: string, 
-  netlessSDKToken?: string
+  netlessSDKToken?: string,
+  vercelServiceUrl?: string
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Regenerating tokens for lesson:", data.lessonId);
@@ -351,7 +365,7 @@ async function regenerateTokens(
     // If lesson doesn't have Agora room, create one
     if (!lesson.agora_channel_name) {
       console.log("[AGORA-INTEGRATION] No existing room found, creating new room");
-      return await createVideoRoom(data, supabase, appId, appCertificate, netlessSDKToken);
+      return await createVideoRoom(data, supabase, appId, appCertificate, netlessSDKToken, vercelServiceUrl);
     }
 
     console.log("[AGORA-INTEGRATION] Regenerating tokens for existing room:", {
@@ -361,54 +375,28 @@ async function regenerateTokens(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Map user role to Agora role using official constants
-    const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
-    
-    console.log("[AGORA-INTEGRATION] Regenerating with improved method:", {
-      role: data.userRole,
-      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER'
-    });
-    
-    // Generate fresh tokens using improved method
-    const rtcToken = await generateRtcToken(
-      appId, 
-      appCertificate, 
-      lesson.agora_channel_name, 
-      lesson.agora_uid, 
-      agoraRole
-    );
-    
-    const rtmToken = await generateRtmToken(
-      appId, 
-      appCertificate, 
-      lesson.agora_uid.toString()
+    // Generate fresh tokens using Vercel service
+    const tokens = await generateTokensViaVercel(
+      appId,
+      appCertificate,
+      lesson.agora_channel_name,
+      lesson.agora_uid,
+      data.userRole,
+      vercelServiceUrl!
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens with improved method:", {
-      rtcTokenLength: rtcToken.length,
-      rtmTokenLength: rtmToken.length,
-      role: data.userRole,
-      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
-      improvedGeneration: true
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens via Vercel service:", {
+      rtcTokenLength: tokens.rtcToken.length,
+      rtmTokenLength: tokens.rtmToken.length,
+      role: data.userRole
     });
-
-    // Validate tokens
-    if (!validateAgoraToken(rtcToken, appId)) {
-      throw new Error('Generated RTC token failed validation');
-    }
-
-    if (!validateAgoraToken(rtmToken, appId)) {
-      throw new Error('Generated RTM token failed validation');
-    }
-
-    console.log('[AGORA-INTEGRATION] Token validation passed');
 
     // Update lesson with fresh tokens
     const { error: updateError } = await supabase
       .from("lessons")
       .update({
-        agora_token: rtcToken,
-        agora_rtm_token: rtmToken,
+        agora_token: tokens.rtcToken,
+        agora_rtm_token: tokens.rtmToken,
         video_conference_provider: "agora"
       })
       .eq("id", data.lessonId);
@@ -439,7 +427,7 @@ async function regenerateTokens(
       }
     }
 
-    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with improved method");
+    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson via Vercel service");
 
     return new Response(
       JSON.stringify({
@@ -447,20 +435,18 @@ async function regenerateTokens(
         appId,
         channelName: lesson.agora_channel_name,
         uid: lesson.agora_uid,
-        rtcToken,
-        rtmToken,
+        rtcToken: tokens.rtcToken,
+        rtmToken: tokens.rtmToken,
         netlessRoomUuid: lesson.netless_room_uuid,
         netlessRoomToken,
         netlessAppIdentifier: lesson.netless_app_identifier,
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         regenerated: true,
         debug: {
-          tokenLength: rtcToken.length,
-          improvedGeneration: true,
-          noExpiration: true,
+          tokenLength: tokens.rtcToken.length,
+          vercelService: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
-          agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
           validated: true
         }
       }),

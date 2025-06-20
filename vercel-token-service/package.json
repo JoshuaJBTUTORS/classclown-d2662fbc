@@ -1,0 +1,19 @@
+
+{
+  "name": "agora-token-service",
+  "version": "1.0.0",
+  "description": "Node.js service for generating Agora tokens",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "node api/generate-tokens.js"
+  },
+  "dependencies": {
+    "agora-access-token": "^2.0.7",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
