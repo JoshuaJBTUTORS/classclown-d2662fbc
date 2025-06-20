@@ -92,7 +92,7 @@ const App = () => (
                 <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
                 <Route path="/lessons" element={<ProtectedRoute><Lessons /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><Reports /></ProtectedRoute>} />
-                <Route path="/progress-old" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+                <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
                 <Route path="/homework" element={<ProtectedRoute><Homework /></ProtectedRoute>} />
                 <Route path="/time-off" element={<ProtectedRoute allowedRoles={['tutor']}><TimeOff /></ProtectedRoute>} />
                 <Route path="/time-off-requests" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><TimeOffRequests /></ProtectedRoute>} />
