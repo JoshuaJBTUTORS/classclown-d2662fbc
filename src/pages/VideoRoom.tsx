@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { AgoraRTCProvider, createClient } from 'agora-rtc-react';
+import { AgoraRTCProvider } from 'agora-rtc-react';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 
 const VideoRoom: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -21,7 +21,7 @@ const VideoRoom: React.FC = () => {
   const [agoraCredentials, setAgoraCredentials] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [agoraClient] = useState(() => createClient({ mode: 'rtc', codec: 'vp8' }));
+  const [agoraClient] = useState(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }));
 
   useEffect(() => {
     if (!user || !lessonId) {
