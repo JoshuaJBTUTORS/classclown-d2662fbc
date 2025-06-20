@@ -6,7 +6,6 @@ import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -17,9 +16,8 @@ const CourseCheckout = () => {
   const { isOwner } = useAuth();
   const [searchParams] = useSearchParams();
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
-  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
-  const { data: course, isLoading: isCourseLoading } = useQuery({
+  const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
     queryFn: () => learningHubService.getCourseById(courseId!),
     enabled: !!courseId,
@@ -38,34 +36,50 @@ const CourseCheckout = () => {
 
   // Redirect owners directly to course content
   useEffect(() => {
-    if (course && isOwner && !isCourseLoading) {
-      console.log('Owner detected, redirecting to course');
+    if (course && isOwner) {
       toast({
         title: "Admin Access",
         description: "Redirecting to course content with full access.",
       });
       navigate(`/course/${course.id}`);
     }
-  }, [course, isOwner, navigate, toast, isCourseLoading]);
+  }, [course, isOwner, navigate, toast]);
 
   // Check if user already has access on component mount
   useEffect(() => {
-    if (course && !isOwner && !isCheckingAccess) {
+    if (course && !isOwner) {
       checkExistingAccess();
     }
   }, [course, isOwner]);
 
   const checkExistingAccess = async () => {
-    if (!course || isOwner) return;
-    
-    console.log('Checking existing access for course:', course.id);
-    setIsCheckingAccess(true);
+    if (!course) return;
     
     try {
       const hasAccess = await paymentService.checkCoursePurchase(course.id);
-      console.log('Access check result:', hasAccess);
-      
       if (hasAccess) {
+        toast({
+          title: "Access Already Available",
+          description: "You already have access to this course!",
+        });
+        navigate(`/course/${course.id}`);
+      }
+    } catch (error) {
+      console.error('Error checking course access:', error);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    if (!course) return;
+    
+    setIsLoadingSubscription(true);
+    
+    try {
+      const data = await paymentService.createSubscriptionWithTrial(course.id);
+      
+      console.log('Checkout session response:', data);
+      
+      if (data.message === "Course already purchased") {
         toast({
           title: "Access Already Available",
           description: "You already have access to this course!",
@@ -73,65 +87,13 @@ const CourseCheckout = () => {
         navigate(`/course/${course.id}`);
         return;
       }
-    } catch (error) {
-      console.error('Error checking course access:', error);
-    } finally {
-      setIsCheckingAccess(false);
-    }
-  };
 
-  const handleStartTrial = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!course) return;
-    
-    setIsLoadingSubscription(true);
-    
-    try {
-      console.log('Starting checkout for course:', course.id);
-      
-      // Get the current session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('Not authenticated');
+      if (data.checkout_url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error("No checkout URL received");
       }
-      
-      // Create a form and submit it to trigger the server-side redirect
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/create-checkout-session`;
-      form.style.display = 'none';
-      
-      // Add course ID
-      const courseInput = document.createElement('input');
-      courseInput.type = 'hidden';
-      courseInput.name = 'courseId';
-      courseInput.value = course.id;
-      form.appendChild(courseInput);
-      
-      // Add authorization token
-      const authInput = document.createElement('input');
-      authInput.type = 'hidden';
-      authInput.name = 'authorization';
-      authInput.value = `Bearer ${session.access_token}`;
-      form.appendChild(authInput);
-      
-      // Add API key
-      const apikeyInput = document.createElement('input');
-      apikeyInput.type = 'hidden';
-      apikeyInput.name = 'apikey';
-      apikeyInput.value = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqeGJ4a3BlZ2NubmZqYnN4YXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MTE2NzIsImV4cCI6MjA2MzI4NzY3Mn0.QFNyi5omwRMPiL_nJlUOHo5ATwXd14PdQHfoG7oTnwA';
-      form.appendChild(apikeyInput);
-      
-      document.body.appendChild(form);
-      form.submit();
-      
-      // Clean up the form after submission
-      setTimeout(() => {
-        if (form.parentNode) {
-          document.body.removeChild(form);
-        }
-      }, 1000);
       
     } catch (error) {
       console.error('Error creating checkout session:', error);
@@ -149,16 +111,10 @@ const CourseCheckout = () => {
     return `£${(priceInPence / 100).toFixed(2)}`;
   };
 
-  // Show loading spinner while checking course or access
-  if (isCourseLoading || isCheckingAccess || !course) {
+  if (isLoading || !course) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">
-            {isCourseLoading ? 'Loading course...' : 'Checking access...'}
-          </p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -167,10 +123,7 @@ const CourseCheckout = () => {
   if (isOwner) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to course...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -272,28 +225,23 @@ const CourseCheckout = () => {
               <p className="text-gray-600 mb-4">
                 Click below to proceed to secure checkout. You'll enter your payment details but won't be charged during the 3-day trial period.
               </p>
-              
-              {/* Form following Ruby pattern */}
-              <form onSubmit={handleStartTrial}>
-                <input type="hidden" name="courseId" value={course.id} />
-                <Button
-                  type="submit"
-                  disabled={isLoadingSubscription}
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
-                >
-                  {isLoadingSubscription ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Starting checkout...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="h-4 w-4 mr-2" />
-                      Start 3-Day Free Trial
-                    </>
-                  )}
-                </Button>
-              </form>
+              <Button
+                onClick={handleStartTrial}
+                disabled={isLoadingSubscription}
+                className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
+              >
+                {isLoadingSubscription ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Redirecting to checkout...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Start 3-Day Free Trial
+                  </>
+                )}
+              </Button>
             </div>
             
             <div className="text-center text-sm text-gray-500">
