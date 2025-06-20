@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
-import CoursePaymentModal from '@/components/learningHub/CoursePaymentModal';
 import ContentViewer from '@/components/learningHub/ContentViewer';
 import NotesSection from '@/components/learningHub/NotesSection';
 import CourseSidebar from '@/components/learningHub/CourseSidebar';
@@ -36,7 +36,6 @@ const CourseDetail = () => {
   const { toast } = useToast();
   const { isOwner } = useAuth();
   const isMobile = useIsMobile();
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -80,7 +79,7 @@ const CourseDetail = () => {
       await paymentService.verifyCoursePayment(sessionId);
       toast({
         title: "Welcome aboard! 🎉",
-        description: "Your subscription is now active. Enjoy your 7-day free trial!",
+        description: "Your subscription is now active. Enjoy your 3-day free trial!",
       });
       window.location.reload();
     } catch (error) {
@@ -105,7 +104,8 @@ const CourseDetail = () => {
         setSelectedLesson(firstLesson);
       }
     } else {
-      setShowPaymentModal(true);
+      // Navigate directly to checkout page instead of showing modal
+      navigate(`/checkout/${course.id}`);
     }
   };
 
@@ -299,7 +299,7 @@ const CourseDetail = () => {
                         </div>
                         <div className="flex items-center gap-1 text-green-600">
                           <Gift className="h-4 w-4" />
-                          <span className="text-sm font-medium">7-day free trial</span>
+                          <span className="text-sm font-medium">3-day free trial</span>
                         </div>
                       </div>
                       
@@ -402,20 +402,6 @@ const CourseDetail = () => {
           </div>
         </div>
       )}
-
-      {/* Payment Modal */}
-      <CoursePaymentModal
-        course={course}
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onSuccess={() => {
-          setShowPaymentModal(false);
-          toast({
-            title: "Payment Successful!",
-            description: "Redirecting to checkout to complete your subscription...",
-          });
-        }}
-      />
     </div>
   );
 };
