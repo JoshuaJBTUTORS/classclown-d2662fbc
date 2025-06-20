@@ -6,9 +6,14 @@ const ROLE_PUBLISHER = 1;
 const ROLE_SUBSCRIBER = 2;
 
 module.exports = async (req, res) => {
+  // Set CORS headers for all requests
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return res.status(200).json({});
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
