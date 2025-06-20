@@ -80,13 +80,15 @@ const CourseCheckout = () => {
     }
   };
 
-  const handleStartTrial = async () => {
+  const handleStartTrial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!course) return;
     
     setIsLoadingSubscription(true);
     
     try {
-      console.log('Starting trial for course:', course.id);
+      console.log('Starting checkout for course:', course.id);
       
       // Get the current session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -94,27 +96,55 @@ const CourseCheckout = () => {
         throw new Error('Not authenticated');
       }
       
-      // Call the edge function using Supabase invoke
-      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { courseId: course.id },
+      // Create a form and submit it to trigger the server-side redirect
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `${supabase.supabaseUrl}/functions/v1/create-checkout-session`;
+      form.style.display = 'none';
+      
+      // Add course ID
+      const courseInput = document.createElement('input');
+      courseInput.type = 'hidden';
+      courseInput.name = 'courseId';
+      courseInput.value = course.id;
+      form.appendChild(courseInput);
+      
+      // Add authorization header as hidden input (we'll handle this differently)
+      // Instead, let's use the Supabase invoke method but handle redirect properly
+      
+      document.body.appendChild(form);
+      
+      // Actually, let's use a simpler approach - direct API call that returns redirect URL
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/create-checkout-session`, {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
+          'apikey': supabase.supabaseKey,
         },
+        body: JSON.stringify({ courseId: course.id }),
       });
 
-      if (error) {
-        console.error('Checkout session creation error:', error);
-        throw new Error(error.message || 'Failed to create checkout session');
+      // Check if it's a redirect response
+      if (response.status === 303) {
+        const location = response.headers.get('Location');
+        if (location) {
+          console.log('Redirecting to Stripe checkout:', location);
+          window.location.href = location;
+          return;
+        }
       }
 
-      if (!data.url) {
-        throw new Error('No checkout URL returned');
+      // If not a redirect, check for JSON response
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
       }
 
-      console.log('Checkout session created successfully, redirecting to:', data.url);
-      
-      // Redirect to Stripe Checkout
-      window.location.href = data.url;
+      // Clean up the form
+      document.body.removeChild(form);
       
     } catch (error) {
       console.error('Error creating checkout session:', error);
@@ -255,23 +285,28 @@ const CourseCheckout = () => {
               <p className="text-gray-600 mb-4">
                 Click below to proceed to secure checkout. You'll enter your payment details but won't be charged during the 3-day trial period.
               </p>
-              <Button
-                onClick={handleStartTrial}
-                disabled={isLoadingSubscription}
-                className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
-              >
-                {isLoadingSubscription ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating checkout session...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-4 w-4 mr-2" />
-                    Start 3-Day Free Trial
-                  </>
-                )}
-              </Button>
+              
+              {/* Form following Ruby pattern */}
+              <form onSubmit={handleStartTrial}>
+                <input type="hidden" name="courseId" value={course.id} />
+                <Button
+                  type="submit"
+                  disabled={isLoadingSubscription}
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
+                >
+                  {isLoadingSubscription ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Starting checkout...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Start 3-Day Free Trial
+                    </>
+                  )}
+                </Button>
+              </form>
             </div>
             
             <div className="text-center text-sm text-gray-500">
