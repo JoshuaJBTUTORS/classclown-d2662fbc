@@ -22,261 +22,28 @@ interface RegenerateTokensRequest {
   userRole: 'tutor' | 'student';
 }
 
-// Simplified Agora Token Builder based on official SDK
-class SimpleAgoraTokenBuilder {
-  // Role constants matching official SDK
-  static readonly ROLE_PUBLISHER = 1;
-  static readonly ROLE_SUBSCRIBER = 2;
-  
-  // Privilege constants
-  static readonly kJoinChannel = 1;
-  static readonly kPublishAudioStream = 2;
-  static readonly kPublishVideoStream = 3;
-  static readonly kPublishDataStream = 4;
-  static readonly kRtmLogin = 1000;
+// Import the official Agora token builder
+const { RtcTokenBuilder, RtmTokenBuilder, RtcRole } = await import('https://esm.sh/agora-access-token@2.0.4');
 
-  static async buildTokenWithUid(
-    appId: string,
-    appCertificate: string,
-    channelName: string,
-    uid: number,
-    role: number,
-    tokenExpirationInSeconds: number = 3600
-  ): Promise<string> {
-    console.log('[SIMPLE-TOKEN] Building token with simplified approach', {
-      appId: appId.substring(0, 8) + '...',
-      channelName,
-      uid,
-      role: role === 1 ? 'PUBLISHER' : 'SUBSCRIBER',
-      expiration: tokenExpirationInSeconds
-    });
+// Official Agora role constants
+const ROLE_PUBLISHER = 1;
+const ROLE_SUBSCRIBER = 2;
 
-    try {
-      // Calculate expiration timestamp
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-      const privilegeExpiration = currentTimestamp + tokenExpirationInSeconds;
-
-      // Create message for token (simplified version)
-      const message = this.createTokenMessage(
-        appId,
-        channelName,
-        uid.toString(),
-        role,
-        privilegeExpiration
-      );
-
-      // Generate HMAC-SHA256 signature
-      const signature = await this.generateSignature(appCertificate, message);
-
-      // Build final token: version + appId + base64(message + signature)
-      const content = new Uint8Array(message.length + signature.length);
-      content.set(message, 0);
-      content.set(signature, message.length);
-
-      const base64Content = btoa(String.fromCharCode(...content));
-      const token = `007${appId}${base64Content}`;
-
-      console.log('[SIMPLE-TOKEN] Token generated successfully', {
-        tokenLength: token.length,
-        tokenPrefix: token.substring(0, 20) + '...',
-        expectedLength: '~164 characters',
-        messageLength: message.length,
-        signatureLength: signature.length
-      });
-
-      return token;
-    } catch (error) {
-      console.error('[SIMPLE-TOKEN] Token generation failed:', error);
-      throw new Error(`Token generation failed: ${error.message}`);
-    }
-  }
-
-  private static createTokenMessage(
-    appId: string,
-    channelName: string,
-    uid: string,
-    role: number,
-    privilegeExpiration: number
-  ): Uint8Array {
-    // Create a simple message structure
-    const encoder = new TextEncoder();
-    
-    // Encode components
-    const appIdBytes = encoder.encode(appId);
-    const channelBytes = encoder.encode(channelName);
-    const uidBytes = encoder.encode(uid);
-    
-    // Create privileges based on role
-    const privileges = new Map<number, number>();
-    privileges.set(this.kJoinChannel, privilegeExpiration);
-    
-    if (role === this.ROLE_PUBLISHER) {
-      privileges.set(this.kPublishAudioStream, privilegeExpiration);
-      privileges.set(this.kPublishVideoStream, privilegeExpiration);
-      privileges.set(this.kPublishDataStream, privilegeExpiration);
-    }
-
-    // Simple message format: timestamp + privileges + appId + channel + uid
-    const timestamp = Math.floor(Date.now() / 1000);
-    const timestampBytes = new Uint32Array([timestamp]);
-    const privilegeCount = new Uint16Array([privileges.size]);
-    
-    // Calculate total size
-    let totalSize = 4 + 2; // timestamp + privilege count
-    totalSize += privileges.size * 8; // privilege entries (4 bytes key + 4 bytes value)
-    totalSize += 2 + appIdBytes.length; // appId length + appId
-    totalSize += 2 + channelBytes.length; // channel length + channel
-    totalSize += 2 + uidBytes.length; // uid length + uid
-
-    const buffer = new ArrayBuffer(totalSize);
-    const view = new DataView(buffer);
-    const uint8View = new Uint8Array(buffer);
-    let offset = 0;
-
-    // Write timestamp
-    view.setUint32(offset, timestamp, true);
-    offset += 4;
-
-    // Write privilege count
-    view.setUint16(offset, privileges.size, true);
-    offset += 2;
-
-    // Write privileges
-    for (const [key, value] of privileges) {
-      view.setUint32(offset, key, true);
-      offset += 4;
-      view.setUint32(offset, value, true);
-      offset += 4;
-    }
-
-    // Write appId
-    view.setUint16(offset, appIdBytes.length, true);
-    offset += 2;
-    uint8View.set(appIdBytes, offset);
-    offset += appIdBytes.length;
-
-    // Write channel
-    view.setUint16(offset, channelBytes.length, true);
-    offset += 2;
-    uint8View.set(channelBytes, offset);
-    offset += channelBytes.length;
-
-    // Write uid
-    view.setUint16(offset, uidBytes.length, true);
-    offset += 2;
-    uint8View.set(uidBytes, offset);
-    offset += uidBytes.length;
-
-    return new Uint8Array(buffer);
-  }
-
-  private static async generateSignature(key: string, message: Uint8Array): Promise<Uint8Array> {
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(key);
-    
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, message);
-    return new Uint8Array(signature);
-  }
-
-  static async buildRtmToken(
-    appId: string,
-    appCertificate: string,
-    userId: string,
-    tokenExpirationInSeconds: number = 3600
-  ): Promise<string> {
-    console.log('[SIMPLE-RTM] Building RTM token', { userId });
-
-    try {
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-      const privilegeExpiration = currentTimestamp + tokenExpirationInSeconds;
-
-      // Create RTM message (simpler than RTC)
-      const message = this.createRtmTokenMessage(appId, userId, privilegeExpiration);
-      const signature = await this.generateSignature(appCertificate, message);
-
-      const content = new Uint8Array(message.length + signature.length);
-      content.set(message, 0);
-      content.set(signature, message.length);
-
-      const base64Content = btoa(String.fromCharCode(...content));
-      const token = `007${appId}${base64Content}`;
-
-      console.log('[SIMPLE-RTM] RTM token generated', {
-        tokenLength: token.length,
-        userId
-      });
-
-      return token;
-    } catch (error) {
-      console.error('[SIMPLE-RTM] RTM token generation failed:', error);
-      throw new Error(`RTM token generation failed: ${error.message}`);
-    }
-  }
-
-  private static createRtmTokenMessage(
-    appId: string,
-    userId: string,
-    privilegeExpiration: number
-  ): Uint8Array {
-    const encoder = new TextEncoder();
-    const appIdBytes = encoder.encode(appId);
-    const userIdBytes = encoder.encode(userId);
-    
-    const timestamp = Math.floor(Date.now() / 1000);
-    
-    // Simple RTM message: timestamp + rtm_login_privilege + appId + userId
-    const totalSize = 4 + 8 + 2 + appIdBytes.length + 2 + userIdBytes.length;
-    const buffer = new ArrayBuffer(totalSize);
-    const view = new DataView(buffer);
-    const uint8View = new Uint8Array(buffer);
-    let offset = 0;
-
-    // Write timestamp
-    view.setUint32(offset, timestamp, true);
-    offset += 4;
-
-    // Write RTM login privilege
-    view.setUint32(offset, this.kRtmLogin, true);
-    offset += 4;
-    view.setUint32(offset, privilegeExpiration, true);
-    offset += 4;
-
-    // Write appId
-    view.setUint16(offset, appIdBytes.length, true);
-    offset += 2;
-    uint8View.set(appIdBytes, offset);
-    offset += appIdBytes.length;
-
-    // Write userId
-    view.setUint16(offset, userIdBytes.length, true);
-    offset += 2;
-    uint8View.set(userIdBytes, offset);
-
-    return new Uint8Array(buffer);
-  }
-}
-
-// Simple token validation
-function validateSimpleToken(token: string, appId: string): boolean {
+// Token validation function
+function validateAgoraToken(token: string, appId: string): boolean {
   try {
     if (!token || token.length < 100) {
       console.error('[VALIDATE] Token too short:', token?.length);
       return false;
     }
 
+    // Agora tokens should start with '007'
     if (!token.startsWith('007')) {
       console.error('[VALIDATE] Invalid token version:', token.substring(0, 3));
       return false;
     }
 
+    // Token should contain the app ID
     if (!token.includes(appId)) {
       console.error('[VALIDATE] Token does not contain app ID');
       return false;
@@ -287,6 +54,76 @@ function validateSimpleToken(token: string, appId: string): boolean {
   } catch (error) {
     console.error('[VALIDATE] Token validation error:', error);
     return false;
+  }
+}
+
+// Generate RTC Token using official SDK
+function generateRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number, tokenExpiration: number = 3600): string {
+  try {
+    console.log('[RTC-TOKEN] Generating token with official SDK:', {
+      appId: appId.substring(0, 8) + '...',
+      channelName,
+      uid,
+      role: role === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
+      expiration: tokenExpiration
+    });
+
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const privilegeExpiration = currentTimestamp + tokenExpiration;
+
+    // Use official Agora token builder
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      appId,
+      appCertificate,
+      channelName,
+      uid,
+      role,
+      privilegeExpiration
+    );
+
+    console.log('[RTC-TOKEN] Generated using official SDK:', {
+      tokenLength: token.length,
+      tokenPrefix: token.substring(0, 20) + '...',
+      usingOfficialSDK: true
+    });
+
+    return token;
+  } catch (error) {
+    console.error('[RTC-TOKEN] Generation failed:', error);
+    throw new Error(`RTC token generation failed: ${error.message}`);
+  }
+}
+
+// Generate RTM Token using official SDK
+function generateRtmToken(appId: string, appCertificate: string, userId: string, tokenExpiration: number = 3600): string {
+  try {
+    console.log('[RTM-TOKEN] Generating token with official SDK:', {
+      appId: appId.substring(0, 8) + '...',
+      userId,
+      expiration: tokenExpiration
+    });
+
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const privilegeExpiration = currentTimestamp + tokenExpiration;
+
+    // Use official Agora RTM token builder
+    const token = RtmTokenBuilder.buildToken(
+      appId,
+      appCertificate,
+      userId,
+      privilegeExpiration
+    );
+
+    console.log('[RTM-TOKEN] Generated using official SDK:', {
+      tokenLength: token.length,
+      tokenPrefix: token.substring(0, 20) + '...',
+      usingOfficialSDK: true
+    });
+
+    return token;
+  } catch (error) {
+    console.error('[RTM-TOKEN] Generation failed:', error);
+    throw new Error(`RTM token generation failed: ${error.message}`);
   }
 }
 
@@ -378,7 +215,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with simplified token generation');
+    console.log('[AGORA-INTEGRATION] Processing request with official Agora SDK');
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -478,18 +315,19 @@ async function createVideoRoom(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Map user role to Agora role (simplified)
-    const agoraRole = data.userRole === 'tutor' ? SimpleAgoraTokenBuilder.ROLE_PUBLISHER : SimpleAgoraTokenBuilder.ROLE_SUBSCRIBER;
+    // Map user role to Agora role using official constants
+    const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
     const tokenExpiration = 3600; // 1 hour
 
-    console.log("[AGORA-INTEGRATION] Using simplified token generation:", {
+    console.log("[AGORA-INTEGRATION] Using official Agora SDK:", {
       userRole: data.userRole,
-      agoraRole: agoraRole === 1 ? 'PUBLISHER' : 'SUBSCRIBER',
-      tokenExpiration
+      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
+      tokenExpiration,
+      usingOfficialSDK: true
     });
 
-    // Generate tokens using simplified approach
-    const rtcToken = await SimpleAgoraTokenBuilder.buildTokenWithUid(
+    // Generate tokens using official Agora SDK
+    const rtcToken = generateRtcToken(
       appId, 
       appCertificate, 
       channelName, 
@@ -498,28 +336,28 @@ async function createVideoRoom(
       tokenExpiration
     );
     
-    const rtmToken = await SimpleAgoraTokenBuilder.buildRtmToken(
+    const rtmToken = generateRtmToken(
       appId, 
       appCertificate, 
       uid.toString(), 
       tokenExpiration
     );
 
-    console.log("[AGORA-INTEGRATION] Generated tokens using simplified approach:", {
+    console.log("[AGORA-INTEGRATION] Generated tokens using official SDK:", {
       rtcTokenLength: rtcToken.length,
       rtcTokenPrefix: rtcToken.substring(0, 15) + '...',
       rtmTokenLength: rtmToken.length,
       rtmTokenPrefix: rtmToken.substring(0, 15) + '...',
       tokenVersion: rtcToken.substring(0, 3),
-      usingSimplifiedApproach: true
+      usingOfficialSDK: true
     });
 
     // Validate tokens
-    if (!validateSimpleToken(rtcToken, appId)) {
+    if (!validateAgoraToken(rtcToken, appId)) {
       throw new Error('Generated RTC token failed validation');
     }
 
-    if (!validateSimpleToken(rtmToken, appId)) {
+    if (!validateAgoraToken(rtmToken, appId)) {
       throw new Error('Generated RTM token failed validation');
     }
 
@@ -569,7 +407,7 @@ async function createVideoRoom(
       throw updateError;
     }
 
-    console.log("[AGORA-INTEGRATION] Video room created successfully with simplified approach");
+    console.log("[AGORA-INTEGRATION] Video room created successfully with official SDK");
 
     return new Response(
       JSON.stringify({
@@ -586,7 +424,7 @@ async function createVideoRoom(
         debug: {
           tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          usingSimplifiedApproach: true,
+          usingOfficialSDK: true,
           role: data.userRole,
           agoraRole,
           validated: true
@@ -641,11 +479,11 @@ async function getTokens(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Map user role to Agora role (simplified)
-    const agoraRole = data.userRole === 'tutor' ? SimpleAgoraTokenBuilder.ROLE_PUBLISHER : SimpleAgoraTokenBuilder.ROLE_SUBSCRIBER;
+    // Map user role to Agora role using official constants
+    const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
     const tokenExpiration = 3600; // 1 hour
     
-    const rtcToken = await SimpleAgoraTokenBuilder.buildTokenWithUid(
+    const rtcToken = generateRtcToken(
       appId, 
       appCertificate, 
       lesson.agora_channel_name, 
@@ -654,28 +492,28 @@ async function getTokens(
       tokenExpiration
     );
     
-    const rtmToken = await SimpleAgoraTokenBuilder.buildRtmToken(
+    const rtmToken = generateRtmToken(
       appId, 
       appCertificate, 
       lesson.agora_uid.toString(), 
       tokenExpiration
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens using simplified approach:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens using official SDK:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
-      agoraRole: agoraRole === 1 ? 'PUBLISHER' : 'SUBSCRIBER',
+      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
       tokenVersion: rtcToken.substring(0, 3),
-      usingSimplifiedApproach: true
+      usingOfficialSDK: true
     });
 
     // Validate tokens
-    if (!validateSimpleToken(rtcToken, appId)) {
+    if (!validateAgoraToken(rtcToken, appId)) {
       throw new Error('Generated RTC token failed validation');
     }
 
-    if (!validateSimpleToken(rtmToken, appId)) {
+    if (!validateAgoraToken(rtmToken, appId)) {
       throw new Error('Generated RTM token failed validation');
     }
 
@@ -708,10 +546,10 @@ async function getTokens(
         debug: {
           tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          usingSimplifiedApproach: true,
+          usingOfficialSDK: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
-          agoraRole: agoraRole === 1 ? 'PUBLISHER' : 'SUBSCRIBER',
+          agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
           validated: true
         }
       }),
@@ -764,16 +602,16 @@ async function regenerateTokens(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Map user role to Agora role (simplified)
-    const agoraRole = data.userRole === 'tutor' ? SimpleAgoraTokenBuilder.ROLE_PUBLISHER : SimpleAgoraTokenBuilder.ROLE_SUBSCRIBER;
+    // Map user role to Agora role using official constants
+    const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
     const tokenExpiration = 3600; // 1 hour
     
-    console.log("[AGORA-INTEGRATION] Regenerating with simplified parameters:", {
+    console.log("[AGORA-INTEGRATION] Regenerating with official SDK parameters:", {
       role: data.userRole,
-      agoraRole: agoraRole === 1 ? 'PUBLISHER' : 'SUBSCRIBER'
+      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER'
     });
     
-    const rtcToken = await SimpleAgoraTokenBuilder.buildTokenWithUid(
+    const rtcToken = generateRtcToken(
       appId, 
       appCertificate, 
       lesson.agora_channel_name, 
@@ -782,28 +620,28 @@ async function regenerateTokens(
       tokenExpiration
     );
     
-    const rtmToken = await SimpleAgoraTokenBuilder.buildRtmToken(
+    const rtmToken = generateRtmToken(
       appId, 
       appCertificate, 
       lesson.agora_uid.toString(), 
       tokenExpiration
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens using simplified approach:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens using official SDK:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
-      agoraRole: agoraRole ===  1 ? 'PUBLISHER' : 'SUBSCRIBER',
+      agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
       tokenVersion: rtcToken.substring(0, 3),
-      usingSimplifiedApproach: true
+      usingOfficialSDK: true
     });
 
     // Validate tokens
-    if (!validateSimpleToken(rtcToken, appId)) {
+    if (!validateAgoraToken(rtcToken, appId)) {
       throw new Error('Generated RTC token failed validation');
     }
 
-    if (!validateSimpleToken(rtmToken, appId)) {
+    if (!validateAgoraToken(rtmToken, appId)) {
       throw new Error('Generated RTM token failed validation');
     }
 
@@ -845,7 +683,7 @@ async function regenerateTokens(
       }
     }
 
-    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson using simplified approach");
+    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson using official SDK");
 
     return new Response(
       JSON.stringify({
@@ -863,10 +701,10 @@ async function regenerateTokens(
         debug: {
           tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          usingSimplifiedApproach: true,
+          usingOfficialSDK: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
-          agoraRole: agoraRole === 1 ? 'PUBLISHER' : 'SUBSCRIBER',
+          agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
           validated: true
         }
       }),
