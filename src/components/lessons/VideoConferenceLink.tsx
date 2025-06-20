@@ -94,7 +94,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       // For demo purposes, create a simple Agora web URL
       // In production, you'd want to redirect to your own Agora integration page
       const role = userRole === 'tutor' ? 'host' : 'audience';
-      const appId = Deno?.env?.get?.('AGORA_APP_ID') || agoraAppId || 'demo_app_id';
+      // Use the passed agoraAppId or fallback to a demo value
+      const appId = agoraAppId || 'demo_app_id';
       return `https://webdemo.agora.io/basicVideoCall/index.html?appid=${appId}&channel=${agoraChannelName}&token=${agoraToken}&role=${role}`;
     }
     return null;
