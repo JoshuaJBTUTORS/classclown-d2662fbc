@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { validateAgoraCredentials } from "./validation.ts";
@@ -17,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with manual Deno-compatible token generation');
+    console.log('[AGORA-INTEGRATION] Processing request with official Agora token library');
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -84,14 +83,14 @@ async function createVideoRoom(
     // Map user role to Agora role using official constants
     const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
 
-    console.log("[AGORA-INTEGRATION] Using manual Deno-compatible token generation:", {
+    console.log("[AGORA-INTEGRATION] Using official Agora token library:", {
       userRole: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
       noExpiration: true,
-      manualImplementation: true
+      officialLibrary: true
     });
 
-    // Generate tokens using manual Deno-compatible method (NO expiration)
+    // Generate tokens using official library (NO expiration)
     const rtcToken = await generateRtcToken(
       appId, 
       appCertificate, 
@@ -106,14 +105,13 @@ async function createVideoRoom(
       uid.toString()
     );
 
-    console.log("[AGORA-INTEGRATION] Generated tokens with manual Deno implementation:", {
+    console.log("[AGORA-INTEGRATION] Generated tokens with official library:", {
       rtcTokenLength: rtcToken.length,
       rtcTokenPrefix: rtcToken.substring(0, 15) + '...',
       rtmTokenLength: rtmToken.length,
       rtmTokenPrefix: rtmToken.substring(0, 15) + '...',
-      tokenVersion: rtcToken.substring(0, 3),
       expectedFormat: '~155 chars',
-      denoCompatible: true
+      officialLibrary: true
     });
 
     // Validate tokens using updated validation
@@ -125,7 +123,7 @@ async function createVideoRoom(
       throw new Error('Generated RTM token failed validation');
     }
 
-    console.log('[AGORA-INTEGRATION] Token validation passed - manual implementation confirmed');
+    console.log('[AGORA-INTEGRATION] Token validation passed - official library implementation confirmed');
 
     // Create Netless whiteboard room if token is available
     let netlessRoomUuid = null;
@@ -171,7 +169,7 @@ async function createVideoRoom(
       throw updateError;
     }
 
-    console.log("[AGORA-INTEGRATION] Video room created successfully with manual Deno-compatible tokens");
+    console.log("[AGORA-INTEGRATION] Video room created successfully with official Agora library");
 
     return new Response(
       JSON.stringify({
@@ -186,10 +184,8 @@ async function createVideoRoom(
         netlessAppIdentifier: appIdentifier,
         message: "Agora video room created successfully",
         debug: {
-          tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          manualImplementation: true,
-          denoCompatible: true,
+          officialLibrary: true,
           noExpiration: true,
           role: data.userRole,
           agoraRole,
@@ -248,7 +244,7 @@ async function getTokens(
     // Map user role to Agora role using official constants
     const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
     
-    // Generate fresh tokens using manual Deno-compatible method
+    // Generate fresh tokens using official library
     const rtcToken = await generateRtcToken(
       appId, 
       appCertificate, 
@@ -263,13 +259,12 @@ async function getTokens(
       lesson.agora_uid.toString()
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens with manual Deno implementation:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens with official library:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
-      tokenVersion: rtcToken.substring(0, 3),
-      denoCompatible: true
+      officialLibrary: true
     });
 
     // Validate tokens
@@ -308,10 +303,8 @@ async function getTokens(
         netlessAppIdentifier: lesson.netless_app_identifier,
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         debug: {
-          tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          manualImplementation: true,
-          denoCompatible: true,
+          officialLibrary: true,
           noExpiration: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
@@ -371,12 +364,12 @@ async function regenerateTokens(
     // Map user role to Agora role using official constants
     const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
     
-    console.log("[AGORA-INTEGRATION] Regenerating with manual Deno implementation:", {
+    console.log("[AGORA-INTEGRATION] Regenerating with official library:", {
       role: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER'
     });
     
-    // Generate fresh tokens using manual Deno-compatible method
+    // Generate fresh tokens using official library
     const rtcToken = await generateRtcToken(
       appId, 
       appCertificate, 
@@ -391,13 +384,12 @@ async function regenerateTokens(
       lesson.agora_uid.toString()
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens with manual Deno implementation:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens with official library:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
-      tokenVersion: rtcToken.substring(0, 3),
-      denoCompatible: true
+      officialLibrary: true
     });
 
     // Validate tokens
@@ -447,7 +439,7 @@ async function regenerateTokens(
       }
     }
 
-    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with manual Deno implementation");
+    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with official library");
 
     return new Response(
       JSON.stringify({
@@ -463,10 +455,8 @@ async function regenerateTokens(
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         regenerated: true,
         debug: {
-          tokenVersion: rtcToken.substring(0, 3),
           tokenLength: rtcToken.length,
-          manualImplementation: true,
-          denoCompatible: true,
+          officialLibrary: true,
           noExpiration: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
