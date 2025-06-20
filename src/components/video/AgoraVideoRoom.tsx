@@ -9,6 +9,7 @@ import {
   useRemoteAudioTracks,
   useRemoteUsers,
 } from 'agora-rtc-react';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 import { toast } from 'sonner';
 import VideoRoomHeader from './VideoRoomHeader';
 import EnhancedVideoControls from './EnhancedVideoControls';
@@ -42,6 +43,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [rtmToken, setRtmToken] = useState<string>('');
+  const [screenTrack, setScreenTrack] = useState<any>(null);
 
   const { startRecording, stopRecording } = useAgora();
   const agoraEngine = useRTCClient();
@@ -73,6 +75,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     return () => {
       // Cleanup when component unmounts
       setIsJoined(false);
+      if (screenTrack) {
+        screenTrack.close();
+      }
     };
   }, [token]);
 
@@ -96,20 +101,25 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
 
     try {
       if (!isScreenSharing) {
-        // Start screen sharing - using the correct API
-        const screenTrack = await agoraEngine.createScreenVideoTrack({
+        // Start screen sharing using AgoraRTC directly
+        const newScreenTrack = await AgoraRTC.createScreenVideoTrack({
           encoderConfig: "1080p_1",
         });
         
         if (localCameraTrack) {
           await agoraEngine.unpublish([localCameraTrack]);
         }
-        await agoraEngine.publish([screenTrack]);
+        await agoraEngine.publish([newScreenTrack]);
+        setScreenTrack(newScreenTrack);
         setIsScreenSharing(true);
         toast.success('Screen sharing started');
       } else {
         // Stop screen sharing
-        await agoraEngine.unpublish();
+        if (screenTrack) {
+          await agoraEngine.unpublish([screenTrack]);
+          screenTrack.close();
+          setScreenTrack(null);
+        }
         if (localCameraTrack) {
           await agoraEngine.publish([localCameraTrack]);
         }
@@ -149,6 +159,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   };
 
   const handleLeave = () => {
+    if (screenTrack) {
+      screenTrack.close();
+    }
     setIsJoined(false);
     toast.success('Left video conference');
     onLeave();

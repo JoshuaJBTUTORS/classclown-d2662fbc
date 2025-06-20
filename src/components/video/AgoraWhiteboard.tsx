@@ -70,7 +70,7 @@ const AgoraWhiteboard: React.FC<AgoraWhiteboardProps> = ({
     
     switch (tool) {
       case 'selector':
-        room.setMemberState({ currentApplianceName: 'clicker' });
+        room.setMemberState({ currentApplianceName: 'selector' });
         break;
       case 'pen':
         room.setMemberState({ currentApplianceName: 'pencil' });
