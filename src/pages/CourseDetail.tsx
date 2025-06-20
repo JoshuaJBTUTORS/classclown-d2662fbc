@@ -148,7 +148,7 @@ const CourseDetail = () => {
       {selectedLessonId && selectedLesson ? (
         <CourseAccessControl courseId={course.id}>
           {/* Full Screen Layout - No Sidebar Padding */}
-          <div className="fixed inset-0 bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100 z-50">
+          <div className="fixed inset-0 bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100">
             <div className="flex h-full">
               {/* Course Sidebar - Fixed Width */}
               <div className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
@@ -176,72 +176,47 @@ const CourseDetail = () => {
                 </div>
               </div>
 
-              {/* Main Content Area - Full Remaining Width */}
+              {/* Main Content Area - Single Column Layout */}
               <div className="flex-1 overflow-y-auto">
                 <div className="h-full p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-                    {/* Left Column - Course Content Details */}
+                  <div className="max-w-4xl mx-auto space-y-6">
+                    {/* Lesson Title and Badge */}
                     <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 p-6">
-                      <div className="mb-6">
-                        <Badge variant="outline" className="mb-3 border-pink-200 text-pink-700 bg-pink-50">
-                          {course.subject}
-                        </Badge>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                          {selectedLesson.title}
-                        </h1>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                          {selectedLesson.description || "Continue with this lesson to master the concepts."}
-                        </p>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{selectedLesson.duration_minutes || 10} min</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <BookOpen className="h-4 w-4" />
-                            <span>{selectedLesson.content_type || 'video'}</span>
-                          </div>
+                      <Badge variant="outline" className="mb-3 border-pink-200 text-pink-700 bg-pink-50">
+                        {course.subject}
+                      </Badge>
+                      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                        {selectedLesson.title}
+                      </h1>
+                      <p className="text-gray-600 leading-relaxed">
+                        {selectedLesson.description || "Continue with this lesson to master the concepts."}
+                      </p>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-4">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{selectedLesson.duration_minutes || 10} min</span>
                         </div>
-
-                        <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg p-4">
-                          <h3 className="font-semibold text-gray-900 mb-3">Learning Objectives</h3>
-                          <div className="space-y-2">
-                            <div className="flex items-start gap-2">
-                              <CheckCircle className="h-4 w-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Understand core concepts</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <CheckCircle className="h-4 w-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Apply knowledge practically</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <CheckCircle className="h-4 w-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Complete exercises</span>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-4 w-4" />
+                          <span>{selectedLesson.content_type || 'video'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Right Column - Video and Flash Cards */}
-                    <div className="space-y-6">
-                      {/* Video Content */}
-                      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
-                        <ContentViewer lesson={selectedLesson} />
-                      </div>
+                    {/* Video Content */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
+                      <ContentViewer lesson={selectedLesson} />
+                    </div>
 
-                      {/* Flash Cards Section */}
-                      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
-                        <NotesSection 
-                          courseId={course.id}
-                          lessonId={selectedLesson.id}
-                          lessonTitle={selectedLesson.title}
-                          contentType={selectedLesson.content_type}
-                        />
-                      </div>
+                    {/* Flash Cards Section */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
+                      <NotesSection 
+                        courseId={course.id}
+                        lessonId={selectedLesson.id}
+                        lessonTitle={selectedLesson.title}
+                        contentType={selectedLesson.content_type}
+                      />
                     </div>
                   </div>
                 </div>
