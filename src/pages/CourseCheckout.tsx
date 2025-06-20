@@ -24,7 +24,6 @@ const CourseCheckout = () => {
     message?: string;
   } | null>(null);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
-  const [hasStartedTrial, setHasStartedTrial] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -34,7 +33,7 @@ const CourseCheckout = () => {
 
   // Check if user already has access on component mount
   useEffect(() => {
-    if (course && !hasStartedTrial) {
+    if (course) {
       checkExistingAccess();
     }
   }, [course]);
@@ -57,10 +56,9 @@ const CourseCheckout = () => {
   };
 
   const handleStartTrial = async () => {
-    if (!course || hasStartedTrial) return;
+    if (!course) return;
     
     setIsLoadingSubscription(true);
-    setHasStartedTrial(true);
     
     try {
       const data = await paymentService.createSubscriptionWithTrial(course.id);
@@ -90,7 +88,6 @@ const CourseCheckout = () => {
       
     } catch (error) {
       console.error('Error creating subscription:', error);
-      setHasStartedTrial(false);
       toast({
         title: "Subscription Error",
         description: error instanceof Error ? error.message : "Unable to start your subscription. Please try again.",
@@ -129,7 +126,6 @@ const CourseCheckout = () => {
       description: error,
       variant: "destructive",
     });
-    setHasStartedTrial(false);
   };
 
   const formatPrice = (priceInPence: number) => {
@@ -236,7 +232,7 @@ const CourseCheckout = () => {
           </div>
 
           {/* Show start trial button if no subscription data yet */}
-          {!subscriptionData && !hasStartedTrial && (
+          {!subscriptionData && (
             <div className="space-y-6">
               <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
                 <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
@@ -264,7 +260,7 @@ const CourseCheckout = () => {
             </div>
           )}
 
-          {/* Payment Form or Loading */}
+          {/* Payment Form */}
           {subscriptionData && subscriptionData.requires_payment_method && subscriptionData.client_secret && (
             <EmbeddedPaymentForm
               clientSecret={subscriptionData.client_secret}
@@ -274,16 +270,6 @@ const CourseCheckout = () => {
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
             />
-          )}
-
-          {/* Loading state */}
-          {hasStartedTrial && !subscriptionData && (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-3 text-gray-600">
-                Setting up your subscription...
-              </span>
-            </div>
           )}
         </div>
       </div>

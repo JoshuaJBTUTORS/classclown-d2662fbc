@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CoursePurchase } from '@/types/course';
 
@@ -11,6 +12,7 @@ export const paymentService = {
     course_title: string; 
     amount: number;
     requires_payment_method: boolean;
+    message?: string;
   }> => {
     console.log('Creating subscription with trial for course:', courseId);
     
