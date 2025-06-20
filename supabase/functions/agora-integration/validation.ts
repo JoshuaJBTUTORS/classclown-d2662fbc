@@ -6,7 +6,8 @@ export function validateAgoraCredentials(appId: string, appCertificate: string) 
     appIdValue: appId ? appId.substring(0, 8) + '...' : 'NOT SET',
     appIdLength: appId?.length || 0,
     hasAppCertificate: !!appCertificate,
-    certificateLength: appCertificate?.length || 0
+    certificateLength: appCertificate?.length || 0,
+    hasNetlessToken: !!Deno.env.get("NETLESS_SDK_TOKEN")
   });
 
   if (!appId || !appCertificate) {
