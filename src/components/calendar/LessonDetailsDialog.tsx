@@ -17,6 +17,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgora } from '@/hooks/useAgora';
+import VideoProviderSelector from '@/components/lessons/VideoProviderSelector';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -62,6 +64,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   } | null>(null);
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
+  const { createRoom: createAgoraRoom, isCreatingRoom: isCreatingAgoraRoom } = useAgora();
+  
+  // New state for provider selection
+  const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
 
   // Check if user is a student or parent (both have read-only access)
   const isStudentOrParent = userRole === 'student' || userRole === 'parent';
@@ -317,28 +323,58 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
 
   const handleCreateOnlineRoom = async () => {
+    // Open provider selector instead of directly creating room
+    setIsProviderSelectorOpen(true);
+  };
+
+  const handleProviderSelected = async (provider: 'lesson_space' | 'agora') => {
     if (!lesson) return;
     
+    setIsProviderSelectorOpen(false);
+    
     try {
-      const result = await createRoom({
-        lessonId: lesson.id,
-        title: lesson.title,
-        startTime: lesson.start_time,
-        duration: lesson.end_time ? 
-          Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60)) : 
-          60
-      });
+      if (provider === 'lesson_space') {
+        const result = await createRoom({
+          lessonId: lesson.id,
+          title: lesson.title,
+          startTime: lesson.start_time,
+          duration: lesson.end_time ? 
+            Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60)) : 
+            60
+        });
 
-      if (result) {
-        if (isRecurringInstanceId(lesson.id)) {
-          const parts = lesson.id.split('-');
-          const baseId = parts.slice(0, 5).join('-');
-          await fetchRecurringInstance(baseId, lesson.id);
-        } else {
-          await fetchLessonDetails(lesson.id);
+        if (result) {
+          if (isRecurringInstanceId(lesson.id)) {
+            const parts = lesson.id.split('-');
+            const baseId = parts.slice(0, 5).join('-');
+            await fetchRecurringInstance(baseId, lesson.id);
+          } else {
+            await fetchLessonDetails(lesson.id);
+          }
+          
+          toast.success('Lesson Space room created! Room details have been updated.');
         }
-        
-        toast.success('Online room created! Room details have been updated.');
+      } else if (provider === 'agora') {
+        const result = await createAgoraRoom({
+          lessonId: lesson.id,
+          title: lesson.title,
+          startTime: lesson.start_time,
+          duration: lesson.end_time ? 
+            Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60)) : 
+            60
+        });
+
+        if (result) {
+          if (isRecurringInstanceId(lesson.id)) {
+            const parts = lesson.id.split('-');
+            const baseId = parts.slice(0, 5).join('-');
+            await fetchRecurringInstance(baseId, lesson.id);
+          } else {
+            await fetchLessonDetails(lesson.id);
+          }
+          
+          toast.success('Agora room created! Room details have been updated.');
+        }
       }
     } catch (error) {
       console.error('Error creating online room:', error);
@@ -463,6 +499,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
     return userRole as 'tutor' | 'student' | 'admin' | 'owner';
   };
+
+  // Check if currently creating any type of room
+  const isCurrentlyCreating = isCreatingRoom || isCreatingAgoraRoom;
 
   return (
     <>
@@ -610,10 +649,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={handleCreateOnlineRoom}
-                        disabled={isCreatingRoom}
+                        disabled={isCurrentlyCreating}
                         className="flex items-center gap-2"
                       >
-                        {isCreatingRoom ? (
+                        {isCurrentlyCreating ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                             Creating...
@@ -730,6 +769,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Provider Selection Dialog */}
+      <VideoProviderSelector
+        isOpen={isProviderSelectorOpen}
+        onClose={() => setIsProviderSelectorOpen(false)}
+        onSelectProvider={handleProviderSelected}
+        isCreating={isCurrentlyCreating}
+        isGroupLesson={lesson?.is_group || false}
+        studentCount={lesson?.students?.length || 0}
+      />
 
       {/* Only show edit dialog for tutors, admins, and owners */}
       {!isStudentOrParent && (
