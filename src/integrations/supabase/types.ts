@@ -719,6 +719,13 @@ export type Database = {
       }
       lessons: {
         Row: {
+          agora_channel_name: string | null
+          agora_recording_id: string | null
+          agora_recording_status: string | null
+          agora_rtm_token: string | null
+          agora_token: string | null
+          agora_uid: number | null
+          agora_whiteboard_token: string | null
           attendance_completed: boolean | null
           completion_date: string | null
           created_at: string | null
@@ -745,6 +752,13 @@ export type Database = {
           video_conference_provider: string | null
         }
         Insert: {
+          agora_channel_name?: string | null
+          agora_recording_id?: string | null
+          agora_recording_status?: string | null
+          agora_rtm_token?: string | null
+          agora_token?: string | null
+          agora_uid?: number | null
+          agora_whiteboard_token?: string | null
           attendance_completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null
@@ -771,6 +785,13 @@ export type Database = {
           video_conference_provider?: string | null
         }
         Update: {
+          agora_channel_name?: string | null
+          agora_recording_id?: string | null
+          agora_recording_status?: string | null
+          agora_rtm_token?: string | null
+          agora_token?: string | null
+          agora_uid?: number | null
+          agora_whiteboard_token?: string | null
           attendance_completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null

@@ -21,6 +21,14 @@ export interface Lesson {
   video_conference_link?: string | null;
   // Additional Lesson Space fields
   lesson_space_session_id?: string | null;
+  // Agora.io fields
+  agora_channel_name?: string | null;
+  agora_token?: string | null;
+  agora_uid?: number | null;
+  agora_rtm_token?: string | null;
+  agora_whiteboard_token?: string | null;
+  agora_recording_id?: string | null;
+  agora_recording_status?: string | null;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
