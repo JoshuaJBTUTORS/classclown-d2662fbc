@@ -15,7 +15,7 @@ serve(async (req) => {
   }
   
   try {
-    console.log("Starting create-checkout-session function");
+    console.log("Starting create-payment-intent function for embedded checkout");
     
     const { courseId } = await req.json();
     
@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error("Course ID is required");
     }
 
-    console.log("Processing checkout session for course:", courseId);
+    console.log("Processing payment intent for course:", courseId);
 
     // Create Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
@@ -64,13 +64,7 @@ serve(async (req) => {
       throw new Error("Course not found");
     }
 
-    console.log("Course found:", course.title, "Price:", course.price, "Stripe Price ID:", course.stripe_price_id);
-
-    // Check if course has a Stripe Price ID
-    if (!course.stripe_price_id) {
-      console.error("Course missing Stripe Price ID:", course.title);
-      throw new Error("Course pricing not configured. Please contact support.");
-    }
+    console.log("Course found:", course.title, "Price:", course.price);
 
     // Check if user already has an active subscription for this course
     const { data: existingPurchase } = await supabaseClient
@@ -84,13 +78,10 @@ serve(async (req) => {
     if (existingPurchase) {
       return new Response(
         JSON.stringify({ 
-          checkout_url: null,
-          message: "Course already purchased",
-          course_title: course.title,
-          amount: course.price || 1299,
-          requires_payment_method: false
+          error: "Course already purchased",
+          message: "You already have access to this course!"
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -119,45 +110,33 @@ serve(async (req) => {
       console.log("New customer created:", customerId);
     }
 
-    // Get origin for redirect URLs
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000';
-    
-    // Create Stripe Checkout Session with trial
-    console.log("Creating Stripe Checkout Session with 3-day trial using Price ID:", course.stripe_price_id);
-    const session = await stripe.checkout.sessions.create({
+    // Create Setup Intent for future subscription with trial
+    console.log("Creating Setup Intent for subscription with trial");
+    const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
       payment_method_types: ['card'],
-      line_items: [{
-        price: course.stripe_price_id,
-        quantity: 1,
-      }],
-      mode: 'subscription',
-      subscription_data: {
-        trial_period_days: 3,
-        metadata: {
-          course_id: courseId,
-          user_id: user.id,
-        },
+      usage: 'off_session',
+      metadata: {
+        course_id: courseId,
+        user_id: user.id,
+        course_title: course.title,
+        trial_days: '3',
       },
-      success_url: `${origin}/course/${courseId}?session_id={CHECKOUT_SESSION_ID}&trial=success`,
-      cancel_url: `${origin}/checkout/${courseId}?canceled=true`,
-      allow_promotion_codes: true,
     });
 
-    console.log("Checkout session created:", session.id, "URL:", session.url);
+    console.log("Setup Intent created:", setupIntent.id, "Client Secret:", setupIntent.client_secret);
 
     return new Response(JSON.stringify({ 
-      checkout_url: session.url,
-      session_id: session.id,
+      client_secret: setupIntent.client_secret,
+      customer_id: customerId,
       course_title: course.title,
       amount: course.price || 1299,
-      requires_payment_method: true
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error in create-checkout-session function:", error);
+    console.error("Error in create-payment-intent function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import EmbeddedPaymentForm from '@/components/learningHub/EmbeddedPaymentForm';
 
 const CourseCheckout = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -15,7 +16,14 @@ const CourseCheckout = () => {
   const { toast } = useToast();
   const { isOwner } = useAuth();
   const [searchParams] = useSearchParams();
-  const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+  const [paymentData, setPaymentData] = useState<{
+    clientSecret: string;
+    customerId: string;
+    courseTitle: string;
+    amount: number;
+  } | null>(null);
+  const [isLoadingPayment, setIsLoadingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -52,6 +60,13 @@ const CourseCheckout = () => {
     }
   }, [course, isOwner]);
 
+  // Initialize embedded payment form when component mounts
+  useEffect(() => {
+    if (course && !isOwner && !paymentData) {
+      initializeEmbeddedPayment();
+    }
+  }, [course, isOwner, paymentData]);
+
   const checkExistingAccess = async () => {
     if (!course) return;
     
@@ -69,42 +84,51 @@ const CourseCheckout = () => {
     }
   };
 
-  const handleStartTrial = async () => {
+  const initializeEmbeddedPayment = async () => {
     if (!course) return;
     
-    setIsLoadingSubscription(true);
+    setIsLoadingPayment(true);
+    setPaymentError(null);
     
     try {
-      const data = await paymentService.createSubscriptionWithTrial(course.id);
+      const data = await paymentService.createPaymentIntent(course.id);
       
-      console.log('Checkout session response:', data);
+      console.log('Payment intent response:', data);
       
-      if (data.message === "Course already purchased") {
-        toast({
-          title: "Access Already Available",
-          description: "You already have access to this course!",
+      if (data.client_secret) {
+        setPaymentData({
+          clientSecret: data.client_secret,
+          customerId: data.customer_id,
+          courseTitle: data.course_title,
+          amount: data.amount,
         });
-        navigate(`/course/${course.id}`);
-        return;
-      }
-
-      if (data.checkout_url) {
-        // Redirect to Stripe Checkout
-        window.location.href = data.checkout_url;
       } else {
-        throw new Error("No checkout URL received");
+        throw new Error("No client secret received");
       }
       
     } catch (error) {
-      console.error('Error creating checkout session:', error);
-      toast({
-        title: "Subscription Error",
-        description: error instanceof Error ? error.message : "Unable to start your subscription. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error creating payment intent:', error);
+      setPaymentError(error instanceof Error ? error.message : "Unable to initialize payment. Please try again.");
     } finally {
-      setIsLoadingSubscription(false);
+      setIsLoadingPayment(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    toast({
+      title: "Welcome aboard! 🎉",
+      description: "Your subscription is now active. Enjoy your 3-day free trial!",
+    });
+    navigate(`/course/${course.id}`);
+  };
+
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
+    toast({
+      title: "Payment Error",
+      description: error,
+      variant: "destructive",
+    });
   };
 
   const formatPrice = (priceInPence: number) => {
@@ -187,7 +211,7 @@ const CourseCheckout = () => {
               <span className="font-semibold text-primary">3-Day Free Trial</span>
             </div>
             <p className="text-sm text-primary/80">
-              Start learning immediately with full access. Payment details required but no charges during your trial period.
+              Start learning immediately with full access. Complete your payment details to begin your trial.
             </p>
           </div>
         </div>
@@ -211,46 +235,45 @@ const CourseCheckout = () => {
         </div>
       </div>
 
-      {/* Right Panel - Trial Signup */}
+      {/* Right Panel - Embedded Payment Form */}
       <div className="lg:w-3/5 bg-white p-8 lg:p-12">
         <div className="max-w-lg">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Start your free trial</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete your free trial</h2>
             <p className="text-gray-600">3 days free, then {course.price ? formatPrice(course.price) : '£12.99'}/month</p>
           </div>
 
-          <div className="space-y-6">
-            <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
-              <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
-              <p className="text-gray-600 mb-4">
-                Click below to proceed to secure checkout. You'll enter your payment details but won't be charged during the 3-day trial period.
-              </p>
+          {isLoadingPayment ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-gray-600">Loading payment form...</span>
+            </div>
+          ) : paymentError ? (
+            <div className="border border-red-200 bg-red-50 rounded-lg p-6">
+              <h3 className="font-semibold text-red-900 mb-2">Payment Setup Error</h3>
+              <p className="text-red-700 mb-4">{paymentError}</p>
               <Button
-                onClick={handleStartTrial}
-                disabled={isLoadingSubscription}
-                className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
+                onClick={initializeEmbeddedPayment}
+                variant="outline"
+                className="border-red-200 text-red-700 hover:bg-red-50"
               >
-                {isLoadingSubscription ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Redirecting to checkout...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-4 w-4 mr-2" />
-                    Start 3-Day Free Trial
-                  </>
-                )}
+                Try Again
               </Button>
             </div>
-            
-            <div className="text-center text-sm text-gray-500">
-              <p>
-                After your trial ends, you'll be charged {course.price ? formatPrice(course.price) : '£12.99'} monthly. 
-                You can cancel or manage your subscription anytime.
-              </p>
+          ) : paymentData ? (
+            <EmbeddedPaymentForm
+              clientSecret={paymentData.clientSecret}
+              customerId={paymentData.customerId}
+              courseTitle={paymentData.courseTitle}
+              amount={paymentData.amount}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+            />
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              Initializing payment form...
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
