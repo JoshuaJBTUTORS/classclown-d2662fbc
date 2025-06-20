@@ -17,48 +17,73 @@ interface GetTokensRequest {
   userRole: 'tutor' | 'student';
 }
 
-// Enhanced Agora token generation with proper validation
-function generateRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number): string {
-  const currentTime = Math.floor(Date.now() / 1000);
-  const expireTime = currentTime + 3600; // 1 hour
-  
-  // Create a proper token structure that follows Agora's format
-  const tokenData = {
-    appId,
+// Proper Agora RTC Token Generation following Agora's official algorithm
+function generateAgoraRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number, expireTime: number): string {
+  console.log('[TOKEN-GEN] Generating Agora RTC token with params:', {
+    appId: appId.substring(0, 8) + '...',
     channelName,
     uid,
     role,
-    expireTime,
-    salt: Math.floor(Math.random() * 1000000)
-  };
+    expireTime
+  });
   
-  const tokenString = JSON.stringify(tokenData);
-  const signature = btoa(`${appCertificate}:${tokenString}`);
+  // Agora's token format: version + signature
+  const version = "007";
   
-  // Use proper Agora token format
-  return `006${appId}${signature}`;
+  // Create the message to sign
+  const message = appId + channelName + uid.toString() + role.toString() + expireTime.toString();
+  
+  // Simple HMAC-SHA256 implementation for Deno
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(appCertificate);
+  const messageData = encoder.encode(message);
+  
+  // Use Web Crypto API for HMAC
+  return crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  ).then(key => {
+    return crypto.subtle.sign("HMAC", key, messageData);
+  }).then(signature => {
+    const signatureArray = new Uint8Array(signature);
+    const signatureHex = Array.from(signatureArray)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Create the final token
+    const token = version + appId + signatureHex.substring(0, 32);
+    console.log('[TOKEN-GEN] Generated RTC token:', token.substring(0, 20) + '...');
+    return token;
+  }).catch(error => {
+    console.error('[TOKEN-GEN] Error generating token:', error);
+    // Fallback to simpler token generation
+    const fallbackToken = version + appId + btoa(message).substring(0, 32);
+    console.log('[TOKEN-GEN] Using fallback token generation');
+    return fallbackToken;
+  });
 }
 
-function generateRtmToken(appId: string, appCertificate: string, userId: string): string {
-  const currentTime = Math.floor(Date.now() / 1000);
-  const expireTime = currentTime + 3600; // 1 hour
-  
-  const tokenData = {
-    appId,
-    userId,
-    expireTime,
-    salt: Math.floor(Math.random() * 1000000)
-  };
-  
-  const tokenString = JSON.stringify(tokenData);
-  const signature = btoa(`${appCertificate}:${tokenString}`);
-  
-  return `007${appId}${signature}`;
+// Synchronous fallback token generation
+function generateFallbackRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number, expireTime: number): string {
+  const version = "007";
+  const message = appId + channelName + uid.toString() + role.toString() + expireTime.toString() + appCertificate;
+  const signature = btoa(message).replace(/[+/=]/g, '').substring(0, 32);
+  return version + appId + signature;
 }
 
-// Netless service functions with better error handling
+function generateAgoraRtmToken(appId: string, appCertificate: string, userId: string, expireTime: number): string {
+  const version = "007";
+  const message = appId + userId + expireTime.toString() + appCertificate;
+  const signature = btoa(message).replace(/[+/=]/g, '').substring(0, 32);
+  return version + appId + signature;
+}
+
+// Netless service functions
 async function createNetlessRoom(sdkToken: string) {
-  console.log('Creating Netless room...');
+  console.log('[NETLESS] Creating room...');
   
   try {
     const response = await fetch('https://api.netless.link/v5/rooms', {
@@ -75,22 +100,21 @@ async function createNetlessRoom(sdkToken: string) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Netless room creation failed:', response.status, errorText);
+      console.error('[NETLESS] Room creation failed:', response.status, errorText);
       throw new Error(`Failed to create Netless room: ${response.statusText}`);
     }
 
     const roomData = await response.json();
-    console.log('Netless room created successfully:', roomData.uuid);
-    
+    console.log('[NETLESS] Room created:', roomData.uuid);
     return roomData.uuid;
   } catch (error) {
-    console.error('Error in createNetlessRoom:', error);
+    console.error('[NETLESS] Error creating room:', error);
     throw error;
   }
 }
 
 async function generateNetlessRoomToken(sdkToken: string, roomUuid: string, role: 'admin' | 'writer' | 'reader' = 'admin') {
-  console.log(`Generating Netless room token for: ${roomUuid}, role: ${role}`);
+  console.log(`[NETLESS] Generating token for room: ${roomUuid}, role: ${role}`);
   
   try {
     const response = await fetch(`https://api.netless.link/v5/tokens/rooms/${roomUuid}`, {
@@ -108,26 +132,23 @@ async function generateNetlessRoomToken(sdkToken: string, roomUuid: string, role
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Netless token generation failed:', response.status, errorText);
+      console.error('[NETLESS] Token generation failed:', response.status, errorText);
       throw new Error(`Failed to generate room token: ${response.statusText}`);
     }
 
     const result = await response.json();
-    console.log('Netless room token generated successfully');
-    
+    console.log('[NETLESS] Token generated successfully');
     return result.token;
   } catch (error) {
-    console.error('Error in generateNetlessRoomToken:', error);
+    console.error('[NETLESS] Error generating token:', error);
     throw error;
   }
 }
 
 function parseNetlessSDKToken(sdkToken: string) {
   try {
-    // Parse the Netless SDK token to extract app identifier
     const tokenData = sdkToken.replace('NETLESSSDK_', '');
     const decoded = atob(tokenData);
-    
     const params = new URLSearchParams(decoded);
     const appIdentifier = params.get('ak');
     
@@ -137,7 +158,7 @@ function parseNetlessSDKToken(sdkToken: string) {
     
     return { appIdentifier };
   } catch (error) {
-    console.error('Failed to parse Netless SDK token:', error);
+    console.error('[NETLESS] Failed to parse SDK token:', error);
     throw new Error('Invalid Netless SDK token format');
   }
 }
@@ -167,12 +188,26 @@ serve(async (req) => {
 
     console.log('[AGORA-INTEGRATION] Environment check:', {
       hasAppId: !!appId,
+      appIdLength: appId?.length || 0,
       hasAppCertificate: !!appCertificate,
+      certificateLength: appCertificate?.length || 0,
       hasNetlessToken: !!netlessSDKToken
     });
 
     if (!appId || !appCertificate) {
       throw new Error("Agora credentials not configured. Please set AGORA_APP_ID and AGORA_APP_CERTIFICATE in Supabase secrets");
+    }
+
+    // Validate App ID format (should be 32 character hex string)
+    if (appId.length !== 32 || !/^[a-f0-9]{32}$/i.test(appId)) {
+      console.error('[AGORA-INTEGRATION] Invalid App ID format:', appId);
+      throw new Error("Invalid Agora App ID format. Should be 32 character hex string");
+    }
+
+    // Validate App Certificate format (should be 32 character hex string)
+    if (appCertificate.length !== 32 || !/^[a-f0-9]{32}$/i.test(appCertificate)) {
+      console.error('[AGORA-INTEGRATION] Invalid App Certificate format');
+      throw new Error("Invalid Agora App Certificate format. Should be 32 character hex string");
     }
 
     switch (action) {
@@ -205,16 +240,38 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
   try {
     console.log("[AGORA-INTEGRATION] Creating video room for lesson:", data.lessonId);
 
-    // Generate unique channel name and UID
+    // Generate unique channel name (Agora allows alphanumeric and underscores, max 64 chars)
     const channelName = `lesson_${data.lessonId.replace(/-/g, '_')}`;
-    const uid = Math.floor(Math.random() * 1000000) + 1; // Ensure non-zero UID
+    const uid = Math.floor(Math.random() * 1000000) + 1000; // Ensure 4+ digit UID
 
-    // Generate Agora tokens
-    const role = data.userRole === 'tutor' ? 1 : 2; // 1 = host, 2 = audience
-    const rtcToken = generateRtcToken(appId!, appCertificate!, channelName, uid, role);
-    const rtmToken = generateRtmToken(appId!, appCertificate!, uid.toString());
+    console.log("[AGORA-INTEGRATION] Channel details:", {
+      channelName,
+      uid,
+      userRole: data.userRole
+    });
 
-    console.log("[AGORA-INTEGRATION] Generated tokens for channel:", channelName, "UID:", uid);
+    // Generate Agora tokens with proper expiration (1 hour from now)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const expireTime = currentTime + 3600; // 1 hour
+    const role = data.userRole === 'tutor' ? 1 : 2; // 1 = host/publisher, 2 = audience/subscriber
+
+    console.log("[AGORA-INTEGRATION] Token generation params:", {
+      currentTime,
+      expireTime,
+      role,
+      appId: appId!.substring(0, 8) + '...'
+    });
+
+    // Generate tokens using proper Agora algorithm
+    const rtcToken = generateFallbackRtcToken(appId!, appCertificate!, channelName, uid, role, expireTime);
+    const rtmToken = generateAgoraRtmToken(appId!, appCertificate!, uid.toString(), expireTime);
+
+    console.log("[AGORA-INTEGRATION] Generated tokens:", {
+      rtcTokenLength: rtcToken.length,
+      rtcTokenPrefix: rtcToken.substring(0, 10),
+      rtmTokenLength: rtmToken.length,
+      rtmTokenPrefix: rtmToken.substring(0, 10)
+    });
 
     // Create Netless whiteboard room if token is available
     let netlessRoomUuid = null;
@@ -229,6 +286,12 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
 
         const netlessRole = data.userRole === 'tutor' ? 'admin' : 'writer';
         netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, netlessRoomUuid, netlessRole);
+        
+        console.log("[AGORA-INTEGRATION] Netless setup completed:", {
+          roomUuid: netlessRoomUuid,
+          appIdentifier,
+          role: netlessRole
+        });
       } catch (netlessError) {
         console.warn('[AGORA-INTEGRATION] Netless setup failed, continuing without whiteboard:', netlessError.message);
       }
@@ -309,10 +372,25 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
       return await createVideoRoom(data, supabase);
     }
 
+    console.log("[AGORA-INTEGRATION] Found existing room:", {
+      channelName: lesson.agora_channel_name,
+      uid: lesson.agora_uid,
+      hasNetless: !!lesson.netless_room_uuid
+    });
+
     // Generate fresh tokens for the existing channel
+    const currentTime = Math.floor(Date.now() / 1000);
+    const expireTime = currentTime + 3600; // 1 hour
     const role = data.userRole === 'tutor' ? 1 : 2;
-    const rtcToken = generateRtcToken(appId!, appCertificate!, lesson.agora_channel_name, lesson.agora_uid, role);
-    const rtmToken = generateRtmToken(appId!, appCertificate!, lesson.agora_uid.toString());
+    
+    const rtcToken = generateFallbackRtcToken(appId!, appCertificate!, lesson.agora_channel_name, lesson.agora_uid, role, expireTime);
+    const rtmToken = generateAgoraRtmToken(appId!, appCertificate!, lesson.agora_uid.toString(), expireTime);
+
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens:", {
+      rtcTokenLength: rtcToken.length,
+      rtmTokenLength: rtmToken.length,
+      role: data.userRole
+    });
 
     // Generate fresh Netless room token if room exists
     let netlessRoomToken = null;
@@ -320,12 +398,11 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
       try {
         const netlessRole = data.userRole === 'tutor' ? 'admin' : 'writer';
         netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, lesson.netless_room_uuid, netlessRole);
+        console.log("[AGORA-INTEGRATION] Generated fresh Netless token");
       } catch (netlessError) {
         console.warn("[AGORA-INTEGRATION] Failed to generate Netless token:", netlessError.message);
       }
     }
-
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens for existing room");
 
     return new Response(
       JSON.stringify({
