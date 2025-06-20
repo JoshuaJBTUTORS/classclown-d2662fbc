@@ -101,10 +101,15 @@ export interface CoursePurchase {
   course_id: string;
   stripe_payment_intent_id?: string;
   stripe_session_id?: string;
+  stripe_subscription_id?: string;
   amount_paid: number;
   currency: string;
   purchase_date: string;
   status: string;
+  grace_period_start?: string;
+  grace_period_end?: string;
+  previous_status?: string;
+  trial_end?: string;
   created_at: string;
   updated_at: string;
 }
