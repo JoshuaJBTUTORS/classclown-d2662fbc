@@ -22,7 +22,31 @@ interface RegenerateTokensRequest {
   userRole: 'tutor' | 'student';
 }
 
-// Official Agora RTC Token Generation Implementation
+// CRC32 calculation for Agora token integrity
+class CRC32 {
+  private static table: Uint32Array;
+
+  static {
+    this.table = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let crc = i;
+      for (let j = 0; j < 8; j++) {
+        crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1);
+      }
+      this.table[i] = crc;
+    }
+  }
+
+  static calculate(data: Uint8Array): number {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < data.length; i++) {
+      crc = this.table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+}
+
+// Official Agora RTC Token Generator with proper binary packing
 class AgoraTokenBuilder {
   private static readonly kJoinChannel = 1;
   private static readonly kPublishAudioStream = 2;
@@ -38,7 +62,7 @@ class AgoraTokenBuilder {
     role: number,
     expireTime: number
   ): Promise<string> {
-    console.log('[AGORA-TOKEN] Building token with official algorithm', {
+    console.log('[AGORA-TOKEN] Building token with official binary algorithm', {
       appId: appId.substring(0, 8) + '...',
       channelName,
       uid,
@@ -47,19 +71,37 @@ class AgoraTokenBuilder {
     });
 
     try {
-      // Create message to sign
-      const message = this.packMessage(appId, channelName, uid, role, expireTime);
+      // Create privilege map
+      const privileges = new Map<number, number>();
+      privileges.set(this.kJoinChannel, expireTime);
+      
+      if (role === 1) { // Publisher/Host
+        privileges.set(this.kPublishAudioStream, expireTime);
+        privileges.set(this.kPublishVideoStream, expireTime);
+        privileges.set(this.kPublishDataStream, expireTime);
+      }
+
+      // Generate salt and timestamp
+      const salt = Math.floor(Math.random() * 0xFFFFFFFF);
+      const ts = Math.floor(Date.now() / 1000);
+
+      console.log('[AGORA-TOKEN] Token parameters:', { salt, ts, privileges: Object.fromEntries(privileges) });
+
+      // Pack message according to Agora binary specification
+      const message = this.packMessage(salt, ts, privileges, appId, channelName, uid);
       
       // Generate signature using HMAC-SHA256
       const signature = await this.hmacSha256(appCertificate, message);
       
-      // Build final token
-      const token = this.buildToken(appId, message, signature);
+      // Build final token in Agora's binary format
+      const token = this.buildBinaryToken(appId, message, signature);
       
       console.log('[AGORA-TOKEN] Token generated successfully', {
         tokenLength: token.length,
         tokenPrefix: token.substring(0, 20) + '...',
-        version: token.substring(0, 3)
+        version: token.substring(0, 3),
+        messageLength: message.length,
+        signatureLength: signature.length
       });
 
       return token;
@@ -70,48 +112,87 @@ class AgoraTokenBuilder {
   }
 
   private static packMessage(
+    salt: number,
+    ts: number,
+    privileges: Map<number, number>,
     appId: string,
     channelName: string,
-    uid: number,
-    role: number,
-    expireTime: number
-  ): string {
-    // Create privilege map
-    const privileges = new Map();
-    privileges.set(this.kJoinChannel, expireTime);
+    uid: number
+  ): Uint8Array {
+    // Calculate buffer size needed
+    const appIdBytes = new TextEncoder().encode(appId);
+    const channelBytes = new TextEncoder().encode(channelName);
+    const uidBytes = new TextEncoder().encode(uid.toString());
     
-    if (role === 1) { // Publisher/Host
-      privileges.set(this.kPublishAudioStream, expireTime);
-      privileges.set(this.kPublishVideoStream, expireTime);
-      privileges.set(this.kPublishDataStream, expireTime);
+    // Base size: salt(4) + ts(4) + privilege_count(2) + service_count(2)
+    let bufferSize = 4 + 4 + 2 + 2;
+    
+    // Add privilege map size: each privilege = service_type(2) + privilege_key(2) + expire(4)
+    bufferSize += privileges.size * (2 + 2 + 4);
+    
+    // Add service map size: appId_len(2) + appId + channel_len(2) + channel + uid_len(2) + uid
+    bufferSize += 2 + appIdBytes.length + 2 + channelBytes.length + 2 + uidBytes.length;
+
+    const buffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(buffer);
+    const uint8View = new Uint8Array(buffer);
+    let offset = 0;
+
+    // Pack salt (4 bytes, little endian)
+    view.setUint32(offset, salt, true);
+    offset += 4;
+
+    // Pack timestamp (4 bytes, little endian)
+    view.setUint32(offset, ts, true);
+    offset += 4;
+
+    // Pack privilege map
+    view.setUint16(offset, privileges.size, true);
+    offset += 2;
+
+    for (const [serviceType, expireTime] of privileges) {
+      view.setUint16(offset, serviceType, true);
+      offset += 2;
+      view.setUint16(offset, serviceType, true); // privilege key same as service type
+      offset += 2;
+      view.setUint32(offset, expireTime, true);
+      offset += 4;
     }
 
-    // Pack message according to Agora specification
-    const salt = Math.floor(Math.random() * 0xFFFFFFFF);
-    const ts = Math.floor(Date.now() / 1000);
+    // Pack service map
+    view.setUint16(offset, 3, true); // 3 services: appId, channel, uid
+    offset += 2;
 
-    // Create message components
-    const messageData = {
-      salt: salt,
-      ts: ts,
-      privileges: Object.fromEntries(privileges),
-      appId: appId,
-      channelName: channelName,
-      uid: uid.toString()
-    };
+    // Pack appId
+    view.setUint16(offset, appIdBytes.length, true);
+    offset += 2;
+    uint8View.set(appIdBytes, offset);
+    offset += appIdBytes.length;
 
-    // Convert to binary-compatible format
-    const messageStr = JSON.stringify(messageData);
-    const messageBytes = new TextEncoder().encode(messageStr);
-    
-    // Convert to base64 for transport
-    return btoa(String.fromCharCode(...messageBytes));
+    // Pack channel name
+    view.setUint16(offset, channelBytes.length, true);
+    offset += 2;
+    uint8View.set(channelBytes, offset);
+    offset += channelBytes.length;
+
+    // Pack uid
+    view.setUint16(offset, uidBytes.length, true);
+    offset += 2;
+    uint8View.set(uidBytes, offset);
+    offset += uidBytes.length;
+
+    const result = uint8View.slice(0, offset);
+    console.log('[AGORA-TOKEN] Message packed:', {
+      size: result.length,
+      hex: Array.from(result.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' ')
+    });
+
+    return result;
   }
 
-  private static async hmacSha256(key: string, message: string): Promise<string> {
+  private static async hmacSha256(key: string, message: Uint8Array): Promise<Uint8Array> {
     const encoder = new TextEncoder();
     const keyData = encoder.encode(key);
-    const messageData = encoder.encode(message);
     
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
@@ -121,20 +202,53 @@ class AgoraTokenBuilder {
       ['sign']
     );
     
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    return Array.from(new Uint8Array(signature))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, message);
+    return new Uint8Array(signature);
   }
 
-  private static buildToken(appId: string, message: string, signature: string): string {
+  private static buildBinaryToken(appId: string, message: Uint8Array, signature: Uint8Array): string {
     const version = "007";
-    const appIdBytes = appId;
-    const messageBase64 = message;
-    const signatureHex = signature;
     
-    // Combine according to Agora token format: version + appId + message + signature
-    return version + appIdBytes + messageBase64 + signatureHex.substring(0, 32);
+    // Calculate CRC32 checksum
+    const crc32 = CRC32.calculate(message);
+    
+    // Create final token buffer
+    const totalSize = 4 + message.length + signature.length; // crc32 + message + signature
+    const tokenBuffer = new ArrayBuffer(totalSize);
+    const view = new DataView(tokenBuffer);
+    const uint8View = new Uint8Array(tokenBuffer);
+    
+    let offset = 0;
+    
+    // Pack CRC32 checksum (4 bytes, little endian)
+    view.setUint32(offset, crc32, true);
+    offset += 4;
+    
+    // Pack message
+    uint8View.set(message, offset);
+    offset += message.length;
+    
+    // Pack signature
+    uint8View.set(signature, offset);
+    
+    // Convert to base64
+    const tokenBytes = new Uint8Array(tokenBuffer);
+    const base64Token = btoa(String.fromCharCode(...tokenBytes));
+    
+    // Build final token: version + appId + base64(crc32 + message + signature)
+    const finalToken = version + appId + base64Token;
+    
+    console.log('[AGORA-TOKEN] Binary token built:', {
+      version,
+      appId: appId.substring(0, 8) + '...',
+      crc32: crc32.toString(16),
+      messageSize: message.length,
+      signatureSize: signature.length,
+      base64Size: base64Token.length,
+      finalSize: finalToken.length
+    });
+    
+    return finalToken;
   }
 
   static async buildRtmToken(appId: string, appCertificate: string, userId: string, expireTime: number): Promise<string> {
@@ -142,31 +256,85 @@ class AgoraTokenBuilder {
     
     try {
       // RTM token uses similar structure but simpler privilege map
-      const privileges = new Map();
+      const privileges = new Map<number, number>();
       privileges.set(this.kRtmLogin, expireTime);
 
       const salt = Math.floor(Math.random() * 0xFFFFFFFF);
       const ts = Math.floor(Date.now() / 1000);
 
-      const messageData = {
-        salt: salt,
-        ts: ts,
-        privileges: Object.fromEntries(privileges),
-        appId: appId,
-        userId: userId
-      };
-
-      const messageStr = JSON.stringify(messageData);
-      const messageBytes = new TextEncoder().encode(messageStr);
-      const message = btoa(String.fromCharCode(...messageBytes));
-      
+      // For RTM, we use userId instead of numeric uid
+      const message = this.packRtmMessage(salt, ts, privileges, appId, userId);
       const signature = await this.hmacSha256(appCertificate, message);
       
-      return "007" + appId + message + signature.substring(0, 32);
+      return this.buildBinaryToken(appId, message, signature);
     } catch (error) {
       console.error('[RTM-TOKEN] Error generating RTM token:', error);
       throw new Error(`RTM token generation failed: ${error.message}`);
     }
+  }
+
+  private static packRtmMessage(
+    salt: number,
+    ts: number,
+    privileges: Map<number, number>,
+    appId: string,
+    userId: string
+  ): Uint8Array {
+    const appIdBytes = new TextEncoder().encode(appId);
+    const userIdBytes = new TextEncoder().encode(userId);
+    
+    // Base size: salt(4) + ts(4) + privilege_count(2) + service_count(2)
+    let bufferSize = 4 + 4 + 2 + 2;
+    
+    // Add privilege map size
+    bufferSize += privileges.size * (2 + 2 + 4);
+    
+    // Add service map size: appId + userId (no channel for RTM)
+    bufferSize += 2 + appIdBytes.length + 2 + userIdBytes.length;
+
+    const buffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(buffer);
+    const uint8View = new Uint8Array(buffer);
+    let offset = 0;
+
+    // Pack salt
+    view.setUint32(offset, salt, true);
+    offset += 4;
+
+    // Pack timestamp
+    view.setUint32(offset, ts, true);
+    offset += 4;
+
+    // Pack privilege map
+    view.setUint16(offset, privileges.size, true);
+    offset += 2;
+
+    for (const [serviceType, expireTime] of privileges) {
+      view.setUint16(offset, serviceType, true);
+      offset += 2;
+      view.setUint16(offset, serviceType, true);
+      offset += 2;
+      view.setUint32(offset, expireTime, true);
+      offset += 4;
+    }
+
+    // Pack service map (2 services for RTM)
+    view.setUint16(offset, 2, true);
+    offset += 2;
+
+    // Pack appId
+    view.setUint16(offset, appIdBytes.length, true);
+    offset += 2;
+    uint8View.set(appIdBytes, offset);
+    offset += appIdBytes.length;
+
+    // Pack userId
+    view.setUint16(offset, userIdBytes.length, true);
+    offset += 2;
+    uint8View.set(userIdBytes, offset);
+    offset += userIdBytes.length;
+
+    return uint8View.slice(0, offset);
   }
 }
 
@@ -185,8 +353,21 @@ function validateToken(token: string, appId: string): boolean {
     }
 
     // Check if token contains app ID
-    if (!token.includes(appId.substring(0, 8))) {
+    if (!token.includes(appId)) {
       console.error('[VALIDATE] Token does not contain app ID');
+      return false;
+    }
+
+    // Try to decode the base64 portion
+    try {
+      const base64Part = token.substring(3 + appId.length);
+      const decoded = atob(base64Part);
+      if (decoded.length < 36) { // Minimum: CRC32(4) + basic message + signature
+        console.error('[VALIDATE] Decoded token too short');
+        return false;
+      }
+    } catch (decodeError) {
+      console.error('[VALIDATE] Failed to decode token base64');
       return false;
     }
 
