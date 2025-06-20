@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, Users, UserPlus, Settings, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share } from 'lucide-react';
 
 interface VideoRoomHeaderProps {
   lessonTitle: string;
@@ -16,17 +15,18 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
   onLeave
 }) => {
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={onLeave}
-          className="text-gray-600 hover:text-gray-900"
+          className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Leave
         </Button>
+        <div className="h-6 w-px bg-gray-300" />
         <div>
           <h1 className="text-lg font-semibold text-gray-900 font-playfair">
             {lessonTitle}
@@ -38,15 +38,20 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button variant="outline" size="sm" className="text-gray-600">
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
+          <Share className="h-4 w-4 mr-2" />
+          Share
+        </Button>
+        <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
           <UserPlus className="h-4 w-4 mr-2" />
           Invite
         </Button>
-        <Button variant="ghost" size="sm" className="text-gray-600">
+        <div className="h-6 w-px bg-gray-200 mx-1" />
+        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
           <Settings className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="text-gray-600">
+        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </div>
