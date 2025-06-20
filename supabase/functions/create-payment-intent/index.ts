@@ -121,16 +121,19 @@ serve(async (req) => {
       console.log("New customer created:", customerId);
     }
 
-    // Create subscription with 7-day free trial using the Stripe Price ID
+    // Create subscription with 7-day free trial that REQUIRES payment method setup
     console.log("Creating Stripe subscription with trial using Price ID:", course.stripe_price_id);
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{
-        price: course.stripe_price_id, // Use the Price ID from Stripe
+        price: course.stripe_price_id,
       }],
-      trial_period_days: 7, // 7-day free trial
+      trial_period_days: 7,
       payment_behavior: 'default_incomplete',
-      payment_settings: { save_default_payment_method: 'on_subscription' },
+      payment_settings: { 
+        save_default_payment_method: 'on_subscription',
+        payment_method_types: ['card']
+      },
       expand: ['latest_invoice.payment_intent'],
       metadata: {
         course_id: courseId,
@@ -138,7 +141,7 @@ serve(async (req) => {
       },
     });
 
-    console.log("Subscription created with trial:", subscription.id);
+    console.log("Subscription created with trial:", subscription.id, "Status:", subscription.status);
 
     // Create Supabase client using service role key to bypass RLS
     const supabaseService = createClient(
@@ -147,7 +150,7 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Create purchase record immediately with trial status
+    // Create purchase record with incomplete status until payment method is added
     const { error: insertError } = await supabaseService
       .from('course_purchases')
       .insert({
@@ -157,7 +160,7 @@ serve(async (req) => {
         stripe_payment_intent_id: subscription.latest_invoice?.payment_intent?.id || subscription.id,
         amount_paid: course.price || 1299,
         currency: 'gbp',
-        status: subscription.status === 'trialing' ? 'completed' : 'pending'
+        status: subscription.status === 'incomplete' ? 'pending' : 'completed'
       });
 
     if (insertError) {
@@ -173,7 +176,7 @@ serve(async (req) => {
 
     console.log("Purchase record created successfully");
 
-    // Get client secret for payment setup if needed
+    // Get client secret for payment setup
     let clientSecret = null;
     if (subscription.latest_invoice && typeof subscription.latest_invoice === 'object') {
       const invoice = subscription.latest_invoice as any;

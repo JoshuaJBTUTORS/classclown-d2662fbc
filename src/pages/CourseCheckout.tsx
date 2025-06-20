@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
@@ -89,8 +89,8 @@ const CourseCheckout = () => {
       
       setSubscriptionData(data);
       
-      // If subscription is already active (trial), redirect immediately
-      if (data.status === 'trialing') {
+      // Now always require payment method setup - no immediate redirect
+      if (!data.requires_payment_method) {
         toast({
           title: "Free trial activated!",
           description: "Your 7-day free trial has started. Enjoy full access to the course!",
@@ -259,7 +259,7 @@ const CourseCheckout = () => {
               <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
                 <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
                 <p className="text-gray-600 mb-4">
-                  Click below to start your 7-day free trial. You'll only need to add a payment method to continue after the trial period.
+                  Click below to start your 7-day free trial. You'll need to add a payment method to continue after the trial period.
                 </p>
                 <Button
                   onClick={handleStartTrial}
@@ -282,7 +282,7 @@ const CourseCheckout = () => {
             </div>
           )}
 
-          {/* Payment Form */}
+          {/* Payment Form - Always show when payment method is required */}
           {subscriptionData && subscriptionData.requires_payment_method && subscriptionData.client_secret && (
             <EmbeddedPaymentForm
               clientSecret={subscriptionData.client_secret}
