@@ -11,9 +11,11 @@ import {
 } from 'agora-rtc-react';
 import { toast } from 'sonner';
 import VideoRoomHeader from './VideoRoomHeader';
-import VideoControls from './VideoControls';
+import EnhancedVideoControls from './EnhancedVideoControls';
 import VideoPanel from './VideoPanel';
-import Whiteboard from './Whiteboard';
+import AgoraWhiteboard from './AgoraWhiteboard';
+import AgoraChatPanel from './AgoraChatPanel';
+import { useAgora } from '@/hooks/useAgora';
 
 interface AgoraVideoRoomProps {
   appId: string;
@@ -36,8 +38,12 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
 }) => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
+  const [rtmToken, setRtmToken] = useState<string>('');
 
+  const { startRecording, stopRecording } = useAgora();
   const agoraEngine = useRTCClient();
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(isAudioEnabled);
   const { localCameraTrack } = useLocalCameraTrack(isVideoEnabled);
@@ -60,11 +66,15 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     setIsJoined(true);
     toast.success('Joined video conference');
 
+    // For demo purposes, we'll use the RTC token as RTM token
+    // In production, you'd get a separate RTM token from your backend
+    setRtmToken(token);
+
     return () => {
       // Cleanup when component unmounts
       setIsJoined(false);
     };
-  }, []);
+  }, [token]);
 
   // Play remote audio tracks
   useEffect(() => {
@@ -79,6 +89,56 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const toggleVideo = () => {
     setIsVideoEnabled(!isVideoEnabled);
     toast.success(isVideoEnabled ? 'Camera turned off' : 'Camera turned on');
+  };
+
+  const toggleScreenShare = async () => {
+    if (!agoraEngine) return;
+
+    try {
+      if (!isScreenSharing) {
+        // Start screen sharing
+        const screenTrack = await agoraEngine.createScreenVideoTrack();
+        await agoraEngine.unpublish([localCameraTrack]);
+        await agoraEngine.publish([screenTrack]);
+        setIsScreenSharing(true);
+        toast.success('Screen sharing started');
+      } else {
+        // Stop screen sharing
+        await agoraEngine.unpublish();
+        await agoraEngine.publish([localCameraTrack]);
+        setIsScreenSharing(false);
+        toast.success('Screen sharing stopped');
+      }
+    } catch (error) {
+      console.error('Screen sharing error:', error);
+      toast.error('Failed to toggle screen sharing');
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (userRole !== 'tutor') return;
+
+    try {
+      if (!isRecording) {
+        const success = await startRecording(channel);
+        if (success) {
+          setIsRecording(true);
+        }
+      } else {
+        const success = await stopRecording(channel);
+        if (success) {
+          setIsRecording(false);
+        }
+      }
+    } catch (error) {
+      console.error('Recording error:', error);
+      toast.error('Failed to toggle recording');
+    }
+  };
+
+  const handleManageParticipants = () => {
+    // This would open a participant management dialog
+    toast.info('Participant management coming soon');
   };
 
   const handleLeave = () => {
@@ -96,13 +156,29 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         lessonTitle={lessonTitle}
         participantCount={totalParticipants}
         onLeave={handleLeave}
+        userRole={userRole}
+        isRecording={isRecording}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex">
+        {/* Chat Panel */}
+        <AgoraChatPanel
+          rtmToken={rtmToken}
+          channelName={channel}
+          userId={uid.toString()}
+          userName={userRole === 'tutor' ? 'Teacher' : 'Student'}
+          userRole={userRole}
+        />
+
         {/* Whiteboard Area */}
         <div className="flex-1 p-6">
-          <Whiteboard isReadOnly={userRole === 'student'} />
+          <AgoraWhiteboard 
+            isReadOnly={userRole === 'student'} 
+            userRole={userRole}
+            roomToken="demo-whiteboard-token"
+            roomUuid="demo-whiteboard-room"
+          />
         </div>
 
         {/* Video Panel */}
@@ -115,12 +191,18 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         />
       </div>
 
-      {/* Controls */}
-      <VideoControls
+      {/* Enhanced Controls */}
+      <EnhancedVideoControls
         isAudioEnabled={isAudioEnabled}
         isVideoEnabled={isVideoEnabled}
+        isScreenSharing={isScreenSharing}
+        isRecording={isRecording}
+        userRole={userRole}
         onToggleAudio={toggleAudio}
         onToggleVideo={toggleVideo}
+        onToggleScreenShare={toggleScreenShare}
+        onToggleRecording={toggleRecording}
+        onManageParticipants={handleManageParticipants}
         onLeave={handleLeave}
       />
     </div>

@@ -1,17 +1,22 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share, Record } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface VideoRoomHeaderProps {
   lessonTitle: string;
   participantCount: number;
+  userRole: 'tutor' | 'student';
+  isRecording?: boolean;
   onLeave: () => void;
 }
 
 const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
   lessonTitle,
   participantCount,
+  userRole,
+  isRecording = false,
   onLeave
 }) => {
   return (
@@ -28,26 +33,40 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
         </Button>
         <div className="h-6 w-px bg-gray-300" />
         <div>
-          <h1 className="text-lg font-semibold text-gray-900 font-playfair">
-            {lessonTitle}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold text-gray-900 font-playfair">
+              {lessonTitle}
+            </h1>
+            {isRecording && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <Record className="h-3 w-3" />
+                Recording
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Users className="h-4 w-4" />
             <span>{participantCount} participants</span>
+            <span>•</span>
+            <span className="capitalize">{userRole}</span>
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
-          <Share className="h-4 w-4 mr-2" />
-          Share
-        </Button>
-        <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Invite
-        </Button>
-        <div className="h-6 w-px bg-gray-200 mx-1" />
+        {userRole === 'tutor' && (
+          <>
+            <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
+              <Share className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+            <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite
+            </Button>
+            <div className="h-6 w-px bg-gray-200 mx-1" />
+          </>
+        )}
         <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
           <Settings className="h-4 w-4" />
         </Button>
