@@ -1,3 +1,4 @@
+
 import { LessonSubject } from '@/constants/subjects';
 
 export interface Course {
@@ -8,7 +9,8 @@ export interface Course {
   status: 'draft' | 'published' | 'archived';
   subject?: LessonSubject;
   difficulty_level?: string;
-  price?: number; // Price in pence (e.g., 899 for £8.99)
+  price?: number; // Price in pence (e.g., 1299 for £12.99)
+  stripe_price_id?: string; // Stripe Price ID for subscriptions
   created_at: string;
   updated_at: string;
 }
@@ -20,6 +22,7 @@ export interface CourseFormData {
   subject: string; // Allows empty string for form placeholder
   difficulty_level?: string;
   cover_image_url: string;
+  stripe_price_id?: string; // Add Stripe Price ID to form
   status?: 'draft' | 'published' | 'archived';
 }
 

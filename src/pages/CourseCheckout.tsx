@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
@@ -40,7 +40,7 @@ const CourseCheckout = () => {
         title: "Admin Access",
         description: "Redirecting to course content with full access.",
       });
-      navigate(`/learning-hub/course/${course.id}`);
+      navigate(`/course/${course.id}`);
     }
   }, [course, isOwner, navigate, toast]);
 
@@ -61,7 +61,7 @@ const CourseCheckout = () => {
           title: "Access Already Available",
           description: "You already have access to this course!",
         });
-        navigate(`/learning-hub/course/${course.id}`);
+        navigate(`/course/${course.id}`);
       }
     } catch (error) {
       console.error('Error checking course access:', error);
@@ -83,7 +83,7 @@ const CourseCheckout = () => {
           title: "Access Already Available",
           description: "You already have access to this course!",
         });
-        navigate(`/learning-hub/course/${course.id}`);
+        navigate(`/course/${course.id}`);
         return;
       }
       
@@ -95,7 +95,7 @@ const CourseCheckout = () => {
           title: "Free trial activated!",
           description: "Your 7-day free trial has started. Enjoy full access to the course!",
         });
-        navigate(`/learning-hub/course/${course.id}`);
+        navigate(`/course/${course.id}`);
         return;
       }
       
@@ -122,7 +122,7 @@ const CourseCheckout = () => {
         description: "Your subscription is now active. Enjoy your 7-day free trial!",
       });
 
-      navigate(`/learning-hub/course/${course.id}`);
+      navigate(`/course/${course.id}`);
     } catch (error) {
       console.error('Error completing subscription setup:', error);
       toast({
@@ -170,7 +170,7 @@ const CourseCheckout = () => {
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/learning-hub/course/${course.id}`)}
+            onClick={() => navigate(`/course/${course.id}`)}
             className="mb-6 p-0 h-auto font-normal text-gray-600 hover:text-primary hover:bg-transparent"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -250,7 +250,7 @@ const CourseCheckout = () => {
         <div className="max-w-lg">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Start your free trial</h2>
-            <p className="text-gray-600">7 days free, then {course.price ? formatPrice(course.price) : '£8.99'}/month</p>
+            <p className="text-gray-600">7 days free, then {course.price ? formatPrice(course.price) : '£12.99'}/month</p>
           </div>
 
           {/* Show start trial button if no subscription data yet */}
@@ -300,4 +300,3 @@ const CourseCheckout = () => {
 };
 
 export default CourseCheckout;
-

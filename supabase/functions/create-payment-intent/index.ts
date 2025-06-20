@@ -52,7 +52,7 @@ serve(async (req) => {
 
     console.log("User authenticated:", user.email);
 
-    // Get course details
+    // Get course details including Stripe Price ID
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
       .select('*')
@@ -64,7 +64,13 @@ serve(async (req) => {
       throw new Error("Course not found");
     }
 
-    console.log("Course found:", course.title, "Price:", course.price);
+    console.log("Course found:", course.title, "Price:", course.price, "Stripe Price ID:", course.stripe_price_id);
+
+    // Check if course has a Stripe Price ID
+    if (!course.stripe_price_id) {
+      console.error("Course missing Stripe Price ID:", course.title);
+      throw new Error("Course pricing not configured. Please contact support.");
+    }
 
     // Check if user already has an active subscription for this course
     const { data: existingPurchase } = await supabaseClient
@@ -82,7 +88,7 @@ serve(async (req) => {
           status: 'active',
           trial_end: null,
           course_title: course.title,
-          amount: course.price || 899,
+          amount: course.price || 1299,
           requires_payment_method: false,
           message: "Course already purchased"
         }),
@@ -115,19 +121,12 @@ serve(async (req) => {
       console.log("New customer created:", customerId);
     }
 
-    // Create subscription with 7-day free trial
-    console.log("Creating Stripe subscription with trial");
+    // Create subscription with 7-day free trial using the Stripe Price ID
+    console.log("Creating Stripe subscription with trial using Price ID:", course.stripe_price_id);
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{
-        price_data: {
-          currency: "gbp",
-          product: `${course.title} Subscription`,
-          unit_amount: course.price || 899, // £8.99 per month
-          recurring: {
-            interval: "month",
-          },
-        },
+        price: course.stripe_price_id, // Use the Price ID from Stripe
       }],
       trial_period_days: 7, // 7-day free trial
       payment_behavior: 'default_incomplete',
@@ -156,7 +155,7 @@ serve(async (req) => {
         course_id: courseId,
         stripe_session_id: subscription.id,
         stripe_payment_intent_id: subscription.latest_invoice?.payment_intent?.id || subscription.id,
-        amount_paid: course.price || 899,
+        amount_paid: course.price || 1299,
         currency: 'gbp',
         status: subscription.status === 'trialing' ? 'completed' : 'pending'
       });
@@ -189,7 +188,7 @@ serve(async (req) => {
       status: subscription.status,
       trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       course_title: course.title,
-      amount: course.price || 899,
+      amount: course.price || 1299,
       requires_payment_method: subscription.status === 'incomplete'
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

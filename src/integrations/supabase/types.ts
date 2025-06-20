@@ -442,6 +442,7 @@ export type Database = {
           id: string
           price: number | null
           status: string
+          stripe_price_id: string | null
           subject: string | null
           title: string
           updated_at: string | null
@@ -454,6 +455,7 @@ export type Database = {
           id?: string
           price?: number | null
           status?: string
+          stripe_price_id?: string | null
           subject?: string | null
           title: string
           updated_at?: string | null
@@ -466,6 +468,7 @@ export type Database = {
           id?: string
           price?: number | null
           status?: string
+          stripe_price_id?: string | null
           subject?: string | null
           title?: string
           updated_at?: string | null
