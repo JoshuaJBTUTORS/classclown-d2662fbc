@@ -58,8 +58,8 @@ export const useAgora = () => {
 
         toast.success('Online room created successfully!');
         
-        // Wait a moment for the database to update
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Wait for database to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         return {
           channelName: data.channelName,
@@ -115,6 +115,14 @@ export const useAgora = () => {
           toast.error('Invalid room credentials received');
           return null;
         }
+
+        console.log('Valid Agora credentials received:', {
+          appId: data.appId,
+          channelName: data.channelName,
+          uid: data.uid,
+          hasRtcToken: !!data.rtcToken,
+          hasNetless: !!data.netlessRoomUuid
+        });
 
         return {
           channelName: data.channelName,
