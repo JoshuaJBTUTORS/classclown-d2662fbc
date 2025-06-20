@@ -43,7 +43,7 @@ const VideoRoom: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log('🧪 [TEST] Using updated official Agora token for testing');
+      console.log('🧪 [TEST] Using FRESH official Agora token for correct channel');
 
       // Fetch lesson details
       const { data: lessonData, error: lessonError } = await supabase
@@ -69,27 +69,28 @@ const VideoRoom: React.FC = () => {
       console.log('Lesson data loaded:', lessonData);
       setLesson(lessonData);
 
-      // TEST: Use the updated official Agora token
-      const officialToken = '007eJxSYBC+9+tEwQPhvMMP9C/kJbUu8GX88jBkT1W9l/lHFofWjusKDEaWpgaGyWZJpgbJBibmFokWxkkmyQZpBsZmqYZGZuYGf2aFZjQEMjLMy/FmYmRgZGBhYGQA8ZnAJDOYZAGTIAAIAAD//2YiIOY=';
+      // TEST: Use the FRESH official Agora token for the correct channel
+      const freshOfficialToken = '007eJxSYAjb6fWJdZfXXmv2fd83C5WXr9z+XMgp48sHC87nVRles38rMBhZmhoYJpslmRokG5iYWyRaGCeZJBukGRibpRoamZkbfJgTmtEQyMhQYl/OzMjAyMDCwMgA4jOBSWYwyQImtRlyUouL8/PiTU2STBJTLCzjDYxTTeJNUlOM4i3NDU3ijY0NLVOTTJIMjc3TGBgAAQAA///pTS1a';
       
-      // Create test credentials with updated official token
+      // Create test credentials with FRESH token for exact channel match
       const testCredentials = {
         appId: '29501c6b50c04f60a84c1ec705a7a67d', // Your Agora App ID
-        channelName: `lesson_${lessonId.replace(/-/g, '_')}`,
-        rtcToken: officialToken,
+        channelName: `lesson_${lessonId.replace(/-/g, '_')}`, // This should be: lesson_54b4ad89_03e4_4ed2_9714_3319eb4b137f
+        rtcToken: freshOfficialToken,
         uid: Math.floor(Math.random() * 1000000) + 1000,
-        rtmToken: officialToken, // Using same token for RTM for testing
+        rtmToken: freshOfficialToken, // Using same token for RTM for testing
         netlessRoomUuid: lessonData.netless_room_uuid,
         netlessRoomToken: lessonData.netless_room_token,
         netlessAppIdentifier: lessonData.netless_app_identifier
       };
 
-      console.log('🧪 [TEST] Using updated official Agora credentials:', {
+      console.log('🧪 [TEST] Using FRESH official Agora token for exact channel:', {
         appId: testCredentials.appId.substring(0, 8) + '...',
         channelName: testCredentials.channelName,
         uid: testCredentials.uid,
-        officialTokenLength: officialToken.length,
-        tokenPrefix: officialToken.substring(0, 20) + '...'
+        freshTokenLength: freshOfficialToken.length,
+        tokenPrefix: freshOfficialToken.substring(0, 20) + '...',
+        channelMatch: testCredentials.channelName === 'lesson_54b4ad89_03e4_4ed2_9714_3319eb4b137f'
       });
       
       setAgoraCredentials(testCredentials);
@@ -139,8 +140,9 @@ const VideoRoom: React.FC = () => {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <div className="text-center">
-            <p className="text-gray-600 font-medium">🧪 Testing with updated official Agora token...</p>
+            <p className="text-gray-600 font-medium">🧪 Testing FRESH official Agora token...</p>
             <p className="text-sm text-gray-500 mt-1">Channel: {lesson?.title}</p>
+            <p className="text-xs text-gray-400 mt-1">Fresh token for correct channel</p>
           </div>
         </div>
       </div>
@@ -160,8 +162,9 @@ const VideoRoom: React.FC = () => {
               {error || 'Video conference not available'}
             </p>
             <div className="text-sm text-gray-600 space-y-1">
-              <p><strong>🧪 TEST MODE:</strong> Using updated official Agora token</p>
+              <p><strong>🧪 TEST MODE:</strong> Using FRESH official Agora token</p>
               <p><strong>Lesson:</strong> {lessonId}</p>
+              <p><strong>Channel:</strong> lesson_54b4ad89_03e4_4ed2_9714_3319eb4b137f</p>
             </div>
             <div className="space-y-3 mt-6">
               <Button onClick={handleRetry} className="w-full">
@@ -187,19 +190,20 @@ const VideoRoom: React.FC = () => {
     appIdentifier: agoraCredentials.netlessAppIdentifier
   } : undefined;
 
-  console.log('🧪 [TEST] Rendering video room with updated official Agora token:', {
+  console.log('🧪 [TEST] Rendering video room with FRESH official Agora token:', {
     appId: agoraCredentials.appId,
     channel: agoraCredentials.channelName,
     uid: agoraCredentials.uid,
     role: videoRoomRole,
     tokenValid: !!agoraCredentials.rtcToken,
-    hasNetless: !!netlessCredentials
+    hasNetless: !!netlessCredentials,
+    tokenIsFresh: true
   });
 
   return (
     <AgoraRTCProvider client={agoraClient}>
-      <div className="fixed top-4 right-4 z-50 bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded text-sm font-medium">
-        🧪 TEST MODE: Using Updated Official Agora Token
+      <div className="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-800 px-3 py-2 rounded text-sm font-medium">
+        🧪 TEST MODE: Using FRESH Official Agora Token
       </div>
       <AgoraVideoRoom
         appId={agoraCredentials.appId}
