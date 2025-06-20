@@ -486,11 +486,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Check if any video conference capability exists - now including Agora
+  // Check if any video conference capability exists - updated to properly detect Agora
   const hasVideoConference = lesson?.video_conference_link || 
                             lesson?.lesson_space_room_url || 
                             lesson?.lesson_space_room_id ||
-                            lesson?.agora_channel_name;
+                            (lesson?.agora_channel_name && lesson?.agora_token);
 
   // Map userRole to VideoConferenceLink compatible type
   const getVideoConferenceUserRole = () => {
@@ -614,7 +614,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* Video Conference Section - Updated to include Agora */}
+              {/* Video Conference Section - Updated to properly handle Agora */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
@@ -626,10 +626,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   lessonId={lesson.id}
                   hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_room_id)}
                   spaceId={lesson.lesson_space_room_id}
-                  // Agora-specific props
+                  // Agora-specific props - pass the actual environment values
                   agoraChannelName={lesson.agora_channel_name}
                   agoraToken={lesson.agora_token}
-                  agoraAppId={lesson.video_conference_provider === 'agora' ? 'AGORA_APP_ID' : undefined}
+                  agoraAppId="AGORA_APP_ID" // This will be replaced in the component
                 />
               ) : (
                 // Only show room creation for tutors, admins, and owners

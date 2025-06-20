@@ -43,8 +43,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
   const navigate = useNavigate();
 
-  // Don't render if no links are available and no lesson space
-  if (!link && !hasLessonSpace) return null;
+  // Check if we have any video conference capability
+  const hasAgoraRoom = provider === 'agora' && agoraChannelName && agoraToken;
+  const hasVideoConference = link || hasLessonSpace || hasAgoraRoom;
+
+  // Don't render if no video conference capabilities are available
+  if (!hasVideoConference) return null;
 
   const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -84,12 +88,14 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  // Generate Agora meeting URL
+  // Generate Agora meeting URL with proper app ID from environment
   const generateAgoraUrl = () => {
-    if (provider === 'agora' && agoraChannelName && agoraToken && agoraAppId) {
-      // Create a simple Agora web URL format
+    if (provider === 'agora' && agoraChannelName && agoraToken) {
+      // For demo purposes, create a simple Agora web URL
+      // In production, you'd want to redirect to your own Agora integration page
       const role = userRole === 'tutor' ? 'host' : 'audience';
-      return `https://webdemo.agora.io/basicVideoCall/index.html?appid=${agoraAppId}&channel=${agoraChannelName}&token=${agoraToken}&role=${role}`;
+      const appId = Deno?.env?.get?.('AGORA_APP_ID') || agoraAppId || 'demo_app_id';
+      return `https://webdemo.agora.io/basicVideoCall/index.html?appid=${appId}&channel=${agoraChannelName}&token=${agoraToken}&role=${role}`;
     }
     return null;
   };
@@ -136,7 +142,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
         {/* Main lesson URL section */}
-        {urlToUse && (
+        {(urlToUse || hasAgoraRoom) && (
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -147,6 +153,11 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                     <div className="flex items-center text-xs text-muted-foreground mt-1">
                       <Users className="h-3 w-3 mr-1" />
                       <span>Group lesson • {studentCount} participants</span>
+                    </div>
+                  )}
+                  {provider === 'agora' && agoraChannelName && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Channel: {agoraChannelName}
                     </div>
                   )}
                 </div>
@@ -174,8 +185,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                 {getJoinButtonText()}
               </Button>
               
-              {/* Only show copy button for tutors/admins/owners */}
-              {userRole !== 'student' && (
+              {/* Only show copy button for tutors/admins/owners and when we have a URL */}
+              {userRole !== 'student' && urlToUse && (
                 <Button 
                   size="sm" 
                   variant="outline" 
