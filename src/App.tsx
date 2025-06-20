@@ -21,6 +21,8 @@ import LearningHubMyCourses from './pages/LearningHubMyCourses';
 import LearningHubSettings from './pages/LearningHubSettings';
 import LearningHubRevision from './pages/LearningHubRevision';
 import LearningHubAssessments from './pages/LearningHubAssessments';
+import CourseDetail from './pages/CourseDetail';
+import CourseEdit from './pages/CourseEdit';
 
 function App() {
   const queryClient = new QueryClient();
@@ -90,6 +92,24 @@ function App() {
                       <VideoRoom />
                     </ProtectedRoute>
                   } 
+                />
+
+                {/* Course routes - standalone pages */}
+                <Route
+                  path="/course/:id"
+                  element={
+                    <ProtectedRoute>
+                      <CourseDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course/:id/edit"
+                  element={
+                    <ProtectedRoute>
+                      <CourseEdit />
+                    </ProtectedRoute>
+                  }
                 />
 
                 {/* Learning Hub routes */}
