@@ -1,13 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  useJoin,
-  useLocalCameraTrack,
-  useLocalMicrophoneTrack,
-  usePublish,
-  useRTCClient,
-  useRemoteAudioTracks,
-  useRemoteUsers,
-} from 'agora-rtc-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { toast } from 'sonner';
 import VideoRoomHeader from './VideoRoomHeader';
@@ -42,230 +33,293 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   netlessCredentials,
   onLeave
 }) => {
+  // State management
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isJoined, setIsJoined] = useState(false);
-  const [rtmToken, setRtmToken] = useState<string>('');
-  const [screenTrack, setScreenTrack] = useState<any>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting');
   const [connectionError, setConnectionError] = useState<string | null>(null);
-
-  const { startRecording, stopRecording } = useAgora();
-  const agoraEngine = useRTCClient();
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   
-  // Create local tracks following Agora SDK patterns
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(isAudioEnabled);
-  const { localCameraTrack } = useLocalCameraTrack(isVideoEnabled);
-  const remoteUsers = useRemoteUsers();
-  const { audioTracks } = useRemoteAudioTracks(remoteUsers);
+  // Agora client and tracks
+  const [agoraClient, setAgoraClient] = useState<any>(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
+  const [localVideoTrack, setLocalVideoTrack] = useState<any>(null);
+  const [screenTrack, setScreenTrack] = useState<any>(null);
+  const [remoteUsers, setRemoteUsers] = useState<any[]>([]);
+  const [rtmToken, setRtmToken] = useState<string>('');
+  
+  const { startRecording, stopRecording } = useAgora();
 
-  // Publish local tracks
-  usePublish([localMicrophoneTrack, localCameraTrack]);
+  // Debug logging utility
+  const addDebugLog = useCallback((message: string, data?: any) => {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    const logMessage = `[${timestamp}] ${message}${data ? ': ' + JSON.stringify(data, null, 2) : ''}`;
+    console.log('🐛 [AGORA-DEBUG]', logMessage);
+    setDebugLogs(prev => [...prev.slice(-10), logMessage]); // Keep last 10 logs
+  }, []);
 
-  // Join the channel following Agora documentation
-  useJoin({
-    appid: appId,
-    channel: channel,
-    token: token,
-    uid: uid,
-  }, isJoined);
-
-  // Enhanced debugging without invalid token parsing
+  // Connection timeout handler
   useEffect(() => {
-    console.log('🔍 [DEBUG] Agora connection parameters:', {
-      appId,
-      channel,
-      uid,
-      tokenLength: token?.length,
-      tokenPrefix: token?.substring(0, 20) + '...',
-      userRole,
-      isJoined,
-      connectionStatus
-    });
-
-    // Basic parameter validation (without invalid token parsing)
-    if (!appId || appId.length !== 32) {
-      console.error('❌ [ERROR] Invalid App ID:', { appId, length: appId?.length });
-      setConnectionError(`Invalid App ID format (length: ${appId?.length}, expected: 32)`);
-      setConnectionStatus('failed');
-      return;
-    }
-
-    if (!token || token.length < 10) {
-      console.error('❌ [ERROR] Invalid token:', { tokenLength: token?.length });
-      setConnectionError('Invalid or missing token');
-      setConnectionStatus('failed');
-      return;
-    }
-
-    if (!channel) {
-      console.error('❌ [ERROR] Missing channel name');
-      setConnectionError('Missing channel name');
-      setConnectionStatus('failed');
-      return;
-    }
-
-    console.log('✅ [SUCCESS] Basic parameters validated, attempting connection...');
-  }, [appId, channel, token, uid]);
-
-  // Setup event listeners with enhanced error handling
-  useEffect(() => {
-    if (!agoraEngine) return;
-
-    const handleUserPublished = async (user: any, mediaType: 'audio' | 'video') => {
-      console.log('👤 [USER] User published:', user.uid, mediaType);
-      try {
-        await agoraEngine.subscribe(user, mediaType);
-        
-        if (mediaType === 'video') {
-          console.log('📹 [VIDEO] Remote video track available for user:', user.uid);
-        }
-        if (mediaType === 'audio') {
-          user.audioTrack?.play();
-        }
-      } catch (error) {
-        console.error('❌ [ERROR] Failed to subscribe to user:', error);
-      }
-    };
-
-    const handleUserUnpublished = (user: any, mediaType: 'audio' | 'video') => {
-      console.log('👤 [USER] User unpublished:', user.uid, mediaType);
-    };
-
-    const handleConnectionStateChanged = (newState: string, reason: string) => {
-      console.log('🔄 [CONNECTION] State changed:', { newState, reason });
-      
-      if (newState === 'CONNECTED') {
-        setConnectionStatus('connected');
-        setConnectionError(null);
-        console.log('✅ [SUCCESS] Successfully connected to Agora');
-      } else if (newState === 'FAILED' || newState === 'DISCONNECTED') {
+    if (connectionStatus === 'connecting') {
+      const timeout = setTimeout(() => {
+        addDebugLog('❌ CONNECTION TIMEOUT after 10 seconds');
         setConnectionStatus('failed');
-        setConnectionError(`Connection ${newState.toLowerCase()}: ${reason}`);
-        console.log('❌ [ERROR] Connection failed:', { newState, reason });
-      }
-    };
+        setConnectionError('Connection timeout - Unable to connect to Agora servers after 10 seconds');
+      }, 10000);
 
-    const handleError = (error: any) => {
-      console.error('❌ [AGORA-ERROR] SDK Error:', error);
-      setConnectionError(`Agora SDK Error: ${error.message || error.code || 'Unknown error'}`);
-      setConnectionStatus('failed');
-      
-      // Specific error handling
-      if (error.code === 'CAN_NOT_GET_GATEWAY_SERVER') {
-        setConnectionError('Invalid App ID - cannot connect to Agora servers. Please verify your Agora App ID is correct.');
-      } else if (error.code === 'INVALID_VENDOR_KEY') {
-        setConnectionError('Invalid vendor key - App ID not found in Agora system');
-      } else if (error.code === 'TOKEN_EXPIRED') {
-        setConnectionError('Token has expired - please refresh the page');
-      }
-    };
-
-    // Set up event listeners
-    agoraEngine.on('user-published', handleUserPublished);
-    agoraEngine.on('user-unpublished', handleUserUnpublished);
-    agoraEngine.on('connection-state-changed', handleConnectionStateChanged);
-    agoraEngine.on('error', handleError);
-
-    return () => {
-      agoraEngine.off('user-published', handleUserPublished);
-      agoraEngine.off('user-unpublished', handleUserUnpublished);
-      agoraEngine.off('connection-state-changed', handleConnectionStateChanged);
-      agoraEngine.off('error', handleError);
-    };
-  }, [agoraEngine]);
-
-  // Initialize connection
-  useEffect(() => {
-    console.log('🚀 [INIT] Initializing Agora Video Room with credentials:', {
-      appId: appId?.substring(0, 8) + '...',
-      channel,
-      uid,
-      userRole,
-      tokenValid: !!token && token.length > 10
-    });
-    
-    // Auto-join when component mounts
-    setIsJoined(true);
-    setRtmToken(token); // Use RTC token as RTM token for now
-    
-    toast.success('Connecting to video conference...');
-
-    return () => {
-      // Cleanup when component unmounts
-      if (screenTrack) {
-        screenTrack.close();
-      }
-    };
-  }, [appId, channel, token, uid]);
-
-  // Handle connection status changes
-  useEffect(() => {
-    if (connectionStatus === 'connected') {
-      toast.success('Successfully joined video conference');
-    } else if (connectionStatus === 'failed') {
-      toast.error(`Failed to connect: ${connectionError || 'Unknown error'}`);
+      return () => clearTimeout(timeout);
     }
-  }, [connectionStatus, connectionError]);
+  }, [connectionStatus, addDebugLog]);
 
-  // Play remote audio tracks
+  // Initialize Agora client and connect
   useEffect(() => {
-    audioTracks.forEach((track) => {
-      track.play();
-    });
-  }, [audioTracks]);
+    let mounted = true;
+    
+    const initializeAgora = async () => {
+      try {
+        addDebugLog('🚀 STARTING Agora initialization', {
+          appId: appId?.substring(0, 8) + '...',
+          channel,
+          uid,
+          userRole,
+          tokenLength: token?.length,
+          tokenPrefix: token?.substring(0, 15) + '...'
+        });
+
+        // Validate parameters immediately
+        if (!appId || appId.length !== 32) {
+          throw new Error(`Invalid App ID format. Length: ${appId?.length}, Expected: 32`);
+        }
+
+        if (!token || token.length < 50) {
+          throw new Error(`Invalid token format. Length: ${token?.length}, Expected: >50`);
+        }
+
+        if (!channel) {
+          throw new Error('Missing channel name');
+        }
+
+        addDebugLog('✅ Parameters validated');
+
+        // Create Agora client with enhanced configuration
+        const client = AgoraRTC.createClient({ 
+          mode: 'rtc', 
+          codec: 'vp8',
+          role: userRole === 'tutor' ? 'host' : 'audience'
+        });
+
+        if (!mounted) return;
+        setAgoraClient(client);
+        addDebugLog('✅ Agora client created', { mode: 'rtc', codec: 'vp8', role: userRole });
+
+        // Set up comprehensive event listeners BEFORE joining
+        client.on('connection-state-changed', (newState: string, reason: string) => {
+          addDebugLog('🔄 Connection state changed', { newState, reason });
+          
+          if (newState === 'CONNECTED') {
+            setConnectionStatus('connected');
+            setConnectionError(null);
+            addDebugLog('✅ Successfully connected to Agora');
+            toast.success('Connected to video conference');
+          } else if (newState === 'FAILED' || newState === 'DISCONNECTED') {
+            setConnectionStatus('failed');
+            const errorMsg = `Connection ${newState.toLowerCase()}: ${reason}`;
+            setConnectionError(errorMsg);
+            addDebugLog('❌ Connection failed', { newState, reason });
+            toast.error(`Connection failed: ${reason}`);
+          } else if (newState === 'CONNECTING') {
+            setConnectionStatus('connecting');
+            addDebugLog('🔄 Connection in progress...');
+          }
+        });
+
+        client.on('user-published', async (user: any, mediaType: 'audio' | 'video') => {
+          addDebugLog('👤 User published', { uid: user.uid, mediaType });
+          try {
+            await client.subscribe(user, mediaType);
+            
+            if (mediaType === 'video') {
+              addDebugLog('📹 Remote video track subscribed', { uid: user.uid });
+            }
+            if (mediaType === 'audio') {
+              user.audioTrack?.play();
+              addDebugLog('🔊 Remote audio track playing', { uid: user.uid });
+            }
+
+            // Update remote users
+            setRemoteUsers(prev => {
+              const existing = prev.find(u => u.uid === user.uid);
+              if (existing) {
+                return prev.map(u => u.uid === user.uid ? user : u);
+              } else {
+                return [...prev, user];
+              }
+            });
+          } catch (error) {
+            addDebugLog('❌ Failed to subscribe to user', { uid: user.uid, error: error.message });
+          }
+        });
+
+        client.on('user-unpublished', (user: any, mediaType: 'audio' | 'video') => {
+          addDebugLog('👤 User unpublished', { uid: user.uid, mediaType });
+          setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
+        });
+
+        client.on('user-left', (user: any) => {
+          addDebugLog('👤 User left', { uid: user.uid });
+          setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
+        });
+
+        client.on('error', (error: any) => {
+          addDebugLog('❌ Agora SDK Error', { 
+            code: error.code, 
+            message: error.message,
+            details: error 
+          });
+          
+          let userFriendlyError = `Agora Error: ${error.message || error.code || 'Unknown error'}`;
+          
+          // Specific error handling
+          if (error.code === 'CAN_NOT_GET_GATEWAY_SERVER') {
+            userFriendlyError = 'Invalid App ID - cannot connect to Agora servers';
+          } else if (error.code === 'INVALID_VENDOR_KEY') {
+            userFriendlyError = 'Invalid App ID - not found in Agora system';
+          } else if (error.code === 'TOKEN_EXPIRED') {
+            userFriendlyError = 'Token has expired - please refresh';
+          } else if (error.code === 'INVALID_TOKEN') {
+            userFriendlyError = 'Invalid token format or configuration';
+          }
+          
+          setConnectionError(userFriendlyError);
+          setConnectionStatus('failed');
+          toast.error(userFriendlyError);
+        });
+
+        addDebugLog('✅ Event listeners set up');
+
+        // Create local tracks
+        try {
+          const [audioTrack, videoTrack] = await Promise.all([
+            AgoraRTC.createMicrophoneAudioTrack(),
+            AgoraRTC.createCameraVideoTrack()
+          ]);
+
+          if (!mounted) {
+            audioTrack?.close();
+            videoTrack?.close();
+            return;
+          }
+
+          setLocalAudioTrack(audioTrack);
+          setLocalVideoTrack(videoTrack);
+          addDebugLog('✅ Local tracks created');
+        } catch (trackError) {
+          addDebugLog('⚠️ Failed to create local tracks', { error: trackError.message });
+          // Continue without local tracks - user can enable them later
+        }
+
+        // Join the channel with detailed logging
+        addDebugLog('🔗 Attempting to join channel...', {
+          appId: appId.substring(0, 8) + '...',
+          channel,
+          token: token.substring(0, 15) + '...',
+          uid
+        });
+
+        const joinResult = await client.join(appId, channel, token, uid);
+        
+        if (!mounted) return;
+        
+        addDebugLog('✅ Successfully joined channel', { result: joinResult });
+
+        // Publish local tracks if available
+        if (localAudioTrack || localVideoTrack) {
+          const tracksToPublish = [localAudioTrack, localVideoTrack].filter(Boolean);
+          if (tracksToPublish.length > 0) {
+            await client.publish(tracksToPublish);
+            addDebugLog('✅ Local tracks published', { trackCount: tracksToPublish.length });
+          }
+        }
+
+        setRtmToken(token); // Use RTC token as RTM token
+        addDebugLog('🎉 Agora initialization complete');
+
+      } catch (error: any) {
+        if (!mounted) return;
+        
+        addDebugLog('❌ CRITICAL: Agora initialization failed', {
+          error: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        
+        setConnectionStatus('failed');
+        setConnectionError(`Initialization failed: ${error.message}`);
+        toast.error(`Failed to connect: ${error.message}`);
+      }
+    };
+
+    initializeAgora();
+
+    return () => {
+      mounted = false;
+      // Cleanup will be handled by handleLeave
+    };
+  }, [appId, channel, token, uid, userRole, addDebugLog]);
 
   const toggleAudio = useCallback(() => {
     setIsAudioEnabled(prev => {
       const newState = !prev;
+      if (localAudioTrack) {
+        localAudioTrack.setEnabled(newState);
+      }
       toast.success(newState ? 'Microphone unmuted' : 'Microphone muted');
       return newState;
     });
-  }, []);
+  }, [localAudioTrack]);
 
   const toggleVideo = useCallback(() => {
     setIsVideoEnabled(prev => {
       const newState = !prev;
+      if (localVideoTrack) {
+        localVideoTrack.setEnabled(newState);
+      }
       toast.success(newState ? 'Camera turned on' : 'Camera turned off');
       return newState;
     });
-  }, []);
+  }, [localVideoTrack]);
 
   const toggleScreenShare = useCallback(async () => {
-    if (!agoraEngine) {
+    if (!agoraClient) {
       toast.error('Video engine not ready');
       return;
     }
 
     try {
       if (!isScreenSharing) {
-        // Start screen sharing using AgoraRTC
         const newScreenTrack = await AgoraRTC.createScreenVideoTrack({
           encoderConfig: "1080p_1",
         });
         
-        // Unpublish camera and publish screen
-        if (localCameraTrack) {
-          await agoraEngine.unpublish([localCameraTrack]);
+        if (localVideoTrack) {
+          await agoraClient.unpublish([localVideoTrack]);
         }
-        await agoraEngine.publish([newScreenTrack as any]);
+        await agoraClient.publish([newScreenTrack]);
         
         setScreenTrack(newScreenTrack);
         setIsScreenSharing(true);
         toast.success('Screen sharing started');
       } else {
-        // Stop screen sharing
         if (screenTrack) {
-          await agoraEngine.unpublish([screenTrack]);
+          await agoraClient.unpublish([screenTrack]);
           screenTrack.close();
           setScreenTrack(null);
         }
         
-        // Re-publish camera
-        if (localCameraTrack) {
-          await agoraEngine.publish([localCameraTrack]);
+        if (localVideoTrack) {
+          await agoraClient.publish([localVideoTrack]);
         }
         
         setIsScreenSharing(false);
@@ -275,7 +329,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       console.error('Screen sharing error:', error);
       toast.error('Failed to toggle screen sharing');
     }
-  }, [agoraEngine, localCameraTrack, screenTrack, isScreenSharing]);
+  }, [agoraClient, localVideoTrack, screenTrack, isScreenSharing]);
 
   const toggleRecording = useCallback(async () => {
     if (userRole !== 'tutor') {
@@ -307,48 +361,82 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
 
   const handleLeave = useCallback(async () => {
     try {
-      // Clean up local tracks
+      addDebugLog('🚪 Leaving channel and cleaning up...');
+      
+      // Stop local tracks
+      if (localAudioTrack) {
+        localAudioTrack.close();
+        setLocalAudioTrack(null);
+      }
+      if (localVideoTrack) {
+        localVideoTrack.close();
+        setLocalVideoTrack(null);
+      }
       if (screenTrack) {
         screenTrack.close();
         setScreenTrack(null);
       }
       
-      // Leave the channel
-      setIsJoined(false);
+      // Leave channel
+      if (agoraClient) {
+        await agoraClient.leave();
+        addDebugLog('✅ Left Agora channel');
+      }
       
       toast.success('Left video conference');
       onLeave();
     } catch (error) {
-      console.error('Error leaving channel:', error);
+      addDebugLog('❌ Error during cleanup', { error: error.message });
       toast.error('Error leaving conference');
       onLeave();
     }
-  }, [screenTrack, onLeave]);
+  }, [agoraClient, localAudioTrack, localVideoTrack, screenTrack, onLeave, addDebugLog]);
 
   const handleRetryConnection = useCallback(() => {
-    console.log('🔄 [RETRY] Attempting to reconnect...');
+    addDebugLog('🔄 Manual retry requested');
     setConnectionStatus('connecting');
     setConnectionError(null);
-    setIsJoined(false);
+    setDebugLogs([]);
     
-    // Wait a moment then try to rejoin
-    setTimeout(() => {
-      setIsJoined(true);
-    }, 1000);
-  }, []);
+    // Force remount by changing a key prop would be better, but for now:
+    window.location.reload();
+  }, [addDebugLog]);
 
   const totalParticipants = remoteUsers.length + 1;
 
-  // Show connection status with detailed error information
+  // Show detailed connection status
   if (connectionStatus === 'connecting') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-2xl">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Connecting to video conference...</p>
-          <p className="text-sm text-gray-500 mt-2">Channel: {channel}</p>
-          <p className="text-xs text-gray-400 mt-1">App ID: {appId?.substring(0, 8)}...</p>
-          <p className="text-xs text-gray-400 mt-1">Token: {token?.substring(0, 15)}...</p>
+          <p className="text-gray-600 font-medium mb-4">Connecting to video conference...</p>
+          
+          <div className="bg-white rounded-lg p-4 text-sm text-left">
+            <h4 className="font-semibold mb-2">Connection Details:</h4>
+            <div className="space-y-1 text-gray-600">
+              <p><strong>Channel:</strong> {channel}</p>
+              <p><strong>App ID:</strong> {appId?.substring(0, 8)}...</p>
+              <p><strong>UID:</strong> {uid}</p>
+              <p><strong>Token:</strong> {token?.substring(0, 15)}...</p>
+              <p><strong>Role:</strong> {userRole}</p>
+            </div>
+            
+            {debugLogs.length > 0 && (
+              <div className="mt-4">
+                <h5 className="font-semibold mb-2">Debug Logs:</h5>
+                <div className="bg-gray-100 rounded p-2 max-h-32 overflow-y-auto text-xs">
+                  {debugLogs.map((log, index) => (
+                    <div key={index} className="mb-1">{log}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <p className="text-xs text-gray-500 mt-4">
+            Connection will timeout after 10 seconds if unsuccessful
+          </p>
         </div>
       </div>
     );
@@ -357,7 +445,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   if (connectionStatus === 'failed') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center max-w-lg">
+        <div className="text-center max-w-2xl">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
             <h3 className="text-lg font-semibold text-red-800 mb-2">
               Connection Failed
@@ -365,16 +453,30 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             <p className="text-red-600 mb-4">
               {connectionError || 'Failed to connect to video conference'}
             </p>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p><strong>Channel:</strong> {channel}</p>
-              <p><strong>App ID:</strong> {appId?.substring(0, 8)}...</p>
-              <p><strong>UID:</strong> {uid}</p>
-              <p><strong>Token Length:</strong> {token?.length}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                <strong>Note:</strong> Token validation removed - relying on Agora SDK validation
-              </p>
+            
+            <div className="bg-white rounded p-4 text-sm text-left">
+              <h4 className="font-semibold mb-2">Connection Attempted:</h4>
+              <div className="space-y-1 text-gray-600">
+                <p><strong>Channel:</strong> {channel}</p>
+                <p><strong>App ID:</strong> {appId?.substring(0, 8)}... (Length: {appId?.length})</p>
+                <p><strong>UID:</strong> {uid}</p>
+                <p><strong>Token Length:</strong> {token?.length}</p>
+                <p><strong>Role:</strong> {userRole}</p>
+              </div>
+              
+              {debugLogs.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="font-semibold mb-2">Debug Logs:</h5>
+                  <div className="bg-gray-100 rounded p-2 max-h-40 overflow-y-auto text-xs">
+                    {debugLogs.map((log, index) => (
+                      <div key={index} className="mb-1">{log}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+          
           <div className="space-y-3">
             <button 
               onClick={handleRetryConnection}
@@ -394,8 +496,14 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     );
   }
 
+  // Successfully connected - render the video room
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Debug indicator */}
+      <div className="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-800 px-3 py-2 rounded text-sm font-medium">
+        🐛 DEBUG MODE: Connection Successful
+      </div>
+
       {/* Header */}
       <VideoRoomHeader
         lessonTitle={lessonTitle}
@@ -430,7 +538,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
 
         {/* Video Panel */}
         <VideoPanel
-          localCameraTrack={localCameraTrack}
+          localCameraTrack={localVideoTrack}
           remoteUsers={remoteUsers}
           isAudioEnabled={isAudioEnabled}
           isVideoEnabled={isVideoEnabled}
