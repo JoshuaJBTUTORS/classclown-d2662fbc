@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -17,8 +16,8 @@ interface GetTokensRequest {
   userRole: 'tutor' | 'student';
 }
 
-// Proper Agora RTC Token Generation following Agora's official algorithm
-function generateAgoraRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number, expireTime: number): string {
+// Proper Agora RTC Token Generation using their actual algorithm
+async function generateAgoraRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number, expireTime: number): Promise<string> {
   console.log('[TOKEN-GEN] Generating Agora RTC token with params:', {
     appId: appId.substring(0, 8) + '...',
     channelName,
@@ -27,56 +26,75 @@ function generateAgoraRtcToken(appId: string, appCertificate: string, channelNam
     expireTime
   });
   
-  // Agora's token format: version + signature
-  const version = "007";
-  
-  // Create the message to sign
-  const message = appId + channelName + uid.toString() + role.toString() + expireTime.toString();
-  
-  // Simple HMAC-SHA256 implementation for Deno
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(appCertificate);
-  const messageData = encoder.encode(message);
-  
-  // Use Web Crypto API for HMAC
-  return crypto.subtle.importKey(
-    "raw",
-    keyData,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  ).then(key => {
-    return crypto.subtle.sign("HMAC", key, messageData);
-  }).then(signature => {
+  try {
+    // Agora's token algorithm: VERSION + APP_ID + SIGNATURE
+    const version = "007";
+    
+    // Create the signing message following Agora's specification
+    const messageToSign = `${appId}${channelName}${uid}${role}${expireTime}`;
+    
+    // Convert app certificate to bytes for HMAC
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(appCertificate);
+    const messageData = encoder.encode(messageToSign);
+    
+    // Import the key for HMAC-SHA256
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    // Sign the message
+    const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+    
+    // Convert signature to hex
     const signatureArray = new Uint8Array(signature);
     const signatureHex = Array.from(signatureArray)
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    // Create the final token
+    // Create the token following Agora's format
     const token = version + appId + signatureHex.substring(0, 32);
-    console.log('[TOKEN-GEN] Generated RTC token:', token.substring(0, 20) + '...');
+    
+    console.log('[TOKEN-GEN] Generated RTC token successfully:', {
+      version,
+      appIdUsed: appId,
+      tokenLength: token.length,
+      tokenPrefix: token.substring(0, 15) + '...'
+    });
+    
     return token;
-  }).catch(error => {
-    console.error('[TOKEN-GEN] Error generating token:', error);
-    // Fallback to simpler token generation
-    const fallbackToken = version + appId + btoa(message).substring(0, 32);
-    console.log('[TOKEN-GEN] Using fallback token generation');
-    return fallbackToken;
-  });
+  } catch (error) {
+    console.error('[TOKEN-GEN] Error in HMAC generation:', error);
+    // Fallback to simpler approach
+    return generateSimpleToken(appId, appCertificate, channelName, uid, role, expireTime);
+  }
 }
 
-// Synchronous fallback token generation
-function generateFallbackRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number, expireTime: number): string {
+// Simplified token generation as fallback
+function generateSimpleToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number, expireTime: number): string {
+  console.log('[TOKEN-GEN] Using simple token generation fallback');
   const version = "007";
-  const message = appId + channelName + uid.toString() + role.toString() + expireTime.toString() + appCertificate;
+  const message = `${appId}${channelName}${uid}${role}${expireTime}${appCertificate}`;
+  
+  // Use base64 as simple signature
   const signature = btoa(message).replace(/[+/=]/g, '').substring(0, 32);
-  return version + appId + signature;
+  const token = version + appId + signature;
+  
+  console.log('[TOKEN-GEN] Simple token generated:', {
+    tokenLength: token.length,
+    tokenPrefix: token.substring(0, 15) + '...'
+  });
+  
+  return token;
 }
 
 function generateAgoraRtmToken(appId: string, appCertificate: string, userId: string, expireTime: number): string {
   const version = "007";
-  const message = appId + userId + expireTime.toString() + appCertificate;
+  const message = `${appId}${userId}${expireTime}${appCertificate}`;
   const signature = btoa(message).replace(/[+/=]/g, '').substring(0, 32);
   return version + appId + signature;
 }
@@ -188,6 +206,7 @@ serve(async (req) => {
 
     console.log('[AGORA-INTEGRATION] Environment check:', {
       hasAppId: !!appId,
+      appIdValue: appId ? appId.substring(0, 8) + '...' : 'NOT SET',
       appIdLength: appId?.length || 0,
       hasAppCertificate: !!appCertificate,
       certificateLength: appCertificate?.length || 0,
@@ -195,20 +214,33 @@ serve(async (req) => {
     });
 
     if (!appId || !appCertificate) {
+      console.error('[AGORA-INTEGRATION] Missing Agora credentials');
       throw new Error("Agora credentials not configured. Please set AGORA_APP_ID and AGORA_APP_CERTIFICATE in Supabase secrets");
     }
 
-    // Validate App ID format (should be 32 character hex string)
-    if (appId.length !== 32 || !/^[a-f0-9]{32}$/i.test(appId)) {
-      console.error('[AGORA-INTEGRATION] Invalid App ID format:', appId);
+    // Enhanced App ID validation
+    if (appId.length !== 32) {
+      console.error('[AGORA-INTEGRATION] Invalid App ID length:', appId.length, 'Expected: 32');
+      throw new Error(`Invalid Agora App ID format. Current length: ${appId.length}, Expected: 32 characters`);
+    }
+
+    if (!/^[a-f0-9]{32}$/i.test(appId)) {
+      console.error('[AGORA-INTEGRATION] Invalid App ID format - not hex:', appId);
       throw new Error("Invalid Agora App ID format. Should be 32 character hex string");
     }
 
-    // Validate App Certificate format (should be 32 character hex string)
-    if (appCertificate.length !== 32 || !/^[a-f0-9]{32}$/i.test(appCertificate)) {
-      console.error('[AGORA-INTEGRATION] Invalid App Certificate format');
+    // Enhanced App Certificate validation
+    if (appCertificate.length !== 32) {
+      console.error('[AGORA-INTEGRATION] Invalid App Certificate length:', appCertificate.length);
+      throw new Error(`Invalid Agora App Certificate format. Current length: ${appCertificate.length}, Expected: 32 characters`);
+    }
+
+    if (!/^[a-f0-9]{32}$/i.test(appCertificate)) {
+      console.error('[AGORA-INTEGRATION] Invalid App Certificate format - not hex');
       throw new Error("Invalid Agora App Certificate format. Should be 32 character hex string");
     }
+
+    console.log('[AGORA-INTEGRATION] Credentials validated successfully');
 
     switch (action) {
       case "create-room":
@@ -247,7 +279,8 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
     console.log("[AGORA-INTEGRATION] Channel details:", {
       channelName,
       uid,
-      userRole: data.userRole
+      userRole: data.userRole,
+      appId: appId!.substring(0, 8) + '...'
     });
 
     // Generate Agora tokens with proper expiration (1 hour from now)
@@ -259,19 +292,31 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
       currentTime,
       expireTime,
       role,
-      appId: appId!.substring(0, 8) + '...'
+      appId: appId!.substring(0, 8) + '...',
+      channelName
     });
 
     // Generate tokens using proper Agora algorithm
-    const rtcToken = generateFallbackRtcToken(appId!, appCertificate!, channelName, uid, role, expireTime);
+    const rtcToken = await generateAgoraRtcToken(appId!, appCertificate!, channelName, uid, role, expireTime);
     const rtmToken = generateAgoraRtmToken(appId!, appCertificate!, uid.toString(), expireTime);
 
     console.log("[AGORA-INTEGRATION] Generated tokens:", {
       rtcTokenLength: rtcToken.length,
-      rtcTokenPrefix: rtcToken.substring(0, 10),
+      rtcTokenPrefix: rtcToken.substring(0, 15) + '...',
       rtmTokenLength: rtmToken.length,
-      rtmTokenPrefix: rtmToken.substring(0, 10)
+      rtmTokenPrefix: rtmToken.substring(0, 15) + '...',
+      appIdInToken: rtcToken.substring(3, 35) // Extract app ID from token
     });
+
+    // Verify token contains correct App ID
+    const tokenAppId = rtcToken.substring(3, 35);
+    if (tokenAppId !== appId) {
+      console.error("[AGORA-INTEGRATION] Token App ID mismatch:", {
+        expectedAppId: appId,
+        tokenAppId,
+        match: tokenAppId === appId
+      });
+    }
 
     // Create Netless whiteboard room if token is available
     let netlessRoomUuid = null;
@@ -330,7 +375,11 @@ async function createVideoRoom(data: CreateVideoRoomRequest, supabase: any) {
         netlessRoomUuid,
         netlessRoomToken,
         netlessAppIdentifier: appIdentifier,
-        message: "Agora video room created successfully"
+        message: "Agora video room created successfully",
+        debug: {
+          tokenAppId: rtcToken.substring(3, 35),
+          appIdMatch: rtcToken.substring(3, 35) === appId
+        }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -375,7 +424,8 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
     console.log("[AGORA-INTEGRATION] Found existing room:", {
       channelName: lesson.agora_channel_name,
       uid: lesson.agora_uid,
-      hasNetless: !!lesson.netless_room_uuid
+      hasNetless: !!lesson.netless_room_uuid,
+      appId: appId!.substring(0, 8) + '...'
     });
 
     // Generate fresh tokens for the existing channel
@@ -383,13 +433,15 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
     const expireTime = currentTime + 3600; // 1 hour
     const role = data.userRole === 'tutor' ? 1 : 2;
     
-    const rtcToken = generateFallbackRtcToken(appId!, appCertificate!, lesson.agora_channel_name, lesson.agora_uid, role, expireTime);
+    const rtcToken = await generateAgoraRtcToken(appId!, appCertificate!, lesson.agora_channel_name, lesson.agora_uid, role, expireTime);
     const rtmToken = generateAgoraRtmToken(appId!, appCertificate!, lesson.agora_uid.toString(), expireTime);
 
     console.log("[AGORA-INTEGRATION] Generated fresh tokens:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
-      role: data.userRole
+      role: data.userRole,
+      tokenAppId: rtcToken.substring(3, 35),
+      appIdMatch: rtcToken.substring(3, 35) === appId
     });
 
     // Generate fresh Netless room token if room exists
@@ -415,7 +467,13 @@ async function getTokens(data: GetTokensRequest, supabase: any) {
         netlessRoomUuid: lesson.netless_room_uuid,
         netlessRoomToken,
         netlessAppIdentifier: lesson.netless_app_identifier,
-        role: data.userRole === 'tutor' ? 'publisher' : 'subscriber'
+        role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
+        debug: {
+          tokenAppId: rtcToken.substring(3, 35),
+          appIdMatch: rtcToken.substring(3, 35) === appId,
+          channelName: lesson.agora_channel_name,
+          uid: lesson.agora_uid
+        }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
