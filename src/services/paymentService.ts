@@ -163,7 +163,7 @@ export const paymentService = {
     }
   },
 
-  // Check if user has purchased a course with enhanced status checking
+  // Check if user has purchased a course - now includes trialing status
   checkCoursePurchase: async (courseId: string): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
@@ -173,7 +173,7 @@ export const paymentService = {
       .select('id, status')
       .eq('course_id', courseId)
       .eq('user_id', user.id)
-      .in('status', ['completed', 'past_due']) // Allow access for past_due to give grace period
+      .in('status', ['completed', 'past_due', 'trialing']) // Include trialing status
       .maybeSingle();
     
     if (error) {
@@ -203,7 +203,7 @@ export const paymentService = {
     return data as CoursePurchase[];
   },
 
-  // Get subscription status for a user
+  // Get subscription status for a user - now includes trialing
   getSubscriptionStatus: async (): Promise<{
     hasActiveSubscription: boolean;
     subscriptions: CoursePurchase[];
@@ -212,7 +212,7 @@ export const paymentService = {
     const purchases = await paymentService.getUserPurchases();
     
     const activeSubscriptions = purchases.filter(p => 
-      p.status === 'completed' || p.status === 'past_due'
+      p.status === 'completed' || p.status === 'past_due' || p.status === 'trialing'
     );
     
     const needsPaymentUpdate = purchases.some(p => p.status === 'past_due');

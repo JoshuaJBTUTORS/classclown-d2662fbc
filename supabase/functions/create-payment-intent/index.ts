@@ -85,7 +85,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           subscription_id: existingPurchase.stripe_session_id,
-          status: 'active',
+          status: existingPurchase.status,
           trial_end: null,
           course_title: course.title,
           amount: course.price || 1299,
@@ -121,20 +121,14 @@ serve(async (req) => {
       console.log("New customer created:", customerId);
     }
 
-    // Create subscription with 7-day free trial that REQUIRES payment method setup
-    console.log("Creating Stripe subscription with trial using Price ID:", course.stripe_price_id);
+    // Create subscription with 3-day free trial using Stripe's native trial flow
+    console.log("Creating Stripe subscription with 3-day trial using Price ID:", course.stripe_price_id);
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{
         price: course.stripe_price_id,
       }],
-      trial_period_days: 7,
-      payment_behavior: 'default_incomplete',
-      payment_settings: { 
-        save_default_payment_method: 'on_subscription',
-        payment_method_types: ['card']
-      },
-      expand: ['latest_invoice.payment_intent'],
+      trial_period_days: 3,
       metadata: {
         course_id: courseId,
         user_id: user.id,
@@ -150,17 +144,17 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Create purchase record with incomplete status until payment method is added
+    // Create purchase record with trialing status
     const { error: insertError } = await supabaseService
       .from('course_purchases')
       .insert({
         user_id: user.id,
         course_id: courseId,
         stripe_session_id: subscription.id,
-        stripe_payment_intent_id: subscription.latest_invoice?.payment_intent?.id || subscription.id,
+        stripe_payment_intent_id: subscription.id,
         amount_paid: course.price || 1299,
         currency: 'gbp',
-        status: subscription.status === 'incomplete' ? 'pending' : 'completed'
+        status: subscription.status
       });
 
     if (insertError) {
@@ -176,23 +170,13 @@ serve(async (req) => {
 
     console.log("Purchase record created successfully");
 
-    // Get client secret for payment setup
-    let clientSecret = null;
-    if (subscription.latest_invoice && typeof subscription.latest_invoice === 'object') {
-      const invoice = subscription.latest_invoice as any;
-      if (invoice.payment_intent && typeof invoice.payment_intent === 'object') {
-        clientSecret = invoice.payment_intent.client_secret;
-      }
-    }
-
     return new Response(JSON.stringify({ 
       subscription_id: subscription.id,
-      client_secret: clientSecret,
       status: subscription.status,
       trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       course_title: course.title,
       amount: course.price || 1299,
-      requires_payment_method: subscription.status === 'incomplete'
+      requires_payment_method: false
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

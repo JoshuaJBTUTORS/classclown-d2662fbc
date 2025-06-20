@@ -8,23 +8,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import EmbeddedPaymentForm from '@/components/learningHub/EmbeddedPaymentForm';
 
 const CourseCheckout = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isOwner } = useAuth();
-  const [subscriptionData, setSubscriptionData] = useState<{
-    subscription_id: string;
-    client_secret?: string;
-    status: string;
-    trial_end?: string;
-    course_title: string;
-    amount: number;
-    requires_payment_method: boolean;
-    message?: string;
-  } | null>(null);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
 
   const { data: course, isLoading } = useQuery({
@@ -86,18 +75,14 @@ const CourseCheckout = () => {
         navigate(`/course/${course.id}`);
         return;
       }
+
+      // For native Stripe trials, user gets immediate access
+      toast({
+        title: "Free trial activated!",
+        description: "Your 3-day free trial has started. Enjoy full access to the course!",
+      });
       
-      setSubscriptionData(data);
-      
-      // Now always require payment method setup - no immediate redirect
-      if (!data.requires_payment_method) {
-        toast({
-          title: "Free trial activated!",
-          description: "Your 7-day free trial has started. Enjoy full access to the course!",
-        });
-        navigate(`/course/${course.id}`);
-        return;
-      }
+      navigate(`/course/${course.id}`);
       
     } catch (error) {
       console.error('Error creating subscription:', error);
@@ -109,36 +94,6 @@ const CourseCheckout = () => {
     } finally {
       setIsLoadingSubscription(false);
     }
-  };
-
-  const handlePaymentSuccess = async () => {
-    if (!subscriptionData || !course) return;
-
-    try {
-      await paymentService.completeSubscriptionSetup(subscriptionData.subscription_id);
-
-      toast({
-        title: "Welcome aboard!",
-        description: "Your subscription is now active. Enjoy your 7-day free trial!",
-      });
-
-      navigate(`/course/${course.id}`);
-    } catch (error) {
-      console.error('Error completing subscription setup:', error);
-      toast({
-        title: "Setup Error",
-        description: "Payment method saved but there was an issue completing setup. Please contact support.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handlePaymentError = (error: string) => {
-    toast({
-      title: "Payment Setup Failed",
-      description: error,
-      variant: "destructive",
-    });
   };
 
   const formatPrice = (priceInPence: number) => {
@@ -218,7 +173,7 @@ const CourseCheckout = () => {
               <div className="p-1.5 bg-primary/20 rounded-full">
                 <Shield className="h-4 w-4 text-primary" />
               </div>
-              <span className="font-semibold text-primary">7-Day Free Trial</span>
+              <span className="font-semibold text-primary">3-Day Free Trial</span>
             </div>
             <p className="text-sm text-primary/80">
               Start learning immediately with full access. No charges during your trial period - cancel anytime.
@@ -245,54 +200,47 @@ const CourseCheckout = () => {
         </div>
       </div>
 
-      {/* Right Panel - Subscription Setup */}
+      {/* Right Panel - Trial Signup */}
       <div className="lg:w-3/5 bg-white p-8 lg:p-12">
         <div className="max-w-lg">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Start your free trial</h2>
-            <p className="text-gray-600">7 days free, then {course.price ? formatPrice(course.price) : '£12.99'}/month</p>
+            <p className="text-gray-600">3 days free, then {course.price ? formatPrice(course.price) : '£12.99'}/month</p>
           </div>
 
-          {/* Show start trial button if no subscription data yet */}
-          {!subscriptionData && (
-            <div className="space-y-6">
-              <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
-                <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
-                <p className="text-gray-600 mb-4">
-                  Click below to start your 7-day free trial. You'll need to add a payment method to continue after the trial period.
-                </p>
-                <Button
-                  onClick={handleStartTrial}
-                  disabled={isLoadingSubscription}
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
-                >
-                  {isLoadingSubscription ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Starting trial...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="h-4 w-4 mr-2" />
-                      Start 7-Day Free Trial
-                    </>
-                  )}
-                </Button>
-              </div>
+          <div className="space-y-6">
+            <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
+              <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
+              <p className="text-gray-600 mb-4">
+                Click below to start your 3-day free trial with immediate access to all course content. 
+                You can cancel anytime during the trial period.
+              </p>
+              <Button
+                onClick={handleStartTrial}
+                disabled={isLoadingSubscription}
+                className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-colors"
+              >
+                {isLoadingSubscription ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Starting trial...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Start 3-Day Free Trial
+                  </>
+                )}
+              </Button>
             </div>
-          )}
-
-          {/* Payment Form - Always show when payment method is required */}
-          {subscriptionData && subscriptionData.requires_payment_method && subscriptionData.client_secret && (
-            <EmbeddedPaymentForm
-              clientSecret={subscriptionData.client_secret}
-              customerId=""
-              courseTitle={subscriptionData.course_title}
-              amount={subscriptionData.amount}
-              onSuccess={handlePaymentSuccess}
-              onError={handlePaymentError}
-            />
-          )}
+            
+            <div className="text-center text-sm text-gray-500">
+              <p>
+                After your trial ends, you'll be charged {course.price ? formatPrice(course.price) : '£12.99'} monthly. 
+                You can cancel or manage your subscription anytime in your account settings.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
