@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,9 +43,9 @@ const VideoRoom: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log('Loading video room for lesson:', lessonId);
+      console.log('🧪 [TEST] Using official Agora token for testing');
 
-      // Fetch lesson details with all Agora fields
+      // Fetch lesson details
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
         .select(`
@@ -70,42 +69,33 @@ const VideoRoom: React.FC = () => {
       console.log('Lesson data loaded:', lessonData);
       setLesson(lessonData);
 
-      // Get fresh tokens for the user
-      const agoraRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole || 'student');
-      console.log('Requesting tokens with role:', agoraRole);
+      // TEST: Use official Agora token instead of generating one
+      const officialToken = '007eJxSYPj5h7/t6IL4+5YNN2Ndg2bbW9oIfUhJUUzvnjO5IjbwOYsCg5GlqYFhslmSqUGygYm5RaKFcZJJskGagbFZqqGRmbnBjZmhGQ2BjAw29ZuYGBkYGVgYGBlAfCYwyQwmWcAkCAACAAD//8JcHxc=';
       
-      const credentials = await getTokens(lessonId, agoraRole as 'tutor' | 'student');
-      
-      if (!credentials) {
-        throw new Error('Failed to get video conference access. Please check Agora configuration.');
-      }
+      // Create test credentials with official token
+      const testCredentials = {
+        appId: '29501c6b50c04f60a84c1ec705a7a67d', // Your Agora App ID
+        channelName: `lesson_${lessonId.replace(/-/g, '_')}`,
+        rtcToken: officialToken,
+        uid: Math.floor(Math.random() * 1000000) + 1000,
+        rtmToken: officialToken, // Using same token for RTM for testing
+        netlessRoomUuid: lessonData.netless_room_uuid,
+        netlessRoomToken: lessonData.netless_room_token,
+        netlessAppIdentifier: lessonData.netless_app_identifier
+      };
 
-      // Validate credentials
-      if (!credentials.appId || !credentials.channelName || !credentials.rtcToken) {
-        throw new Error('Invalid video conference credentials received');
-      }
-
-      console.log('Agora credentials obtained:', {
-        appId: credentials.appId,
-        channelName: credentials.channelName,
-        uid: credentials.uid,
-        hasToken: !!credentials.rtcToken
+      console.log('🧪 [TEST] Using official Agora credentials:', {
+        appId: testCredentials.appId.substring(0, 8) + '...',
+        channelName: testCredentials.channelName,
+        uid: testCredentials.uid,
+        officialTokenLength: officialToken.length,
+        tokenPrefix: officialToken.substring(0, 20) + '...'
       });
       
-      setAgoraCredentials(credentials);
+      setAgoraCredentials(testCredentials);
     } catch (error: any) {
       console.error('Error loading video room:', error);
       setError(error.message);
-      
-      // Show specific error messages
-      if (error.message.includes('Agora credentials not configured')) {
-        setError('Video conferencing is not properly configured. Please contact support.');
-      } else if (error.message.includes('Lesson not found')) {
-        setError('This lesson could not be found or you do not have permission to access it.');
-      } else {
-        setError(error.message);
-      }
-      
       toast.error(error.message);
     } finally {
       setIsLoading(false);
@@ -149,8 +139,8 @@ const VideoRoom: React.FC = () => {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <div className="text-center">
-            <p className="text-gray-600 font-medium">Loading video conference...</p>
-            <p className="text-sm text-gray-500 mt-1">Setting up your connection</p>
+            <p className="text-gray-600 font-medium">🧪 Testing with official Agora token...</p>
+            <p className="text-sm text-gray-500 mt-1">Channel: {lesson?.title}</p>
           </div>
         </div>
       </div>
@@ -166,42 +156,21 @@ const VideoRoom: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Connection Error
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-red-600 mb-4">
               {error || 'Video conference not available'}
             </p>
-            <div className="space-y-3">
+            <div className="text-sm text-gray-600 space-y-1">
+              <p><strong>🧪 TEST MODE:</strong> Using official Agora token</p>
+              <p><strong>Lesson:</strong> {lessonId}</p>
+            </div>
+            <div className="space-y-3 mt-6">
               <Button onClick={handleRetry} className="w-full">
                 Try Again
               </Button>
-              {lesson?.video_conference_provider === 'agora' && (
-                <Button 
-                  onClick={handleRegenerateTokens} 
-                  variant="outline" 
-                  className="w-full"
-                  disabled={isRegenerating}
-                >
-                  {isRegenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Regenerate Room Access
-                    </>
-                  )}
-                </Button>
-              )}
               <Button onClick={() => navigate('/calendar')} variant="outline" className="w-full">
                 Go Back to Calendar
               </Button>
             </div>
-            {retryCount > 0 && (
-              <p className="text-xs text-gray-500 mt-3">
-                Retry attempt: {retryCount}
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>
@@ -218,16 +187,20 @@ const VideoRoom: React.FC = () => {
     appIdentifier: agoraCredentials.netlessAppIdentifier
   } : undefined;
 
-  console.log('Rendering video room with real Agora credentials:', {
+  console.log('🧪 [TEST] Rendering video room with official Agora token:', {
     appId: agoraCredentials.appId,
     channel: agoraCredentials.channelName,
     uid: agoraCredentials.uid,
     role: videoRoomRole,
+    tokenValid: !!agoraCredentials.rtcToken,
     hasNetless: !!netlessCredentials
   });
 
   return (
     <AgoraRTCProvider client={agoraClient}>
+      <div className="fixed top-4 right-4 z-50 bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded text-sm font-medium">
+        🧪 TEST MODE: Using Official Agora Token
+      </div>
       <AgoraVideoRoom
         appId={agoraCredentials.appId}
         channel={agoraCredentials.channelName}
