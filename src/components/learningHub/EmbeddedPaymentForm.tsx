@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, CreditCard, AlertCircle, Shield, Lock } from 'lucide-react';
+import { paymentService } from '@/services/paymentService';
 
 // Load Stripe with your live publishable key
 const stripePromise = loadStripe('pk_live_51QN38HJvbqr5stJM97b75qtlGHikLcEdXzhPypRqJPKRcZgeYyCztQ6h65rz79HGs1iCgI97GUqUlAUE7vJkGtPk001FSXb648');
@@ -56,14 +57,14 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     const cardNumberElement = elements.getElement(CardNumberElement);
 
     if (!cardNumberElement) {
-      setErrorMessage('Card element not foun');
+      setErrorMessage('Card element not found');
       setIsProcessing(false);
       return;
     }
 
     try {
-      // For subscription setup, we confirm the setup intent or payment intent
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      // Confirm the setup intent with the payment method
+      const { error, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
         payment_method: {
           card: cardNumberElement,
           billing_details: {
@@ -74,15 +75,30 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       });
 
       if (error) {
-        console.error('Payment confirmation error:', error);
+        console.error('Setup confirmation error:', error);
         setErrorMessage(error.message || 'Payment setup failed');
         onError(error.message || 'Payment setup failed');
-      } else if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_action')) {
-        console.log('Payment method setup successful');
-        onSuccess();
+      } else if (setupIntent && setupIntent.status === 'succeeded') {
+        console.log('Setup Intent confirmed successfully:', setupIntent.id);
+        
+        // Now complete the subscription setup
+        try {
+          const result = await paymentService.completeSubscriptionSetup(setupIntent.id);
+          if (result.success) {
+            onSuccess();
+          } else {
+            setErrorMessage(result.message || 'Failed to complete subscription setup');
+            onError(result.message || 'Failed to complete subscription setup');
+          }
+        } catch (subscriptionError) {
+          console.error('Subscription completion error:', subscriptionError);
+          setErrorMessage('Failed to complete subscription setup');
+          onError('Failed to complete subscription setup');
+        }
       } else {
-        console.log('Payment intent status:', paymentIntent?.status);
-        onSuccess(); // Proceed anyway for subscription setup
+        console.log('Setup intent status:', setupIntent?.status);
+        setErrorMessage('Payment setup incomplete');
+        onError('Payment setup incomplete');
       }
     } catch (err) {
       console.error('Payment confirmation error:', err);
@@ -131,7 +147,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Free trial period</span>
-            <span className="font-semibold text-primary">7 days</span>
+            <span className="font-semibold text-primary">3 days</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">After trial</span>
@@ -143,7 +159,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               <span className="font-bold text-xl text-primary">£0.00</span>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Your card will be charged {formatPrice(amount)} on {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} unless you cancel.
+              Your card will be charged {formatPrice(amount)} on {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} unless you cancel.
             </p>
           </div>
         </div>

@@ -9,89 +9,103 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
   
   try {
-    const { subscriptionId } = await req.json();
+    console.log("Starting complete-subscription function");
     
-    if (!subscriptionId) {
-      throw new Error("Subscription ID is required");
+    const { setupIntentId } = await req.json();
+    
+    if (!setupIntentId) {
+      throw new Error("Setup Intent ID is required");
     }
 
-    console.log("Completing subscription setup:", subscriptionId);
+    console.log("Processing subscription completion for setup intent:", setupIntentId);
 
-    // Create Supabase client using the service role key to bypass RLS
+    // Create Supabase client using service role key for admin operations
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing Authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Verify user is authenticated using anon key client
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
-    // Retrieve the subscription to verify it exists and get its status
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    // Retrieve the Setup Intent to get metadata
+    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+    console.log("Setup Intent retrieved:", setupIntent.id, "Status:", setupIntent.status);
+
+    if (setupIntent.status !== 'succeeded') {
+      throw new Error("Setup Intent not succeeded");
+    }
+
+    const { course_id, user_id, course_title, trial_days } = setupIntent.metadata;
     
-    if (!subscription) {
-      throw new Error("Subscription not found");
+    if (!course_id || !user_id) {
+      throw new Error("Missing required metadata");
     }
 
-    console.log("Subscription status:", subscription.status);
+    // Get course details to find the Stripe price ID
+    const { data: course, error: courseError } = await supabaseClient
+      .from('courses')
+      .select('stripe_price_id, price')
+      .eq('id', course_id)
+      .single();
 
-    // Update the purchase record with the latest subscription status
-    const { error: updateError } = await supabaseClient
+    if (courseError || !course) {
+      throw new Error("Course not found");
+    }
+
+    // Create subscription with trial period
+    const subscription = await stripe.subscriptions.create({
+      customer: setupIntent.customer as string,
+      items: [{
+        price: course.stripe_price_id,
+      }],
+      trial_period_days: parseInt(trial_days || '3'),
+      default_payment_method: setupIntent.payment_method as string,
+      metadata: {
+        course_id,
+        user_id,
+        course_title,
+      },
+    });
+
+    console.log("Subscription created:", subscription.id);
+
+    // Record the purchase in the database
+    const { error: purchaseError } = await supabaseClient
       .from('course_purchases')
-      .update({
-        status: (subscription.status === 'active' || subscription.status === 'trialing') ? 'completed' : subscription.status,
-        stripe_payment_intent_id: subscription.latest_invoice?.payment_intent || subscription.id
-      })
-      .eq('stripe_session_id', subscriptionId)
-      .eq('user_id', user.id);
+      .insert({
+        course_id,
+        user_id,
+        stripe_subscription_id: subscription.id,
+        status: 'trialing',
+        purchase_date: new Date().toISOString(),
+        trial_end: new Date(subscription.trial_end! * 1000).toISOString(),
+      });
 
-    if (updateError) {
-      console.error("Database update error:", updateError);
-      throw new Error("Failed to update subscription status in database");
+    if (purchaseError) {
+      console.error("Error recording purchase:", purchaseError);
+      throw new Error("Failed to record purchase");
     }
 
-    console.log("Subscription status updated successfully");
+    console.log("Purchase recorded successfully");
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Subscription setup completed successfully",
-        subscription_status: subscription.status,
-        trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: "Subscription created successfully with trial period",
+      subscription_id: subscription.id,
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
     console.error("Error in complete-subscription function:", error);
     return new Response(
