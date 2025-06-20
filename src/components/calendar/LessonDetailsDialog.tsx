@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,8 @@ import {
   XCircle,
   MoreHorizontal,
   FileText,
-  Video
+  Video,
+  ExternalLink
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +29,6 @@ import EditLessonForm from '@/components/lessons/EditLessonForm';
 import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import ViewHomeworkDialog from '@/components/homework/ViewHomeworkDialog';
-import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -158,8 +159,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const canComplete = canEdit && lesson.status === 'scheduled';
   const canAssignHomework = canEdit;
 
-  // Map userRole to the expected type for VideoConferenceLink
-  const videoConferenceUserRole = (userRole === 'parent') ? 'student' : userRole as 'tutor' | 'student' | 'admin' | 'owner';
+  const getVideoConferenceProvider = () => {
+    if (lesson.video_conference_provider === 'lesson_space') return 'Lesson Space';
+    if (lesson.video_conference_provider === 'google_meet') return 'Google Meet';
+    if (lesson.video_conference_provider === 'zoom') return 'Zoom';
+    if (lesson.video_conference_provider === 'agora') return 'Agora Video Call';
+    return 'Video Conference';
+  };
 
   return (
     <>
@@ -267,23 +273,32 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               </CardContent>
             </Card>
 
-            {/* Video Conference Link */}
-            {(lesson.video_conference_link || lesson.agora_channel_name) && (
-              <VideoConferenceLink 
-                link={lesson.video_conference_link}
-                provider={lesson.video_conference_provider}
-                userRole={videoConferenceUserRole}
-                isGroupLesson={lesson.is_group}
-                studentCount={lesson.students?.length || 0}
-                lessonId={lesson.id}
-                hasLessonSpace={!!lesson.lesson_space_space_id}
-                spaceId={lesson.lesson_space_space_id}
-                hasAgora={!!lesson.agora_channel_name}
-                agoraChannelName={lesson.agora_channel_name}
-                agoraToken={lesson.agora_token}
-                agoraUid={lesson.agora_uid}
-                className="mb-4"
-              />
+            {/* Simple Video Conference Link */}
+            {(lesson.video_conference_link || lesson.lesson_space_space_id) && (
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{getVideoConferenceProvider()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        const link = lesson.video_conference_link || 
+                                   (lesson.lesson_space_space_id ? `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}` : null);
+                        if (link) {
+                          window.open(link, '_blank');
+                        }
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Join Lesson
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Tutor Information */}
