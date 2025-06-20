@@ -17,10 +17,29 @@ serve(async (req) => {
   try {
     console.log("Starting create-checkout-session function");
     
-    const { courseId } = await req.json();
+    let courseId, authToken;
+    
+    // Handle both JSON and form data
+    const contentType = req.headers.get("content-type");
+    if (contentType?.includes("application/x-www-form-urlencoded")) {
+      // Handle form submission
+      const formData = await req.formData();
+      courseId = formData.get("courseId");
+      authToken = formData.get("authorization")?.toString().replace("Bearer ", "");
+    } else {
+      // Handle JSON request
+      const { courseId: jsonCourseId } = await req.json();
+      courseId = jsonCourseId;
+      const authHeader = req.headers.get('Authorization');
+      authToken = authHeader?.replace("Bearer ", "");
+    }
     
     if (!courseId) {
       throw new Error("Course ID is required");
+    }
+
+    if (!authToken) {
+      throw new Error("Authorization token is required");
     }
 
     console.log("Processing checkout session for course:", courseId);
@@ -31,17 +50,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing Authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authToken);
     if (authError || !user) {
       console.error("Authentication error:", authError);
       return new Response(
