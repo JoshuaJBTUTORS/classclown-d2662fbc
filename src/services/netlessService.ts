@@ -96,4 +96,14 @@ export class NetlessService {
     const { appIdentifier } = this.parseSDKToken(sdkToken);
     return appIdentifier;
   }
+
+  static async ensureRoomToken(sdkToken: string, roomUuid: string, userRole: 'tutor' | 'student'): Promise<string> {
+    try {
+      const role = userRole === 'tutor' ? 'admin' : 'reader';
+      return await this.generateRoomToken(sdkToken, roomUuid, role);
+    } catch (error) {
+      console.error('Failed to generate Netless room token:', error);
+      throw new Error('Unable to generate whiteboard access token');
+    }
+  }
 }

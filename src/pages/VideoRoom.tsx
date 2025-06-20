@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgora } from '@/hooks/useAgora';
+import { useNetlessCredentials } from '@/hooks/useNetlessCredentials';
 import AgoraVideoRoom from '@/components/video/AgoraVideoRoom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,17 @@ const VideoRoom: React.FC = () => {
     AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }) as any
   );
 
+  // Map admin/owner roles to video room role
+  const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
+  
+  // Use Netless credentials hook
+  const { 
+    credentials: netlessCredentials, 
+    isLoading: isLoadingNetless, 
+    error: netlessError,
+    regenerateToken: regenerateNetlessToken
+  } = useNetlessCredentials(lessonId || '', videoRoomRole);
+
   useEffect(() => {
     if (!user || !lessonId) {
       navigate('/auth');
@@ -53,10 +66,7 @@ const VideoRoom: React.FC = () => {
           agora_channel_name,
           agora_token,
           agora_uid,
-          agora_rtm_token,
-          netless_room_uuid,
-          netless_room_token,
-          netless_app_identifier
+          agora_rtm_token
         `)
         .eq('id', lessonId)
         .single();
@@ -70,7 +80,7 @@ const VideoRoom: React.FC = () => {
       setLesson(lessonData);
 
       // TEST: Use the FRESH official Agora token for the correct channel
-      const freshOfficialToken = '007eJxSYAjb6fWJdZfXXmv2fd83C5WXr9z+XMgp48sHC87nVRles38rMBhZmhoYJpslmRokG5iYWyRaGCeZJBukGRibpRoamZkbfJgTmtEQyMhQYl/OzMjAyMDCwMgA4jOBSWYwyQImtRlyUouL8/PiTU2STBJTLCzjDYxTTeJNUlOM4i3NDU3ijY0NLVOTTJIMjc3TGBgAAQAA///pTS1a';
+      const freshOfficialToken = '007eJxSYAjb6fWJdZfXXmv2fd83C5WXr9z+XMgp48sHC5WXr9z+XMgp48sHC87nVRles38rMBhZmhoYJpslmRokG5iYWyRaGCeZJBukGRibpRoamZkbfJgTmtEQyMjQYl/OzMjAyMDCwMgA4jOBSWYwyQImtRlyUouL8/PiTU2STBJTLCzjDYxTTeJNUlOM4i3NDU3ijY0NLVOTTJIMjc3TGBgAAQAA///pTS1a';
       
       // Create test credentials with FRESH token for exact channel match
       const testCredentials = {
@@ -79,9 +89,6 @@ const VideoRoom: React.FC = () => {
         rtcToken: freshOfficialToken,
         uid: Math.floor(Math.random() * 1000000) + 1000,
         rtmToken: freshOfficialToken, // Using same token for RTM for testing
-        netlessRoomUuid: lessonData.netless_room_uuid,
-        netlessRoomToken: lessonData.netless_room_token,
-        netlessAppIdentifier: lessonData.netless_app_identifier
       };
 
       console.log('🧪 [TEST] Using FRESH official Agora token for exact channel:', {
@@ -134,7 +141,8 @@ const VideoRoom: React.FC = () => {
     navigate('/calendar');
   };
 
-  if (isLoading) {
+  // Show loading state while either Agora or Netless credentials are loading
+  if (isLoading || isLoadingNetless) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -142,14 +150,16 @@ const VideoRoom: React.FC = () => {
           <div className="text-center">
             <p className="text-gray-600 font-medium">🧪 Testing FRESH official Agora token...</p>
             <p className="text-sm text-gray-500 mt-1">Channel: {lesson?.title}</p>
-            <p className="text-xs text-gray-400 mt-1">Fresh token for correct channel</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {isLoadingNetless ? 'Loading whiteboard...' : 'Fresh token for correct channel'}
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (error || !lesson ||  !agoraCredentials) {
+  if (error || !lesson || !agoraCredentials) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -165,11 +175,17 @@ const VideoRoom: React.FC = () => {
               <p><strong>🧪 TEST MODE:</strong> Using FRESH official Agora token</p>
               <p><strong>Lesson:</strong> {lessonId}</p>
               <p><strong>Channel:</strong> lesson_54b4ad89_03e4_4ed2_9714_3319eb4b137f</p>
+              {netlessError && <p><strong>Whiteboard:</strong> {netlessError}</p>}
             </div>
             <div className="space-y-3 mt-6">
               <Button onClick={handleRetry} className="w-full">
                 Try Again
               </Button>
+              {netlessError && (
+                <Button onClick={regenerateNetlessToken} variant="outline" className="w-full">
+                  Fix Whiteboard
+                </Button>
+              )}
               <Button onClick={() => navigate('/calendar')} variant="outline" className="w-full">
                 Go Back to Calendar
               </Button>
@@ -179,16 +195,6 @@ const VideoRoom: React.FC = () => {
       </div>
     );
   }
-
-  // Map admin/owner roles to tutor for the video room UI
-  const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
-
-  // Prepare Netless credentials if available
-  const netlessCredentials = agoraCredentials.netlessRoomUuid ? {
-    roomUuid: agoraCredentials.netlessRoomUuid,
-    roomToken: agoraCredentials.netlessRoomToken,
-    appIdentifier: agoraCredentials.netlessAppIdentifier
-  } : undefined;
 
   console.log('🧪 [TEST] Rendering video room with FRESH official Agora token:', {
     appId: agoraCredentials.appId,
