@@ -3,7 +3,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
-import { AlertTriangle, Lock, CreditCard } from 'lucide-react';
+import { AlertTriangle, Lock, CreditCard, Clock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,13 +22,13 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
   const { data: hasPurchased, isLoading } = useQuery({
     queryKey: ['course-purchase', courseId, user?.id],
     queryFn: () => paymentService.checkCoursePurchase(courseId),
-    enabled: !!user && !!courseId && !isOwner, // Skip check if user is owner
+    enabled: !!user && !!courseId && !isOwner,
   });
 
   const { data: subscriptionStatus } = useQuery({
     queryKey: ['subscription-status', user?.id],
     queryFn: paymentService.getSubscriptionStatus,
-    enabled: !!user && !isOwner, // Skip check if user is owner
+    enabled: !!user && !isOwner,
   });
 
   // Sync subscription status on mount
@@ -88,7 +88,50 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
     );
   }
 
-  // Check if payment needs updating
+  // Show grace period warning if applicable
+  if (subscriptionStatus?.gracePeriodInfo?.isInGracePeriod) {
+    const { daysRemaining, gracePeriodEnd } = subscriptionStatus.gracePeriodInfo;
+    
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <Clock className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">Payment Issue - Limited Access</p>
+              <p>
+                Your payment failed, but you still have access for <strong>{daysRemaining} more days</strong>.
+                {gracePeriodEnd && (
+                  <span className="block text-sm mt-1">
+                    Access expires: {new Date(gracePeriodEnd).toLocaleDateString()}
+                  </span>
+                )}
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="mt-2"
+                onClick={async () => {
+                  try {
+                    const { url } = await paymentService.createCustomerPortal();
+                    window.open(url, '_blank');
+                  } catch (error) {
+                    console.error('Error opening customer portal:', error);
+                  }
+                }}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Update Payment Method
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+        {children}
+      </div>
+    );
+  }
+
+  // Check if payment needs updating (past due status)
   if (subscriptionStatus?.needsPaymentUpdate) {
     return (
       <div className="space-y-4">

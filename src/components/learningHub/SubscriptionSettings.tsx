@@ -7,7 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
-import { ExternalLink, CreditCard, Calendar, AlertCircle } from 'lucide-react';
+import { ExternalLink, CreditCard, Calendar, AlertCircle, Clock } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const SubscriptionSettings = () => {
   const { user } = useAuth();
@@ -68,13 +69,15 @@ const SubscriptionSettings = () => {
     }
   };
 
-  const getStatusBadgeVariant = (hasActive: boolean, needsPayment: boolean) => {
+  const getStatusBadgeVariant = (hasActive: boolean, needsPayment: boolean, isInGracePeriod: boolean) => {
+    if (isInGracePeriod) return 'destructive';
     if (needsPayment) return 'destructive';
     if (hasActive) return 'default';
     return 'secondary';
   };
 
-  const getStatusText = (hasActive: boolean, needsPayment: boolean) => {
+  const getStatusText = (hasActive: boolean, needsPayment: boolean, isInGracePeriod: boolean) => {
+    if (isInGracePeriod) return 'Grace Period';
     if (needsPayment) return 'Payment Required';
     if (hasActive) return 'Active';
     return 'No Active Subscription';
@@ -82,6 +85,35 @@ const SubscriptionSettings = () => {
 
   return (
     <div className="space-y-6">
+      {/* Grace Period Alert */}
+      {subscriptionStatus?.gracePeriodInfo?.isInGracePeriod && (
+        <Alert variant="destructive">
+          <Clock className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">Payment Failed - Grace Period Active</p>
+              <p>
+                Your payment failed, but you still have <strong>{subscriptionStatus.gracePeriodInfo.daysRemaining} days</strong> of access remaining.
+              </p>
+              {subscriptionStatus.gracePeriodInfo.gracePeriodEnd && (
+                <p className="text-sm">
+                  Access expires: {new Date(subscriptionStatus.gracePeriodInfo.gracePeriodEnd).toLocaleDateString()}
+                </p>
+              )}
+              <Button 
+                onClick={handleManageSubscription}
+                disabled={isLoading}
+                size="sm"
+                className="mt-2"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Update Payment Method Now
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Current Subscription Status */}
       <Card>
         <CardHeader className="pb-3">
@@ -90,11 +122,13 @@ const SubscriptionSettings = () => {
             {subscriptionStatus && (
               <Badge variant={getStatusBadgeVariant(
                 subscriptionStatus.hasActiveSubscription,
-                subscriptionStatus.needsPaymentUpdate
+                subscriptionStatus.needsPaymentUpdate,
+                subscriptionStatus.gracePeriodInfo?.isInGracePeriod || false
               )}>
                 {getStatusText(
                   subscriptionStatus.hasActiveSubscription,
-                  subscriptionStatus.needsPaymentUpdate
+                  subscriptionStatus.needsPaymentUpdate,
+                  subscriptionStatus.gracePeriodInfo?.isInGracePeriod || false
                 )}
               </Badge>
             )}
@@ -111,6 +145,11 @@ const SubscriptionSettings = () => {
                       <p className="font-medium">Course Subscription</p>
                       <p className="text-sm text-gray-600">
                         Status: {subscription.status}
+                        {subscription.status === 'grace_period' && subscription.grace_period_end && (
+                          <span className="text-red-600 font-medium ml-2">
+                            (Expires: {new Date(subscription.grace_period_end).toLocaleDateString()})
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -135,7 +174,7 @@ const SubscriptionSettings = () => {
             </div>
           )}
 
-          {subscriptionStatus?.needsPaymentUpdate && (
+          {subscriptionStatus?.needsPaymentUpdate && !subscriptionStatus?.gracePeriodInfo?.isInGracePeriod && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-800">
                 <AlertCircle className="h-4 w-4" />
@@ -188,6 +227,7 @@ const SubscriptionSettings = () => {
             <li>• Use "Manage Subscription" to update payment methods, pause, or cancel your subscription</li>
             <li>• Changes made through the portal will be reflected in your account within a few minutes</li>
             <li>• You can reactivate paused subscriptions at any time</li>
+            <li>• If payment fails, you'll have 5 days of continued access to resolve the issue</li>
           </ul>
         </div>
       </div>

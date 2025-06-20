@@ -171,7 +171,7 @@ export const paymentService = {
     }
   },
 
-  // Check if user has purchased a course - now includes trialing status and subscription-based purchases
+  // Check if user has purchased a course - now includes grace period logic
   checkCoursePurchase: async (courseId: string): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
@@ -180,10 +180,10 @@ export const paymentService = {
 
     const { data, error } = await supabase
       .from('course_purchases')
-      .select('id, status, stripe_subscription_id, stripe_session_id, stripe_payment_intent_id')
+      .select('id, status, grace_period_end, trial_end, stripe_subscription_id, stripe_session_id')
       .eq('course_id', courseId)
       .eq('user_id', user.id)
-      .in('status', ['completed', 'past_due', 'trialing']) // Include trialing status
+      .in('status', ['completed', 'past_due', 'trialing', 'grace_period'])
       .maybeSingle();
     
     if (error) {
@@ -191,7 +191,43 @@ export const paymentService = {
       return false;
     }
     
-    const hasAccess = !!data;
+    if (!data) {
+      console.log('No purchase found for course');
+      return false;
+    }
+
+    // Handle grace period logic
+    if (data.status === 'grace_period') {
+      if (data.grace_period_end) {
+        const gracePeriodEnd = new Date(data.grace_period_end);
+        const now = new Date();
+        
+        if (now > gracePeriodEnd) {
+          console.log('Grace period expired, access denied');
+          // Grace period expired - should be handled by cleanup function
+          return false;
+        } else {
+          console.log('Within grace period, access allowed', { 
+            gracePeriodEnd: gracePeriodEnd.toISOString(),
+            timeRemaining: Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          });
+          return true;
+        }
+      }
+    }
+
+    // Handle trial period
+    if (data.status === 'trialing' && data.trial_end) {
+      const trialEnd = new Date(data.trial_end);
+      const now = new Date();
+      
+      if (now > trialEnd) {
+        console.log('Trial period expired');
+        return false;
+      }
+    }
+    
+    const hasAccess = ['completed', 'past_due', 'trialing'].includes(data.status);
     console.log('Course access check result:', { hasAccess, purchaseData: data });
     
     return hasAccess;
@@ -216,24 +252,66 @@ export const paymentService = {
     return data as CoursePurchase[];
   },
 
-  // Get subscription status for a user - now includes trialing and subscription-based purchases
+  // Get subscription status for a user - now includes grace period and trial logic
   getSubscriptionStatus: async (): Promise<{
     hasActiveSubscription: boolean;
     subscriptions: CoursePurchase[];
     needsPaymentUpdate: boolean;
+    gracePeriodInfo?: {
+      isInGracePeriod: boolean;
+      gracePeriodEnd?: string;
+      daysRemaining?: number;
+    };
   }> => {
     const purchases = await paymentService.getUserPurchases();
     
     const activeSubscriptions = purchases.filter(p => 
-      p.status === 'completed' || p.status === 'past_due' || p.status === 'trialing'
+      p.status === 'completed' || p.status === 'past_due' || p.status === 'trialing' || p.status === 'grace_period'
     );
     
-    const needsPaymentUpdate = purchases.some(p => p.status === 'past_due');
+    const needsPaymentUpdate = purchases.some(p => p.status === 'past_due' || p.status === 'grace_period');
+    
+    // Check for grace period info
+    const gracePeriodPurchase = purchases.find(p => p.status === 'grace_period');
+    let gracePeriodInfo;
+    
+    if (gracePeriodPurchase?.grace_period_end) {
+      const gracePeriodEnd = new Date(gracePeriodPurchase.grace_period_end);
+      const now = new Date();
+      const daysRemaining = Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      gracePeriodInfo = {
+        isInGracePeriod: true,
+        gracePeriodEnd: gracePeriodPurchase.grace_period_end,
+        daysRemaining: Math.max(0, daysRemaining)
+      };
+    }
     
     return {
       hasActiveSubscription: activeSubscriptions.length > 0,
       subscriptions: activeSubscriptions,
-      needsPaymentUpdate
+      needsPaymentUpdate,
+      gracePeriodInfo
     };
+  },
+
+  // Clean up expired grace periods
+  cleanupExpiredGracePeriods: async (): Promise<{ message: string; updated: number }> => {
+    console.log('Cleaning up expired grace periods');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('cleanup-grace-periods');
+      
+      if (error) {
+        console.error('Grace period cleanup error:', error);
+        throw error;
+      }
+      
+      console.log('Grace period cleanup completed');
+      return data;
+    } catch (error) {
+      console.error('Grace period cleanup service error:', error);
+      throw error;
+    }
   },
 };

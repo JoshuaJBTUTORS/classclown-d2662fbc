@@ -389,12 +389,16 @@ export type Database = {
           course_id: string
           created_at: string
           currency: string
+          grace_period_end: string | null
+          grace_period_start: string | null
           id: string
+          previous_status: string | null
           purchase_date: string
           status: string
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
           stripe_subscription_id: string | null
+          trial_end: string | null
           updated_at: string
           user_id: string
         }
@@ -403,12 +407,16 @@ export type Database = {
           course_id: string
           created_at?: string
           currency?: string
+          grace_period_end?: string | null
+          grace_period_start?: string | null
           id?: string
+          previous_status?: string | null
           purchase_date?: string
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           stripe_subscription_id?: string | null
+          trial_end?: string | null
           updated_at?: string
           user_id: string
         }
@@ -417,12 +425,16 @@ export type Database = {
           course_id?: string
           created_at?: string
           currency?: string
+          grace_period_end?: string | null
+          grace_period_start?: string | null
           id?: string
+          previous_status?: string | null
           purchase_date?: string
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           stripe_subscription_id?: string | null
+          trial_end?: string | null
           updated_at?: string
           user_id?: string
         }
