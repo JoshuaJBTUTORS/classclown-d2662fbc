@@ -66,7 +66,7 @@ class AgoraTokenBuilder {
       
       accessToken.addService(service);
       
-      const token = accessToken.build();
+      const token = await accessToken.build();
       
       console.log('[AGORA-TOKEN] Token generated successfully:', {
         tokenLength: token.length,
@@ -104,8 +104,8 @@ class AccessToken {
     this.services.set(service.getServiceType(), service);
   }
 
-  build(): Promise<string> {
-    return this.buildToken();
+  async build(): Promise<string> {
+    return await this.buildToken();
   }
 
   private async buildToken(): Promise<string> {
