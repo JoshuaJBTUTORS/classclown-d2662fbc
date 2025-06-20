@@ -10,7 +10,7 @@
     "start": "node api/generate-tokens.js"
   },
   "dependencies": {
-    "agora-access-token": "^2.0.7",
+    "agora-access-token": "^2.0.4",
     "cors": "^2.8.5"
   },
   "engines": {
