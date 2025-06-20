@@ -143,14 +143,17 @@ serve(async (req) => {
 
     console.log("Checkout session created:", session.id, "URL:", session.url);
 
-    // Following the sample code pattern - redirect directly to Stripe
-    return new Response(null, {
-      status: 303,
-      headers: {
-        ...corsHeaders,
-        'Location': session.url!,
-      },
-    });
+    // Return the checkout URL as JSON instead of redirecting
+    return new Response(
+      JSON.stringify({ url: session.url }),
+      { 
+        status: 200, 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json" 
+        } 
+      }
+    );
   } catch (error) {
     console.error("Error in create-checkout-session function:", error);
     return new Response(

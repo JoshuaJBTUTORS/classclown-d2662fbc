@@ -6,6 +6,7 @@ import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -87,23 +88,33 @@ const CourseCheckout = () => {
     try {
       console.log('Starting trial for course:', course.id);
       
-      // Call the edge function directly, which will handle the redirect
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+      
+      // Call the edge function using Supabase invoke
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: { courseId: course.id },
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await import('@/integrations/supabase/client')).supabase.auth.getSession().then(s => s.data.session?.access_token)}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ courseId: course.id }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create checkout session');
+      if (error) {
+        console.error('Checkout session creation error:', error);
+        throw new Error(error.message || 'Failed to create checkout session');
       }
 
-      // If we get here, the redirect should have happened
-      console.log('Checkout session created successfully');
+      if (!data.url) {
+        throw new Error('No checkout URL returned');
+      }
+
+      console.log('Checkout session created successfully, redirecting to:', data.url);
+      
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
       
     } catch (error) {
       console.error('Error creating checkout session:', error);
@@ -252,7 +263,7 @@ const CourseCheckout = () => {
                 {isLoadingSubscription ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Redirecting to checkout...
+                    Creating checkout session...
                   </>
                 ) : (
                   <>
