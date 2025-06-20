@@ -87,7 +87,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         ...data,
         students: data.lesson_students.map((ls: any) => ls.student),
         homework: data.homework?.[0] || null,
-        lesson_students: data.lesson_students
+        lesson_students: data.lesson_students,
+        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular'
       };
 
       setLesson(transformedLesson);
@@ -157,6 +158,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const canEdit = userRole === 'admin' || userRole === 'owner' || userRole === 'tutor';
   const canComplete = canEdit && lesson.status === 'scheduled';
   const canAssignHomework = canEdit;
+
+  // Map userRole to the expected type for VideoConferenceLink
+  const videoConferenceUserRole = (userRole === 'parent') ? 'student' : userRole as 'tutor' | 'student' | 'admin' | 'owner';
 
   return (
     <>
@@ -269,7 +273,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               <VideoConferenceLink 
                 link={lesson.video_conference_link}
                 provider={lesson.video_conference_provider}
-                userRole={userRole}
+                userRole={videoConferenceUserRole}
                 isGroupLesson={lesson.is_group}
                 studentCount={lesson.students?.length || 0}
                 lessonId={lesson.id}
@@ -367,7 +371,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       {/* Edit Lesson Dialog */}
       <EditLessonForm
-        lesson={lesson}
+        lessonId={lesson.id}
         isOpen={isEditDialogOpen}
         onClose={() => setIsEditDialogOpen(false)}
         onSuccess={() => {
@@ -379,7 +383,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       {/* Complete Session Dialog */}
       <CompleteSessionDialog
-        lesson={lesson}
+        lessonId={lesson.id}
         isOpen={isCompleteDialogOpen}
         onClose={() => setIsCompleteDialogOpen(false)}
         onSuccess={() => {
@@ -391,7 +395,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       {/* Assign Homework Dialog */}
       <AssignHomeworkDialog
-        lessonId={lesson.id}
         isOpen={isHomeworkDialogOpen}
         onClose={() => setIsHomeworkDialogOpen(false)}
         onSuccess={() => {
@@ -404,7 +407,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       {/* View Homework Dialog */}
       {lesson.homework && (
         <ViewHomeworkDialog
-          homework={lesson.homework}
+          homeworkId={lesson.homework.id}
           isOpen={isViewHomeworkOpen}
           onClose={() => setIsViewHomeworkOpen(false)}
         />

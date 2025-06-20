@@ -114,8 +114,11 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       return;
     }
 
+    // Map userRole to expected type for getTokens
+    const agoraUserRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : userRole as 'tutor' | 'student' | 'parent';
+
     // Get fresh tokens for the user
-    const tokens = await getTokens(lessonId, userRole);
+    const tokens = await getTokens(lessonId, agoraUserRole);
     
     if (tokens) {
       // In a real implementation, you would integrate with the Agora Web SDK here
