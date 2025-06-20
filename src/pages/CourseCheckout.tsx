@@ -16,8 +16,9 @@ const CourseCheckout = () => {
   const { isOwner } = useAuth();
   const [searchParams] = useSearchParams();
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
-  const { data: course, isLoading } = useQuery({
+  const { data: course, isLoading: isCourseLoading } = useQuery({
     queryKey: ['course', courseId],
     queryFn: () => learningHubService.getCourseById(courseId!),
     enabled: !!courseId,
@@ -36,36 +37,45 @@ const CourseCheckout = () => {
 
   // Redirect owners directly to course content
   useEffect(() => {
-    if (course && isOwner) {
+    if (course && isOwner && !isCourseLoading) {
+      console.log('Owner detected, redirecting to course');
       toast({
         title: "Admin Access",
         description: "Redirecting to course content with full access.",
       });
       navigate(`/course/${course.id}`);
     }
-  }, [course, isOwner, navigate, toast]);
+  }, [course, isOwner, navigate, toast, isCourseLoading]);
 
   // Check if user already has access on component mount
   useEffect(() => {
-    if (course && !isOwner) {
+    if (course && !isOwner && !isCheckingAccess) {
       checkExistingAccess();
     }
   }, [course, isOwner]);
 
   const checkExistingAccess = async () => {
-    if (!course) return;
+    if (!course || isOwner) return;
+    
+    console.log('Checking existing access for course:', course.id);
+    setIsCheckingAccess(true);
     
     try {
       const hasAccess = await paymentService.checkCoursePurchase(course.id);
+      console.log('Access check result:', hasAccess);
+      
       if (hasAccess) {
         toast({
           title: "Access Already Available",
           description: "You already have access to this course!",
         });
         navigate(`/course/${course.id}`);
+        return;
       }
     } catch (error) {
       console.error('Error checking course access:', error);
+    } finally {
+      setIsCheckingAccess(false);
     }
   };
 
@@ -75,6 +85,7 @@ const CourseCheckout = () => {
     setIsLoadingSubscription(true);
     
     try {
+      console.log('Starting trial for course:', course.id);
       const data = await paymentService.createSubscriptionWithTrial(course.id);
       
       console.log('Checkout session response:', data);
@@ -89,6 +100,7 @@ const CourseCheckout = () => {
       }
 
       if (data.checkout_url) {
+        console.log('Redirecting to Stripe checkout:', data.checkout_url);
         // Redirect to Stripe Checkout
         window.location.href = data.checkout_url;
       } else {
@@ -111,10 +123,16 @@ const CourseCheckout = () => {
     return `£${(priceInPence / 100).toFixed(2)}`;
   };
 
-  if (isLoading || !course) {
+  // Show loading spinner while checking course or access
+  if (isCourseLoading || isCheckingAccess || !course) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {isCourseLoading ? 'Loading course...' : 'Checking access...'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -123,7 +141,10 @@ const CourseCheckout = () => {
   if (isOwner) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to course...</p>
+        </div>
       </div>
     );
   }
