@@ -6,9 +6,8 @@ import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const CourseCheckout = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -18,8 +17,6 @@ const CourseCheckout = () => {
   const [searchParams] = useSearchParams();
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [redirectAttempts, setRedirectAttempts] = useState(0);
 
   const { data: course, isLoading: isCourseLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -82,80 +79,31 @@ const CourseCheckout = () => {
     }
   };
 
-  const attemptRedirect = (url: string) => {
-    console.log(`Redirect attempt ${redirectAttempts + 1}:`, url);
-    setRedirectAttempts(prev => prev + 1);
-    
-    try {
-      // First attempt: direct redirect
-      if (redirectAttempts === 0) {
-        console.log('Attempting direct redirect...');
-        window.location.href = url;
-        return;
-      }
-      
-      // Second attempt: open in new tab
-      if (redirectAttempts === 1) {
-        console.log('Attempting redirect in new tab...');
-        const newWindow = window.open(url, '_blank');
-        if (newWindow) {
-          toast({
-            title: "Checkout Opened",
-            description: "Stripe checkout has opened in a new tab. Please complete your payment there.",
-          });
-        } else {
-          throw new Error('Popup blocked');
-        }
-        return;
-      }
-      
-      // If we get here, both methods failed - show manual link
-      setCheckoutUrl(url);
-      
-    } catch (error) {
-      console.error('Redirect error:', error);
-      setCheckoutUrl(url);
-      toast({
-        title: "Redirect Issue",
-        description: "Please use the manual link below to continue to checkout.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleStartTrial = async () => {
     if (!course) return;
     
     setIsLoadingSubscription(true);
-    setCheckoutUrl(null);
-    setRedirectAttempts(0);
     
     try {
       console.log('Starting trial for course:', course.id);
-      const data = await paymentService.createSubscriptionWithTrial(course.id);
       
-      console.log('Checkout session response:', data);
-      
-      if (data.message === "Course already purchased") {
-        toast({
-          title: "Access Already Available",
-          description: "You already have access to this course!",
-        });
-        navigate(`/course/${course.id}`);
-        return;
+      // Call the edge function directly, which will handle the redirect
+      const response = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await import('@/integrations/supabase/client')).supabase.auth.getSession().then(s => s.data.session?.access_token)}`,
+        },
+        body: JSON.stringify({ courseId: course.id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create checkout session');
       }
 
-      if (data.checkout_url) {
-        console.log('Received checkout URL:', data.checkout_url);
-        
-        // Small delay to ensure UI is updated
-        setTimeout(() => {
-          attemptRedirect(data.checkout_url!);
-        }, 500);
-        
-      } else {
-        throw new Error("No checkout URL received");
-      }
+      // If we get here, the redirect should have happened
+      console.log('Checkout session created successfully');
       
     } catch (error) {
       console.error('Error creating checkout session:', error);
@@ -291,27 +239,6 @@ const CourseCheckout = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Manual checkout link if redirect failed */}
-            {checkoutUrl && (
-              <Alert>
-                <ExternalLink className="h-4 w-4" />
-                <AlertDescription>
-                  <div className="space-y-3">
-                    <p>Complete your checkout by clicking the link below:</p>
-                    <Button
-                      asChild
-                      className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium rounded-md"
-                    >
-                      <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Continue to Stripe Checkout
-                      </a>
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-
             <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
               <h3 className="font-semibold text-gray-900 mb-4">Ready to start?</h3>
               <p className="text-gray-600 mb-4">
@@ -325,7 +252,7 @@ const CourseCheckout = () => {
                 {isLoadingSubscription ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {redirectAttempts === 0 ? 'Creating checkout...' : 'Opening checkout...'}
+                    Redirecting to checkout...
                   </>
                 ) : (
                   <>

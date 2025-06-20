@@ -84,13 +84,10 @@ serve(async (req) => {
     if (existingPurchase) {
       return new Response(
         JSON.stringify({ 
-          checkout_url: null,
-          message: "Course already purchased",
-          course_title: course.title,
-          amount: course.price || 1299,
-          requires_payment_method: false
+          error: "Course already purchased",
+          message: "Course already purchased"
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -146,15 +143,13 @@ serve(async (req) => {
 
     console.log("Checkout session created:", session.id, "URL:", session.url);
 
-    return new Response(JSON.stringify({ 
-      checkout_url: session.url,
-      session_id: session.id,
-      course_title: course.title,
-      amount: course.price || 1299,
-      requires_payment_method: true
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+    // Following the sample code pattern - redirect directly to Stripe
+    return new Response(null, {
+      status: 303,
+      headers: {
+        ...corsHeaders,
+        'Location': session.url!,
+      },
     });
   } catch (error) {
     console.error("Error in create-checkout-session function:", error);
