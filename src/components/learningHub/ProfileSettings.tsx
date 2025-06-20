@@ -20,11 +20,21 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
+interface ProfileData {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const ProfileSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
   const {
     register,
