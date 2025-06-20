@@ -2,12 +2,11 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, Link, Settings } from 'lucide-react';
+import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNavigate } from 'react-router-dom';
-import { useAgora } from '@/hooks/useAgora';
 
 interface VideoConferenceLinkProps {
   link: string | null;
@@ -19,12 +18,6 @@ interface VideoConferenceLinkProps {
   lessonId?: string;
   hasLessonSpace?: boolean;
   spaceId?: string;
-  // Agora-specific props
-  hasAgora?: boolean;
-  agoraChannelName?: string;
-  agoraToken?: string;
-  agoraUid?: number;
-  agoraAppId?: string;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ 
@@ -36,21 +29,14 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   studentCount = 0,
   lessonId,
   hasLessonSpace = false,
-  spaceId,
-  hasAgora = false,
-  agoraChannelName,
-  agoraToken,
-  agoraUid,
-  agoraAppId
+  spaceId
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
-  const [isAgoraSetupOpen, setIsAgoraSetupOpen] = React.useState(false);
   const navigate = useNavigate();
-  const { createRoom, getTokens, isCreatingRoom, isGeneratingTokens } = useAgora();
 
-  // Don't render if no links are available and no lesson space and no Agora
-  if (!link && !hasLessonSpace && !hasAgora) return null;
+  // Don't render if no links are available and no lesson space
+  if (!link && !hasLessonSpace) return null;
 
   const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -67,8 +53,6 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         return 'Google Meet';
       case 'zoom':
         return 'Zoom';
-      case 'agora':
-        return 'Agora Video Call';
       default:
         return 'Video Conference';
     }
@@ -90,44 +74,6 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  const handleCreateAgoraRoom = async () => {
-    if (!lessonId) {
-      toast.error('Lesson ID is required');
-      return;
-    }
-
-    const roomData = await createRoom({
-      lessonId,
-      title: 'Video Lesson',
-      startTime: new Date().toISOString(),
-      duration: 60
-    });
-
-    if (roomData) {
-      toast.success('Agora room created! You can now join the video call.');
-    }
-  };
-
-  const handleJoinAgoraRoom = async () => {
-    if (!lessonId) {
-      toast.error('Lesson ID is required');
-      return;
-    }
-
-    // Map userRole to expected type for getTokens
-    const agoraUserRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : userRole as 'tutor' | 'student' | 'parent';
-
-    // Get fresh tokens for the user
-    const tokens = await getTokens(lessonId, agoraUserRole);
-    
-    if (tokens) {
-      // In a real implementation, you would integrate with the Agora Web SDK here
-      // For now, we'll show a success message
-      toast.success('Agora tokens generated! Ready to join video call.');
-      console.log('Agora connection details:', tokens);
-    }
-  };
-
   // Generate the correct URL based on user role
   const getCorrectUrl = () => {
     if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
@@ -143,13 +89,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleJoinLesson = () => {
-    // Handle Agora provider
-    if (provider === 'agora') {
-      handleJoinAgoraRoom();
-      return;
-    }
-
-    // For students and parents, redirect to consent flow for Lesson Space
+    // For students and parents, redirect to consent flow
     if ((userRole === 'student') && lessonId) {
       navigate(`/join-lesson/${lessonId}`);
       return;
@@ -169,14 +109,11 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   const showStudentJoinLink = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
                               provider === 'lesson_space' && hasLessonSpace && studentCount > 0 && spaceId;
 
-  const showAgoraSetup = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
-                         (provider === 'agora' || !provider) && lessonId;
-
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
         {/* Main lesson URL section */}
-        {(urlToUse || provider === 'agora') && (
+        {urlToUse && (
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -209,23 +146,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                 onClick={handleJoinLesson}
                 className="flex-1"
                 variant={userRole === 'tutor' ? 'default' : 'outline'}
-                disabled={provider === 'agora' && isGeneratingTokens}
               >
-                {provider === 'agora' && isGeneratingTokens ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    {getJoinButtonText()}
-                  </>
-                )}
+                <ExternalLink className="h-4 w-4 mr-2" />
+                {getJoinButtonText()}
               </Button>
               
-              {/* Only show copy button for non-Agora providers and non-students */}
-              {userRole !== 'student' && provider !== 'agora' && urlToUse && (
+              {/* Only show copy button for tutors/admins/owners */}
+              {userRole !== 'student' && (
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -246,81 +173,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </div>
             )}
 
-            {userRole === 'tutor' && provider === 'agora' && (
-              <div className="text-xs text-muted-foreground bg-green-50 p-2 rounded">
-                <strong>Agora Video Call:</strong> High-quality video conferencing with whiteboard and recording capabilities.
-              </div>
-            )}
-
             {userRole === 'student' && provider === 'lesson_space' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
                 <strong>Student access:</strong> Click "Join Lesson" to review requirements and enter the lesson space.
               </div>
             )}
-
-            {userRole === 'student' && provider === 'agora' && (
-              <div className="text-xs text-muted-foreground bg-green-50 p-2 rounded">
-                <strong>Student access:</strong> Click "Join Lesson" to connect to the video call.
-              </div>
-            )}
           </>
-        )}
-
-        {/* Agora setup section for tutors/admins */}
-        {showAgoraSetup && (
-          <div className="border-t pt-3">
-            <Collapsible open={isAgoraSetupOpen} onOpenChange={setIsAgoraSetupOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground">
-                <span>Agora Video Call Setup</span>
-                {isAgoraSetupOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 mt-2">
-                {!agoraChannelName ? (
-                  <div className="flex items-center justify-between p-2 bg-orange-50 rounded border border-orange-200">
-                    <div className="flex items-center">
-                      <Settings className="h-4 w-4 text-orange-500 mr-2" />
-                      <span className="text-sm">Video call room not created</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={handleCreateAgoraRoom}
-                      disabled={isCreatingRoom}
-                      className="h-7 px-3"
-                    >
-                      {isCreatingRoom ? (
-                        <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                          Creating...
-                        </>
-                      ) : (
-                        'Create Room'
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
-                    <div className="flex items-center">
-                      <Video className="h-4 w-4 text-green-500 mr-2" />
-                      <span className="text-sm">Video call room ready</span>
-                    </div>
-                    <div className="text-xs text-green-600">
-                      Channel: {agoraChannelName}
-                    </div>
-                  </div>
-                )}
-                <div className="text-xs text-muted-foreground">
-                  {!agoraChannelName 
-                    ? 'Create an Agora video call room for this lesson.'
-                    : 'Students can now join the video call when you start the lesson.'
-                  }
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
         )}
 
         {/* Student invite link section for tutors/admins */}

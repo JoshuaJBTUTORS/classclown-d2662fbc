@@ -50,6 +50,20 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setPreloadedLessonData(null);
   };
 
+  const handleDeleteLesson = async (lessonId: string, deleteAllFuture = false) => {
+    console.log("Delete lesson called:", lessonId, deleteAllFuture);
+    // This will be handled by the parent Calendar component
+    setIsDetailsOpen(false);
+    setSelectedLessonId(null);
+  };
+
+  const handleCompleteSession = (lessonId: string) => {
+    console.log("Complete session called:", lessonId);
+    // This will be handled by the parent Calendar component
+    setIsDetailsOpen(false);
+    setSelectedLessonId(null);
+  };
+
   const handleRefresh = () => {
     console.log("Refresh called from CalendarDisplay");
     // This will trigger a refresh in the parent component
@@ -252,6 +266,10 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           isOpen={isDetailsOpen}
           onClose={handleDetailsClose}
           lessonId={selectedLessonId}
+          onDelete={handleDeleteLesson}
+          onCompleteSession={handleCompleteSession}
+          onAssignHomework={handleAssignHomework}
+          onRefresh={handleRefresh}
         />
 
         <AssignHomeworkDialog
