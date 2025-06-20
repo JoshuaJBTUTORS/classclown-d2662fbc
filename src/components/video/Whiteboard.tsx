@@ -25,7 +25,8 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ isReadOnly = false }) => {
       isDrawingMode: !isReadOnly && activeTool === 'pen',
     });
 
-    if (!isReadOnly) {
+    // Initialize the freeDrawingBrush properties only if not in read-only mode
+    if (!isReadOnly && canvas.freeDrawingBrush) {
       canvas.freeDrawingBrush.color = strokeColor;
       canvas.freeDrawingBrush.width = strokeWidth;
     }
@@ -42,6 +43,7 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ isReadOnly = false }) => {
 
     fabricCanvas.isDrawingMode = activeTool === 'pen' || activeTool === 'eraser';
     
+    // Check if freeDrawingBrush exists before setting properties
     if (fabricCanvas.freeDrawingBrush) {
       fabricCanvas.freeDrawingBrush.color = activeTool === 'eraser' ? '#ffffff' : strokeColor;
       fabricCanvas.freeDrawingBrush.width = activeTool === 'eraser' ? strokeWidth * 3 : strokeWidth;
