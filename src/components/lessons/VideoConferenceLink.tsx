@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -43,8 +44,17 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   const navigate = useNavigate();
 
   // Check if we have any video conference capability
-  const hasAgoraRoom = provider === 'agora' && agoraChannelName && agoraToken;
+  const hasAgoraRoom = provider === 'agora' && agoraChannelName && (agoraToken || lessonId);
   const hasVideoConference = link || hasLessonSpace || hasAgoraRoom;
+
+  console.log('VideoConferenceLink props:', {
+    provider,
+    agoraChannelName,
+    agoraToken,
+    hasAgoraRoom,
+    hasVideoConference,
+    lessonId
+  });
 
   // Don't render if no video conference capabilities are available
   if (!hasVideoConference) return null;
@@ -65,7 +75,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       case 'zoom':
         return 'Zoom';
       case 'agora':
-        return 'Agora.io';
+        return 'Agora Video Room';
       default:
         return 'Video Conference';
     }
@@ -104,6 +114,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   const handleJoinLesson = () => {
     // Handle Agora rooms differently - navigate to internal video room
     if (provider === 'agora' && hasAgoraRoom && lessonId) {
+      console.log('Navigating to Agora video room for lesson:', lessonId);
       navigate(`/video-room/${lessonId}`);
       return;
     }
@@ -200,7 +211,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
             {userRole === 'tutor' && provider === 'agora' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Host privileges:</strong> You have full control of the Agora meeting room.
+                <strong>Host privileges:</strong> You have full control of the Agora meeting room with whiteboard access.
               </div>
             )}
 
@@ -212,7 +223,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
             {userRole === 'student' && provider === 'agora' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Student access:</strong> Click "Join Lesson" to review requirements and enter the meeting.
+                <strong>Student access:</strong> Click "Join Lesson" to enter the interactive video classroom with whiteboard.
               </div>
             )}
           </>

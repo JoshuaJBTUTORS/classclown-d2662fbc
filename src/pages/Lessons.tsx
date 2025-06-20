@@ -72,10 +72,18 @@ const Lessons = () => {
   const fetchLessons = async () => {
     setIsLoading(true);
     try {
+      // Include all Agora fields in the query to ensure proper display
       const { data, error } = await supabase
         .from('lessons')
         .select(`
           *,
+          agora_channel_name,
+          agora_token,
+          agora_uid,
+          agora_rtm_token,
+          netless_room_uuid,
+          netless_room_token,
+          netless_app_identifier,
           tutor:tutors(id, first_name, last_name),
           lesson_students!inner(
             student:students(id, first_name, last_name)
@@ -84,6 +92,8 @@ const Lessons = () => {
         .order('start_time', { ascending: false });
 
       if (error) throw error;
+
+      console.log('Fetched lessons with Agora data:', data);
 
       // Transform the data
       const processedData = data.map(lesson => {

@@ -39,27 +39,43 @@ const VideoRoom: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      // Fetch lesson details
+      console.log('Loading video room for lesson:', lessonId);
+
+      // Fetch lesson details with all Agora fields
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
-        .select('*')
+        .select(`
+          *,
+          agora_channel_name,
+          agora_token,
+          agora_uid,
+          agora_rtm_token,
+          netless_room_uuid,
+          netless_room_token,
+          netless_app_identifier
+        `)
         .eq('id', lessonId)
         .single();
 
       if (lessonError || !lessonData) {
+        console.error('Lesson fetch error:', lessonError);
         throw new Error('Lesson not found');
       }
 
+      console.log('Lesson data loaded:', lessonData);
       setLesson(lessonData);
 
       // Get fresh tokens for the user - map admin/owner to tutor for Agora roles
       const agoraRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole || 'student');
+      console.log('Requesting tokens with role:', agoraRole);
+      
       const credentials = await getTokens(lessonId, agoraRole as 'tutor' | 'student');
       
       if (!credentials) {
         throw new Error('Failed to get video conference access');
       }
 
+      console.log('Agora credentials obtained:', credentials);
       setAgoraCredentials(credentials);
     } catch (error: any) {
       console.error('Error loading video room:', error);
@@ -93,9 +109,14 @@ const VideoRoom: React.FC = () => {
             <p className="text-gray-600 mb-4">
               {error || 'Video conference not available'}
             </p>
-            <Button onClick={() => navigate('/calendar')} variant="outline">
-              Go Back to Calendar
-            </Button>
+            <div className="space-y-2">
+              <Button onClick={() => navigate('/calendar')} variant="outline">
+                Go Back to Calendar
+              </Button>
+              <Button onClick={loadVideoRoom} variant="default">
+                Retry Loading
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -111,6 +132,14 @@ const VideoRoom: React.FC = () => {
     roomToken: agoraCredentials.netlessRoomToken,
     appIdentifier: agoraCredentials.netlessAppIdentifier
   } : undefined;
+
+  console.log('Rendering video room with credentials:', {
+    appId: agoraCredentials.appId,
+    channel: agoraCredentials.channelName,
+    uid: agoraCredentials.uid,
+    role: videoRoomRole,
+    netless: netlessCredentials
+  });
 
   return (
     <AgoraRTCProvider client={agoraClient}>

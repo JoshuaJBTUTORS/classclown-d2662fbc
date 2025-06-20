@@ -29,6 +29,8 @@ export const useAgora = () => {
   const createRoom = async (params: CreateRoomParams): Promise<AgoraRoomData | null> => {
     setIsCreatingRoom(true);
     try {
+      console.log('Creating Agora room for lesson:', params.lessonId);
+      
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
           action: 'create-room',
@@ -43,8 +45,14 @@ export const useAgora = () => {
         return null;
       }
 
-      if (data.success) {
+      console.log('Agora room creation response:', data);
+
+      if (data?.success) {
         toast.success('Online room created successfully!');
+        
+        // Wait a moment for the database to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         return {
           channelName: data.channelName,
           rtcToken: data.rtcToken,
@@ -56,7 +64,8 @@ export const useAgora = () => {
           netlessAppIdentifier: data.netlessAppIdentifier
         };
       } else {
-        toast.error('Failed to create online room');
+        console.error('Room creation failed:', data);
+        toast.error(data?.error || 'Failed to create online room');
         return null;
       }
     } catch (error) {
@@ -71,6 +80,8 @@ export const useAgora = () => {
   const getTokens = async (lessonId: string, userRole: 'tutor' | 'student' | 'parent' = 'student'): Promise<AgoraRoomData | null> => {
     setIsGeneratingTokens(true);
     try {
+      console.log('Getting Agora tokens for lesson:', lessonId, 'role:', userRole);
+      
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
           action: 'get-tokens',
@@ -85,7 +96,9 @@ export const useAgora = () => {
         return null;
       }
 
-      if (data.success) {
+      console.log('Agora tokens response:', data);
+
+      if (data?.success) {
         return {
           channelName: data.channelName,
           rtcToken: data.rtcToken,
@@ -98,7 +111,8 @@ export const useAgora = () => {
           netlessAppIdentifier: data.netlessAppIdentifier
         };
       } else {
-        toast.error('Failed to get room access');
+        console.error('Token generation failed:', data);
+        toast.error(data?.error || 'Failed to get room access');
         return null;
       }
     } catch (error) {
