@@ -409,7 +409,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     }
   }, [appId, channel, token, userRole, addDebugLog, retryCount, retryConnection]);
 
-  // Initialize on mount - only depends on static props, NOT on currentUid
+  // Initialize on mount
   useEffect(() => {
     mountedRef.current = true;
     
@@ -419,20 +419,15 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     // Start initialization
     initializeAgora();
 
+    // Cleanup on unmount
     return () => {
       mountedRef.current = false;
       isInitializingRef.current = false;
+      // Don't call cleanupAgora here - let the component unmount naturally
     };
-  }, [appId, channel, token, userRole]); // Removed currentUid from dependencies
+  }, [appId, channel, token, userRole, initializeAgora]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      cleanupAgora();
-    };
-  }, [cleanupAgora]);
-
+  // Toggle audio function
   const toggleAudio = useCallback(() => {
     setIsAudioEnabled(prev => {
       const newState = !prev;
@@ -444,6 +439,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     });
   }, [localAudioTrack]);
 
+  // Toggle video function
   const toggleVideo = useCallback(() => {
     setIsVideoEnabled(prev => {
       const newState = !prev;
@@ -455,6 +451,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     });
   }, [localVideoTrack]);
 
+  // Toggle screen sharing function
   const toggleScreenShare = useCallback(async () => {
     if (!agoraClient) {
       toast.error('Video engine not ready');
@@ -495,6 +492,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     }
   }, [agoraClient, localVideoTrack, screenTrack, isScreenSharing]);
 
+  // Toggle recording function
   const toggleRecording = useCallback(async () => {
     if (userRole !== 'tutor') {
       toast.error('Only tutors can control recording');
@@ -519,10 +517,12 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     }
   }, [userRole, isRecording, startRecording, stopRecording, channel]);
 
+  // Handle manage participants function
   const handleManageParticipants = useCallback(() => {
     toast.info('Participant management coming soon');
   }, []);
 
+  // Handle leave function
   const handleLeave = useCallback(async () => {
     try {
       addDebugLog('🚪 Leaving channel and cleaning up...');
@@ -536,6 +536,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     }
   }, [cleanupAgora, onLeave, addDebugLog]);
 
+  // Handle manual retry function
   const handleManualRetry = useCallback(() => {
     addDebugLog('🔄 Manual retry requested by user');
     setRetryCount(0); // Reset retry count for manual retry
@@ -550,6 +551,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     initializeAgora();
   }, [addDebugLog, generateUniqueUid, uid, initializeAgora]);
 
+  // Total participants count
   const totalParticipants = remoteUsers.length + 1;
 
   // Show detailed connection status
