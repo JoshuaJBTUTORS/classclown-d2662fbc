@@ -5,7 +5,7 @@ import { AgoraTokenBuilder } from "./token-builder.ts";
 export const ROLE_PUBLISHER = 1;
 export const ROLE_SUBSCRIBER = 2;
 
-// Simplified token validation function
+// Enhanced token validation function
 export function validateAgoraToken(token: string, appId: string): boolean {
   try {
     if (!token || token.length < 50) {
@@ -13,9 +13,9 @@ export function validateAgoraToken(token: string, appId: string): boolean {
       return false;
     }
 
-    // Official Agora tokens should be around 150-160 characters
+    // Official Agora tokens should be around 140-180 characters with the new library
     if (token.length < 140 || token.length > 180) {
-      console.warn('[VALIDATE] Token length unusual:', token.length, 'Expected: 150-160');
+      console.warn('[VALIDATE] Token length unusual:', token.length, 'Expected: 140-180');
     }
 
     // Basic structure check - Agora tokens typically start with specific patterns
@@ -24,7 +24,7 @@ export function validateAgoraToken(token: string, appId: string): boolean {
       return false;
     }
 
-    console.log('[VALIDATE] Token validation passed - official library format');
+    console.log('[VALIDATE] Token validation passed - improved library format');
     return true;
   } catch (error) {
     console.error('[VALIDATE] Token validation error:', error);
@@ -32,17 +32,17 @@ export function validateAgoraToken(token: string, appId: string): boolean {
   }
 }
 
-// Generate RTC Token using official library
+// Generate RTC Token using improved library with fallbacks
 export async function generateRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: number): Promise<string> {
   try {
-    console.log('[RTC-TOKEN] Generating with official Agora library:', {
+    console.log('[RTC-TOKEN] Generating with improved Agora library:', {
       appId: appId.substring(0, 8) + '...',
       channelName,
       uid,
       role: role === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER'
     });
 
-    // Use official library with NO expiration (0 means no expiration)
+    // Use improved token builder with NO expiration (0 means no expiration)
     const token = await AgoraTokenBuilder.buildRtcToken(
       appId,
       appCertificate,
@@ -52,30 +52,30 @@ export async function generateRtcToken(appId: string, appCertificate: string, ch
       0 // NO EXPIRATION - same as Agora website default
     );
 
-    console.log('[RTC-TOKEN] Generated token with official library:', {
+    console.log('[RTC-TOKEN] Generated token with improved library:', {
       tokenLength: token.length,
       tokenPrefix: token.substring(0, 20) + '...',
-      expectedLength: '150-160 chars',
+      expectedLength: '140-180 chars',
       actualLength: token.length,
-      officialLibrary: true
+      improvedLibrary: true
     });
 
     return token;
   } catch (error) {
-    console.error('[RTC-TOKEN] Official library generation failed:', error);
+    console.error('[RTC-TOKEN] Improved library generation failed:', error);
     throw new Error(`RTC token generation failed: ${error.message}`);
   }
 }
 
-// Generate RTM Token using official library
+// Generate RTM Token using improved library with fallbacks
 export async function generateRtmToken(appId: string, appCertificate: string, userId: string): Promise<string> {
   try {
-    console.log('[RTM-TOKEN] Generating with official Agora library:', {
+    console.log('[RTM-TOKEN] Generating with improved Agora library:', {
       appId: appId.substring(0, 8) + '...',
       userId
     });
 
-    // Use official library with NO expiration
+    // Use improved token builder with NO expiration
     const token = await AgoraTokenBuilder.buildRtmToken(
       appId,
       appCertificate,
@@ -83,15 +83,15 @@ export async function generateRtmToken(appId: string, appCertificate: string, us
       0 // NO EXPIRATION - same as website default
     );
 
-    console.log('[RTM-TOKEN] Generated token with official library:', {
+    console.log('[RTM-TOKEN] Generated token with improved library:', {
       tokenLength: token.length,
       tokenPrefix: token.substring(0, 20) + '...',
-      officialLibrary: true
+      improvedLibrary: true
     });
 
     return token;
   } catch (error) {
-    console.error('[RTM-TOKEN] Official library generation failed:', error);
+    console.error('[RTM-TOKEN] Improved library generation failed:', error);
     throw new Error(`RTM token generation failed: ${error.message}`);
   }
 }

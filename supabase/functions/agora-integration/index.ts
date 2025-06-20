@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with official Agora token library');
+    console.log('[AGORA-INTEGRATION] Processing request with improved Agora token generation');
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -83,14 +83,14 @@ async function createVideoRoom(
     // Map user role to Agora role using official constants
     const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
 
-    console.log("[AGORA-INTEGRATION] Using official Agora token library:", {
+    console.log("[AGORA-INTEGRATION] Using improved Agora token generation:", {
       userRole: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
       noExpiration: true,
-      officialLibrary: true
+      improvedImports: true
     });
 
-    // Generate tokens using official library (NO expiration)
+    // Generate tokens using improved token builder
     const rtcToken = await generateRtcToken(
       appId, 
       appCertificate, 
@@ -105,16 +105,16 @@ async function createVideoRoom(
       uid.toString()
     );
 
-    console.log("[AGORA-INTEGRATION] Generated tokens with official library:", {
+    console.log("[AGORA-INTEGRATION] Generated tokens with improved method:", {
       rtcTokenLength: rtcToken.length,
       rtcTokenPrefix: rtcToken.substring(0, 15) + '...',
       rtmTokenLength: rtmToken.length,
       rtmTokenPrefix: rtmToken.substring(0, 15) + '...',
       expectedFormat: '~155 chars',
-      officialLibrary: true
+      improvedGeneration: true
     });
 
-    // Validate tokens using updated validation
+    // Validate tokens
     if (!validateAgoraToken(rtcToken, appId)) {
       throw new Error('Generated RTC token failed validation');
     }
@@ -123,7 +123,7 @@ async function createVideoRoom(
       throw new Error('Generated RTM token failed validation');
     }
 
-    console.log('[AGORA-INTEGRATION] Token validation passed - official library implementation confirmed');
+    console.log('[AGORA-INTEGRATION] Token validation passed - improved implementation confirmed');
 
     // Create Netless whiteboard room if token is available
     let netlessRoomUuid = null;
@@ -169,7 +169,7 @@ async function createVideoRoom(
       throw updateError;
     }
 
-    console.log("[AGORA-INTEGRATION] Video room created successfully with official Agora library");
+    console.log("[AGORA-INTEGRATION] Video room created successfully with improved token generation");
 
     return new Response(
       JSON.stringify({
@@ -185,7 +185,7 @@ async function createVideoRoom(
         message: "Agora video room created successfully",
         debug: {
           tokenLength: rtcToken.length,
-          officialLibrary: true,
+          improvedGeneration: true,
           noExpiration: true,
           role: data.userRole,
           agoraRole,
@@ -244,7 +244,7 @@ async function getTokens(
     // Map user role to Agora role using official constants
     const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
     
-    // Generate fresh tokens using official library
+    // Generate fresh tokens using improved method
     const rtcToken = await generateRtcToken(
       appId, 
       appCertificate, 
@@ -259,12 +259,12 @@ async function getTokens(
       lesson.agora_uid.toString()
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens with official library:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens with improved method:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
-      officialLibrary: true
+      improvedGeneration: true
     });
 
     // Validate tokens
@@ -304,7 +304,7 @@ async function getTokens(
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         debug: {
           tokenLength: rtcToken.length,
-          officialLibrary: true,
+          improvedGeneration: true,
           noExpiration: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
@@ -364,12 +364,12 @@ async function regenerateTokens(
     // Map user role to Agora role using official constants
     const agoraRole = data.userRole === 'tutor' ? ROLE_PUBLISHER : ROLE_SUBSCRIBER;
     
-    console.log("[AGORA-INTEGRATION] Regenerating with official library:", {
+    console.log("[AGORA-INTEGRATION] Regenerating with improved method:", {
       role: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER'
     });
     
-    // Generate fresh tokens using official library
+    // Generate fresh tokens using improved method
     const rtcToken = await generateRtcToken(
       appId, 
       appCertificate, 
@@ -384,12 +384,12 @@ async function regenerateTokens(
       lesson.agora_uid.toString()
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens with official library:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens with improved method:", {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: data.userRole,
       agoraRole: agoraRole === ROLE_PUBLISHER ? 'PUBLISHER' : 'SUBSCRIBER',
-      officialLibrary: true
+      improvedGeneration: true
     });
 
     // Validate tokens
@@ -439,7 +439,7 @@ async function regenerateTokens(
       }
     }
 
-    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with official library");
+    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with improved method");
 
     return new Response(
       JSON.stringify({
@@ -456,7 +456,7 @@ async function regenerateTokens(
         regenerated: true,
         debug: {
           tokenLength: rtcToken.length,
-          officialLibrary: true,
+          improvedGeneration: true,
           noExpiration: true,
           channelName: lesson.agora_channel_name,
           uid: lesson.agora_uid,
