@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -25,6 +24,7 @@ interface CreateRoomParams {
 export const useAgora = () => {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isGeneratingTokens, setIsGeneratingTokens] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const createRoom = async (params: CreateRoomParams): Promise<AgoraRoomData | null> => {
     setIsCreatingRoom(true);
@@ -150,6 +150,73 @@ export const useAgora = () => {
     }
   };
 
+  const regenerateTokens = async (lessonId: string, userRole: 'tutor' | 'student' | 'parent' = 'student'): Promise<AgoraRoomData | null> => {
+    setIsRegenerating(true);
+    try {
+      console.log('Regenerating Agora tokens for lesson:', lessonId, 'role:', userRole);
+      
+      const { data, error } = await supabase.functions.invoke('agora-integration', {
+        body: {
+          action: 'regenerate-tokens',
+          lessonId,
+          userRole: userRole === 'parent' ? 'student' : userRole
+        }
+      });
+
+      if (error) {
+        console.error('Error regenerating Agora tokens:', error);
+        const errorMessage = error.message || 'Failed to regenerate room access';
+        toast.error(errorMessage);
+        return null;
+      }
+
+      console.log('Agora token regeneration response:', data);
+
+      if (data?.success) {
+        // Validate the response data
+        if (!data.appId || !data.channelName || !data.rtcToken) {
+          console.error('Invalid regeneration response:', data);
+          toast.error('Invalid room credentials received');
+          return null;
+        }
+
+        console.log('Fresh Agora credentials regenerated:', {
+          appId: data.appId,
+          channelName: data.channelName,
+          uid: data.uid,
+          hasRtcToken: !!data.rtcToken,
+          hasNetless: !!data.netlessRoomUuid,
+          regenerated: data.regenerated
+        });
+
+        toast.success('Room credentials regenerated successfully!');
+
+        return {
+          channelName: data.channelName,
+          rtcToken: data.rtcToken,
+          rtmToken: data.rtmToken,
+          uid: data.uid,
+          appId: data.appId,
+          role: data.role,
+          netlessRoomUuid: data.netlessRoomUuid,
+          netlessRoomToken: data.netlessRoomToken,
+          netlessAppIdentifier: data.netlessAppIdentifier
+        };
+      } else {
+        console.error('Token regeneration failed:', data);
+        const errorMessage = data?.error || 'Failed to regenerate room access';
+        toast.error(errorMessage);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error regenerating Agora tokens:', error);
+      toast.error('Failed to regenerate room access');
+      return null;
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   const startRecording = async (lessonId: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.functions.invoke('agora-integration', {
@@ -211,9 +278,11 @@ export const useAgora = () => {
   return {
     createRoom,
     getTokens,
+    regenerateTokens,
     startRecording,
     stopRecording,
     isCreatingRoom,
-    isGeneratingTokens
+    isGeneratingTokens,
+    isRegenerating
   };
 };

@@ -7,7 +7,7 @@ import { useAgora } from '@/hooks/useAgora';
 import AgoraVideoRoom from '@/components/video/AgoraVideoRoom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { AgoraRTCProvider } from 'agora-rtc-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
@@ -16,13 +16,14 @@ const VideoRoom: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
-  const { getTokens } = useAgora();
+  const { getTokens, regenerateTokens } = useAgora();
   
   const [lesson, setLesson] = useState<any>(null);
   const [agoraCredentials, setAgoraCredentials] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   
   // Create Agora client following SDK documentation
   const [agoraClient] = useState(() => 
@@ -115,6 +116,29 @@ const VideoRoom: React.FC = () => {
     setRetryCount(prev => prev + 1);
   };
 
+  const handleRegenerateTokens = async () => {
+    if (!lessonId) return;
+    
+    setIsRegenerating(true);
+    try {
+      const agoraRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole || 'student');
+      
+      const credentials = await regenerateTokens(lessonId, agoraRole as 'tutor' | 'student');
+      
+      if (credentials) {
+        setAgoraCredentials(credentials);
+        setError(null);
+        
+        // Refresh lesson data to get updated tokens
+        await loadVideoRoom();
+      }
+    } catch (error) {
+      console.error('Error regenerating tokens:', error);
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   const handleLeaveRoom = () => {
     navigate('/calendar');
   };
@@ -149,6 +173,26 @@ const VideoRoom: React.FC = () => {
               <Button onClick={handleRetry} className="w-full">
                 Try Again
               </Button>
+              {lesson?.video_conference_provider === 'agora' && (
+                <Button 
+                  onClick={handleRegenerateTokens} 
+                  variant="outline" 
+                  className="w-full"
+                  disabled={isRegenerating}
+                >
+                  {isRegenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Regenerating...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Regenerate Room Access
+                    </>
+                  )}
+                </Button>
+              )}
               <Button onClick={() => navigate('/calendar')} variant="outline" className="w-full">
                 Go Back to Calendar
               </Button>
