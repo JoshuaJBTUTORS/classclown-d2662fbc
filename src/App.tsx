@@ -35,6 +35,7 @@ import LearningHubDashboard from "./pages/LearningHubDashboard";
 import LearningHubMyCourses from "./pages/LearningHubMyCourses";
 import LearningHubAssessments from "./pages/LearningHubAssessments";
 import LearningHubRevision from "./pages/LearningHubRevision";
+import LearningHubSettings from "./pages/LearningHubSettings";
 import CourseCreate from "./pages/CourseCreate";
 import CourseEdit from "./pages/CourseEdit";
 import CourseDetail from "./pages/CourseDetail";
@@ -84,6 +85,7 @@ const App = () => (
                   <Route path="my-courses" element={<LearningHubMyCourses />} />
                   <Route path="assessments" element={<LearningHubAssessments />} />
                   <Route path="revision" element={<LearningHubRevision />} />
+                  <Route path="settings" element={<LearningHubSettings />} />
                   <Route path="progress" element={<Progress />} />
                   <Route path="library" element={<LearningHub />} />
                   {/* Redirect old nested course URLs to standalone route */}

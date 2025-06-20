@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -10,6 +9,7 @@ import {
   GraduationCap,
   Home,
   Calendar,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -51,6 +51,11 @@ const navigationItems = [
     title: 'Course Library',
     href: '/learning-hub/library',
     icon: Library
+  },
+  {
+    title: 'Settings',
+    href: '/learning-hub/settings',
+    icon: Settings
   }
 ];
 
@@ -114,4 +119,3 @@ const LearningHubSidebar = () => {
 };
 
 export default LearningHubSidebar;
-
