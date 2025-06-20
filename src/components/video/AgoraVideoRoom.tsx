@@ -42,6 +42,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [retryCount, setRetryCount] = useState(0);
+  const [shouldRetry, setShouldRetry] = useState(false); // New flag for triggering retries
   
   // Agora client and tracks
   const [agoraClient, setAgoraClient] = useState<any>(null);
@@ -127,35 +128,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     }
   }, [agoraClient, localAudioTrack, localVideoTrack, screenTrack, addDebugLog]);
 
-  // Controlled retry function with proper cleanup
-  const retryConnection = useCallback(async () => {
-    if (retryCount >= maxRetries) {
-      addDebugLog('❌ Max retries reached, stopping attempts');
-      setConnectionStatus('failed');
-      setConnectionError(`Maximum retry attempts (${maxRetries}) exceeded. Please try again later.`);
-      return;
-    }
-
-    addDebugLog('🔄 Starting controlled retry', { attempt: retryCount + 1, maxRetries });
-    
-    // Full cleanup first
-    await cleanupAgora();
-    
-    // Generate new UID for retry
-    const newUid = generateUniqueUid(uid);
-    currentUidRef.current = newUid;
-    
-    // Increment retry count
-    setRetryCount(prev => prev + 1);
-    
-    // Reset status and start fresh
-    setConnectionStatus('connecting');
-    setConnectionError(null);
-    
-    // Trigger initialization with new UID
-    initializeAgora();
-  }, [retryCount, maxRetries, addDebugLog, cleanupAgora, generateUniqueUid, uid]);
-
   // Connection timeout handler
   useEffect(() => {
     if (connectionStatus === 'connecting') {
@@ -171,8 +143,52 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     }
   }, [connectionStatus, addDebugLog]);
 
-  // Initialize Agora client and connect
-  const initializeAgora = useCallback(async () => {
+  // Separate retry effect that doesn't depend on initializeAgora
+  useEffect(() => {
+    if (shouldRetry && mountedRef.current) {
+      addDebugLog('🔄 Processing retry request');
+      setShouldRetry(false); // Reset the flag
+      
+      // Perform cleanup and retry with new UID
+      const performRetry = async () => {
+        await cleanupAgora();
+        
+        // Generate new UID for retry
+        const newUid = generateUniqueUid(uid);
+        currentUidRef.current = newUid;
+        
+        // Reset status and start fresh
+        setConnectionStatus('connecting');
+        setConnectionError(null);
+        
+        // Initialize again
+        initializeAgoraInternal();
+      };
+      
+      performRetry();
+    }
+  }, [shouldRetry, cleanupAgora, generateUniqueUid, uid, addDebugLog]);
+
+  // Controlled retry function with proper cleanup
+  const retryConnection = useCallback(async () => {
+    if (retryCount >= maxRetries) {
+      addDebugLog('❌ Max retries reached, stopping attempts');
+      setConnectionStatus('failed');
+      setConnectionError(`Maximum retry attempts (${maxRetries}) exceeded. Please try again later.`);
+      return;
+    }
+
+    addDebugLog('🔄 Starting controlled retry', { attempt: retryCount + 1, maxRetries });
+    
+    // Increment retry count
+    setRetryCount(prev => prev + 1);
+    
+    // Trigger retry using state flag
+    setShouldRetry(true);
+  }, [retryCount, maxRetries, addDebugLog]);
+
+  // Core initialization function - not dependent on changing state
+  const initializeAgoraInternal = useCallback(async () => {
     // Prevent multiple simultaneous initializations
     if (isInitializingRef.current) {
       addDebugLog('⚠️ Initialization already in progress, skipping...');
@@ -407,9 +423,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       // Clear initialization guard
       isInitializingRef.current = false;
     }
-  }, [appId, channel, token, userRole, addDebugLog, retryCount, retryConnection]);
+  }, [appId, channel, token, userRole, addDebugLog, retryCount, retryConnection, localAudioTrack, localVideoTrack, connectionStatus]);
 
-  // Initialize on mount
+  // Initialize on mount - NO circular dependencies
   useEffect(() => {
     mountedRef.current = true;
     
@@ -417,7 +433,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     currentUidRef.current = uid;
     
     // Start initialization
-    initializeAgora();
+    initializeAgoraInternal();
 
     // Cleanup on unmount
     return () => {
@@ -425,7 +441,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       isInitializingRef.current = false;
       // Don't call cleanupAgora here - let the component unmount naturally
     };
-  }, [appId, channel, token, userRole, initializeAgora]);
+  }, [appId, channel, token, userRole]); // REMOVED initializeAgora from dependencies
 
   // Toggle audio function
   const toggleAudio = useCallback(() => {
@@ -548,8 +564,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     const newUid = generateUniqueUid(uid);
     currentUidRef.current = newUid;
     
-    initializeAgora();
-  }, [addDebugLog, generateUniqueUid, uid, initializeAgora]);
+    initializeAgoraInternal();
+  }, [addDebugLog, generateUniqueUid, uid, initializeAgoraInternal]);
 
   // Total participants count
   const totalParticipants = remoteUsers.length + 1;
