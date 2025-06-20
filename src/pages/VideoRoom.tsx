@@ -83,8 +83,8 @@ const VideoRoom: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading video conference...</span>
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="text-gray-600">Loading video conference...</span>
         </div>
       </div>
     );
@@ -95,7 +95,7 @@ const VideoRoom: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground mb-4">
+            <p className="text-gray-600 mb-4">
               {error || 'Video conference not available'}
             </p>
             <Button onClick={() => navigate('/calendar')} variant="outline">

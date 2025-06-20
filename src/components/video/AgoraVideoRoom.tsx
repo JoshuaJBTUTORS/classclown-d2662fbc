@@ -11,10 +11,10 @@ import {
   useRemoteAudioTracks,
   useRemoteUsers,
 } from 'agora-rtc-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import VideoRoomHeader from './VideoRoomHeader';
+import VideoCard from './VideoCard';
+import VideoControls from './VideoControls';
 
 interface AgoraVideoRoomProps {
   appId: string;
@@ -88,120 +88,73 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     onLeave();
   };
 
+  const totalParticipants = remoteUsers.length + 1;
+
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-gray-800 text-white p-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{lessonTitle}</h1>
-          <p className="text-sm text-gray-300">
-            {userRole === 'tutor' ? 'Teaching' : 'Attending'} • Channel: {channel}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          <span>{remoteUsers.length + 1} participants</span>
-        </div>
-      </div>
+      <VideoRoomHeader
+        lessonTitle={lessonTitle}
+        participantCount={totalParticipants}
+        onLeave={handleLeave}
+      />
 
       {/* Video Grid */}
-      <div className="flex-1 p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+      <div className="flex-1 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-7xl mx-auto">
           {/* Local Video */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-sm">
-                You ({userRole === 'tutor' ? 'Teacher' : 'Student'})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                {isVideoEnabled && localCameraTrack ? (
-                  <LocalVideoTrack
-                    track={localCameraTrack}
-                    play={true}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="bg-gray-700 rounded-full p-8">
-                      <Video className="h-12 w-12 text-gray-400" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <VideoCard
+            userName={`You (${userRole === 'tutor' ? 'Teacher' : 'Student'})`}
+            isAudioEnabled={isAudioEnabled}
+            isVideoEnabled={isVideoEnabled}
+            isLocal={true}
+          >
+            {isVideoEnabled && localCameraTrack && (
+              <LocalVideoTrack
+                track={localCameraTrack}
+                play={true}
+                className="w-full h-full object-cover"
+              />
+            )}
+          </VideoCard>
 
           {/* Remote Users */}
           {remoteUsers.map((user) => (
-            <Card key={user.uid} className="bg-gray-800 border-gray-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-white text-sm">
-                  Participant {user.uid}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-2">
-                <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                  <RemoteUser user={user} />
-                </div>
-              </CardContent>
-            </Card>
+            <VideoCard
+              key={user.uid}
+              userName={`Participant ${user.uid}`}
+              isAudioEnabled={user.hasAudio}
+              isVideoEnabled={user.hasVideo}
+            >
+              <RemoteUser user={user} />
+            </VideoCard>
           ))}
 
-          {/* Empty slots when no remote users */}
-          {remoteUsers.length === 0 && (
-            <Card className="bg-gray-800 border-gray-700 border-dashed">
-              <CardContent className="p-8 flex items-center justify-center">
-                <div className="text-center text-gray-400">
-                  <Users className="h-12 w-12 mx-auto mb-2" />
-                  <p>Waiting for others to join...</p>
+          {/* Empty slots for better visual balance */}
+          {Array.from({ length: Math.max(0, 6 - totalParticipants) }).map((_, index) => (
+            <div
+              key={`empty-${index}`}
+              className="aspect-video border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-100"
+            >
+              <div className="text-center text-gray-400">
+                <div className="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center">
+                  <span className="text-gray-500 text-sm">+</span>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                <p className="text-sm">Waiting for participant</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Controls */}
-      <div className="bg-gray-800 p-4">
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant={isAudioEnabled ? "default" : "destructive"}
-            size="lg"
-            onClick={toggleAudio}
-            className="rounded-full w-12 h-12 p-0"
-          >
-            {isAudioEnabled ? (
-              <Mic className="h-5 w-5" />
-            ) : (
-              <MicOff className="h-5 w-5" />
-            )}
-          </Button>
-
-          <Button
-            variant={isVideoEnabled ? "default" : "destructive"}
-            size="lg"
-            onClick={toggleVideo}
-            className="rounded-full w-12 h-12 p-0"
-          >
-            {isVideoEnabled ? (
-              <Video className="h-5 w-5" />
-            ) : (
-              <VideoOff className="h-5 w-5" />
-            )}
-          </Button>
-
-          <Button
-            variant="destructive"
-            size="lg"
-            onClick={handleLeave}
-            className="rounded-full w-12 h-12 p-0"
-          >
-            <PhoneOff className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
+      <VideoControls
+        isAudioEnabled={isAudioEnabled}
+        isVideoEnabled={isVideoEnabled}
+        onToggleAudio={toggleAudio}
+        onToggleVideo={toggleVideo}
+        onLeave={handleLeave}
+      />
     </div>
   );
 };
