@@ -72,7 +72,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     uid: uid,
   }, isJoined);
 
-  // Enhanced debugging and error handling
+  // Enhanced debugging without invalid token parsing
   useEffect(() => {
     console.log('🔍 [DEBUG] Agora connection parameters:', {
       appId,
@@ -85,7 +85,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       connectionStatus
     });
 
-    // Validate parameters
+    // Basic parameter validation (without invalid token parsing)
     if (!appId || appId.length !== 32) {
       console.error('❌ [ERROR] Invalid App ID:', { appId, length: appId?.length });
       setConnectionError(`Invalid App ID format (length: ${appId?.length}, expected: 32)`);
@@ -107,22 +107,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       return;
     }
 
-    // Extract App ID from token for verification
-    if (token && token.length >= 35) {
-      const tokenAppId = token.substring(3, 35);
-      if (tokenAppId !== appId) {
-        console.error('❌ [ERROR] App ID mismatch:', {
-          providedAppId: appId,
-          tokenAppId,
-          match: tokenAppId === appId
-        });
-        setConnectionError(`App ID mismatch: token contains ${tokenAppId.substring(0, 8)}... but using ${appId.substring(0, 8)}...`);
-        setConnectionStatus('failed');
-        return;
-      } else {
-        console.log('✅ [SUCCESS] App ID matches token');
-      }
-    }
+    console.log('✅ [SUCCESS] Basic parameters validated, attempting connection...');
   }, [appId, channel, token, uid]);
 
   // Setup event listeners with enhanced error handling
@@ -363,6 +348,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           <p className="text-gray-600 font-medium">Connecting to video conference...</p>
           <p className="text-sm text-gray-500 mt-2">Channel: {channel}</p>
           <p className="text-xs text-gray-400 mt-1">App ID: {appId?.substring(0, 8)}...</p>
+          <p className="text-xs text-gray-400 mt-1">Token: {token?.substring(0, 15)}...</p>
         </div>
       </div>
     );
@@ -384,6 +370,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               <p><strong>App ID:</strong> {appId?.substring(0, 8)}...</p>
               <p><strong>UID:</strong> {uid}</p>
               <p><strong>Token Length:</strong> {token?.length}</p>
+              <p className="text-xs text-gray-500 mt-2">
+                <strong>Note:</strong> Token validation removed - relying on Agora SDK validation
+              </p>
             </div>
           </div>
           <div className="space-y-3">
