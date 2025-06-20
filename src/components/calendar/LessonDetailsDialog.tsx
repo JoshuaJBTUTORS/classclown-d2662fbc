@@ -450,10 +450,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Check if any video conference capability exists
+  // Check if any video conference capability exists - now including Agora
   const hasVideoConference = lesson?.video_conference_link || 
                             lesson?.lesson_space_room_url || 
-                            lesson?.lesson_space_room_id;
+                            lesson?.lesson_space_room_id ||
+                            lesson?.agora_channel_name;
 
   // Map userRole to VideoConferenceLink compatible type
   const getVideoConferenceUserRole = () => {
@@ -574,7 +575,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* Video Conference Section */}
+              {/* Video Conference Section - Updated to include Agora */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
@@ -586,6 +587,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   lessonId={lesson.id}
                   hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_room_id)}
                   spaceId={lesson.lesson_space_room_id}
+                  // Agora-specific props
+                  agoraChannelName={lesson.agora_channel_name}
+                  agoraToken={lesson.agora_token}
+                  agoraAppId={lesson.video_conference_provider === 'agora' ? 'AGORA_APP_ID' : undefined}
                 />
               ) : (
                 // Only show room creation for tutors, admins, and owners

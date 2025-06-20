@@ -18,6 +18,10 @@ interface VideoConferenceLinkProps {
   lessonId?: string;
   hasLessonSpace?: boolean;
   spaceId?: string;
+  // Agora-specific props
+  agoraChannelName?: string | null;
+  agoraToken?: string | null;
+  agoraAppId?: string;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ 
@@ -29,7 +33,11 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   studentCount = 0,
   lessonId,
   hasLessonSpace = false,
-  spaceId
+  spaceId,
+  // Agora props
+  agoraChannelName,
+  agoraToken,
+  agoraAppId
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
@@ -53,6 +61,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         return 'Google Meet';
       case 'zoom':
         return 'Zoom';
+      case 'agora':
+        return 'Agora.io';
       default:
         return 'Video Conference';
     }
@@ -74,9 +84,21 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  // Generate the correct URL based on user role
+  // Generate Agora meeting URL
+  const generateAgoraUrl = () => {
+    if (provider === 'agora' && agoraChannelName && agoraToken && agoraAppId) {
+      // Create a simple Agora web URL format
+      const role = userRole === 'tutor' ? 'host' : 'audience';
+      return `https://webdemo.agora.io/basicVideoCall/index.html?appid=${agoraAppId}&channel=${agoraChannelName}&token=${agoraToken}&role=${role}`;
+    }
+    return null;
+  };
+
+  // Generate the correct URL based on user role and provider
   const getCorrectUrl = () => {
-    if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
+    if (provider === 'agora') {
+      return generateAgoraUrl();
+    } else if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
       if (userRole === 'student') {
         // Students get the simple invite URL
         return `https://www.thelessonspace.com/space/${spaceId}`;
@@ -99,9 +121,10 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     const urlToUse = getCorrectUrl();
     if (urlToUse) {
       window.open(urlToUse, '_blank');
-      toast.success('Redirecting to Lesson Space...');
+      const providerName = getProviderName();
+      toast.success(`Redirecting to ${providerName}...`);
     } else {
-      toast.error('Lesson space not available');
+      toast.error('Meeting room not available');
     }
   };
 
@@ -173,9 +196,21 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </div>
             )}
 
+            {userRole === 'tutor' && provider === 'agora' && (
+              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
+                <strong>Host privileges:</strong> You have full control of the Agora meeting room.
+              </div>
+            )}
+
             {userRole === 'student' && provider === 'lesson_space' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
                 <strong>Student access:</strong> Click "Join Lesson" to review requirements and enter the lesson space.
+              </div>
+            )}
+
+            {userRole === 'student' && provider === 'agora' && (
+              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
+                <strong>Student access:</strong> Click "Join Lesson" to review requirements and enter the meeting.
               </div>
             )}
           </>
