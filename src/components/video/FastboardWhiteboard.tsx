@@ -1,6 +1,7 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
+import WhiteboardToolbar from './WhiteboardToolbar';
 
 interface FastboardWhiteboardProps {
   isReadOnly?: boolean;
@@ -24,6 +25,9 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
+  const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
+  const [currentColor, setCurrentColor] = useState('#000000');
+  const [currentFontSize, setCurrentFontSize] = useState<'small' | 'normal' | 'large'>('normal');
 
   useEffect(() => {
     const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
@@ -94,6 +98,65 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     };
   }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
 
+  const handleNewTab = () => {
+    if (!appRef.current) return;
+    try {
+      // Create a new scene/page in the whiteboard
+      const sceneIndex = appRef.current.getScenes().length;
+      appRef.current.putScenes('/' + (sceneIndex + 1), [{ name: `Page ${sceneIndex + 1}` }]);
+      appRef.current.setSceneIndex(sceneIndex);
+      console.log('Created new whiteboard tab');
+    } catch (error) {
+      console.error('Error creating new tab:', error);
+    }
+  };
+
+  const handleColorChange = (color: string) => {
+    setCurrentColor(color);
+    if (!appRef.current) return;
+    try {
+      // Update the stroke color for drawing tools
+      appRef.current.setMemberState({ strokeColor: [
+        parseInt(color.slice(1, 3), 16),
+        parseInt(color.slice(3, 5), 16),
+        parseInt(color.slice(5, 7), 16)
+      ] });
+      console.log('Changed color to:', color);
+    } catch (error) {
+      console.error('Error changing color:', error);
+    }
+  };
+
+  const handleFontSizeChange = (size: 'small' | 'normal' | 'large') => {
+    setCurrentFontSize(size);
+    if (!appRef.current) return;
+    try {
+      const fontSize = size === 'small' ? 12 : size === 'large' ? 24 : 16;
+      appRef.current.setMemberState({ textSize: fontSize });
+      console.log('Changed font size to:', size, fontSize);
+    } catch (error) {
+      console.error('Error changing font size:', error);
+    }
+  };
+
+  const handleFormatToggle = (format: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'highlight') => {
+    const newFormats = new Set(activeFormats);
+    if (newFormats.has(format)) {
+      newFormats.delete(format);
+    } else {
+      newFormats.add(format);
+    }
+    setActiveFormats(newFormats);
+    
+    if (!appRef.current) return;
+    try {
+      // Apply text formatting - this would need to be implemented based on Fastboard's text formatting API
+      console.log('Toggled format:', format, 'Active:', newFormats.has(format));
+    } catch (error) {
+      console.error('Error toggling format:', error);
+    }
+  };
+
   const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
 
   if (!roomUuid || !roomToken) {
@@ -113,10 +176,23 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   }
 
   return (
-    <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+      {/* Whiteboard Toolbar */}
+      <WhiteboardToolbar
+        userRole={userRole}
+        onNewTab={handleNewTab}
+        onColorChange={handleColorChange}
+        onFontSizeChange={handleFontSizeChange}
+        onFormatToggle={handleFormatToggle}
+        activeFormats={activeFormats}
+        currentColor={currentColor}
+        currentFontSize={currentFontSize}
+      />
+      
+      {/* Whiteboard Canvas */}
       <div 
         ref={whiteboardRef} 
-        className="w-full h-full" 
+        className="flex-1 w-full" 
         style={{ width: '100%', height: '100%', minWidth: '400px', minHeight: '300px' }}
       />
     </div>
