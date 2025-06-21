@@ -20,21 +20,21 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
   onLeave
 }) => {
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
+    <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={onLeave}
-          className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          className="text-white hover:text-gray-300 hover:bg-gray-700"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Leave
         </Button>
-        <div className="h-6 w-px bg-gray-300" />
+        <div className="h-6 w-px bg-gray-600" />
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-gray-900 font-playfair">
+            <h1 className="text-lg font-semibold text-white font-playfair">
               {lessonTitle}
             </h1>
             {isRecording && (
@@ -44,7 +44,7 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-gray-300">
             <Users className="h-4 w-4" />
             <span>{participantCount} participants</span>
             <span>•</span>
@@ -56,21 +56,21 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
       <div className="flex items-center gap-2">
         {userRole === 'tutor' && (
           <>
-            <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
+            <Button variant="outline" size="sm" className="text-white border-gray-600 hover:text-gray-300 hover:bg-gray-700 hover:border-gray-500">
               <Share className="h-4 w-4 mr-2" />
               Share
             </Button>
-            <Button variant="outline" size="sm" className="text-gray-600 hover:text-gray-900">
+            <Button variant="outline" size="sm" className="text-white border-gray-600 hover:text-gray-300 hover:bg-gray-700 hover:border-gray-500">
               <UserPlus className="h-4 w-4 mr-2" />
               Invite
             </Button>
-            <div className="h-6 w-px bg-gray-200 mx-1" />
+            <div className="h-6 w-px bg-gray-600 mx-1" />
           </>
         )}
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+        <Button variant="ghost" size="sm" className="text-white hover:text-gray-300 hover:bg-gray-700">
           <Settings className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+        <Button variant="ghost" size="sm" className="text-white hover:text-gray-300 hover:bg-gray-700">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </div>
