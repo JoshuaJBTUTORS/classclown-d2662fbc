@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 import WhiteboardToolbar from './WhiteboardToolbar';
@@ -17,6 +18,13 @@ interface WhiteboardTab {
   name: string;
   type: 'main' | 'document';
   scenePath: string;
+}
+
+// Add type definitions for Netless image data
+interface NetlessImageData {
+  url: string;
+  width?: number;
+  height?: number;
 }
 
 // The correct Netless App Identifier - always use this as fallback
@@ -318,7 +326,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       const convertedFileList = Object.keys(netlessTask.images)
         .sort((a, b) => parseInt(a) - parseInt(b)) // Sort by page number
         .map((pageNumber) => {
-          const imageData = netlessTask.images![pageNumber];
+          const imageData = netlessTask.images![pageNumber] as string | NetlessImageData;
           
           // Handle both object format {width, height, url} and direct URL string
           if (typeof imageData === 'string') {
@@ -328,12 +336,13 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
               conversionFileUrl: imageData,
               preview: imageData
             };
-          } else if (imageData && typeof imageData === 'object' && imageData.url) {
+          } else if (imageData && typeof imageData === 'object' && (imageData as NetlessImageData).url) {
+            const typedImageData = imageData as NetlessImageData;
             return {
-              width: imageData.width || 1280,
-              height: imageData.height || 720,
-              conversionFileUrl: imageData.url, // Extract the URL string
-              preview: imageData.url // Extract the URL string for preview too
+              width: typedImageData.width || 1280,
+              height: typedImageData.height || 720,
+              conversionFileUrl: typedImageData.url, // Extract the URL string
+              preview: typedImageData.url // Extract the URL string for preview too
             };
           } else {
             console.error('Invalid image data format for page', pageNumber, ':', imageData);
@@ -469,13 +478,13 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           
           // Fallback: try inserting the first image as a regular image
           try {
-            const firstImageData = Object.values(completedTask.images)[0];
-            let firstImageUrl;
+            const firstImageData = Object.values(completedTask.images)[0] as string | NetlessImageData;
+            let firstImageUrl: string | undefined;
             
             if (typeof firstImageData === 'string') {
               firstImageUrl = firstImageData;
-            } else if (firstImageData && typeof firstImageData === 'object' && firstImageData.url) {
-              firstImageUrl = firstImageData.url;
+            } else if (firstImageData && typeof firstImageData === 'object' && (firstImageData as NetlessImageData).url) {
+              firstImageUrl = (firstImageData as NetlessImageData).url;
             }
             
             if (firstImageUrl) {
