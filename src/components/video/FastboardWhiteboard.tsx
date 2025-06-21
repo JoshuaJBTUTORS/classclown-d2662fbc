@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { createFastboard, mount } from '@netless/fastboard';
+import { WhiteWebSdk, Room, RoomPhase } from 'white-web-sdk';
 
 interface FastboardWhiteboardProps {
   isReadOnly?: boolean;
@@ -22,7 +22,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const appRef = useRef<any>(null);
+  const roomRef = useRef<Room | null>(null);
 
   useEffect(() => {
     if (!whiteboardRef.current || !roomUuid || !roomToken || !appIdentifier) {
@@ -31,51 +31,51 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       return;
     }
 
-    const initFastboard = async () => {
+    const initWhiteboard = async () => {
       try {
-        console.log('Initializing Fastboard with:', { roomUuid, appIdentifier, userId });
+        console.log('Initializing whiteboard with:', { roomUuid, appIdentifier, userId });
         
-        const app = await createFastboard({
-          sdkConfig: {
-            appIdentifier: appIdentifier,
-            region: 'us-sv', // US Silicon Valley region
-          },
-          joinRoom: {
-            uid: userId,
-            uuid: roomUuid,
-            roomToken: roomToken,
-            isWritable: !isReadOnly && userRole === 'tutor',
-          },
-          managerConfig: {
-            cursor: true,
-          },
+        const whiteWebSdk = new WhiteWebSdk({
+          appIdentifier: appIdentifier,
+          region: 'us-sv',
         });
 
-        // Store app reference for cleanup
-        appRef.current = app;
+        const room = await whiteWebSdk.joinRoom({
+          uuid: roomUuid,
+          roomToken: roomToken,
+          uid: userId,
+          isWritable: !isReadOnly && userRole === 'tutor',
+        });
 
-        // Mount the fastboard to the div
-        mount(app, whiteboardRef.current);
+        roomRef.current = room;
+
+        room.bindHtmlElement(whiteboardRef.current);
         
+        room.callbacks.on('onRoomStateChanged', (modifyState) => {
+          if (modifyState.roomPhase) {
+            console.log('Room phase changed:', modifyState.roomPhase);
+          }
+        });
+
         setError(null);
         setIsLoading(false);
-        console.log('Fastboard initialized successfully');
+        console.log('Whiteboard initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize Fastboard:', error);
+        console.error('Failed to initialize whiteboard:', error);
         setError(error instanceof Error ? error.message : 'Failed to initialize whiteboard');
         setIsLoading(false);
       }
     };
 
-    initFastboard();
+    initWhiteboard();
 
     return () => {
-      if (appRef.current) {
-        console.log('Cleaning up Fastboard');
+      if (roomRef.current) {
+        console.log('Cleaning up whiteboard');
         try {
-          appRef.current.destroy();
+          roomRef.current.disconnect();
         } catch (error) {
-          console.warn('Error cleaning up Fastboard:', error);
+          console.warn('Error cleaning up whiteboard:', error);
         }
       }
     };

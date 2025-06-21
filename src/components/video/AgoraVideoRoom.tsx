@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -48,6 +49,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [chatOpen, setChatOpen] = useState(false);
   const [whiteboardVisible, setWhiteboardVisible] = useState(true);
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
   const { localCameraTrack } = useLocalCameraTrack(cameraOn);
@@ -82,6 +85,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const toggleChat = () => setChatOpen(prev => !prev);
   const toggleParticipants = () => setParticipantsOpen(prev => !prev);
   const toggleWhiteboard = () => setWhiteboardVisible(prev => !prev);
+  const toggleScreenShare = () => setIsScreenSharing(prev => !prev);
+  const toggleRecording = () => setIsRecording(prev => !prev);
 
   const handleLeave = () => {
     setCalling(false);
@@ -96,6 +101,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         lessonTitle={lessonTitle} 
         onLeave={handleLeave}
         participantCount={totalParticipants}
+        userRole={userRole}
       />
       
       <div className="flex-1 flex overflow-hidden">
@@ -105,34 +111,13 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           <div className="flex-1 flex">
             {/* Video panel */}
             <div className={`${whiteboardVisible ? 'w-1/2' : 'flex-1'} bg-black relative`}>
-              <VideoPanel>
-                <div className="grid grid-cols-2 gap-2 h-full p-4">
-                  {/* Local user */}
-                  <div className="relative bg-gray-800 rounded-lg overflow-hidden">
-                    <LocalUser
-                      audioTrack={localMicrophoneTrack}
-                      videoTrack={localCameraTrack}
-                      cameraOn={cameraOn}
-                      micOn={micOn}
-                      playAudio={false}
-                      playVideo={cameraOn}
-                    />
-                    <div className="absolute bottom-2 left-2 text-white text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-                      You ({userRole})
-                    </div>
-                  </div>
-
-                  {/* Remote users */}
-                  {remoteUsers.map((user) => (
-                    <div key={user.uid} className="relative bg-gray-800 rounded-lg overflow-hidden">
-                      <RemoteUser user={user} />
-                      <div className="absolute bottom-2 left-2 text-white text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-                        User {user.uid}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </VideoPanel>
+              <VideoPanel
+                localCameraTrack={localCameraTrack}
+                remoteUsers={remoteUsers}
+                isAudioEnabled={micOn}
+                isVideoEnabled={cameraOn}
+                userRole={userRole}
+              />
             </div>
 
             {/* Whiteboard area */}
@@ -153,12 +138,17 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           {/* Controls */}
           <div className="bg-gray-800 p-4">
             <EnhancedVideoControls
-              micOn={micOn}
-              cameraOn={cameraOn}
-              onToggleMic={toggleMic}
-              onToggleCamera={toggleCamera}
-              onLeave={handleLeave}
+              isAudioEnabled={micOn}
+              isVideoEnabled={cameraOn}
+              isScreenSharing={isScreenSharing}
+              isRecording={isRecording}
               userRole={userRole}
+              onToggleAudio={toggleMic}
+              onToggleVideo={toggleCamera}
+              onToggleScreenShare={toggleScreenShare}
+              onToggleRecording={toggleRecording}
+              onManageParticipants={toggleParticipants}
+              onLeave={handleLeave}
             />
             
             {/* Additional controls */}
@@ -197,10 +187,11 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         {chatOpen && (
           <div className="w-80 bg-white border-l border-gray-200">
             <AgoraChatPanel 
-              appId={appId}
+              rtmToken=""
+              channelName={channel}
               userId={uid.toString()}
+              userName={`User ${uid}`}
               userRole={userRole}
-              onClose={toggleChat}
             />
           </div>
         )}
