@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 import WhiteboardToolbar from './WhiteboardToolbar';
@@ -417,9 +418,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           return;
         }
 
+        // Declare fastboardData outside try block to fix scope issue
+        let fastboardData;
+        
         try {
           // Transform the Netless response to Fastboard format
-          const fastboardData = transformNetlessToFastboard(completedTask, fileName);
+          fastboardData = transformNetlessToFastboard(completedTask, fileName);
           
           console.log('Inserting document with Fastboard-compatible format:', {
             documentTitle: fileName,
@@ -440,7 +444,9 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           });
         } catch (insertError) {
           console.error('Failed to insert document into Fastboard:', insertError);
-          console.error('Fastboard data that failed:', fastboardData);
+          if (fastboardData) {
+            console.error('Fastboard data that failed:', fastboardData);
+          }
           
           // Fallback: try inserting the first image as a regular image
           try {
