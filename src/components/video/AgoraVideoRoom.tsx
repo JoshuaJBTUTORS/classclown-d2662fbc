@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -41,6 +40,11 @@ interface AgoraVideoRoomProps {
     roomToken: string;
     appIdentifier: string;
   } | null;
+  expectedStudents?: Array<{
+    id: number;
+    first_name: string;
+    last_name: string;
+  }>;
   onLeave: () => void;
 }
 
@@ -52,6 +56,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   userRole,
   lessonTitle,
   netlessCredentials,
+  expectedStudents = [],
   onLeave,
 }) => {
   const [calling, setCalling] = useState(false);
@@ -139,14 +144,16 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     onLeave();
   };
 
-  const totalParticipants = remoteUsers.length + 1;
+  const totalExpectedParticipants = expectedStudents.length + 1; // +1 for tutor/current user
+  const currentParticipants = remoteUsers.length + 1;
 
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       <VideoRoomHeader 
         lessonTitle={lessonTitle} 
         onLeave={handleLeave}
-        participantCount={totalParticipants}
+        participantCount={currentParticipants}
+        expectedParticipantCount={totalExpectedParticipants}
         userRole={userRole}
         isRecording={isRecording}
       />
@@ -238,7 +245,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 onClick={toggleParticipants}
               >
                 <Users className="h-4 w-4 mr-2" />
-                ({totalParticipants})
+                ({currentParticipants}/{totalExpectedParticipants})
               </Button>
 
               {/* Tutor-only Controls */}
@@ -280,7 +287,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         {/* Right Sidebar - Video Grid */}
         <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
           <div className="p-3 border-b border-gray-700">
-            <h3 className="text-white text-sm font-medium">Participants ({totalParticipants})</h3>
+            <h3 className="text-white text-sm font-medium">
+              Participants ({currentParticipants}/{totalExpectedParticipants})
+            </h3>
           </div>
           <div className="flex-1">
             <VerticalVideoGrid
@@ -289,6 +298,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               isAudioEnabled={micOn}
               isVideoEnabled={cameraOn}
               userRole={userRole}
+              expectedStudents={expectedStudents}
             />
           </div>
         </div>

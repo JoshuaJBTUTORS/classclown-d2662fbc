@@ -6,6 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAgora } from '@/hooks/useAgora';
 import { toast } from 'sonner';
 
+interface ExpectedStudent {
+  id: number;
+  first_name: string;
+  last_name: string;
+}
+
 export const useVideoRoom = (lessonId: string) => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
@@ -17,6 +23,7 @@ export const useVideoRoom = (lessonId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [expectedStudents, setExpectedStudents] = useState<ExpectedStudent[]>([]);
 
   // Map admin/owner roles to video room role
   const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
@@ -57,6 +64,34 @@ export const useVideoRoom = (lessonId: string) => {
 
       console.log('📚 Lesson data loaded:', lessonData.title);
       setLesson(lessonData);
+
+      // Fetch expected students for this lesson
+      const { data: studentsData, error: studentsError } = await supabase
+        .from('lesson_students')
+        .select(`
+          student:students(
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('lesson_id', lessonId);
+
+      if (studentsError) {
+        console.error('Error fetching lesson students:', studentsError);
+      } else {
+        const students = studentsData
+          ?.map(ls => ls.student)
+          .filter(Boolean)
+          .map(student => ({
+            id: student.id,
+            first_name: student.first_name || '',
+            last_name: student.last_name || ''
+          })) || [];
+        
+        console.log('👥 Expected students loaded:', students);
+        setExpectedStudents(students);
+      }
 
       // Get tokens using the proper agora-integration edge function
       console.log('🔑 Fetching Agora credentials via edge function...');
@@ -120,6 +155,7 @@ export const useVideoRoom = (lessonId: string) => {
   return {
     lesson,
     agoraCredentials,
+    expectedStudents,
     isLoading,
     error,
     isRegenerating,

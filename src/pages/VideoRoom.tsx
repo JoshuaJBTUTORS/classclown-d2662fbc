@@ -20,6 +20,7 @@ const VideoRoom: React.FC = () => {
   const {
     lesson,
     agoraCredentials,
+    expectedStudents,
     isLoading,
     error,
     isRegenerating,
@@ -63,13 +64,14 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  console.log('🎉 Rendering video room with Fastboard whiteboard:', {
+  console.log('🎉 Rendering video room with expected students:', {
     appId: agoraCredentials.appId?.substring(0, 8) + '...',
     channel: agoraCredentials.channelName,
     uid: agoraCredentials.uid,
     role: videoRoomRole,
     tokenValid: !!agoraCredentials.rtcToken,
     hasNetless: !!netlessCredentials,
+    expectedStudentsCount: expectedStudents.length,
     fastboardEnabled: true
   });
 
@@ -83,6 +85,7 @@ const VideoRoom: React.FC = () => {
         userRole={videoRoomRole}
         lessonTitle={lesson.title}
         netlessCredentials={netlessCredentials}
+        expectedStudents={expectedStudents}
         onLeave={handleLeaveRoom}
       />
     </AgoraRTCProvider>

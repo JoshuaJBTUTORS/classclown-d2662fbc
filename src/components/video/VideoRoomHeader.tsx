@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 interface VideoRoomHeaderProps {
   lessonTitle: string;
   participantCount: number;
+  expectedParticipantCount?: number;
   userRole: 'tutor' | 'student';
   isRecording?: boolean;
   onLeave: () => void;
@@ -15,10 +16,15 @@ interface VideoRoomHeaderProps {
 const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
   lessonTitle,
   participantCount,
+  expectedParticipantCount,
   userRole,
   isRecording = false,
   onLeave
 }) => {
+  const participantText = expectedParticipantCount 
+    ? `${participantCount}/${expectedParticipantCount} participants`
+    : `${participantCount} participants`;
+
   return (
     <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-4">
@@ -46,7 +52,7 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <Users className="h-4 w-4" />
-            <span>{participantCount} participants</span>
+            <span>{participantText}</span>
             <span>•</span>
             <span className="capitalize">{userRole}</span>
           </div>
