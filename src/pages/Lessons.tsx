@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -94,13 +95,12 @@ const Lessons = () => {
 
       console.log('Fetched lessons with Agora data:', data);
 
-      // Transform the data and properly cast video_conference_provider
-      const processedData: Lesson[] = data.map(lesson => {
+      // Transform the data
+      const processedData = data.map(lesson => {
         const students = lesson.lesson_students.map((ls: any) => ls.student);
         return {
           ...lesson,
           lesson_type: (lesson.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-          video_conference_provider: lesson.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | null,
           students,
           lesson_students: undefined
         };

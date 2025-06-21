@@ -132,11 +132,9 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       
       if (error) throw error;
       
-      // Transform the data with proper type casting
       const processedLesson: Lesson = {
         ...data,
-        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        video_conference_provider: data.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | null
+        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular'
       };
       
       setLesson(processedLesson);
