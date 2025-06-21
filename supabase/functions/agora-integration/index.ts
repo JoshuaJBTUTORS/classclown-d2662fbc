@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// import { createNetlessRoom, generateNetlessRoomToken, parseNetlessSDKToken } from "./netless-service.ts";
+import { createNetlessRoom, generateNetlessRoomToken, parseNetlessSDKToken } from "./netless-service.ts";
 import { AccessToken2, ServiceRtc, ServiceRtm } from "./agora-token.ts";
 
 const corsHeaders = {
@@ -180,12 +180,12 @@ serve(async (req) => {
     // Validate required environment variables
     const appId = Deno.env.get("AGORA_APP_ID");
     const appCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
-    // const netlessSDKToken = Deno.env.get("NETLESS_SDK_TOKEN");
+    const netlessSDKToken = Deno.env.get("NETLESS_SDK_TOKEN");
 
     console.log('[AGORA-INTEGRATION] Environment check:', {
       hasAppId: !!appId,
       hasAppCertificate: !!appCertificate,
-      // hasNetlessToken: !!netlessSDKToken
+      hasNetlessToken: !!netlessSDKToken
     });
 
     if (!appId || !appCertificate) {
@@ -200,12 +200,12 @@ serve(async (req) => {
 
     switch (action) {
       case "create-room":
-        return await createVideoRoom(requestData, supabase, appId, appCertificate);
+        return await createVideoRoom(requestData, supabase, appId, appCertificate, netlessSDKToken);
       case "get-tokens":
       case "get_tokens":
-        return await getTokens(requestData, supabase, appId, appCertificate);
+        return await getTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
       case "regenerate-tokens":
-        return await regenerateTokens(requestData, supabase, appId, appCertificate);
+        return await regenerateTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
       default:
         console.error('[AGORA-INTEGRATION] Invalid action:', action);
         return new Response(
@@ -226,7 +226,8 @@ async function createVideoRoom(
   data,
   supabase,
   appId,
-  appCertificate
+  appCertificate,
+  netlessSDKToken
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Creating video room for lesson:", data.lessonId);
@@ -257,6 +258,25 @@ async function createVideoRoom(
       userRole: data.userRole
     });
 
+    // Create Netless whiteboard room if SDK token is available
+    let netlessRoomUuid = null;
+    let netlessAppIdentifier = null;
+    if (netlessSDKToken) {
+      try {
+        console.log("[AGORA-INTEGRATION] Creating Netless whiteboard room...");
+        netlessRoomUuid = await createNetlessRoom(netlessSDKToken);
+        const parsedToken = parseNetlessSDKToken(netlessSDKToken);
+        netlessAppIdentifier = parsedToken.appIdentifier;
+        console.log("[AGORA-INTEGRATION] Netless room created:", {
+          roomUuid: netlessRoomUuid,
+          appIdentifier: netlessAppIdentifier
+        });
+      } catch (error) {
+        console.error("[AGORA-INTEGRATION] Failed to create Netless room:", error);
+        // Continue without whiteboard - don't fail the entire room creation
+      }
+    }
+
     // Update lesson with room details
     const { error: updateError } = await supabase
       .from("lessons")
@@ -266,6 +286,8 @@ async function createVideoRoom(
         agora_token: tokens.rtcToken,
         agora_rtm_token: tokens.rtmToken,
         video_conference_provider: "agora",
+        netless_room_uuid: netlessRoomUuid,
+        netless_app_identifier: netlessAppIdentifier
       })
       .eq("id", data.lessonId);
 
@@ -284,12 +306,16 @@ async function createVideoRoom(
         uid: tokens.uid,
         rtcToken: tokens.rtcToken,
         rtmToken: tokens.rtmToken,
+        netlessRoomUuid,
+        netlessRoomToken: null, // Will be generated when needed
+        netlessAppIdentifier,
         message: "Agora video room created successfully",
         debug: {
           tokenLength: tokens.rtcToken.length,
           officialImplementation: true,
           role: data.userRole,
-          validated: true
+          validated: true,
+          hasWhiteboard: !!netlessRoomUuid
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -310,7 +336,8 @@ async function getTokens(
   data,
   supabase,
   appId,
-  appCertificate
+  appCertificate,
+  netlessSDKToken
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Getting tokens for lesson:", data.lessonId);
@@ -330,7 +357,7 @@ async function getTokens(
     // If lesson doesn't have Agora room, create one
     if (!lesson.agora_channel_name) {
       console.log("[AGORA-INTEGRATION] No existing room found, creating new room");
-      return await createVideoRoom(data, supabase, appId, appCertificate);
+      return await createVideoRoom(data, supabase, appId, appCertificate, netlessSDKToken);
     }
 
     console.log("[AGORA-INTEGRATION] Found existing room:", {
@@ -357,10 +384,25 @@ async function getTokens(
         .eq("id", data.lessonId);
     }
 
+    // Generate Netless room token if room exists
+    let netlessRoomToken = null;
+    if (lesson.netless_room_uuid && netlessSDKToken) {
+      try {
+        console.log("[AGORA-INTEGRATION] Generating Netless room token...");
+        const role = data.userRole === 'tutor' ? 'admin' : 'reader';
+        netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, lesson.netless_room_uuid, role);
+        console.log("[AGORA-INTEGRATION] Netless room token generated successfully");
+      } catch (error) {
+        console.error("[AGORA-INTEGRATION] Failed to generate Netless room token:", error);
+        // Continue without whiteboard token - don't fail the entire request
+      }
+    }
+
     console.log("[AGORA-INTEGRATION] Generated fresh tokens with official implementation:", {
       rtcTokenLength: tokens.rtcToken.length,
       rtmTokenLength: tokens.rtmToken.length,
-      role: data.userRole
+      role: data.userRole,
+      hasWhiteboardToken: !!netlessRoomToken
     });
 
     return new Response(
@@ -372,7 +414,7 @@ async function getTokens(
         rtcToken: tokens.rtcToken,
         rtmToken: tokens.rtmToken,
         netlessRoomUuid: lesson.netless_room_uuid,
-        netlessRoomToken: null,
+        netlessRoomToken,
         netlessAppIdentifier: lesson.netless_app_identifier,
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         debug: {
@@ -380,7 +422,8 @@ async function getTokens(
           officialImplementation: true,
           channelName: lesson.agora_channel_name,
           uid: tokens.uid,
-          validated: true
+          validated: true,
+          hasWhiteboard: !!lesson.netless_room_uuid
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -401,7 +444,8 @@ async function regenerateTokens(
   data,
   supabase,
   appId,
-  appCertificate
+  appCertificate,
+  netlessSDKToken
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Regenerating tokens for lesson:", data.lessonId);
@@ -421,7 +465,7 @@ async function regenerateTokens(
     // If lesson doesn't have Agora room, create one
     if (!lesson.agora_channel_name) {
       console.log("[AGORA-INTEGRATION] No existing room found, creating new room");
-      return await createVideoRoom(data, supabase, appId, appCertificate);
+      return await createVideoRoom(data, supabase, appId, appCertificate, netlessSDKToken);
     }
 
     console.log("[AGORA-INTEGRATION] Regenerating tokens for existing room:", {
@@ -440,10 +484,25 @@ async function regenerateTokens(
       data.userRole
     );
 
+    // Generate fresh Netless room token if room exists
+    let netlessRoomToken = null;
+    if (lesson.netless_room_uuid && netlessSDKToken) {
+      try {
+        console.log("[AGORA-INTEGRATION] Regenerating Netless room token...");
+        const role = data.userRole === 'tutor' ? 'admin' : 'reader';
+        netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, lesson.netless_room_uuid, role);
+        console.log("[AGORA-INTEGRATION] Netless room token regenerated successfully");
+      } catch (error) {
+        console.error("[AGORA-INTEGRATION] Failed to regenerate Netless room token:", error);
+        // Continue without whiteboard token - don't fail the entire request
+      }
+    }
+
     console.log("[AGORA-INTEGRATION] Generated fresh tokens with official implementation:", {
       rtcTokenLength: tokens.rtcToken.length,
       rtmTokenLength: tokens.rtmToken.length,
-      role: data.userRole
+      role: data.userRole,
+      hasWhiteboardToken: !!netlessRoomToken
     });
 
     // Update lesson with fresh tokens
@@ -473,7 +532,7 @@ async function regenerateTokens(
         rtcToken: tokens.rtcToken,
         rtmToken: tokens.rtmToken,
         netlessRoomUuid: lesson.netless_room_uuid,
-        netlessRoomToken: null,
+        netlessRoomToken,
         netlessAppIdentifier: lesson.netless_app_identifier,
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         regenerated: true,
@@ -482,7 +541,8 @@ async function regenerateTokens(
           officialImplementation: true,
           channelName: lesson.agora_channel_name,
           uid: tokens.uid,
-          validated: true
+          validated: true,
+          hasWhiteboard: !!lesson.netless_room_uuid
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
