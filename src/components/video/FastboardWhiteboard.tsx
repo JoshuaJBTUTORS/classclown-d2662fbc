@@ -12,6 +12,13 @@ interface FastboardWhiteboardProps {
   userId: string;
 }
 
+interface WhiteboardTab {
+  id: string;
+  name: string;
+  type: 'main' | 'document';
+  sceneIndex: number;
+}
+
 // The correct Netless App Identifier - always use this as fallback
 const CORRECT_NETLESS_APP_IDENTIFIER = 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg';
 
@@ -27,7 +34,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const appRef = useRef<any>(null);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const [currentColor, setCurrentColor] = useState('#000000');
-  const [currentFontSize, setCurrentFontSize] = useState<'small' | 'normal' | 'large'>('normal');
+  const [currentFont, setCurrentFont] = useState('Sans');
+  const [currentFontSize, setCurrentFontSize] = useState(14);
+  const [tabs, setTabs] = useState<WhiteboardTab[]>([
+    { id: 'main', name: 'Main Room', type: 'main', sceneIndex: 0 }
+  ]);
+  const [activeTabId, setActiveTabId] = useState('main');
 
   useEffect(() => {
     const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
@@ -72,6 +84,16 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
         appRef.current = app;
         mount(app, whiteboardRef.current);
+        
+        // Set initial drawing properties
+        if (app.room && !isReadOnly && userRole === 'tutor') {
+          app.room.setMemberState({
+            strokeColor: [0, 0, 0], // Black
+            strokeWidth: 2,
+            textSize: currentFontSize,
+          });
+        }
+        
         console.log('Fastboard initialized successfully');
       } catch (error) {
         console.error('FastboardWhiteboard initialization failed:', error);
@@ -99,41 +121,121 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
 
   const handleNewTab = () => {
-    if (!appRef.current) return;
+    if (!appRef.current?.room) return;
+    
     try {
-      // Create a new scene/page in the whiteboard
-      const sceneIndex = appRef.current.getScenes().length;
-      appRef.current.putScenes('/' + (sceneIndex + 1), [{ name: `Page ${sceneIndex + 1}` }]);
-      appRef.current.setSceneIndex(sceneIndex);
-      console.log('Created new whiteboard tab');
+      const newTabId = `doc${tabs.length}`;
+      const sceneIndex = tabs.length;
+      const scenePath = `/${sceneIndex}`;
+      
+      // Create new scene in Fastboard
+      appRef.current.room.putScenes(scenePath, [{ 
+        name: `Document ${tabs.length}`,
+        ppt: undefined 
+      }]);
+      
+      const newTab: WhiteboardTab = {
+        id: newTabId,
+        name: `Document ${tabs.length}`,
+        type: 'document',
+        sceneIndex
+      };
+      
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTabId);
+      appRef.current.room.setSceneIndex(sceneIndex);
+      
+      console.log('Created new whiteboard tab:', newTab);
     } catch (error) {
       console.error('Error creating new tab:', error);
     }
   };
 
+  const handleTabSwitch = (tabId: string) => {
+    if (!appRef.current?.room) return;
+    
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab) return;
+    
+    try {
+      setActiveTabId(tabId);
+      appRef.current.room.setSceneIndex(tab.sceneIndex);
+      console.log('Switched to tab:', tab);
+    } catch (error) {
+      console.error('Error switching tab:', error);
+    }
+  };
+
+  const handleTabClose = (tabId: string) => {
+    if (tabId === 'main' || !appRef.current?.room) return;
+    
+    try {
+      const tabToClose = tabs.find(t => t.id === tabId);
+      if (!tabToClose) return;
+      
+      // Remove scene from Fastboard
+      const scenePath = `/${tabToClose.sceneIndex}`;
+      appRef.current.room.removeScenes(scenePath);
+      
+      // Update tabs state
+      const newTabs = tabs.filter(t => t.id !== tabId);
+      setTabs(newTabs);
+      
+      // Switch to main tab if closing active tab
+      if (activeTabId === tabId) {
+        setActiveTabId('main');
+        appRef.current.room.setSceneIndex(0);
+      }
+      
+      console.log('Closed tab:', tabId);
+    } catch (error) {
+      console.error('Error closing tab:', error);
+    }
+  };
+
   const handleColorChange = (color: string) => {
     setCurrentColor(color);
-    if (!appRef.current) return;
+    if (!appRef.current?.room) return;
+    
     try {
-      // Update the stroke color for drawing tools
-      appRef.current.setMemberState({ strokeColor: [
-        parseInt(color.slice(1, 3), 16),
-        parseInt(color.slice(3, 5), 16),
-        parseInt(color.slice(5, 7), 16)
-      ] });
-      console.log('Changed color to:', color);
+      // Convert hex to RGB
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      
+      appRef.current.room.setMemberState({ 
+        strokeColor: [r, g, b] 
+      });
+      console.log('Changed stroke color to:', color);
     } catch (error) {
       console.error('Error changing color:', error);
     }
   };
 
-  const handleFontSizeChange = (size: 'small' | 'normal' | 'large') => {
-    setCurrentFontSize(size);
-    if (!appRef.current) return;
+  const handleFontChange = (font: string) => {
+    setCurrentFont(font);
+    if (!appRef.current?.room) return;
+    
     try {
-      const fontSize = size === 'small' ? 12 : size === 'large' ? 24 : 16;
-      appRef.current.setMemberState({ textSize: fontSize });
-      console.log('Changed font size to:', size, fontSize);
+      appRef.current.room.setMemberState({ 
+        textSize: currentFontSize,
+        // Note: Fastboard may have limitations on font family changes
+      });
+      console.log('Changed font to:', font);
+    } catch (error) {
+      console.error('Error changing font:', error);
+    }
+  };
+
+  const handleFontSizeChange = (size: number) => {
+    setCurrentFontSize(size);
+    if (!appRef.current?.room) return;
+    
+    try {
+      appRef.current.room.setMemberState({ 
+        textSize: size 
+      });
+      console.log('Changed font size to:', size);
     } catch (error) {
       console.error('Error changing font size:', error);
     }
@@ -148,12 +250,36 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
     setActiveFormats(newFormats);
     
-    if (!appRef.current) return;
+    if (!appRef.current?.room) return;
+    
     try {
-      // Apply text formatting - this would need to be implemented based on Fastboard's text formatting API
+      // Note: Text formatting in Fastboard may be limited
+      // This is a placeholder for when Fastboard supports rich text formatting
       console.log('Toggled format:', format, 'Active:', newFormats.has(format));
     } catch (error) {
       console.error('Error toggling format:', error);
+    }
+  };
+
+  const handleAlignmentChange = (alignment: 'left' | 'center' | 'right') => {
+    if (!appRef.current?.room) return;
+    
+    try {
+      // Note: Text alignment in Fastboard may be limited
+      console.log('Changed alignment to:', alignment);
+    } catch (error) {
+      console.error('Error changing alignment:', error);
+    }
+  };
+
+  const handleListToggle = (type: 'bullet' | 'numbered') => {
+    if (!appRef.current?.room) return;
+    
+    try {
+      // Note: List formatting in Fastboard may be limited
+      console.log('Toggled list type:', type);
+    } catch (error) {
+      console.error('Error toggling list:', error);
     }
   };
 
@@ -181,18 +307,26 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       <WhiteboardToolbar
         userRole={userRole}
         onNewTab={handleNewTab}
+        onTabSwitch={handleTabSwitch}
+        onTabClose={handleTabClose}
         onColorChange={handleColorChange}
+        onFontChange={handleFontChange}
         onFontSizeChange={handleFontSizeChange}
         onFormatToggle={handleFormatToggle}
+        onAlignmentChange={handleAlignmentChange}
+        onListToggle={handleListToggle}
         activeFormats={activeFormats}
         currentColor={currentColor}
+        currentFont={currentFont}
         currentFontSize={currentFontSize}
+        tabs={tabs}
+        activeTabId={activeTabId}
       />
       
       {/* Whiteboard Canvas */}
       <div 
         ref={whiteboardRef} 
-        className="flex-1 w-full" 
+        className="flex-1 w-full bg-white" 
         style={{ width: '100%', height: '100%', minWidth: '400px', minHeight: '300px' }}
       />
     </div>
