@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 import WhiteboardToolbar from './WhiteboardToolbar';
@@ -313,15 +312,34 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         throw new Error('Missing required images or prefix data');
       }
 
+      console.log('Processing Netless images:', netlessTask.images);
+
       // Convert the images object to convertedFileList array
       const convertedFileList = Object.keys(netlessTask.images)
         .sort((a, b) => parseInt(a) - parseInt(b)) // Sort by page number
-        .map((pageNumber) => ({
-          width: 1280, // Default width, adjust as needed
-          height: 720, // Default height, adjust as needed
-          conversionFileUrl: netlessTask.images![pageNumber],
-          preview: netlessTask.images![pageNumber] // Use same URL for preview
-        }));
+        .map((pageNumber) => {
+          const imageData = netlessTask.images![pageNumber];
+          
+          // Handle both object format {width, height, url} and direct URL string
+          if (typeof imageData === 'string') {
+            return {
+              width: 1280, // Default dimensions for string URLs
+              height: 720,
+              conversionFileUrl: imageData,
+              preview: imageData
+            };
+          } else if (imageData && typeof imageData === 'object' && imageData.url) {
+            return {
+              width: imageData.width || 1280,
+              height: imageData.height || 720,
+              conversionFileUrl: imageData.url, // Extract the URL string
+              preview: imageData.url // Extract the URL string for preview too
+            };
+          } else {
+            console.error('Invalid image data format for page', pageNumber, ':', imageData);
+            throw new Error(`Invalid image data format for page ${pageNumber}`);
+          }
+        });
 
       // Create the Fastboard-compatible response format
       const fastboardResponse = {
@@ -341,7 +359,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         originalImageCount: Object.keys(netlessTask.images).length,
         transformedPageCount: convertedFileList.length,
         hasProgress: !!fastboardResponse.progress,
-        hasConvertedFileList: !!fastboardResponse.progress.convertedFileList
+        hasConvertedFileList: !!fastboardResponse.progress.convertedFileList,
+        sampleConversionFileUrl: convertedFileList[0]?.conversionFileUrl?.substring(0, 50) + '...'
       });
 
       return fastboardResponse;
@@ -450,13 +469,21 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           
           // Fallback: try inserting the first image as a regular image
           try {
-            const firstImageUrl = Object.values(completedTask.images)[0];
+            const firstImageData = Object.values(completedTask.images)[0];
+            let firstImageUrl;
+            
+            if (typeof firstImageData === 'string') {
+              firstImageUrl = firstImageData;
+            } else if (firstImageData && typeof firstImageData === 'object' && firstImageData.url) {
+              firstImageUrl = firstImageData.url;
+            }
+            
             if (firstImageUrl) {
               console.log('Attempting fallback: inserting first page as image');
               await appRef.current.insertImage(firstImageUrl);
               alert(`Could not insert "${fileName}" as a document, but inserted the first page as an image.`);
             } else {
-              throw new Error('No images available for fallback');
+              throw new Error('No valid image URL available for fallback');
             }
           } catch (fallbackError) {
             console.error('Fallback image insertion also failed:', fallbackError);
