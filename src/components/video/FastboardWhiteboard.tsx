@@ -73,7 +73,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           },
           managerConfig: {
             cursor: true,
-            toolbar: userRole === 'tutor' && !isReadOnly,
           },
         });
 
