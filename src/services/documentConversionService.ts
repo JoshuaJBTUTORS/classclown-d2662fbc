@@ -6,17 +6,14 @@ export interface ConversionTaskInfo {
   type: string;
   status: 'Waiting' | 'Converting' | 'Finished' | 'Fail';
   failedReason?: string;
+  // Raw Netless response fields that Fastboard expects
+  images?: { [pageNumber: string]: string }; // page number -> image URL mapping
+  prefix?: string; // base URL prefix
   progress?: {
     totalPageSize: number;
     convertedPageSize: number;
     convertedPercentage: number;
   };
-  convertedFileList?: Array<{
-    width: number;
-    height: number;
-    conversionFileUrl: string;
-    preview?: string;
-  }>;
 }
 
 export class DocumentConversionService {
@@ -74,7 +71,7 @@ export class DocumentConversionService {
   static async pollConversionStatus(
     taskUuid: string,
     onProgress?: (progress: ConversionTaskInfo) => void,
-    maxAttempts: number = 30
+    maxAttempts: number = 60 // Increased from 30 to 60 (2 minutes)
   ): Promise<ConversionTaskInfo | null> {
     let attempts = 0;
     
@@ -103,7 +100,7 @@ export class DocumentConversionService {
       attempts++;
     }
 
-    console.warn('Document conversion polling timed out');
+    console.warn('Document conversion polling timed out after', maxAttempts * 2, 'seconds');
     return null;
   }
 }

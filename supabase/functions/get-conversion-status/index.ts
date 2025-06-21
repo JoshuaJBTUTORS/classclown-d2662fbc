@@ -49,35 +49,25 @@ serve(async (req) => {
     }
 
     const statusData = await statusResponse.json();
+    console.log('Raw Netless response:', statusData);
     
-    // Convert Netless response format to our interface
-    const convertedFileList = [];
-    if (statusData.images && typeof statusData.images === 'object') {
-      // Convert Netless images object to array format
-      for (const [pageNum, imageUrl] of Object.entries(statusData.images)) {
-        convertedFileList.push({
-          width: 800, // Default width
-          height: 600, // Default height
-          conversionFileUrl: imageUrl,
-          preview: statusData.previews?.[pageNum] || imageUrl
-        });
-      }
-    }
-    
+    // Return the raw Netless response format that Fastboard expects
     return new Response(
       JSON.stringify({ 
         success: true, 
         taskInfo: {
-          uuid: taskUuid,
-          type: 'conversion',
+          uuid: statusData.uuid || taskUuid,
+          type: statusData.type || 'static',
           status: statusData.status,
+          failedReason: statusData.failedReason,
+          // Raw Netless fields that Fastboard insertDocs expects
+          images: statusData.images || {},
+          prefix: statusData.prefix || '',
           progress: {
-            totalPageSize: statusData.pageCount || 0,
-            convertedPageSize: statusData.pageCount || 0,
-            convertedPercentage: statusData.convertedPercentage || 0
-          },
-          convertedFileList: convertedFileList,
-          failedReason: statusData.errorMessage
+            totalPageSize: statusData.progress?.totalPageSize || 0,
+            convertedPageSize: statusData.progress?.convertedPageSize || 0,
+            convertedPercentage: statusData.progress?.convertedPercentage || 0
+          }
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

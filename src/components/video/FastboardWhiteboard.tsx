@@ -329,7 +329,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
       console.log('Netless document conversion started:', taskInfo);
       
-      // Poll for conversion completion
+      // Poll for conversion completion with increased timeout
       const completedTask = await DocumentConversionService.pollConversionStatus(
         taskInfo.uuid,
         (progress) => {
@@ -338,31 +338,30 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         }
       );
 
-      if (completedTask?.status === 'Finished' && completedTask.convertedFileList) {
+      if (completedTask?.status === 'Finished' && completedTask.images) {
         console.log('Netless document conversion completed:', completedTask);
         
-        // Create docs data for insertDocs using Netless format
-        const docsData = {
+        // Use the raw Netless response format that Fastboard expects
+        const netlessDocsData = {
           uuid: completedTask.uuid,
-          type: 'static', // Netless static conversion
+          type: completedTask.type || 'static',
           status: 'Finished',
           failedReason: '',
-          taskProgress: {
-            totalPageSize: completedTask.convertedFileList.length,
-            convertedPageSize: completedTask.convertedFileList.length,
-            convertedPercentage: 100,
-            convertedFileList: completedTask.convertedFileList.map((file, index) => ({
-              width: file.width,
-              height: file.height,
-              conversionFileUrl: file.conversionFileUrl,
-              preview: file.preview || file.conversionFileUrl
-            }))
+          // Pass the raw Netless fields directly
+          images: completedTask.images,
+          prefix: completedTask.prefix || '',
+          progress: completedTask.progress || {
+            totalPageSize: Object.keys(completedTask.images).length,
+            convertedPageSize: Object.keys(completedTask.images).length,
+            convertedPercentage: 100
           }
         };
 
-        // Insert the converted document using insertDocs
-        appRef.current.insertDocs(docsData);
-        console.log('Document inserted successfully using Netless converted data');
+        console.log('Inserting document with raw Netless format:', netlessDocsData);
+        
+        // Insert the converted document using insertDocs with raw Netless format
+        appRef.current.insertDocs(netlessDocsData);
+        console.log('Document inserted successfully using raw Netless format');
         
         // Remove from tracking
         setConversionTasks(prev => {
