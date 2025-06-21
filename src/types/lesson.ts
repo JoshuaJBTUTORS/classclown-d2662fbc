@@ -8,27 +8,18 @@ export interface Lesson {
   end_time: string;
   is_group: boolean;
   status: string;
-  subject?: string; // Add subject field
+  subject?: string;
   is_recurring?: boolean;
   recurrence_interval?: string | null;
   recurrence_day?: string | null;
   recurrence_end_date?: string | null;
-  // Enhanced video conference fields
+  // Enhanced video conference fields (simplified - external links only)
   lesson_space_room_id?: string | null;
   lesson_space_room_url?: string | null;
-  lesson_space_space_id?: string | null; // Add space ID field
+  lesson_space_space_id?: string | null;
   video_conference_provider?: string | null;
   video_conference_link?: string | null;
-  // Additional Lesson Space fields
   lesson_space_session_id?: string | null;
-  // Agora.io fields
-  agora_channel_name?: string | null;
-  agora_token?: string | null;
-  agora_uid?: number | null;
-  agora_rtm_token?: string | null;
-  agora_whiteboard_token?: string | null;
-  agora_recording_id?: string | null;
-  agora_recording_status?: string | null;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
@@ -45,7 +36,7 @@ export interface Lesson {
     email?: string;
     attendance_status?: string;
     feedback?: string;
-    lesson_space_url?: string; // Individual student URL for Lesson Space
+    lesson_space_url?: string;
   }[];
   completed?: boolean;
   completion_date?: string | null;
