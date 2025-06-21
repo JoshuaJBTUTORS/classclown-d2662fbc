@@ -15,7 +15,7 @@ interface FastboardWhiteboardProps {
 interface WhiteboardTab {
   id: string;
   name: string;
-  type: 'main' | 'document';
+  type: 'main' | 'document' | 'code-editor';
   scenePath: string;
 }
 
@@ -153,6 +153,55 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
+  const handleOpenCodeEditor = () => {
+    if (!appRef.current?.room) return;
+    
+    try {
+      const codeEditorTabId = 'code-editor';
+      
+      // Check if code editor tab already exists
+      const existingCodeTab = tabs.find(t => t.type === 'code-editor');
+      if (existingCodeTab) {
+        setActiveTabId(existingCodeTab.id);
+        return;
+      }
+      
+      // Create new code editor tab
+      const newTab: WhiteboardTab = {
+        id: codeEditorTabId,
+        name: 'Code Editor',
+        type: 'code-editor',
+        scenePath: '/code-editor'
+      };
+      
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(codeEditorTabId);
+      
+      // Insert code editor appliance using Fastboard's built-in functionality
+      // Note: This uses Fastboard's internal code editor appliance
+      if (appRef.current.room.insertCodeEditor) {
+        appRef.current.room.insertCodeEditor({
+          width: 800,
+          height: 600,
+          language: 'javascript'
+        });
+      } else if (appRef.current.room.insertApp) {
+        // Alternative method using insertApp
+        appRef.current.room.insertApp({
+          kind: 'Monaco',
+          options: {
+            title: 'Code Editor',
+            scenePath: '/code-editor'
+          }
+        });
+      }
+      
+      console.log('Opened code editor tab:', newTab);
+    } catch (error) {
+      console.error('Error opening code editor:', error);
+    }
+  };
+
   const handleTabSwitch = (tabId: string) => {
     if (!appRef.current?.room) return;
     
@@ -161,8 +210,15 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     
     try {
       setActiveTabId(tabId);
-      // Use setScenePath for more reliable scene switching
-      appRef.current.room.setScenePath(tab.scenePath);
+      
+      if (tab.type === 'code-editor') {
+        // Handle switching to code editor - Fastboard manages this internally
+        console.log('Switched to code editor tab');
+      } else {
+        // Use setScenePath for regular whiteboard scenes
+        appRef.current.room.setScenePath(tab.scenePath);
+      }
+      
       console.log('Switched to tab:', tab);
     } catch (error) {
       console.error('Error switching tab:', error);
@@ -176,8 +232,15 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       const tabToClose = tabs.find(t => t.id === tabId);
       if (!tabToClose) return;
       
-      // Remove the specific scene using removeScenes
-      appRef.current.room.removeScenes(tabToClose.scenePath);
+      if (tabToClose.type === 'code-editor') {
+        // Close code editor appliance
+        if (appRef.current.room.closeApp) {
+          appRef.current.room.closeApp('Monaco');
+        }
+      } else {
+        // Remove the specific scene using removeScenes
+        appRef.current.room.removeScenes(tabToClose.scenePath);
+      }
       
       // Update tabs state
       const newTabs = tabs.filter(t => t.id !== tabId);
@@ -309,6 +372,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       <WhiteboardToolbar
         userRole={userRole}
         onNewTab={handleNewTab}
+        onOpenCodeEditor={handleOpenCodeEditor}
         onTabSwitch={handleTabSwitch}
         onTabClose={handleTabClose}
         onColorChange={handleColorChange}
