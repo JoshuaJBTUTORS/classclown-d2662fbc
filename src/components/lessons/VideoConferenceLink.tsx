@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -131,8 +132,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       return;
     }
 
-    // Handle Agora rooms differently - navigate to internal video room
-    if (provider === 'agora' && agoraChannelName && (agoraToken || lessonId)) {
+    // Handle internal Agora rooms differently - navigate to internal video room
+    if (provider === 'agora' && agoraChannelName && lessonId) {
       console.log('Navigating to Agora video room for lesson:', lessonId);
       navigate(`/video-room/${lessonId}`);
       return;
