@@ -106,7 +106,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       roomUuid: netlessCredentials?.roomUuid ? netlessCredentials.roomUuid.substring(0, 8) + '...' : 'undefined',
       appIdentifier: netlessCredentials?.appIdentifier ? netlessCredentials.appIdentifier.substring(0, 8) + '...' : 'undefined',
       hasRoomToken: !!netlessCredentials?.roomToken,
-      netlessAppId: netlessCredentials?.appIdentifier || 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg'
+      usingCorrectNetlessAppId: 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg'
     });
   }, [netlessCredentials]);
 
@@ -178,7 +178,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                     userRole={userRole}
                     roomUuid={netlessCredentials.roomUuid}
                     roomToken={netlessCredentials.roomToken}
-                    appIdentifier={netlessCredentials.appIdentifier || 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg'} // Use the correct Netless App Identifier with fallback
+                    appIdentifier={netlessCredentials.appIdentifier}
                     userId={validUid.toString()}
                   />
                 ) : (

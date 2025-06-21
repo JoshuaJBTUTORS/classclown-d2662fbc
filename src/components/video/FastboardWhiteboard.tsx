@@ -7,39 +7,52 @@ interface FastboardWhiteboardProps {
   userRole: 'tutor' | 'student';
   roomUuid?: string;
   roomToken?: string;
-  appIdentifier?: string; // Back to using Netless app identifier
+  appIdentifier?: string;
   userId: string;
 }
+
+// The correct Netless App Identifier - always use this as fallback
+const CORRECT_NETLESS_APP_IDENTIFIER = 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg';
 
 const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({ 
   isReadOnly = false, 
   userRole,
   roomUuid,
   roomToken,
-  appIdentifier, // Use Netless app identifier
+  appIdentifier,
   userId
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!roomUuid || !roomToken || !appIdentifier || !whiteboardRef.current) {
+    const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
+    
+    if (!roomUuid || !roomToken || !whiteboardRef.current) {
       console.warn('FastboardWhiteboard: Missing required props:', {
         roomUuid: !!roomUuid,
         roomToken: !!roomToken,
-        appIdentifier: !!appIdentifier,
+        appIdentifier: !!finalAppIdentifier,
         whiteboardRef: !!whiteboardRef.current
       });
       return;
     }
 
+    console.log('FastboardWhiteboard: Initializing with credentials:', {
+      roomUuid: roomUuid.substring(0, 8) + '...',
+      appIdentifier: finalAppIdentifier,
+      userId,
+      userRole,
+      isReadOnly
+    });
+
     const initFastboard = async () => {
       try {
-        console.log('Initializing Fastboard with Netless App Identifier:', appIdentifier);
+        console.log('Initializing Fastboard with Netless App Identifier:', finalAppIdentifier);
         
         const app = await createFastboard({
           sdkConfig: {
-            appIdentifier: appIdentifier, // Use the Netless App Identifier here
+            appIdentifier: finalAppIdentifier,
             region: 'us-sv',
           },
           joinRoom: {
@@ -58,6 +71,13 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         console.log('Fastboard initialized successfully');
       } catch (error) {
         console.error('FastboardWhiteboard initialization failed:', error);
+        console.error('Initialization details:', {
+          appIdentifier: finalAppIdentifier,
+          roomUuid,
+          tokenLength: roomToken?.length,
+          userId,
+          error: error.message
+        });
       }
     };
 
@@ -74,13 +94,18 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     };
   }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
 
-  if (!roomUuid || !roomToken || !appIdentifier) {
+  const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
+
+  if (!roomUuid || !roomToken) {
     return (
       <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
         <div className="text-center p-6">
           <p className="text-gray-600">Whiteboard not configured</p>
           <p className="text-gray-500 text-sm mt-2">
-            Missing: {!roomUuid && 'Room UUID'} {!roomToken && 'Room Token'} {!appIdentifier && 'App Identifier'}
+            Missing: {!roomUuid && 'Room UUID'} {!roomToken && 'Room Token'}
+          </p>
+          <p className="text-gray-400 text-xs mt-1">
+            App ID: {finalAppIdentifier.substring(0, 20)}...
           </p>
         </div>
       </div>
