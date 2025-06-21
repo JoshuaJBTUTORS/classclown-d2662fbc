@@ -1,7 +1,6 @@
 
 import { Buffer } from 'https://deno.land/std@0.155.0/node/buffer.ts'
-import { deflate } from 'https://deno.land/x/compress@v0.3.3/mod.ts'
-import { hmac } from 'https://deno.land/x/hmac@v2.0.1/mod.ts'
+import { deflate } from 'jsr:@deno-library/compress'
 
 const VERSION_LENGTH = 3
 const APP_ID_LENGTH = 32
@@ -109,9 +108,12 @@ class AccessToken2 {
         this.services = {}
     }
 
-    __signing() {
-        let signing = encodeHMac(new ByteBuf().putUint32(this.issueTs).pack(), this.appCertificate)
-        signing = encodeHMac(new ByteBuf().putUint32(this.salt).pack(), signing)
+    async __signing() {
+        const issueBuffer = new ByteBuf().putUint32(this.issueTs).pack()
+        const saltBuffer = new ByteBuf().putUint32(this.salt).pack()
+        
+        let signing = await encodeHMac(issueBuffer, this.appCertificate)
+        signing = await encodeHMac(saltBuffer, signing)
         return signing
     }
 
@@ -143,12 +145,12 @@ class AccessToken2 {
         this.services[service.service_type()] = service
     }
 
-    build() {
+    async build() {
         if (!this.__build_check()) {
             return ''
         }
 
-        let signing = this.__signing()
+        let signing = await this.__signing()
         let signing_info = new ByteBuf().putString(this.appId)
             .putUint32(this.issueTs)
             .putUint32(this.expire)
@@ -159,15 +161,28 @@ class AccessToken2 {
             signing_info = Buffer.concat([signing_info, service.pack()])
         })
 
-        let signature = encodeHMac(signing, signing_info)
+        let signature = await encodeHMac(signing, signing_info)
         let content = Buffer.concat([new ByteBuf().putString(signature).pack(), signing_info])
         let compressed = deflate(content)
         return `${getVersion()}${Buffer.from(compressed).toString('base64')}`
     }
 }
 
-var encodeHMac = function (key, message) {
-    return hmac('sha256', key, message, 'utf8')
+// Replace HMAC function with Deno's Web Crypto API
+var encodeHMac = async function (key, message) {
+    const keyBuffer = typeof key === 'string' ? new TextEncoder().encode(key) : key
+    const messageBuffer = typeof message === 'string' ? new TextEncoder().encode(message) : message
+    
+    const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyBuffer,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+    )
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer)
+    return new Uint8Array(signature)
 }
 
 var ByteBuf = function () {

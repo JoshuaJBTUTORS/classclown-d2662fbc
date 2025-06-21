@@ -52,7 +52,7 @@ function validateAgoraCredentials(appId: string, appCertificate: string) {
 }
 
 // Simplified token generation using official classes
-function generateRtcToken(appId, appCertificate, channelName, uid, role, expireTime) {
+async function generateRtcToken(appId, appCertificate, channelName, uid, role, expireTime) {
   try {
     console.log('[AGORA-INTEGRATION] Generating RTC token with official implementation');
     
@@ -70,14 +70,14 @@ function generateRtcToken(appId, appCertificate, channelName, uid, role, expireT
     }
     
     token.add_service(serviceRtc)
-    return token.build()
+    return await token.build()
   } catch (error) {
     console.error('[AGORA-INTEGRATION] RTC token generation error:', error);
     throw error;
   }
 }
 
-function generateRtmToken(appId, appCertificate, userId, expireTime) {
+async function generateRtmToken(appId, appCertificate, userId, expireTime) {
   try {
     console.log('[AGORA-INTEGRATION] Generating RTM token with official implementation');
     
@@ -85,7 +85,7 @@ function generateRtmToken(appId, appCertificate, userId, expireTime) {
     const serviceRtm = new ServiceRtm(userId)
     serviceRtm.add_privilege(ServiceRtm.kPrivilegeLogin, expireTime)
     token.add_service(serviceRtm)
-    return token.build()
+    return await token.build()
   } catch (error) {
     console.error('[AGORA-INTEGRATION] RTM token generation error:', error);
     throw error;
@@ -120,10 +120,10 @@ async function generateTokensOfficial(
     const expireTime = currentTimestamp + 86400 // 24 hours
 
     // Generate RTC token
-    const rtcToken = generateRtcToken(appId, appCertificate, channelName, actualUid, userRole, expireTime)
+    const rtcToken = await generateRtcToken(appId, appCertificate, channelName, actualUid, userRole, expireTime)
     
     // Generate RTM token
-    const rtmToken = generateRtmToken(appId, appCertificate, actualUid.toString(), expireTime)
+    const rtmToken = await generateRtmToken(appId, appCertificate, actualUid.toString(), expireTime)
 
     if (!rtcToken || !rtmToken) {
       throw new Error('Failed to generate tokens');
@@ -257,32 +257,6 @@ async function createVideoRoom(
       userRole: data.userRole
     });
 
-    // Netless functionality temporarily disabled
-    /*
-    let netlessRoomUuid = null;
-    let netlessRoomToken = null;
-    let appIdentifier = null;
-
-    if (netlessSDKToken) {
-      try {
-        netlessRoomUuid = await createNetlessRoom(netlessSDKToken);
-        const { appIdentifier: parsedAppId } = parseNetlessSDKToken(netlessSDKToken);
-        appIdentifier = parsedAppId;
-
-        const netlessRole = data.userRole === 'tutor' ? 'admin' : 'writer';
-        netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, netlessRoomUuid, netlessRole);
-        
-        console.log("[AGORA-INTEGRATION] Netless setup completed:", {
-          roomUuid: netlessRoomUuid,
-          appIdentifier,
-          role: netlessRole
-        });
-      } catch (netlessError) {
-        console.warn('[AGORA-INTEGRATION] Netless setup failed, continuing without whiteboard:', netlessError.message);
-      }
-    }
-    */
-
     // Update lesson with room details
     const { error: updateError } = await supabase
       .from("lessons")
@@ -292,9 +266,6 @@ async function createVideoRoom(
         agora_token: tokens.rtcToken,
         agora_rtm_token: tokens.rtmToken,
         video_conference_provider: "agora",
-        // netless_room_uuid: netlessRoomUuid,
-        // netless_room_token: netlessRoomToken,
-        // netless_app_identifier: appIdentifier
       })
       .eq("id", data.lessonId);
 
@@ -313,9 +284,6 @@ async function createVideoRoom(
         uid: tokens.uid,
         rtcToken: tokens.rtcToken,
         rtmToken: tokens.rtmToken,
-        // netlessRoomUuid,
-        // netlessRoomToken,
-        // netlessAppIdentifier: appIdentifier,
         message: "Agora video room created successfully",
         debug: {
           tokenLength: tokens.rtcToken.length,
@@ -394,20 +362,6 @@ async function getTokens(
       rtmTokenLength: tokens.rtmToken.length,
       role: data.userRole
     });
-
-    // Generate fresh Netless room token if room exists
-    /*
-    let netlessRoomToken = null;
-    if (lesson.netless_room_uuid && netlessSDKToken) {
-      try {
-        const netlessRole = data.userRole === 'tutor' ? 'admin' : 'writer';
-        netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, lesson.netless_room_uuid, netlessRole);
-        console.log("[AGORA-INTEGRATION] Generated fresh Netless token");
-      } catch (netlessError) {
-        console.warn("[AGORA-INTEGRATION] Failed to generate Netless token:", netlessError.message);
-      }
-    }
-    */
 
     return new Response(
       JSON.stringify({
@@ -507,29 +461,6 @@ async function regenerateTokens(
       console.error("[AGORA-INTEGRATION] Error updating lesson with fresh tokens:", updateError);
       throw updateError;
     }
-
-    // Generate fresh Netless room token if room exists
-    /*
-    let netlessRoomToken = null;
-    if (lesson.netless_room_uuid && netlessSDKToken) {
-      try {
-        const netlessRole = data.userRole === 'tutor' ? 'admin' : 'writer';
-        netlessRoomToken = await generateNetlessRoomToken(netlessSDKToken, lesson.netless_room_uuid, netlessRole);
-        
-        // Update lesson with fresh Netless token
-        await supabase
-          .from("lessons")
-          .update({
-            netless_room_token: netlessRoomToken
-          })
-          .eq("id", data.lessonId);
-          
-        console.log("[AGORA-INTEGRATION] Generated and updated fresh Netless token");
-      } catch (netlessError) {
-        console.warn("[AGORA-INTEGRATION] Failed to regenerate Netless token:", netlessError.message);
-      }
-    }
-    */
 
     console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with official implementation");
 
