@@ -240,7 +240,7 @@ const StudentJoinPage: React.FC = () => {
   };
 
   const handleJoinLesson = () => {
-    // Handle Agora rooms differently - navigate to internal video room
+    // Handle Agora rooms - navigate to internal video room
     if (lesson?.video_conference_provider === 'agora' && lesson?.agora_channel_name) {
       navigate(`/video-room/${lessonId}`);
       return;

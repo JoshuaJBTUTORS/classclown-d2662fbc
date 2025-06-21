@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -40,37 +41,20 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
-  const [externalAgoraUrl, setExternalAgoraUrl] = React.useState<string | null>(null);
   const navigate = useNavigate();
 
   // Check if we have any video conference capability
   const hasAgoraRoom = provider === 'agora' && agoraChannelName && (agoraToken || lessonId);
-  const hasExternalAgora = provider === 'external_agora' && agoraChannelName;
-  const hasVideoConference = link || hasLessonSpace || hasAgoraRoom || hasExternalAgora;
+  const hasVideoConference = link || hasLessonSpace || hasAgoraRoom;
 
   console.log('VideoConferenceLink props:', {
     provider,
     agoraChannelName,
     agoraToken,
     hasAgoraRoom,
-    hasExternalAgora,
     hasVideoConference,
     lessonId
   });
-
-  // Generate external Agora URL when needed
-  React.useEffect(() => {
-    if (hasExternalAgora && lessonId && !externalAgoraUrl) {
-      // This would be called when user clicks join - for now we'll prepare the URL structure
-      const baseUrl = 'https://your-agora-app.vercel.app'; // Replace with actual URL
-      const params = new URLSearchParams({
-        lessonId: lessonId,
-        channelName: agoraChannelName || '',
-        userRole: userRole
-      });
-      setExternalAgoraUrl(`${baseUrl}?${params.toString()}`);
-    }
-  }, [hasExternalAgora, lessonId, agoraChannelName, userRole, externalAgoraUrl]);
 
   // Don't render if no video conference capabilities are available
   if (!hasVideoConference) return null;
@@ -92,8 +76,6 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         return 'Zoom';
       case 'agora':
         return 'Agora Video Room';
-      case 'external_agora':
-        return 'External Agora App';
       default:
         return 'Video Conference';
     }
@@ -115,11 +97,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     return 'Admin Access';
   };
 
-  // Update the getCorrectUrl function
   const getCorrectUrl = () => {
-    if (provider === 'external_agora') {
-      return externalAgoraUrl;
-    }
     if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
       if (userRole === 'student') {
         // Students get the simple invite URL
@@ -133,20 +111,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleJoinLesson = () => {
-    // Handle External Agora differently - open in new window with token generation
-    if (provider === 'external_agora' && lessonId) {
-      console.log('Opening external Agora app for lesson:', lessonId);
-      // For external Agora, we need to generate fresh tokens and open the external app
-      if (externalAgoraUrl) {
-        window.open(externalAgoraUrl, '_blank', 'width=1200,height=800');
-        toast.success('Opening external Agora app...');
-      } else {
-        toast.error('External app URL not available');
-      }
-      return;
-    }
-
-    // Handle internal Agora rooms differently - navigate to internal video room
+    // Handle internal Agora rooms - navigate to internal video room
     if (provider === 'agora' && hasAgoraRoom && lessonId) {
       console.log('Navigating to internal Agora video room for lesson:', lessonId);
       navigate(`/video-room/${lessonId}`);
@@ -154,7 +119,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     }
 
     // For students and parents with other providers, redirect to consent flow
-    if ((userRole === 'student') && lessonId && provider !== 'agora' && provider !== 'external_agora') {
+    if ((userRole === 'student') && lessonId && provider !== 'agora') {
       navigate(`/join-lesson/${lessonId}`);
       return;
     }
@@ -178,7 +143,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
         {/* Main lesson URL section */}
-        {(urlToUse || hasAgoraRoom || hasExternalAgora) && (
+        {(urlToUse || hasAgoraRoom) && (
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -191,7 +156,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                       <span>Group lesson • {studentCount} participants</span>
                     </div>
                   )}
-                  {(provider === 'agora' || provider === 'external_agora') && agoraChannelName && (
+                  {provider === 'agora' && agoraChannelName && (
                     <div className="text-xs text-muted-foreground mt-1">
                       Channel: {agoraChannelName}
                     </div>
@@ -222,7 +187,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </Button>
               
               {/* Only show copy button for tutors/admins/owners and when we have a URL */}
-              {userRole !== 'student' && urlToUse && provider !== 'external_agora' && (
+              {userRole !== 'student' && urlToUse && (
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -244,7 +209,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </div>
             )}
 
-            {userRole === 'tutor' && (provider === 'agora' || provider === 'external_agora') && (
+            {userRole === 'tutor' && provider === 'agora' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
                 <strong>Host privileges:</strong> You have full control of the Agora meeting room with whiteboard access.
               </div>
@@ -256,15 +221,9 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </div>
             )}
 
-            {userRole === 'student' && (provider === 'agora' || provider === 'external_agora') && (
+            {userRole === 'student' && provider === 'agora' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
                 <strong>Student access:</strong> Click "Join Lesson" to enter the interactive video classroom with whiteboard.
-              </div>
-            )}
-
-            {provider === 'external_agora' && (
-              <div className="text-xs text-muted-foreground bg-orange-50 p-2 rounded">
-                <strong>External App:</strong> This will open your custom Agora application in a new window with secure token authentication.
               </div>
             )}
           </>
