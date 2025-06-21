@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -156,14 +157,17 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       });
 
       const lessonStudentsData = lessonData.lesson_students.map((ls: any) => ({
-        id: ls.student.id,
-        first_name: ls.student.first_name,
-        last_name: ls.student.last_name
+        student: {
+          id: ls.student.id,
+          first_name: ls.student.first_name,
+          last_name: ls.student.last_name
+        }
       }));
 
       const processedLesson: Lesson = {
         ...lessonData,
         lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
         students: processedStudents,
         agora_channel_name: lessonData.agora_channel_name,
         agora_recording_id: lessonData.agora_recording_id,
@@ -175,8 +179,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         netless_app_identifier: lessonData.netless_app_identifier,
         netless_room_token: lessonData.netless_room_token,
         netless_room_uuid: lessonData.netless_room_uuid,
-        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora') || null,
-        lesson_students: lessonStudentsData || []
+        lesson_students: lessonStudentsData
       };
 
       setLesson(processedLesson);

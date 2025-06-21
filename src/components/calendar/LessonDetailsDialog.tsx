@@ -225,27 +225,50 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const startDate = parseISO(data.start_time);
       const endDate = parseISO(data.end_time);
       
-      // Create recurring lesson instance
+      // Set the time to match the instance date
+      const start = new Date(instanceDate);
+      start.setHours(startDate.getHours(), startDate.getMinutes());
+      
+      const end = new Date(instanceDate);
+      end.setHours(endDate.getHours(), endDate.getMinutes());
+      
+      // Process students data properly
+      const processedStudents = students.map(student => ({
+        id: student.id,
+        first_name: student.first_name,
+        last_name: student.last_name
+      }));
+
+      // Process lesson students data
+      const lessonStudentsData = data.lesson_students?.map((ls: any) => ({
+        student: {
+          id: ls.student.id,
+          first_name: ls.student.first_name,
+          last_name: ls.student.last_name
+        }
+      })) || [];
+      
+      // Create recurring lesson instance using the original lesson data
       const recurringLesson: Lesson = {
-        ...originalLesson,
-        id: crypto.randomUUID(),
+        ...data,
+        id: instanceId,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
         is_recurring_instance: true,
-        lesson_type: (originalLesson.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
         students: processedStudents,
-        agora_channel_name: originalLesson.agora_channel_name,
-        agora_token: originalLesson.agora_token,
-        agora_uid: originalLesson.agora_uid,
-        agora_rtm_token: originalLesson.agora_rtm_token,
-        agora_whiteboard_token: originalLesson.agora_whiteboard_token,
-        agora_recording_id: originalLesson.agora_recording_id,
-        agora_recording_status: originalLesson.agora_recording_status,
-        netless_room_uuid: originalLesson.netless_room_uuid,
-        netless_room_token: originalLesson.netless_room_token,
-        netless_app_identifier: originalLesson.netless_app_identifier,
-        video_conference_provider: (originalLesson.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora') || null,
-        lesson_students: lessonStudentsData || []
+        agora_channel_name: data.agora_channel_name,
+        agora_token: data.agora_token,
+        agora_uid: data.agora_uid,
+        agora_rtm_token: data.agora_rtm_token,
+        agora_whiteboard_token: data.agora_whiteboard_token,
+        agora_recording_id: data.agora_recording_id,
+        agora_recording_status: data.agora_recording_status,
+        netless_room_uuid: data.netless_room_uuid,
+        netless_room_token: data.netless_room_token,
+        netless_app_identifier: data.netless_app_identifier,
+        video_conference_provider: (data.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
+        lesson_students: lessonStudentsData
       };
       
       console.log("Created instance lesson:", recurringLesson);
@@ -320,6 +343,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const processedLesson: Lesson = {
         ...data,
         lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        video_conference_provider: (data.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
         students
       };
       

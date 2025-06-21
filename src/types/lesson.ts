@@ -1,3 +1,4 @@
+
 export interface Lesson {
   id: string;
   title: string;
@@ -28,6 +29,10 @@ export interface Lesson {
   agora_whiteboard_token?: string | null;
   agora_recording_id?: string | null;
   agora_recording_status?: string | null;
+  // Netless fields
+  netless_room_uuid?: string | null;
+  netless_room_token?: string | null;
+  netless_app_identifier?: string | null;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
