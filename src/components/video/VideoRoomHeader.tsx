@@ -56,21 +56,37 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
       <div className="flex items-center gap-2">
         {userRole === 'tutor' && (
           <>
-            <Button variant="outline" size="sm" className="text-white border-gray-600 hover:text-gray-300 hover:bg-gray-700 hover:border-gray-500">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+            >
               <Share className="h-4 w-4 mr-2" />
               Share
             </Button>
-            <Button variant="outline" size="sm" className="text-white border-gray-600 hover:text-gray-300 hover:bg-gray-700 hover:border-gray-500">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+            >
               <UserPlus className="h-4 w-4 mr-2" />
               Invite
             </Button>
             <div className="h-6 w-px bg-gray-600 mx-1" />
           </>
         )}
-        <Button variant="ghost" size="sm" className="text-white hover:text-gray-300 hover:bg-gray-700">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+        >
           <Settings className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="text-white hover:text-gray-300 hover:bg-gray-700">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+        >
           <MoreVertical className="h-4 w-4" />
         </Button>
       </div>
