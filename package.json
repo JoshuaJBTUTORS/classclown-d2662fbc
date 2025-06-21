@@ -17,6 +17,7 @@
     "@fullcalendar/react": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
     "@hookform/resolvers": "^3.9.0",
+    "@netless/app-in-mainview-plugin": "^0.0.9",
     "@netless/appliance-plugin": "^1.1.17",
     "@netless/fastboard": "^1.0.7",
     "@netless/window-manager": "^1.0.5",
