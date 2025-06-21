@@ -24,7 +24,7 @@ const getVersion = () => {
     return '007'
 }
 
-// Agora token generation classes
+// Working Agora token generation classes (from generate-agora-token)
 class Service {
     private __type: number
     private __privileges: Record<number, number>
@@ -137,7 +137,7 @@ class AccessToken2 {
     constructor(appId: string, appCertificate: string, issueTs?: number, expire?: number) {
         this.appId = appId
         this.appCertificate = appCertificate
-        this.issueTs = issueTs || Math.floor(new Date().getTime() / 1000)
+        this.issueTs = issueTs || Math.floor(Date.now() / 1000)
         this.expire = expire || 0
         this.salt = Math.floor(Math.random() * (99999999)) + 1
         this.services = {}
@@ -195,8 +195,6 @@ class AccessToken2 {
 
         let signature = encodeHMac(signing, signing_info)
         let content = Buffer.concat([new ByteBuf().putString(signature).pack(), signing_info])
-        
-        // Fix: Use proper deflate compression instead of Uint8Array
         let compressed = deflate(content)
         return `${getVersion()}${Buffer.from(compressed).toString('base64')}`
     }
@@ -228,18 +226,6 @@ var ByteBuf = function () {
 
     that.putUint32 = function (v: number) {
         that.buffer.writeUInt32LE(v, that.position)
-        that.position += 4
-        return that
-    }
-
-    that.putInt16 = function (v: number) {
-        that.buffer.writeInt16LE(v, that.position)
-        that.position += 2
-        return that
-    }
-
-    that.putInt32 = function (v: number) {
-        that.buffer.writeInt32LE(v, that.position)
         that.position += 4
         return that
     }
@@ -288,12 +274,6 @@ var ReadByteBuf = function (bytes: Buffer) {
     that.getUint32 = function () {
         var ret = that.buffer.readUInt32LE(that.position)
         that.position += 4
-        return ret
-    }
-
-    that.getInt16 = function () {
-        var ret = that.buffer.readInt16LE(that.position)
-        that.position += 2
         return ret
     }
 
@@ -421,7 +401,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with direct token generation');
+    console.log('[AGORA-INTEGRATION] Processing request with fixed token generation');
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -437,6 +417,12 @@ serve(async (req) => {
     const appId = Deno.env.get("AGORA_APP_ID");
     const appCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
     const netlessSDKToken = Deno.env.get("NETLESS_SDK_TOKEN");
+
+    console.log('[AGORA-INTEGRATION] Environment check:', {
+      hasAppId: !!appId,
+      hasAppCertificate: !!appCertificate,
+      hasNetlessToken: !!netlessSDKToken
+    });
 
     validateAgoraCredentials(appId || "", appCertificate || "");
 
@@ -544,7 +530,7 @@ async function createVideoRoom(
       throw updateError;
     }
 
-    console.log("[AGORA-INTEGRATION] Video room created successfully with direct token generation");
+    console.log("[AGORA-INTEGRATION] Video room created successfully with fixed token generation");
 
     return new Response(
       JSON.stringify({
@@ -560,7 +546,7 @@ async function createVideoRoom(
         message: "Agora video room created successfully",
         debug: {
           tokenLength: tokens.rtcToken.length,
-          directGeneration: true,
+          fixedGeneration: true,
           role: data.userRole,
           validated: true
         }
@@ -663,7 +649,7 @@ async function getTokens(
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         debug: {
           tokenLength: tokens.rtcToken.length,
-          directGeneration: true,
+          fixedGeneration: true,
           channelName: lesson.agora_channel_name,
           uid: tokens.uid,
           validated: true
@@ -770,7 +756,7 @@ async function regenerateTokens(
       }
     }
 
-    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with direct generation");
+    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with fixed generation");
 
     return new Response(
       JSON.stringify({
@@ -787,7 +773,7 @@ async function regenerateTokens(
         regenerated: true,
         debug: {
           tokenLength: tokens.rtcToken.length,
-          directGeneration: true,
+          fixedGeneration: true,
           channelName: lesson.agora_channel_name,
           uid: tokens.uid,
           validated: true
