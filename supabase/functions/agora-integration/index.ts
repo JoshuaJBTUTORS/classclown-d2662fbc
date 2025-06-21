@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { validateAgoraCredentials } from "./validation.ts";
@@ -6,6 +5,7 @@ import { createNetlessRoom, generateNetlessRoomToken, parseNetlessSDKToken } fro
 import { CreateVideoRoomRequest, GetTokensRequest, RegenerateTokensRequest } from "./types.ts";
 import { hmac } from 'https://deno.land/x/hmac@v2.0.1/mod.ts'
 import { Buffer } from 'https://deno.land/std@0.155.0/node/buffer.ts'
+import { deflate } from 'https://deno.land/x/compress@v0.3.3/mod.ts'
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -196,8 +196,8 @@ class AccessToken2 {
         let signature = encodeHMac(signing, signing_info)
         let content = Buffer.concat([new ByteBuf().putString(signature).pack(), signing_info])
         
-        // Use native compression instead of deflate
-        const compressed = new Uint8Array(content);
+        // Fix: Use proper deflate compression instead of Uint8Array
+        let compressed = deflate(content)
         return `${getVersion()}${Buffer.from(compressed).toString('base64')}`
     }
 }
@@ -228,6 +228,18 @@ var ByteBuf = function () {
 
     that.putUint32 = function (v: number) {
         that.buffer.writeUInt32LE(v, that.position)
+        that.position += 4
+        return that
+    }
+
+    that.putInt16 = function (v: number) {
+        that.buffer.writeInt16LE(v, that.position)
+        that.position += 2
+        return that
+    }
+
+    that.putInt32 = function (v: number) {
+        that.buffer.writeInt32LE(v, that.position)
         that.position += 4
         return that
     }
@@ -276,6 +288,12 @@ var ReadByteBuf = function (bytes: Buffer) {
     that.getUint32 = function () {
         var ret = that.buffer.readUInt32LE(that.position)
         that.position += 4
+        return ret
+    }
+
+    that.getInt16 = function () {
+        var ret = that.buffer.readInt16LE(that.position)
+        that.position += 2
         return ret
     }
 
@@ -347,26 +365,33 @@ async function generateTokensDirect(
   appId: string,
   appCertificate: string,
   channelName: string,
-  uid: number,
+  uid: number | null,
   userRole: string
 ) {
   try {
     console.log('[AGORA-INTEGRATION] Generating tokens directly:', {
       appId: appId.substring(0, 8) + '...',
       channelName,
-      uid,
+      uid: uid,
       userRole
     });
+
+    // Handle null UID by generating a random one
+    let actualUid = uid;
+    if (actualUid === null || actualUid === undefined) {
+      actualUid = Math.floor(Math.random() * 1000000) + 1000;
+      console.log('[AGORA-INTEGRATION] Generated new UID:', actualUid);
+    }
 
     // Set token expiration (24 hours by default)
     const currentTimestamp = Math.floor(Date.now() / 1000)
     const expireTime = currentTimestamp + 86400 // 24 hours
 
     // Generate RTC token
-    const rtcToken = generateRtcToken(appId, appCertificate, channelName, uid, userRole, expireTime)
+    const rtcToken = generateRtcToken(appId, appCertificate, channelName, actualUid, userRole, expireTime)
     
     // Generate RTM token
-    const rtmToken = generateRtmToken(appId, appCertificate, uid.toString(), expireTime)
+    const rtmToken = generateRtmToken(appId, appCertificate, actualUid.toString(), expireTime)
 
     if (!rtcToken || !rtmToken) {
       throw new Error('Failed to generate tokens');
@@ -375,12 +400,14 @@ async function generateTokensDirect(
     console.log('[AGORA-INTEGRATION] Generated tokens successfully:', {
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
-      role: userRole
+      role: userRole,
+      finalUid: actualUid
     });
 
     return {
       rtcToken,
-      rtmToken
+      rtmToken,
+      uid: actualUid
     };
   } catch (error) {
     console.error('[AGORA-INTEGRATION] Direct token generation error:', error);
@@ -502,7 +529,7 @@ async function createVideoRoom(
       .from("lessons")
       .update({
         agora_channel_name: channelName,
-        agora_uid: uid,
+        agora_uid: tokens.uid,
         agora_token: tokens.rtcToken,
         agora_rtm_token: tokens.rtmToken,
         video_conference_provider: "agora",
@@ -524,7 +551,7 @@ async function createVideoRoom(
         success: true,
         appId,
         channelName,
-        uid,
+        uid: tokens.uid,
         rtcToken: tokens.rtcToken,
         rtmToken: tokens.rtmToken,
         netlessRoomUuid,
@@ -596,6 +623,14 @@ async function getTokens(
       data.userRole
     );
 
+    // Update lesson with new UID if it was null
+    if (lesson.agora_uid !== tokens.uid) {
+      await supabase
+        .from("lessons")
+        .update({ agora_uid: tokens.uid })
+        .eq("id", data.lessonId);
+    }
+
     console.log("[AGORA-INTEGRATION] Generated fresh tokens directly:", {
       rtcTokenLength: tokens.rtcToken.length,
       rtmTokenLength: tokens.rtmToken.length,
@@ -619,7 +654,7 @@ async function getTokens(
         success: true,
         appId,
         channelName: lesson.agora_channel_name,
-        uid: lesson.agora_uid,
+        uid: tokens.uid,
         rtcToken: tokens.rtcToken,
         rtmToken: tokens.rtmToken,
         netlessRoomUuid: lesson.netless_room_uuid,
@@ -630,7 +665,7 @@ async function getTokens(
           tokenLength: tokens.rtcToken.length,
           directGeneration: true,
           channelName: lesson.agora_channel_name,
-          uid: lesson.agora_uid,
+          uid: tokens.uid,
           validated: true
         }
       }),
@@ -704,6 +739,7 @@ async function regenerateTokens(
       .update({
         agora_token: tokens.rtcToken,
         agora_rtm_token: tokens.rtmToken,
+        agora_uid: tokens.uid,
         video_conference_provider: "agora"
       })
       .eq("id", data.lessonId);
@@ -741,7 +777,7 @@ async function regenerateTokens(
         success: true,
         appId,
         channelName: lesson.agora_channel_name,
-        uid: lesson.agora_uid,
+        uid: tokens.uid,
         rtcToken: tokens.rtcToken,
         rtmToken: tokens.rtmToken,
         netlessRoomUuid: lesson.netless_room_uuid,
@@ -753,7 +789,7 @@ async function regenerateTokens(
           tokenLength: tokens.rtcToken.length,
           directGeneration: true,
           channelName: lesson.agora_channel_name,
-          uid: lesson.agora_uid,
+          uid: tokens.uid,
           validated: true
         }
       }),
