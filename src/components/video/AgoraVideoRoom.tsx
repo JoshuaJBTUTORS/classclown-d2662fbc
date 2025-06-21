@@ -72,10 +72,12 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   // Screen sharing hook
   const { 
     isScreenSharing, 
-    isScreenShareLoading, 
+    isScreenShareLoading,
+    isScreenSharePaused,
     startScreenShare, 
     stopScreenShare,
-    getScreenTracks
+    getScreenTracks,
+    attemptScreenShareRecovery
   } = useScreenShare();
 
   // Validate UID to ensure it's a valid number
@@ -169,6 +171,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     }
   };
 
+  const handleManualRecovery = async () => {
+    await attemptScreenShareRecovery();
+  };
+
   const handleLeave = () => {
     setCalling(false);
     setIsJoined(false);
@@ -202,6 +208,24 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       <div className="flex-1 flex overflow-hidden">
         {/* Main Content Area - Conditionally show Screen Share or Whiteboard */}
         <div className="flex-1 flex flex-col">
+          {/* Tab Switch Warning for Screen Sharing */}
+          {isScreenSharePaused && (
+            <div className="bg-yellow-600 text-white px-4 py-2 text-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Monitor className="h-4 w-4" />
+                <span>Screen sharing paused due to tab switch</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualRecovery}
+                className="bg-transparent border-white text-white hover:bg-white hover:text-yellow-600"
+              >
+                Restore
+              </Button>
+            </div>
+          )}
+
           {/* Main Content */}
           <div className="flex-1 flex">
             {isScreenSharing && screenVideoTrack ? (
@@ -265,7 +289,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 size="lg"
                 onClick={handleScreenShare}
                 disabled={isScreenShareLoading}
-                className="rounded-full w-12 h-12 p-0 text-gray-600 hover:text-gray-900"
+                className={`rounded-full w-12 h-12 p-0 text-gray-600 hover:text-gray-900 ${
+                  isScreenSharePaused ? 'ring-2 ring-yellow-500' : ''
+                }`}
               >
                 {isScreenSharing ? (
                   <MonitorOff className="h-5 w-5" />
