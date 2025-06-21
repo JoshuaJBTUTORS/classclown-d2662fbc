@@ -181,34 +181,58 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     try {
       console.log("Fetching recurring instance data for original ID:", originalId, "and instance ID:", instanceId);
       
-      const { data, error } = await supabase
+      // First get the lesson details
+      const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
-        .select(`
-          *,
-          tutor:tutors(id, first_name, last_name),
-          lesson_students(
-            student:students(id, first_name, last_name),
-            lesson_space_url
-          )
-        `)
+        .select('*')
         .eq('id', originalId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching original lesson:", error);
+      if (lessonError) {
+        console.error("Error fetching original lesson:", lessonError);
         toast.error('Failed to load recurring lesson data');
         createPlaceholderLesson(instanceId);
         return;
       }
 
-      if (!data) {
+      if (!lessonData) {
         console.error("No data returned for original lesson");
         toast.error('Recurring lesson not found');
         createPlaceholderLesson(instanceId);
         return;
       }
 
-      setPreloadedLessonData(data);
+      // Get tutor details
+      const { data: tutorData, error: tutorError } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name')
+        .eq('id', lessonData.tutor_id)
+        .maybeSingle();
+
+      if (tutorError) {
+        console.error("Error fetching tutor:", tutorError);
+      }
+
+      // Get students for this lesson using array aggregation
+      const { data: studentData, error: studentError } = await supabase
+        .from('lesson_students')
+        .select(`
+          student:students(id, first_name, last_name)
+        `)
+        .eq('lesson_id', originalId);
+
+      if (studentError) {
+        console.error("Error fetching students:", studentError);
+      }
+
+      // Combine all data
+      const combinedData = {
+        ...lessonData,
+        tutor: tutorData,
+        lesson_students: studentData || []
+      };
+
+      setPreloadedLessonData(combinedData);
 
       const dateParts = instanceId.split('-');
       const year = parseInt(dateParts[5], 10);
@@ -216,14 +240,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const day = parseInt(dateParts[7], 10);
       const instanceDate = new Date(year, month, day);
       
-      const students = data.lesson_students?.map((ls: any) => ({
+      const students = studentData?.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
         last_name: ls.student.last_name
       })) || [];
       
-      const startDate = parseISO(data.start_time);
-      const endDate = parseISO(data.end_time);
+      const startDate = parseISO(lessonData.start_time);
+      const endDate = parseISO(lessonData.end_time);
       
       // Set the time to match the instance date
       const start = new Date(instanceDate);
@@ -232,43 +256,18 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const end = new Date(instanceDate);
       end.setHours(endDate.getHours(), endDate.getMinutes());
       
-      // Process students data properly
-      const processedStudents = students.map(student => ({
-        id: student.id,
-        first_name: student.first_name,
-        last_name: student.last_name
-      }));
-
-      // Process lesson students data
-      const lessonStudentsData = data.lesson_students?.map((ls: any) => ({
-        student: {
-          id: ls.student.id,
-          first_name: ls.student.first_name,
-          last_name: ls.student.last_name
-        }
-      })) || [];
-      
       // Create recurring lesson instance using the original lesson data
       const recurringLesson: Lesson = {
-        ...data,
+        ...lessonData,
         id: instanceId,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
         is_recurring_instance: true,
-        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        students: processedStudents,
-        agora_channel_name: data.agora_channel_name,
-        agora_token: data.agora_token,
-        agora_uid: data.agora_uid,
-        agora_rtm_token: data.agora_rtm_token,
-        agora_whiteboard_token: data.agora_whiteboard_token,
-        agora_recording_id: data.agora_recording_id,
-        agora_recording_status: data.agora_recording_status,
-        netless_room_uuid: data.netless_room_uuid,
-        netless_room_token: data.netless_room_token,
-        netless_app_identifier: data.netless_app_identifier,
-        video_conference_provider: (data.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
-        lesson_students: lessonStudentsData
+        lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        students: students,
+        tutor: tutorData,
+        lesson_students: studentData || [],
+        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
       };
       
       console.log("Created instance lesson:", recurringLesson);
@@ -307,44 +306,70 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     try {
       console.log("Fetching regular lesson details for ID:", id);
       
-      const { data, error } = await supabase
+      // First get the lesson details
+      const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
-        .select(`
-          *,
-          tutor:tutors(id, first_name, last_name),
-          lesson_students(
-            student:students(id, first_name, last_name),
-            lesson_space_url
-          )
-        `)
+        .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching lesson details:', error);
+      if (lessonError) {
+        console.error('Error fetching lesson details:', lessonError);
         toast.error('Failed to load lesson details');
         return;
       }
 
-      if (!data) {
+      if (!lessonData) {
         console.error('No data returned for lesson details');
         toast.error('Lesson not found');
         return;
       }
-      
-      setPreloadedLessonData(data);
 
-      const students = data.lesson_students?.map((ls: any) => ({
+      // Get tutor details
+      const { data: tutorData, error: tutorError } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name')
+        .eq('id', lessonData.tutor_id)
+        .maybeSingle();
+
+      if (tutorError) {
+        console.error('Error fetching tutor:', tutorError);
+      }
+
+      // Get students for this lesson using array aggregation
+      const { data: studentData, error: studentError } = await supabase
+        .from('lesson_students')
+        .select(`
+          student:students(id, first_name, last_name)
+        `)
+        .eq('lesson_id', id);
+
+      if (studentError) {
+        console.error('Error fetching students:', studentError);
+      }
+
+      // Combine all data
+      const combinedData = {
+        ...lessonData,
+        tutor: tutorData,
+        lesson_students: studentData || []
+      };
+      
+      setPreloadedLessonData(combinedData);
+
+      const students = studentData?.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
         last_name: ls.student.last_name
       })) || [];
         
       const processedLesson: Lesson = {
-        ...data,
-        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        video_conference_provider: (data.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
-        students
+        ...lessonData,
+        lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
+        students,
+        tutor: tutorData,
+        lesson_students: studentData || []
       };
       
       console.log("Fetched and processed lesson:", processedLesson);
