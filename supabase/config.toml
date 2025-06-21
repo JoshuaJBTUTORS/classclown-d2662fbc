@@ -55,6 +55,9 @@ verify_jwt = false
 [functions.agora-integration]
 verify_jwt = true
 
+[functions.generate-agora-token]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328

@@ -4,12 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Video, Globe, Users } from 'lucide-react';
+import { Video, Globe, Users, ExternalLink } from 'lucide-react';
 
 interface VideoProviderSelectorProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectProvider: (provider: 'lesson_space' | 'agora') => void;
+  onSelectProvider: (provider: 'lesson_space' | 'agora' | 'external_agora') => void;
   isCreating: boolean;
   isGroupLesson: boolean;
   studentCount: number;
@@ -23,7 +23,7 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
   isGroupLesson,
   studentCount
 }) => {
-  const [selectedProvider, setSelectedProvider] = useState<'lesson_space' | 'agora'>('lesson_space');
+  const [selectedProvider, setSelectedProvider] = useState<'lesson_space' | 'agora' | 'external_agora'>('lesson_space');
 
   const handleCreate = () => {
     onSelectProvider(selectedProvider);
@@ -44,7 +44,7 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
         </DialogHeader>
 
         <div className="py-4">
-          <RadioGroup value={selectedProvider} onValueChange={(value) => setSelectedProvider(value as 'lesson_space' | 'agora')}>
+          <RadioGroup value={selectedProvider} onValueChange={(value) => setSelectedProvider(value as 'lesson_space' | 'agora' | 'external_agora')}>
             <div className="space-y-4">
               <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
                 <RadioGroupItem value="lesson_space" id="lesson_space" className="mt-1" />
@@ -68,14 +68,31 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
                 <div className="flex-1">
                   <Label htmlFor="agora" className="flex items-center gap-2 font-medium cursor-pointer">
                     <Users className="h-4 w-4 text-purple-500" />
-                    Agora.io
+                    Agora.io (Internal)
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
-                    High-quality video conferencing with advanced features. 
+                    High-quality video conferencing with advanced features built into the platform.
                     Ideal for larger group sessions and professional meetings.
                   </p>
                   <div className="mt-2 text-xs text-blue-600">
                     ✓ HD video quality ✓ Recording capabilities ✓ Advanced controls
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
+                <RadioGroupItem value="external_agora" id="external_agora" className="mt-1" />
+                <div className="flex-1">
+                  <Label htmlFor="external_agora" className="flex items-center gap-2 font-medium cursor-pointer">
+                    <ExternalLink className="h-4 w-4 text-orange-500" />
+                    External Agora App
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Use your custom Agora application with secure token generation.
+                    Opens in a new window with full Agora SDK features.
+                  </p>
+                  <div className="mt-2 text-xs text-orange-600">
+                    ✓ Custom app features ✓ External window ✓ Secure tokens
                   </div>
                 </div>
               </div>
@@ -94,7 +111,8 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
                 Creating...
               </>
             ) : (
-              `Create ${selectedProvider === 'lesson_space' ? 'Lesson Space' : 'Agora'} Room`
+              `Create ${selectedProvider === 'lesson_space' ? 'Lesson Space' : 
+                        selectedProvider === 'agora' ? 'Agora' : 'External Agora'} Room`
             )}
           </Button>
         </div>
