@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 
@@ -74,7 +73,9 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           },
           managerConfig: {
             cursor: true,
-            // Enable Fastboard's native toolbar with all drawing tools
+          },
+          // Enable Fastboard's native UI components including toolbar
+          ui: {
             toolbar: userRole === 'tutor' && !isReadOnly,
           },
         });
