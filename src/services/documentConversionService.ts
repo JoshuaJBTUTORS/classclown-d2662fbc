@@ -6,6 +6,7 @@ export interface ConversionTaskInfo {
   type: string;
   status: 'Waiting' | 'Converting' | 'Finished' | 'Fail';
   failedReason?: string;
+  convertedPercentage?: number; // Add this missing property
   // Raw Netless response fields that Fastboard expects
   images?: { [pageNumber: string]: string }; // page number -> image URL mapping
   prefix?: string; // base URL prefix
