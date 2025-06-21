@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -151,23 +152,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       />
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Video Grid */}
-        <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
-          <div className="p-3 border-b border-gray-700">
-            <h3 className="text-white text-sm font-medium">Participants ({totalParticipants})</h3>
-          </div>
-          <div className="flex-1">
-            <VerticalVideoGrid
-              localCameraTrack={localCameraTrack}
-              remoteUsers={remoteUsers}
-              isAudioEnabled={micOn}
-              isVideoEnabled={cameraOn}
-              userRole={userRole}
-            />
-          </div>
-        </div>
-
-        {/* Main Content Area */}
+        {/* Main Content Area - Whiteboard (Left Side) */}
         <div className="flex-1 flex flex-col">
           {/* Whiteboard Area */}
           <div className="flex-1 flex">
@@ -292,7 +277,23 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           </div>
         </div>
 
-        {/* Chat panel */}
+        {/* Right Sidebar - Video Grid */}
+        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+          <div className="p-3 border-b border-gray-700">
+            <h3 className="text-white text-sm font-medium">Participants ({totalParticipants})</h3>
+          </div>
+          <div className="flex-1">
+            <VerticalVideoGrid
+              localCameraTrack={localCameraTrack}
+              remoteUsers={remoteUsers}
+              isAudioEnabled={micOn}
+              isVideoEnabled={cameraOn}
+              userRole={userRole}
+            />
+          </div>
+        </div>
+
+        {/* Chat panel - Opens from the far right */}
         {chatOpen && (
           <div className="w-80 bg-white border-l border-gray-200">
             <AgoraChatPanel 
