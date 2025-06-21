@@ -51,20 +51,43 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isJoined, setIsJoined] = useState(false);
+
+  // Validate UID to ensure it's a valid number
+  const validUid = Math.max(1, Math.floor(Math.abs(uid))) || Math.floor(Math.random() * 1000000) + 1000;
+
+  console.log('AgoraVideoRoom - Using UID:', validUid, 'Original UID:', uid);
 
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
   const { localCameraTrack } = useLocalCameraTrack(cameraOn);
   const remoteUsers = useRemoteUsers();
   const { audioTracks } = useRemoteAudioTracks(remoteUsers);
 
-  usePublish([localMicrophoneTrack, localCameraTrack]);
+  // Only publish tracks if we're joined and tracks are ready
+  const tracksToPublish = [];
+  if (isJoined && localMicrophoneTrack && micOn) {
+    tracksToPublish.push(localMicrophoneTrack);
+  }
+  if (isJoined && localCameraTrack && cameraOn) {
+    tracksToPublish.push(localCameraTrack);
+  }
 
-  useJoin({
+  usePublish(tracksToPublish);
+
+  const joinState = useJoin({
     appid: appId,
     channel: channel,
     token: token,
-    uid: uid,
+    uid: validUid,
   }, calling);
+
+  // Track join state
+  useEffect(() => {
+    if (joinState && !isJoined) {
+      console.log('Successfully joined Agora channel');
+      setIsJoined(true);
+    }
+  }, [joinState, isJoined]);
 
   useEffect(() => {
     console.log('AgoraVideoRoom - Netless credentials:', {
@@ -83,9 +106,12 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   }, [audioTracks]);
 
   useEffect(() => {
+    console.log('Starting to join Agora room...');
     setCalling(true);
     return () => {
+      console.log('Leaving Agora room...');
       setCalling(false);
+      setIsJoined(false);
     };
   }, []);
 
@@ -99,6 +125,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
 
   const handleLeave = () => {
     setCalling(false);
+    setIsJoined(false);
     onLeave();
   };
 
@@ -139,7 +166,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                     roomUuid={netlessCredentials.roomUuid}
                     roomToken={netlessCredentials.roomToken}
                     appIdentifier={netlessCredentials.appIdentifier}
-                    userId={uid.toString()}
+                    userId={validUid.toString()}
                   />
                 ) : (
                   <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
@@ -207,8 +234,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             <AgoraChatPanel 
               rtmToken=""
               channelName={channel}
-              userId={uid.toString()}
-              userName={`User ${uid}`}
+              userId={validUid.toString()}
+              userName={`User ${validUid}`}
               userRole={userRole}
             />
           </div>
