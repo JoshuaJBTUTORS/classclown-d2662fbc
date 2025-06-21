@@ -16,6 +16,9 @@ const getVersion = () => {
 }
 
 class Service {
+    private __type: number
+    private __privileges: Record<number, number>
+
     constructor(service_type: number) {
         this.__type = service_type
         this.__privileges = {}
@@ -78,9 +81,13 @@ class ServiceRtc extends Service {
     }
 }
 
+// @ts-ignore
 ServiceRtc.kPrivilegeJoinChannel = 1
+// @ts-ignore
 ServiceRtc.kPrivilegePublishAudioStream = 2
+// @ts-ignore
 ServiceRtc.kPrivilegePublishVideoStream = 3
+// @ts-ignore
 ServiceRtc.kPrivilegePublishDataStream = 4
 
 const kRtmServiceType = 2
@@ -106,6 +113,7 @@ class ServiceRtm extends Service {
     }
 }
 
+// @ts-ignore
 ServiceRtm.kPrivilegeLogin = 1
 
 class AccessToken2 {
@@ -114,7 +122,7 @@ class AccessToken2 {
     issueTs: number
     expire: number
     salt: number
-    services: any
+    services: Record<number, Service>
 
     constructor(appId: string, appCertificate: string, issueTs?: number, expire?: number) {
         this.appId = appId
@@ -136,8 +144,12 @@ class AccessToken2 {
             if (data.length !== APP_ID_LENGTH) {
                 return false
             }
-            let buf = Buffer.from(data, 'hex')
-            return !!buf
+            try {
+                let buf = Buffer.from(data, 'hex')
+                return !!buf
+            } catch {
+                return false
+            }
         }
 
         const { appId, appCertificate, services } = this
@@ -167,7 +179,7 @@ class AccessToken2 {
             .putUint32(this.salt)
             .putUint16(Object.keys(this.services).length).pack()
         
-        Object.values(this.services).forEach((service: any) => {
+        Object.values(this.services).forEach((service: Service) => {
             signing_info = Buffer.concat([signing_info, service.pack()])
         })
 
@@ -219,7 +231,7 @@ var ByteBuf = function () {
         return that.putBytes(Buffer.from(str))
     }
 
-    that.putTreeMapUInt32 = function (map: any) {
+    that.putTreeMapUInt32 = function (map: Record<number, number>) {
         if (!map) {
             that.putUint16(0)
             return that
@@ -264,7 +276,7 @@ var ReadByteBuf = function (bytes: Buffer) {
     }
 
     that.getTreeMapUInt32 = function () {
-        var map: any = {}
+        var map: Record<number, number> = {}
         var len = that.getUint16()
         for (var i = 0; i < len; i++) {
             var key = that.getUint16()
@@ -291,11 +303,16 @@ function generateRtcToken(appId: string, appCertificate: string, channelName: st
     
     // Add privileges based on role
     if (role === 'publisher' || role === 'tutor') {
+        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegeJoinChannel, expireTime)
+        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegePublishAudioStream, expireTime)
+        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegePublishVideoStream, expireTime)
+        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegePublishDataStream, expireTime)
     } else {
+        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegeJoinChannel, expireTime)
     }
     
@@ -307,6 +324,7 @@ function generateRtcToken(appId: string, appCertificate: string, channelName: st
 function generateRtmToken(appId: string, appCertificate: string, userId: string, expireTime: number) {
     const token = new AccessToken2(appId, appCertificate, Math.floor(Date.now() / 1000), expireTime)
     const serviceRtm = new ServiceRtm(userId)
+    // @ts-ignore
     serviceRtm.add_privilege(ServiceRtm.kPrivilegeLogin, expireTime)
     token.add_service(serviceRtm)
     return token.build()
@@ -319,24 +337,37 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const { channelName, uid, userRole, expireTime: customExpireTime } = await req.json()
+        console.log('[AGORA-TOKEN] Request received:', req.method)
+        
+        const requestBody = await req.json()
+        console.log('[AGORA-TOKEN] Request body:', requestBody)
+        
+        const { channelName, uid, userRole, expireTime: customExpireTime } = requestBody
 
         // Get Agora credentials from environment
         const appId = Deno.env.get('AGORA_APP_ID')
         const appCertificate = Deno.env.get('AGORA_APP_CERTIFICATE')
+
+        console.log('[AGORA-TOKEN] Environment check:', {
+            hasAppId: !!appId,
+            hasAppCertificate: !!appCertificate,
+            appIdLength: appId?.length,
+            appCertificateLength: appCertificate?.length
+        })
 
         if (!appId || !appCertificate) {
             console.error('[AGORA-TOKEN] Missing Agora credentials')
             return new Response(
                 JSON.stringify({ 
                     success: false, 
-                    error: 'Agora credentials not configured' 
+                    error: 'Agora credentials not configured. Please configure AGORA_APP_ID and AGORA_APP_CERTIFICATE.' 
                 }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
         if (!channelName || uid === undefined) {
+            console.error('[AGORA-TOKEN] Missing required parameters:', { channelName, uid })
             return new Response(
                 JSON.stringify({ 
                     success: false, 
@@ -374,7 +405,10 @@ Deno.serve(async (req) => {
             )
         }
 
-        console.log('[AGORA-TOKEN] Tokens generated successfully')
+        console.log('[AGORA-TOKEN] Tokens generated successfully:', {
+            rtcTokenLength: rtcToken.length,
+            rtmTokenLength: rtmToken.length
+        })
 
         return new Response(
             JSON.stringify({

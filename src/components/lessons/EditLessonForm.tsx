@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { z } from 'zod';
@@ -133,8 +132,21 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       if (error) throw error;
       
       const processedLesson: Lesson = {
-        ...data,
-        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular'
+        ...lessonData,
+        lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        agora_channel_name: lessonData.agora_channel_name,
+        agora_recording_id: lessonData.agora_recording_id,
+        agora_recording_status: lessonData.agora_recording_status,
+        agora_rtm_token: lessonData.agora_rtm_token,
+        agora_token: lessonData.agora_token,
+        agora_uid: lessonData.agora_uid,
+        agora_whiteboard_token: lessonData.agora_whiteboard_token,
+        netless_app_identifier: lessonData.netless_app_identifier,
+        netless_room_token: lessonData.netless_room_token,
+        netless_room_uuid: lessonData.netless_room_uuid,
+        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora') || null,
+        students: processedStudents,
+        lesson_students: lessonStudentsData || []
       };
       
       setLesson(processedLesson);

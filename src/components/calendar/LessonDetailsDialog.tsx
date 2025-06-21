@@ -225,20 +225,31 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const startDate = parseISO(data.start_time);
       const endDate = parseISO(data.end_time);
       
-      const instanceLesson: Lesson = {
-        ...data,
-        id: instanceId,
-        start_time: format(instanceDate, "yyyy-MM-dd") + 
-                    format(startDate, "'T'HH:mm:ss"),
-        end_time: format(instanceDate, "yyyy-MM-dd") + 
-                  format(endDate, "'T'HH:mm:ss"),
+      // Create recurring lesson instance
+      const recurringLesson: Lesson = {
+        ...originalLesson,
+        id: crypto.randomUUID(),
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
         is_recurring_instance: true,
-        lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        students
+        lesson_type: (originalLesson.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        students: processedStudents,
+        agora_channel_name: originalLesson.agora_channel_name,
+        agora_token: originalLesson.agora_token,
+        agora_uid: originalLesson.agora_uid,
+        agora_rtm_token: originalLesson.agora_rtm_token,
+        agora_whiteboard_token: originalLesson.agora_whiteboard_token,
+        agora_recording_id: originalLesson.agora_recording_id,
+        agora_recording_status: originalLesson.agora_recording_status,
+        netless_room_uuid: originalLesson.netless_room_uuid,
+        netless_room_token: originalLesson.netless_room_token,
+        netless_app_identifier: originalLesson.netless_app_identifier,
+        video_conference_provider: (originalLesson.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora') || null,
+        lesson_students: lessonStudentsData || []
       };
       
-      console.log("Created instance lesson:", instanceLesson);
-      setLesson(instanceLesson);
+      console.log("Created instance lesson:", recurringLesson);
+      setLesson(recurringLesson);
     } catch (error) {
       console.error('Error in fetchRecurringInstance:', error);
       toast.error('Failed to load recurring lesson data');

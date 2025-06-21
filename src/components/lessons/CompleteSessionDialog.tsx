@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -145,13 +144,42 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         last_name: ls.student.last_name
       }));
 
-      const transformedLesson: Lesson = {
+      const processedStudents = students.map(student => {
+        return {
+          id: student.id,
+          first_name: student.first_name,
+          last_name: student.last_name,
+          attendance: 'attended' as 'attended' | 'missed' | 'cancelled',
+          feedback: '',
+          homework: '',
+        };
+      });
+
+      const lessonStudentsData = lessonData.lesson_students.map((ls: any) => ({
+        id: ls.student.id,
+        first_name: ls.student.first_name,
+        last_name: ls.student.last_name
+      }));
+
+      const processedLesson: Lesson = {
         ...lessonData,
         lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        students,
+        students: processedStudents,
+        agora_channel_name: lessonData.agora_channel_name,
+        agora_recording_id: lessonData.agora_recording_id,
+        agora_recording_status: lessonData.agora_recording_status,
+        agora_rtm_token: lessonData.agora_rtm_token,
+        agora_token: lessonData.agora_token,
+        agora_uid: lessonData.agora_uid,
+        agora_whiteboard_token: lessonData.agora_whiteboard_token,
+        netless_app_identifier: lessonData.netless_app_identifier,
+        netless_room_token: lessonData.netless_room_token,
+        netless_room_uuid: lessonData.netless_room_uuid,
+        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora') || null,
+        lesson_students: lessonStudentsData || []
       };
 
-      setLesson(transformedLesson);
+      setLesson(processedLesson);
     } catch (error) {
       console.error('Error fetching lesson details:', error);
       toast.error('Failed to load lesson details');
