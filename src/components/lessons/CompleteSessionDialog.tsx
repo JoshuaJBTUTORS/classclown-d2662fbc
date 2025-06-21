@@ -138,7 +138,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
 
       if (lessonError) throw lessonError;
 
-      // Transform the data to match our Lesson interface
+      // Transform the data to match our Lesson interface with proper type casting
       const students = lessonData.lesson_students.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
@@ -148,6 +148,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
       const transformedLesson: Lesson = {
         ...lessonData,
         lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
+        video_conference_provider: lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | null,
         students,
       };
 
