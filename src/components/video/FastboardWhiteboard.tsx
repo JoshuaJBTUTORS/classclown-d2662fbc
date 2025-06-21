@@ -338,16 +338,42 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         }
       );
 
-      if (completedTask?.status === 'Finished' && completedTask.images) {
+      if (completedTask?.status === 'Finished') {
         console.log('Netless document conversion completed:', completedTask);
         
+        // Validate the required fields before attempting insertion
+        const hasImages = completedTask.images && Object.keys(completedTask.images).length > 0;
+        const hasPrefix = completedTask.prefix && completedTask.prefix.length > 0;
+        const hasProgress = completedTask.progress && completedTask.progress.convertedPercentage === 100;
+
+        console.log('Validation check:', {
+          hasImages,
+          hasPrefix,
+          hasProgress,
+          imageCount: hasImages ? Object.keys(completedTask.images).length : 0,
+          prefix: hasPrefix ? completedTask.prefix.substring(0, 50) + '...' : 'missing',
+          progress: completedTask.progress
+        });
+
+        if (!hasImages) {
+          console.error('Document conversion completed but no images found');
+          alert(`Document conversion completed but no content available for "${fileName}". This may be due to an empty or unsupported document format.`);
+          
+          // Remove from tracking
+          setConversionTasks(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(completedTask.uuid);
+            return newMap;
+          });
+          return;
+        }
+
         // Use the raw Netless response format that Fastboard expects
         const netlessDocsData = {
           uuid: completedTask.uuid,
           type: completedTask.type || 'static',
           status: 'Finished',
           failedReason: '',
-          // Pass the raw Netless fields directly
           images: completedTask.images,
           prefix: completedTask.prefix || '',
           progress: completedTask.progress || {
@@ -357,11 +383,24 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           }
         };
 
-        console.log('Inserting document with raw Netless format:', netlessDocsData);
+        console.log('Inserting document with validated Netless format:', {
+          uuid: netlessDocsData.uuid,
+          type: netlessDocsData.type,
+          status: netlessDocsData.status,
+          imageCount: Object.keys(netlessDocsData.images).length,
+          hasPrefix: !!netlessDocsData.prefix,
+          progress: netlessDocsData.progress
+        });
         
-        // Insert the converted document using insertDocs with raw Netless format
-        appRef.current.insertDocs(netlessDocsData);
-        console.log('Document inserted successfully using raw Netless format');
+        try {
+          // Insert the converted document using insertDocs with validated format
+          appRef.current.insertDocs(netlessDocsData);
+          console.log('Document inserted successfully with validated format');
+        } catch (insertError) {
+          console.error('Failed to insert document into Fastboard:', insertError);
+          console.error('Data structure that failed:', netlessDocsData);
+          alert(`Failed to insert document "${fileName}" into whiteboard: ${insertError.message}`);
+        }
         
         // Remove from tracking
         setConversionTasks(prev => {
