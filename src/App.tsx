@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import { LearningHubProvider } from './contexts/LearningHubContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import Index from './pages/Index';
 import Calendar from './pages/Calendar';
 import Students from './pages/Students';
 import Tutors from './pages/Tutors';
@@ -39,7 +40,7 @@ function App() {
                   path="/"
                   element={
                     <ProtectedRoute>
-                      <Calendar />
+                      <Index />
                     </ProtectedRoute>
                   }
                 />

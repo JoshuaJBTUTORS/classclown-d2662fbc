@@ -26,7 +26,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
   useEffect(() => {
     if (!roomUuid || !roomToken || !appIdentifier) {
-      console.log('FastboardWhiteboard: Missing credentials, waiting...');
       setError('Missing whiteboard configuration');
       setIsLoading(false);
       return;
@@ -34,14 +33,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
     const initFastboard = async () => {
       try {
-        console.log('FastboardWhiteboard: Initializing Fastboard with:', { 
-          roomUuid: roomUuid.substring(0, 8) + '...',
-          appIdentifier: appIdentifier.substring(0, 8) + '...',
-          userId,
-          userRole,
-          isReadOnly
-        });
-
         if (!whiteboardRef.current) {
           throw new Error('Whiteboard container element not found');
         }
@@ -63,13 +54,10 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         });
 
         appRef.current = app;
-
-        // Mount the Fastboard to the DOM element
         mount(app, whiteboardRef.current);
 
         setError(null);
         setIsLoading(false);
-        console.log('FastboardWhiteboard: Fastboard initialized successfully');
       } catch (error) {
         console.error('FastboardWhiteboard: Initialization failed:', error);
         setError(error instanceof Error ? error.message : 'Failed to initialize whiteboard');
@@ -77,9 +65,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       }
     };
 
-    // Small delay to ensure React ref is properly set
     const timeoutId = setTimeout(() => {
-      console.log('FastboardWhiteboard: Starting initialization with DOM element:', !!whiteboardRef.current);
       initFastboard();
     }, 100);
 
@@ -88,11 +74,9 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     };
   }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
 
-  // Cleanup effect
   useEffect(() => {
     return () => {
       if (appRef.current) {
-        console.log('FastboardWhiteboard: Cleaning up Fastboard');
         try {
           appRef.current.destroy();
         } catch (error) {
@@ -108,13 +92,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         <div className="text-center p-6">
           <p className="text-red-600 mb-2">Whiteboard Error</p>
           <p className="text-gray-600 text-sm">{error}</p>
-          <div className="mt-4 text-xs text-gray-500">
-            <p>Debug info:</p>
-            <p>Room UUID: {roomUuid ? 'Present' : 'Missing'}</p>
-            <p>Room Token: {roomToken ? 'Present' : 'Missing'}</p>
-            <p>App ID: {appIdentifier ? 'Present' : 'Missing'}</p>
-            <p>DOM Element: {whiteboardRef.current ? 'Present' : 'Missing'}</p>
-          </div>
         </div>
       </div>
     );
@@ -126,9 +103,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         <div className="text-center p-6">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
           <p className="text-gray-600">Connecting to whiteboard...</p>
-          <div className="mt-2 text-xs text-gray-500">
-            <p>DOM Element: {whiteboardRef.current ? 'Present' : 'Missing'}</p>
-          </div>
         </div>
       </div>
     );
