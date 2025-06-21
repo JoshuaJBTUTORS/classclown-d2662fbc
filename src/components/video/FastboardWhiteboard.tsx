@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 import WhiteboardToolbar from './WhiteboardToolbar';
+import { DocumentConversionService, ConversionTaskInfo } from '@/services/documentConversionService';
 
 interface FastboardWhiteboardProps {
   isReadOnly?: boolean;
@@ -39,6 +40,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     { id: 'main', name: 'Main Room', type: 'main', scenePath: '/init' }
   ]);
   const [activeTabId, setActiveTabId] = useState('main');
+  const [conversionTasks, setConversionTasks] = useState<Map<string, ConversionTaskInfo>>(new Map());
 
   // Extract lesson ID from URL if available
   const lessonId = typeof window !== 'undefined' ? 
@@ -303,67 +305,90 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
-  const handleDocumentInsert = (documentUrl: string, fileName: string) => {
+  const handleDocumentInsert = async (documentUrl: string, fileName: string) => {
     if (!appRef.current) return;
     
     try {
-      console.log('Inserting document:', documentUrl, fileName);
+      console.log('Starting document conversion workflow:', documentUrl, fileName);
       
-      const fileExtension = fileName.toLowerCase().split('.').pop() || '';
-      console.log('Document file extension:', fileExtension);
+      // Start conversion process
+      const taskInfo = await DocumentConversionService.convertDocument(
+        lessonId || 'unknown',
+        documentUrl,
+        fileName
+      );
+
+      if (!taskInfo) {
+        console.error('Failed to start document conversion');
+        alert(`Failed to convert document "${fileName}". Please try again.`);
+        return;
+      }
+
+      // Track conversion task
+      setConversionTasks(prev => new Map(prev.set(taskInfo.uuid, taskInfo)));
+
+      console.log('Document conversion started:', taskInfo);
       
-      // Try different approaches based on file type
-      if (fileExtension === 'pdf') {
-        // For PDFs, try insertImage first (many PDFs can be displayed as images)
-        try {
-          console.log('Attempting to insert PDF as image...');
-          appRef.current.insertImage(documentUrl);
-          console.log('PDF inserted as image successfully');
-          return;
-        } catch (imageError) {
-          console.warn('PDF as image failed, trying insertMedia:', imageError);
-          try {
-            appRef.current.insertMedia(fileName, documentUrl);
-            console.log('PDF inserted as media successfully');
-            return;
-          } catch (mediaError) {
-            console.error('PDF as media also failed:', mediaError);
+      // Poll for conversion completion
+      const completedTask = await DocumentConversionService.pollConversionStatus(
+        taskInfo.uuid,
+        (progress) => {
+          setConversionTasks(prev => new Map(prev.set(progress.uuid, progress)));
+          console.log('Conversion progress:', progress);
+        }
+      );
+
+      if (completedTask?.status === 'Finished' && completedTask.convertedFileList) {
+        console.log('Document conversion completed:', completedTask);
+        
+        // Create docs data for insertDocs
+        const docsData = {
+          uuid: completedTask.uuid,
+          type: 'dynamic',
+          status: 'Finished',
+          failedReason: '',
+          taskProgress: {
+            totalPageSize: completedTask.convertedFileList.length,
+            convertedPageSize: completedTask.convertedFileList.length,
+            convertedPercentage: 100,
+            convertedFileList: completedTask.convertedFileList.map((file, index) => ({
+              width: file.width,
+              height: file.height,
+              conversionFileUrl: file.conversionFileUrl,
+              preview: file.preview
+            }))
           }
-        }
-      } else if (['ppt', 'pptx', 'doc', 'docx'].includes(fileExtension)) {
-        // For Office documents, try insertMedia
-        try {
-          console.log('Attempting to insert Office document as media...');
-          appRef.current.insertMedia(fileName, documentUrl);
-          console.log('Office document inserted as media successfully');
-          return;
-        } catch (mediaError) {
-          console.warn('Office document as media failed:', mediaError);
-        }
-      } else if (['mp3', 'mp4', 'mov', 'avi'].includes(fileExtension)) {
-        // For actual media files
-        try {
-          console.log('Inserting media file...');
-          appRef.current.insertMedia(fileName, documentUrl);
-          console.log('Media file inserted successfully');
-          return;
-        } catch (mediaError) {
-          console.error('Media file insertion failed:', mediaError);
-        }
+        };
+
+        // Insert the converted document using insertDocs
+        appRef.current.insertDocs(docsData);
+        console.log('Document inserted successfully using insertDocs');
+        
+        // Remove from tracking
+        setConversionTasks(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(completedTask.uuid);
+          return newMap;
+        });
+        
+      } else if (completedTask?.status === 'Fail') {
+        console.error('Document conversion failed:', completedTask.failedReason);
+        alert(`Document conversion failed: ${completedTask.failedReason}`);
+        
+        // Remove from tracking
+        setConversionTasks(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(completedTask.uuid);
+          return newMap;
+        });
+      } else {
+        console.error('Document conversion timed out or failed');
+        alert(`Document conversion timed out for "${fileName}". Please try again.`);
       }
       
-      // Final fallback: try insertImage for any document type
-      console.log('Trying final fallback: insertImage for document...');
-      appRef.current.insertImage(documentUrl);
-      console.log('Document inserted as image (fallback) successfully');
-      
     } catch (error) {
-      console.error('All document insertion methods failed:', error);
-      console.error('Document URL:', documentUrl);
-      console.error('File name:', fileName);
-      
-      // Show user-friendly error
-      alert(`Failed to insert document "${fileName}". The file format may not be supported for direct display.`);
+      console.error('Document insertion workflow failed:', error);
+      alert(`Failed to process document "${fileName}": ${error.message}`);
     }
   };
 
@@ -409,6 +434,20 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         activeTabId={activeTabId}
         lessonId={lessonId}
       />
+      
+      {/* Conversion Progress Display */}
+      {conversionTasks.size > 0 && (
+        <div className="bg-blue-50 border-b border-blue-200 p-2 text-sm">
+          {Array.from(conversionTasks.values()).map(task => (
+            <div key={task.uuid} className="flex items-center gap-2">
+              <span>Converting document...</span>
+              {task.progress && (
+                <span>({task.progress.convertedPercentage}%)</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       
       {/* Whiteboard Canvas */}
       <div 
