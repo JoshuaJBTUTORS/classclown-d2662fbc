@@ -1,6 +1,12 @@
 
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "api/generate-tokens.js",
+      "use": "@vercel/node"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
