@@ -27,50 +27,47 @@ serve(async (req) => {
       );
     }
 
-    // Get Agora credentials from environment
-    const agoraAppId = Deno.env.get("AGORA_APP_ID");
-    const agoraAppCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
+    // Get Netless SDK token from environment
+    const netlessSDKToken = Deno.env.get("NETLESS_SDK_TOKEN");
 
-    if (!agoraAppId || !agoraAppCertificate) {
+    if (!netlessSDKToken) {
       return new Response(
-        JSON.stringify({ error: "Missing Agora credentials" }),
+        JSON.stringify({ error: "Missing Netless SDK token" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log('Starting Agora document conversion:', { fileName, fileUrl: fileUrl.substring(0, 50) + '...' });
+    console.log('Starting Netless document conversion:', { fileName, fileUrl: fileUrl.substring(0, 50) + '...' });
 
-    // Start conversion task with Agora API
-    const conversionResponse = await fetch('https://api.agora.io/v1/apps/' + agoraAppId + '/cloud_recording/file_conversion/tasks', {
+    // Start conversion task with Netless API
+    const conversionResponse = await fetch('https://api.netless.link/v5/projector/tasks', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(agoraAppId + ':' + agoraAppCertificate)}`
+        'token': netlessSDKToken,
+        'region': 'us-sv'
       },
       body: JSON.stringify({
-        fileUrl: fileUrl,
-        outputFormat: 'png', // Convert to images for display
-        config: {
-          outputStorage: {
-            vendor: 'agora',
-            region: 'us'
-          }
-        }
+        resource: fileUrl,
+        type: 'static', // Convert to static images
+        preview: true, // Generate previews
+        outputFormat: 'png', // Use PNG format
+        scale: 1.2 // Higher quality images
       })
     });
 
     if (!conversionResponse.ok) {
       const errorText = await conversionResponse.text();
-      console.error('Agora conversion API error:', errorText);
+      console.error('Netless conversion API error:', errorText);
       return new Response(
-        JSON.stringify({ error: 'Conversion service unavailable' }),
+        JSON.stringify({ error: 'Document conversion service unavailable' }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const conversionData = await conversionResponse.json();
     
-    console.log('Agora conversion started:', conversionData);
+    console.log('Netless conversion started:', conversionData);
 
     // Track conversion in database
     const { error: dbError } = await supabase
@@ -79,8 +76,8 @@ serve(async (req) => {
         lesson_id: lessonId,
         file_name: fileName,
         file_url: fileUrl,
-        task_uuid: conversionData.taskId,
-        status: 'Converting'
+        task_uuid: conversionData.uuid,
+        status: conversionData.status || 'Waiting'
       });
 
     if (dbError) {
@@ -91,9 +88,9 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         taskInfo: {
-          uuid: conversionData.taskId,
+          uuid: conversionData.uuid,
           type: 'conversion',
-          status: 'Converting'
+          status: conversionData.status || 'Waiting'
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

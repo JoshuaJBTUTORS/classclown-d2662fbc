@@ -309,9 +309,9 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     if (!appRef.current) return;
     
     try {
-      console.log('Starting document conversion workflow:', documentUrl, fileName);
+      console.log('Starting Netless document conversion workflow:', documentUrl, fileName);
       
-      // Start conversion process
+      // Start conversion process with Netless
       const taskInfo = await DocumentConversionService.convertDocument(
         lessonId || 'unknown',
         documentUrl,
@@ -319,7 +319,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       );
 
       if (!taskInfo) {
-        console.error('Failed to start document conversion');
+        console.error('Failed to start Netless document conversion');
         alert(`Failed to convert document "${fileName}". Please try again.`);
         return;
       }
@@ -327,24 +327,24 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       // Track conversion task
       setConversionTasks(prev => new Map(prev.set(taskInfo.uuid, taskInfo)));
 
-      console.log('Document conversion started:', taskInfo);
+      console.log('Netless document conversion started:', taskInfo);
       
       // Poll for conversion completion
       const completedTask = await DocumentConversionService.pollConversionStatus(
         taskInfo.uuid,
         (progress) => {
           setConversionTasks(prev => new Map(prev.set(progress.uuid, progress)));
-          console.log('Conversion progress:', progress);
+          console.log('Netless conversion progress:', progress);
         }
       );
 
       if (completedTask?.status === 'Finished' && completedTask.convertedFileList) {
-        console.log('Document conversion completed:', completedTask);
+        console.log('Netless document conversion completed:', completedTask);
         
-        // Create docs data for insertDocs
+        // Create docs data for insertDocs using Netless format
         const docsData = {
           uuid: completedTask.uuid,
-          type: 'dynamic',
+          type: 'static', // Netless static conversion
           status: 'Finished',
           failedReason: '',
           taskProgress: {
@@ -355,14 +355,14 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
               width: file.width,
               height: file.height,
               conversionFileUrl: file.conversionFileUrl,
-              preview: file.preview
+              preview: file.preview || file.conversionFileUrl
             }))
           }
         };
 
         // Insert the converted document using insertDocs
         appRef.current.insertDocs(docsData);
-        console.log('Document inserted successfully using insertDocs');
+        console.log('Document inserted successfully using Netless converted data');
         
         // Remove from tracking
         setConversionTasks(prev => {
@@ -372,7 +372,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         });
         
       } else if (completedTask?.status === 'Fail') {
-        console.error('Document conversion failed:', completedTask.failedReason);
+        console.error('Netless document conversion failed:', completedTask.failedReason);
         alert(`Document conversion failed: ${completedTask.failedReason}`);
         
         // Remove from tracking
@@ -382,12 +382,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           return newMap;
         });
       } else {
-        console.error('Document conversion timed out or failed');
+        console.error('Netless document conversion timed out or failed');
         alert(`Document conversion timed out for "${fileName}". Please try again.`);
       }
       
     } catch (error) {
-      console.error('Document insertion workflow failed:', error);
+      console.error('Netless document insertion workflow failed:', error);
       alert(`Failed to process document "${fileName}": ${error.message}`);
     }
   };

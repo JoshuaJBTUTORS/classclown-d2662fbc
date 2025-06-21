@@ -26,9 +26,9 @@ export class DocumentConversionService {
     fileName: string
   ): Promise<ConversionTaskInfo | null> {
     try {
-      console.log('Starting document conversion:', { fileName, fileUrl });
+      console.log('Starting document conversion with Netless:', { fileName, fileUrl });
       
-      // Call our edge function to handle Agora conversion
+      // Call our edge function to handle Netless conversion
       const { data, error } = await supabase.functions.invoke('convert-document', {
         body: {
           lessonId,
