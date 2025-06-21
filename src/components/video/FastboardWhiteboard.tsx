@@ -73,9 +73,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           },
           managerConfig: {
             cursor: true,
-          },
-          // Enable Fastboard's native UI components including toolbar
-          ui: {
             toolbar: userRole === 'tutor' && !isReadOnly,
           },
         });
