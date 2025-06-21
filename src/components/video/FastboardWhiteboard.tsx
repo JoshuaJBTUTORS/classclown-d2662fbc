@@ -16,7 +16,7 @@ interface WhiteboardTab {
   id: string;
   name: string;
   type: 'main' | 'document';
-  sceneIndex: number;
+  scenePath: string;
 }
 
 // The correct Netless App Identifier - always use this as fallback
@@ -37,7 +37,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const [currentFont, setCurrentFont] = useState('Sans');
   const [currentFontSize, setCurrentFontSize] = useState(14);
   const [tabs, setTabs] = useState<WhiteboardTab[]>([
-    { id: 'main', name: 'Main Room', type: 'main', sceneIndex: 0 }
+    { id: 'main', name: 'Main Room', type: 'main', scenePath: '/init' }
   ]);
   const [activeTabId, setActiveTabId] = useState('main');
 
@@ -125,12 +125,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     
     try {
       const newTabId = `doc${tabs.length}`;
-      const sceneIndex = tabs.length;
-      const scenePath = `/${sceneIndex}`;
+      const sceneName = `Document-${tabs.length}`;
+      const scenePath = `/${sceneName}`;
       
-      // Create new scene in Fastboard
-      appRef.current.room.putScenes(scenePath, [{ 
-        name: `Document ${tabs.length}`,
+      // Create new scene in root directory using putScenes
+      appRef.current.room.putScenes('/', [{ 
+        name: sceneName,
         ppt: undefined 
       }]);
       
@@ -138,12 +138,14 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         id: newTabId,
         name: `Document ${tabs.length}`,
         type: 'document',
-        sceneIndex
+        scenePath
       };
       
       setTabs(prev => [...prev, newTab]);
       setActiveTabId(newTabId);
-      appRef.current.room.setSceneIndex(sceneIndex);
+      
+      // Switch to the new scene using setScenePath
+      appRef.current.room.setScenePath(scenePath);
       
       console.log('Created new whiteboard tab:', newTab);
     } catch (error) {
@@ -159,7 +161,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     
     try {
       setActiveTabId(tabId);
-      appRef.current.room.setSceneIndex(tab.sceneIndex);
+      // Use setScenePath for more reliable scene switching
+      appRef.current.room.setScenePath(tab.scenePath);
       console.log('Switched to tab:', tab);
     } catch (error) {
       console.error('Error switching tab:', error);
@@ -173,9 +176,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       const tabToClose = tabs.find(t => t.id === tabId);
       if (!tabToClose) return;
       
-      // Remove scene from Fastboard
-      const scenePath = `/${tabToClose.sceneIndex}`;
-      appRef.current.room.removeScenes(scenePath);
+      // Remove the specific scene using removeScenes
+      appRef.current.room.removeScenes(tabToClose.scenePath);
       
       // Update tabs state
       const newTabs = tabs.filter(t => t.id !== tabId);
@@ -184,7 +186,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       // Switch to main tab if closing active tab
       if (activeTabId === tabId) {
         setActiveTabId('main');
-        appRef.current.room.setSceneIndex(0);
+        appRef.current.room.setScenePath('/init');
       }
       
       console.log('Closed tab:', tabId);
