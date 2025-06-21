@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { WhiteWebSdk, Room, RoomPhase } from 'white-web-sdk';
+import { createFastboard, mount } from '@netless/fastboard';
 
 interface FastboardWhiteboardProps {
   isReadOnly?: boolean;
@@ -22,10 +22,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const roomRef = useRef<Room | null>(null);
-  const initAttemptRef = useRef(0);
+  const appRef = useRef<any>(null);
 
-  // Effect to initialize whiteboard
   useEffect(() => {
     if (!roomUuid || !roomToken || !appIdentifier) {
       console.log('FastboardWhiteboard: Missing credentials, waiting...');
@@ -34,83 +32,55 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       return;
     }
 
-    const initWhiteboard = async () => {
-      const maxAttempts = 3;
-      initAttemptRef.current += 1;
-      
-      console.log(`FastboardWhiteboard: Initialization attempt ${initAttemptRef.current}/${maxAttempts}`);
-
+    const initFastboard = async () => {
       try {
-        // Check if DOM element is available
-        if (!whiteboardRef.current) {
-          console.error('FastboardWhiteboard: DOM element not available during initialization');
-          throw new Error('Whiteboard container element not found during initialization');
-        }
-
-        console.log('FastboardWhiteboard: Initializing whiteboard with:', { 
+        console.log('FastboardWhiteboard: Initializing Fastboard with:', { 
           roomUuid: roomUuid.substring(0, 8) + '...',
           appIdentifier: appIdentifier.substring(0, 8) + '...',
           userId,
           userRole,
-          isReadOnly,
-          domElement: !!whiteboardRef.current
-        });
-        
-        const whiteWebSdk = new WhiteWebSdk({
-          appIdentifier: appIdentifier,
-          region: 'us-sv',
+          isReadOnly
         });
 
-        const room = await whiteWebSdk.joinRoom({
-          uuid: roomUuid,
-          roomToken: roomToken,
-          uid: userId,
-          isWritable: !isReadOnly && userRole === 'tutor',
-        });
-
-        roomRef.current = room;
-
-        // Final check before binding
         if (!whiteboardRef.current) {
-          throw new Error('Whiteboard container became unavailable during room join');
+          throw new Error('Whiteboard container element not found');
         }
 
-        room.bindHtmlElement(whiteboardRef.current);
-        
-        room.callbacks.on('onRoomStateChanged', (modifyState) => {
-          if (modifyState.roomPhase) {
-            console.log('FastboardWhiteboard: Room phase changed:', modifyState.roomPhase);
-          }
+        const app = await createFastboard({
+          sdkConfig: {
+            appIdentifier: appIdentifier,
+            region: 'us-sv',
+          },
+          joinRoom: {
+            uid: userId,
+            uuid: roomUuid,
+            roomToken: roomToken,
+            isWritable: !isReadOnly && userRole === 'tutor',
+          },
+          managerConfig: {
+            cursor: true,
+          },
         });
+
+        appRef.current = app;
+
+        // Mount the Fastboard to the DOM element
+        mount(app, whiteboardRef.current);
 
         setError(null);
         setIsLoading(false);
-        initAttemptRef.current = 0;
-        console.log('FastboardWhiteboard: Whiteboard initialized successfully');
+        console.log('FastboardWhiteboard: Fastboard initialized successfully');
       } catch (error) {
-        console.error(`FastboardWhiteboard: Initialization attempt ${initAttemptRef.current} failed:`, error);
-        
-        // Retry logic for container-related errors only
-        if (initAttemptRef.current < maxAttempts && 
-            error instanceof Error && 
-            (error.message.includes('container') || error.message.includes('element'))) {
-          console.log(`FastboardWhiteboard: Retrying in 1 second... (attempt ${initAttemptRef.current + 1}/${maxAttempts})`);
-          setTimeout(() => {
-            initWhiteboard();
-          }, 1000);
-          return;
-        }
-
+        console.error('FastboardWhiteboard: Initialization failed:', error);
         setError(error instanceof Error ? error.message : 'Failed to initialize whiteboard');
         setIsLoading(false);
-        initAttemptRef.current = 0;
       }
     };
 
     // Small delay to ensure React ref is properly set
     const timeoutId = setTimeout(() => {
       console.log('FastboardWhiteboard: Starting initialization with DOM element:', !!whiteboardRef.current);
-      initWhiteboard();
+      initFastboard();
     }, 100);
 
     return () => {
@@ -121,12 +91,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   // Cleanup effect
   useEffect(() => {
     return () => {
-      if (roomRef.current) {
-        console.log('FastboardWhiteboard: Cleaning up whiteboard');
+      if (appRef.current) {
+        console.log('FastboardWhiteboard: Cleaning up Fastboard');
         try {
-          roomRef.current.disconnect();
+          appRef.current.destroy();
         } catch (error) {
-          console.warn('FastboardWhiteboard: Error cleaning up whiteboard:', error);
+          console.warn('FastboardWhiteboard: Error cleaning up Fastboard:', error);
         }
       }
     };
@@ -144,7 +114,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
             <p>Room Token: {roomToken ? 'Present' : 'Missing'}</p>
             <p>App ID: {appIdentifier ? 'Present' : 'Missing'}</p>
             <p>DOM Element: {whiteboardRef.current ? 'Present' : 'Missing'}</p>
-            <p>Init Attempts: {initAttemptRef.current}</p>
           </div>
         </div>
       </div>
