@@ -40,7 +40,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
-  const [currentColor, setCurrentColor] = useState('#FFFFFF'); // Changed to white
+  const [currentColor, setCurrentColor] = useState('#FFFFFF'); // White default
   const [currentFont, setCurrentFont] = useState('Sans');
   const [currentFontSize, setCurrentFontSize] = useState(14);
   const [tabs, setTabs] = useState<WhiteboardTab[]>([
@@ -91,14 +91,13 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           },
           managerConfig: {
             cursor: true,
-          },
-          theme: 'dark', // Set dark theme for black background
+          }
         });
 
         appRef.current = app;
         mount(app, whiteboardRef.current);
         
-        // Set initial drawing properties with white pen on black background
+        // Set initial drawing properties with white pen
         if (app.room && !isReadOnly && userRole === 'tutor') {
           app.room.setMemberState({
             strokeColor: [255, 255, 255], // White pen color
@@ -107,7 +106,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           });
         }
         
-        console.log('Fastboard initialized successfully with black background and white pen');
+        console.log('Fastboard initialized successfully with white pen');
       } catch (error) {
         console.error('FastboardWhiteboard initialization failed:', error);
         console.error('Initialization details:', {
