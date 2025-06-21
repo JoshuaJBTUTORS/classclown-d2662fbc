@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { validateAgoraCredentials } from "./validation.ts";
@@ -12,11 +13,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Agora role constants
-const ROLE_PUBLISHER = 1;
-const ROLE_SUBSCRIBER = 2;
-
-// Token generation constants
+// Official Agora AccessToken2 implementation
 const VERSION_LENGTH = 3
 const APP_ID_LENGTH = 32
 
@@ -24,12 +21,8 @@ const getVersion = () => {
     return '007'
 }
 
-// Working Agora token generation classes (from generate-agora-token)
 class Service {
-    private __type: number
-    private __privileges: Record<number, number>
-
-    constructor(service_type: number) {
+    constructor(service_type) {
         this.__type = service_type
         this.__privileges = {}
     }
@@ -50,7 +43,7 @@ class Service {
         return this.__type
     }
 
-    add_privilege(privilege: number, expire: number) {
+    add_privilege(privilege, expire) {
         this.__privileges[privilege] = expire
     }
 
@@ -58,7 +51,7 @@ class Service {
         return Buffer.concat([this.__pack_type(), this.__pack_privileges()])
     }
 
-    unpack(buffer: Buffer) {
+    unpack(buffer) {
         let bufReader = new ReadByteBuf(buffer)
         this.__privileges = bufReader.getTreeMapUInt32()
         return bufReader
@@ -68,10 +61,7 @@ class Service {
 const kRtcServiceType = 1
 
 class ServiceRtc extends Service {
-    private __channel_name: string
-    private __uid: string
-
-    constructor(channel_name: string, uid: number) {
+    constructor(channel_name, uid) {
         super(kRtcServiceType)
         this.__channel_name = channel_name
         this.__uid = uid === 0 ? '' : `${uid}`
@@ -83,7 +73,7 @@ class ServiceRtc extends Service {
         return Buffer.concat([super.pack(), buffer.pack()])
     }
 
-    unpack(buffer: Buffer) {
+    unpack(buffer) {
         let bufReader = super.unpack(buffer)
         this.__channel_name = bufReader.getString()
         this.__uid = bufReader.getString()
@@ -91,21 +81,15 @@ class ServiceRtc extends Service {
     }
 }
 
-// @ts-ignore
 ServiceRtc.kPrivilegeJoinChannel = 1
-// @ts-ignore
 ServiceRtc.kPrivilegePublishAudioStream = 2
-// @ts-ignore
 ServiceRtc.kPrivilegePublishVideoStream = 3
-// @ts-ignore
 ServiceRtc.kPrivilegePublishDataStream = 4
 
 const kRtmServiceType = 2
 
 class ServiceRtm extends Service {
-    private __user_id: string
-
-    constructor(user_id: string) {
+    constructor(user_id) {
         super(kRtmServiceType)
         this.__user_id = user_id || ''
     }
@@ -116,29 +100,22 @@ class ServiceRtm extends Service {
         return Buffer.concat([super.pack(), buffer.pack()])
     }
 
-    unpack(buffer: Buffer) {
+    unpack(buffer) {
         let bufReader = super.unpack(buffer)
         this.__user_id = bufReader.getString()
         return bufReader
     }
 }
 
-// @ts-ignore
 ServiceRtm.kPrivilegeLogin = 1
 
 class AccessToken2 {
-    appId: string
-    appCertificate: string
-    issueTs: number
-    expire: number
-    salt: number
-    services: Record<number, Service>
-
-    constructor(appId: string, appCertificate: string, issueTs?: number, expire?: number) {
+    constructor(appId, appCertificate, issueTs, expire) {
         this.appId = appId
         this.appCertificate = appCertificate
         this.issueTs = issueTs || Math.floor(Date.now() / 1000)
-        this.expire = expire || 0
+        this.expire = expire
+        // salt ranges in (1, 99999999)
         this.salt = Math.floor(Math.random() * (99999999)) + 1
         this.services = {}
     }
@@ -150,7 +127,7 @@ class AccessToken2 {
     }
 
     __build_check() {
-        let is_uuid = (data: string) => {
+        let is_uuid = (data) => {
             if (data.length !== APP_ID_LENGTH) {
                 return false
             }
@@ -173,7 +150,7 @@ class AccessToken2 {
         return true
     }
 
-    add_service(service: Service) {
+    add_service(service) {
         this.services[service.service_type()] = service
     }
 
@@ -189,7 +166,7 @@ class AccessToken2 {
             .putUint32(this.salt)
             .putUint16(Object.keys(this.services).length).pack()
         
-        Object.values(this.services).forEach((service: Service) => {
+        Object.values(this.services).forEach((service) => {
             signing_info = Buffer.concat([signing_info, service.pack()])
         })
 
@@ -200,7 +177,7 @@ class AccessToken2 {
     }
 }
 
-var encodeHMac = function (key: any, message: any) {
+var encodeHMac = function (key, message) {
     return hmac('sha256', key, message, 'utf8')
 }
 
@@ -218,30 +195,36 @@ var ByteBuf = function () {
         return out
     }
 
-    that.putUint16 = function (v: number) {
+    that.putUint16 = function (v) {
         that.buffer.writeUInt16LE(v, that.position)
         that.position += 2
         return that
     }
 
-    that.putUint32 = function (v: number) {
+    that.putUint32 = function (v) {
         that.buffer.writeUInt32LE(v, that.position)
         that.position += 4
         return that
     }
 
-    that.putBytes = function (bytes: Buffer) {
+    that.putInt16 = function (v) {
+        that.buffer.writeInt16LE(v, that.position)
+        that.position += 2
+        return that
+    }
+
+    that.putBytes = function (bytes) {
         that.putUint16(bytes.length)
         bytes.copy(that.buffer, that.position)
         that.position += bytes.length
         return that
     }
 
-    that.putString = function (str: string) {
+    that.putString = function (str) {
         return that.putBytes(Buffer.from(str))
     }
 
-    that.putTreeMapUInt32 = function (map: Record<number, number>) {
+    that.putTreeMapUInt32 = function (map) {
         if (!map) {
             that.putUint16(0)
             return that
@@ -259,7 +242,7 @@ var ByteBuf = function () {
     return that
 }
 
-var ReadByteBuf = function (bytes: Buffer) {
+var ReadByteBuf = function (bytes) {
     var that = {
         buffer: bytes,
         position: 0,
@@ -286,7 +269,7 @@ var ReadByteBuf = function (bytes: Buffer) {
     }
 
     that.getTreeMapUInt32 = function () {
-        var map: Record<number, number> = {}
+        var map = {}
         var len = that.getUint16()
         for (var i = 0; i < len; i++) {
             var key = that.getUint16()
@@ -306,23 +289,18 @@ var ReadByteBuf = function (bytes: Buffer) {
     return that
 }
 
-// Helper function to generate RTC token
-function generateRtcToken(appId: string, appCertificate: string, channelName: string, uid: number, role: string, expireTime: number) {
+// Simplified token generation using official classes
+function generateRtcToken(appId, appCertificate, channelName, uid, role, expireTime) {
     const token = new AccessToken2(appId, appCertificate, Math.floor(Date.now() / 1000), expireTime)
     const serviceRtc = new ServiceRtc(channelName, uid)
     
     // Add privileges based on role
     if (role === 'publisher' || role === 'tutor') {
-        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegeJoinChannel, expireTime)
-        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegePublishAudioStream, expireTime)
-        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegePublishVideoStream, expireTime)
-        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegePublishDataStream, expireTime)
     } else {
-        // @ts-ignore
         serviceRtc.add_privilege(ServiceRtc.kPrivilegeJoinChannel, expireTime)
     }
     
@@ -330,26 +308,24 @@ function generateRtcToken(appId: string, appCertificate: string, channelName: st
     return token.build()
 }
 
-// Helper function to generate RTM token
-function generateRtmToken(appId: string, appCertificate: string, userId: string, expireTime: number) {
+function generateRtmToken(appId, appCertificate, userId, expireTime) {
     const token = new AccessToken2(appId, appCertificate, Math.floor(Date.now() / 1000), expireTime)
     const serviceRtm = new ServiceRtm(userId)
-    // @ts-ignore
     serviceRtm.add_privilege(ServiceRtm.kPrivilegeLogin, expireTime)
     token.add_service(serviceRtm)
     return token.build()
 }
 
-// Generate tokens directly
-async function generateTokensDirect(
-  appId: string,
-  appCertificate: string,
-  channelName: string,
-  uid: number | null,
-  userRole: string
+// Generate tokens using official implementation
+async function generateTokensOfficial(
+  appId,
+  appCertificate,
+  channelName,
+  uid,
+  userRole
 ) {
   try {
-    console.log('[AGORA-INTEGRATION] Generating tokens directly:', {
+    console.log('[AGORA-INTEGRATION] Generating tokens with official implementation:', {
       appId: appId.substring(0, 8) + '...',
       channelName,
       uid: uid,
@@ -390,7 +366,7 @@ async function generateTokensDirect(
       uid: actualUid
     };
   } catch (error) {
-    console.error('[AGORA-INTEGRATION] Direct token generation error:', error);
+    console.error('[AGORA-INTEGRATION] Official token generation error:', error);
     throw new Error(`Token generation failed: ${error.message}`);
   }
 }
@@ -401,7 +377,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with fixed token generation');
+    console.log('[AGORA-INTEGRATION] Processing request with official Agora implementation');
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -428,12 +404,12 @@ serve(async (req) => {
 
     switch (action) {
       case "create-room":
-        return await createVideoRoom(requestData as CreateVideoRoomRequest, supabase, appId!, appCertificate!, netlessSDKToken);
+        return await createVideoRoom(requestData, supabase, appId!, appCertificate!, netlessSDKToken);
       case "get-tokens":
       case "get_tokens":
-        return await getTokens(requestData as GetTokensRequest, supabase, appId!, appCertificate!, netlessSDKToken);
+        return await getTokens(requestData, supabase, appId!, appCertificate!, netlessSDKToken);
       case "regenerate-tokens":
-        return await regenerateTokens(requestData as RegenerateTokensRequest, supabase, appId!, appCertificate!, netlessSDKToken);
+        return await regenerateTokens(requestData, supabase, appId!, appCertificate!, netlessSDKToken);
       default:
         console.error('[AGORA-INTEGRATION] Invalid action:', action);
         return new Response(
@@ -451,11 +427,11 @@ serve(async (req) => {
 });
 
 async function createVideoRoom(
-  data: CreateVideoRoomRequest, 
-  supabase: any, 
-  appId: string, 
-  appCertificate: string, 
-  netlessSDKToken?: string
+  data,
+  supabase,
+  appId,
+  appCertificate,
+  netlessSDKToken
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Creating video room for lesson:", data.lessonId);
@@ -471,8 +447,8 @@ async function createVideoRoom(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Generate tokens directly
-    const tokens = await generateTokensDirect(
+    // Generate tokens using official implementation
+    const tokens = await generateTokensOfficial(
       appId,
       appCertificate,
       channelName,
@@ -480,7 +456,7 @@ async function createVideoRoom(
       data.userRole
     );
 
-    console.log("[AGORA-INTEGRATION] Generated tokens directly:", {
+    console.log("[AGORA-INTEGRATION] Generated tokens with official implementation:", {
       rtcTokenLength: tokens.rtcToken.length,
       rtmTokenLength: tokens.rtmToken.length,
       userRole: data.userRole
@@ -530,7 +506,7 @@ async function createVideoRoom(
       throw updateError;
     }
 
-    console.log("[AGORA-INTEGRATION] Video room created successfully with fixed token generation");
+    console.log("[AGORA-INTEGRATION] Video room created successfully with official implementation");
 
     return new Response(
       JSON.stringify({
@@ -546,7 +522,7 @@ async function createVideoRoom(
         message: "Agora video room created successfully",
         debug: {
           tokenLength: tokens.rtcToken.length,
-          fixedGeneration: true,
+          officialImplementation: true,
           role: data.userRole,
           validated: true
         }
@@ -566,11 +542,11 @@ async function createVideoRoom(
 }
 
 async function getTokens(
-  data: GetTokensRequest, 
-  supabase: any, 
-  appId: string, 
-  appCertificate: string, 
-  netlessSDKToken?: string
+  data,
+  supabase,
+  appId,
+  appCertificate,
+  netlessSDKToken
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Getting tokens for lesson:", data.lessonId);
@@ -600,8 +576,8 @@ async function getTokens(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Generate fresh tokens directly
-    const tokens = await generateTokensDirect(
+    // Generate fresh tokens using official implementation
+    const tokens = await generateTokensOfficial(
       appId,
       appCertificate,
       lesson.agora_channel_name,
@@ -617,7 +593,7 @@ async function getTokens(
         .eq("id", data.lessonId);
     }
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens directly:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens with official implementation:", {
       rtcTokenLength: tokens.rtcToken.length,
       rtmTokenLength: tokens.rtmToken.length,
       role: data.userRole
@@ -649,7 +625,7 @@ async function getTokens(
         role: data.userRole === 'tutor' ? 'publisher' : 'subscriber',
         debug: {
           tokenLength: tokens.rtcToken.length,
-          fixedGeneration: true,
+          officialImplementation: true,
           channelName: lesson.agora_channel_name,
           uid: tokens.uid,
           validated: true
@@ -670,11 +646,11 @@ async function getTokens(
 }
 
 async function regenerateTokens(
-  data: RegenerateTokensRequest, 
-  supabase: any, 
-  appId: string, 
-  appCertificate: string, 
-  netlessSDKToken?: string
+  data,
+  supabase,
+  appId,
+  appCertificate,
+  netlessSDKToken
 ) {
   try {
     console.log("[AGORA-INTEGRATION] Regenerating tokens for lesson:", data.lessonId);
@@ -704,8 +680,8 @@ async function regenerateTokens(
       appId: appId.substring(0, 8) + '...'
     });
 
-    // Generate fresh tokens directly
-    const tokens = await generateTokensDirect(
+    // Generate fresh tokens using official implementation
+    const tokens = await generateTokensOfficial(
       appId,
       appCertificate,
       lesson.agora_channel_name,
@@ -713,7 +689,7 @@ async function regenerateTokens(
       data.userRole
     );
 
-    console.log("[AGORA-INTEGRATION] Generated fresh tokens directly:", {
+    console.log("[AGORA-INTEGRATION] Generated fresh tokens with official implementation:", {
       rtcTokenLength: tokens.rtcToken.length,
       rtmTokenLength: tokens.rtmToken.length,
       role: data.userRole
@@ -756,7 +732,7 @@ async function regenerateTokens(
       }
     }
 
-    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with fixed generation");
+    console.log("[AGORA-INTEGRATION] Successfully regenerated all tokens for lesson with official implementation");
 
     return new Response(
       JSON.stringify({
@@ -773,7 +749,7 @@ async function regenerateTokens(
         regenerated: true,
         debug: {
           tokenLength: tokens.rtcToken.length,
-          fixedGeneration: true,
+          officialImplementation: true,
           channelName: lesson.agora_channel_name,
           uid: tokens.uid,
           validated: true
