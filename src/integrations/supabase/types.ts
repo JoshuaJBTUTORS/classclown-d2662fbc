@@ -1620,6 +1620,53 @@ export type Database = {
         }
         Relationships: []
       }
+      whiteboard_files: {
+        Row: {
+          created_at: string
+          expires_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          lesson_id: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          lesson_id: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          lesson_id?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whiteboard_files_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       year_groups: {
         Row: {
           created_at: string

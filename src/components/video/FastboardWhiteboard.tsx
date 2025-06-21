@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 import WhiteboardToolbar from './WhiteboardToolbar';
@@ -40,6 +39,10 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     { id: 'main', name: 'Main Room', type: 'main', scenePath: '/init' }
   ]);
   const [activeTabId, setActiveTabId] = useState('main');
+
+  // Extract lesson ID from URL if available
+  const lessonId = typeof window !== 'undefined' ? 
+    window.location.pathname.split('/video-room/')[1] : undefined;
 
   useEffect(() => {
     const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
@@ -285,6 +288,61 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
+  const handleImageInsert = (imageUrl: string) => {
+    if (!appRef.current?.room) return;
+    
+    try {
+      console.log('Inserting image:', imageUrl);
+      
+      // Insert image into whiteboard
+      appRef.current.insertImage(imageUrl);
+      
+      console.log('Image inserted successfully');
+    } catch (error) {
+      console.error('Error inserting image:', error);
+    }
+  };
+
+  const handleDocumentInsert = (documentUrl: string, fileName: string) => {
+    if (!appRef.current?.room) return;
+    
+    try {
+      console.log('Inserting document:', documentUrl, fileName);
+      
+      // For documents, we'll create a new tab and display the document
+      // Note: Full document conversion would require additional Netless services
+      // For now, we'll insert as a link or placeholder
+      
+      const newTabId = `doc${tabs.length}`;
+      const sceneName = `Document-${fileName}`;
+      const scenePath = `/${sceneName}`;
+      
+      // Create new scene
+      appRef.current.room.putScenes('/', [{ 
+        name: sceneName,
+        ppt: undefined 
+      }]);
+      
+      const newTab: WhiteboardTab = {
+        id: newTabId,
+        name: fileName,
+        type: 'document',
+        scenePath
+      };
+      
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTabId);
+      
+      // Switch to the new scene
+      appRef.current.room.setScenePath(scenePath);
+      
+      // Add document link or placeholder text
+      console.log('Document tab created:', newTab);
+    } catch (error) {
+      console.error('Error inserting document:', error);
+    }
+  };
+
   const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
 
   if (!roomUuid || !roomToken) {
@@ -317,12 +375,15 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         onFormatToggle={handleFormatToggle}
         onAlignmentChange={handleAlignmentChange}
         onListToggle={handleListToggle}
+        onImageInsert={handleImageInsert}
+        onDocumentInsert={handleDocumentInsert}
         activeFormats={activeFormats}
         currentColor={currentColor}
         currentFont={currentFont}
         currentFontSize={currentFontSize}
         tabs={tabs}
         activeTabId={activeTabId}
+        lessonId={lessonId}
       />
       
       {/* Whiteboard Canvas */}
