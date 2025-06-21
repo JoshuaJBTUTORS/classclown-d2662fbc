@@ -24,6 +24,8 @@ import LearningHubRevision from './pages/LearningHubRevision';
 import LearningHubAssessments from './pages/LearningHubAssessments';
 import CourseDetail from './pages/CourseDetail';
 import CourseEdit from './pages/CourseEdit';
+import AssessmentEdit from './pages/AssessmentEdit';
+import AssessmentPreview from './pages/AssessmentPreview';
 
 function App() {
   const queryClient = new QueryClient();
@@ -109,6 +111,24 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <CourseEdit />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Assessment routes - standalone pages */}
+                <Route
+                  path="/assessment/:id/edit"
+                  element={
+                    <ProtectedRoute>
+                      <AssessmentEdit />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/assessment/:id/preview"
+                  element={
+                    <ProtectedRoute>
+                      <AssessmentPreview />
                     </ProtectedRoute>
                   }
                 />
