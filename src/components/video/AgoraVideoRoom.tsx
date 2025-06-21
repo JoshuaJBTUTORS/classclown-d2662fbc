@@ -10,14 +10,13 @@ import {
   useRemoteUsers,
 } from 'agora-rtc-react';
 import VideoRoomHeader from './VideoRoomHeader';
-import VideoPanel from './VideoPanel';
+import VerticalVideoGrid from './VerticalVideoGrid';
 import AgoraChatPanel from './AgoraChatPanel';
 import FastboardWhiteboard from './FastboardWhiteboard';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, 
   Users, 
-  Presentation,
   Mic,
   MicOff,
   Video,
@@ -58,7 +57,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [micOn, setMicOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(userRole === 'tutor');
   const [chatOpen, setChatOpen] = useState(false);
-  const [whiteboardVisible, setWhiteboardVisible] = useState(true);
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -131,7 +129,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const toggleCamera = () => setCameraOn(prev => !prev);
   const toggleChat = () => setChatOpen(prev => !prev);
   const toggleParticipants = () => setParticipantsOpen(prev => !prev);
-  const toggleWhiteboard = () => setWhiteboardVisible(prev => !prev);
   const toggleScreenShare = () => setIsScreenSharing(prev => !prev);
   const toggleRecording = () => setIsRecording(prev => !prev);
 
@@ -154,48 +151,48 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       />
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Main content area */}
-        <div className="flex-1 flex flex-col">
-          {/* Video area */}
-          <div className="flex-1 flex">
-            {/* Video panel */}
-            <div className={`${whiteboardVisible ? 'w-1/2' : 'flex-1'} bg-black relative`}>
-              <VideoPanel
-                localCameraTrack={localCameraTrack}
-                remoteUsers={remoteUsers}
-                isAudioEnabled={micOn}
-                isVideoEnabled={cameraOn}
-                userRole={userRole}
-              />
-            </div>
+        {/* Left Sidebar - Video Grid */}
+        <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
+          <div className="p-3 border-b border-gray-700">
+            <h3 className="text-white text-sm font-medium">Participants ({totalParticipants})</h3>
+          </div>
+          <div className="flex-1">
+            <VerticalVideoGrid
+              localCameraTrack={localCameraTrack}
+              remoteUsers={remoteUsers}
+              isAudioEnabled={micOn}
+              isVideoEnabled={cameraOn}
+              userRole={userRole}
+            />
+          </div>
+        </div>
 
-            {/* Whiteboard area */}
-            {whiteboardVisible && (
-              <div className="w-1/2 flex">
-                {netlessCredentials ? (
-                  <FastboardWhiteboard
-                    isReadOnly={userRole === 'student'}
-                    userRole={userRole}
-                    roomUuid={netlessCredentials.roomUuid}
-                    roomToken={netlessCredentials.roomToken}
-                    appIdentifier={netlessCredentials.appIdentifier}
-                    userId={validUid.toString()}
-                  />
-                ) : (
-                  <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
-                    <div className="text-center p-6">
-                      <p className="text-gray-600 mb-2">Whiteboard Unavailable</p>
-                      <p className="text-gray-500 text-sm">No whiteboard credentials available for this lesson</p>
-                    </div>
-                  </div>
-                )}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Whiteboard Area */}
+          <div className="flex-1 flex">
+            {netlessCredentials ? (
+              <FastboardWhiteboard
+                isReadOnly={userRole === 'student'}
+                userRole={userRole}
+                roomUuid={netlessCredentials.roomUuid}
+                roomToken={netlessCredentials.roomToken}
+                appIdentifier={netlessCredentials.appIdentifier}
+                userId={validUid.toString()}
+              />
+            ) : (
+              <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center m-4">
+                <div className="text-center p-6">
+                  <p className="text-gray-600 mb-2">Whiteboard Unavailable</p>
+                  <p className="text-gray-500 text-sm">No whiteboard credentials available for this lesson</p>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Unified Controls */}
-          <div className="bg-gray-800 p-4">
-            <div className="flex justify-center items-center gap-3">
+          {/* Bottom Controls Overlay */}
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 px-6 py-3 flex items-center gap-3">
               {/* Basic Controls */}
               <Button
                 variant={micOn ? "default" : "destructive"}
@@ -228,7 +225,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 variant={isScreenSharing ? "default" : "ghost"}
                 size="lg"
                 onClick={toggleScreenShare}
-                className="rounded-full w-12 h-12 p-0 text-white hover:text-gray-300"
+                className="rounded-full w-12 h-12 p-0 text-gray-600 hover:text-gray-900"
               >
                 {isScreenSharing ? (
                   <MonitorOff className="h-5 w-5" />
@@ -237,17 +234,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 )}
               </Button>
 
-              <div className="w-px h-8 bg-gray-600 mx-2" />
-
-              {/* Whiteboard */}
-              <Button
-                variant={whiteboardVisible ? "default" : "outline"}
-                size="sm"
-                onClick={toggleWhiteboard}
-              >
-                <Presentation className="h-4 w-4 mr-2" />
-                Whiteboard
-              </Button>
+              <div className="w-px h-8 bg-gray-200 mx-1" />
               
               {/* Chat */}
               <Button
@@ -266,13 +253,13 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 onClick={toggleParticipants}
               >
                 <Users className="h-4 w-4 mr-2" />
-                Participants ({totalParticipants})
+                ({totalParticipants})
               </Button>
 
               {/* Tutor-only Controls */}
               {userRole === 'tutor' && (
                 <>
-                  <div className="w-px h-8 bg-gray-600 mx-2" />
+                  <div className="w-px h-8 bg-gray-200 mx-1" />
                   
                   {/* Recording */}
                   <Button
@@ -290,7 +277,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 </>
               )}
 
-              <div className="w-px h-8 bg-gray-600 mx-2" />
+              <div className="w-px h-8 bg-gray-200 mx-2" />
 
               {/* Leave Button */}
               <Button
