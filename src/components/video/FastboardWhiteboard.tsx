@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 import WhiteboardToolbar from './WhiteboardToolbar';
@@ -14,7 +15,7 @@ interface FastboardWhiteboardProps {
 interface WhiteboardTab {
   id: string;
   name: string;
-  type: 'main' | 'document' | 'code-editor';
+  type: 'main' | 'document';
   scenePath: string;
 }
 
@@ -30,7 +31,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   userId
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
-  const codeEditorRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const [currentColor, setCurrentColor] = useState('#000000');
@@ -40,7 +40,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     { id: 'main', name: 'Main Room', type: 'main', scenePath: '/init' }
   ]);
   const [activeTabId, setActiveTabId] = useState('main');
-  const [codeEditorApp, setCodeEditorApp] = useState<any>(null);
 
   useEffect(() => {
     const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
@@ -154,61 +153,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
-  const handleOpenCodeEditor = () => {
-    if (!appRef.current?.room) return;
-    
-    try {
-      const codeEditorTabId = 'code-editor';
-      
-      // Check if code editor tab already exists
-      const existingCodeTab = tabs.find(t => t.type === 'code-editor');
-      if (existingCodeTab) {
-        setActiveTabId(existingCodeTab.id);
-        return;
-      }
-      
-      // Create new code editor tab
-      const newTab: WhiteboardTab = {
-        id: codeEditorTabId,
-        name: 'Code Editor',
-        type: 'code-editor',
-        scenePath: '/code-editor'
-      };
-      
-      setTabs(prev => [...prev, newTab]);
-      setActiveTabId(codeEditorTabId);
-      
-      // Create a Monaco editor instance using basic Monaco
-      if (codeEditorRef.current && !codeEditorApp) {
-        import('@monaco-editor/react').then(({ default: Editor }) => {
-          const editorComponent = React.createElement(Editor, {
-            height: '100%',
-            width: '100%',
-            defaultLanguage: 'javascript',
-            defaultValue: '// Welcome to the Code Editor!\n// Start coding here...\n\nfunction hello() {\n  console.log("Hello, World!");\n}\n\nhello();',
-            theme: 'vs-dark',
-            options: {
-              fontSize: 14,
-              wordWrap: 'on',
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              automaticLayout: true
-            }
-          });
-          
-          setCodeEditorApp(editorComponent);
-          console.log('Monaco editor initialized');
-        }).catch(error => {
-          console.error('Failed to load Monaco editor:', error);
-        });
-      }
-      
-      console.log('Opened code editor tab:', newTab);
-    } catch (error) {
-      console.error('Error opening code editor:', error);
-    }
-  };
-
   const handleTabSwitch = (tabId: string) => {
     if (!appRef.current?.room) return;
     
@@ -217,15 +161,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     
     try {
       setActiveTabId(tabId);
-      
-      if (tab.type === 'code-editor') {
-        // Handle switching to code editor
-        console.log('Switched to code editor tab');
-      } else {
-        // Use setScenePath for regular whiteboard scenes
-        appRef.current.room.setScenePath(tab.scenePath);
-      }
-      
+      // Use setScenePath for more reliable scene switching
+      appRef.current.room.setScenePath(tab.scenePath);
       console.log('Switched to tab:', tab);
     } catch (error) {
       console.error('Error switching tab:', error);
@@ -239,13 +176,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       const tabToClose = tabs.find(t => t.id === tabId);
       if (!tabToClose) return;
       
-      if (tabToClose.type === 'code-editor') {
-        // Clean up code editor
-        setCodeEditorApp(null);
-      } else {
-        // Remove the specific scene using removeScenes
-        appRef.current.room.removeScenes(tabToClose.scenePath);
-      }
+      // Remove the specific scene using removeScenes
+      appRef.current.room.removeScenes(tabToClose.scenePath);
       
       // Update tabs state
       const newTabs = tabs.filter(t => t.id !== tabId);
@@ -354,8 +286,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   };
 
   const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
-  const activeTab = tabs.find(t => t.id === activeTabId);
-  const isCodeEditorActive = activeTab?.type === 'code-editor';
 
   if (!roomUuid || !roomToken) {
     return (
@@ -379,7 +309,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       <WhiteboardToolbar
         userRole={userRole}
         onNewTab={handleNewTab}
-        onOpenCodeEditor={handleOpenCodeEditor}
         onTabSwitch={handleTabSwitch}
         onTabClose={handleTabClose}
         onColorChange={handleColorChange}
@@ -396,34 +325,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         activeTabId={activeTabId}
       />
       
-      {/* Main Content Area */}
-      <div className="flex-1 relative">
-        {/* Whiteboard Canvas - Hidden when code editor is active */}
-        <div 
-          ref={whiteboardRef} 
-          className={`absolute inset-0 w-full h-full bg-white ${isCodeEditorActive ? 'hidden' : 'block'}`}
-          style={{ minWidth: '400px', minHeight: '300px' }}
-        />
-        
-        {/* Code Editor Overlay - Shown when code editor tab is active */}
-        {isCodeEditorActive && (
-          <div 
-            ref={codeEditorRef}
-            className="absolute inset-0 w-full h-full bg-gray-900"
-          >
-            {codeEditorApp ? (
-              codeEditorApp
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-                  <p className="text-white">Loading Code Editor...</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Whiteboard Canvas */}
+      <div 
+        ref={whiteboardRef} 
+        className="flex-1 w-full bg-white" 
+        style={{ width: '100%', height: '100%', minWidth: '400px', minHeight: '300px' }}
+      />
     </div>
   );
 };

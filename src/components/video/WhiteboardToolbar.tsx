@@ -18,8 +18,7 @@ import {
   List,
   ListOrdered,
   Users,
-  LogOut,
-  Code
+  LogOut
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,7 +35,6 @@ import {
 interface WhiteboardToolbarProps {
   userRole: 'tutor' | 'student';
   onNewTab?: () => void;
-  onOpenCodeEditor?: () => void;
   onTabSwitch?: (tabId: string) => void;
   onTabClose?: (tabId: string) => void;
   onColorChange?: (color: string) => void;
@@ -49,14 +47,13 @@ interface WhiteboardToolbarProps {
   currentColor?: string;
   currentFont?: string;
   currentFontSize?: number;
-  tabs?: Array<{ id: string; name: string; type: 'main' | 'document' | 'code-editor' }>;
+  tabs?: Array<{ id: string; name: string; type: 'main' | 'document' }>;
   activeTabId?: string;
 }
 
 const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
   userRole,
   onNewTab,
-  onOpenCodeEditor,
   onTabSwitch,
   onTabClose,
   onColorChange,
@@ -101,18 +98,6 @@ const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
     return null;
   }
 
-  const getTabIcon = (tabType: string) => {
-    switch (tabType) {
-      case 'main':
-        return <Home className="h-4 w-4" />;
-      case 'code-editor':
-        return <Code className="h-4 w-4" />;
-      case 'document':
-      default:
-        return <FileText className="h-4 w-4" />;
-    }
-  };
-
   return (
     <div className="bg-gray-800 text-white border-b border-gray-700 flex items-center justify-between px-4 py-2 min-h-[60px]">
       {/* Left Side - Tabs and New Tab Button */}
@@ -129,7 +114,11 @@ const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
               }`}
               onClick={() => onTabSwitch?.(tab.id)}
             >
-              {getTabIcon(tab.type)}
+              {tab.type === 'main' ? (
+                <Home className="h-4 w-4" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
               <span className="text-sm font-medium">{tab.name}</span>
               {tab.id !== 'main' && (
                 <button
@@ -164,13 +153,6 @@ const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
             >
               <FileText className="h-4 w-4 mr-2" />
               New Whiteboard
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={onOpenCodeEditor}
-              className="text-white hover:bg-gray-700"
-            >
-              <Code className="h-4 w-4 mr-2" />
-              Code Editor
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
