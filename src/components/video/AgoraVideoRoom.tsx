@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -12,11 +11,23 @@ import {
 } from 'agora-rtc-react';
 import VideoRoomHeader from './VideoRoomHeader';
 import VideoPanel from './VideoPanel';
-import EnhancedVideoControls from './EnhancedVideoControls';
 import AgoraChatPanel from './AgoraChatPanel';
 import FastboardWhiteboard from './FastboardWhiteboard';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Users, Presentation } from 'lucide-react';
+import { 
+  MessageSquare, 
+  Users, 
+  Presentation,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  PhoneOff,
+  Monitor,
+  MonitorOff,
+  Circle,
+  Square
+} from 'lucide-react';
 
 interface AgoraVideoRoomProps {
   appId: string;
@@ -138,6 +149,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
         onLeave={handleLeave}
         participantCount={totalParticipants}
         userRole={userRole}
+        isRecording={isRecording}
       />
       
       <div className="flex-1 flex overflow-hidden">
@@ -180,24 +192,53 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             )}
           </div>
 
-          {/* Controls */}
+          {/* Unified Controls */}
           <div className="bg-gray-800 p-4">
-            <EnhancedVideoControls
-              isAudioEnabled={micOn}
-              isVideoEnabled={cameraOn}
-              isScreenSharing={isScreenSharing}
-              isRecording={isRecording}
-              userRole={userRole}
-              onToggleAudio={toggleMic}
-              onToggleVideo={toggleCamera}
-              onToggleScreenShare={toggleScreenShare}
-              onToggleRecording={toggleRecording}
-              onManageParticipants={toggleParticipants}
-              onLeave={handleLeave}
-            />
-            
-            {/* Additional controls */}
-            <div className="flex justify-center gap-2 mt-2">
+            <div className="flex justify-center items-center gap-3">
+              {/* Basic Controls */}
+              <Button
+                variant={micOn ? "default" : "destructive"}
+                size="lg"
+                onClick={toggleMic}
+                className="rounded-full w-12 h-12 p-0"
+              >
+                {micOn ? (
+                  <Mic className="h-5 w-5" />
+                ) : (
+                  <MicOff className="h-5 w-5" />
+                )}
+              </Button>
+
+              <Button
+                variant={cameraOn ? "default" : "destructive"}
+                size="lg"
+                onClick={toggleCamera}
+                className="rounded-full w-12 h-12 p-0"
+              >
+                {cameraOn ? (
+                  <Video className="h-5 w-5" />
+                ) : (
+                  <VideoOff className="h-5 w-5" />
+                )}
+              </Button>
+
+              {/* Screen Share */}
+              <Button
+                variant={isScreenSharing ? "default" : "ghost"}
+                size="lg"
+                onClick={toggleScreenShare}
+                className="rounded-full w-12 h-12 p-0 text-white hover:text-gray-300"
+              >
+                {isScreenSharing ? (
+                  <MonitorOff className="h-5 w-5" />
+                ) : (
+                  <Monitor className="h-5 w-5" />
+                )}
+              </Button>
+
+              <div className="w-px h-8 bg-gray-600 mx-2" />
+
+              {/* Whiteboard */}
               <Button
                 variant={whiteboardVisible ? "default" : "outline"}
                 size="sm"
@@ -207,6 +248,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 Whiteboard
               </Button>
               
+              {/* Chat */}
               <Button
                 variant={chatOpen ? "default" : "outline"}
                 size="sm"
@@ -216,6 +258,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 Chat
               </Button>
               
+              {/* Participants */}
               <Button
                 variant={participantsOpen ? "default" : "outline"}
                 size="sm"
@@ -223,6 +266,39 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               >
                 <Users className="h-4 w-4 mr-2" />
                 Participants ({totalParticipants})
+              </Button>
+
+              {/* Tutor-only Controls */}
+              {userRole === 'tutor' && (
+                <>
+                  <div className="w-px h-8 bg-gray-600 mx-2" />
+                  
+                  {/* Recording */}
+                  <Button
+                    variant={isRecording ? "destructive" : "ghost"}
+                    size="lg"
+                    onClick={toggleRecording}
+                    className="rounded-full w-12 h-12 p-0"
+                  >
+                    {isRecording ? (
+                      <Square className="h-5 w-5" />
+                    ) : (
+                      <Circle className="h-5 w-5" />
+                    )}
+                  </Button>
+                </>
+              )}
+
+              <div className="w-px h-8 bg-gray-600 mx-2" />
+
+              {/* Leave Button */}
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={handleLeave}
+                className="rounded-full w-12 h-12 p-0"
+              >
+                <PhoneOff className="h-5 w-5" />
               </Button>
             </div>
           </div>
