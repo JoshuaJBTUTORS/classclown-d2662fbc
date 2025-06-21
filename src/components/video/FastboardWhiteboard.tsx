@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { WhiteWebSdk, Room, RoomPhase } from 'white-web-sdk';
 
 interface FastboardWhiteboardProps {
@@ -25,22 +25,47 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const [isDomReady, setIsDomReady] = useState(false);
   const roomRef = useRef<Room | null>(null);
   const initAttemptRef = useRef(0);
+  const domReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Ref callback to detect when DOM element is ready
-  const whiteboardRefCallback = useCallback((node: HTMLDivElement | null) => {
-    whiteboardRef.current = node;
-    if (node) {
-      console.log('FastboardWhiteboard: DOM element is now ready');
+  // Use useLayoutEffect to check DOM readiness after layout but before paint
+  useLayoutEffect(() => {
+    console.log('FastboardWhiteboard: useLayoutEffect - checking DOM readiness');
+    
+    if (whiteboardRef.current) {
+      console.log('FastboardWhiteboard: DOM element found in useLayoutEffect');
       setIsDomReady(true);
+      if (domReadyTimeoutRef.current) {
+        clearTimeout(domReadyTimeoutRef.current);
+        domReadyTimeoutRef.current = null;
+      }
     } else {
-      setIsDomReady(false);
+      console.log('FastboardWhiteboard: DOM element not ready in useLayoutEffect, setting up timeout');
+      
+      // Set a timeout to force initialization or show error if DOM isn't ready
+      domReadyTimeoutRef.current = setTimeout(() => {
+        console.log('FastboardWhiteboard: DOM readiness timeout - checking one more time');
+        if (whiteboardRef.current) {
+          console.log('FastboardWhiteboard: DOM element found after timeout');
+          setIsDomReady(true);
+        } else {
+          console.error('FastboardWhiteboard: DOM element still not ready after timeout');
+          setError('Whiteboard container failed to mount properly');
+          setIsLoading(false);
+        }
+      }, 2000); // 2 second timeout
     }
-  }, []);
 
-  // Separate effect to wait for DOM readiness
+    return () => {
+      if (domReadyTimeoutRef.current) {
+        clearTimeout(domReadyTimeoutRef.current);
+      }
+    };
+  }, []); // Run only once after mount
+
+  // Effect to initialize whiteboard once DOM is ready
   useEffect(() => {
     if (!isDomReady) {
-      console.log('FastboardWhiteboard: Waiting for DOM element to be ready...');
+      console.log('FastboardWhiteboard: DOM not ready yet, waiting...');
       return;
     }
 
@@ -58,9 +83,10 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       console.log(`FastboardWhiteboard: Initialization attempt ${initAttemptRef.current}/${maxAttempts}`);
 
       try {
-        // Double-check DOM element is still available
+        // Final check - ensure DOM element is still available
         if (!whiteboardRef.current) {
-          throw new Error('Whiteboard container element not found');
+          console.error('FastboardWhiteboard: DOM element disappeared during initialization');
+          throw new Error('Whiteboard container element not found during initialization');
         }
 
         console.log('FastboardWhiteboard: Initializing whiteboard with:', { 
@@ -68,7 +94,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           appIdentifier: appIdentifier.substring(0, 8) + '...',
           userId,
           userRole,
-          isReadOnly
+          isReadOnly,
+          domElement: !!whiteboardRef.current
         });
         
         const whiteWebSdk = new WhiteWebSdk({
@@ -85,9 +112,9 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
         roomRef.current = room;
 
-        // Ensure DOM element is still available before binding
+        // Final check before binding
         if (!whiteboardRef.current) {
-          throw new Error('Whiteboard container became unavailable during initialization');
+          throw new Error('Whiteboard container became unavailable during room join');
         }
 
         room.bindHtmlElement(whiteboardRef.current);
@@ -100,13 +127,15 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
         setError(null);
         setIsLoading(false);
-        initAttemptRef.current = 0; // Reset attempt counter on success
+        initAttemptRef.current = 0;
         console.log('FastboardWhiteboard: Whiteboard initialized successfully');
       } catch (error) {
         console.error(`FastboardWhiteboard: Initialization attempt ${initAttemptRef.current} failed:`, error);
         
-        // Retry logic
-        if (initAttemptRef.current < maxAttempts && error instanceof Error && error.message.includes('container')) {
+        // Retry logic for container-related errors only
+        if (initAttemptRef.current < maxAttempts && 
+            error instanceof Error && 
+            (error.message.includes('container') || error.message.includes('element'))) {
           console.log(`FastboardWhiteboard: Retrying in 1 second... (attempt ${initAttemptRef.current + 1}/${maxAttempts})`);
           setTimeout(() => {
             initWhiteboard();
@@ -116,11 +145,11 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
         setError(error instanceof Error ? error.message : 'Failed to initialize whiteboard');
         setIsLoading(false);
-        initAttemptRef.current = 0; // Reset attempt counter
+        initAttemptRef.current = 0;
       }
     };
 
-    // Small delay to ensure DOM is fully ready
+    // Small delay to ensure everything is ready
     const timeoutId = setTimeout(() => {
       initWhiteboard();
     }, 100);
@@ -156,6 +185,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
             <p>Room Token: {roomToken ? 'Present' : 'Missing'}</p>
             <p>App ID: {appIdentifier ? 'Present' : 'Missing'}</p>
             <p>DOM Ready: {isDomReady ? 'Yes' : 'No'}</p>
+            <p>DOM Element: {whiteboardRef.current ? 'Present' : 'Missing'}</p>
             <p>Init Attempts: {initAttemptRef.current}</p>
           </div>
         </div>
@@ -169,8 +199,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         <div className="text-center p-6">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
           <p className="text-gray-600">
-            {!isDomReady ? 'Preparing whiteboard...' : 'Loading whiteboard...'}
+            {!isDomReady ? 'Preparing whiteboard container...' : 'Connecting to whiteboard...'}
           </p>
+          <div className="mt-2 text-xs text-gray-500">
+            <p>DOM Ready: {isDomReady ? 'Yes' : 'No'}</p>
+            <p>DOM Element: {whiteboardRef.current ? 'Present' : 'Missing'}</p>
+          </div>
         </div>
       </div>
     );
@@ -178,7 +212,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
   return (
     <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div ref={whiteboardRefCallback} className="w-full h-full" />
+      <div ref={whiteboardRef} className="w-full h-full" />
     </div>
   );
 };
