@@ -68,14 +68,14 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
                 <div className="flex-1">
                   <Label htmlFor="agora" className="flex items-center gap-2 font-medium cursor-pointer">
                     <Users className="h-4 w-4 text-purple-500" />
-                    Agora.io (External)
+                    Agora.io
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
-                    External high-quality video conferencing with interactive whiteboard and advanced features. 
-                    Opens in a new tab with your custom Agora application.
+                    High-quality video conferencing with advanced features. 
+                    Ideal for larger group sessions and professional meetings.
                   </p>
-                  <div className="mt-2 text-xs text-purple-600">
-                    ✓ Custom video app ✓ Interactive whiteboard ✓ Advanced controls ✓ External integration
+                  <div className="mt-2 text-xs text-blue-600">
+                    ✓ HD video quality ✓ Recording capabilities ✓ Advanced controls
                   </div>
                 </div>
               </div>
@@ -94,7 +94,7 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
                 Creating...
               </>
             ) : (
-              `Create ${selectedProvider === 'lesson_space' ? 'Lesson Space' : 'External Agora'} Room`
+              `Create ${selectedProvider === 'lesson_space' ? 'Lesson Space' : 'Agora'} Room`
             )}
           </Button>
         </div>

@@ -18,9 +18,10 @@ interface VideoConferenceLinkProps {
   lessonId?: string;
   hasLessonSpace?: boolean;
   spaceId?: string;
-  // External Agora-specific props
+  // Agora-specific props
   agoraChannelName?: string | null;
-  isExternalAgora?: boolean;
+  agoraToken?: string | null;
+  agoraAppId?: string;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ 
@@ -33,23 +34,24 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   lessonId,
   hasLessonSpace = false,
   spaceId,
-  // External Agora props
+  // Agora props
   agoraChannelName,
-  isExternalAgora = false
+  agoraToken,
+  agoraAppId
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
   const navigate = useNavigate();
 
-  // Check if we have any video conference capability - updated for external Agora
-  const hasExternalAgoraRoom = isExternalAgora && agoraChannelName && link;
-  const hasVideoConference = link || hasLessonSpace || hasExternalAgoraRoom;
+  // Check if we have any video conference capability
+  const hasAgoraRoom = provider === 'agora' && agoraChannelName && (agoraToken || lessonId);
+  const hasVideoConference = link || hasLessonSpace || hasAgoraRoom;
 
   console.log('VideoConferenceLink props:', {
     provider,
     agoraChannelName,
-    hasExternalAgoraRoom,
-    isExternalAgora,
+    agoraToken,
+    hasAgoraRoom,
     hasVideoConference,
     lessonId
   });
@@ -73,19 +75,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       case 'zoom':
         return 'Zoom';
       case 'agora':
-        return 'Agora Video Room (External)';
+        return 'Agora Video Room';
       default:
         return 'Video Conference';
     }
   };
 
   const getJoinButtonText = () => {
-    if (provider === 'agora') {
-      return userRole === 'tutor' 
-        ? (isGroupLesson ? 'Start External Group Room' : 'Start External Room')
-        : 'Join External Room';
-    }
-    
     if (userRole === 'tutor') {
       return isGroupLesson ? 'Start Group Lesson' : 'Start Lesson';
     }
@@ -116,24 +112,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleJoinLesson = () => {
-    // Handle external Agora rooms - open external app in new tab
-    if (provider === 'agora' && hasExternalAgoraRoom && link) {
-      console.log('Opening external Agora room:', link);
-      
-      // Get user info for URL parameters
-      const userName = userRole === 'tutor' ? 'Tutor' : 'Student';
-      
-      // Append user role and name to the external URL
-      const separator = link.includes('?') ? '&' : '?';
-      const externalUrl = `${link}${separator}userName=${encodeURIComponent(userName)}&role=${userRole}`;
-      
-      window.open(externalUrl, '_blank');
-      toast.success('Opening external Agora video room...');
-      return;
-    }
-
-    // Handle internal Agora rooms differently - navigate to internal video room
-    if (provider === 'agora' && agoraChannelName && lessonId) {
+    // Handle Agora rooms differently - navigate to internal video room
+    if (provider === 'agora' && hasAgoraRoom && lessonId) {
       console.log('Navigating to Agora video room for lesson:', lessonId);
       navigate(`/video-room/${lessonId}`);
       return;
@@ -164,7 +144,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     <Card className={cn("p-4", className)}>
       <div className="flex flex-col space-y-3">
         {/* Main lesson URL section */}
-        {(urlToUse || hasExternalAgoraRoom) && (
+        {(urlToUse || hasAgoraRoom) && (
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -179,7 +159,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                   )}
                   {provider === 'agora' && agoraChannelName && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      Channel: {agoraChannelName} • External App
+                      Channel: {agoraChannelName}
                     </div>
                   )}
                 </div>
@@ -207,8 +187,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                 {getJoinButtonText()}
               </Button>
               
-              {/* Only show copy button for tutors/admins/owners and when we have a URL (not for external Agora) */}
-              {userRole !== 'student' && urlToUse && provider !== 'agora' && (
+              {/* Only show copy button for tutors/admins/owners and when we have a URL */}
+              {userRole !== 'student' && urlToUse && (
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -223,7 +203,6 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               )}
             </div>
 
-            {/* Role-specific information messages */}
             {userRole === 'tutor' && provider === 'lesson_space' && (
               <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
                 <strong>Teacher privileges:</strong> You have full control of the lesson space with leader permissions.
@@ -231,8 +210,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             )}
 
             {userRole === 'tutor' && provider === 'agora' && (
-              <div className="text-xs text-muted-foreground bg-purple-50 p-2 rounded">
-                <strong>Host privileges:</strong> You have full control of the external Agora room with whiteboard access. Opens in new tab.
+              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
+                <strong>Host privileges:</strong> You have full control of the Agora meeting room with whiteboard access.
               </div>
             )}
 
@@ -243,15 +222,15 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             )}
 
             {userRole === 'student' && provider === 'agora' && (
-              <div className="text-xs text-muted-foreground bg-purple-50 p-2 rounded">
-                <strong>Student access:</strong> Click "Join External Room" to open the interactive video classroom in a new tab.
+              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
+                <strong>Student access:</strong> Click "Join Lesson" to enter the interactive video classroom with whiteboard.
               </div>
             )}
           </>
         )}
 
-        {/* Student invite link section - only for Lesson Space */}
-        {showStudentJoinLink && provider === 'lesson_space' && (
+        {/* Student invite link section for tutors/admins */}
+        {showStudentJoinLink && (
           <div className="border-t pt-3">
             <Collapsible open={isStudentLinksOpen} onOpenChange={setIsStudentLinksOpen}>
               <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground">

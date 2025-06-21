@@ -17,8 +17,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgora } from '@/hooks/useAgora';
 import VideoProviderSelector from '@/components/lessons/VideoProviderSelector';
-import { useExternalAgora } from '@/hooks/useExternalAgora';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -64,7 +64,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   } | null>(null);
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
-  const { createExternalRoom, isCreatingRoom: isCreatingExternalRoom } = useExternalAgora();
+  const { createRoom: createAgoraRoom, isCreatingRoom: isCreatingAgoraRoom } = useAgora();
   
   // New state for provider selection
   const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
@@ -355,7 +355,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           toast.success('Lesson Space room created! Room details have been updated.');
         }
       } else if (provider === 'agora') {
-        const result = await createExternalRoom({
+        const result = await createAgoraRoom({
           lessonId: lesson.id,
           title: lesson.title,
           startTime: lesson.start_time,
@@ -373,7 +373,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             await fetchLessonDetails(lesson.id);
           }
           
-          toast.success('External Agora room created! Room details have been updated.');
+          toast.success('Agora room created! Room details have been updated.');
         }
       }
     } catch (error) {
@@ -486,11 +486,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Check if any video conference capability exists - updated to include external Agora
+  // Check if any video conference capability exists - updated to properly detect Agora
   const hasVideoConference = lesson?.video_conference_link || 
                             lesson?.lesson_space_room_url || 
                             lesson?.lesson_space_room_id ||
-                            (lesson?.video_conference_provider === 'agora' && lesson?.agora_channel_name);
+                            (lesson?.agora_channel_name && lesson?.agora_token);
 
   // Map userRole to VideoConferenceLink compatible type
   const getVideoConferenceUserRole = () => {
@@ -501,7 +501,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
 
   // Check if currently creating any type of room
-  const isCurrentlyCreating = isCreatingRoom || isCreatingExternalRoom;
+  const isCurrentlyCreating = isCreatingRoom || isCreatingAgoraRoom;
 
   return (
     <>
@@ -614,7 +614,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* Video Conference Section - Updated to handle both Lesson Space and external Agora */}
+              {/* Video Conference Section - Updated to properly handle Agora */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
@@ -626,9 +626,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   lessonId={lesson.id}
                   hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_room_id)}
                   spaceId={lesson.lesson_space_room_id}
-                  // Agora-specific props for external integration
+                  // Agora-specific props - pass the actual environment values
                   agoraChannelName={lesson.agora_channel_name}
-                  isExternalAgora={lesson.video_conference_provider === 'agora'}
+                  agoraToken={lesson.agora_token}
+                  agoraAppId="AGORA_APP_ID" // This will be replaced in the component
                 />
               ) : (
                 // Only show room creation for tutors, admins, and owners
