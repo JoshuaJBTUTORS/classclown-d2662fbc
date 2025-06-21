@@ -339,7 +339,13 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       );
 
       if (completedTask?.status === 'Finished' || (completedTask?.convertedPercentage === 100 && completedTask?.images)) {
-        console.log('Netless document conversion completed:', completedTask);
+        console.log('✅ Netless document conversion completed successfully:', {
+          taskUuid: completedTask.uuid,
+          status: completedTask.status,
+          convertedPercentage: completedTask.convertedPercentage,
+          imageCount: completedTask.images ? Object.keys(completedTask.images).length : 0,
+          fileName
+        });
         
         // Validate the required fields before attempting insertion
         const hasImages = completedTask.images && Object.keys(completedTask.images).length > 0;
@@ -378,7 +384,11 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         try {
           // Insert the converted document using the raw Netless response
           appRef.current.insertDocs(completedTask);
-          console.log('Document inserted successfully with raw Netless format');
+          console.log('✅ Document inserted successfully into Fastboard whiteboard:', {
+            fileName,
+            taskUuid: completedTask.uuid,
+            imageCount: Object.keys(completedTask.images).length
+          });
         } catch (insertError) {
           console.error('Failed to insert document into Fastboard:', insertError);
           console.error('Data structure that failed:', completedTask);
@@ -391,6 +401,8 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           newMap.delete(completedTask.uuid);
           return newMap;
         });
+        
+        console.log('✅ Document conversion workflow completed successfully for:', fileName);
         
       } else if (completedTask?.status === 'Fail') {
         console.error('Netless document conversion failed:', completedTask.failedReason);

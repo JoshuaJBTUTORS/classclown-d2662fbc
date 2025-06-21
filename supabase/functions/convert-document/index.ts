@@ -67,7 +67,11 @@ serve(async (req) => {
 
     const conversionData = await conversionResponse.json();
     
-    console.log('Netless conversion started:', conversionData);
+    console.log('✅ Netless conversion request submitted successfully:', {
+      taskUuid: conversionData.uuid,
+      status: conversionData.status || 'Waiting',
+      fileName
+    });
 
     // Track conversion in database
     const { error: dbError } = await supabase

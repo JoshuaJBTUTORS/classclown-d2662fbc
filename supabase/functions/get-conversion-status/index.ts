@@ -49,7 +49,13 @@ serve(async (req) => {
     }
 
     const statusData = await statusResponse.json();
-    console.log('Raw Netless response:', statusData);
+    console.log('✅ Successfully retrieved Netless status:', {
+      taskUuid,
+      status: statusData.status,
+      convertedPercentage: statusData.convertedPercentage,
+      hasImages: !!statusData.images,
+      hasPrefix: !!statusData.prefix
+    });
     
     // Return the raw Netless response with minimal transformation
     // The Netless API already provides the correct format for Fastboard

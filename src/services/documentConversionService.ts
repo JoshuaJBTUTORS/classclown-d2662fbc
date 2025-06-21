@@ -41,6 +41,7 @@ export class DocumentConversionService {
       }
 
       if (data?.success) {
+        console.log('✅ Document conversion initiated successfully:', data.taskInfo);
         return data.taskInfo;
       }
 
@@ -60,6 +61,15 @@ export class DocumentConversionService {
       if (error) {
         console.error('Failed to get conversion status:', error);
         return null;
+      }
+
+      if (data?.success) {
+        console.log('✅ Conversion status retrieved successfully:', {
+          taskUuid,
+          status: data.taskInfo.status,
+          percentage: data.taskInfo.convertedPercentage
+        });
+        return data.taskInfo;
       }
 
       return data?.taskInfo || null;
@@ -88,6 +98,22 @@ export class DocumentConversionService {
       }
 
       if (status.status === 'Finished') {
+        console.log('✅ Document conversion completed successfully:', {
+          taskUuid,
+          convertedPercentage: status.convertedPercentage,
+          hasImages: !!status.images,
+          hasPrefix: !!status.prefix
+        });
+        return status;
+      }
+
+      // Check for early completion (100% with data available)
+      if (status.convertedPercentage === 100 && status.images) {
+        console.log('✅ Document conversion completed early (100% with data):', {
+          taskUuid,
+          imageCount: Object.keys(status.images).length,
+          hasPrefix: !!status.prefix
+        });
         return status;
       }
 
