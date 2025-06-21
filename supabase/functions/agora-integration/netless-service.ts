@@ -89,28 +89,66 @@ export async function generateNetlessRoomToken(sdkToken: string, roomUuid: strin
       throw new Error(`Failed to generate room token: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    // Handle both JSON and direct token response formats
+    // Handle response according to official Agora documentation
     const contentType = response.headers.get('content-type');
     console.log('[NETLESS] Response content type:', contentType);
     
     let token;
     if (contentType && contentType.includes('application/json')) {
-      // JSON response format
+      // JSON response format - token is in the 'body' field according to docs
       const result = await response.json();
-      console.log('[NETLESS] JSON token generation response received');
-      token = result.token;
+      console.log('[NETLESS] JSON response received:', {
+        hasBody: !!result.body,
+        hasToken: !!result.token,
+        keys: Object.keys(result),
+        bodyType: typeof result.body
+      });
+      
+      // According to Agora docs, the token is in the 'body' field
+      token = result.body || result;
+      
+      // Handle case where body might be an object with the token
+      if (typeof token === 'object' && token !== null) {
+        // Look for token-like strings in the object
+        const tokenKeys = Object.keys(token).filter(key => 
+          typeof token[key] === 'string' && token[key].startsWith('NETLESSROOM_')
+        );
+        if (tokenKeys.length > 0) {
+          token = token[tokenKeys[0]];
+        } else {
+          // Take the first string value that looks like a token
+          const stringValues = Object.values(token).filter(val => 
+            typeof val === 'string' && val.length > 10
+          );
+          if (stringValues.length > 0) {
+            token = stringValues[0];
+          }
+        }
+      }
     } else {
       // Direct token response format
       token = await response.text();
       console.log('[NETLESS] Direct token response received');
     }
     
+    console.log('[NETLESS] Extracted token:', {
+      tokenType: typeof token,
+      tokenLength: token ? token.length : 0,
+      startsWithNetless: token ? token.startsWith('NETLESSROOM_') : false,
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'null/undefined'
+    });
+    
     if (!token || token.trim() === '') {
-      console.error('[NETLESS] Empty or null token received');
+      console.error('[NETLESS] Empty or null token extracted');
       throw new Error('Empty token returned from Netless API');
     }
 
     // Validate token format (should start with NETLESSROOM_)
+    if (typeof token !== 'string') {
+      console.error('[NETLESS] Token is not a string:', typeof token, token);
+      throw new Error('Invalid token format: expected string');
+    }
+
     if (!token.startsWith('NETLESSROOM_')) {
       console.error('[NETLESS] Invalid token format received:', token.substring(0, 50) + '...');
       throw new Error('Invalid token format returned from Netless API');
