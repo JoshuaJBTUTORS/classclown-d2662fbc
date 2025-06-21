@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -13,6 +14,7 @@ import VideoRoomHeader from './VideoRoomHeader';
 import VerticalVideoGrid from './VerticalVideoGrid';
 import AgoraChatPanel from './AgoraChatPanel';
 import FastboardWhiteboard from './FastboardWhiteboard';
+import { useScreenShare } from '@/hooks/useScreenShare';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, 
@@ -64,9 +66,17 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [cameraOn, setCameraOn] = useState(userRole === 'tutor');
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
+
+  // Screen sharing hook
+  const { 
+    isScreenSharing, 
+    isScreenShareLoading, 
+    startScreenShare, 
+    stopScreenShare,
+    getScreenTracks
+  } = useScreenShare();
 
   // Validate UID to ensure it's a valid number
   const validUid = Math.max(1, Math.floor(Math.abs(uid))) || Math.floor(Math.random() * 1000000) + 1000;
@@ -78,13 +88,23 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const remoteUsers = useRemoteUsers();
   const { audioTracks } = useRemoteAudioTracks(remoteUsers);
 
+  // Get screen tracks
+  const { screenVideoTrack, screenAudioTrack } = getScreenTracks();
+
   // Only publish tracks if we're joined and tracks are ready
   const tracksToPublish = [];
   if (isJoined && localMicrophoneTrack && micOn) {
     tracksToPublish.push(localMicrophoneTrack);
   }
-  if (isJoined && localCameraTrack && cameraOn) {
+  if (isJoined && localCameraTrack && cameraOn && !isScreenSharing) {
+    // Don't publish camera track when screen sharing
     tracksToPublish.push(localCameraTrack);
+  }
+  if (isJoined && screenVideoTrack && isScreenSharing) {
+    tracksToPublish.push(screenVideoTrack);
+  }
+  if (isJoined && screenAudioTrack && isScreenSharing) {
+    tracksToPublish.push(screenAudioTrack);
   }
 
   usePublish(tracksToPublish);
@@ -128,6 +148,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       console.log('Leaving Agora room...');
       setCalling(false);
       setIsJoined(false);
+      // Clean up screen share when leaving
+      if (isScreenSharing) {
+        stopScreenShare();
+      }
     };
   }, []);
 
@@ -135,12 +159,22 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const toggleCamera = () => setCameraOn(prev => !prev);
   const toggleChat = () => setChatOpen(prev => !prev);
   const toggleParticipants = () => setParticipantsOpen(prev => !prev);
-  const toggleScreenShare = () => setIsScreenSharing(prev => !prev);
   const toggleRecording = () => setIsRecording(prev => !prev);
+
+  const handleScreenShare = async () => {
+    if (isScreenSharing) {
+      await stopScreenShare();
+    } else {
+      await startScreenShare();
+    }
+  };
 
   const handleLeave = () => {
     setCalling(false);
     setIsJoined(false);
+    if (isScreenSharing) {
+      stopScreenShare();
+    }
     onLeave();
   };
 
@@ -204,6 +238,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 size="lg"
                 onClick={toggleCamera}
                 className="rounded-full w-12 h-12 p-0"
+                disabled={isScreenSharing}
               >
                 {cameraOn ? (
                   <Video className="h-5 w-5" />
@@ -216,7 +251,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               <Button
                 variant={isScreenSharing ? "default" : "ghost"}
                 size="lg"
-                onClick={toggleScreenShare}
+                onClick={handleScreenShare}
+                disabled={isScreenShareLoading}
                 className="rounded-full w-12 h-12 p-0 text-gray-600 hover:text-gray-900"
               >
                 {isScreenSharing ? (
@@ -293,12 +329,13 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           </div>
           <div className="flex-1">
             <VerticalVideoGrid
-              localCameraTrack={localCameraTrack}
+              localCameraTrack={isScreenSharing ? screenVideoTrack : localCameraTrack}
               remoteUsers={remoteUsers}
               isAudioEnabled={micOn}
-              isVideoEnabled={cameraOn}
+              isVideoEnabled={isScreenSharing ? true : cameraOn}
               userRole={userRole}
               expectedStudents={expectedStudents}
+              isScreenSharing={isScreenSharing}
             />
           </div>
         </div>
