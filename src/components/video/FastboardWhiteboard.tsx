@@ -303,43 +303,76 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
+  const getFileTypeFromUrl = (url: string, fileName: string): 'pdf' | 'office' | 'media' | 'unknown' => {
+    const extension = fileName.toLowerCase().split('.').pop() || '';
+    
+    if (extension === 'pdf') return 'pdf';
+    if (['ppt', 'pptx', 'doc', 'docx'].includes(extension)) return 'office';
+    if (['mp3', 'mp4', 'mov', 'avi'].includes(extension)) return 'media';
+    
+    return 'unknown';
+  };
+
   const handleDocumentInsert = (documentUrl: string, fileName: string) => {
-    if (!appRef.current?.room) return;
+    if (!appRef.current) return;
     
     try {
       console.log('Inserting document:', documentUrl, fileName);
       
-      // For documents, we'll create a new tab and display the document
-      // Note: Full document conversion would require additional Netless services
-      // For now, we'll insert as a link or placeholder
+      const fileType = getFileTypeFromUrl(documentUrl, fileName);
       
-      const newTabId = `doc${tabs.length}`;
-      const sceneName = `Document-${fileName}`;
-      const scenePath = `/${sceneName}`;
+      switch (fileType) {
+        case 'media':
+          // Use insertMedia for media files
+          appRef.current.insertMedia(fileName, documentUrl);
+          console.log('Media document inserted successfully');
+          break;
+          
+        case 'pdf':
+        case 'office':
+          // For PDF and Office docs, create a simple document structure
+          // Since we don't have conversion service, create a basic docs structure
+          const docsData = {
+            uuid: `doc_${Date.now()}`,
+            type: 'static',
+            status: 'Finished',
+            progress: {
+              totalPageSize: 1,
+              convertedPageSize: 1,
+              convertedPercentage: 100,
+              convertedFileList: [
+                {
+                  width: 800,
+                  height: 600,
+                  conversionFileUrl: documentUrl,
+                  preview: documentUrl
+                }
+              ]
+            }
+          };
+          
+          appRef.current.insertDocs(fileName, docsData);
+          console.log('Document inserted successfully');
+          break;
+          
+        default:
+          // Fallback: try to insert as media first, then as image
+          try {
+            appRef.current.insertMedia(fileName, documentUrl);
+            console.log('Document inserted as media');
+          } catch (mediaError) {
+            console.warn('Failed to insert as media, trying as image:', mediaError);
+            appRef.current.insertImage(documentUrl);
+            console.log('Document inserted as image');
+          }
+          break;
+      }
       
-      // Create new scene
-      appRef.current.room.putScenes('/', [{ 
-        name: sceneName,
-        ppt: undefined 
-      }]);
-      
-      const newTab: WhiteboardTab = {
-        id: newTabId,
-        name: fileName,
-        type: 'document',
-        scenePath
-      };
-      
-      setTabs(prev => [...prev, newTab]);
-      setActiveTabId(newTabId);
-      
-      // Switch to the new scene
-      appRef.current.room.setScenePath(scenePath);
-      
-      // Add document link or placeholder text
-      console.log('Document tab created:', newTab);
     } catch (error) {
       console.error('Error inserting document:', error);
+      
+      // Final fallback: show error message
+      console.error('Failed to insert document. URL:', documentUrl, 'Error:', error.message);
     }
   };
 
