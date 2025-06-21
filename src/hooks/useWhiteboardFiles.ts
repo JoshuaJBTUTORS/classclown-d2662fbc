@@ -30,8 +30,14 @@ export const useWhiteboardFiles = () => {
 
     const validTypes = fileType === 'image' ? validImageTypes : validDocTypes;
     
-    if (!validTypes.includes(file.type)) {
-      toast.error(`Invalid ${fileType} file type`);
+    // Check file extension as fallback for MIME type validation
+    const fileExtension = file.name.toLowerCase().split('.').pop();
+    const validImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+    const validDocExtensions = ['pdf', 'ppt', 'pptx', 'doc', 'docx'];
+    const validExtensions = fileType === 'image' ? validImageExtensions : validDocExtensions;
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension || '')) {
+      toast.error(`Invalid ${fileType} file type. Please select a valid file.`);
       return null;
     }
 
@@ -48,8 +54,15 @@ export const useWhiteboardFiles = () => {
       const reader = new FileReader();
       const fileContent = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(file);
+      });
+
+      console.log('Uploading file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        fileType
       });
 
       // Upload via edge function
@@ -64,7 +77,7 @@ export const useWhiteboardFiles = () => {
 
       if (error) {
         console.error('Upload error:', error);
-        toast.error('Failed to upload file');
+        toast.error(`Failed to upload file: ${error.message}`);
         return null;
       }
 
@@ -76,7 +89,7 @@ export const useWhiteboardFiles = () => {
       throw new Error(data?.error || 'Upload failed');
     } catch (error) {
       console.error('File upload error:', error);
-      toast.error('Failed to upload file');
+      toast.error(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     } finally {
       setIsUploading(false);
