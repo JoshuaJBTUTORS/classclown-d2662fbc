@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
 import { useAuth } from '@/contexts/AuthContext';
 import VideoProviderSelector from '@/components/lessons/VideoProviderSelector';
+import { useExternalAgora } from '@/hooks/useExternalAgora';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -63,6 +64,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   } | null>(null);
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
+  const { createExternalRoom, isCreatingRoom: isCreatingExternalRoom } = useExternalAgora();
   
   // New state for provider selection
   const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
@@ -325,7 +327,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     setIsProviderSelectorOpen(true);
   };
 
-  const handleProviderSelected = async (provider: 'lesson_space') => {
+  const handleProviderSelected = async (provider: 'lesson_space' | 'agora') => {
     if (!lesson) return;
     
     setIsProviderSelectorOpen(false);
@@ -351,6 +353,27 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           }
           
           toast.success('Lesson Space room created! Room details have been updated.');
+        }
+      } else if (provider === 'agora') {
+        const result = await createExternalRoom({
+          lessonId: lesson.id,
+          title: lesson.title,
+          startTime: lesson.start_time,
+          duration: lesson.end_time ? 
+            Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60)) : 
+            60
+        });
+
+        if (result) {
+          if (isRecurringInstanceId(lesson.id)) {
+            const parts = lesson.id.split('-');
+            const baseId = parts.slice(0, 5).join('-');
+            await fetchRecurringInstance(baseId, lesson.id);
+          } else {
+            await fetchLessonDetails(lesson.id);
+          }
+          
+          toast.success('External Agora room created! Room details have been updated.');
         }
       }
     } catch (error) {
@@ -463,10 +486,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Check if any video conference capability exists - simplified without Agora
+  // Check if any video conference capability exists - updated to include external Agora
   const hasVideoConference = lesson?.video_conference_link || 
                             lesson?.lesson_space_room_url || 
-                            lesson?.lesson_space_room_id;
+                            lesson?.lesson_space_room_id ||
+                            (lesson?.video_conference_provider === 'agora' && lesson?.agora_channel_name);
 
   // Map userRole to VideoConferenceLink compatible type
   const getVideoConferenceUserRole = () => {
@@ -477,7 +501,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
 
   // Check if currently creating any type of room
-  const isCurrentlyCreating = isCreatingRoom;
+  const isCurrentlyCreating = isCreatingRoom || isCreatingExternalRoom;
 
   return (
     <>
@@ -590,7 +614,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* Video Conference Section - Updated to only handle Lesson Space and external links */}
+              {/* Video Conference Section - Updated to handle both Lesson Space and external Agora */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
@@ -602,6 +626,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   lessonId={lesson.id}
                   hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_room_id)}
                   spaceId={lesson.lesson_space_room_id}
+                  // Agora-specific props for external integration
+                  agoraChannelName={lesson.agora_channel_name}
+                  isExternalAgora={lesson.video_conference_provider === 'agora'}
                 />
               ) : (
                 // Only show room creation for tutors, admins, and owners

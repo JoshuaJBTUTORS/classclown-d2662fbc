@@ -13,13 +13,15 @@ export interface Lesson {
   recurrence_interval?: string | null;
   recurrence_day?: string | null;
   recurrence_end_date?: string | null;
-  // Enhanced video conference fields (simplified - external links only)
+  // Enhanced video conference fields
   lesson_space_room_id?: string | null;
   lesson_space_room_url?: string | null;
   lesson_space_space_id?: string | null;
   video_conference_provider?: string | null;
   video_conference_link?: string | null;
   lesson_space_session_id?: string | null;
+  // Agora fields for external integration
+  agora_channel_name?: string | null;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
