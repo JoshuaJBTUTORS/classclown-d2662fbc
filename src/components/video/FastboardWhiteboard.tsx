@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 import WhiteboardToolbar from './WhiteboardToolbar';
@@ -313,47 +312,84 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
-  // Transform Netless response to Fastboard format
+  // Enhanced transformation to match Fastboard's expected format
   const transformNetlessToFastboard = (netlessTask: ConversionTaskInfo, fileName: string) => {
     try {
+      console.log('🔄 Transforming Netless response for Fastboard:', {
+        taskUuid: netlessTask.uuid,
+        type: netlessTask.type,
+        status: netlessTask.status,
+        hasImages: !!netlessTask.images,
+        hasPrefix: !!netlessTask.prefix,
+        convertedPercentage: netlessTask.convertedPercentage
+      });
+
+      // Validate required data
       if (!netlessTask.images || !netlessTask.prefix) {
-        throw new Error('Missing required images or prefix data');
+        throw new Error('Missing required images or prefix data from Netless response');
       }
 
-      console.log('Processing Netless images:', netlessTask.images);
+      const imageEntries = Object.entries(netlessTask.images);
+      console.log('📄 Processing pages:', {
+        totalPages: imageEntries.length,
+        samplePage: imageEntries[0] ? `Page ${imageEntries[0][0]}` : 'none'
+      });
 
-      // Convert the images object to convertedFileList array
-      const convertedFileList = Object.keys(netlessTask.images)
-        .sort((a, b) => parseInt(a) - parseInt(b)) // Sort by page number
-        .map((pageNumber) => {
-          const imageData = netlessTask.images![pageNumber] as string | NetlessImageData;
+      // Transform images to Fastboard format
+      const convertedFileList = imageEntries
+        .sort(([a], [b]) => parseInt(a) - parseInt(b)) // Sort by page number
+        .map(([pageNumber, imageData]) => {
+          console.log(`📑 Processing page ${pageNumber}:`, typeof imageData, imageData);
           
-          // Handle both object format {width, height, url} and direct URL string
+          let imageUrl: string;
+          let width = 1280;
+          let height = 720;
+          
+          // Handle different image data formats
           if (typeof imageData === 'string') {
-            return {
-              width: 1280, // Default dimensions for string URLs
-              height: 720,
-              conversionFileUrl: imageData,
-              preview: imageData
-            };
-          } else if (imageData && typeof imageData === 'object' && (imageData as NetlessImageData).url) {
+            imageUrl = imageData;
+          } else if (imageData && typeof imageData === 'object') {
             const typedImageData = imageData as NetlessImageData;
-            return {
-              width: typedImageData.width || 1280,
-              height: typedImageData.height || 720,
-              conversionFileUrl: typedImageData.url, // Extract the URL string
-              preview: typedImageData.url // Extract the URL string for preview too
-            };
+            if (typedImageData.url) {
+              imageUrl = typedImageData.url;
+              width = typedImageData.width || width;
+              height = typedImageData.height || height;
+            } else {
+              throw new Error(`Invalid image data structure for page ${pageNumber}`);
+            }
           } else {
-            console.error('Invalid image data format for page', pageNumber, ':', imageData);
-            throw new Error(`Invalid image data format for page ${pageNumber}`);
+            throw new Error(`Unsupported image data type for page ${pageNumber}: ${typeof imageData}`);
           }
+
+          // Construct full URLs using prefix if needed
+          const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${netlessTask.prefix}${imageUrl}`;
+          
+          console.log(`✅ Page ${pageNumber} processed:`, {
+            width,
+            height,
+            urlLength: fullImageUrl.length,
+            urlPrefix: fullImageUrl.substring(0, 50) + '...'
+          });
+
+          // For static documents, both conversionFileUrl and preview use the same image URL
+          // For dynamic documents, we would need different URLs, but most PDFs are static
+          return {
+            width,
+            height,
+            conversionFileUrl: fullImageUrl,
+            preview: fullImageUrl
+          };
         });
 
-      // Create the Fastboard-compatible response format
+      console.log('📊 Conversion file list created:', {
+        totalPages: convertedFileList.length,
+        firstPageDimensions: convertedFileList[0] ? `${convertedFileList[0].width}x${convertedFileList[0].height}` : 'none'
+      });
+
+      // Create Fastboard-compatible response
       const fastboardResponse = {
         uuid: netlessTask.uuid,
-        type: netlessTask.type || 'static',
+        type: netlessTask.type || 'static', // Default to static for most PDF conversions
         status: netlessTask.status,
         progress: {
           totalPageSize: convertedFileList.length,
@@ -364,17 +400,26 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         }
       };
 
-      console.log('✅ Transformed Netless response to Fastboard format:', {
-        originalImageCount: Object.keys(netlessTask.images).length,
-        transformedPageCount: convertedFileList.length,
-        hasProgress: !!fastboardResponse.progress,
-        hasConvertedFileList: !!fastboardResponse.progress.convertedFileList,
-        sampleConversionFileUrl: convertedFileList[0]?.conversionFileUrl?.substring(0, 50) + '...'
+      console.log('✅ Fastboard response created successfully:', {
+        uuid: fastboardResponse.uuid,
+        type: fastboardResponse.type,
+        status: fastboardResponse.status,
+        totalPages: fastboardResponse.progress.totalPageSize,
+        convertedPercentage: fastboardResponse.progress.convertedPercentage
       });
 
       return fastboardResponse;
     } catch (error) {
-      console.error('Failed to transform Netless response:', error);
+      console.error('❌ Failed to transform Netless response:', error);
+      console.error('📋 Debug info:', {
+        taskUuid: netlessTask.uuid,
+        taskType: netlessTask.type,
+        taskStatus: netlessTask.status,
+        hasImages: !!netlessTask.images,
+        hasPrefix: !!netlessTask.prefix,
+        imagesType: typeof netlessTask.images,
+        prefixType: typeof netlessTask.prefix
+      });
       throw error;
     }
   };
@@ -383,7 +428,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     if (!appRef.current) return;
     
     try {
-      console.log('Starting Netless document conversion workflow:', documentUrl, fileName);
+      console.log('🚀 Starting document conversion workflow:', { documentUrl, fileName, lessonId });
       
       // Start conversion process with Netless
       const taskInfo = await DocumentConversionService.convertDocument(
@@ -393,27 +438,26 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       );
 
       if (!taskInfo) {
-        console.error('Failed to start Netless document conversion');
+        console.error('❌ Failed to start document conversion');
         alert(`Failed to convert document "${fileName}". Please try again.`);
         return;
       }
 
       // Track conversion task
       setConversionTasks(prev => new Map(prev.set(taskInfo.uuid, taskInfo)));
-
-      console.log('Netless document conversion started:', taskInfo);
+      console.log('⏳ Document conversion started:', taskInfo);
       
-      // Poll for conversion completion with increased timeout
+      // Poll for conversion completion
       const completedTask = await DocumentConversionService.pollConversionStatus(
         taskInfo.uuid,
         (progress) => {
           setConversionTasks(prev => new Map(prev.set(progress.uuid, progress)));
-          console.log('Netless conversion progress:', progress);
+          console.log('📈 Conversion progress:', progress);
         }
       );
 
       if (completedTask?.status === 'Finished' || (completedTask?.convertedPercentage === 100 && completedTask?.images)) {
-        console.log('✅ Netless document conversion completed successfully:', {
+        console.log('✅ Document conversion completed:', {
           taskUuid: completedTask.uuid,
           status: completedTask.status,
           convertedPercentage: completedTask.convertedPercentage,
@@ -421,23 +465,13 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           fileName
         });
         
-        // Validate the required fields before attempting insertion
+        // Validate required fields
         const hasImages = completedTask.images && Object.keys(completedTask.images).length > 0;
         const hasPrefix = completedTask.prefix && completedTask.prefix.length > 0;
 
-        console.log('Validation check:', {
-          hasImages,
-          hasPrefix,
-          imageCount: hasImages ? Object.keys(completedTask.images).length : 0,
-          prefix: hasPrefix ? completedTask.prefix.substring(0, 50) + '...' : 'missing',
-          convertedPercentage: completedTask.convertedPercentage
-        });
-
         if (!hasImages) {
-          console.error('Document conversion completed but no images found');
-          alert(`Document conversion completed but no content available for "${fileName}". This may be due to an empty or unsupported document format.`);
-          
-          // Remove from tracking
+          console.error('❌ No images found in conversion result');
+          alert(`Document conversion completed but no content available for "${fileName}".`);
           setConversionTasks(prev => {
             const newMap = new Map(prev);
             newMap.delete(completedTask.uuid);
@@ -446,37 +480,31 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           return;
         }
 
-        // Declare fastboardData outside try block to fix scope issue
-        let fastboardData;
-        
         try {
           // Transform the Netless response to Fastboard format
-          fastboardData = transformNetlessToFastboard(completedTask, fileName);
+          const fastboardData = transformNetlessToFastboard(completedTask, fileName);
           
-          console.log('Inserting document with Fastboard-compatible format:', {
+          console.log('🎯 Inserting document with transformed data:', {
             documentTitle: fileName,
             uuid: fastboardData.uuid,
             type: fastboardData.type,
             status: fastboardData.status,
-            pageCount: fastboardData.progress.convertedFileList.length,
-            convertedPercentage: fastboardData.progress.convertedPercentage
+            pageCount: fastboardData.progress.convertedFileList.length
           });
           
-          // Insert the document using the correct Fastboard API signature
+          // Insert the document using Fastboard API
           await appRef.current.insertDocs(fileName, fastboardData);
           
-          console.log('✅ Document inserted successfully into Fastboard whiteboard:', {
+          console.log('🎉 Document inserted successfully into Fastboard:', {
             fileName,
             taskUuid: completedTask.uuid,
             pageCount: fastboardData.progress.convertedFileList.length
           });
-        } catch (insertError) {
-          console.error('Failed to insert document into Fastboard:', insertError);
-          if (fastboardData) {
-            console.error('Fastboard data that failed:', fastboardData);
-          }
           
-          // Fallback: try inserting the first image as a regular image
+        } catch (insertError) {
+          console.error('❌ Failed to insert document into Fastboard:', insertError);
+          
+          // Fallback: try inserting the first image
           try {
             const firstImageData = Object.values(completedTask.images)[0] as string | NetlessImageData;
             let firstImageUrl: string | undefined;
@@ -488,14 +516,16 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
             }
             
             if (firstImageUrl) {
-              console.log('Attempting fallback: inserting first page as image');
-              await appRef.current.insertImage(firstImageUrl);
+              // Ensure full URL
+              const fullUrl = firstImageUrl.startsWith('http') ? firstImageUrl : `${completedTask.prefix}${firstImageUrl}`;
+              console.log('🔄 Attempting fallback image insertion:', fullUrl);
+              await appRef.current.insertImage(fullUrl);
               alert(`Could not insert "${fileName}" as a document, but inserted the first page as an image.`);
             } else {
               throw new Error('No valid image URL available for fallback');
             }
           } catch (fallbackError) {
-            console.error('Fallback image insertion also failed:', fallbackError);
+            console.error('❌ Fallback image insertion failed:', fallbackError);
             alert(`Failed to insert document "${fileName}": ${insertError.message}`);
           }
         }
@@ -507,25 +537,21 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           return newMap;
         });
         
-        console.log('✅ Document conversion workflow completed successfully for:', fileName);
-        
       } else if (completedTask?.status === 'Fail') {
-        console.error('Netless document conversion failed:', completedTask.failedReason);
+        console.error('❌ Document conversion failed:', completedTask.failedReason);
         alert(`Document conversion failed: ${completedTask.failedReason}`);
-        
-        // Remove from tracking
         setConversionTasks(prev => {
           const newMap = new Map(prev);
           newMap.delete(completedTask.uuid);
           return newMap;
         });
       } else {
-        console.error('Netless document conversion timed out or failed');
+        console.error('⏰ Document conversion timed out');
         alert(`Document conversion timed out for "${fileName}". Please try again.`);
       }
       
     } catch (error) {
-      console.error('Netless document insertion workflow failed:', error);
+      console.error('💥 Document insertion workflow failed:', error);
       alert(`Failed to process document "${fileName}": ${error.message}`);
     }
   };
