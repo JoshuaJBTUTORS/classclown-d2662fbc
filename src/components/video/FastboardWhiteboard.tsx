@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
-import WhiteboardToolbar from './WhiteboardToolbar';
 
 interface FastboardWhiteboardProps {
   isReadOnly?: boolean;
@@ -32,10 +31,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
-  const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
-  const [currentColor, setCurrentColor] = useState('#000000');
-  const [currentFont, setCurrentFont] = useState('Sans');
-  const [currentFontSize, setCurrentFontSize] = useState(14);
   const [tabs, setTabs] = useState<WhiteboardTab[]>([
     { id: 'main', name: 'Main Room', type: 'main', scenePath: '/init' }
   ]);
@@ -64,7 +59,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
     const initFastboard = async () => {
       try {
-        console.log('Initializing Fastboard with Netless App Identifier:', finalAppIdentifier);
+        console.log('Initializing Fastboard with native toolbar enabled');
         
         const app = await createFastboard({
           sdkConfig: {
@@ -79,22 +74,15 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           },
           managerConfig: {
             cursor: true,
+            // Enable Fastboard's native toolbar with all drawing tools
+            toolbar: userRole === 'tutor' && !isReadOnly,
           },
         });
 
         appRef.current = app;
         mount(app, whiteboardRef.current);
         
-        // Set initial drawing properties
-        if (app.room && !isReadOnly && userRole === 'tutor') {
-          app.room.setMemberState({
-            strokeColor: [0, 0, 0], // Black
-            strokeWidth: 2,
-            textSize: currentFontSize,
-          });
-        }
-        
-        console.log('Fastboard initialized successfully');
+        console.log('Fastboard initialized successfully with native toolbar');
       } catch (error) {
         console.error('FastboardWhiteboard initialization failed:', error);
         console.error('Initialization details:', {
@@ -195,96 +183,6 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
-  const handleColorChange = (color: string) => {
-    setCurrentColor(color);
-    if (!appRef.current?.room) return;
-    
-    try {
-      // Convert hex to RGB
-      const r = parseInt(color.slice(1, 3), 16);
-      const g = parseInt(color.slice(3, 5), 16);
-      const b = parseInt(color.slice(5, 7), 16);
-      
-      appRef.current.room.setMemberState({ 
-        strokeColor: [r, g, b] 
-      });
-      console.log('Changed stroke color to:', color);
-    } catch (error) {
-      console.error('Error changing color:', error);
-    }
-  };
-
-  const handleFontChange = (font: string) => {
-    setCurrentFont(font);
-    if (!appRef.current?.room) return;
-    
-    try {
-      appRef.current.room.setMemberState({ 
-        textSize: currentFontSize,
-        // Note: Fastboard may have limitations on font family changes
-      });
-      console.log('Changed font to:', font);
-    } catch (error) {
-      console.error('Error changing font:', error);
-    }
-  };
-
-  const handleFontSizeChange = (size: number) => {
-    setCurrentFontSize(size);
-    if (!appRef.current?.room) return;
-    
-    try {
-      appRef.current.room.setMemberState({ 
-        textSize: size 
-      });
-      console.log('Changed font size to:', size);
-    } catch (error) {
-      console.error('Error changing font size:', error);
-    }
-  };
-
-  const handleFormatToggle = (format: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'highlight') => {
-    const newFormats = new Set(activeFormats);
-    if (newFormats.has(format)) {
-      newFormats.delete(format);
-    } else {
-      newFormats.add(format);
-    }
-    setActiveFormats(newFormats);
-    
-    if (!appRef.current?.room) return;
-    
-    try {
-      // Note: Text formatting in Fastboard may be limited
-      // This is a placeholder for when Fastboard supports rich text formatting
-      console.log('Toggled format:', format, 'Active:', newFormats.has(format));
-    } catch (error) {
-      console.error('Error toggling format:', error);
-    }
-  };
-
-  const handleAlignmentChange = (alignment: 'left' | 'center' | 'right') => {
-    if (!appRef.current?.room) return;
-    
-    try {
-      // Note: Text alignment in Fastboard may be limited
-      console.log('Changed alignment to:', alignment);
-    } catch (error) {
-      console.error('Error changing alignment:', error);
-    }
-  };
-
-  const handleListToggle = (type: 'bullet' | 'numbered') => {
-    if (!appRef.current?.room) return;
-    
-    try {
-      // Note: List formatting in Fastboard may be limited
-      console.log('Toggled list type:', type);
-    } catch (error) {
-      console.error('Error toggling list:', error);
-    }
-  };
-
   const finalAppIdentifier = appIdentifier || CORRECT_NETLESS_APP_IDENTIFIER;
 
   if (!roomUuid || !roomToken) {
@@ -305,27 +203,45 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
   return (
     <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
-      {/* Whiteboard Toolbar */}
-      <WhiteboardToolbar
-        userRole={userRole}
-        onNewTab={handleNewTab}
-        onTabSwitch={handleTabSwitch}
-        onTabClose={handleTabClose}
-        onColorChange={handleColorChange}
-        onFontChange={handleFontChange}
-        onFontSizeChange={handleFontSizeChange}
-        onFormatToggle={handleFormatToggle}
-        onAlignmentChange={handleAlignmentChange}
-        onListToggle={handleListToggle}
-        activeFormats={activeFormats}
-        currentColor={currentColor}
-        currentFont={currentFont}
-        currentFontSize={currentFontSize}
-        tabs={tabs}
-        activeTabId={activeTabId}
-      />
+      {/* Minimal tab management for tutors only */}
+      {userRole === 'tutor' && tabs.length > 1 && (
+        <div className="bg-gray-100 border-b border-gray-200 flex items-center px-4 py-2">
+          <div className="flex items-center gap-1">
+            {tabs.map((tab) => (
+              <div 
+                key={tab.id}
+                className={`flex items-center gap-2 px-3 py-1 rounded cursor-pointer transition-colors text-sm ${
+                  activeTabId === tab.id 
+                    ? 'bg-white text-gray-800 shadow-sm' 
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                }`}
+                onClick={() => handleTabSwitch(tab.id)}
+              >
+                <span>{tab.name}</span>
+                {tab.id !== 'main' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTabClose(tab.id);
+                    }}
+                    className="hover:bg-gray-400 rounded p-1 ml-1"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={handleNewTab}
+              className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+            >
+              + New
+            </button>
+          </div>
+        </div>
+      )}
       
-      {/* Whiteboard Canvas */}
+      {/* Whiteboard Canvas - Fastboard will render its native toolbar here */}
       <div 
         ref={whiteboardRef} 
         className="flex-1 w-full bg-white" 
