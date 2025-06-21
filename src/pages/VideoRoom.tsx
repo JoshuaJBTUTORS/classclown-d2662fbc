@@ -63,14 +63,14 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  console.log('🎉 Rendering video room with edge function credentials:', {
+  console.log('🎉 Rendering video room with Fastboard whiteboard:', {
     appId: agoraCredentials.appId?.substring(0, 8) + '...',
     channel: agoraCredentials.channelName,
     uid: agoraCredentials.uid,
     role: videoRoomRole,
     tokenValid: !!agoraCredentials.rtcToken,
     hasNetless: !!netlessCredentials,
-    usingEdgeFunction: true
+    fastboardEnabled: true
   });
 
   return (

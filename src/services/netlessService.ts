@@ -35,7 +35,7 @@ export class NetlessService {
       
       return {
         appIdentifier,
-        region: 'us-sv' // Default region, can be configured
+        region: 'us-sv' // Default region for US users
       };
     } catch (error) {
       console.error('Failed to parse Netless SDK token:', error);
@@ -88,8 +88,27 @@ export class NetlessService {
       throw new Error(`Failed to generate room token: ${response.statusText}`);
     }
 
-    const tokenData: NetlessTokenResponse = await response.json();
-    return tokenData.token;
+    // Handle both JSON and direct token response formats
+    const contentType = response.headers.get('content-type');
+    
+    let token;
+    if (contentType && contentType.includes('application/json')) {
+      const tokenData: NetlessTokenResponse = await response.json();
+      token = tokenData.token;
+    } else {
+      token = await response.text();
+    }
+
+    if (!token || token.trim() === '') {
+      throw new Error('Empty token returned from Netless API');
+    }
+
+    // Validate token format (should start with NETLESSROOM_)
+    if (!token.startsWith('NETLESSROOM_')) {
+      throw new Error('Invalid token format returned from Netless API');
+    }
+
+    return token;
   }
 
   static getAppIdentifierFromToken(sdkToken: string): string {
