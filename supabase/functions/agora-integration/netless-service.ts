@@ -89,16 +89,38 @@ export async function generateNetlessRoomToken(sdkToken: string, roomUuid: strin
       throw new Error(`Failed to generate room token: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    const result = await response.json();
-    console.log('[NETLESS] Token generation response received');
+    // Handle both JSON and direct token response formats
+    const contentType = response.headers.get('content-type');
+    console.log('[NETLESS] Response content type:', contentType);
     
-    if (!result.token) {
-      console.error('[NETLESS] No token in response:', result);
-      throw new Error('No token returned from Netless API');
+    let token;
+    if (contentType && contentType.includes('application/json')) {
+      // JSON response format
+      const result = await response.json();
+      console.log('[NETLESS] JSON token generation response received');
+      token = result.token;
+    } else {
+      // Direct token response format
+      token = await response.text();
+      console.log('[NETLESS] Direct token response received');
+    }
+    
+    if (!token || token.trim() === '') {
+      console.error('[NETLESS] Empty or null token received');
+      throw new Error('Empty token returned from Netless API');
     }
 
-    console.log('[NETLESS] Token generated successfully');
-    return result.token;
+    // Validate token format (should start with NETLESSROOM_)
+    if (!token.startsWith('NETLESSROOM_')) {
+      console.error('[NETLESS] Invalid token format received:', token.substring(0, 50) + '...');
+      throw new Error('Invalid token format returned from Netless API');
+    }
+
+    console.log('[NETLESS] Token generated successfully:', {
+      tokenLength: token.length,
+      tokenPrefix: token.substring(0, 20) + '...'
+    });
+    return token;
   } catch (error) {
     console.error('[NETLESS] Error generating token:', error);
     throw error;
