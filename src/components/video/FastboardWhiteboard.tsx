@@ -40,7 +40,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
-  const [currentColor, setCurrentColor] = useState('#000000');
+  const [currentColor, setCurrentColor] = useState('#FFFFFF'); // Changed to white
   const [currentFont, setCurrentFont] = useState('Sans');
   const [currentFontSize, setCurrentFontSize] = useState(14);
   const [tabs, setTabs] = useState<WhiteboardTab[]>([
@@ -92,21 +92,22 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           managerConfig: {
             cursor: true,
           },
+          theme: 'dark', // Set dark theme for black background
         });
 
         appRef.current = app;
         mount(app, whiteboardRef.current);
         
-        // Set initial drawing properties
+        // Set initial drawing properties with white pen on black background
         if (app.room && !isReadOnly && userRole === 'tutor') {
           app.room.setMemberState({
-            strokeColor: [0, 0, 0], // Black
+            strokeColor: [255, 255, 255], // White pen color
             strokeWidth: 2,
             textSize: currentFontSize,
           });
         }
         
-        console.log('Fastboard initialized successfully');
+        console.log('Fastboard initialized successfully with black background and white pen');
       } catch (error) {
         console.error('FastboardWhiteboard initialization failed:', error);
         console.error('Initialization details:', {
@@ -560,13 +561,13 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
   if (!roomUuid || !roomToken) {
     return (
-      <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+      <div className="flex-1 bg-black border border-gray-600 rounded-lg overflow-hidden flex items-center justify-center">
         <div className="text-center p-6">
-          <p className="text-gray-600">Whiteboard not configured</p>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-gray-300">Whiteboard not configured</p>
+          <p className="text-gray-400 text-sm mt-2">
             Missing: {!roomUuid && 'Room UUID'} {!roomToken && 'Room Token'}
           </p>
-          <p className="text-gray-400 text-xs mt-1">
+          <p className="text-gray-500 text-xs mt-1">
             App ID: {finalAppIdentifier.substring(0, 20)}...
           </p>
         </div>
@@ -575,7 +576,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   }
 
   return (
-    <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+    <div className="flex-1 bg-black border border-gray-600 rounded-lg overflow-hidden flex flex-col">
       {/* Whiteboard Toolbar */}
       <WhiteboardToolbar
         userRole={userRole}
@@ -601,9 +602,9 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       
       {/* Conversion Progress Display */}
       {conversionTasks.size > 0 && (
-        <div className="bg-blue-50 border-b border-blue-200 p-2 text-sm">
+        <div className="bg-blue-900 border-b border-blue-700 p-2 text-sm">
           {Array.from(conversionTasks.values()).map(task => (
-            <div key={task.uuid} className="flex items-center gap-2">
+            <div key={task.uuid} className="flex items-center gap-2 text-blue-100">
               <span>Converting document...</span>
               {task.progress && (
                 <span>({task.progress.convertedPercentage}%)</span>
@@ -616,7 +617,7 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
       {/* Whiteboard Canvas */}
       <div 
         ref={whiteboardRef} 
-        className="flex-1 w-full bg-white" 
+        className="flex-1 w-full bg-black" 
         style={{ width: '100%', height: '100%', minWidth: '400px', minHeight: '300px' }}
       />
     </div>
