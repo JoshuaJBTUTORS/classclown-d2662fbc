@@ -7,7 +7,7 @@ interface FastboardWhiteboardProps {
   userRole: 'tutor' | 'student';
   roomUuid?: string;
   roomToken?: string;
-  agoraAppId?: string; // Changed from appIdentifier to agoraAppId
+  appIdentifier?: string; // Back to using Netless app identifier
   userId: string;
 }
 
@@ -16,18 +16,18 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   userRole,
   roomUuid,
   roomToken,
-  agoraAppId, // Use Agora App ID instead of Netless app identifier
+  appIdentifier, // Use Netless app identifier
   userId
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!roomUuid || !roomToken || !agoraAppId || !whiteboardRef.current) {
+    if (!roomUuid || !roomToken || !appIdentifier || !whiteboardRef.current) {
       console.warn('FastboardWhiteboard: Missing required props:', {
         roomUuid: !!roomUuid,
         roomToken: !!roomToken,
-        agoraAppId: !!agoraAppId,
+        appIdentifier: !!appIdentifier,
         whiteboardRef: !!whiteboardRef.current
       });
       return;
@@ -35,11 +35,11 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
     const initFastboard = async () => {
       try {
-        console.log('Initializing Fastboard with Agora App ID:', agoraAppId);
+        console.log('Initializing Fastboard with Netless App Identifier:', appIdentifier);
         
         const app = await createFastboard({
           sdkConfig: {
-            appIdentifier: agoraAppId, // Use the Agora App ID here
+            appIdentifier: appIdentifier, // Use the Netless App Identifier here
             region: 'us-sv',
           },
           joinRoom: {
@@ -72,15 +72,15 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         }
       }
     };
-  }, [roomUuid, roomToken, agoraAppId, isReadOnly, userRole, userId]);
+  }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
 
-  if (!roomUuid || !roomToken || !agoraAppId) {
+  if (!roomUuid || !roomToken || !appIdentifier) {
     return (
       <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
         <div className="text-center p-6">
           <p className="text-gray-600">Whiteboard not configured</p>
           <p className="text-gray-500 text-sm mt-2">
-            Missing: {!roomUuid && 'Room UUID'} {!roomToken && 'Room Token'} {!agoraAppId && 'App ID'}
+            Missing: {!roomUuid && 'Room UUID'} {!roomToken && 'Room Token'} {!appIdentifier && 'App Identifier'}
           </p>
         </div>
       </div>

@@ -21,13 +21,9 @@ export async function createNetlessRoomWithToken(netlessSDKToken: string, userRo
 
     console.log('[ROOM-MGR] Netless room created successfully:', roomUuid);
 
-    // Parse app identifier from SDK token
-    const parsedToken = parseNetlessSDKToken(netlessSDKToken);
-    const appIdentifier = parsedToken.appIdentifier;
-
-    if (!appIdentifier) {
-      throw new Error('Failed to parse app identifier from SDK token');
-    }
+    // Use the correct Netless App Identifier instead of parsing from SDK token
+    const appIdentifier = 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg';
+    console.log('[ROOM-MGR] Using correct Netless App Identifier:', appIdentifier);
 
     // Generate room token
     console.log('[ROOM-MGR] Generating Netless room token for role:', userRole);

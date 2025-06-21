@@ -106,9 +106,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       roomUuid: netlessCredentials?.roomUuid ? netlessCredentials.roomUuid.substring(0, 8) + '...' : 'undefined',
       appIdentifier: netlessCredentials?.appIdentifier ? netlessCredentials.appIdentifier.substring(0, 8) + '...' : 'undefined',
       hasRoomToken: !!netlessCredentials?.roomToken,
-      usingAgoraAppId: appId ? appId.substring(0, 8) + '...' : 'undefined'
+      netlessAppId: netlessCredentials?.appIdentifier || 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg'
     });
-  }, [netlessCredentials, appId]);
+  }, [netlessCredentials]);
 
   useEffect(() => {
     audioTracks.map((track, index) => {
@@ -178,7 +178,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                     userRole={userRole}
                     roomUuid={netlessCredentials.roomUuid}
                     roomToken={netlessCredentials.roomToken}
-                    agoraAppId={appId} // Pass the Agora App ID instead of appIdentifier
+                    appIdentifier={netlessCredentials.appIdentifier || 'TORbYEt7EfCzGuPZ97oCJA/9M23Doi-qTMNAg'} // Use the correct Netless App Identifier with fallback
                     userId={validUid.toString()}
                   />
                 ) : (
