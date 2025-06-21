@@ -305,6 +305,51 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
+  // Transform Netless response to Fastboard format
+  const transformNetlessToFastboard = (netlessTask: ConversionTaskInfo, fileName: string) => {
+    try {
+      if (!netlessTask.images || !netlessTask.prefix) {
+        throw new Error('Missing required images or prefix data');
+      }
+
+      // Convert the images object to convertedFileList array
+      const convertedFileList = Object.keys(netlessTask.images)
+        .sort((a, b) => parseInt(a) - parseInt(b)) // Sort by page number
+        .map((pageNumber) => ({
+          width: 1280, // Default width, adjust as needed
+          height: 720, // Default height, adjust as needed
+          conversionFileUrl: netlessTask.images![pageNumber],
+          preview: netlessTask.images![pageNumber] // Use same URL for preview
+        }));
+
+      // Create the Fastboard-compatible response format
+      const fastboardResponse = {
+        uuid: netlessTask.uuid,
+        type: netlessTask.type || 'static',
+        status: netlessTask.status,
+        progress: {
+          totalPageSize: convertedFileList.length,
+          convertedPageSize: convertedFileList.length,
+          convertedPercentage: netlessTask.convertedPercentage || 100,
+          convertedFileList,
+          currentStep: "Packaging"
+        }
+      };
+
+      console.log('✅ Transformed Netless response to Fastboard format:', {
+        originalImageCount: Object.keys(netlessTask.images).length,
+        transformedPageCount: convertedFileList.length,
+        hasProgress: !!fastboardResponse.progress,
+        hasConvertedFileList: !!fastboardResponse.progress.convertedFileList
+      });
+
+      return fastboardResponse;
+    } catch (error) {
+      console.error('Failed to transform Netless response:', error);
+      throw error;
+    }
+  };
+
   const handleDocumentInsert = async (documentUrl: string, fileName: string) => {
     if (!appRef.current) return;
     
@@ -372,27 +417,45 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
           return;
         }
 
-        console.log('Inserting document with raw Netless format:', {
-          uuid: completedTask.uuid,
-          type: completedTask.type || 'static',
-          status: completedTask.status || 'Finished',
-          imageCount: Object.keys(completedTask.images).length,
-          hasPrefix: !!completedTask.prefix,
-          convertedPercentage: completedTask.convertedPercentage
-        });
-        
         try {
-          // Insert the converted document using the raw Netless response
-          appRef.current.insertDocs(completedTask);
+          // Transform the Netless response to Fastboard format
+          const fastboardData = transformNetlessToFastboard(completedTask, fileName);
+          
+          console.log('Inserting document with Fastboard-compatible format:', {
+            documentTitle: fileName,
+            uuid: fastboardData.uuid,
+            type: fastboardData.type,
+            status: fastboardData.status,
+            pageCount: fastboardData.progress.convertedFileList.length,
+            convertedPercentage: fastboardData.progress.convertedPercentage
+          });
+          
+          // Insert the document using the correct Fastboard API signature
+          await appRef.current.insertDocs(fileName, fastboardData);
+          
           console.log('✅ Document inserted successfully into Fastboard whiteboard:', {
             fileName,
             taskUuid: completedTask.uuid,
-            imageCount: Object.keys(completedTask.images).length
+            pageCount: fastboardData.progress.convertedFileList.length
           });
         } catch (insertError) {
           console.error('Failed to insert document into Fastboard:', insertError);
-          console.error('Data structure that failed:', completedTask);
-          alert(`Failed to insert document "${fileName}" into whiteboard: ${insertError.message}`);
+          console.error('Fastboard data that failed:', fastboardData);
+          
+          // Fallback: try inserting the first image as a regular image
+          try {
+            const firstImageUrl = Object.values(completedTask.images)[0];
+            if (firstImageUrl) {
+              console.log('Attempting fallback: inserting first page as image');
+              await appRef.current.insertImage(firstImageUrl);
+              alert(`Could not insert "${fileName}" as a document, but inserted the first page as an image.`);
+            } else {
+              throw new Error('No images available for fallback');
+            }
+          } catch (fallbackError) {
+            console.error('Fallback image insertion also failed:', fallbackError);
+            alert(`Failed to insert document "${fileName}": ${insertError.message}`);
+          }
         }
         
         // Remove from tracking
