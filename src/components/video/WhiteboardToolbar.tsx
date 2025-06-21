@@ -158,47 +158,6 @@ const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
         </Button>
       </div>
 
-      {/* File Upload Controls */}
-      <div className="flex items-center gap-2 mb-2">
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/jpg,image/webp"
-          onChange={handleImageUpload}
-          className="hidden"
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => imageInputRef.current?.click()}
-          disabled={isUploading}
-        >
-          <Image className="h-4 w-4 mr-1" />
-          Insert Image
-        </Button>
-
-        <input
-          ref={documentInputRef}
-          type="file"
-          accept=".pdf,.ppt,.pptx,.doc,.docx"
-          onChange={handleDocumentUpload}
-          className="hidden"
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => documentInputRef.current?.click()}
-          disabled={isUploading}
-        >
-          <FileText className="h-4 w-4 mr-1" />
-          Insert Document
-        </Button>
-        
-        {isUploading && (
-          <span className="text-sm text-gray-500">Uploading...</span>
-        )}
-      </div>
-
       <Separator className="my-2" />
 
       {/* Text Formatting */}
