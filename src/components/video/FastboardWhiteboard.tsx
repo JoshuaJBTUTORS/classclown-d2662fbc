@@ -25,7 +25,28 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   const roomRef = useRef<Room | null>(null);
 
   useEffect(() => {
-    if (!whiteboardRef.current || !roomUuid || !roomToken || !appIdentifier) {
+    console.log('FastboardWhiteboard props received:', {
+      roomUuid: roomUuid ? roomUuid.substring(0, 8) + '...' : 'undefined',
+      appIdentifier: appIdentifier ? appIdentifier.substring(0, 8) + '...' : 'undefined',
+      hasRoomToken: !!roomToken,
+      tokenLength: roomToken?.length,
+      userId,
+      userRole
+    });
+
+    if (!whiteboardRef.current) {
+      console.log('Whiteboard ref not ready');
+      setError('Whiteboard container not ready');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!roomUuid || !roomToken || !appIdentifier) {
+      console.log('Missing whiteboard configuration:', {
+        hasRoomUuid: !!roomUuid,
+        hasRoomToken: !!roomToken,
+        hasAppIdentifier: !!appIdentifier
+      });
       setError('Missing whiteboard configuration');
       setIsLoading(false);
       return;
@@ -87,6 +108,12 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
         <div className="text-center p-6">
           <p className="text-red-600 mb-2">Whiteboard Error</p>
           <p className="text-gray-600 text-sm">{error}</p>
+          <div className="mt-4 text-xs text-gray-500">
+            <p>Debug info:</p>
+            <p>Room UUID: {roomUuid ? 'Present' : 'Missing'}</p>
+            <p>Room Token: {roomToken ? 'Present' : 'Missing'}</p>
+            <p>App ID: {appIdentifier ? 'Present' : 'Missing'}</p>
+          </div>
         </div>
       </div>
     );

@@ -67,6 +67,15 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   }, calling);
 
   useEffect(() => {
+    console.log('AgoraVideoRoom - Netless credentials:', {
+      hasCredentials: !!netlessCredentials,
+      roomUuid: netlessCredentials?.roomUuid ? netlessCredentials.roomUuid.substring(0, 8) + '...' : 'undefined',
+      appIdentifier: netlessCredentials?.appIdentifier ? netlessCredentials.appIdentifier.substring(0, 8) + '...' : 'undefined',
+      hasRoomToken: !!netlessCredentials?.roomToken
+    });
+  }, [netlessCredentials]);
+
+  useEffect(() => {
     audioTracks.map((track, index) => {
       console.log(`Playing audio track ${index}`);
       track.play();
@@ -123,14 +132,23 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
             {/* Whiteboard area */}
             {whiteboardVisible && (
               <div className="w-1/2 flex">
-                <FastboardWhiteboard
-                  isReadOnly={userRole === 'student'}
-                  userRole={userRole}
-                  roomUuid={netlessCredentials?.roomUuid}
-                  roomToken={netlessCredentials?.roomToken}
-                  appIdentifier={netlessCredentials?.appIdentifier}
-                  userId={uid.toString()}
-                />
+                {netlessCredentials ? (
+                  <FastboardWhiteboard
+                    isReadOnly={userRole === 'student'}
+                    userRole={userRole}
+                    roomUuid={netlessCredentials.roomUuid}
+                    roomToken={netlessCredentials.roomToken}
+                    appIdentifier={netlessCredentials.appIdentifier}
+                    userId={uid.toString()}
+                  />
+                ) : (
+                  <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+                    <div className="text-center p-6">
+                      <p className="text-gray-600 mb-2">Whiteboard Unavailable</p>
+                      <p className="text-gray-500 text-sm">No whiteboard credentials available for this lesson</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
