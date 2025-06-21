@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -14,6 +13,7 @@ import VideoRoomHeader from './VideoRoomHeader';
 import VerticalVideoGrid from './VerticalVideoGrid';
 import AgoraChatPanel from './AgoraChatPanel';
 import FastboardWhiteboard from './FastboardWhiteboard';
+import ScreenShareDisplay from './ScreenShareDisplay';
 import { useScreenShare } from '@/hooks/useScreenShare';
 import { Button } from '@/components/ui/button';
 import { 
@@ -181,6 +181,13 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const totalExpectedParticipants = expectedStudents.length + 1; // +1 for tutor/current user
   const currentParticipants = remoteUsers.length + 1;
 
+  const getLocalUserName = () => {
+    if (isScreenSharing) {
+      return `You (${userRole})`;
+    }
+    return `You (${userRole})`;
+  };
+
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       <VideoRoomHeader 
@@ -193,11 +200,16 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       />
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Main Content Area - Whiteboard (Left Side) */}
+        {/* Main Content Area - Conditionally show Screen Share or Whiteboard */}
         <div className="flex-1 flex flex-col">
-          {/* Whiteboard Area */}
+          {/* Main Content */}
           <div className="flex-1 flex">
-            {netlessCredentials ? (
+            {isScreenSharing && screenVideoTrack ? (
+              <ScreenShareDisplay
+                screenVideoTrack={screenVideoTrack}
+                userName={getLocalUserName()}
+              />
+            ) : netlessCredentials ? (
               <FastboardWhiteboard
                 isReadOnly={userRole === 'student'}
                 userRole={userRole}
@@ -329,10 +341,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
           </div>
           <div className="flex-1">
             <VerticalVideoGrid
-              localCameraTrack={isScreenSharing ? screenVideoTrack : localCameraTrack}
+              localCameraTrack={localCameraTrack}
               remoteUsers={remoteUsers}
               isAudioEnabled={micOn}
-              isVideoEnabled={isScreenSharing ? true : cameraOn}
+              isVideoEnabled={cameraOn}
               userRole={userRole}
               expectedStudents={expectedStudents}
               isScreenSharing={isScreenSharing}

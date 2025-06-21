@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RemoteUser, LocalVideoTrack } from 'agora-rtc-react';
 import VideoCard from './VideoCard';
@@ -47,7 +46,7 @@ const VerticalVideoGrid: React.FC<VerticalVideoGridProps> = ({
 
   const getLocalUserName = () => {
     if (isScreenSharing) {
-      return `You (${userRole}) - Screen Sharing`;
+      return `You (${userRole}) - Camera`;
     }
     return `You (${userRole})`;
   };
@@ -55,13 +54,13 @@ const VerticalVideoGrid: React.FC<VerticalVideoGridProps> = ({
   return (
     <div className="h-full p-3 overflow-y-auto">
       <div className={`grid ${gridCols} gap-3 auto-rows-max`}>
-        {/* Local user video */}
+        {/* Local user video - Show camera feed when screen sharing */}
         <VideoCard
           userName={getLocalUserName()}
           isAudioEnabled={isAudioEnabled}
           isVideoEnabled={isVideoEnabled}
           isLocal={true}
-          isScreenSharing={isScreenSharing}
+          isScreenSharing={false}
         >
           {isVideoEnabled && localCameraTrack ? (
             <LocalVideoTrack
