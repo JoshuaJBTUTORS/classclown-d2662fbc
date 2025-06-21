@@ -303,76 +303,67 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
     }
   };
 
-  const getFileTypeFromUrl = (url: string, fileName: string): 'pdf' | 'office' | 'media' | 'unknown' => {
-    const extension = fileName.toLowerCase().split('.').pop() || '';
-    
-    if (extension === 'pdf') return 'pdf';
-    if (['ppt', 'pptx', 'doc', 'docx'].includes(extension)) return 'office';
-    if (['mp3', 'mp4', 'mov', 'avi'].includes(extension)) return 'media';
-    
-    return 'unknown';
-  };
-
   const handleDocumentInsert = (documentUrl: string, fileName: string) => {
     if (!appRef.current) return;
     
     try {
       console.log('Inserting document:', documentUrl, fileName);
       
-      const fileType = getFileTypeFromUrl(documentUrl, fileName);
+      const fileExtension = fileName.toLowerCase().split('.').pop() || '';
+      console.log('Document file extension:', fileExtension);
       
-      switch (fileType) {
-        case 'media':
-          // Use insertMedia for media files
-          appRef.current.insertMedia(fileName, documentUrl);
-          console.log('Media document inserted successfully');
-          break;
-          
-        case 'pdf':
-        case 'office':
-          // For PDF and Office docs, create a simple document structure
-          // Since we don't have conversion service, create a basic docs structure
-          const docsData = {
-            uuid: `doc_${Date.now()}`,
-            type: 'static',
-            status: 'Finished',
-            progress: {
-              totalPageSize: 1,
-              convertedPageSize: 1,
-              convertedPercentage: 100,
-              convertedFileList: [
-                {
-                  width: 800,
-                  height: 600,
-                  conversionFileUrl: documentUrl,
-                  preview: documentUrl
-                }
-              ]
-            }
-          };
-          
-          appRef.current.insertDocs(fileName, docsData);
-          console.log('Document inserted successfully');
-          break;
-          
-        default:
-          // Fallback: try to insert as media first, then as image
+      // Try different approaches based on file type
+      if (fileExtension === 'pdf') {
+        // For PDFs, try insertImage first (many PDFs can be displayed as images)
+        try {
+          console.log('Attempting to insert PDF as image...');
+          appRef.current.insertImage(documentUrl);
+          console.log('PDF inserted as image successfully');
+          return;
+        } catch (imageError) {
+          console.warn('PDF as image failed, trying insertMedia:', imageError);
           try {
             appRef.current.insertMedia(fileName, documentUrl);
-            console.log('Document inserted as media');
+            console.log('PDF inserted as media successfully');
+            return;
           } catch (mediaError) {
-            console.warn('Failed to insert as media, trying as image:', mediaError);
-            appRef.current.insertImage(documentUrl);
-            console.log('Document inserted as image');
+            console.error('PDF as media also failed:', mediaError);
           }
-          break;
+        }
+      } else if (['ppt', 'pptx', 'doc', 'docx'].includes(fileExtension)) {
+        // For Office documents, try insertMedia
+        try {
+          console.log('Attempting to insert Office document as media...');
+          appRef.current.insertMedia(fileName, documentUrl);
+          console.log('Office document inserted as media successfully');
+          return;
+        } catch (mediaError) {
+          console.warn('Office document as media failed:', mediaError);
+        }
+      } else if (['mp3', 'mp4', 'mov', 'avi'].includes(fileExtension)) {
+        // For actual media files
+        try {
+          console.log('Inserting media file...');
+          appRef.current.insertMedia(fileName, documentUrl);
+          console.log('Media file inserted successfully');
+          return;
+        } catch (mediaError) {
+          console.error('Media file insertion failed:', mediaError);
+        }
       }
       
-    } catch (error) {
-      console.error('Error inserting document:', error);
+      // Final fallback: try insertImage for any document type
+      console.log('Trying final fallback: insertImage for document...');
+      appRef.current.insertImage(documentUrl);
+      console.log('Document inserted as image (fallback) successfully');
       
-      // Final fallback: show error message
-      console.error('Failed to insert document. URL:', documentUrl, 'Error:', error.message);
+    } catch (error) {
+      console.error('All document insertion methods failed:', error);
+      console.error('Document URL:', documentUrl);
+      console.error('File name:', fileName);
+      
+      // Show user-friendly error
+      alert(`Failed to insert document "${fileName}". The file format may not be supported for direct display.`);
     }
   };
 
