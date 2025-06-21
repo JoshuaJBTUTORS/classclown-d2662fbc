@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createFastboard, mount } from '@netless/fastboard';
 
 interface FastboardWhiteboardProps {
@@ -20,23 +20,15 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
   userId
 }) => {
   const whiteboardRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const appRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!roomUuid || !roomToken || !appIdentifier) {
-      setError('Missing whiteboard configuration');
-      setIsLoading(false);
+    if (!roomUuid || !roomToken || !appIdentifier || !whiteboardRef.current) {
       return;
     }
 
     const initFastboard = async () => {
       try {
-        if (!whiteboardRef.current) {
-          throw new Error('Whiteboard container element not found');
-        }
-
         const app = await createFastboard({
           sdkConfig: {
             appIdentifier: appIdentifier,
@@ -55,54 +47,29 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
         appRef.current = app;
         mount(app, whiteboardRef.current);
-
-        setError(null);
-        setIsLoading(false);
       } catch (error) {
-        console.error('FastboardWhiteboard: Initialization failed:', error);
-        setError(error instanceof Error ? error.message : 'Failed to initialize whiteboard');
-        setIsLoading(false);
+        console.error('FastboardWhiteboard initialization failed:', error);
       }
     };
 
-    const timeoutId = setTimeout(() => {
-      initFastboard();
-    }, 100);
+    initFastboard();
 
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
-
-  useEffect(() => {
     return () => {
       if (appRef.current) {
         try {
           appRef.current.destroy();
         } catch (error) {
-          console.warn('FastboardWhiteboard: Error cleaning up Fastboard:', error);
+          console.warn('Error cleaning up Fastboard:', error);
         }
       }
     };
-  }, []);
+  }, [roomUuid, roomToken, appIdentifier, isReadOnly, userRole, userId]);
 
-  if (error) {
+  if (!roomUuid || !roomToken || !appIdentifier) {
     return (
       <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
         <div className="text-center p-6">
-          <p className="text-red-600 mb-2">Whiteboard Error</p>
-          <p className="text-gray-600 text-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
-        <div className="text-center p-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p className="text-gray-600">Connecting to whiteboard...</p>
+          <p className="text-gray-600">Whiteboard not configured</p>
         </div>
       </div>
     );
@@ -110,7 +77,11 @@ const FastboardWhiteboard: React.FC<FastboardWhiteboardProps> = ({
 
   return (
     <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div ref={whiteboardRef} className="w-full h-full" />
+      <div 
+        ref={whiteboardRef} 
+        className="w-full h-full" 
+        style={{ width: '100%', height: '100%', minWidth: '400px', minHeight: '300px' }}
+      />
     </div>
   );
 };
