@@ -51,7 +51,17 @@ serve(async (req) => {
     const statusData = await statusResponse.json();
     console.log('Raw Netless response:', statusData);
     
-    // Return the raw Netless response format that Fastboard expects
+    // Fix: Handle the actual Netless response format where convertedPercentage is at top level
+    const progress = {
+      totalPageSize: statusData.progress?.totalPageSize || 0,
+      convertedPageSize: statusData.progress?.convertedPageSize || 0,
+      // Use convertedPercentage from top level, not nested in progress
+      convertedPercentage: statusData.convertedPercentage || statusData.progress?.convertedPercentage || 0
+    };
+
+    console.log('Parsed progress:', progress);
+    
+    // Return the response format that Fastboard expects
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -63,11 +73,7 @@ serve(async (req) => {
           // Raw Netless fields that Fastboard insertDocs expects
           images: statusData.images || {},
           prefix: statusData.prefix || '',
-          progress: {
-            totalPageSize: statusData.progress?.totalPageSize || 0,
-            convertedPageSize: statusData.progress?.convertedPageSize || 0,
-            convertedPercentage: statusData.progress?.convertedPercentage || 0
-          }
+          progress: progress
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
