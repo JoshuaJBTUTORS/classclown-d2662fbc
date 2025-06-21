@@ -20,24 +20,41 @@ serve(async (req) => {
 
     const { lessonId, fileName, fileType, fileContent } = await req.json();
 
+    console.log('Received upload request:', {
+      lessonId: lessonId?.substring(0, 8) + '...',
+      fileName,
+      fileType,
+      contentLength: fileContent?.length
+    });
+
     // Validate inputs
     if (!lessonId || !fileName || !fileType || !fileContent) {
+      console.error('Missing required parameters:', { lessonId: !!lessonId, fileName: !!fileName, fileType: !!fileType, fileContent: !!fileContent });
       return new Response(
         JSON.stringify({ error: "Missing required parameters" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create storage bucket if it doesn't exist
+    // Validate file type at application level
+    const validImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+    const validDocExtensions = ['pdf', 'ppt', 'pptx', 'doc', 'docx'];
+    const validExtensions = fileType === 'image' ? validImageExtensions : validDocExtensions;
+    
+    const fileExtension = fileName.toLowerCase().split('.').pop();
+    if (!validExtensions.includes(fileExtension || '')) {
+      console.error('Invalid file extension:', fileExtension, 'for type:', fileType);
+      return new Response(
+        JSON.stringify({ error: `Invalid ${fileType} file type. Allowed extensions: ${validExtensions.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create storage bucket without MIME type restrictions
     const { error: bucketError } = await supabase.storage.createBucket('whiteboard-files', {
       public: true,
       fileSizeLimit: 10485760, // 10MB
-      allowedMimeTypes: [
-        'image/png', 'image/jpeg', 'image/jpg', 'image/webp',
-        'application/pdf', 'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ]
+      // Removed allowedMimeTypes to avoid MIME type detection issues
     });
 
     // Ignore error if bucket already exists
@@ -45,25 +62,45 @@ serve(async (req) => {
       console.error('Bucket creation error:', bucketError);
     }
 
-    // Convert base64 to blob with proper MIME type detection
-    const base64Data = fileContent.split(',')[1];
-    if (!base64Data) {
+    // Parse base64 data with improved error handling
+    const base64Match = fileContent.match(/^data:([^;]+);base64,(.+)$/);
+    if (!base64Match) {
+      console.error('Invalid base64 format, trying fallback parsing');
+      // Fallback: assume it's already base64 without data URI
+      const base64Data = fileContent.includes(',') ? fileContent.split(',')[1] : fileContent;
+      if (!base64Data) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid file content format' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    const base64Data = base64Match ? base64Match[2] : (fileContent.includes(',') ? fileContent.split(',')[1] : fileContent);
+    
+    // Convert base64 to binary with better error handling
+    let binaryData: Uint8Array;
+    try {
+      binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      console.log('Binary conversion successful, size:', binaryData.length);
+    } catch (error) {
+      console.error('Failed to decode base64:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid file content format' }),
+        JSON.stringify({ error: 'Failed to decode file content' }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-    
-    // Determine MIME type from file extension as fallback
+    // Determine MIME type from file extension with comprehensive mapping
     const getContentType = (filename: string): string => {
       const ext = filename.toLowerCase().split('.').pop();
       const mimeTypes: { [key: string]: string } = {
+        // Images
         'png': 'image/png',
         'jpg': 'image/jpeg',
         'jpeg': 'image/jpeg',
         'webp': 'image/webp',
+        // Documents
         'pdf': 'application/pdf',
         'ppt': 'application/vnd.ms-powerpoint',
         'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -74,23 +111,46 @@ serve(async (req) => {
     };
 
     const contentType = getContentType(fileName);
+    console.log('Determined content type:', contentType, 'for file:', fileName);
     
-    // Upload file to storage with proper content type
+    // Upload file to storage with enhanced options
     const filePath = `lesson-${lessonId}/${fileType}s/${Date.now()}-${fileName}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('whiteboard-files')
       .upload(filePath, binaryData, {
         contentType: contentType,
-        upsert: false
+        cacheControl: '3600',
+        upsert: false,
+        duplex: 'half' // Help with binary uploads
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
+      console.error('Upload error details:', {
+        message: uploadError.message,
+        name: uploadError.name,
+        cause: uploadError.cause,
+        filePath,
+        contentType,
+        fileSize: binaryData.length
+      });
       return new Response(
-        JSON.stringify({ error: 'Failed to upload file: ' + uploadError.message }),
+        JSON.stringify({ 
+          error: 'Failed to upload file: ' + uploadError.message,
+          details: {
+            filePath,
+            contentType,
+            fileSize: binaryData.length
+          }
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log('Upload successful:', {
+      filePath: uploadData.path,
+      contentType,
+      size: binaryData.length
+    });
 
     // Get public URL
     const { data: urlData } = supabase.storage
@@ -110,30 +170,38 @@ serve(async (req) => {
       });
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      console.error('Database tracking error:', dbError);
       // Don't fail the request if DB tracking fails
     }
 
-    console.log('File uploaded successfully:', {
+    console.log('File upload completed successfully:', {
       filePath,
-      contentType,
-      size: binaryData.length,
-      url: urlData.publicUrl
+      url: urlData.publicUrl,
+      size: binaryData.length
     });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         url: urlData.publicUrl,
-        filePath: filePath
+        filePath: filePath,
+        fileSize: binaryData.length,
+        contentType: contentType
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error('Function error:', error);
+    console.error('Function error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        type: 'function_error'
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
