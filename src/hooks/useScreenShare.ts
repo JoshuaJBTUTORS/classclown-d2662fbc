@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ export const useScreenShare = () => {
   const screenAudioTrackRef = useRef<any>(null);
   const screenShareIntentRef = useRef(false); // Track user's intent to screen share
   const isRecoveringRef = useRef(false);
+  const hasAudioRef = useRef(false); // Track if current session has audio
 
   // Page Visibility API integration
   useEffect(() => {
@@ -61,6 +63,36 @@ export const useScreenShare = () => {
     }
   };
 
+  const createScreenTrackWithFallback = async () => {
+    try {
+      // First attempt: Try with audio
+      console.log('🎵 Attempting screen share with audio...');
+      const screenTracks = await AgoraRTC.createScreenVideoTrack({
+        encoderConfig: "1080p_1",
+        optimizationMode: "detail"
+      }, "enable");
+
+      hasAudioRef.current = Array.isArray(screenTracks);
+      return screenTracks;
+    } catch (error: any) {
+      console.log('🔇 Audio screen share failed, trying without audio...', error.code);
+      
+      // Second attempt: Try without audio
+      try {
+        const screenTrack = await AgoraRTC.createScreenVideoTrack({
+          encoderConfig: "1080p_1",
+          optimizationMode: "detail"
+        }, "disable");
+
+        hasAudioRef.current = false;
+        return screenTrack;
+      } catch (videoError: any) {
+        console.error('❌ Both audio and video-only screen share failed:', videoError);
+        throw videoError;
+      }
+    }
+  };
+
   const attemptScreenShareRecovery = async () => {
     if (isRecoveringRef.current || !screenShareIntentRef.current) return;
     
@@ -94,11 +126,8 @@ export const useScreenShare = () => {
           try { currentAudioTrack.close(); } catch (e) { /* ignore */ }
         }
         
-        // Create new tracks
-        const screenTracks = await AgoraRTC.createScreenVideoTrack({
-          encoderConfig: "1080p_1",
-          optimizationMode: "detail"
-        }, "enable");
+        // Create new tracks with fallback logic
+        const screenTracks = await createScreenTrackWithFallback();
 
         // Handle both single track and array of tracks (with audio)
         if (Array.isArray(screenTracks)) {
@@ -147,11 +176,8 @@ export const useScreenShare = () => {
     try {
       console.log('🖥️ Starting screen share...');
 
-      // Create screen sharing track with audio on supported browsers
-      const screenTracks = await AgoraRTC.createScreenVideoTrack({
-        encoderConfig: "1080p_1",
-        optimizationMode: "detail"
-      }, "enable");
+      // Create screen sharing track with fallback logic
+      const screenTracks = await createScreenTrackWithFallback();
 
       // Handle both single track and array of tracks (with audio)
       if (Array.isArray(screenTracks)) {
@@ -194,6 +220,7 @@ export const useScreenShare = () => {
       
       setIsScreenSharing(false);
       screenShareIntentRef.current = false;
+      hasAudioRef.current = false;
       return null;
     } finally {
       setIsScreenShareLoading(false);
@@ -208,6 +235,7 @@ export const useScreenShare = () => {
       
       // Clear user intent first
       screenShareIntentRef.current = false;
+      hasAudioRef.current = false;
       
       // Close video track
       if (screenTrackRef.current) {
