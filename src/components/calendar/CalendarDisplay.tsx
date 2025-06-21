@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -266,10 +265,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           isOpen={isDetailsOpen}
           onClose={handleDetailsClose}
           lessonId={selectedLessonId}
-          onDelete={handleDeleteLesson}
-          onCompleteSession={handleCompleteSession}
-          onAssignHomework={handleAssignHomework}
-          onRefresh={handleRefresh}
         />
 
         <AssignHomeworkDialog
