@@ -51,68 +51,8 @@ serve(async (req) => {
     const statusData = await statusResponse.json();
     console.log('Raw Netless response:', statusData);
     
-    // Preserve original progress object when available (finished state)
-    // Only construct when missing (in-progress state)
-    let progress;
-    if (statusData.progress) {
-      // Use existing progress object from Netless (finished state)
-      progress = statusData.progress;
-      console.log('Using existing progress object from Netless:', progress);
-    } else {
-      // Construct progress object for in-progress conversions
-      progress = {
-        totalPageSize: statusData.pageCount || 0,
-        convertedPageSize: Math.floor((statusData.convertedPercentage || 0) / 100 * (statusData.pageCount || 0)),
-        convertedPercentage: statusData.convertedPercentage || 0
-      };
-      console.log('Constructed progress object for in-progress conversion:', progress);
-    }
-
-    // Ensure images and prefix are properly preserved
-    const images = statusData.images || {};
-    const prefix = statusData.prefix || '';
-
-    // Validation check to ensure all required fields are present
-    const hasRequiredFields = {
-      hasImages: Object.keys(images).length > 0 || statusData.status !== 'Finished',
-      hasPrefix: prefix.length > 0 || statusData.status !== 'Finished', 
-      hasProgress: progress && typeof progress.convertedPercentage === 'number'
-    };
-
-    console.log('Field validation for Fastboard compatibility:', {
-      status: statusData.status,
-      hasImages: hasRequiredFields.hasImages,
-      hasPrefix: hasRequiredFields.hasPrefix,
-      hasProgress: hasRequiredFields.hasProgress,
-      imageCount: Object.keys(images).length,
-      prefixLength: prefix.length,
-      progressData: progress
-    });
-
-    // For finished conversions, ensure we have the required data
-    if (statusData.status === 'Finished' && (!hasRequiredFields.hasImages || !hasRequiredFields.hasPrefix)) {
-      console.error('Finished conversion missing required data:', {
-        missingImages: !hasRequiredFields.hasImages,
-        missingPrefix: !hasRequiredFields.hasPrefix,
-        rawData: statusData
-      });
-      
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Conversion completed but required data is missing',
-          taskInfo: {
-            uuid: statusData.uuid || taskUuid,
-            type: statusData.type || 'static',
-            status: 'Fail',
-            failedReason: 'Conversion completed but images or prefix data is missing'
-          }
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    
-    // Return the response format that Fastboard expects with preserved data
+    // Return the raw Netless response with minimal transformation
+    // The Netless API already provides the correct format for Fastboard
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -121,10 +61,13 @@ serve(async (req) => {
           type: statusData.type || 'static',
           status: statusData.status,
           failedReason: statusData.failedReason,
-          // Preserve original Netless fields that Fastboard insertDocs expects
-          images: images,
-          prefix: prefix,
-          progress: progress
+          // Pass through all Netless fields directly
+          images: statusData.images,
+          prefix: statusData.prefix,
+          pageCount: statusData.pageCount,
+          convertedPercentage: statusData.convertedPercentage,
+          previews: statusData.previews,
+          note: statusData.note
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
