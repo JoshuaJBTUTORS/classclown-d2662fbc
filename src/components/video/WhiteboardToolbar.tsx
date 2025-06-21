@@ -135,15 +135,27 @@ const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
           ))}
         </div>
 
-        {/* New Tab Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onNewTab}
-          className="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-8 h-8 p-0"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        {/* New Tab Dropdown Button */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-8 h-8 p-0"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-gray-800 border-gray-600">
+            <DropdownMenuItem 
+              onClick={onNewTab}
+              className="text-white hover:bg-gray-700"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              New Whiteboard
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Center - Formatting Controls */}
