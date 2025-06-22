@@ -3,15 +3,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  EduRoleTypeEnum,
-  EduRoomTypeEnum,
-  Platform,
-  AgoraEduClassroomEvent
-} from 'agora-edu-core';
 
-// Import AgoraEduSDK from the correct package
-const AgoraEduSDK = require('agora-classroom-sdk').AgoraEduSDK;
+// Import FcrUIScene from the web-compatible package
+import { FcrUIScene } from 'fcr-ui-scene';
+import {
+  FcrChatroom,
+  FcrBoardWidget,
+  FcrPollingWidget,
+  FcrStreamMediaPlayerWidget,
+  FcrWebviewWidget,
+  FcrCountdownWidget,
+  FcrPopupQuizWidget
+} from 'agora-plugin-gallery/scene';
 
 interface UIBuilderClassroomProps {
   roomId: string;
@@ -41,11 +44,12 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const unmountRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const initializeClassroom = async () => {
       try {
-        console.log('[DEBUG] === UIBuilder Classroom Initialization (NPM) ===');
+        console.log('[DEBUG] === UIBuilder Classroom Initialization (FcrUIScene) ===');
         console.log('[DEBUG] Classroom config:', {
           roomId,
           userUuid,
@@ -70,43 +74,66 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           throw new Error('Room ID is required for classroom initialization');
         }
 
-        console.log('[DEBUG] Configuring SDK...');
-        AgoraEduSDK.config({
+        console.log('[DEBUG] Launching classroom with FcrUIScene...');
+
+        // Map user role to numeric role type (1 = teacher, 2 = student)
+        const roleType = userRole === 'teacher' ? 1 : 2;
+
+        // Launch options following the documentation pattern
+        const launchOptions = {
           appId,
-          region: 'NA' // North America region
-        });
-
-        // Map user role
-        const roleType = userRole === 'teacher' ? EduRoleTypeEnum.teacher : EduRoleTypeEnum.student;
-
-        console.log('[DEBUG] Launching classroom with NPM SDK...');
-        await AgoraEduSDK.launch(containerRef.current, {
+          region: 'NA', // North America region
           userUuid,
           userName,
-          roleType,
           roomUuid: roomId,
+          roomType: 10, // Room type: 10 for Cloud Class
           roomName: lessonTitle || roomId,
-          roomType: EduRoomTypeEnum.RoomSmallClass, // Vocational/small interactive class
-          rtmToken,
+          pretest: true, // Enable pre-class equipment detection
+          token: rtmToken, // RTM token
           language: 'en',
-          duration: 60 * 60 * 2, // 2 hours
-          courseWareList: [],
-          pretest: false,
-          platform: Platform.PC,
-          listener: (evt: AgoraEduClassroomEvent) => {
-            console.log('[DEBUG] UIBuilder classroom event:', evt);
-            if (evt === AgoraEduClassroomEvent.Ready) {
-              console.log('[DEBUG] UIBuilder classroom ready');
-              setIsLoading(false);
-              toast.success('Classroom connected successfully');
-            } else if (evt === AgoraEduClassroomEvent.Destroyed) {
-              console.log('[DEBUG] UIBuilder classroom destroyed');
-              onClose();
-            }
+          duration: 60 * 60 * 2, // 2 hours in seconds
+          recordUrl: '', // Empty for now
+          roleType: roleType, // User roles: 1 is teacher, 2 is student
+          widgets: {
+            easemobIM: FcrChatroom, // IM widget
+            netlessBoard: FcrBoardWidget, // Interactive whiteboard widget
+            poll: FcrPollingWidget, // Voter widget
+            mediaPlayer: FcrStreamMediaPlayerWidget, // Video sync player widget
+            webView: FcrWebviewWidget, // Embedded browser widget
+            countdownTimer: FcrCountdownWidget, // Countdown widget
+            popupQuiz: FcrPopupQuizWidget, // Clicker widget
           }
-        });
+        };
 
-        console.log('[DEBUG] UIBuilder classroom launched successfully');
+        // Launch the classroom using FcrUIScene.launch
+        const unmount = FcrUIScene.launch(
+          containerRef.current,
+          launchOptions,
+          () => {
+            // Success callback
+            console.log('[DEBUG] UIBuilder classroom ready (FcrUIScene)');
+            setIsLoading(false);
+            toast.success('Classroom connected successfully');
+          },
+          (err: any) => {
+            // Error callback
+            console.error('[DEBUG] Failed to initialize UIBuilder classroom:', err);
+            setError(err.message);
+            onError?.(err.message);
+            setIsLoading(false);
+            toast.error(`Failed to initialize classroom: ${err.message}`);
+          },
+          (type: any) => {
+            // Destroy callback
+            console.log('[DEBUG] UIBuilder classroom destroyed');
+            onClose();
+          }
+        );
+
+        // Store unmount function for cleanup
+        unmountRef.current = unmount;
+
+        console.log('[DEBUG] UIBuilder classroom launched successfully with FcrUIScene');
         
       } catch (error: any) {
         console.error('[DEBUG] Failed to initialize UIBuilder classroom:', error);
@@ -122,6 +149,10 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
     // Cleanup
     return () => {
       console.log('[DEBUG] UIBuilder classroom cleanup');
+      if (unmountRef.current) {
+        unmountRef.current();
+        unmountRef.current = null;
+      }
     };
   }, [roomId, userUuid, userName, userRole, rtmToken, appId, lessonTitle, onError, onClose]);
 
@@ -185,7 +216,7 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
               Loading Interactive Classroom...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing Agora Education SDK (NPM)
+              Initializing FcrUIScene (Web SDK)
             </div>
           </div>
         </div>

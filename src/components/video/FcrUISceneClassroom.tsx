@@ -3,17 +3,18 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  EduClassroomConfig,
-  EduRoleTypeEnum,
-  EduRoomTypeEnum,
-  EduRegion,
-  Platform,
-  AgoraEduClassroomEvent
-} from 'agora-edu-core';
 
-// Import AgoraEduSDK from the correct package
-const AgoraEduSDK = require('agora-classroom-sdk').AgoraEduSDK;
+// Import FcrUIScene from the web-compatible package
+import { FcrUIScene } from 'fcr-ui-scene';
+import {
+  FcrChatroom,
+  FcrBoardWidget,
+  FcrPollingWidget,
+  FcrStreamMediaPlayerWidget,
+  FcrWebviewWidget,
+  FcrCountdownWidget,
+  FcrPopupQuizWidget
+} from 'agora-plugin-gallery/scene';
 
 interface FcrUISceneClassroomProps {
   appId: string;
@@ -39,9 +40,10 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const unmountRef = React.useRef<(() => void) | null>(null);
 
   React.useEffect(() => {
-    console.log('[DEBUG] === FcrUISceneClassroom Effect Started (NPM Approach) ===');
+    console.log('[DEBUG] === FcrUIScene Classroom Effect Started ===');
     console.log('[DEBUG] Props received:', {
       appId: appId?.substring(0, 8) + '...',
       rtmTokenPresent: !!rtmToken,
@@ -54,9 +56,8 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
 
     const initializeClassroom = async () => {
       try {
-        console.log('[DEBUG] === Starting NPM SDK Initialization ===');
+        console.log('[DEBUG] === Starting FcrUIScene Initialization ===');
         
-        // Container validation
         if (!containerRef.current) {
           console.error('[DEBUG] Container ref is null - aborting initialization');
           throw new Error('Container not available');
@@ -65,7 +66,6 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         console.log('[DEBUG] Container validation passed');
         
         // Validate required parameters
-        console.log('[DEBUG] === Validating Parameters ===');
         if (!rtmToken) {
           throw new Error('RTM token is required for classroom initialization');
         }
@@ -76,53 +76,65 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           throw new Error('Channel name is required for classroom initialization');
         }
 
-        // Configure the SDK
-        console.log('[DEBUG] === Configuring Agora Education SDK ===');
-        AgoraEduSDK.config({
-          appId,
-          region: 'NA' // North America region
-        });
-        console.log('[DEBUG] SDK configuration completed');
-
-        // Map user role to Agora role type
-        const roleType = userRole === 'teacher' ? EduRoleTypeEnum.teacher : EduRoleTypeEnum.student;
+        // Map user role to numeric role type (1 = teacher, 2 = student)
+        const roleType = userRole === 'teacher' ? 1 : 2;
         console.log('[DEBUG] Role mapping:', { userRole, roleType });
 
-        // Launch options following CloudClass Desktop pattern
+        // Launch options following the documentation pattern
         const launchOptions = {
+          appId,
+          region: 'NA', // North America region
           userUuid: uid.toString(),
           userName,
-          roleType: roleType,
           roomUuid: channelName,
+          roomType: 10, // Room type: 10 for Cloud Class
           roomName: lessonTitle || channelName,
-          roomType: EduRoomTypeEnum.RoomSmallClass,
-          rtmToken: rtmToken,
+          pretest: true, // Enable pre-class equipment detection
+          token: rtmToken, // RTM token
           language: 'en',
-          duration: 60 * 60 * 2, // 2 hours
-          courseWareList: [],
-          pretest: false,
-          platform: Platform.PC,
-          listener: (evt: AgoraEduClassroomEvent) => {
-            console.log('[DEBUG] === Classroom Event Received ===');
-            console.log('[DEBUG] Event:', evt);
-            
-            if (evt === AgoraEduClassroomEvent.Ready) {
-              console.log('[DEBUG] Classroom ready - removing loading state');
-              setIsLoading(false);
-              toast.success('Classroom connected successfully');
-            } else if (evt === AgoraEduClassroomEvent.Destroyed) {
-              console.log('[DEBUG] Classroom destroyed - closing');
-              onClose();
-            }
+          duration: 60 * 60 * 2, // 2 hours in seconds
+          recordUrl: '', // Empty for now
+          roleType: roleType, // User roles: 1 is teacher, 2 is student
+          widgets: {
+            easemobIM: FcrChatroom, // IM widget
+            netlessBoard: FcrBoardWidget, // Interactive whiteboard widget
+            poll: FcrPollingWidget, // Voter widget
+            mediaPlayer: FcrStreamMediaPlayerWidget, // Video sync player widget
+            webView: FcrWebviewWidget, // Embedded browser widget
+            countdownTimer: FcrCountdownWidget, // Countdown widget
+            popupQuiz: FcrPopupQuizWidget, // Clicker widget
           }
         };
 
-        console.log('[DEBUG] === Launching Classroom ===');
+        console.log('[DEBUG] === Launching FcrUIScene Classroom ===');
         console.log('[DEBUG] Launch options prepared');
         
-        await AgoraEduSDK.launch(containerRef.current, launchOptions);
-        
-        console.log('[DEBUG] Agora Education SDK launched successfully');
+        // Launch the classroom using FcrUIScene.launch
+        const unmount = FcrUIScene.launch(
+          containerRef.current,
+          launchOptions,
+          () => {
+            // Success callback
+            console.log('[DEBUG] FcrUIScene classroom launched successfully');
+            setIsLoading(false);
+            toast.success('Classroom connected successfully');
+          },
+          (err: any) => {
+            // Error callback
+            console.error('[DEBUG] FcrUIScene classroom launch failed:', err);
+            setError(`Classroom Error: ${err.message || 'Unknown error'}`);
+            setIsLoading(false);
+            toast.error(`Classroom error: ${err.message || 'Unknown error'}`);
+          },
+          (type: any) => {
+            // Destroy callback
+            console.log('[DEBUG] FcrUIScene classroom destroyed, type:', type);
+            onClose();
+          }
+        );
+
+        // Store unmount function for cleanup
+        unmountRef.current = unmount;
         
       } catch (error: any) {
         console.error('[DEBUG] === Classroom Initialization Failed ===');
@@ -137,7 +149,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       }
     };
 
-    // Start initialization immediately
+    // Start initialization
     if (!containerRef.current) {
       console.log('[DEBUG] Container not ready, waiting...');
       const checkContainer = setInterval(() => {
@@ -166,6 +178,11 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
     return () => {
       try {
         console.log('[DEBUG] === Component Cleanup ===');
+        if (unmountRef.current) {
+          console.log('[DEBUG] Calling unmount function');
+          unmountRef.current();
+          unmountRef.current = null;
+        }
       } catch (error) {
         console.error('[DEBUG] Cleanup error:', error);
       }
@@ -210,7 +227,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
               Loading Flexible Classroom...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing Agora Education SDK (NPM)
+              Initializing FcrUIScene (Web SDK)
             </div>
             <div className="text-xs text-gray-500">
               Check browser console for detailed logs
@@ -219,12 +236,12 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         </div>
       )}
 
-      {/* Agora Education SDK Container */}
+      {/* FcrUIScene Container */}
       <div 
         ref={containerRef}
         className="w-full h-full"
         style={{ 
-          height: 'calc(100vh - 0px)',
+          height: '100vh',
           width: '100vw'
         }}
       />
