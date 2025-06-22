@@ -41,6 +41,7 @@ serve(async (req) => {
     }
     
     const { action, ...requestData } = requestBody;
+    console.log('[AGORA-INTEGRATION] Action extracted:', action);
 
     // Validate required environment variables
     const appId = Deno.env.get("AGORA_APP_ID");
@@ -64,20 +65,36 @@ serve(async (req) => {
 
     validateAgoraCredentials(appId, appCertificate);
 
+    console.log('[AGORA-INTEGRATION] Processing action:', action);
+    
     switch (action) {
       case "create-flexible-classroom":
+        console.log('[AGORA-INTEGRATION] Handling create-flexible-classroom action');
         return await createFlexibleClassroomSession(requestData, supabase, appId, appCertificate);
+        
       case "create-room":
+        console.log('[AGORA-INTEGRATION] Handling create-room action');
         return await createVideoRoom(requestData, supabase, appId, appCertificate, netlessSDKToken);
+        
       case "get-tokens":
       case "get_tokens":
+        console.log('[AGORA-INTEGRATION] Handling get-tokens action');
         return await getTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
+        
       case "regenerate-tokens":
+        console.log('[AGORA-INTEGRATION] Handling regenerate-tokens action');
         return await regenerateTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
+        
       default:
-        console.error('[AGORA-INTEGRATION] Invalid action:', action);
+        console.error('[AGORA-INTEGRATION] Invalid action received:', action);
+        console.error('[AGORA-INTEGRATION] Available actions: create-flexible-classroom, create-room, get-tokens, regenerate-tokens');
         return new Response(
-          JSON.stringify({ success: false, error: "Invalid action", received: action }),
+          JSON.stringify({ 
+            success: false, 
+            error: "Invalid action", 
+            received: action,
+            available: ["create-flexible-classroom", "create-room", "get-tokens", "regenerate-tokens"]
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
