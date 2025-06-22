@@ -1,0 +1,183 @@
+.group-start-content {
+  box-sizing: border-box;
+  padding-top: 30px;
+  padding-left: 30px;
+}
+
+.start-main-title,
+.start-sub-title {
+  @apply text-level2;
+  font-size: 16px;
+  font-family: PingFang-SC-Bold, PingFang-SC;
+  font-weight: bold;
+  user-select: none;
+}
+
+.start-sub-title {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.start-sub-title + div > .fcr-input-wrapper,
+.group-search-wrap .fcr-input-wrapper {
+  @apply bg-component border border-solid border-divider;
+  border-radius: 4px;
+}
+
+.group-search-wrap .fcr-input-wrapper {
+  padding-left: 6px;
+}
+
+.group-search-wrap .fcr-input-wrapper .fcr-input-prefix {
+  opacity: 0.5;
+  margin-right: -6px !important;
+}
+
+.group-start-footer {
+  @apply border-t border-solid border-divider;
+  box-sizing: border-box;
+  padding-right: 20px;
+  display: flex;
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  height: 58px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.group-tips-wrap {
+  margin-left: 1rem;
+}
+
+.group-tips {
+  @apply text-level2;
+  font-size: 12px;
+  font-family: PingFangSC-Regular, PingFang SC;
+  font-weight: 400;
+}
+
+.group-select-footer {
+  @apply bg-component border border-solid border-divider;
+  height: 58px;
+}
+
+.group-select-footer > div {
+  @apply bg-component;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+}
+
+.group-scroll-overflow > .fcr-multi-tree-root > .fcr-tree-root {
+  @apply bg-component border border-solid border-divider;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.group-scroll-overflow > .fcr-multi-tree-root > .fcr-tree-root .fcr-tree-node {
+  height: 36px;
+}
+
+.group-scroll-overflow {
+  margin-left: 15px;
+  margin-right: 15px;
+  scrollbar-width: none;
+}
+.group-scroll-overflow::-webkit-scrollbar {
+  width: 0;
+}
+
+.group-scroll-overflow > .fcr-multi-tree-root {
+  margin-top: 8px;
+}
+
+.rename-btn {
+  color: #357bf6 !important;
+  margin-right: 15px;
+}
+.remove-btn {
+  @apply text-error;
+  margin-right: 15px;
+}
+
+.breakout-room .fcr-tree-node span {
+  @apply text-level1;
+}
+
+.breakout-room .fcr-tree-node .tree-node-tips {
+  font-size: 12px;
+  font-family: PingFangSC-Regular, PingFang SC;
+  font-weight: 400;
+  @apply text-level2;
+  margin-left: 10px;
+}
+
+.group-select-footer .fcr-btn-danger:hover {
+  @apply text-level1 bg-error;
+}
+
+input[name='breakout-room-type'] + span {
+  @apply text-level2;
+}
+
+input[name='breakout-room-type'] {
+  position: relative;
+}
+
+input[name='breakout-room-type']:checked:after {
+  content: '';
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  background: #fff;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid #357bf6;
+}
+
+.group-rename-input {
+  @apply bg-component text-level1;
+  outline: 1px solid #357bf6;
+}
+
+.group-start-footer button,
+.group-select-footer button,
+.confirm-panel-footer button {
+  display: flex;
+  min-width: 80px;
+  height: 30px;
+  justify-content: center;
+  align-items: center;
+  padding: 5px 26px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.group-start-footer .fcr-btn-secondary,
+.group-select-footer .fcr-btn-secondary,
+.confirm-panel-footer .fcr-btn-secondary {
+  color: #357bf6 !important;
+}
+
+.group-scroll-overflow > .fcr-multi-tree-root > .fcr-tree-root > .fcr-tree-node + .fcr-tree-root {
+  @apply border-t border-solid border-divider;
+}
+
+.breakout-room-group-panel .popover-arrow {
+  display: block;
+}
+
+.group-select-footer .recreate-btn {
+  padding: 5px 22px !important;
+}
+
+.group-select-footer .add-group-btn {
+  padding: 5px 15px !important;
+}
+
+.group-select-footer .start-btn,
+.group-select-footer .broadcast-btn {
+  padding: 5px 12px !important;
+}

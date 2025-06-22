@@ -1,0 +1,8 @@
+{
+  "entryPoints": ["./src/infra/api"],
+  "out": "./docs",
+  "exclude": ["**/node_modules/**"],
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "hideGenerator": true
+}

@@ -1,0 +1,99 @@
+.sub-title {
+  @apply text-level2;
+  font-size: 13px;
+  font-weight: 400;
+  align-self: flex-start;
+}
+
+.programs {
+  width: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.program-item {
+  @apply border border-solid border-divider;
+  width: 185px;
+  height: 150px;
+  border-radius: 4px;
+  margin-right: 16px;
+  margin-bottom: 18px;
+  @apply box-border flex flex-col justify-center items-center cursor-pointer float-left;
+}
+.program-item-active {
+  @apply border border-solid border-brand;
+}
+.program-item-img {
+  width: 159px;
+  height: 101px;
+  @apply border border-solid border-divider;
+  margin-top: 10px;
+  background-position: center;
+  background-size: 100%;
+  @apply box-border;
+}
+
+.program-item-title {
+  margin-top: 6px;
+  @apply flex justify-center items-center;
+}
+
+.program-item-title .title-text {
+  @apply text-level1;
+  margin-left: 7px;
+  font-size: 12px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+.programs h5 {
+  @apply border-b border-solid border-divider text-level1;
+  font-weight: bold;
+  font-size: 14px;
+  padding-bottom: 5px;
+  margin-bottom: 14px;
+}
+.screen-picker-footer {
+  position: relative;
+  top: 30px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.screen-picker-footer-confirm-btn {
+  margin-left: 15px;
+}
+.screen-picker-footer-text {
+  @apply text-level1;
+  flex: 1;
+  font-size: 14px;
+  font-weight: bold;
+  padding-right: 40px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 30px;
+}
+.screen-picker-dialog .modal-content {
+  padding-top: 15px;
+  position: relative;
+}
+.screen-picker-dialog .modal-content .mask {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    var(--fcr_system_component_color) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
