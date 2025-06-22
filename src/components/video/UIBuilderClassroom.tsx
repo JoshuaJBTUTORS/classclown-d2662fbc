@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
-  AgoraEduSDK,
   EduRoleTypeEnum,
   EduRoomTypeEnum,
   Platform,
   AgoraEduClassroomEvent
 } from 'agora-edu-core';
+
+// Import AgoraEduSDK from the correct package
+const AgoraEduSDK = require('agora-classroom-sdk').AgoraEduSDK;
 
 interface UIBuilderClassroomProps {
   roomId: string;
@@ -100,12 +102,6 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
             } else if (evt === AgoraEduClassroomEvent.Destroyed) {
               console.log('[DEBUG] UIBuilder classroom destroyed');
               onClose();
-            } else if (evt === AgoraEduClassroomEvent.NetworkConnectionLost) {
-              console.error('[DEBUG] UIBuilder classroom network error');
-              const errorMsg = 'Network connection lost';
-              setError(errorMsg);
-              onError?.(errorMsg);
-              toast.error(`Classroom error: ${errorMsg}`);
             }
           }
         });

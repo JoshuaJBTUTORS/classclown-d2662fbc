@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
-  AgoraEduSDK,
   EduClassroomConfig,
   EduRoleTypeEnum,
   EduRoomTypeEnum,
@@ -12,6 +11,9 @@ import {
   Platform,
   AgoraEduClassroomEvent
 } from 'agora-edu-core';
+
+// Import AgoraEduSDK from the correct package
+const AgoraEduSDK = require('agora-classroom-sdk').AgoraEduSDK;
 
 interface FcrUISceneClassroomProps {
   appId: string;
@@ -86,42 +88,17 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         const roleType = userRole === 'teacher' ? EduRoleTypeEnum.teacher : EduRoleTypeEnum.student;
         console.log('[DEBUG] Role mapping:', { userRole, roleType });
 
-        // Prepare session info
-        const sessionInfo = {
-          userUuid: uid.toString(),
-          userName,
-          role: roleType,
-          roomUuid: channelName,
-          roomName: lessonTitle || channelName,
-          roomType: EduRoomTypeEnum.RoomSmallClass, // Small class for interactive sessions
-          roomSubtype: 0, // Standard subtype
-          roomServiceType: 0, // Standard service
-          duration: 60 * 60 * 2, // 2 hours
-          flexProperties: {},
-          token: rtmToken,
-          startTime: Date.now()
-        };
-
-        console.log('[DEBUG] Session info prepared:', {
-          userUuid: sessionInfo.userUuid,
-          userName: sessionInfo.userName,
-          role: sessionInfo.role,
-          roomUuid: sessionInfo.roomUuid,
-          roomName: sessionInfo.roomName,
-          roomType: sessionInfo.roomType
-        });
-
         // Launch options following CloudClass Desktop pattern
         const launchOptions = {
-          userUuid: sessionInfo.userUuid,
-          userName: sessionInfo.userName,
-          roleType: sessionInfo.role,
-          roomUuid: sessionInfo.roomUuid,
-          roomName: sessionInfo.roomName,
-          roomType: sessionInfo.roomType,
-          rtmToken: sessionInfo.token,
+          userUuid: uid.toString(),
+          userName,
+          roleType: roleType,
+          roomUuid: channelName,
+          roomName: lessonTitle || channelName,
+          roomType: EduRoomTypeEnum.RoomSmallClass,
+          rtmToken: rtmToken,
           language: 'en',
-          duration: sessionInfo.duration,
+          duration: 60 * 60 * 2, // 2 hours
           courseWareList: [],
           pretest: false,
           platform: Platform.PC,
@@ -136,9 +113,6 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
             } else if (evt === AgoraEduClassroomEvent.Destroyed) {
               console.log('[DEBUG] Classroom destroyed - closing');
               onClose();
-            } else if (evt === AgoraEduClassroomEvent.NetworkConnectionLost) {
-              console.error('[DEBUG] Network connection lost');
-              toast.error('Network connection lost');
             }
           }
         };
