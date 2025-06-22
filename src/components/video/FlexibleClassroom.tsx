@@ -1,14 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
-import { loadAgoraFlexibleClassroomSDK } from '@/utils/agoraSDKLoader';
-
-// Import Agora Flexible Classroom SDK
-declare global {
-  interface Window {
-    AgoraEduSDK: any;
-  }
-}
+import AgoraEduSDK from 'agora-classroom-sdk';
 
 interface FlexibleClassroomProps {
   credentials: FlexibleClassroomCredentials;
@@ -27,30 +20,20 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const classroomRef = useRef<any>(null);
-  const [isSDKLoading, setIsSDKLoading] = useState(true);
-  const [sdkError, setSDKError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
-    const initializeSDK = async () => {
-      try {
-        await loadAgoraFlexibleClassroomSDK();
-        setIsSDKLoading(false);
-      } catch (error) {
-        console.error('Failed to load Agora SDK:', error);
-        setSDKError('Failed to load classroom SDK');
-        setIsSDKLoading(false);
-      }
-    };
-
-    initializeSDK();
-  }, []);
-
-  useEffect(() => {
-    if (isSDKLoading || sdkError || !containerRef.current || !credentials) return;
+    if (!containerRef.current || !credentials) return;
 
     const initializeClassroom = async () => {
       try {
-        console.log('Initializing Flexible Classroom with credentials:', credentials);
+        console.log('Initializing Flexible Classroom with credentials:', {
+          roomId: credentials.roomId,
+          userRole: credentials.userRole,
+          userName: credentials.userName,
+          appId: credentials.appId.substring(0, 8) + '...'
+        });
 
         // Determine classroom type based on expected students
         const classroomType = expectedStudents.length <= 1 ? '1v1' : 'small-classroom';
@@ -58,7 +41,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
         // Configure classroom options
         const launchOptions = {
           appId: credentials.appId,
-          region: 'AP', // Adjust based on your region
+          region: 'AP', // Asia Pacific region
           roomId: credentials.roomId,
           roomName: credentials.lessonTitle || `Lesson ${credentials.roomId}`,
           userUuid: credentials.userUuid,
@@ -71,7 +54,6 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           courseWareList: [],
           extApps: [],
           uiConfig: {
-            // Customize UI based on our needs
             shareScreen: {
               enable: true,
             },
@@ -86,27 +68,32 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
             },
           },
           widgets: {
-            easemobIM: false, // Disable if not needed
+            easemobIM: false,
             poll: true,
             popupQuiz: true,
             countdown: true,
             webview: false,
           },
-          // Classroom layout and features
           latencyLevel: 1, // Ultra low latency
           platform: 'web',
         };
 
-        // Launch the classroom
-        if (window.AgoraEduSDK) {
-          classroomRef.current = await window.AgoraEduSDK.launch(
-            containerRef.current,
-            launchOptions
-          );
+        console.log('Launching Flexible Classroom with options:', {
+          ...launchOptions,
+          rtmToken: launchOptions.rtmToken.substring(0, 20) + '...'
+        });
 
-          // Set up event listeners
+        // Launch the classroom using the npm package
+        classroomRef.current = await AgoraEduSDK.launch(
+          containerRef.current,
+          launchOptions
+        );
+
+        // Set up event listeners
+        if (classroomRef.current) {
           classroomRef.current.on('ready', () => {
             console.log('Flexible Classroom is ready');
+            setIsInitializing(false);
           });
 
           classroomRef.current.on('destroyed', () => {
@@ -116,14 +103,16 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
 
           classroomRef.current.on('error', (error: any) => {
             console.error('Flexible Classroom error:', error);
+            setInitError(`Classroom error: ${error.message || error}`);
+            setIsInitializing(false);
           });
-        } else {
-          console.error('AgoraEduSDK not loaded');
-          setSDKError('Classroom SDK not available');
         }
-      } catch (error) {
+
+        setIsInitializing(false);
+      } catch (error: any) {
         console.error('Error initializing Flexible Classroom:', error);
-        setSDKError('Failed to initialize classroom');
+        setInitError(`Failed to initialize classroom: ${error.message || error}`);
+        setIsInitializing(false);
       }
     };
 
@@ -139,16 +128,16 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
         }
       }
     };
-  }, [credentials, expectedStudents, onLeave, isSDKLoading, sdkError]);
+  }, [credentials, expectedStudents, onLeave]);
 
-  if (sdkError) {
+  if (initError) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-4">
           <div className="text-center">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Classroom Error</h2>
-            <p className="text-gray-600 mb-4">{sdkError}</p>
+            <p className="text-gray-600 mb-4">{initError}</p>
             <button
               onClick={onLeave}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -192,14 +181,12 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
       />
 
       {/* Loading overlay */}
-      {(isSDKLoading || !classroomRef.current) && (
+      {isInitializing && (
         <div className="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 shadow-lg">
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-              <span className="text-gray-700">
-                {isSDKLoading ? 'Loading SDK...' : 'Starting classroom...'}
-              </span>
+              <span className="text-gray-700">Initializing classroom...</span>
             </div>
           </div>
         </div>

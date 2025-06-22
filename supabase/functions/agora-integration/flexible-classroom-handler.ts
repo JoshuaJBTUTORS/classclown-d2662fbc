@@ -19,8 +19,7 @@ export async function createFlexibleClassroomSession(
   try {
     const { lessonId, userRole, customUID, displayName } = requestData;
     
-    console.log('[FLEXIBLE-CLASSROOM] Creating session for lesson:', lessonId);
-    console.log('[FLEXIBLE-CLASSROOM] Request data:', { lessonId, userRole, customUID, displayName });
+    console.log('[FLEXIBLE-CLASSROOM] Creating session with improved token generation:', { lessonId, userRole, customUID, displayName });
 
     // Get lesson details
     const { data: lesson, error: lessonError } = await supabase
@@ -31,15 +30,15 @@ export async function createFlexibleClassroomSession(
 
     if (lessonError || !lesson) {
       console.error('[FLEXIBLE-CLASSROOM] Lesson fetch error:', lessonError);
-      throw new Error('Lesson not found');
+      throw new Error(`Lesson not found: ${lessonError?.message || 'Unknown error'}`);
     }
 
     console.log('[FLEXIBLE-CLASSROOM] Lesson found:', lesson.title);
 
-    // Generate room ID from lesson ID
+    // Generate room ID from lesson ID (consistent format)
     const roomId = `lesson_${lessonId.replace(/-/g, '_')}`;
     
-    // Use custom UID or generate from lesson tutor ID
+    // Use custom UID or generate deterministic one
     let userUuid: string;
     if (customUID) {
       userUuid = customUID.toString();
@@ -55,8 +54,8 @@ export async function createFlexibleClassroomSession(
       console.log('[FLEXIBLE-CLASSROOM] Generated random UID:', userUuid);
     }
 
-    // Generate RTM token for signaling
-    console.log('[FLEXIBLE-CLASSROOM] Generating tokens...');
+    // Generate tokens for signaling - RTM is critical for Flexible Classroom
+    console.log('[FLEXIBLE-CLASSROOM] Generating tokens for signaling...');
     const tokenData = await generateTokensOfficial(
       appId,
       appCertificate,
@@ -66,15 +65,21 @@ export async function createFlexibleClassroomSession(
     );
 
     if (!tokenData.rtmToken) {
-      throw new Error('Failed to generate RTM token');
+      throw new Error('Failed to generate RTM token - required for Flexible Classroom signaling');
     }
 
-    console.log('[FLEXIBLE-CLASSROOM] Generated credentials:', {
+    // Validate token generation
+    if (tokenData.rtmToken.length < 100) {
+      console.warn('[FLEXIBLE-CLASSROOM] RTM token seems too short:', tokenData.rtmToken.length);
+    }
+
+    console.log('[FLEXIBLE-CLASSROOM] Generated credentials successfully:', {
       roomId,
       userUuid,
       userRole,
       hasRtmToken: !!tokenData.rtmToken,
-      rtmTokenLength: tokenData.rtmToken.length
+      rtmTokenLength: tokenData.rtmToken.length,
+      rtcTokenLength: tokenData.rtcToken?.length || 0
     });
 
     const response = {
@@ -88,7 +93,7 @@ export async function createFlexibleClassroomSession(
       lessonTitle: lesson.title
     };
 
-    console.log('[FLEXIBLE-CLASSROOM] Returning response:', {
+    console.log('[FLEXIBLE-CLASSROOM] Returning response with masked token:', {
       ...response,
       rtmToken: response.rtmToken.substring(0, 20) + '...'
     });
@@ -98,19 +103,33 @@ export async function createFlexibleClassroomSession(
       { 
         status: 200, 
         headers: { 
-          ...{ "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" }, 
+          "Access-Control-Allow-Origin": "*", 
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
           "Content-Type": "application/json" 
         } 
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('[FLEXIBLE-CLASSROOM] Error creating session:', error);
+    
+    // Provide more detailed error info
+    const errorMessage = error.message || 'Unknown error occurred';
+    const errorDetails = {
+      success: false, 
+      error: errorMessage,
+      errorType: error.name || 'UnknownError',
+      timestamp: new Date().toISOString()
+    };
+    
+    console.error('[FLEXIBLE-CLASSROOM] Detailed error response:', errorDetails);
+    
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify(errorDetails),
       { 
         status: 500, 
         headers: { 
-          ...{ "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" }, 
+          "Access-Control-Allow-Origin": "*", 
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
           "Content-Type": "application/json" 
         } 
       }
