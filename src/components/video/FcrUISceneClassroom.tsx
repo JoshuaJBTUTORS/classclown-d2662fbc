@@ -50,25 +50,8 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           tokenPresent: !!rtmToken
         });
 
-        const launchConfig = {
-          roomToken: rtmToken,
-          roomId: channelName,
-          userName,
-          userRole: userRole === 'teacher' ? 1 : 2, // Convert to expected enum values
-          language: 'en',
-          userProperties: {
-            uid: uid.toString(),
-            lessonTitle: lessonTitle || channelName
-          }
-        };
-
-        console.log('[FCRUISCENE] Launch config:', {
-          ...launchConfig,
-          roomToken: launchConfig.roomToken ? '[PRESENT]' : '[MISSING]'
-        });
-
-        // Create the scene creator instance with full config
-        const fullConfig = {
+        // Create the scene creator instance with proper config
+        const sceneConfig = {
           appId,
           region: FcrRegion.NA,
           userId: uid.toString(),
@@ -83,17 +66,22 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           roleType: userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
         };
 
-        const sceneCreator = new FcrUISceneCreator(fullConfig);
+        console.log('[FCRUISCENE] Creating scene with config:', {
+          ...sceneConfig,
+          token: sceneConfig.token ? '[PRESENT]' : '[MISSING]'
+        });
+
+        const sceneCreator = new FcrUISceneCreator(sceneConfig);
         sceneRef.current = sceneCreator;
 
-        // Define callback functions
+        // Define callback functions for the 5-argument launch method
         const onSuccess = () => {
           console.log('[FCRUISCENE] Classroom launched successfully');
           setIsLoading(false);
           toast.success('Classroom connected successfully');
         };
 
-        const onError = (error: any) => {
+        const onFailure = (error: any) => {
           console.error('[FCRUISCENE] Classroom launch error:', error);
           setError(`Launch Error: ${error.message || 'Unknown error'}`);
           setIsLoading(false);
@@ -105,22 +93,29 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           onClose();
         };
 
-        // Try simpler launch approach first - just pass the container
-        try {
-          await sceneCreator.launch(containerRef.current.id || 'classroom-container');
-          onSuccess();
-        } catch (launchError) {
-          console.warn('[FCRUISCENE] Simple launch failed, trying alternative approach:', launchError);
-          
-          // Alternative: try with callback-based approach
-          await sceneCreator.launch((containerId: string) => {
-            console.log('[FCRUISCENE] Mounting to container:', containerId);
-            if (containerRef.current) {
-              containerRef.current.id = containerId;
-            }
-          });
-          onSuccess();
-        }
+        // Launch configuration object
+        const launchConfig = {
+          roomToken: rtmToken,
+          roomId: channelName,
+          userName,
+          userRole: userRole === 'teacher' ? 1 : 2,
+          language: 'en',
+          userProperties: {
+            uid: uid.toString(),
+            lessonTitle: lessonTitle || channelName
+          }
+        };
+
+        console.log('[FCRUISCENE] Launching with 5-argument method');
+
+        // Use the correct 5-argument launch method signature
+        await sceneCreator.launch(
+          launchConfig,
+          containerRef.current,
+          onSuccess,
+          onFailure,
+          onDestroy
+        );
 
       } catch (error: any) {
         console.error('[FCRUISCENE] Failed to initialize classroom:', error);
