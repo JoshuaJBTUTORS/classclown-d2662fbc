@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useVideoRoom } from '@/hooks/useVideoRoom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Video, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import EmbeddedVideoRoom from '@/components/video/EmbeddedVideoRoom';
 const VideoRoom: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
+  const { userRole, isAdmin, isOwner, isTutor } = useAuth();
   
   const {
     lesson,
@@ -17,6 +19,26 @@ const VideoRoom: React.FC = () => {
     error,
     handleLeaveRoom
   } = useVideoRoom(lessonId || '');
+
+  // Determine if user has teacher/host privileges
+  const isTeacherRole = isTutor || isAdmin || isOwner;
+
+  // Get the appropriate room URL based on role
+  const getRoomUrl = () => {
+    if (!lesson) return null;
+    
+    if (isTeacherRole) {
+      // Teachers get the authenticated room URL
+      return lesson.lesson_space_room_url;
+    } else {
+      // Students and parents get the invitation URL
+      return lesson.lesson_space_space_id 
+        ? `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`
+        : null;
+    }
+  };
+
+  const roomUrl = getRoomUrl();
 
   if (isLoading) {
     return (
@@ -53,7 +75,7 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  if (!lesson?.lesson_space_room_url) {
+  if (!roomUrl) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -64,7 +86,10 @@ const VideoRoom: React.FC = () => {
                 No Video Room Available
               </h2>
               <p className="text-sm text-gray-600 mb-4">
-                This lesson doesn't have a video room set up yet. Please contact your teacher to create one.
+                {isTeacherRole 
+                  ? "This lesson doesn't have a video room set up yet. Please create one first."
+                  : "This lesson doesn't have a video room set up yet. Please contact your teacher to create one."
+                }
               </p>
             </div>
             <Button onClick={handleLeaveRoom} className="w-full">
@@ -80,8 +105,9 @@ const VideoRoom: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <EmbeddedVideoRoom
-        roomUrl={lesson.lesson_space_room_url}
-        lessonTitle={lesson.title}
+        roomUrl={roomUrl}
+        spaceId={lesson?.lesson_space_space_id}
+        lessonTitle={lesson?.title}
         onExit={handleLeaveRoom}
         className="h-screen"
       />

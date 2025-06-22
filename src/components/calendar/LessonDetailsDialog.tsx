@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Clock, 
   Users, 
@@ -12,7 +13,9 @@ import {
   Video,
   Loader2,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  UserCheck
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +38,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [lesson, setLesson] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const { userRole, isAdmin, isOwner, isTutor } = useAuth();
+
+  // Determine if user has teacher/host privileges
+  const isTeacherRole = isTutor || isAdmin || isOwner;
 
   useEffect(() => {
     if (lessonId && isOpen) {
@@ -180,9 +187,20 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 <div className="flex items-center gap-2 mb-3">
                   <Video className="h-4 w-4" />
                   <h3 className="font-medium">Video Conference</h3>
+                  {isTeacherRole ? (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs ml-auto">
+                      <Shield className="h-3 w-3" />
+                      Host Access
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs ml-auto">
+                      <UserCheck className="h-3 w-3" />
+                      Student Access
+                    </div>
+                  )}
                 </div>
 
-                {lesson.lesson_space_room_url ? (
+                {lesson.lesson_space_room_url || lesson.lesson_space_space_id ? (
                   <VideoConferenceLink 
                     lessonId={lesson.id}
                     lessonSpaceRoomUrl={lesson.lesson_space_room_url}
@@ -197,27 +215,34 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                       <div className="text-sm text-amber-700">
                         <p className="font-medium">No video room created yet</p>
-                        <p>Create a LessonSpace room to enable video conferencing for this lesson.</p>
+                        <p>
+                          {isTeacherRole 
+                            ? 'Create a LessonSpace room to enable video conferencing for this lesson.'
+                            : 'Ask your teacher to create a video room for this lesson.'
+                          }
+                        </p>
                       </div>
                     </div>
                     
-                    <Button
-                      onClick={handleCreateLessonSpaceRoom}
-                      disabled={isCreatingRoom}
-                      className="w-full"
-                    >
-                      {isCreatingRoom ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Creating Room...
-                        </>
-                      ) : (
-                        <>
-                          <Video className="h-4 w-4 mr-2" />
-                          Create LessonSpace Room
-                        </>
-                      )}
-                    </Button>
+                    {isTeacherRole && (
+                      <Button
+                        onClick={handleCreateLessonSpaceRoom}
+                        disabled={isCreatingRoom}
+                        className="w-full"
+                      >
+                        {isCreatingRoom ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Creating Room...
+                          </>
+                        ) : (
+                          <>
+                            <Video className="h-4 w-4 mr-2" />
+                            Create LessonSpace Room
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>

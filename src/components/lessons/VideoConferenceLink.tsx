@@ -3,12 +3,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Video,
   Users,
   Loader2,
   ExternalLink,
-  Play
+  Play,
+  UserCheck
 } from 'lucide-react';
 
 interface VideoConferenceLinkProps {
@@ -32,9 +34,26 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { userRole, isAdmin, isOwner, isTutor } = useAuth();
+
+  // Determine if user has teacher/host privileges
+  const isTeacherRole = isTutor || isAdmin || isOwner;
+
+  // Get the appropriate URL based on user role
+  const getVideoRoomUrl = () => {
+    if (isTeacherRole) {
+      // Teachers get the authenticated room URL with full controls
+      return lessonSpaceRoomUrl;
+    } else {
+      // Students and parents get the simple invitation URL
+      return lessonSpaceSpaceId ? `https://www.thelessonspace.com/space/${lessonSpaceSpaceId}` : null;
+    }
+  };
+
+  const videoUrl = getVideoRoomUrl();
 
   const handleJoinRoom = () => {
-    if (!lessonSpaceRoomUrl) {
+    if (!videoUrl) {
       toast.error('Video room URL not available');
       return;
     }
@@ -53,13 +72,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleOpenInNewTab = () => {
-    if (!lessonSpaceRoomUrl) {
+    if (!videoUrl) {
       toast.error('Video room URL not available');
       return;
     }
 
     try {
-      window.open(lessonSpaceRoomUrl, '_blank', 'noopener,noreferrer');
+      window.open(videoUrl, '_blank', 'noopener,noreferrer');
       toast.success('Opening video room in new tab...');
     } catch (error) {
       console.error('Error opening video room:', error);
@@ -67,7 +86,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     }
   };
 
-  if (!lessonSpaceRoomUrl) {
+  if (!lessonSpaceSpaceId && !lessonSpaceRoomUrl) {
     return null;
   }
 
@@ -76,7 +95,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       <div>
         <h3 className="font-medium text-sm">LessonSpace Video Room</h3>
         <p className="text-sm text-muted-foreground">
-          Join your interactive video classroom
+          {isTeacherRole ? 'Manage your interactive video classroom' : 'Join your interactive video classroom'}
         </p>
         {isGroupLesson && (
           <p className="text-xs text-muted-foreground mt-1">
@@ -84,7 +103,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             Group lesson ({studentCount} students)
           </p>
         )}
-        {lessonSpaceRoomId && (
+        {isTeacherRole && lessonSpaceRoomId && (
           <p className="text-xs text-muted-foreground mt-1">
             Room ID: {lessonSpaceRoomId}
           </p>
@@ -92,6 +111,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         {lessonSpaceSpaceId && (
           <p className="text-xs text-muted-foreground mt-1">
             Space ID: {lessonSpaceSpaceId}
+          </p>
+        )}
+        {!isTeacherRole && (
+          <p className="text-xs text-green-600 mt-1">
+            <UserCheck className="h-3 w-3 inline-block mr-1" />
+            Student access - click to join
           </p>
         )}
       </div>
@@ -110,7 +135,11 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         <Button
           onClick={handleJoinRoom}
           disabled={isLoading}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+          className={`flex items-center gap-2 ${
+            isTeacherRole 
+              ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
+              : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
+          } text-white`}
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -120,7 +149,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               <Play className="h-3 w-3" />
             </>
           )}
-          Join Room
+          {isTeacherRole ? 'Host Room' : 'Join Lesson'}
         </Button>
       </div>
     </div>
