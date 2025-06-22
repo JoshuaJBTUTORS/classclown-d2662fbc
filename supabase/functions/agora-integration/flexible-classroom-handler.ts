@@ -1,143 +1,86 @@
 
-import { generateTokensOfficial } from "./token-generator.ts";
-
-export interface FlexibleClassroomCredentials {
-  roomId: string;
-  userUuid: string;
-  userName: string;
-  userRole: 'teacher' | 'student';
-  rtmToken: string;
-  rtcToken: string;
-  appId: string;
-}
-
-export async function createFlexibleClassroomSession(
-  requestData: any,
-  supabase: any,
-  appId: string,
-  appCertificate: string
-) {
-  console.log('[FLEXIBLE-CLASSROOM] Starting session creation');
+// Room creation handler for Agora Flexible Classroom
+export async function handleFlexibleClassroom(params: any) {
+  console.log('[FLEXIBLE-CLASSROOM] Creating room with params:', params)
   
+  const { 
+    roomName, 
+    roomType = 4, // Default to small class (1v1: 0, small class: 4, lecture: 2)
+    maxUsers = 200,
+    startTime,
+    endTime 
+  } = params
+  
+  if (!roomName) {
+    throw new Error('Missing required parameter: roomName')
+  }
+
+  // Get credentials from environment
+  const appId = Deno.env.get('AGORA_APP_ID')
+  const appCertificate = Deno.env.get('AGORA_APP_CERTIFICATE')
+  
+  if (!appId || !appCertificate) {
+    throw new Error('Missing Agora credentials in environment variables')
+  }
+
   try {
-    const { lessonId, userRole, customUID, displayName } = requestData;
+    // Create Basic Auth header
+    const credentials = btoa(`${appId}:${appCertificate}`)
     
-    console.log('[FLEXIBLE-CLASSROOM] Creating session with data:', { lessonId, userRole, customUID, displayName });
-
-    // Validate required parameters
-    if (!lessonId) {
-      throw new Error('lessonId is required');
-    }
-    if (!userRole) {
-      throw new Error('userRole is required');
-    }
-
-    console.log('[FLEXIBLE-CLASSROOM] Fetching lesson details...');
-    
-    // Get lesson details with better error handling
-    const { data: lesson, error: lessonError } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('id', lessonId)
-      .single();
-
-    if (lessonError) {
-      console.error('[FLEXIBLE-CLASSROOM] Lesson fetch error:', lessonError);
-      throw new Error(`Failed to fetch lesson: ${lessonError.message}`);
-    }
-
-    if (!lesson) {
-      throw new Error(`Lesson not found with ID: ${lessonId}`);
-    }
-
-    console.log('[FLEXIBLE-CLASSROOM] Lesson found:', lesson.title);
-
-    // Generate room ID from lesson ID (ensure it's valid for Agora)
-    const roomId = `lesson_${lessonId.replace(/-/g, '_')}`;
-    
-    // Use custom UID or generate deterministic one
-    let userUuid: string;
-    if (customUID) {
-      userUuid = customUID.toString();
-    } else if (userRole === 'tutor') {
-      // Generate deterministic UID for tutor based on lesson tutor_id
-      if (lesson.tutor_id) {
-        const tutorHash = lesson.tutor_id.substring(0, 8);
-        const tutorNumericId = parseInt(tutorHash, 16) % 100000;
-        userUuid = (100000 + tutorNumericId).toString();
-      } else {
-        userUuid = '100001'; // Default tutor UID
+    // Prepare room creation payload
+    const roomPayload = {
+      roomName: roomName,
+      roomType: roomType,
+      roomProperties: {
+        schedule: {
+          startTime: startTime || Math.floor(Date.now() / 1000),
+          duration: endTime ? Math.floor((new Date(endTime).getTime() - new Date(startTime || Date.now()).getTime()) / 1000) : 3600,
+          closeDelay: 300
+        },
+        processes: {
+          handsUp: {
+            maxAccept: 1
+          }
+        }
       }
-    } else {
-      // Generate random UID for student (can be improved with student ID mapping)
-      userUuid = Math.floor(Math.random() * 1000000).toString();
     }
 
-    console.log('[FLEXIBLE-CLASSROOM] Generated identifiers:', { roomId, userUuid, userRole });
-
-    console.log('[FLEXIBLE-CLASSROOM] Generating tokens...');
+    console.log('[FLEXIBLE-CLASSROOM] Making room creation request to Agora API')
     
-    // Generate both RTC and RTM tokens
-    const tokenData = await generateTokensOfficial(
-      appId,
-      appCertificate,
-      roomId,
-      parseInt(userUuid),
-      userRole
-    );
+    // Make API call to create room
+    const response = await fetch(`https://api.agora.io/edu/apps/${appId}/v2/rooms`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+        'x-agora-token': '', // Empty for room creation
+        'x-agora-uid': '0'   // System user for room creation
+      },
+      body: JSON.stringify(roomPayload)
+    })
 
-    if (!tokenData.rtmToken || !tokenData.rtcToken) {
-      throw new Error('Failed to generate required tokens for classroom');
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[FLEXIBLE-CLASSROOM] Room creation failed:', response.status, errorText)
+      throw new Error(`Room creation failed: ${response.status} - ${errorText}`)
     }
 
-    console.log('[FLEXIBLE-CLASSROOM] Tokens generated successfully');
+    const roomData = await response.json()
+    console.log('[FLEXIBLE-CLASSROOM] Room created successfully:', roomData)
 
-    const response = {
+    return {
       success: true,
-      roomId,
-      userUuid,
-      userName: displayName || `User ${userUuid}`,
-      userRole: userRole === 'tutor' ? 'teacher' : 'student',
-      rtmToken: tokenData.rtmToken,
-      rtcToken: tokenData.rtcToken,
-      appId,
-      lessonTitle: lesson.title || 'Lesson'
-    };
+      roomUuid: roomData.data?.roomUuid || `room_${Date.now()}`,
+      roomName: roomName,
+      roomType: roomType,
+      maxUsers: maxUsers,
+      appId: appId,
+      createdAt: new Date().toISOString(),
+      roomData: roomData.data
+    }
 
-    console.log('[FLEXIBLE-CLASSROOM] Response prepared:', { 
-      ...response, 
-      rtmToken: response.rtmToken ? '[PRESENT]' : '[MISSING]',
-      rtcToken: response.rtcToken ? '[PRESENT]' : '[MISSING]'
-    });
-
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { 
-          "Access-Control-Allow-Origin": "*", 
-          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-          "Content-Type": "application/json" 
-        } 
-      }
-    );
   } catch (error: any) {
-    console.error('[FLEXIBLE-CLASSROOM] Error creating session:', error);
-    
-    return new Response(
-      JSON.stringify({
-        success: false, 
-        error: error.message || 'Unknown error occurred',
-        details: error.stack
-      }),
-      { 
-        status: 500, 
-        headers: { 
-          "Access-Control-Allow-Origin": "*", 
-          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-          "Content-Type": "application/json" 
-        } 
-      }
-    );
+    console.error('[FLEXIBLE-CLASSROOM] Room creation error:', error)
+    throw new Error(`Room creation failed: ${error.message}`)
   }
 }

@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleFlexibleClassroom } from './flexible-classroom-handler.ts'
@@ -34,8 +33,9 @@ serve(async (req) => {
       case 'generate-education-token':
         return await handleGenerateEducationToken(params)
       
+      case 'create-room':
       case 'flexible-classroom':
-        return await handleFlexibleClassroom(params)
+        return await handleCreateRoom(params)
       
       default:
         throw new Error(`Unknown action: ${action}`)
@@ -54,6 +54,25 @@ serve(async (req) => {
     )
   }
 })
+
+async function handleCreateRoom(params: any) {
+  console.log('[AGORA-INTEGRATION] Creating flexible classroom room with params:', params)
+  
+  try {
+    const roomResult = await handleFlexibleClassroom(params)
+    
+    return new Response(
+      JSON.stringify(roomResult),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  } catch (error: any) {
+    console.error('[AGORA-INTEGRATION] Room creation failed:', error)
+    throw error
+  }
+}
 
 async function handleGenerateEducationToken(params: any) {
   console.log('[AGORA-INTEGRATION] Generating education token with params:', params)
