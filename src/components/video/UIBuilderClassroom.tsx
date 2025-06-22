@@ -1,19 +1,8 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Import FcrUIScene as default export
-import FcrUIScene from 'fcr-ui-scene';
-import {
-  FcrChatroom,
-  FcrBoardWidget,
-  FcrPollingWidget,
-  FcrStreamMediaPlayerWidget,
-  FcrWebviewWidget,
-  FcrCountdownWidget,
-  FcrPopupQuizWidget
-} from 'agora-plugin-gallery/scene';
 
 interface UIBuilderClassroomProps {
   roomId: string;
@@ -46,9 +35,9 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
   const unmountRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const initializeClassroom = async () => {
+    const initializeClassroom = () => {
       try {
-        console.log('[DEBUG] === UIBuilder Classroom Initialization (FcrUIScene) ===');
+        console.log('[DEBUG] === UIBuilder Classroom Initialization (CDN) ===');
         console.log('[DEBUG] Classroom config:', {
           roomId,
           userUuid,
@@ -73,7 +62,12 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           throw new Error('Room ID is required for classroom initialization');
         }
 
-        console.log('[DEBUG] Launching classroom with FcrUIScene...');
+        // Check if FcrUIScene is available from CDN
+        if (typeof window.FcrUIScene === 'undefined') {
+          throw new Error('FcrUIScene not loaded from CDN. Please check the script tags.');
+        }
+
+        console.log('[DEBUG] Launching classroom with FcrUIScene from CDN...');
 
         // Map user role to numeric role type (1 = teacher, 2 = student)
         const roleType = userRole === 'teacher' ? 1 : 2;
@@ -94,29 +88,29 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           recordUrl: '', // Empty for now
           roleType: roleType, // User roles: 1 is teacher, 2 is student
           widgets: {
-            easemobIM: FcrChatroom, // IM widget
-            netlessBoard: FcrBoardWidget, // Interactive whiteboard widget
-            poll: FcrPollingWidget, // Voter widget
-            mediaPlayer: FcrStreamMediaPlayerWidget, // Video sync player widget
-            webView: FcrWebviewWidget, // Embedded browser widget
-            countdownTimer: FcrCountdownWidget, // Countdown widget
-            popupQuiz: FcrPopupQuizWidget, // Clicker widget
+            easemobIM: window.FcrChatroom, // IM widget
+            netlessBoard: window.FcrBoardWidget, // Interactive whiteboard widget
+            poll: window.FcrPollingWidget, // Voter widget
+            mediaPlayer: window.FcrStreamMediaPlayerWidget, // Video sync player widget
+            webView: window.FcrWebviewWidget, // Embedded browser widget
+            countdownTimer: window.FcrCountdownWidget, // Countdown widget
+            popupQuiz: window.FcrPopupQuizWidget, // Clicker widget
           }
         };
 
-        // Launch the classroom using FcrUIScene.launch
-        const unmount = FcrUIScene.launch(
+        // Launch the classroom using FcrUIScene.launch from CDN
+        const unmount = window.FcrUIScene.launch(
           containerRef.current,
           launchOptions,
           () => {
             // Success callback
-            console.log('[DEBUG] UIBuilder classroom ready (FcrUIScene)');
+            console.log('[DEBUG] UIBuilder classroom ready (CDN)');
             setIsLoading(false);
             toast.success('Classroom connected successfully');
           },
           (err: any) => {
             // Error callback
-            console.error('[DEBUG] Failed to initialize UIBuilder classroom:', err);
+            console.error('[DEBUG] Failed to initialize UIBuilder classroom (CDN):', err);
             setError(err.message);
             onError?.(err.message);
             setIsLoading(false);
@@ -132,10 +126,10 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
         // Store unmount function for cleanup
         unmountRef.current = unmount;
 
-        console.log('[DEBUG] UIBuilder classroom launched successfully with FcrUIScene');
+        console.log('[DEBUG] UIBuilder classroom launched successfully with CDN');
         
       } catch (error: any) {
-        console.error('[DEBUG] Failed to initialize UIBuilder classroom:', error);
+        console.error('[DEBUG] Failed to initialize UIBuilder classroom (CDN):', error);
         setError(error.message);
         onError?.(error.message);
         setIsLoading(false);
@@ -143,11 +137,22 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
       }
     };
 
-    initializeClassroom();
+    // Wait for CDN scripts to load
+    const checkCDNLoaded = () => {
+      if (typeof window.FcrUIScene !== 'undefined') {
+        console.log('[DEBUG] CDN scripts loaded, initializing UIBuilder classroom');
+        initializeClassroom();
+      } else {
+        console.log('[DEBUG] Waiting for CDN scripts to load...');
+        setTimeout(checkCDNLoaded, 100);
+      }
+    };
+
+    checkCDNLoaded();
 
     // Cleanup
     return () => {
-      console.log('[DEBUG] UIBuilder classroom cleanup');
+      console.log('[DEBUG] UIBuilder classroom cleanup (CDN)');
       if (unmountRef.current) {
         unmountRef.current();
         unmountRef.current = null;
@@ -212,10 +217,10 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           <div className="text-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
             <div className="text-lg font-medium text-gray-900">
-              Loading Interactive Classroom...
+              Loading Interactive Classroom (CDN)...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing FcrUIScene (Web SDK)
+              Initializing FcrUIScene from CDN
             </div>
           </div>
         </div>

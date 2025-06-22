@@ -4,18 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Import FcrUIScene as default export
-import FcrUIScene from 'fcr-ui-scene';
-import {
-  FcrChatroom,
-  FcrBoardWidget,
-  FcrPollingWidget,
-  FcrStreamMediaPlayerWidget,
-  FcrWebviewWidget,
-  FcrCountdownWidget,
-  FcrPopupQuizWidget
-} from 'agora-plugin-gallery/scene';
-
 interface FcrUISceneClassroomProps {
   appId: string;
   rtmToken: string;
@@ -54,9 +42,9 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       lessonTitle
     });
 
-    const initializeClassroom = async () => {
+    const initializeClassroom = () => {
       try {
-        console.log('[DEBUG] === Starting FcrUIScene Initialization ===');
+        console.log('[DEBUG] === Starting FcrUIScene Initialization (CDN) ===');
         
         if (!containerRef.current) {
           console.error('[DEBUG] Container ref is null - aborting initialization');
@@ -74,6 +62,11 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         }
         if (!channelName) {
           throw new Error('Channel name is required for classroom initialization');
+        }
+
+        // Check if FcrUIScene is available from CDN
+        if (typeof window.FcrUIScene === 'undefined') {
+          throw new Error('FcrUIScene not loaded from CDN. Please check the script tags.');
         }
 
         // Map user role to numeric role type (1 = teacher, 2 = student)
@@ -96,32 +89,32 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           recordUrl: '', // Empty for now
           roleType: roleType, // User roles: 1 is teacher, 2 is student
           widgets: {
-            easemobIM: FcrChatroom, // IM widget
-            netlessBoard: FcrBoardWidget, // Interactive whiteboard widget
-            poll: FcrPollingWidget, // Voter widget
-            mediaPlayer: FcrStreamMediaPlayerWidget, // Video sync player widget
-            webView: FcrWebviewWidget, // Embedded browser widget
-            countdownTimer: FcrCountdownWidget, // Countdown widget
-            popupQuiz: FcrPopupQuizWidget, // Clicker widget
+            easemobIM: window.FcrChatroom, // IM widget
+            netlessBoard: window.FcrBoardWidget, // Interactive whiteboard widget
+            poll: window.FcrPollingWidget, // Voter widget
+            mediaPlayer: window.FcrStreamMediaPlayerWidget, // Video sync player widget
+            webView: window.FcrWebviewWidget, // Embedded browser widget
+            countdownTimer: window.FcrCountdownWidget, // Countdown widget
+            popupQuiz: window.FcrPopupQuizWidget, // Clicker widget
           }
         };
 
-        console.log('[DEBUG] === Launching FcrUIScene Classroom ===');
+        console.log('[DEBUG] === Launching FcrUIScene Classroom (CDN) ===');
         console.log('[DEBUG] Launch options prepared');
         
-        // Launch the classroom using FcrUIScene.launch
-        const unmount = FcrUIScene.launch(
+        // Launch the classroom using FcrUIScene.launch from CDN
+        const unmount = window.FcrUIScene.launch(
           containerRef.current,
           launchOptions,
           () => {
             // Success callback
-            console.log('[DEBUG] FcrUIScene classroom launched successfully');
+            console.log('[DEBUG] FcrUIScene classroom launched successfully (CDN)');
             setIsLoading(false);
             toast.success('Classroom connected successfully');
           },
           (err: any) => {
             // Error callback
-            console.error('[DEBUG] FcrUIScene classroom launch failed:', err);
+            console.error('[DEBUG] FcrUIScene classroom launch failed (CDN):', err);
             setError(`Classroom Error: ${err.message || 'Unknown error'}`);
             setIsLoading(false);
             toast.error(`Classroom error: ${err.message || 'Unknown error'}`);
@@ -137,7 +130,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         unmountRef.current = unmount;
         
       } catch (error: any) {
-        console.error('[DEBUG] === Classroom Initialization Failed ===');
+        console.error('[DEBUG] === Classroom Initialization Failed (CDN) ===');
         console.error('[DEBUG] Error details:', {
           message: error.message,
           stack: error.stack,
@@ -149,35 +142,23 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       }
     };
 
-    // Start initialization
-    if (!containerRef.current) {
-      console.log('[DEBUG] Container not ready, waiting...');
-      const checkContainer = setInterval(() => {
-        if (containerRef.current) {
-          console.log('[DEBUG] Container now available, starting initialization');
-          clearInterval(checkContainer);
-          initializeClassroom();
-        }
-      }, 100);
-      
-      // Cleanup interval after 10 seconds
-      setTimeout(() => {
-        clearInterval(checkContainer);
-        if (!containerRef.current) {
-          console.error('[DEBUG] Container never became available');
-          setError('Container initialization timeout');
-          setIsLoading(false);
-        }
-      }, 10000);
-    } else {
-      console.log('[DEBUG] Container ready immediately, starting initialization');
-      initializeClassroom();
-    }
+    // Wait for CDN scripts to load
+    const checkCDNLoaded = () => {
+      if (typeof window.FcrUIScene !== 'undefined') {
+        console.log('[DEBUG] CDN scripts loaded, initializing classroom');
+        initializeClassroom();
+      } else {
+        console.log('[DEBUG] Waiting for CDN scripts to load...');
+        setTimeout(checkCDNLoaded, 100);
+      }
+    };
+
+    checkCDNLoaded();
 
     // Cleanup function
     return () => {
       try {
-        console.log('[DEBUG] === Component Cleanup ===');
+        console.log('[DEBUG] === Component Cleanup (CDN) ===');
         if (unmountRef.current) {
           console.log('[DEBUG] Calling unmount function');
           unmountRef.current();
@@ -224,10 +205,10 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           <div className="text-center space-y-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <div className="text-lg font-medium text-gray-900">
-              Loading Flexible Classroom...
+              Loading Flexible Classroom (CDN)...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing FcrUIScene (Web SDK)
+              Initializing FcrUIScene from CDN
             </div>
             <div className="text-xs text-gray-500">
               Check browser console for detailed logs
