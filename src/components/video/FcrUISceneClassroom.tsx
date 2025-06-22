@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -104,14 +105,22 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           onClose();
         };
 
-        // Launch the scene with all 5 expected arguments
-        await sceneCreator.launch(
-          launchConfig,
-          containerRef.current,
-          onSuccess,
-          onError,
-          onDestroy
-        );
+        // Try simpler launch approach first - just pass the container
+        try {
+          await sceneCreator.launch(containerRef.current.id || 'classroom-container');
+          onSuccess();
+        } catch (launchError) {
+          console.warn('[FCRUISCENE] Simple launch failed, trying alternative approach:', launchError);
+          
+          // Alternative: try with callback-based approach
+          await sceneCreator.launch((containerId: string) => {
+            console.log('[FCRUISCENE] Mounting to container:', containerId);
+            if (containerRef.current) {
+              containerRef.current.id = containerId;
+            }
+          });
+          onSuccess();
+        }
 
       } catch (error: any) {
         console.error('[FCRUISCENE] Failed to initialize classroom:', error);
@@ -181,6 +190,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       {/* Classroom container */}
       <div 
         ref={containerRef}
+        id="classroom-container"
         className="w-full h-full"
         style={{ 
           height: '100vh',
