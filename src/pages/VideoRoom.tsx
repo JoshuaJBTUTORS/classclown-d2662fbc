@@ -48,7 +48,7 @@ const VideoRoom: React.FC = () => {
       if (!lesson || !lessonId) return;
 
       try {
-        console.log('Initializing Flexible Classroom for lesson:', lessonId);
+        console.log('Initializing UI Builder Flexible Classroom for lesson:', lessonId);
         
         const customUID = await generateUID();
         const displayName = getDisplayName();
@@ -74,7 +74,7 @@ const VideoRoom: React.FC = () => {
           setClassroomError('Failed to create classroom session');
         }
       } catch (error: any) {
-        console.error('Error initializing Flexible Classroom:', error);
+        console.error('Error initializing UI Builder Flexible Classroom:', error);
         setClassroomError(error.message || 'Failed to initialize classroom');
       }
     };
