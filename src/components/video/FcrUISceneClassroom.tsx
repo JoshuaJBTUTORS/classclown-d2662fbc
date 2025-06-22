@@ -74,24 +74,27 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         const sceneCreator = new FcrUISceneCreator(config);
         sceneRef.current = sceneCreator;
 
-        // Launch the scene
-        await sceneCreator.launch(containerRef.current, {
-          onSuccess: () => {
-            console.log('[FCRUISCENE] Classroom launched successfully');
-            setIsLoading(false);
-            toast.success('Classroom connected successfully');
-          },
-          onError: (error: any) => {
-            console.error('[FCRUISCENE] Classroom launch error:', error);
-            setError(`Launch Error: ${error.message || 'Unknown error'}`);
-            setIsLoading(false);
-            toast.error(`Classroom error: ${error.message || 'Unknown error'}`);
-          },
-          onDestroy: (type: any) => {
-            console.log('[FCRUISCENE] Classroom destroyed:', type);
-            onClose();
-          }
-        });
+        // Define callback functions
+        const onSuccess = () => {
+          console.log('[FCRUISCENE] Classroom launched successfully');
+          setIsLoading(false);
+          toast.success('Classroom connected successfully');
+        };
+
+        const onError = (error: any) => {
+          console.error('[FCRUISCENE] Classroom launch error:', error);
+          setError(`Launch Error: ${error.message || 'Unknown error'}`);
+          setIsLoading(false);
+          toast.error(`Classroom error: ${error.message || 'Unknown error'}`);
+        };
+
+        const onDestroy = (type: any) => {
+          console.log('[FCRUISCENE] Classroom destroyed:', type);
+          onClose();
+        };
+
+        // Launch the scene with separate callback arguments
+        await sceneCreator.launch(containerRef.current, config, onSuccess, onError, onDestroy);
 
       } catch (error: any) {
         console.error('[FCRUISCENE] Failed to initialize classroom:', error);
