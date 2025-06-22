@@ -1,4 +1,5 @@
 
+
 export const loadAgoraFlexibleClassroomSDK = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Check if SDK is already loaded
@@ -20,7 +21,7 @@ export const loadAgoraFlexibleClassroomSDK = (): Promise<void> => {
     script.src = 'https://download.agora.io/edu-apaas/release/edu_sdk_2.8.111.bundle.js';
     script.async = true;
     
-    script.onloa = () => {
+    script.onload = () => {
       console.log('Agora Flexible Classroom SDK loaded successfully');
       resolve();
     };
@@ -36,3 +37,4 @@ export const loadAgoraFlexibleClassroomSDK = (): Promise<void> => {
 
 // Load SDK immediately when this module is imported
 loadAgoraFlexibleClassroomSDK().catch(console.error);
+
