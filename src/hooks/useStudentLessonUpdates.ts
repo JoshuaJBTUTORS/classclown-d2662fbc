@@ -120,34 +120,34 @@ export const useStudentLessonUpdates = ({
     }
   }, [isAuthenticated]);
 
-  // Sync lesson space URLs for students
+  // Sync lesson URLs - now simplified since we only use Flexible Classroom
   const syncLessonSpaceUrls = useCallback(async (lessonId: string) => {
     if (!isAuthenticated) return false;
 
     setIsUpdating(true);
     try {
-      console.log(`Syncing lesson space URLs for lesson ${lessonId}`);
+      console.log(`Syncing lesson URLs for lesson ${lessonId}`);
       
-      // Get lesson details to check if lesson space is configured
+      // Get lesson details to check if Flexible Classroom is configured
       const { data: lesson, error: lessonError } = await supabase
         .from('lessons')
-        .select('lesson_space_space_id, video_conference_provider')
+        .select('flexible_classroom_room_id')
         .eq('id', lessonId)
         .single();
 
       if (lessonError) throw lessonError;
 
-      if (lesson?.lesson_space_space_id && lesson?.video_conference_provider === 'lesson_space') {
-        // The lesson space is properly configured, URLs should be available
-        toast.success('Lesson space URLs are up to date');
+      if (lesson?.flexible_classroom_room_id) {
+        // The Flexible Classroom is properly configured
+        toast.success('Lesson URLs are up to date');
         return true;
       } else {
-        toast.info('No lesson space configured for this lesson');
+        toast.info('No Flexible Classroom configured for this lesson');
         return false;
       }
     } catch (error) {
-      console.error('Error syncing lesson space URLs:', error);
-      toast.error('Failed to sync lesson space URLs');
+      console.error('Error syncing lesson URLs:', error);
+      toast.error('Failed to sync lesson URLs');
       return false;
     } finally {
       setIsUpdating(false);

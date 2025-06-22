@@ -1,918 +1,753 @@
-
 import React, { useState, useEffect } from 'react';
-import { format, parseISO, addMinutes, isBefore } from 'date-fns';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { format, parseISO } from 'date-fns';
 import { 
-  Calendar,
-  Clock, // Fixed: imported Clock instead of using undefined variable
-  User,
-  Users,
-  BookOpen,
-  GraduationCap,
-  X,
-  Edit,
-  Trash2,
-  CheckCircle,
-  UserCheck,
-  AlertCircle
+  Calendar, 
+  Clock, 
+  User, 
+  Users, 
+  MapPin, 
+  BookOpen, 
+  Video, 
+  Edit, 
+  Trash2, 
+  ExternalLink,
+  Check,
+  Plus,
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { Lesson } from '@/types/lesson';
-import EditLessonForm from '@/components/lessons/EditLessonForm';
-import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
-import { useFlexibleClassroom } from '@/hooks/useFlexibleClassroom';
+import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import { useExternalAgora } from '@/hooks/useExternalAgora';
 
 interface LessonDetailsDialogProps {
+  lessonId: string | null;
   isOpen: boolean;
   onClose: () => void;
-  lessonId: string | null;
-  onSave?: (lesson: Lesson) => void;
-  onDelete?: (lessonId: string, deleteAllFuture?: boolean) => void;
-  onCompleteSession?: (lessonId: string) => void;
-  onAssignHomework?: (lessonId: string, lessonData: any) => void;
-  onRefresh?: () => void;
+  onLessonUpdated?: () => void;
 }
 
-// This regex pattern matches the format we generate for recurring lessons: UUID-YYYY-MM-DD
-const RECURRING_INSTANCE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d{4}-\d{2}-\d{2}$/;
+interface StudentAttendance {
+  studentId: number;
+  attendanceStatus: 'attended' | 'missed' | 'excused';
+  feedback?: string;
+}
 
-const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
-  isOpen,
+const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({ 
+  lessonId, 
+  isOpen, 
   onClose,
-  lessonId,
-  onSave,
-  onDelete,
-  onCompleteSession,
-  onAssignHomework,
-  onRefresh
+  onLessonUpdated
 }) => {
-  const { userRole } = useAuth();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [deleteOption, setDeleteOption] = useState<'single' | 'all'>('single');
-  const [originalLessonId, setOriginalLessonId] = useState<string | null>(null);
-  const [isRecurringInstance, setIsRecurringInstance] = useState(false);
-  const [hasHomework, setHasHomework] = useState(false);
-  const [homeworkDeleteOption, setHomeworkDeleteOption] = useState<'delete' | 'cancel'>('delete');
-  const [isHomeworkDeleteConfirmOpen, setIsHomeworkDeleteConfirmOpen] = useState(false);
-  const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [completionStatus, setCompletionStatus] = useState<{
-    isCompleted: boolean;
-    attendanceCount: number;
-    totalStudents: number;
-    hasHomework: boolean;
-  } | null>(null);
-  
-  const { createClassroomSession, isLoading: isCreatingFlexibleClassroom } = useFlexibleClassroom();
-
-  // Check if user is a student or parent (both have read-only access)
-  const isStudentOrParent = userRole === 'student' || userRole === 'parent';
-
-  // Function to check if the ID is a recurring instance ID using our specific format
-  const isRecurringInstanceId = (id: string): boolean => {
-    return RECURRING_INSTANCE_REGEX.test(id);
-  };
-
-  const fetchCompletionStatus = async (lessonId: string) => {
-    try {
-      // Fetch attendance data
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('lesson_attendance')
-        .select('student_id')
-        .eq('lesson_id', lessonId);
-
-      if (attendanceError) throw attendanceError;
-
-      // Fetch homework data
-      const { data: homeworkData, error: homeworkError } = await supabase
-        .from('homework')
-        .select('id')
-        .eq('lesson_id', lessonId);
-
-      if (homeworkError) throw homeworkError;
-
-      // Fetch student count
-      const { data: lessonStudentData, error: lessonStudentError } = await supabase
-        .from('lesson_students')
-        .select('student_id')
-        .eq('lesson_id', lessonId);
-
-      if (lessonStudentError) throw lessonStudentError;
-
-      const totalStudents = lessonStudentData?.length || 0;
-      const attendanceCount = attendanceData?.length || 0;
-      const hasHomeworkAssigned = homeworkData && homeworkData.length > 0;
-      const isCompleted = totalStudents > 0 && attendanceCount === totalStudents && hasHomeworkAssigned;
-
-      setCompletionStatus({
-        isCompleted,
-        attendanceCount,
-        totalStudents,
-        hasHomework: hasHomeworkAssigned
-      });
-
-      setHasHomework(hasHomeworkAssigned);
-    } catch (error) {
-      console.error('Error fetching completion status:', error);
-    }
-  };
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
+  const [editedSubject, setEditedSubject] = useState('');
+  const [editedStartTime, setEditedStartTime] = useState('');
+  const [editedEndTime, setEditedEndTime] = useState('');
+  const [editedIsGroup, setEditedIsGroup] = useState(false);
+  const [isCompletingSession, setIsCompletingSession] = useState(false);
+  const [skipHomeworkStep, setSkipHomeworkStep] = useState(false);
+  const [studentAttendances, setStudentAttendances] = useState<StudentAttendance[]>([]);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [isSubmittingReschedule, setIsSubmittingReschedule] = useState(false);
+  const [isSubmittingCancellation, setIsSubmittingCancellation] = useState(false);
+  const [isAgoraLoading, setIsAgoraLoading] = useState(false);
+  const { createExternalAgoraRoom } = useExternalAgora();
 
   useEffect(() => {
     if (lessonId && isOpen) {
-      console.log("Opening lesson details for ID:", lessonId);
-      setLesson(null);
-      setHasHomework(false);
-      setCompletionStatus(null);
-      
-      if (isRecurringInstanceId(lessonId)) {
-        const parts = lessonId.split('-');
-        const baseId = parts.slice(0, 5).join('-');
-        setOriginalLessonId(baseId);
-        setIsRecurringInstance(true);
-        
-        fetchRecurringInstance(baseId, lessonId);
-        checkForHomework(baseId);
-        fetchCompletionStatus(baseId);
-      } else {
-        setOriginalLessonId(lessonId);
-        setIsRecurringInstance(false);
-        fetchLessonDetails(lessonId);
-        checkForHomework(lessonId);
-        fetchCompletionStatus(lessonId);
-      }
-    } else {
-      setLesson(null);
-      setIsRecurringInstance(false);
-      setOriginalLessonId(null);
-      setHasHomework(false);
-      setPreloadedLessonData(null);
-      setCompletionStatus(null);
+      fetchLessonDetails(lessonId);
     }
   }, [lessonId, isOpen]);
 
-  const checkForHomework = async (lessonId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('homework')
-        .select('id')
-        .eq('lesson_id', lessonId);
-
-      if (error) {
-        console.error("Error checking for homework:", error);
-        return;
+  useEffect(() => {
+    if (lesson) {
+      setEditedTitle(lesson.title);
+      setEditedDescription(lesson.description || '');
+      setEditedSubject(lesson.subject || '');
+      setEditedStartTime(format(parseISO(lesson.start_time), 'HH:mm'));
+      setEditedEndTime(format(parseISO(lesson.end_time), 'HH:mm'));
+      setEditedIsGroup(lesson.is_group);
+      
+      // Initialize student attendances from lesson data
+      if (lesson.students) {
+        const initialAttendances = lesson.students.map(student => ({
+          studentId: student.id,
+          attendanceStatus: student.attendance_status || 'attended',
+          feedback: student.feedback || '',
+        }));
+        setStudentAttendances(initialAttendances);
       }
-
-      const hasAssignedHomework = data && data.length > 0;
-      console.log(`Lesson ${lessonId} has homework:`, hasAssignedHomework, data);
-      setHasHomework(hasAssignedHomework);
-    } catch (error) {
-      console.error("Error in checkForHomework:", error);
     }
-  };
-
-  const fetchRecurringInstance = async (originalId: string, instanceId: string) => {
-    setIsLoading(true);
-    try {
-      console.log("Fetching recurring instance data for original ID:", originalId, "and instance ID:", instanceId);
-      
-      // First get the lesson details
-      const { data: lessonData, error: lessonError } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('id', originalId)
-        .maybeSingle();
-
-      if (lessonError) {
-        console.error("Error fetching original lesson:", lessonError);
-        toast.error('Failed to load recurring lesson data');
-        createPlaceholderLesson(instanceId);
-        return;
-      }
-
-      if (!lessonData) {
-        console.error("No data returned for original lesson");
-        toast.error('Recurring lesson not found');
-        createPlaceholderLesson(instanceId);
-        return;
-      }
-
-      // Get tutor details
-      const { data: tutorData, error: tutorError } = await supabase
-        .from('tutors')
-        .select('id, first_name, last_name')
-        .eq('id', lessonData.tutor_id)
-        .maybeSingle();
-
-      if (tutorError) {
-        console.error("Error fetching tutor:", tutorError);
-      }
-
-      // Get students for this lesson using array aggregation
-      const { data: studentData, error: studentError } = await supabase
-        .from('lesson_students')
-        .select(`
-          student:students(id, first_name, last_name)
-        `)
-        .eq('lesson_id', originalId);
-
-      if (studentError) {
-        console.error("Error fetching students:", studentError);
-      }
-
-      // Combine all data
-      const combinedData = {
-        ...lessonData,
-        tutor: tutorData,
-        lesson_students: studentData || []
-      };
-
-      setPreloadedLessonData(combinedData);
-
-      const dateParts = instanceId.split('-');
-      const year = parseInt(dateParts[5], 10);
-      const month = parseInt(dateParts[6], 10) - 1;
-      const day = parseInt(dateParts[7], 10);
-      const instanceDate = new Date(year, month, day);
-      
-      const students = studentData?.map((ls: any) => ({
-        id: ls.student.id,
-        first_name: ls.student.first_name,
-        last_name: ls.student.last_name
-      })) || [];
-      
-      const startDate = parseISO(lessonData.start_time);
-      const endDate = parseISO(lessonData.end_time);
-      
-      // Set the time to match the instance date
-      const start = new Date(instanceDate);
-      start.setHours(startDate.getHours(), startDate.getMinutes());
-      
-      const end = new Date(instanceDate);
-      end.setHours(endDate.getHours(), endDate.getMinutes());
-      
-      // Create recurring lesson instance using the original lesson data
-      const recurringLesson: Lesson = {
-        ...lessonData,
-        id: instanceId,
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
-        is_recurring_instance: true,
-        lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        students: students,
-        tutor: tutorData,
-        lesson_students: studentData || [],
-      };
-      
-      console.log("Created instance lesson:", recurringLesson);
-      setLesson(recurringLesson);
-    } catch (error) {
-      console.error('Error in fetchRecurringInstance:', error);
-      toast.error('Failed to load recurring lesson data');
-      createPlaceholderLesson(instanceId);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const createPlaceholderLesson = (instanceId: string) => {
-    const placeholderLesson: Lesson = {
-      id: instanceId,
-      title: "Recurring Lesson",
-      description: "This is a recurring lesson instance. Some details may not be available.",
-      start_time: "",
-      end_time: "",
-      is_group: false,
-      status: "scheduled",
-      tutor_id: "",
-      is_recurring: true,
-      is_recurring_instance: true,
-      recurrence_interval: "weekly",
-      lesson_type: 'regular'
-    };
-    
-    setLesson(placeholderLesson);
-    console.log("Using placeholder lesson data:", placeholderLesson);
-  };
+  }, [lesson]);
 
   const fetchLessonDetails = async (id: string) => {
     setIsLoading(true);
     try {
-      console.log("Fetching regular lesson details for ID:", id);
-      
-      // First get the lesson details
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (lessonError) {
-        console.error('Error fetching lesson details:', lessonError);
-        toast.error('Failed to load lesson details');
-        return;
-      }
-
-      if (!lessonData) {
-        console.error('No data returned for lesson details');
-        toast.error('Lesson not found');
-        return;
-      }
-
-      // Get tutor details
-      const { data: tutorData, error: tutorError } = await supabase
-        .from('tutors')
-        .select('id, first_name, last_name')
-        .eq('id', lessonData.tutor_id)
-        .maybeSingle();
-
-      if (tutorError) {
-        console.error('Error fetching tutor:', tutorError);
-      }
-
-      // Get students for this lesson using array aggregation
-      const { data: studentData, error: studentError } = await supabase
-        .from('lesson_students')
         .select(`
-          student:students(id, first_name, last_name)
+          *,
+          tutor:tutors(id, first_name, last_name),
+          lesson_students(
+            student:students(id, first_name, last_name)
+          )
         `)
-        .eq('lesson_id', id);
+        .eq('id', id)
+        .single();
 
-      if (studentError) {
-        console.error('Error fetching students:', studentError);
-      }
+      if (lessonError) throw lessonError;
 
-      // Combine all data
-      const combinedData = {
-        ...lessonData,
-        tutor: tutorData,
-        lesson_students: studentData || []
-      };
-      
-      setPreloadedLessonData(combinedData);
-
-      const students = studentData?.map((ls: any) => ({
+      // Transform the data to match our Lesson interface
+      const students = lessonData.lesson_students.map((ls: any) => ({
         id: ls.student.id,
         first_name: ls.student.first_name,
         last_name: ls.student.last_name
-      })) || [];
-        
+      }));
+
+      const processedStudents = students.map(student => {
+        return {
+          id: student.id,
+          first_name: student.first_name,
+          last_name: student.last_name,
+          attendance_status: 'attended',
+          feedback: '',
+        };
+      });
+
+      const lessonStudentsData = lessonData.lesson_students.map((ls: any) => ({
+        student: {
+          id: ls.student.id,
+          first_name: ls.student.first_name,
+          last_name: ls.student.last_name
+        }
+      }));
+
+      // Simplified lesson data without removed video conference properties
       const processedLesson: Lesson = {
         ...lessonData,
         lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        students,
-        tutor: tutorData,
-        lesson_students: studentData || []
+        students: processedStudents,
+        lesson_students: lessonStudentsData
       };
-      
-      console.log("Fetched and processed lesson:", processedLesson);
+
       setLesson(processedLesson);
     } catch (error) {
-      console.error('Error in fetchLessonDetails:', error);
+      console.error('Error fetching lesson details:', error);
       toast.error('Failed to load lesson details');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreateFlexibleClassroom = async () => {
-    if (!lesson) return;
-    
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveClick = async () => {
+    if (!lessonId) return;
+
+    setIsLoading(true);
     try {
-      const userRole = lesson.tutor?.id === lesson.tutor_id ? 'tutor' : 'student';
-      const displayName = userRole === 'tutor' ? 
-        `${lesson.tutor?.first_name} ${lesson.tutor?.last_name}` : 
-        'Student';
+      const { error } = await supabase
+        .from('lessons')
+        .update({
+          title: editedTitle,
+          description: editedDescription,
+          subject: editedSubject,
+          start_time: format(parseISO(lesson.start_time), `yyyy-MM-dd'T'${editedStartTime}:00.000'Z'`),
+          end_time: format(parseISO(lesson.end_time), `yyyy-MM-dd'T'${editedEndTime}:00.000'Z'`),
+          is_group: editedIsGroup,
+        })
+        .eq('id', lessonId);
 
-      const result = await createClassroomSession(
-        lesson.id,
-        userRole,
-        undefined, // Let the system generate UID
-        displayName
-      );
+      if (error) throw error;
 
-      if (result) {
-        // Update the lesson with flexible classroom data
-        const { error } = await supabase
-          .from('lessons')
-          .update({
-            flexible_classroom_room_id: result.roomId,
-            flexible_classroom_session_data: JSON.stringify(result)
-          })
-          .eq('id', isRecurringInstance && originalLessonId ? originalLessonId : lesson.id);
-
-        if (error) {
-          console.error('Error updating lesson with flexible classroom data:', error);
-          toast.error('Failed to save flexible classroom details');
-          return;
-        }
-
-        // Refresh the lesson data to show the new room
-        if (isRecurringInstanceId(lesson.id)) {
-          const parts = lesson.id.split('-');
-          const baseId = parts.slice(0, 5).join('-');
-          await fetchRecurringInstance(baseId, lesson.id);
-        } else {
-          await fetchLessonDetails(lesson.id);
-        }
-        
-        toast.success('Flexible Classroom created! Room details have been updated.');
+      // Refresh lesson details after successful update
+      await fetchLessonDetails(lessonId);
+      setIsEditing(false);
+      toast.success('Lesson updated successfully');
+      if (onLessonUpdated) {
+        onLessonUpdated();
       }
     } catch (error) {
-      console.error('Error creating flexible classroom:', error);
+      console.error('Error updating lesson:', error);
+      toast.error('Failed to update lesson');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleEditLesson = () => {
-    if (lesson) {
-      setIsEditDialogOpen(true);
-    }
-  };
+  const handleDeleteClick = async () => {
+    if (!lessonId) return;
 
-  const handleEditSuccess = () => {
-    // Close the edit dialog
-    setIsEditDialogOpen(false);
-    
-    // Refresh the lesson data
-    if (lesson) {
-      if (isRecurringInstanceId(lesson.id)) {
-        const parts = lesson.id.split('-');
-        const baseId = parts.slice(0, 5).join('-');
-        fetchRecurringInstance(baseId, lesson.id);
-      } else {
-        fetchLessonDetails(lesson.id);
-      }
-    }
-    
-    // Call the onRefresh callback if provided
-    if (onRefresh) {
-      onRefresh();
-    }
-    
-    toast.success('Lesson updated successfully');
-  };
-
-  const handleDeleteLesson = () => {
-    if (hasHomework) {
-      setIsHomeworkDeleteConfirmOpen(true);
-    } else {
-      setIsDeleteConfirmOpen(true);
-    }
-  };
-
-  const confirmDeleteLesson = async () => {
-    if (!lesson || !onDelete) return;
-    
+    setIsLoading(true);
     try {
-      if (hasHomework && homeworkDeleteOption === 'delete') {
-        const lessonIdToUse = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
-        
-        const { error: homeworkError } = await supabase
-          .from('homework')
-          .delete()
-          .eq('lesson_id', lessonIdToUse);
+      const { error } = await supabase
+        .from('lessons')
+        .delete()
+        .eq('id', lessonId);
 
-        if (homeworkError) {
-          console.error("Error deleting homework:", homeworkError);
-          toast.error('Failed to delete associated homework');
-          setIsDeleteConfirmOpen(false);
-          setIsHomeworkDeleteConfirmOpen(false);
-          return;
-        }
-        
-        console.log("Successfully deleted associated homework for lesson:", lessonIdToUse);
-      }
+      if (error) throw error;
 
-      if (isRecurringInstance && deleteOption === 'all' && originalLessonId) {
-        onDelete(originalLessonId, true);
-      } else {
-        onDelete(lesson.id, deleteOption === 'all');
+      onClose(); // Close the dialog after successful deletion
+      toast.success('Lesson deleted successfully');
+      if (onLessonUpdated) {
+        onLessonUpdated();
       }
-      
     } catch (error) {
-      console.error("Error in confirmDeleteLesson:", error);
+      console.error('Error deleting lesson:', error);
       toast.error('Failed to delete lesson');
     } finally {
-      setIsDeleteConfirmOpen(false);
-      setIsHomeworkDeleteConfirmOpen(false);
-      onClose();
+      setIsLoading(false);
     }
-  };
-
-  const cancelDeleteLesson = () => {
-    setIsDeleteConfirmOpen(false);
-    setIsHomeworkDeleteConfirmOpen(false);
   };
 
   const handleCompleteSession = () => {
-    if (lesson && onCompleteSession) {
-      const completionId = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
-      
-      onClose();
-      setTimeout(() => {
-        if (onCompleteSession) {
-          onCompleteSession(completionId);
-        }
-      }, 100);
-    }
+    setIsCompletingSession(true);
   };
-  
-  const handleCompleteLesson = () => {
-    if (lesson && onAssignHomework) {
-      const lessonIdToUse = isRecurringInstance && originalLessonId ? originalLessonId : lesson.id;
-      onAssignHomework(lessonIdToUse, preloadedLessonData);
+
+  const handleCompleteSessionClose = () => {
+    setIsCompletingSession(false);
+  };
+
+  const handleSessionCompleted = () => {
+    setIsCompletingSession(false);
+    onClose();
+    if (onLessonUpdated) {
+      onLessonUpdated();
     }
   };
 
-  if (!isOpen) return null;
+  const handleCancelLesson = () => {
+    setIsCancelling(true);
+  };
 
-  const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
+  const handleRescheduleLesson = () => {
+    setIsRescheduling(true);
+  };
 
-  // Check if flexible classroom exists
-  const hasFlexibleClassroom = lesson?.flexible_classroom_room_id;
+  const handleRescheduleSubmit = async () => {
+    if (!lessonId || !rescheduleDate || !rescheduleReason) return;
+
+    setIsSubmittingReschedule(true);
+    try {
+      // Update lesson status and add reschedule reason
+      const { error } = await supabase
+        .from('lessons')
+        .update({
+          status: 'rescheduled',
+          reschedule_date: rescheduleDate.toISOString(),
+          reschedule_reason: rescheduleReason,
+        })
+        .eq('id', lessonId);
+
+      if (error) throw error;
+
+      // Refresh lesson details after successful reschedule
+      await fetchLessonDetails(lessonId);
+      setIsRescheduling(false);
+      toast.success('Lesson rescheduled successfully');
+      if (onLessonUpdated) {
+        onLessonUpdated();
+      }
+    } catch (error) {
+      console.error('Error rescheduling lesson:', error);
+      toast.error('Failed to reschedule lesson');
+    } finally {
+      setIsSubmittingReschedule(false);
+    }
+  };
+
+  const handleCancellationSubmit = async () => {
+    if (!lessonId) return;
+
+    setIsSubmittingCancellation(true);
+    try {
+      // Update lesson status to cancelled
+      const { error } = await supabase
+        .from('lessons')
+        .update({
+          status: 'cancelled',
+        })
+        .eq('id', lessonId);
+
+      if (error) throw error;
+
+      // Refresh lesson details after successful cancellation
+      await fetchLessonDetails(lessonId);
+      setIsCancelling(false);
+      toast.success('Lesson cancelled successfully');
+      if (onLessonUpdated) {
+        onLessonUpdated();
+      }
+    } catch (error) {
+      console.error('Error cancelling lesson:', error);
+      toast.error('Failed to cancel lesson');
+    } finally {
+      setIsSubmittingCancellation(false);
+    }
+  };
+
+  const handleAttendanceChange = (studentId: number, status: 'attended' | 'missed' | 'excused') => {
+    setStudentAttendances(prev => {
+      const existingAttendance = prev.find(sa => sa.studentId === studentId);
+      if (existingAttendance) {
+        return prev.map(sa =>
+          sa.studentId === studentId ? { ...sa, attendanceStatus: status } : sa
+        );
+      } else {
+        return [...prev, { studentId, attendanceStatus: status }];
+      }
+    });
+  };
+
+  const handleFeedbackChange = (studentId: number, feedback: string) => {
+    setStudentAttendances(prev => {
+      return prev.map(sa =>
+        sa.studentId === studentId ? { ...sa, feedback } : sa
+      );
+    });
+  };
+
+  const handleCreateAgoraRoom = async () => {
+    if (!lesson || !lesson.id || !lesson.tutor_id) {
+      toast.error('Lesson or tutor ID is missing');
+      return;
+    }
+
+    setIsAgoraLoading(true);
+    try {
+      // Assuming the current user is the tutor
+      await createExternalAgoraRoom(lesson.id, lesson.tutor_id, 'tutor');
+      toast.success('Agora room created successfully!');
+    } catch (error) {
+      console.error('Error creating Agora room:', error);
+      toast.error('Failed to create Agora room');
+    } finally {
+      setIsAgoraLoading(false);
+    }
+  };
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={(open) => {
-        if (!open) onClose();
-      }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              Lesson Details
-              {completionStatus?.isCompleted && (
-                <Badge variant="default" className="bg-green-500 text-white">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Completed
-                </Badge>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            {isEditing ? 'Edit Lesson' : 'Lesson Details'}
+          </DialogTitle>
+          <DialogDescription>
+            {lesson && (
+              <>
+                {format(parseISO(lesson.start_time), 'MMMM d, yyyy')}
+                <br />
+                {format(parseISO(lesson.start_time), 'h:mm a')} - {format(parseISO(lesson.end_time), 'h:mm a')}
+              </>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center p-8">
+            Loading lesson details...
+          </div>
+        ) : lesson ? (
+          <div className="space-y-6">
+            {isEditing ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      type="text"
+                      id="title"
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      type="text"
+                      id="subject"
+                      value={editedSubject}
+                      onChange={(e) => setEditedSubject(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startTime">Start Time</Label>
+                    <Input
+                      type="time"
+                      id="startTime"
+                      value={editedStartTime}
+                      onChange={(e) => setEditedStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endTime">End Time</Label>
+                    <Input
+                      type="time"
+                      id="endTime"
+                      value={editedEndTime}
+                      onChange={(e) => setEditedEndTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="checkbox"
+                    id="isGroup"
+                    checked={editedIsGroup}
+                    onChange={(e) => setEditedIsGroup(e.target.checked)}
+                  />
+                  <Label htmlFor="isGroup">Group Session</Label>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 opacity-70" />
+                      <span className="text-sm font-medium">Date</span>
+                    </div>
+                    <p className="text-sm">{format(parseISO(lesson.start_time), 'MMMM d, yyyy')}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 opacity-70" />
+                      <span className="text-sm font-medium">Time</span>
+                    </div>
+                    <p className="text-sm">
+                      {format(parseISO(lesson.start_time), 'h:mm a')} - {format(parseISO(lesson.end_time), 'h:mm a')}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 opacity-70" />
+                      <span className="text-sm font-medium">Subject</span>
+                    </div>
+                    <p className="text-sm">{lesson.subject}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 opacity-70" />
+                      <span className="text-sm font-medium">Tutor</span>
+                    </div>
+                    <p className="text-sm">{lesson.tutor?.first_name} {lesson.tutor?.last_name}</p>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 opacity-70" />
+                    <span className="text-sm font-medium">Description</span>
+                  </div>
+                  <p className="text-sm">{lesson.description || 'No description provided.'}</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 opacity-70" />
+                    <span className="text-sm font-medium">Students</span>
+                  </div>
+                  {lesson.students && lesson.students.length > 0 ? (
+                    <ul className="list-disc pl-5">
+                      {lesson.students.map((student) => (
+                        <li key={student.id} className="text-sm">
+                          {student.first_name} {student.last_name}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm">No students enrolled in this lesson.</p>
+                  )}
+                </div>
+              </>
+            )}
+
+            <Separator />
+
+            {/* Video Conference Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Video Conference</h3>
+              {lesson.flexible_classroom_room_id ? (
+                <>
+                  <VideoConferenceLink lesson={lesson} />
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Join the video conference using the link above.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isAgoraLoading}
+                      onClick={handleCreateAgoraRoom}
+                    >
+                      {isAgoraLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating Room...
+                        </>
+                      ) : (
+                        'Recreate Agora Room'
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-md border p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <AlertTriangle className="h-4 w-4" />
+                    No video conference room has been created for this lesson.
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    disabled={isAgoraLoading}
+                    onClick={handleCreateAgoraRoom}
+                  >
+                    {isAgoraLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Room...
+                      </>
+                    ) : (
+                      'Create Agora Room'
+                    )}
+                  </Button>
+                </div>
               )}
-            </DialogTitle>
+            </div>
+
+            {/* Attendance and Feedback Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Attendance & Feedback</h3>
+              {lesson.students && lesson.students.length > 0 ? (
+                <div className="space-y-2">
+                  {lesson.students.map((student) => {
+                    const attendance = studentAttendances.find(sa => sa.studentId === student.id);
+                    const attendanceStatus = attendance ? attendance.attendanceStatus : 'attended';
+                    const feedback = attendance ? attendance.feedback : '';
+
+                    return (
+                      <div key={student.id} className="border rounded-md p-4">
+                        <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
+                        <div className="mt-2">
+                          <RadioGroup defaultValue={attendanceStatus} onValueChange={(value) => handleAttendanceChange(student.id, value as 'attended' | 'missed' | 'excused')}>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="attended" id={`attended-${student.id}`} className="peer h-4 w-4 border border-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                              <Label htmlFor={`attended-${student.id}`} className="cursor-pointer peer-checked:text-primary">Attended</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="missed" id={`missed-${student.id}`} className="peer h-4 w-4 border border-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                              <Label htmlFor={`missed-${student.id}`} className="cursor-pointer peer-checked:text-primary">Missed</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="excused" id={`excused-${student.id}`} className="peer h-4 w-4 border border-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                              <Label htmlFor={`excused-${student.id}`} className="cursor-pointer peer-checked:text-primary">Excused</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                        <div className="mt-2">
+                          <Label htmlFor={`feedback-${student.id}`}>Feedback</Label>
+                          <Textarea
+                            id={`feedback-${student.id}`}
+                            placeholder="Enter feedback for this student..."
+                            className="resize-none mt-1"
+                            value={feedback || ''}
+                            onChange={(e) => handleFeedbackChange(student.id, e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  <AlertTriangle className="mr-2 h-4 w-4 inline-block" />
+                  No students are enrolled in this lesson.
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              {isEditing ? (
+                <>
+                  <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick={handleSaveClick} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+                    Close
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={handleEditClick} disabled={isLoading}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Lesson
+                  </Button>
+                  <Button type="button" variant="destructive" onClick={handleDeleteClick} disabled={isLoading}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Lesson
+                  </Button>
+                  <Button type="button" onClick={handleCompleteSession} disabled={isLoading}>
+                    <Check className="mr-2 h-4 w-4" />
+                    Complete Session
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="py-6 text-center">
+            Error loading lesson details. Please try again.
+          </div>
+        )}
+      </DialogContent>
+
+      {/* Complete Session Dialog */}
+      <CompleteSessionDialog
+        lessonId={lessonId}
+        isOpen={isCompletingSession}
+        onClose={handleCompleteSessionClose}
+        onSuccess={handleSessionCompleted}
+        skipHomeworkStep={skipHomeworkStep}
+      />
+
+      {/* Cancel Lesson Confirmation Dialog */}
+      <Dialog open={isCancelling} onOpenChange={() => setIsCancelling(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Lesson</DialogTitle>
             <DialogDescription>
-              View and manage lesson information
+              Are you sure you want to cancel this lesson? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          
-          {isLoading ? (
-            <div className="py-6 text-center">Loading lesson details...</div>
-          ) : lesson ? (
-            <div className="grid gap-4 py-4">
-              {completionStatus && !isStudentOrParent && (
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <h3 className="font-medium mb-2 flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Lesson Progress
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span>Attendance marked:</span>
-                      <div className="flex items-center gap-2">
-                        <span>{completionStatus.attendanceCount}/{completionStatus.totalStudents} students</span>
-                        {completionStatus.attendanceCount === completionStatus.totalStudents ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-red-500" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Homework assigned:</span>
-                      <div className="flex items-center gap-2">
-                        <span>{completionStatus.hasHomework ? 'Yes' : 'No'}</span>
-                        {completionStatus.hasHomework ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-red-500" />
-                        )}
-                      </div>
-                    </div>
-                    {completionStatus.isCompleted && (
-                      <div className="mt-2 p-2 bg-green-100 text-green-800 rounded-md text-center">
-                        ✓ Lesson fully completed
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h3 className="font-medium">Title</h3>
-                <p>{lesson.title}</p>
-              </div>
-              <div>
-                <h3 className="font-medium">Description</h3>
-                <p>{lesson.description || 'No description provided'}</p>
-              </div>
-              <div>
-                <h3 className="font-medium">Date & Time</h3>
-                <p>
-                  {lesson.start_time ? 
-                    `${format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')} - ${format(parseISO(lesson.end_time), 'h:mm a')}` : 
-                    'Time information not available'
-                  }
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium">Tutor</h3>
-                <p>{lesson.tutor ? `${lesson.tutor.first_name} ${lesson.tutor.last_name}` : 'Not assigned'}</p>
-              </div>
-
-              {/* Student Attendance Section */}
-              {lesson.students && lesson.students.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="h-4 w-4" />
-                    <h3 className="font-medium">Students & Attendance</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {lesson.students.map(student => (
-                      <StudentAttendanceRow
-                        key={student.id}
-                        student={student}
-                        lessonId={lesson.id}
-                        lessonData={{
-                          title: lesson.title,
-                          start_time: lesson.start_time,
-                          tutor: lesson.tutor
-                        }}
-                        isStudent={isStudentOrParent}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Flexible Classroom Section */}
-              {hasFlexibleClassroom ? (
-                <VideoConferenceLink 
-                  flexibleClassroomRoomId={lesson.flexible_classroom_room_id}
-                  flexibleClassroomSessionData={lesson.flexible_classroom_session_data}
-                  className="mb-4"
-                  isGroupLesson={lesson.is_group}
-                  studentCount={lesson.students?.length || 0}
-                  lessonId={lesson.id}
-                />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsCancelling(false)} disabled={isSubmittingCancellation}>
+              Go Back
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleCancellationSubmit} disabled={isSubmittingCancellation}>
+              {isSubmittingCancellation ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelling...
+                </>
               ) : (
-                // Only show room creation for tutors, admins, and owners
-                !isStudentOrParent && (
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-sm">Flexible Classroom</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {lesson.is_group 
-                            ? `No classroom created yet (${lesson.students?.length || 0} students)`
-                            : 'No classroom created yet'
-                          }
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCreateFlexibleClassroom}
-                        disabled={isCreatingFlexibleClassroom}
-                        className="flex items-center gap-2"
-                      >
-                        {isCreatingFlexibleClassroom ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                            Creating...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4" />
-                            Create Classroom
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )
+                'Confirm Cancellation'
               )}
-
-              {(lesson.is_recurring || lesson.is_recurring_instance) && (
-                <div>
-                  <h3 className="font-medium">Recurrence</h3>
-                  <p>
-                    This is {lesson.is_recurring_instance ? 'part of a' : 'a'} recurring {lesson.recurrence_interval || 'weekly'} lesson 
-                    {lesson.recurrence_end_date ? ` until ${format(parseISO(lesson.recurrence_end_date), 'MMM d, yyyy')}` : ''}
-                  </p>
-                </div>
-              )}
-              {hasHomework && (
-                <div className="pt-2">
-                  <div className="flex items-center gap-2 text-amber-500">
-                    <BookOpen className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      This lesson has homework assigned
-                    </span>
-                  </div>
-                </div>
-              )}
-              <div className="pt-2">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${lesson.status === 'completed' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
-                  <span className="text-sm font-medium">
-                    Status: {lesson.status === 'completed' ? 'Completed' : 'Scheduled'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="py-6 text-center">No lesson data available</div>
-          )}
-          
-          <div className="flex flex-wrap justify-between gap-2 mt-4">
-            <div>
-              {onDelete && lesson && !isStudentOrParent && (
-                <Button 
-                  variant="destructive" 
-                  onClick={handleDeleteLesson}
-                  className="flex items-center gap-1"
-                  size="sm"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2 justify-end">
-              {lesson && onAssignHomework && !isStudentOrParent && (
-                <Button
-                  className="flex items-center gap-1"
-                  onClick={handleCompleteLesson}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Check className="h-4 w-4" />
-                  Complete Lesson
-                </Button>
-              )}
-              {lesson && !isStudentOrParent && (
-                <Button 
-                  onClick={handleEditLesson} 
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </Button>
-              )}
-              {lesson && lesson.status !== 'completed' && onCompleteSession && !isStudentOrParent && (
-                <Button 
-                  className="flex items-center gap-1" 
-                  onClick={handleCompleteSession}
-                  variant="default"
-                  size="sm"
-                >
-                  <Check className="h-4 w-4" />
-                  Complete
-                </Button>
-              )}
-              {lesson && lesson.status === 'completed' && (
-                <Button 
-                  className="flex items-center gap-1" 
-                  variant="outline"
-                  disabled
-                  size="sm"
-                >
-                  <Clock className="h-4 w-4" />
-                  Completed
-                </Button>
-              )}
-              <Button variant="outline" onClick={onClose} size="sm">Close</Button>
-            </div>
-          </div>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <EditLessonForm
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-        onSuccess={handleEditSuccess}
-        lessonId={editLessonId}
-      />
-
-      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the session "{lesson?.title}".
-              {(lesson?.is_recurring || lesson?.is_recurring_instance) && (
-                <div className="mt-4">
-                  <RadioGroup value={deleteOption} onValueChange={(value) => setDeleteOption(value as 'single' | 'all')}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <RadioGroupItem value="single" id="single" />
-                      <Label htmlFor="single">Delete only this instance</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="all" id="all" />
-                      <Label htmlFor="all">Delete this and all future instances</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+      {/* Reschedule Lesson Dialog */}
+      <Dialog open={isRescheduling} onOpenChange={() => setIsRescheduling(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reschedule Lesson</DialogTitle>
+            <DialogDescription>
+              Select a new date and provide a reason for rescheduling this lesson.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div>
+              <Label htmlFor="rescheduleDate">New Date</Label>
+              <Input
+                type="date"
+                id="rescheduleDate"
+                value={rescheduleDate ? format(rescheduleDate, 'yyyy-MM-dd') : ''}
+                onChange={(e) => setRescheduleDate(new Date(e.target.value))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="rescheduleReason">Reason for Reschedule</Label>
+              <Textarea
+                id="rescheduleReason"
+                placeholder="Briefly explain why this lesson is being rescheduled..."
+                className="resize-none mt-1"
+                value={rescheduleReason}
+                onChange={(e) => setRescheduleReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsRescheduling(false)} disabled={isSubmittingReschedule}>
+              Go Back
+            </Button>
+            <Button type="button" onClick={handleRescheduleSubmit} disabled={isSubmittingReschedule}>
+              {isSubmittingReschedule ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rescheduling...
+                </>
+              ) : (
+                'Confirm Reschedule'
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteLesson}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteLesson} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isHomeworkDeleteConfirmOpen} onOpenChange={setIsHomeworkDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              This lesson has homework
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <p className="mb-4">The lesson "{lesson?.title}" has homework assigned to it. What would you like to do?</p>
-              
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
-                <RadioGroup
-                  value={homeworkDeleteOption}
-                  onValueChange={(value) => setHomeworkDeleteOption(value as 'delete' | 'cancel')}
-                >
-                  <div className="flex items-center space-x-2 mb-2">
-                    <RadioGroupItem value="delete" id="delete-homework" />
-                    <div>
-                      <Label htmlFor="delete-homework" className="font-medium">Delete the lesson and its homework</Label>
-                      <p className="text-xs text-muted-foreground">This will permanently delete both the lesson and any associated homework.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="cancel" id="keep-homework" />
-                    <div>
-                      <Label htmlFor="keep-homework" className="font-medium">Cancel deletion</Label>
-                      <p className="text-xs text-muted-foreground">Go back to the lesson details without deleting anything.</p>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-              {(lesson?.is_recurring || lesson?.is_recurring_instance) && homeworkDeleteOption === 'delete' && (
-                <div className="mt-4">
-                  <p className="mb-2 font-medium">For recurring lessons:</p>
-                  <RadioGroup value={deleteOption} onValueChange={(value) => setDeleteOption(value as 'single' | 'all')}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <RadioGroupItem value="single" id="homework-single" />
-                      <Label htmlFor="homework-single">Delete only this instance</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="all" id="homework-all" />
-                      <Label htmlFor="homework-all">Delete this and all future instances</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteLesson}>Cancel</AlertDialogCancel>
-            {homeworkDeleteOption === 'delete' ? (
-              <AlertDialogAction onClick={confirmDeleteLesson} className="bg-destructive text-destructive-foreground">
-                Delete
-              </AlertDialogAction>
-            ) : (
-              <AlertDialogAction onClick={cancelDeleteLesson}>
-                Go Back
-              </AlertDialogAction>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Dialog>
   );
 };
 

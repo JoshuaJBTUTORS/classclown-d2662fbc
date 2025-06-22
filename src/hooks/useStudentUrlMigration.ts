@@ -9,80 +9,33 @@ export const useStudentUrlMigration = () => {
   const migrateExistingLessons = async () => {
     setIsMigrating(true);
     try {
-      console.log("Starting migration of existing lessons...");
+      console.log("Migration no longer needed - old lesson space system has been removed");
       
-      // Find lessons that have lesson_space_room_id but students with NULL lesson_space_url
-      const { data: lessonsToMigrate, error: fetchError } = await supabase
+      // Since we removed all old video conferencing columns, this migration is no longer relevant
+      // We only support Flexible Classroom now
+      
+      const { data: lessonsWithFlexibleClassroom, error: fetchError } = await supabase
         .from('lessons')
-        .select(`
-          id,
-          title,
-          lesson_space_room_id,
-          lesson_students!inner(
-            id,
-            lesson_space_url,
-            student:students(id, first_name, last_name)
-          )
-        `)
-        .not('lesson_space_room_id', 'is', null)
-        .is('lesson_students.lesson_space_url', null);
+        .select('id, title, flexible_classroom_room_id')
+        .not('flexible_classroom_room_id', 'is', null);
 
       if (fetchError) {
-        console.error("Error fetching lessons to migrate:", fetchError);
-        toast.error('Failed to fetch lessons for migration');
+        console.error("Error fetching lessons:", fetchError);
+        toast.error('Failed to fetch lessons');
         return;
       }
 
-      if (!lessonsToMigrate || lessonsToMigrate.length === 0) {
-        toast.success('No lessons need migration - all student URLs are already set');
+      if (!lessonsWithFlexibleClassroom || lessonsWithFlexibleClassroom.length === 0) {
+        toast.info('No lessons with Flexible Classroom found');
         return;
       }
 
-      console.log(`Found ${lessonsToMigrate.length} lessons that need student URL migration`);
-
-      let successCount = 0;
-      let failureCount = 0;
-
-      // Process each lesson
-      for (const lesson of lessonsToMigrate) {
-        try {
-          console.log(`Regenerating student URLs for lesson: ${lesson.title} (${lesson.id})`);
-          
-          // Call the lesson-space-integration function to regenerate URLs
-          const { data: result, error } = await supabase.functions.invoke('lesson-space-integration', {
-            body: {
-              action: 'create-room',
-              lessonId: lesson.id,
-              title: lesson.title,
-              startTime: new Date().toISOString(), // Use current time for migration
-              duration: 60
-            }
-          });
-
-          if (error || !result?.success) {
-            console.error(`Failed to regenerate URLs for lesson ${lesson.id}:`, error || result?.error);
-            failureCount++;
-          } else {
-            console.log(`Successfully regenerated URLs for lesson ${lesson.id}`);
-            successCount++;
-          }
-        } catch (lessonError) {
-          console.error(`Error processing lesson ${lesson.id}:`, lessonError);
-          failureCount++;
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success(`Migration completed: ${successCount} lessons updated successfully`);
-      }
-      if (failureCount > 0) {
-        toast.error(`Migration had issues: ${failureCount} lessons failed to update`);
-      }
-
-      console.log(`Migration completed: ${successCount} success, ${failureCount} failures`);
+      toast.success(`Found ${lessonsWithFlexibleClassroom.length} lessons with Flexible Classroom configured`);
+      console.log(`Migration completed: ${lessonsWithFlexibleClassroom.length} lessons already using Flexible Classroom`);
+      
     } catch (error) {
-      console.error('Error during migration:', error);
-      toast.error('Migration failed: ' + error.message);
+      console.error('Error during migration check:', error);
+      toast.error('Migration check failed: ' + error.message);
     } finally {
       setIsMigrating(false);
     }
