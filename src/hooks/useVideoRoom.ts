@@ -12,6 +12,12 @@ interface ExpectedStudent {
   last_name: string;
 }
 
+interface StudentContext {
+  studentId: number;
+  studentName: string;
+  isParentJoin: boolean;
+}
+
 export const useVideoRoom = (lessonId: string) => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
@@ -24,9 +30,106 @@ export const useVideoRoom = (lessonId: string) => {
   const [retryCount, setRetryCount] = useState(0);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [expectedStudents, setExpectedStudents] = useState<ExpectedStudent[]>([]);
+  const [studentContext, setStudentContext] = useState<StudentContext | null>(null);
 
   // Map admin/owner roles to video room role
   const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
+
+  // Generate deterministic UID based on role and context
+  const generateUID = async () => {
+    if (videoRoomRole === 'tutor') {
+      // Get tutor ID from the lesson
+      if (lesson?.tutor_id) {
+        // Convert tutor UUID to a number (use hash of first 8 chars)
+        const tutorHash = lesson.tutor_id.substring(0, 8);
+        const tutorNumericId = parseInt(tutorHash, 16) % 100000;
+        return 100000 + tutorNumericId; // Tutor range: 100000-199999
+      }
+      return 100001; // Fallback for tutors
+    } else {
+      // For students/parents, use the student ID
+      if (studentContext) {
+        return studentContext.studentId;
+      }
+      
+      // If no student context yet, try to determine it
+      const context = await determineStudentContext();
+      return context ? context.studentId : 1; // Fallback to 1 if we can't determine
+    }
+  };
+
+  const determineStudentContext = async (): Promise<StudentContext | null> => {
+    try {
+      if (userRole === 'parent') {
+        // Parent joining - find which child is in this lesson
+        const { data: parentData, error: parentError } = await supabase
+          .from('parents')
+          .select('id')
+          .eq('user_id', user?.id)
+          .single();
+
+        if (parentError || !parentData) {
+          console.error('Error fetching parent data:', parentError);
+          return null;
+        }
+
+        // Find the child enrolled in this lesson
+        const { data: studentInLesson, error: studentError } = await supabase
+          .from('lesson_students')
+          .select(`
+            student:students(
+              id,
+              first_name,
+              last_name,
+              parent_id
+            )
+          `)
+          .eq('lesson_id', lessonId);
+
+        if (studentError || !studentInLesson) {
+          console.error('Error fetching lesson students:', studentError);
+          return null;
+        }
+
+        // Find the child that belongs to this parent
+        const parentChild = studentInLesson.find(
+          ls => ls.student?.parent_id === parentData.id
+        );
+
+        if (parentChild?.student) {
+          const student = parentChild.student;
+          return {
+            studentId: student.id,
+            studentName: `${student.first_name} ${student.last_name}`.trim(),
+            isParentJoin: true
+          };
+        }
+      } else if (userRole === 'student') {
+        // Direct student join - find the student record for this user
+        const { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .select('id, first_name, last_name')
+          .eq('user_id', user?.id)
+          .single();
+
+        if (studentError || !studentData) {
+          console.error('Error fetching student data:', studentError);
+          return null;
+        }
+
+        return {
+          studentId: studentData.id,
+          studentName: `${studentData.first_name} ${studentData.last_name}`.trim(),
+          isParentJoin: false
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error determining student context:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!user || !lessonId) {
@@ -65,6 +168,14 @@ export const useVideoRoom = (lessonId: string) => {
       console.log('📚 Lesson data loaded:', lessonData.title);
       setLesson(lessonData);
 
+      // Determine student context if needed
+      let context = null;
+      if (videoRoomRole !== 'tutor') {
+        context = await determineStudentContext();
+        setStudentContext(context);
+        console.log('👤 Student context determined:', context);
+      }
+
       // Fetch expected students for this lesson
       const { data: studentsData, error: studentsError } = await supabase
         .from('lesson_students')
@@ -93,9 +204,13 @@ export const useVideoRoom = (lessonId: string) => {
         setExpectedStudents(students);
       }
 
-      // Get tokens using the proper agora-integration edge function
+      // Generate custom UID
+      const customUID = await generateUID();
+      console.log('🆔 Generated UID:', customUID, 'for role:', videoRoomRole);
+
+      // Get tokens using the Agora integration with custom UID
       console.log('🔑 Fetching Agora credentials via edge function...');
-      const credentials = await getTokens(lessonId, videoRoomRole);
+      const credentials = await getTokens(lessonId, videoRoomRole, customUID);
       
       if (!credentials) {
         throw new Error('Failed to get Agora credentials from edge function');
@@ -130,7 +245,8 @@ export const useVideoRoom = (lessonId: string) => {
     setIsRegenerating(true);
     try {
       console.log('🔄 Regenerating tokens via edge function...');
-      const credentials = await regenerateTokens(lessonId, videoRoomRole);
+      const customUID = await generateUID();
+      const credentials = await regenerateTokens(lessonId, videoRoomRole, customUID);
       
       if (credentials) {
         setAgoraCredentials(credentials);
@@ -152,16 +268,25 @@ export const useVideoRoom = (lessonId: string) => {
     navigate('/calendar');
   };
 
+  const getDisplayName = () => {
+    if (studentContext) {
+      return studentContext.studentName;
+    }
+    return `You (${videoRoomRole})`;
+  };
+
   return {
     lesson,
     agoraCredentials,
     expectedStudents,
+    studentContext,
     isLoading,
     error,
     isRegenerating,
     videoRoomRole,
     handleRetry,
     handleRegenerateTokens,
-    handleLeaveRoom
+    handleLeaveRoom,
+    getDisplayName
   };
 };

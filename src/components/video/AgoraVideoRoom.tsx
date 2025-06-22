@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -30,6 +31,12 @@ import {
   Square
 } from 'lucide-react';
 
+interface StudentContext {
+  studentId: number;
+  studentName: string;
+  isParentJoin: boolean;
+}
+
 interface AgoraVideoRoomProps {
   appId: string;
   channel: string;
@@ -47,6 +54,8 @@ interface AgoraVideoRoomProps {
     first_name: string;
     last_name: string;
   }>;
+  studentContext?: StudentContext | null;
+  displayName?: string;
   onLeave: () => void;
 }
 
@@ -59,6 +68,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   lessonTitle,
   netlessCredentials,
   expectedStudents = [],
+  studentContext,
+  displayName,
   onLeave,
 }) => {
   const [calling, setCalling] = useState(false);
@@ -83,7 +94,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   // Validate UID to ensure it's a valid number
   const validUid = Math.max(1, Math.floor(Math.abs(uid))) || Math.floor(Math.random() * 1000000) + 1000;
 
-  console.log('AgoraVideoRoom - Using UID:', validUid, 'Original UID:', uid);
+  console.log('AgoraVideoRoom - Using UID:', validUid, 'Original UID:', uid, 'Student Context:', studentContext);
 
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
   const { localCameraTrack } = useLocalCameraTrack(cameraOn);
@@ -93,19 +104,18 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   // Get screen tracks
   const { screenVideoTrack, screenAudioTrack } = getScreenTracks();
 
-  // Only publish tracks if we're joined and tracks are ready
+  // Publish tracks when joined and ready
   const tracksToPublish = [];
-  if (isJoined && localMicrophoneTrack && micOn) {
+  if (localMicrophoneTrack && micOn) {
     tracksToPublish.push(localMicrophoneTrack);
   }
-  if (isJoined && localCameraTrack && cameraOn && !isScreenSharing) {
-    // Don't publish camera track when screen sharing
+  if (localCameraTrack && cameraOn && !isScreenSharing) {
     tracksToPublish.push(localCameraTrack);
   }
-  if (isJoined && screenVideoTrack && isScreenSharing) {
+  if (screenVideoTrack && isScreenSharing) {
     tracksToPublish.push(screenVideoTrack);
   }
-  if (isJoined && screenAudioTrack && isScreenSharing) {
+  if (screenAudioTrack && isScreenSharing) {
     tracksToPublish.push(screenAudioTrack);
   }
 
@@ -121,10 +131,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   // Track join state
   useEffect(() => {
     if (joinState && !isJoined) {
-      console.log('Successfully joined Agora channel');
+      console.log('Successfully joined Agora channel with UID:', validUid);
       setIsJoined(true);
     }
-  }, [joinState, isJoined]);
+  }, [joinState, isJoined, validUid]);
 
   useEffect(() => {
     console.log('AgoraVideoRoom - Netless credentials:', {
@@ -188,6 +198,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const currentParticipants = remoteUsers.length + 1;
 
   const getLocalUserName = () => {
+    if (displayName) {
+      return displayName;
+    }
     if (isScreenSharing) {
       return `You (${userRole})`;
     }
@@ -373,6 +386,9 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               isVideoEnabled={cameraOn}
               userRole={userRole}
               expectedStudents={expectedStudents}
+              studentContext={studentContext}
+              displayName={getLocalUserName()}
+              currentUID={validUid}
               isScreenSharing={isScreenSharing}
             />
           </div>
@@ -385,7 +401,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               rtmToken=""
               channelName={channel}
               userId={validUid.toString()}
-              userName={`User ${validUid}`}
+              userName={displayName || `User ${validUid}`}
               userRole={userRole}
             />
           </div>

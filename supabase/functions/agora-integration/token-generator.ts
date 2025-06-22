@@ -46,21 +46,25 @@ export async function generateTokensOfficial(
   appCertificate: string,
   channelName: string,
   uid: number | null,
-  userRole: string
+  userRole: string,
+  customUID?: number
 ) {
   try {
     console.log('[TOKEN-GEN] Generating tokens with official implementation:', {
       appId: appId.substring(0, 8) + '...',
       channelName,
       uid: uid,
-      userRole
+      userRole,
+      customUID
     });
 
-    // Handle null UID by generating a random one
-    let actualUid = uid;
+    // Use custom UID if provided, otherwise handle null UID
+    let actualUid = customUID || uid;
     if (actualUid === null || actualUid === undefined) {
       actualUid = Math.floor(Math.random() * 1000000) + 1000;
-      console.log('[TOKEN-GEN] Generated new UID:', actualUid);
+      console.log('[TOKEN-GEN] Generated fallback UID:', actualUid);
+    } else if (customUID) {
+      console.log('[TOKEN-GEN] Using custom UID:', customUID);
     }
 
     // Set token expiration (24 hours by default)
@@ -81,7 +85,8 @@ export async function generateTokensOfficial(
       rtcTokenLength: rtcToken.length,
       rtmTokenLength: rtmToken.length,
       role: userRole,
-      finalUid: actualUid
+      finalUid: actualUid,
+      wasCustomUID: !!customUID
     });
 
     return {

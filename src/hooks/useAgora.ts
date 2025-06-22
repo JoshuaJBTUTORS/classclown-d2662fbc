@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -86,16 +87,21 @@ export const useAgora = () => {
     }
   };
 
-  const getTokens = async (lessonId: string, userRole: 'tutor' | 'student' | 'parent' = 'student'): Promise<AgoraRoomData | null> => {
+  const getTokens = async (
+    lessonId: string, 
+    userRole: 'tutor' | 'student' | 'parent' = 'student', 
+    customUID?: number
+  ): Promise<AgoraRoomData | null> => {
     setIsGeneratingTokens(true);
     try {
-      console.log('Getting Agora tokens for lesson:', lessonId, 'role:', userRole);
+      console.log('Getting Agora tokens for lesson:', lessonId, 'role:', userRole, 'customUID:', customUID);
       
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
           action: 'get-tokens',
           lessonId,
-          userRole: userRole === 'parent' ? 'student' : userRole
+          userRole: userRole === 'parent' ? 'student' : userRole,
+          customUID
         }
       });
 
@@ -150,16 +156,21 @@ export const useAgora = () => {
     }
   };
 
-  const regenerateTokens = async (lessonId: string, userRole: 'tutor' | 'student' | 'parent' = 'student'): Promise<AgoraRoomData | null> => {
+  const regenerateTokens = async (
+    lessonId: string, 
+    userRole: 'tutor' | 'student' | 'parent' = 'student',
+    customUID?: number
+  ): Promise<AgoraRoomData | null> => {
     setIsRegenerating(true);
     try {
-      console.log('Regenerating Agora tokens for lesson:', lessonId, 'role:', userRole);
+      console.log('Regenerating Agora tokens for lesson:', lessonId, 'role:', userRole, 'customUID:', customUID);
       
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
           action: 'regenerate-tokens',
           lessonId,
-          userRole: userRole === 'parent' ? 'student' : userRole
+          userRole: userRole === 'parent' ? 'student' : userRole,
+          customUID
         }
       });
 

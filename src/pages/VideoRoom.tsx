@@ -21,13 +21,15 @@ const VideoRoom: React.FC = () => {
     lesson,
     agoraCredentials,
     expectedStudents,
+    studentContext,
     isLoading,
     error,
     isRegenerating,
     videoRoomRole,
     handleRetry,
     handleRegenerateTokens,
-    handleLeaveRoom
+    handleLeaveRoom,
+    getDisplayName
   } = useVideoRoom(lessonId || '');
   
   // Use Netless credentials hook
@@ -72,6 +74,8 @@ const VideoRoom: React.FC = () => {
     tokenValid: !!agoraCredentials.rtcToken,
     hasNetless: !!netlessCredentials,
     expectedStudentsCount: expectedStudents.length,
+    studentContext,
+    displayName: getDisplayName(),
     fastboardEnabled: true
   });
 
@@ -86,6 +90,8 @@ const VideoRoom: React.FC = () => {
         lessonTitle={lesson.title}
         netlessCredentials={netlessCredentials}
         expectedStudents={expectedStudents}
+        studentContext={studentContext}
+        displayName={getDisplayName()}
         onLeave={handleLeaveRoom}
       />
     </AgoraRTCProvider>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RemoteUser, LocalVideoTrack } from 'agora-rtc-react';
 import VideoCard from './VideoCard';
@@ -9,6 +10,12 @@ interface ExpectedStudent {
   last_name: string;
 }
 
+interface StudentContext {
+  studentId: number;
+  studentName: string;
+  isParentJoin: boolean;
+}
+
 interface VerticalVideoGridProps {
   localCameraTrack?: any;
   remoteUsers: any[];
@@ -16,6 +23,9 @@ interface VerticalVideoGridProps {
   isVideoEnabled: boolean;
   userRole: 'tutor' | 'student';
   expectedStudents?: ExpectedStudent[];
+  studentContext?: StudentContext | null;
+  displayName?: string;
+  currentUID?: number;
   isScreenSharing?: boolean;
 }
 
@@ -26,6 +36,9 @@ const VerticalVideoGrid: React.FC<VerticalVideoGridProps> = ({
   isVideoEnabled,
   userRole,
   expectedStudents = [],
+  studentContext,
+  displayName,
+  currentUID,
   isScreenSharing = false
 }) => {
   const totalExpectedParticipants = expectedStudents.length + 1; // +1 for tutor/current user
@@ -34,22 +47,82 @@ const VerticalVideoGrid: React.FC<VerticalVideoGridProps> = ({
   // Determine grid layout based on total expected participants
   const gridCols = totalExpectedParticipants > 2 ? 'grid-cols-2' : 'grid-cols-1';
 
-  // Create a set of joined student IDs for comparison
-  const joinedStudentIds = new Set(
+  // Create a set of joined user UIDs for comparison
+  const joinedUIDs = new Set(
     remoteUsers.map(user => parseInt(user.uid)).filter(id => !isNaN(id))
   );
 
+  // Map remote users to their display information
+  const getRemoteUserDisplayInfo = (user: any) => {
+    const uid = parseInt(user.uid);
+    
+    // Check if this UID matches any expected student
+    const matchingStudent = expectedStudents.find(student => student.id === uid);
+    
+    if (matchingStudent) {
+      return {
+        name: `${matchingStudent.first_name} ${matchingStudent.last_name}`.trim(),
+        isStudent: true
+      };
+    }
+    
+    // Check if this might be a tutor (UID in the 100000+ range)
+    if (uid >= 100000) {
+      return {
+        name: 'Tutor',
+        isStudent: false
+      };
+    }
+    
+    // Fallback for unknown users
+    return {
+      name: `User ${uid}`,
+      isStudent: false
+    };
+  };
+
   // Filter expected students to show only those who haven't joined
-  const pendingStudents = expectedStudents.filter(
-    student => !joinedStudentIds.has(student.id)
-  );
+  // If current user is a student (including parent join), exclude them from pending list
+  const pendingStudents = expectedStudents.filter(student => {
+    // Don't show as pending if this student has joined
+    if (joinedUIDs.has(student.id)) {
+      return false;
+    }
+    
+    // Don't show as pending if this is the current user's student context
+    if (studentContext && studentContext.studentId === student.id) {
+      return false;
+    }
+    
+    return true;
+  });
 
   const getLocalUserName = () => {
+    if (displayName) {
+      return displayName;
+    }
+    
+    if (studentContext) {
+      return studentContext.isParentJoin 
+        ? `${studentContext.studentName} (via parent)`
+        : studentContext.studentName;
+    }
+    
     if (isScreenSharing) {
       return `You (${userRole}) - Camera`;
     }
     return `You (${userRole})`;
   };
+
+  console.log('VerticalVideoGrid - Rendering with:', {
+    currentUID,
+    remoteUsersCount: remoteUsers.length,
+    expectedStudentsCount: expectedStudents.length,
+    pendingStudentsCount: pendingStudents.length,
+    studentContext,
+    displayName,
+    joinedUIDs: Array.from(joinedUIDs)
+  });
 
   return (
     <div className="h-full p-3 overflow-y-auto">
@@ -71,19 +144,14 @@ const VerticalVideoGrid: React.FC<VerticalVideoGridProps> = ({
           ) : null}
         </VideoCard>
 
-        {/* Remote users (joined students) */}
+        {/* Remote users (joined participants) */}
         {remoteUsers.map((user) => {
-          // Try to find the student name from expected students
-          const studentId = parseInt(user.uid);
-          const studentData = expectedStudents.find(s => s.id === studentId);
-          const userName = studentData 
-            ? `${studentData.first_name} ${studentData.last_name}`.trim()
-            : `User ${user.uid}`;
-
+          const displayInfo = getRemoteUserDisplayInfo(user);
+          
           return (
             <VideoCard
               key={user.uid}
-              userName={userName}
+              userName={displayInfo.name}
               isAudioEnabled={user.hasAudio}
               isVideoEnabled={user.hasVideo}
               isLocal={false}
