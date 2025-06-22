@@ -187,6 +187,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   <VideoConferenceLink 
                     lessonSpaceRoomUrl={lesson.lesson_space_room_url}
                     lessonSpaceRoomId={lesson.lesson_space_room_id}
+                    lessonSpaceSpaceId={lesson.lesson_space_space_id}
                     isGroupLesson={lesson.is_group}
                     studentCount={lesson.lesson_students?.length || 0}
                   />

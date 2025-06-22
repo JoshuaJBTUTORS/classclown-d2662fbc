@@ -726,6 +726,9 @@ export type Database = {
           id: string
           is_group: boolean
           is_recurring: boolean
+          lesson_space_room_id: string | null
+          lesson_space_room_url: string | null
+          lesson_space_space_id: string | null
           lesson_type: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
@@ -749,6 +752,9 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
+          lesson_space_room_id?: string | null
+          lesson_space_room_url?: string | null
+          lesson_space_space_id?: string | null
           lesson_type?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
@@ -772,6 +778,9 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
+          lesson_space_room_id?: string | null
+          lesson_space_room_url?: string | null
+          lesson_space_space_id?: string | null
           lesson_type?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null

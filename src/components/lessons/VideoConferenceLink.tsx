@@ -12,6 +12,7 @@ import {
 interface VideoConferenceLinkProps {
   lessonSpaceRoomUrl?: string | null;
   lessonSpaceRoomId?: string | null;
+  lessonSpaceSpaceId?: string | null;
   className?: string;
   isGroupLesson?: boolean;
   studentCount?: number;
@@ -20,6 +21,7 @@ interface VideoConferenceLinkProps {
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   lessonSpaceRoomUrl,
   lessonSpaceRoomId,
+  lessonSpaceSpaceId,
   className = "",
   isGroupLesson = false,
   studentCount = 0
@@ -65,6 +67,11 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         {lessonSpaceRoomId && (
           <p className="text-xs text-muted-foreground mt-1">
             Room ID: {lessonSpaceRoomId}
+          </p>
+        )}
+        {lessonSpaceSpaceId && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Space ID: {lessonSpaceSpaceId}
           </p>
         )}
       </div>

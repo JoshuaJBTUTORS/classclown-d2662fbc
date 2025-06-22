@@ -16,6 +16,10 @@ export interface Lesson {
   // Only Flexible Classroom fields remain
   flexible_classroom_room_id?: string | null;
   flexible_classroom_session_data?: any;
+  // LessonSpace integration fields
+  lesson_space_room_id?: string | null;
+  lesson_space_room_url?: string | null;
+  lesson_space_space_id?: string | null;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
