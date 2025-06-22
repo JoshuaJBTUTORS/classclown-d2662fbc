@@ -1,198 +1,100 @@
 
-// Education Token Builder for Agora Flexible Classroom
-// Ported from Go implementation
+import { AccessToken2, ServiceApaas, ServiceChat, ServiceRtm } from './AccessToken2.ts'
 
-import { Buffer } from 'https://deno.land/std@0.155.0/node/buffer.ts'
-import { encodeHMac } from './agora-token.ts'
-
-const EDUCATION_TOKEN_VERSION = '007'
-
-// Education token privileges
-const EDUCATION_PRIVILEGES = {
-  ROOM_USER: 1,
-  USER: 2,
-  APP: 3
-}
-
-// User roles for education token
-const EDUCATION_ROLES = {
-  TEACHER: 1,
-  STUDENT: 2,
-  ASSISTANT: 3,
-  OBSERVER: 4
-}
-
-interface EducationTokenOptions {
-  appId: string
-  appCertificate: string
-  roomUuid: string
-  userUuid: string
-  role: number
-  expire: number
+// MD5 implementation for Deno
+async function md5(data: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const dataArray = encoder.encode(data)
+  const hashBuffer = await crypto.subtle.digest('MD5', dataArray)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 class EducationTokenBuilder {
-  private appId: string
-  private appCertificate: string
-  private roomUuid: string
-  private userUuid: string
-  private role: number
-  private expire: number
-  private issueTs: number
-  private salt: number
+    /**
+     * build user room token
+     * @param appId             The App ID issued to you by Agora. Apply for a new App ID from
+     *                          Agora Dashboard if it is missing from your kit. See Get an App ID.
+     * @param appCertificate    Certificate of the application that you registered in
+     *                          the Agora Dashboard. See Get an App Certificate.
+     * @param roomUuid          The room's id, must be unique.
+     * @param userUuid          The user's id, must be unique.
+     * @param role              The user's role.
+     * @param expire            represented by the number of seconds elapsed since now. If, for example, you want to access the
+     *                          Agora Service within 10 minutes after the token is generated, set expire as 600(seconds).
+     * @return The user room token.
+     */
+    static async buildRoomUserToken(appId: string, appCertificate: string, roomUuid: string, userUuid: string, role: number, expire: number) {
+        console.log('[EDUCATION-TOKEN] Building room user token with official implementation')
+        console.log('  - appId:', appId.substring(0, 8) + '...')
+        console.log('  - roomUuid:', roomUuid)
+        console.log('  - userUuid:', userUuid)
+        console.log('  - role:', role)
+        console.log('  - expire:', expire)
 
-  constructor(options: EducationTokenOptions) {
-    this.appId = options.appId
-    this.appCertificate = options.appCertificate
-    this.roomUuid = options.roomUuid
-    this.userUuid = options.userUuid
-    this.role = options.role
-    this.expire = options.expire
-    this.issueTs = Math.floor(Date.now() / 1000)
-    this.salt = Math.floor(Math.random() * 99999999) + 1
-  }
+        let accessToken = new AccessToken2(appId, appCertificate, 0, expire)
 
-  private packString(str: string): Buffer {
-    const strBuffer = Buffer.from(str, 'utf8')
-    const lengthBuffer = Buffer.alloc(2)
-    lengthBuffer.writeUInt16LE(strBuffer.length, 0)
-    return Buffer.concat([lengthBuffer, strBuffer])
-  }
+        let chatUserId = await md5(userUuid)
+        console.log('  - chatUserId (MD5):', chatUserId.substring(0, 8) + '...')
 
-  private packUint32(value: number): Buffer {
-    const buffer = Buffer.alloc(4)
-    buffer.writeUInt32LE(value, 0)
-    return buffer
-  }
+        let apaasService = new ServiceApaas(roomUuid, userUuid, role)
+        accessToken.add_service(apaasService)
 
-  private packUint16(value: number): Buffer {
-    const buffer = Buffer.alloc(2)
-    buffer.writeUInt16LE(value, 0)
-    return buffer
-  }
+        let rtmService = new ServiceRtm(userUuid)
+        rtmService.add_privilege(ServiceRtm.kPrivilegeLogin, expire)
+        accessToken.add_service(rtmService)
 
-  async build(): Promise<string> {
-    try {
-      // Validate inputs
-      if (!this.appId || this.appId.length !== 32) {
-        throw new Error(`Invalid appId: ${this.appId?.length || 0} characters`)
-      }
-      
-      if (!this.appCertificate || this.appCertificate.length !== 32) {
-        throw new Error(`Invalid appCertificate: ${this.appCertificate?.length || 0} characters`)
-      }
+        let chatService = new ServiceChat(chatUserId)
+        chatService.add_privilege(ServiceChat.kPrivilegeUser, expire)
+        accessToken.add_service(chatService)
 
-      // Build signature
-      const signature = await this.buildSignature()
-      
-      // Build message
-      const message = this.buildMessage()
-      
-      // Create final signature
-      const finalSignature = await encodeHMac(signature, message)
-      const signatureString = Buffer.from(finalSignature).toString('hex')
-      
-      // Build content
-      const content = Buffer.concat([
-        this.packString(signatureString),
-        message
-      ])
+        const token = await accessToken.build()
+        console.log('[EDUCATION-TOKEN] ✓ Official token built successfully')
+        console.log('  - Token length:', token.length)
+        console.log('  - Token preview:', token.substring(0, 20) + '...')
+        console.log('  - Starts with version "007":', token.startsWith('007'))
 
-      // Encode with version
-      const token = EDUCATION_TOKEN_VERSION + content.toString('base64')
-      
-      console.log('[EDUCATION-TOKEN] Generated education token successfully:', {
-        tokenLength: token.length,
-        appId: this.appId.substring(0, 8) + '...',
-        roomUuid: this.roomUuid,
-        userUuid: this.userUuid,
-        role: this.role
-      })
-
-      return token
-    } catch (error) {
-      console.error('[EDUCATION-TOKEN] Failed to build education token:', error)
-      throw error
+        return token
     }
-  }
 
-  private async buildSignature(): Promise<Uint8Array> {
-    const issueBuffer = this.packUint32(this.issueTs)
-    const saltBuffer = this.packUint32(this.salt)
-    
-    let signature = await encodeHMac(issueBuffer, this.appCertificate)
-    signature = await encodeHMac(saltBuffer, signature)
-    
-    return signature
-  }
+    /**
+     * build user token
+     * @param appId             The App ID issued to you by Agora. Apply for a new App ID from
+     *                          Agora Dashboard if it is missing from your kit. See Get an App ID.
+     * @param appCertificate    Certificate of the application that you registered in
+     *                          the Agora Dashboard. See Get an App Certificate.
+     * @param userUuid          The user's id, must be unique.
+     * @param expire            represented by the number of seconds elapsed since now. If, for example, you want to access the
+     *                          Agora Service within 10 minutes after the token is generated, set expire as 600(seconds).
+     * @return The user token.
+     */
+    static async buildUserToken(appId: string, appCertificate: string, userUuid: string, expire: number) {
+        let accessToken = new AccessToken2(appId, appCertificate, 0, expire)
+        let apaasService = new ServiceApaas('', userUuid)
+        apaasService.add_privilege(ServiceApaas.PRIVILEGE_USER, expire)
+        accessToken.add_service(apaasService)
 
-  private buildMessage(): Buffer {
-    // Build the message structure for education token
-    const appIdBuffer = this.packString(this.appId)
-    const issueTsBuffer = this.packUint32(this.issueTs)
-    const expireBuffer = this.packUint32(this.expire)
-    const saltBuffer = this.packUint32(this.salt)
-    const roomUuidBuffer = this.packString(this.roomUuid)
-    const userUuidBuffer = this.packString(this.userUuid)
-    const roleBuffer = this.packUint16(this.role)
-    
-    // Service count (for education token, typically 1 service)
-    const serviceCountBuffer = this.packUint16(1)
-    
-    // Service type for education (typically 4 for education service)
-    const serviceTypeBuffer = this.packUint16(4)
-    
-    // Privileges (room user privilege)
-    const privilegeCountBuffer = this.packUint16(1)
-    const privilegeKeyBuffer = this.packUint16(EDUCATION_PRIVILEGES.ROOM_USER)
-    const privilegeExpireBuffer = this.packUint32(this.expire)
+        return await accessToken.build()
+    }
 
-    return Buffer.concat([
-      appIdBuffer,
-      issueTsBuffer,
-      expireBuffer,
-      saltBuffer,
-      serviceCountBuffer,
-      serviceTypeBuffer,
-      roomUuidBuffer,
-      userUuidBuffer,
-      roleBuffer,
-      privilegeCountBuffer,
-      privilegeKeyBuffer,
-      privilegeExpireBuffer
-    ])
-  }
+    /**
+     * build app token
+     * @param appId          The App ID issued to you by Agora. Apply for a new App ID from
+     *                       Agora Dashboard if it is missing from your kit. See Get an App ID.
+     * @param appCertificate Certificate of the application that you registered in
+     *                       the Agora Dashboard. See Get an App Certificate.
+     * @param expire         represented by the number of seconds elapsed since now. If, for example, you want to access the
+     *                       Agora Service within 10 minutes after the token is generated, set expire as 600(seconds).
+     * @return The app token.
+     */
+    static async buildAppToken(appId: string, appCertificate: string, expire: number) {
+        let accessToken = new AccessToken2(appId, appCertificate, 0, expire)
+        let apaasService = new ServiceApaas()
+        apaasService.add_privilege(ServiceApaas.PRIVILEGE_APP, expire)
+        accessToken.add_service(apaasService)
+
+        return await accessToken.build()
+    }
 }
 
-export async function generateEducationToken(
-  appId: string,
-  appCertificate: string,
-  roomUuid: string,
-  userUuid: string,
-  role: number,
-  expireTimeInSeconds: number = 3600
-): Promise<string> {
-  console.log('[EDUCATION-TOKEN] Generating education token:', {
-    appId: appId.substring(0, 8) + '...',
-    roomUuid,
-    userUuid,
-    role,
-    expireTimeInSeconds
-  })
-
-  const currentTime = Math.floor(Date.now() / 1000)
-  const expireTime = currentTime + expireTimeInSeconds
-
-  const builder = new EducationTokenBuilder({
-    appId,
-    appCertificate,
-    roomUuid,
-    userUuid,
-    role,
-    expire: expireTime
-  })
-
-  return await builder.build()
-}
-
-export { EDUCATION_ROLES }
+export { EducationTokenBuilder }

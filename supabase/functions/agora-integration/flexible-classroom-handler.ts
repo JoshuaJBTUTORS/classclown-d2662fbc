@@ -1,6 +1,7 @@
 
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { generateEducationToken } from './education-token-builder.ts'
+import { EducationTokenBuilder } from './education-token-builder.ts'
 
 // Room creation handler for Agora Flexible Classroom with comprehensive debugging
 export async function handleFlexibleClassroom(params: any) {
@@ -214,7 +215,7 @@ export async function handleFlexibleClassroom(params: any) {
     const roomUuid = roomData.data?.roomUuid || roomName
     console.log('[STEP 12] ✓ Room UUID extracted:', roomUuid)
 
-    // Generate education token with comprehensive debugging
+    // Generate education token using official EducationTokenBuilder
     console.log('[STEP 13] === TOKEN GENERATION DEBUG START ===')
     
     // Map user role to education role number
@@ -252,13 +253,13 @@ export async function handleFlexibleClassroom(params: any) {
     console.log('  - roleNumber:', roleNumber)
     console.log('  - expireTime:', tokenExpireTime, 'seconds')
 
-    // Generate real education token
-    console.log('[TOKEN-DEBUG] Generating education token...')
+    // Generate official education token
+    console.log('[TOKEN-DEBUG] Generating official education token...')
     const tokenStartTime = Date.now()
     
     let educationToken: string
     try {
-      educationToken = await generateEducationToken(
+      educationToken = await EducationTokenBuilder.buildRoomUserToken(
         appId,
         appCertificate,
         roomUuid,
@@ -268,7 +269,7 @@ export async function handleFlexibleClassroom(params: any) {
       )
       
       const tokenGenerationTime = Date.now() - tokenStartTime
-      console.log(`[TOKEN-DEBUG] ✓ Token generated successfully in ${tokenGenerationTime}ms`)
+      console.log(`[TOKEN-DEBUG] ✓ Official token generated successfully in ${tokenGenerationTime}ms`)
       
       // Token validation and debug information
       console.log('[TOKEN-DEBUG] Token validation:')
@@ -292,7 +293,7 @@ export async function handleFlexibleClassroom(params: any) {
       console.error('[TOKEN-DEBUG] ERROR: Token generation failed:', tokenError)
       console.error('  - Error message:', tokenError.message)
       console.error('  - Error stack:', tokenError.stack)
-      throw new Error(`Education token generation failed: ${tokenError.message}`)
+      throw new Error(`Official education token generation failed: ${tokenError.message}`)
     }
 
     console.log('[STEP 13] === TOKEN GENERATION DEBUG END ===')
@@ -326,7 +327,8 @@ export async function handleFlexibleClassroom(params: any) {
           startsWithVersion: educationToken.startsWith('007'),
           lengthValid: educationToken.length > 50,
           isBase64Format: /^[A-Za-z0-9+/]+=*$/.test(educationToken.substring(3))
-        }
+        },
+        tokenType: 'official_agora_education_token'
       },
       debug: {
         requestDuration: requestDuration,
@@ -337,10 +339,11 @@ export async function handleFlexibleClassroom(params: any) {
     }
 
     console.log('[STEP 14] ✓ Final result prepared')
-    console.log('[SUCCESS] Room created successfully!')
+    console.log('[SUCCESS] Room created successfully with official token!')
     console.log('  - Room UUID:', result.roomUuid)
     console.log('  - Education token length:', result.educationToken.length)
     console.log('  - Token preview:', result.educationToken.substring(0, 20) + '...')
+    console.log('  - Token type: Official Agora Education Token')
     console.log('=== AGORA FLEXIBLE CLASSROOM DEBUG END ===')
 
     return result
