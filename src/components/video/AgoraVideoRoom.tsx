@@ -8,6 +8,7 @@ import {
   usePublish,
   useRemoteAudioTracks,
   useRemoteUsers,
+  useRTCClient,
 } from 'agora-rtc-react';
 import VideoRoomHeader from './VideoRoomHeader';
 import VerticalVideoGrid from './VerticalVideoGrid';
@@ -96,8 +97,8 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     uid: validUid,
   }, calling);
 
-  // Extract the actual client from the join state
-  const client = joinState?.data || null;
+  // Use the proper RTC client hook
+  const client = useRTCClient();
 
   // Screen sharing hook - pass the client
   const { 

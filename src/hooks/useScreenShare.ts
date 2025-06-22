@@ -1,24 +1,27 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack } from 'agora-rtc-sdk-ng';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 import { toast } from 'sonner';
 
 interface UseScreenShareProps {
-  client: IAgoraRTCClient | null;
+  client: any; // Using any for now since agora-rtc-react abstracts the client
 }
 
 export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isScreenShareLoading, setIsScreenShareLoading] = useState(false);
   const [isScreenSharePaused, setIsScreenSharePaused] = useState(false);
-  const [screenTrack, setScreenTrack] = useState<ILocalVideoTrack | null>(null);
+  const [screenTrack, setScreenTrack] = useState<any>(null);
 
   const stopScreenShare = useCallback(async () => {
     if (!agoraClient || !isScreenSharing || !screenTrack) return;
 
     try {
       setIsScreenSharing(false);
-      await agoraClient.unpublish([screenTrack]);
+      // Use the correct unpublish method
+      if (agoraClient.unpublish) {
+        await agoraClient.unpublish([screenTrack]);
+      }
       screenTrack.close();
       setScreenTrack(null);
       console.log('Screen sharing stopped');
@@ -54,7 +57,9 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
       setScreenTrack(newScreenTrack);
 
       // Publish the screen track
-      await agoraClient.publish([newScreenTrack]);
+      if (agoraClient.publish) {
+        await agoraClient.publish([newScreenTrack]);
+      }
       
       console.log('Screen sharing started');
       toast.success('Screen sharing started');
