@@ -293,4 +293,4 @@ var ReadByteBuf = function (bytes) {
     return that
 }
 
-export { AccessToken2, ServiceRtc, ServiceRtm }
+export { AccessToken2, ServiceRtc, ServiceRtm, encodeHMac }
