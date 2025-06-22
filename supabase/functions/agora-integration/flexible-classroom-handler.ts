@@ -1,5 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { generateEducationToken } from './education-token-builder.ts'
 
 // Room creation handler for Agora Flexible Classroom with comprehensive debugging
 export async function handleFlexibleClassroom(params: any) {
@@ -213,8 +214,8 @@ export async function handleFlexibleClassroom(params: any) {
     const roomUuid = roomData.data?.roomUuid || roomName
     console.log('[STEP 12] ✓ Room UUID extracted:', roomUuid)
 
-    // Generate education token (simplified without external dependency for now)
-    console.log('[STEP 13] Preparing education token...')
+    // Generate education token with comprehensive debugging
+    console.log('[STEP 13] === TOKEN GENERATION DEBUG START ===')
     
     // Map user role to education role number
     let roleNumber: number
@@ -237,11 +238,64 @@ export async function handleFlexibleClassroom(params: any) {
         break
     }
 
-    console.log('[STEP 13] ✓ Role mapped:', userRole, '->', roleNumber)
+    console.log('[TOKEN-DEBUG] Role mapping:')
+    console.log('  - Input role:', userRole)
+    console.log('  - Mapped role number:', roleNumber)
 
-    // For now, create a simple token placeholder until we fix the token generation
-    const educationToken = `temp_token_${Date.now()}_${roleNumber}`
-    console.log('[STEP 13] ✓ Temporary education token created')
+    // Token generation parameters
+    const tokenExpireTime = 3600 // 1 hour
+    console.log('[TOKEN-DEBUG] Token generation parameters:')
+    console.log('  - appId:', appId.substring(0, 8) + '...')
+    console.log('  - appCertificate:', appCertificate.substring(0, 8) + '...')
+    console.log('  - roomUuid:', roomUuid)
+    console.log('  - userUuid:', userId)
+    console.log('  - roleNumber:', roleNumber)
+    console.log('  - expireTime:', tokenExpireTime, 'seconds')
+
+    // Generate real education token
+    console.log('[TOKEN-DEBUG] Generating education token...')
+    const tokenStartTime = Date.now()
+    
+    let educationToken: string
+    try {
+      educationToken = await generateEducationToken(
+        appId,
+        appCertificate,
+        roomUuid,
+        userId,
+        roleNumber,
+        tokenExpireTime
+      )
+      
+      const tokenGenerationTime = Date.now() - tokenStartTime
+      console.log(`[TOKEN-DEBUG] ✓ Token generated successfully in ${tokenGenerationTime}ms`)
+      
+      // Token validation and debug information
+      console.log('[TOKEN-DEBUG] Token validation:')
+      console.log('  - Token length:', educationToken.length)
+      console.log('  - Token preview:', educationToken.substring(0, 20) + '...')
+      console.log('  - Starts with version "007":', educationToken.startsWith('007'))
+      console.log('  - Contains base64 content:', educationToken.length > 10)
+      
+      // Additional token format validation
+      if (!educationToken.startsWith('007')) {
+        console.warn('[TOKEN-DEBUG] WARNING: Token does not start with expected version "007"')
+      }
+      
+      if (educationToken.length < 50) {
+        console.warn('[TOKEN-DEBUG] WARNING: Token seems too short (< 50 characters)')
+      }
+      
+      console.log('[TOKEN-DEBUG] ✓ Token validation completed')
+      
+    } catch (tokenError: any) {
+      console.error('[TOKEN-DEBUG] ERROR: Token generation failed:', tokenError)
+      console.error('  - Error message:', tokenError.message)
+      console.error('  - Error stack:', tokenError.stack)
+      throw new Error(`Education token generation failed: ${tokenError.message}`)
+    }
+
+    console.log('[STEP 13] === TOKEN GENERATION DEBUG END ===')
 
     console.log('[STEP 14] Preparing final result...')
     const result = {
@@ -263,10 +317,15 @@ export async function handleFlexibleClassroom(params: any) {
         tokenLength: educationToken.length,
         tokenPreview: educationToken.substring(0, 20) + '...',
         generatedAt: new Date().toISOString(),
-        expiresIn: 86400,
+        expiresIn: tokenExpireTime,
         roleMapping: {
           inputRole: userRole,
           mappedRoleNumber: roleNumber
+        },
+        validationChecks: {
+          startsWithVersion: educationToken.startsWith('007'),
+          lengthValid: educationToken.length > 50,
+          isBase64Format: /^[A-Za-z0-9+/]+=*$/.test(educationToken.substring(3))
         }
       },
       debug: {
@@ -280,7 +339,8 @@ export async function handleFlexibleClassroom(params: any) {
     console.log('[STEP 14] ✓ Final result prepared')
     console.log('[SUCCESS] Room created successfully!')
     console.log('  - Room UUID:', result.roomUuid)
-    console.log('  - Education token created:', !!result.educationToken)
+    console.log('  - Education token length:', result.educationToken.length)
+    console.log('  - Token preview:', result.educationToken.substring(0, 20) + '...')
     console.log('=== AGORA FLEXIBLE CLASSROOM DEBUG END ===')
 
     return result
