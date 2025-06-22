@@ -1,5 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { generateEducationToken, EDUCATION_ROLES } from './education-token-builder.ts'
 
 // Room creation handler for Agora Flexible Classroom with extensive debugging
 export async function handleFlexibleClassroom(params: any) {
@@ -35,7 +36,7 @@ export async function handleFlexibleClassroom(params: any) {
     .from('lessons')
     .select('title, start_time, end_time, is_group')
     .eq('id', lessonId)
-    .single()
+    .maybeSingle()
 
   if (lessonError || !lesson) {
     console.error('[FLEXIBLE-CLASSROOM] ERROR: Failed to fetch lesson:', lessonError)
@@ -223,18 +224,93 @@ export async function handleFlexibleClassroom(params: any) {
       console.log('  - Response data keys:', Object.keys(roomData.data))
     }
 
+    // Extract or generate room UUID
+    const roomUuid = roomData.data?.roomUuid || roomName
+    console.log('[FLEXIBLE-CLASSROOM] Using roomUuid:', roomUuid)
+
+    // GENERATE EDUCATION TOKENS
+    console.log('[FLEXIBLE-CLASSROOM] Starting education token generation...')
+    
+    // Map user role to education role number
+    let roleNumber: number
+    switch (userRole.toLowerCase()) {
+      case 'teacher':
+      case 'tutor':
+        roleNumber = EDUCATION_ROLES.TEACHER
+        break
+      case 'student':
+        roleNumber = EDUCATION_ROLES.STUDENT
+        break
+      case 'assistant':
+        roleNumber = EDUCATION_ROLES.ASSISTANT
+        break
+      case 'observer':
+        roleNumber = EDUCATION_ROLES.OBSERVER
+        break
+      default:
+        roleNumber = EDUCATION_ROLES.STUDENT // Default to student
+        break
+    }
+
+    console.log('[FLEXIBLE-CLASSROOM] Token generation parameters:')
+    console.log('  - appId:', appId.substring(0, 8) + '...')
+    console.log('  - appCertificate:', appCertificate.substring(0, 8) + '...')
+    console.log('  - roomUuid:', roomUuid)
+    console.log('  - userUuid (userId):', userId)
+    console.log('  - userRole input:', userRole)
+    console.log('  - roleNumber mapped:', roleNumber)
+    console.log('  - expireTimeInSeconds: 86400 (24 hours)')
+
+    let educationToken
+    try {
+      educationToken = await generateEducationToken(
+        appId,
+        appCertificate,
+        roomUuid,
+        userId,
+        roleNumber,
+        86400 // 24 hours
+      )
+
+      console.log('[FLEXIBLE-CLASSROOM] Education token generated successfully!')
+      console.log('  - Token length:', educationToken.length)
+      console.log('  - Token preview:', educationToken.substring(0, 20) + '...')
+      console.log('  - Token starts with version:', educationToken.substring(0, 3))
+      
+    } catch (tokenError: any) {
+      console.error('[FLEXIBLE-CLASSROOM] Education token generation failed!')
+      console.error('  - Token error:', tokenError)
+      console.error('  - Token error message:', tokenError.message)
+      console.error('  - Token error stack:', tokenError.stack)
+      throw new Error(`Education token generation failed: ${tokenError.message}`)
+    }
+
     const result = {
       success: true,
-      roomUuid: roomData.data?.roomUuid || `room_${Date.now()}`,
+      roomUuid: roomUuid,
       roomName: roomName,
       roomType: roomType,
       maxUsers: maxUsers,
       appId: appId,
+      educationToken: educationToken,
+      userUuid: userId,
+      userRole: userRole,
+      roleNumber: roleNumber,
       createdAt: new Date().toISOString(),
       roomData: roomData.data,
       lessonId: lessonId,
       userId: userId,
-      userRole: userRole,
+      tokenDetails: {
+        tokenLength: educationToken.length,
+        tokenPreview: educationToken.substring(0, 20) + '...',
+        generatedAt: new Date().toISOString(),
+        expiresIn: 86400,
+        roleMapping: {
+          inputRole: userRole,
+          mappedRoleNumber: roleNumber,
+          agoraRoleName: Object.keys(EDUCATION_ROLES)[Object.values(EDUCATION_ROLES).indexOf(roleNumber)]
+        }
+      },
       debug: {
         requestDuration: requestDuration,
         responseStatus: response.status,
@@ -243,8 +319,10 @@ export async function handleFlexibleClassroom(params: any) {
       }
     }
 
-    console.log('[FLEXIBLE-CLASSROOM] SUCCESS! Room created successfully')
-    console.log('  - Final result:', JSON.stringify(result, null, 2))
+    console.log('[FLEXIBLE-CLASSROOM] SUCCESS! Room created and tokens generated successfully')
+    console.log('  - Final result keys:', Object.keys(result))
+    console.log('  - Education token included:', !!result.educationToken)
+    console.log('  - Token details:', JSON.stringify(result.tokenDetails, null, 2))
     console.log('=== AGORA FLEXIBLE CLASSROOM DEBUG END ===')
 
     return result
