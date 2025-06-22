@@ -1,100 +1,152 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useNetlessCredentials } from '@/hooks/useNetlessCredentials';
 import { useVideoRoom } from '@/hooks/useVideoRoom';
-import AgoraVideoRoom from '@/components/video/AgoraVideoRoom';
+import { useFlexibleClassroom, FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
+import FlexibleClassroom from '@/components/video/FlexibleClassroom';
 import VideoRoomLoading from '@/components/video/VideoRoomLoading';
 import VideoRoomError from '@/components/video/VideoRoomError';
-import { AgoraRTCProvider } from 'agora-rtc-react';
-import AgoraRTC from 'agora-rtc-sdk-ng';
 
 const VideoRoom: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
-  
-  // Create Agora client following SDK documentation
-  const [agoraClient] = useState(() => 
-    AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }) as any
-  );
+  const [classroomCredentials, setClassroomCredentials] = useState<FlexibleClassroomCredentials | null>(null);
+  const [classroomError, setClassroomError] = useState<string | null>(null);
 
   const {
     lesson,
-    agoraCredentials,
     expectedStudents,
     studentContext,
     isLoading,
     error,
-    isRegenerating,
     videoRoomRole,
     handleRetry,
-    handleRegenerateTokens,
     handleLeaveRoom,
     getDisplayName
   } = useVideoRoom(lessonId || '');
-  
-  // Use Netless credentials hook
-  const { 
-    credentials: netlessCredentials, 
-    isLoading: isLoadingNetless, 
-    error: netlessError,
-    regenerateToken: regenerateNetlessToken
-  } = useNetlessCredentials(lessonId || '', videoRoomRole);
 
-  // Show loading state while either Agora or Netless credentials are loading
-  if (isLoading || isLoadingNetless) {
+  const { createClassroomSession, isLoading: isCreatingSession } = useFlexibleClassroom();
+
+  // Generate deterministic UID based on role and context
+  const generateUID = async () => {
+    if (videoRoomRole === 'tutor') {
+      // Get tutor ID from the lesson
+      if (lesson?.tutor_id) {
+        // Convert tutor UUID to a number (use hash of first 8 chars)
+        const tutorHash = lesson.tutor_id.substring(0, 8);
+        const tutorNumericId = parseInt(tutorHash, 16) % 100000;
+        return 100000 + tutorNumericId; // Tutor range: 100000-199999
+      }
+      return 100001; // Fallback for tutors
+    } else {
+      // For students/parents, use the student ID
+      if (studentContext) {
+        return studentContext.studentId;
+      }
+      return 1; // Fallback for students
+    }
+  };
+
+  useEffect(() => {
+    const initializeClassroom = async () => {
+      if (!lesson || !lessonId) return;
+
+      try {
+        console.log('Initializing Flexible Classroom for lesson:', lessonId);
+        
+        // Generate custom UID
+        const customUID = await generateUID();
+        
+        // Get display name
+        const displayName = getDisplayName();
+        
+        console.log('Creating classroom session:', {
+          lessonId,
+          videoRoomRole,
+          customUID,
+          displayName,
+          studentContext
+        });
+
+        // Create classroom session
+        const credentials = await createClassroomSession(
+          lessonId,
+          videoRoomRole,
+          customUID,
+          displayName
+        );
+
+        if (credentials) {
+          setClassroomCredentials(credentials);
+          setClassroomError(null);
+        } else {
+          setClassroomError('Failed to create classroom session');
+        }
+      } catch (error: any) {
+        console.error('Error initializing Flexible Classroom:', error);
+        setClassroomError(error.message || 'Failed to initialize classroom');
+      }
+    };
+
+    if (lesson && !isLoading && !error) {
+      initializeClassroom();
+    }
+  }, [lesson, lessonId, isLoading, error, videoRoomRole, studentContext]);
+
+  // Show loading state
+  if (isLoading || isCreatingSession) {
     return (
       <VideoRoomLoading 
         lessonTitle={lesson?.title} 
-        isLoadingNetless={isLoadingNetless}
+        isLoadingNetless={false}
       />
     );
   }
 
-  if (error || !lesson || !agoraCredentials) {
+  // Show error state
+  if (error || classroomError) {
     return (
       <VideoRoomError
-        error={error}
+        error={error || classroomError}
         lessonId={lessonId}
         videoRoomRole={videoRoomRole}
-        netlessError={netlessError}
-        isRegenerating={isRegenerating}
+        netlessError={null}
+        isRegenerating={false}
         onRetry={handleRetry}
-        onRegenerateTokens={handleRegenerateTokens}
-        onRegenerateNetlessToken={regenerateNetlessToken}
+        onRegenerateTokens={() => {
+          setClassroomError(null);
+          setClassroomCredentials(null);
+        }}
+        onRegenerateNetlessToken={() => {}}
         onGoBack={handleLeaveRoom}
       />
     );
   }
 
-  console.log('🎉 Rendering video room with expected students:', {
-    appId: agoraCredentials.appId?.substring(0, 8) + '...',
-    channel: agoraCredentials.channelName,
-    uid: agoraCredentials.uid,
-    role: videoRoomRole,
-    tokenValid: !!agoraCredentials.rtcToken,
-    hasNetless: !!netlessCredentials,
-    expectedStudentsCount: expectedStudents.length,
-    studentContext,
-    displayName: getDisplayName(),
-    fastboardEnabled: true
-  });
+  // Show Flexible Classroom if credentials are ready
+  if (classroomCredentials) {
+    console.log('🎉 Rendering Flexible Classroom with credentials:', {
+      roomId: classroomCredentials.roomId,
+      userRole: classroomCredentials.userRole,
+      userName: classroomCredentials.userName,
+      expectedStudentsCount: expectedStudents.length,
+      studentContext,
+      displayName: getDisplayName()
+    });
 
-  return (
-    <AgoraRTCProvider client={agoraClient}>
-      <AgoraVideoRoom
-        appId={agoraCredentials.appId}
-        channel={agoraCredentials.channelName}
-        token={agoraCredentials.rtcToken}
-        uid={agoraCredentials.uid}
-        userRole={videoRoomRole}
-        lessonTitle={lesson.title}
-        netlessCredentials={netlessCredentials}
+    return (
+      <FlexibleClassroom
+        credentials={classroomCredentials}
         expectedStudents={expectedStudents}
-        studentContext={studentContext}
-        displayName={getDisplayName()}
         onLeave={handleLeaveRoom}
       />
-    </AgoraRTCProvider>
+    );
+  }
+
+  return (
+    <VideoRoomLoading 
+      lessonTitle={lesson?.title} 
+      isLoadingNetless={false}
+    />
   );
 };
 

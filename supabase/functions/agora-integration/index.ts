@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { validateAgoraCredentials, validateNetlessSDKToken } from "./credentials-validator.ts";
 import { createVideoRoom, getTokens, regenerateTokens } from "./action-handlers.ts";
+import { createFlexibleClassroomSession } from "./flexible-classroom-handler.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with official Agora implementation');
+    console.log('[AGORA-INTEGRATION] Processing request with Flexible Classroom support');
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -64,6 +65,8 @@ serve(async (req) => {
     validateAgoraCredentials(appId, appCertificate);
 
     switch (action) {
+      case "create-flexible-classroom":
+        return await createFlexibleClassroomSession(requestData, supabase, appId, appCertificate);
       case "create-room":
         return await createVideoRoom(requestData, supabase, appId, appCertificate, netlessSDKToken);
       case "get-tokens":

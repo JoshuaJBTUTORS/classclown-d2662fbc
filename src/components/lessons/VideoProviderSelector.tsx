@@ -4,12 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Video, Globe, Users, ExternalLink } from 'lucide-react';
+import { Video, Globe, Users, ExternalLink, GraduationCap } from 'lucide-react';
 
 interface VideoProviderSelectorProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectProvider: (provider: 'lesson_space' | 'agora' | 'external_agora') => void;
+  onSelectProvider: (provider: 'lesson_space' | 'agora' | 'external_agora' | 'flexible_classroom') => void;
   isCreating: boolean;
   isGroupLesson: boolean;
   studentCount: number;
@@ -23,7 +23,7 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
   isGroupLesson,
   studentCount
 }) => {
-  const [selectedProvider, setSelectedProvider] = useState<'lesson_space' | 'agora' | 'external_agora'>('lesson_space');
+  const [selectedProvider, setSelectedProvider] = useState<'lesson_space' | 'agora' | 'external_agora' | 'flexible_classroom'>('flexible_classroom');
 
   const handleCreate = () => {
     onSelectProvider(selectedProvider);
@@ -44,8 +44,25 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
         </DialogHeader>
 
         <div className="py-4">
-          <RadioGroup value={selectedProvider} onValueChange={(value) => setSelectedProvider(value as 'lesson_space' | 'agora' | 'external_agora')}>
+          <RadioGroup value={selectedProvider} onValueChange={(value) => setSelectedProvider(value as 'lesson_space' | 'agora' | 'external_agora' | 'flexible_classroom')}>
             <div className="space-y-4">
+              <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 bg-blue-50 border-blue-200">
+                <RadioGroupItem value="flexible_classroom" id="flexible_classroom" className="mt-1" />
+                <div className="flex-1">
+                  <Label htmlFor="flexible_classroom" className="flex items-center gap-2 font-medium cursor-pointer">
+                    <GraduationCap className="h-4 w-4 text-blue-500" />
+                    Flexible Classroom (Recommended)
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Professional classroom experience with advanced teaching tools, interactive whiteboard, 
+                    breakout rooms, and robust video quality. Perfect for all lesson types.
+                  </p>
+                  <div className="mt-2 text-xs text-blue-600">
+                    ✓ Professional UI ✓ Advanced whiteboard ✓ Breakout rooms ✓ Recording ✓ Screen sharing
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
                 <RadioGroupItem value="lesson_space" id="lesson_space" className="mt-1" />
                 <div className="flex-1">
@@ -55,7 +72,7 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
                     Browser-based virtual classroom with whiteboard, screen sharing, and interactive tools. 
-                    Perfect for tutoring sessions.
+                    Good for basic tutoring sessions.
                   </p>
                   <div className="mt-2 text-xs text-green-600">
                     ✓ No downloads required ✓ Interactive whiteboard ✓ Screen sharing
@@ -68,14 +85,14 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
                 <div className="flex-1">
                   <Label htmlFor="agora" className="flex items-center gap-2 font-medium cursor-pointer">
                     <Users className="h-4 w-4 text-purple-500" />
-                    Agora.io (Internal)
+                    Agora.io (Custom)
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
-                    High-quality video conferencing with advanced features built into the platform.
-                    Ideal for larger group sessions and professional meetings.
+                    Custom video conferencing implementation with basic features.
+                    May have some limitations.
                   </p>
-                  <div className="mt-2 text-xs text-blue-600">
-                    ✓ HD video quality ✓ Recording capabilities ✓ Advanced controls
+                  <div className="mt-2 text-xs text-yellow-600">
+                    ⚠️ Limited features ⚠️ May have connectivity issues
                   </div>
                 </div>
               </div>
@@ -111,7 +128,8 @@ const VideoProviderSelector: React.FC<VideoProviderSelectorProps> = ({
                 Creating...
               </>
             ) : (
-              `Create ${selectedProvider === 'lesson_space' ? 'Lesson Space' : 
+              `Create ${selectedProvider === 'flexible_classroom' ? 'Flexible Classroom' : 
+                        selectedProvider === 'lesson_space' ? 'Lesson Space' : 
                         selectedProvider === 'agora' ? 'Agora' : 'External Agora'} Room`
             )}
           </Button>
