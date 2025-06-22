@@ -105,8 +105,20 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           onClose();
         };
 
-        // Launch the scene with the launch config as first parameter
-        await sceneCreator.launch(launchConfig, containerRef.current, onSuccess, onError, onDestroy);
+        // Launch the scene - try different approach based on API
+        if (typeof sceneCreator.launch === 'function') {
+          // Try calling launch with just the config and container element
+          await sceneCreator.launch(launchConfig);
+          
+          // Mount to container after launch
+          if (containerRef.current && sceneCreator.mount) {
+            sceneCreator.mount(containerRef.current);
+          }
+          
+          onSuccess();
+        } else {
+          throw new Error('Launch method not available on FcrUISceneCreator');
+        }
 
       } catch (error: any) {
         console.error('[FCRUISCENE] Failed to initialize classroom:', error);
