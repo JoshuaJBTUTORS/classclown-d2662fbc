@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -179,7 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       <div className="flex h-full flex-col">
         {/* Header with Logo */}
         <div className={cn(
-          "flex h-16 items-center justify-between border-b border-gray-200/50 bg-gradient-to-r from-[#e94b7f]/5 to-[#e94b7f]/10 px-4",
+          "flex h-16 items-center justify-between border-b border-gray-200/50 bg-gradient-to-r from-primary/5 to-primary/10 px-4",
           isCollapsed && "px-2"
         )}>
           {!isCollapsed && (
@@ -197,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             size="icon"
             onClick={toggleCollapse}
             className={cn(
-              "h-8 w-8 text-[#e94b7f] hover:bg-[#e94b7f]/10 hover:text-[#e94b7f]",
+              "h-8 w-8 text-primary hover:bg-primary/10 hover:text-primary",
               isCollapsed && "mx-auto"
             )}
           >
@@ -220,8 +221,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 className={cn(
                   "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                   isActive
-                    ? "bg-gradient-to-r from-[#e94b7f] to-[#e94b7f]/90 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gradient-to-r hover:from-[#e94b7f]/10 hover:to-[#e94b7f]/5 hover:text-[#e94b7f]",
+                    ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-md"
+                    : "text-gray-700 hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:text-primary",
                   isCollapsed && "justify-center px-2"
                 )}
                 title={isCollapsed ? item.name : undefined}
@@ -229,7 +230,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 <item.icon
                   className={cn(
                     "h-5 w-5 flex-shrink-0 transition-colors",
-                    isActive ? "text-white" : "text-gray-500 group-hover:text-[#e94b7f]",
+                    isActive ? "text-white" : "text-gray-500 group-hover:text-primary",
                     !isCollapsed && "mr-3"
                   )}
                 />
