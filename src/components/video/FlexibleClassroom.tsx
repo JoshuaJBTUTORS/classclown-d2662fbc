@@ -35,27 +35,20 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
     const loadSDK = async () => {
       try {
         // Import the SDK dynamically
-        const AgoraEduSDK = await import('agora-classroom-sdk');
+        const SDKModule = await import('agora-classroom-sdk');
         
-        // Check if SDK has the launch method
-        if (AgoraEduSDK && typeof AgoraEduSDK.launch === 'function') {
-          window.AgoraEduSDK = AgoraEduSDK;
+        // The SDK structure shows AgoraEduSDK is a property of the imported module
+        if (SDKModule.AgoraEduSDK && typeof SDKModule.AgoraEduSDK.launch === 'function') {
+          window.AgoraEduSDK = SDKModule.AgoraEduSDK;
           setSdkLoaded(true);
           console.log('Agora Classroom SDK loaded successfully');
-        } else if (AgoraEduSDK.default && typeof AgoraEduSDK.default.launch === 'function') {
-          window.AgoraEduSDK = AgoraEduSDK.default;
+        } else if (SDKModule.default && SDKModule.default.AgoraEduSDK && typeof SDKModule.default.AgoraEduSDK.launch === 'function') {
+          window.AgoraEduSDK = SDKModule.default.AgoraEduSDK;
           setSdkLoaded(true);
-          console.log('Agora Classroom SDK loaded successfully (default export)');
+          console.log('Agora Classroom SDK loaded successfully (from default)');
         } else {
-          // Try alternative import approach
-          const { AgoraEduSDK: SDK } = await import('agora-classroom-sdk');
-          if (SDK && typeof SDK.launch === 'function') {
-            window.AgoraEduSDK = SDK;
-            setSdkLoaded(true);
-            console.log('Agora Classroom SDK loaded successfully (named export)');
-          } else {
-            throw new Error('Unable to find launch method in Agora Classroom SDK');
-          }
+          console.error('SDK structure:', Object.keys(SDKModule));
+          throw new Error('Unable to find AgoraEduSDK.launch method in the imported SDK');
         }
       } catch (error) {
         console.error('Failed to load Agora Classroom SDK:', error);
