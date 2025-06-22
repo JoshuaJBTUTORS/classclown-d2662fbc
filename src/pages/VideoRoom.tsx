@@ -5,6 +5,7 @@ import { useVideoRoom } from '@/hooks/useVideoRoom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Video, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import EmbeddedVideoRoom from '@/components/video/EmbeddedVideoRoom';
 
 const VideoRoom: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -16,17 +17,6 @@ const VideoRoom: React.FC = () => {
     error,
     handleLeaveRoom
   } = useVideoRoom(lessonId || '');
-
-  useEffect(() => {
-    // If lesson has LessonSpace room URL, redirect directly to it
-    if (lesson?.lesson_space_room_url) {
-      window.open(lesson.lesson_space_room_url, '_blank', 'noopener,noreferrer');
-      // Navigate back after opening the room
-      setTimeout(() => {
-        handleLeaveRoom();
-      }, 1000);
-    }
-  }, [lesson, handleLeaveRoom]);
 
   if (isLoading) {
     return (
@@ -87,36 +77,14 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  // If we reach here, the lesson has a room URL and should have been opened
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardContent className="p-6 text-center space-y-4">
-          <Video className="h-12 w-12 text-green-500 mx-auto" />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Video Room Opened
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Your LessonSpace video room has opened in a new tab. If it didn't open automatically, 
-              click the button below.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Button 
-              onClick={() => window.open(lesson.lesson_space_room_url, '_blank', 'noopener,noreferrer')}
-              className="w-full"
-            >
-              <Video className="h-4 w-4 mr-2" />
-              Open Video Room
-            </Button>
-            <Button variant="outline" onClick={handleLeaveRoom} className="w-full">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Go Back
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-gray-50">
+      <EmbeddedVideoRoom
+        roomUrl={lesson.lesson_space_room_url}
+        lessonTitle={lesson.title}
+        onExit={handleLeaveRoom}
+        className="h-screen"
+      />
     </div>
   );
 };

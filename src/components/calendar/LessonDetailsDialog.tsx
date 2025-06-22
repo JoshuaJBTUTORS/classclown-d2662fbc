@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -185,6 +184,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
                 {lesson.lesson_space_room_url ? (
                   <VideoConferenceLink 
+                    lessonId={lesson.id}
                     lessonSpaceRoomUrl={lesson.lesson_space_room_url}
                     lessonSpaceRoomId={lesson.lesson_space_room_id}
                     lessonSpaceSpaceId={lesson.lesson_space_space_id}

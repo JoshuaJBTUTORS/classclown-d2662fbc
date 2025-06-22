@@ -1,15 +1,18 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { 
   Video,
   Users,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Play
 } from 'lucide-react';
 
 interface VideoConferenceLinkProps {
+  lessonId: string;
   lessonSpaceRoomUrl?: string | null;
   lessonSpaceRoomId?: string | null;
   lessonSpaceSpaceId?: string | null;
@@ -19,6 +22,7 @@ interface VideoConferenceLinkProps {
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
+  lessonId,
   lessonSpaceRoomUrl,
   lessonSpaceRoomId,
   lessonSpaceSpaceId,
@@ -27,6 +31,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   studentCount = 0
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleJoinRoom = () => {
     if (!lessonSpaceRoomUrl) {
@@ -36,14 +41,29 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
     try {
       setIsLoading(true);
-      // Open LessonSpace room in a new tab
-      window.open(lessonSpaceRoomUrl, '_blank', 'noopener,noreferrer');
-      toast.success('Opening video room...');
+      // Navigate to the embedded video room
+      navigate(`/video-room/${lessonId}`);
+      toast.success('Loading video room...');
     } catch (error) {
-      console.error('Error opening video room:', error);
+      console.error('Error navigating to video room:', error);
       toast.error('Failed to open video room');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOpenInNewTab = () => {
+    if (!lessonSpaceRoomUrl) {
+      toast.error('Video room URL not available');
+      return;
+    }
+
+    try {
+      window.open(lessonSpaceRoomUrl, '_blank', 'noopener,noreferrer');
+      toast.success('Opening video room in new tab...');
+    } catch (error) {
+      console.error('Error opening video room:', error);
+      toast.error('Failed to open video room');
     }
   };
 
@@ -76,21 +96,33 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         )}
       </div>
       
-      <Button
-        onClick={handleJoinRoom}
-        disabled={isLoading}
-        className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-      >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <>
-            <Video className="h-4 w-4" />
-            <ExternalLink className="h-3 w-3" />
-          </>
-        )}
-        Join Room
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={handleOpenInNewTab}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <ExternalLink className="h-3 w-3" />
+          New Tab
+        </Button>
+        
+        <Button
+          onClick={handleJoinRoom}
+          disabled={isLoading}
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Video className="h-4 w-4" />
+              <Play className="h-3 w-3" />
+            </>
+          )}
+          Join Room
+        </Button>
+      </div>
     </div>
   );
 };
