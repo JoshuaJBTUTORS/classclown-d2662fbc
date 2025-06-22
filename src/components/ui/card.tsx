@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -24,7 +23,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6 bg-gradient-to-r from-[hsl(162,45%,98%)] to-white border-b border-[hsl(162,45%,90%)]", className)}
+    className={cn("flex flex-col space-y-1.5 p-6 bg-gradient-to-r from-[hsl(228,59%,98%)] to-white border-b border-[hsl(228,59%,20%)]/10", className)}
     {...props}
   />
 ))
@@ -51,7 +50,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-[hsl(174,58%,40%)] font-medium", className)}
+    className={cn("text-sm text-[hsl(228,59%,20%)]/70 font-medium", className)}
     {...props}
   />
 ))
@@ -71,7 +70,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0 bg-gradient-to-r from-[hsl(162,45%,98%)] to-white border-t border-[hsl(162,45%,90%)]", className)}
+    className={cn("flex items-center p-6 pt-0 bg-gradient-to-r from-[hsl(228,59%,98%)] to-white border-t border-[hsl(228,59%,20%)]/10", className)}
     {...props}
   />
 ))

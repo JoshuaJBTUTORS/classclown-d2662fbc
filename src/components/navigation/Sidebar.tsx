@@ -177,9 +177,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex h-full flex-col">
-        {/* Header with Logo */}
+        {/* Header with Logo - Night Blue Background */}
         <div className={cn(
-          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(150,50%,58%)] to-[hsl(180,58%,40%)] px-4",
+          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(228,59%,20%)] to-[hsl(228,45%,35%)] px-4",
           isCollapsed && "px-2"
         )}>
           {!isCollapsed && (
@@ -220,8 +220,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 className={cn(
                   "group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 relative overflow-hidden",
                   isActive
-                    ? "bg-[hsl(150,45%,90%)] text-[hsl(180,58%,40%)] shadow-md sidebar-item-active"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-[hsl(180,58%,40%)] hover:shadow-sm",
+                    ? "bg-[hsl(150,45%,90%)] text-[hsl(150,50%,25%)] shadow-md sidebar-item-active"
+                    : "text-[hsl(228,59%,20%)] hover:bg-gray-50 hover:text-[hsl(150,50%,58%)] hover:shadow-sm",
                   isCollapsed && "justify-center px-2"
                 )}
                 title={isCollapsed ? item.name : undefined}
@@ -229,7 +229,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 <item.icon
                   className={cn(
                     "h-5 w-5 flex-shrink-0 transition-all duration-300",
-                    isActive ? "text-[hsl(180,58%,40%)]" : "text-gray-500 group-hover:text-[hsl(180,58%,40%)]",
+                    isActive ? "text-[hsl(150,50%,58%)]" : "text-[hsl(228,59%,20%)] group-hover:text-[hsl(150,50%,58%)]",
                     !isCollapsed && "mr-3"
                   )}
                 />
@@ -248,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         {!isCollapsed && (
           <div className="border-t border-gray-200 p-4 bg-gray-50">
             <div className="text-xs text-gray-600 text-center">
-              <p className="font-playfair text-[hsl(180,58%,40%)] font-semibold text-sm">Class Clown Tutoring</p>
+              <p className="font-playfair text-[hsl(228,59%,20%)] font-semibold text-sm">Class Clown Tutoring</p>
               <p className="mt-1 font-medium">Excellence in Education</p>
             </div>
           </div>
