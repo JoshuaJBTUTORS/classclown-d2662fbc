@@ -70,16 +70,13 @@ serve(async (req) => {
 
     console.log('[PROCESSING] Starting action processing...')
     
+    // Route all actions through the flexible classroom handler
     switch (action) {
       case 'generate-education-token':
-        console.log('[PROCESSING] Handling generate-education-token action')
-        result = await handleGenerateEducationToken(params)
-        break
-      
       case 'create-room':
       case 'flexible-classroom':
-        console.log('[PROCESSING] Handling room creation action')
-        result = await handleCreateRoom(params)
+        console.log(`[PROCESSING] Handling ${action} action`)
+        result = await handleFlexibleClassroom(params)
         break
       
       default:
@@ -147,82 +144,3 @@ serve(async (req) => {
     )
   }
 })
-
-async function handleCreateRoom(params: any) {
-  console.log('[ROOM-CREATION] Starting room creation process')
-  console.log('  - Input params keys:', Object.keys(params))
-  
-  try {
-    const roomResult = await handleFlexibleClassroom(params)
-    console.log('[ROOM-CREATION] ✓ Room creation successful')
-    return roomResult
-  } catch (error: any) {
-    console.error('[ROOM-CREATION] ERROR: Room creation failed:', error)
-    console.error('  - Will re-throw error for main handler')
-    throw new Error(`Room creation failed: ${error.message}`)
-  }
-}
-
-async function handleGenerateEducationToken(params: any) {
-  console.log('[TOKEN-GENERATION] Starting token generation process')
-  console.log('  - Input params:', Object.keys(params))
-  
-  const { roomUuid, userUuid, userRole, expireTimeInSeconds = 86400 } = params
-  
-  if (!roomUuid || !userUuid || !userRole) {
-    console.error('[TOKEN-GENERATION] ERROR: Missing required token parameters')
-    throw new Error('Missing required parameters: roomUuid, userUuid, userRole')
-  }
-
-  // Get credentials from environment
-  const appId = Deno.env.get('AGORA_APP_ID')
-  const appCertificate = Deno.env.get('AGORA_APP_CERTIFICATE')
-  
-  if (!appId || !appCertificate) {
-    console.error('[TOKEN-GENERATION] ERROR: Missing Agora credentials')
-    throw new Error('Missing Agora credentials in environment variables')
-  }
-
-  // Map user role to education role number
-  let roleNumber: number
-  switch (userRole.toLowerCase()) {
-    case 'teacher':
-    case 'tutor':
-      roleNumber = 1 // TEACHER
-      break
-    case 'student':
-      roleNumber = 2 // STUDENT
-      break
-    case 'assistant':
-      roleNumber = 3 // ASSISTANT
-      break
-    case 'observer':
-      roleNumber = 4 // OBSERVER
-      break
-    default:
-      roleNumber = 2 // Default to student
-      break
-  }
-
-  console.log('[TOKEN-GENERATION] ✓ Role mapped successfully')
-
-  // For now, create a simple token placeholder
-  const educationToken = `temp_token_${Date.now()}_${roleNumber}`
-
-  console.log('[TOKEN-GENERATION] ✓ Token generated successfully')
-
-  return {
-    success: true,
-    educationToken,
-    appId,
-    roomUuid,
-    userUuid,
-    userRole,
-    roleNumber,
-    expiresIn: expireTimeInSeconds,
-    debug: {
-      tokenLength: educationToken.length,
-      generatedAt: new Date().toISOString()
-    }
-  }
-}

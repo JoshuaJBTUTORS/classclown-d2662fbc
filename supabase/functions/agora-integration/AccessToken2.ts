@@ -1,6 +1,6 @@
 
 import { Buffer } from 'https://deno.land/std@0.155.0/node/buffer.ts'
-import { deflate, inflate } from 'https://deno.land/x/compress@v0.3.3/mod.ts'
+import { deflate, inflate } from 'https://deno.land/x/compress@v0.3.8/mod.ts'
 
 const VERSION_LENGTH = 3
 const APP_ID_LENGTH = 32
