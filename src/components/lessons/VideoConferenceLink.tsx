@@ -3,58 +3,58 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { 
-  GraduationCap,
+  Video,
   Users,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 
 interface VideoConferenceLinkProps {
-  flexibleClassroomRoomId?: string | null;
-  flexibleClassroomSessionData?: string | null;
+  lessonSpaceRoomUrl?: string | null;
+  lessonSpaceRoomId?: string | null;
   className?: string;
   isGroupLesson?: boolean;
   studentCount?: number;
-  lessonId?: string;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
-  flexibleClassroomRoomId,
-  flexibleClassroomSessionData,
+  lessonSpaceRoomUrl,
+  lessonSpaceRoomId,
   className = "",
   isGroupLesson = false,
-  studentCount = 0,
-  lessonId
+  studentCount = 0
 }) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleFlexibleClassroomJoin = () => {
-    if (!flexibleClassroomSessionData || !lessonId) {
-      toast.error('Flexible Classroom session data not available');
+  const handleJoinRoom = () => {
+    if (!lessonSpaceRoomUrl) {
+      toast.error('Video room URL not available');
       return;
     }
 
     try {
       setIsLoading(true);
-      // Navigate to the embedded flexible classroom page
-      window.location.href = `/flexible-classroom/${lessonId}`;
+      // Open LessonSpace room in a new tab
+      window.open(lessonSpaceRoomUrl, '_blank', 'noopener,noreferrer');
+      toast.success('Opening video room...');
     } catch (error) {
-      console.error('Error handling flexible classroom join:', error);
-      toast.error('Failed to join Flexible Classroom');
+      console.error('Error opening video room:', error);
+      toast.error('Failed to open video room');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!flexibleClassroomRoomId || !flexibleClassroomSessionData) {
+  if (!lessonSpaceRoomUrl) {
     return null;
   }
 
   return (
     <div className={`${className} flex items-center justify-between border rounded-lg p-4 bg-gray-50`}>
       <div>
-        <h3 className="font-medium text-sm">Flexible Classroom</h3>
+        <h3 className="font-medium text-sm">LessonSpace Video Room</h3>
         <p className="text-sm text-muted-foreground">
-          Join your interactive classroom with whiteboard and collaboration tools
+          Join your interactive video classroom
         </p>
         {isGroupLesson && (
           <p className="text-xs text-muted-foreground mt-1">
@@ -62,18 +62,28 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             Group lesson ({studentCount} students)
           </p>
         )}
+        {lessonSpaceRoomId && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Room ID: {lessonSpaceRoomId}
+          </p>
+        )}
       </div>
-      {isLoading ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : (
-        <Button
-          onClick={handleFlexibleClassroomJoin}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-        >
-          <GraduationCap className="h-4 w-4" />
-          Join Classroom
-        </Button>
-      )}
+      
+      <Button
+        onClick={handleJoinRoom}
+        disabled={isLoading}
+        className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+      >
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <>
+            <Video className="h-4 w-4" />
+            <ExternalLink className="h-3 w-3" />
+          </>
+        )}
+        Join Room
+      </Button>
     </div>
   );
 };

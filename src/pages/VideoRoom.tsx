@@ -1,143 +1,123 @@
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useVideoRoom } from '@/hooks/useVideoRoom';
-import { useFlexibleClassroom, FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
-import AgoraFlexibleClassroom from '@/components/video/AgoraFlexibleClassroom';
-import VideoRoomLoading from '@/components/video/VideoRoomLoading';
-import VideoRoomError from '@/components/video/VideoRoomError';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Video, AlertCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 const VideoRoom: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
-  const [classroomCredentials, setClassroomCredentials] = useState<FlexibleClassroomCredentials | null>(null);
-  const [classroomError, setClassroomError] = useState<string | null>(null);
-
+  const navigate = useNavigate();
+  
   const {
     lesson,
-    expectedStudents,
-    studentContext,
     isLoading,
     error,
-    videoRoomRole,
-    handleRetry,
-    handleLeaveRoom,
-    getDisplayName
+    handleLeaveRoom
   } = useVideoRoom(lessonId || '');
 
-  const { createClassroomSession, isLoading: isCreatingSession } = useFlexibleClassroom();
-
-  // Generate deterministic UID based on role and context
-  const generateUID = async () => {
-    if (videoRoomRole === 'tutor') {
-      if (lesson?.tutor_id) {
-        const tutorHash = lesson.tutor_id.substring(0, 8);
-        const tutorNumericId = parseInt(tutorHash, 16) % 100000;
-        return 100000 + tutorNumericId;
-      }
-      return 100001;
-    } else {
-      if (studentContext) {
-        return studentContext.studentId;
-      }
-      return 1;
-    }
-  };
-
   useEffect(() => {
-    const initializeClassroom = async () => {
-      if (!lesson || !lessonId) return;
-
-      try {
-        console.log('Initializing UI Builder Flexible Classroom for lesson:', lessonId);
-        
-        const customUID = await generateUID();
-        const displayName = getDisplayName();
-        
-        console.log('Creating classroom session:', {
-          lessonId,
-          videoRoomRole,
-          customUID,
-          displayName
-        });
-
-        const credentials = await createClassroomSession(
-          lessonId,
-          videoRoomRole,
-          customUID,
-          displayName
-        );
-
-        if (credentials) {
-          setClassroomCredentials(credentials);
-          setClassroomError(null);
-        } else {
-          setClassroomError('Failed to create classroom session');
-        }
-      } catch (error: any) {
-        console.error('Error initializing UI Builder Flexible Classroom:', error);
-        setClassroomError(error.message || 'Failed to initialize classroom');
-      }
-    };
-
-    if (lesson && !isLoading && !error) {
-      initializeClassroom();
+    // If lesson has LessonSpace room URL, redirect directly to it
+    if (lesson?.lesson_space_room_url) {
+      window.open(lesson.lesson_space_room_url, '_blank', 'noopener,noreferrer');
+      // Navigate back after opening the room
+      setTimeout(() => {
+        handleLeaveRoom();
+      }, 1000);
     }
-  }, [lesson, lessonId, isLoading, error, videoRoomRole, studentContext]);
+  }, [lesson, handleLeaveRoom]);
 
-  const handleClassroomError = (errorMsg: string) => {
-    setClassroomError(errorMsg);
-  };
-
-  if (isLoading || isCreatingSession) {
+  if (isLoading) {
     return (
-      <VideoRoomLoading 
-        lessonTitle={lesson?.title} 
-        isLoadingNetless={false}
-      />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600">Loading lesson details...</p>
+        </div>
+      </div>
     );
   }
 
-  if (error || classroomError) {
+  if (error) {
     return (
-      <VideoRoomError
-        error={error || classroomError}
-        lessonId={lessonId}
-        videoRoomRole={videoRoomRole}
-        netlessError={null}
-        isRegenerating={false}
-        onRetry={handleRetry}
-        onRegenerateTokens={() => {
-          setClassroomError(null);
-          setClassroomCredentials(null);
-        }}
-        onRegenerateNetlessToken={() => {}}
-        onGoBack={handleLeaveRoom}
-      />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                Unable to Access Video Room
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                {error}
+              </p>
+            </div>
+            <Button onClick={handleLeaveRoom} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
-  if (classroomCredentials) {
+  if (!lesson?.lesson_space_room_url) {
     return (
-      <AgoraFlexibleClassroom
-        roomId={classroomCredentials.roomId}
-        userUuid={classroomCredentials.userUuid}
-        userName={classroomCredentials.userName}
-        userRole={classroomCredentials.userRole}
-        rtmToken={classroomCredentials.rtmToken}
-        appId={classroomCredentials.appId}
-        lessonTitle={classroomCredentials.lessonTitle}
-        studentCount={expectedStudents.length}
-        onError={handleClassroomError}
-        onClose={handleLeaveRoom}
-      />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center space-y-4">
+            <Video className="h-12 w-12 text-gray-400 mx-auto" />
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                No Video Room Available
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                This lesson doesn't have a video room set up yet. Please contact your teacher to create one.
+              </p>
+            </div>
+            <Button onClick={handleLeaveRoom} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
+  // If we reach here, the lesson has a room URL and should have been opened
   return (
-    <VideoRoomLoading 
-      lessonTitle={lesson?.title} 
-      isLoadingNetless={false}
-    />
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full">
+        <CardContent className="p-6 text-center space-y-4">
+          <Video className="h-12 w-12 text-green-500 mx-auto" />
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Video Room Opened
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Your LessonSpace video room has opened in a new tab. If it didn't open automatically, 
+              click the button below.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Button 
+              onClick={() => window.open(lesson.lesson_space_room_url, '_blank', 'noopener,noreferrer')}
+              className="w-full"
+            >
+              <Video className="h-4 w-4 mr-2" />
+              Open Video Room
+            </Button>
+            <Button variant="outline" onClick={handleLeaveRoom} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
