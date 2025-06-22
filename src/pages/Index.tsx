@@ -29,29 +29,29 @@ const Index = () => {
           <div className="space-y-8">
             <DashboardMetrics />
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              <Card className="lg:col-span-2 card-hover border-[hsl(150,45%,85%)] shadow-[var(--shadow-card)]">
+              <Card className="lg:col-span-2 card-hover border-gray-200 shadow-[var(--shadow-card)]">
                 <CardHeader className="pb-4">
-                  <CardTitle className="font-playfair text-2xl luxury-gradient-text">Weekly Activity</CardTitle>
+                  <CardTitle className="font-playfair text-2xl text-[hsl(210,45%,45%)]">Weekly Activity</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(150,45%,98%)] to-[hsl(150,45%,95%)] rounded-lg border border-[hsl(150,45%,90%)]">
-                  <p className="text-[hsl(180,58%,40%)] text-sm font-medium">Activity chart will be shown here</p>
+                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(210,20%,98%)] to-[hsl(210,15%,95%)] rounded-lg border border-gray-100">
+                  <p className="text-[hsl(210,45%,45%)] text-sm font-medium">Activity chart will be shown here</p>
                 </CardContent>
               </Card>
-              <Card className="card-hover border-[hsl(150,45%,85%)] shadow-[var(--shadow-card)]">
+              <Card className="card-hover border-gray-200 shadow-[var(--shadow-card)]">
                 <CardHeader className="pb-4">
-                  <CardTitle className="font-playfair text-2xl luxury-gradient-text">Student Distribution</CardTitle>
+                  <CardTitle className="font-playfair text-2xl text-[hsl(210,45%,45%)]">Student Distribution</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(150,45%,98%)] to-[hsl(150,45%,95%)] rounded-lg border border-[hsl(150,45%,90%)]">
-                  <p className="text-[hsl(180,58%,40%)] text-sm font-medium">Distribution chart will be shown here</p>
+                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(210,20%,98%)] to-[hsl(210,15%,95%)] rounded-lg border border-gray-100">
+                  <p className="text-[hsl(210,45%,45%)] text-sm font-medium">Distribution chart will be shown here</p>
                 </CardContent>
               </Card>
               <UpcomingSessions />
-              <Card className="lg:col-span-2 card-hover border-[hsl(150,45%,85%)] shadow-[var(--shadow-card)]">
+              <Card className="lg:col-span-2 card-hover border-gray-200 shadow-[var(--shadow-card)]">
                 <CardHeader className="pb-4">
-                  <CardTitle className="font-playfair text-2xl luxury-gradient-text">Recent Activities</CardTitle>
+                  <CardTitle className="font-playfair text-2xl text-[hsl(210,45%,45%)]">Recent Activities</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(150,45%,98%)] to-[hsl(150,45%,95%)] rounded-lg border border-[hsl(150,45%,90%)]">
-                  <p className="text-[hsl(180,58%,40%)] text-sm font-medium">Activity log will be shown here</p>
+                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(210,20%,98%)] to-[hsl(210,15%,95%)] rounded-lg border border-gray-100">
+                  <p className="text-[hsl(210,45%,45%)] text-sm font-medium">Activity log will be shown here</p>
                 </CardContent>
               </Card>
             </div>

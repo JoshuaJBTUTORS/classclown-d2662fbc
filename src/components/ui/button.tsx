@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -5,21 +6,21 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-[hsl(228,59%,20%)] to-[hsl(228,45%,35%)] text-white shadow-[var(--shadow-button)] hover:shadow-[var(--shadow-luxury)] hover:from-[hsl(228,45%,35%)] hover:to-[hsl(228,70%,15%)] hover:-translate-y-0.5",
+        default: "bg-gradient-to-r from-[hsl(210,45%,45%)] to-[hsl(210,35%,55%)] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
         outline:
-          "border-2 border-[hsl(228,59%,20%)] bg-white/80 backdrop-blur-sm hover:bg-[hsl(228,59%,20%)] hover:text-white transition-all duration-300",
+          "border border-[hsl(210,45%,45%)] bg-white hover:bg-[hsl(210,45%,45%)] hover:text-white transition-all duration-200",
         secondary:
-          "bg-gradient-to-r from-[hsl(150,50%,58%)] to-[hsl(180,58%,40%)] text-white shadow-[var(--shadow-green-accent)] hover:shadow-[var(--shadow-luxury-hover)] hover:-translate-y-0.5",
-        ghost: "hover:bg-[hsl(228,59%,20%)]/10 hover:text-[hsl(228,59%,20%)] transition-all duration-300",
-        link: "text-[hsl(228,59%,20%)] underline-offset-4 hover:underline font-medium",
-        premium: "bg-gradient-to-r from-white to-[hsl(228,59%,98%)] border-2 border-[hsl(228,59%,20%)] text-[hsl(228,59%,20%)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-luxury)] hover:border-[hsl(150,50%,58%)] hover:text-[hsl(150,50%,58%)] transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm",
-        success: "bg-gradient-to-r from-[hsl(150,50%,58%)] to-[hsl(180,58%,40%)] text-white shadow-[var(--shadow-green-accent)] hover:shadow-[var(--shadow-luxury-hover)] hover:from-[hsl(180,58%,40%)] hover:to-[hsl(180,65%,32%)] hover:-translate-y-0.5",
+          "bg-gradient-to-r from-[hsl(155,35%,50%)] to-[hsl(155,25%,65%)] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
+        ghost: "hover:bg-[hsl(210,45%,45%)]/8 hover:text-[hsl(210,45%,45%)] transition-all duration-200",
+        link: "text-[hsl(210,45%,45%)] underline-offset-4 hover:underline font-medium",
+        premium: "bg-gradient-to-r from-white to-[hsl(35,25%,95%)] border border-[hsl(210,45%,45%)] text-[hsl(210,45%,45%)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-[hsl(155,35%,50%)] hover:text-[hsl(155,35%,50%)] transition-all duration-200 hover:-translate-y-0.5",
+        success: "bg-gradient-to-r from-[hsl(155,35%,50%)] to-[hsl(155,25%,65%)] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
       },
       size: {
         default: "h-10 px-6 py-2",

@@ -172,14 +172,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
   return (
     <div className={cn(
-      "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out lg:translate-x-0 font-sidebar",
+      "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-[hsl(210,20%,98%)] to-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-200 ease-in-out lg:translate-x-0 font-sidebar",
       isOpen ? "translate-x-0" : "-translate-x-full",
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex h-full flex-col">
-        {/* Header with Logo - Night Blue Background */}
+        {/* Header with Logo - Professional Blue Background */}
         <div className={cn(
-          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(228,59%,20%)] to-[hsl(228,45%,35%)] px-4",
+          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(210,45%,45%)] to-[hsl(210,35%,55%)] px-4",
           isCollapsed && "px-2"
         )}>
           {!isCollapsed && (
@@ -187,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
               <img 
                 src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
                 alt="Class Clown Logo" 
-                className="h-10 w-auto drop-shadow-lg" 
+                className="h-10 w-auto drop-shadow-sm" 
               />
             </div>
           )}
@@ -197,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             size="icon"
             onClick={toggleCollapse}
             className={cn(
-              "h-8 w-8 text-white hover:bg-white/10 hover:text-white transition-all duration-300",
+              "h-8 w-8 text-white hover:bg-white/10 hover:text-white transition-all duration-200",
               isCollapsed && "mx-auto"
             )}
           >
@@ -210,7 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         </div>
         
         {/* Navigation */}
-        <nav className="flex-1 space-y-2 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -218,26 +218,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 relative overflow-hidden",
+                  "group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200 relative overflow-hidden",
                   isActive
-                    ? "bg-[hsl(228,45%,90%)] text-[hsl(228,59%,20%)] shadow-md sidebar-item-active"
-                    : "text-[hsl(228,59%,20%)] hover:bg-gray-50 hover:text-[hsl(228,45%,35%)] hover:shadow-sm",
+                    ? "bg-[hsl(35,25%,85%)] text-[hsl(210,45%,45%)] shadow-[var(--shadow-subtle)] sidebar-item-active"
+                    : "text-[hsl(210,45%,45%)] hover:bg-[hsl(210,20%,96%)] hover:text-[hsl(210,35%,35%)]",
                   isCollapsed && "justify-center px-2"
                 )}
                 title={isCollapsed ? item.name : undefined}
               >
                 <item.icon
                   className={cn(
-                    "h-5 w-5 flex-shrink-0 transition-all duration-300",
-                    isActive ? "text-[hsl(228,59%,20%)]" : "text-[hsl(228,59%,20%)] group-hover:text-[hsl(228,45%,35%)]",
+                    "h-5 w-5 flex-shrink-0 transition-all duration-200",
+                    isActive ? "text-[hsl(210,45%,45%)]" : "text-[hsl(210,45%,45%)] group-hover:text-[hsl(210,35%,35%)]",
                     !isCollapsed && "mr-3"
                   )}
                 />
                 {!isCollapsed && (
-                  <span className="truncate font-semibold tracking-wide">{item.name}</span>
+                  <span className="truncate font-medium tracking-wide">{item.name}</span>
                 )}
                 {isActive && (
-                  <div className="absolute right-0 top-0 h-full w-1 bg-[hsl(228,59%,20%)] rounded-l-full" />
+                  <div className="absolute right-0 top-0 h-full w-1 bg-[hsl(210,45%,45%)] rounded-l-full" />
                 )}
               </Link>
             );
@@ -246,9 +246,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
         {/* Footer */}
         {!isCollapsed && (
-          <div className="border-t border-gray-200 p-4 bg-gray-50">
+          <div className="border-t border-gray-200 p-4 bg-[hsl(210,20%,98%)]">
             <div className="text-xs text-gray-600 text-center">
-              <p className="font-playfair text-[hsl(228,59%,20%)] font-semibold text-sm">Class Clown Tutoring</p>
+              <p className="font-playfair text-[hsl(210,45%,45%)] font-semibold text-sm">Class Clown Tutoring</p>
               <p className="mt-1 font-medium">Excellence in Education</p>
             </div>
           </div>
