@@ -99,36 +99,9 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         }
         
         console.log('[DEBUG] SDK not found, loading from CDN...');
-        
-        // Load CSS first
-        console.log('[DEBUG] === Loading CSS ===');
-        const existingCSS = document.querySelector('link[href*="edu_sdk"]');
-        console.log('[DEBUG] Existing CSS link found:', !!existingCSS);
-        
-        if (!existingCSS) {
-          console.log('[DEBUG] Creating CSS link element...');
-          const cssLink = document.createElement('link');
-          cssLink.rel = 'stylesheet';
-          cssLink.href = 'https://download.agora.io/edu-apaas/release/edu_sdk_2.8.111.bundle.css';
-          
-          const cssLoadPromise = new Promise((resolve, reject) => {
-            cssLink.onload = () => {
-              console.log('[DEBUG] CSS loaded successfully');
-              resolve(true);
-            };
-            cssLink.onerror = (error) => {
-              console.error('[DEBUG] CSS load failed:', error);
-              reject(new Error('Failed to load CSS'));
-            };
-          });
-          
-          console.log('[DEBUG] Appending CSS to head...');
-          document.head.appendChild(cssLink);
-          await cssLoadPromise;
-        }
 
-        // Load JS SDK
-        console.log('[DEBUG] === Loading JavaScript SDK ===');
+        // Load JS SDK only (CSS loading removed)
+        console.log('[DEBUG] === Loading JavaScript SDK (No CSS) ===');
         const existingScript = document.querySelector('script[src*="edu_sdk"]');
         console.log('[DEBUG] Existing script found:', !!existingScript);
         
@@ -411,7 +384,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
               Loading Flexible Classroom...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing Agora Education SDK
+              Initializing Agora Education SDK (No CSS)
             </div>
             <div className="text-xs text-gray-500">
               Check browser console for detailed logs
