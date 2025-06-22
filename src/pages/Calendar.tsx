@@ -95,7 +95,7 @@ const Calendar = () => {
           </div>
           
           {/* Calendar Area - Full height with filters */}
-          <div className="flex-1 flex relative overflow-hidden">
+          <div className="flex-1 flex overflow-hidden">
             {/* Collapsible Filters Sidebar */}
             <CollapsibleFilters
               selectedStudents={selectedStudents}
@@ -107,7 +107,7 @@ const Calendar = () => {
             />
             
             {/* Calendar Display - Takes remaining space */}
-            <div className="flex-1 p-4 md:p-6">
+            <div className="flex-1 p-4 md:p-6 overflow-hidden">
               <CalendarDisplay
                 isLoading={isLoading}
                 events={events}

@@ -30,10 +30,10 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
   return (
     <>
       {/* Desktop Collapsible Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:flex">
         <div
           className={cn(
-            "fixed left-64 top-16 z-30 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out",
+            "h-full bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex-shrink-0",
             isOpen ? "w-80" : "w-12"
           )}
         >
@@ -92,9 +92,6 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
           </SheetContent>
         </Sheet>
       </div>
-
-      {/* Spacer for when desktop sidebar is open */}
-      {isOpen && <div className="hidden lg:block w-80 flex-shrink-0" />}
     </>
   );
 };
