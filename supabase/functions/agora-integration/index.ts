@@ -1,144 +1,126 @@
-
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { validateAgoraCredentials, validateNetlessSDKToken } from "./credentials-validator.ts";
-import { createVideoRoom, getTokens, regenerateTokens } from "./action-handlers.ts";
-import { createFlexibleClassroomSession } from "./flexible-classroom-handler.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-console.log('[AGORA-INTEGRATION] Function starting up...');
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { handleFlexibleClassroom } from './flexible-classroom-handler.ts'
+import { generateEducationToken, EDUCATION_ROLES } from './education-token-builder.ts'
 
 serve(async (req) => {
-  console.log('[AGORA-INTEGRATION] Request received:', req.method);
-  
-  if (req.method === "OPTIONS") {
-    console.log('[AGORA-INTEGRATION] Handling OPTIONS request');
-    return new Response("ok", { headers: corsHeaders });
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { 
+        status: 405, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
   }
 
   try {
-    console.log('[AGORA-INTEGRATION] Processing request with Flexible Classroom support');
-    
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const { action, ...params } = await req.json()
+    console.log('[AGORA-INTEGRATION] Action requested:', action, 'with params:', params)
 
-    let requestBody;
-    try {
-      requestBody = await req.json();
-      console.log('[AGORA-INTEGRATION] Request body parsed:', JSON.stringify(requestBody, null, 2));
-    } catch (error) {
-      console.error('[AGORA-INTEGRATION] JSON parsing error:', error);
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid JSON in request body" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    switch (action) {
+      case 'generate-education-token':
+        return await handleGenerateEducationToken(params)
+      
+      case 'flexible-classroom':
+        return await handleFlexibleClassroom(params)
+      
+      default:
+        throw new Error(`Unknown action: ${action}`)
     }
-    
-    const { action, ...requestData } = requestBody;
-    console.log('[AGORA-INTEGRATION] Action extracted:', action);
-
-    // Validate required environment variables
-    const appId = Deno.env.get("AGORA_APP_ID");
-    const appCertificate = Deno.env.get("AGORA_APP_CERTIFICATE");
-    const netlessSDKToken = Deno.env.get("NETLESS_SDK_TOKEN");
-
-    console.log('[AGORA-INTEGRATION] Environment check:', {
-      hasAppId: !!appId,
-      hasAppCertificate: !!appCertificate,
-      hasNetlessToken: !!netlessSDKToken,
-      netlessTokenValid: netlessSDKToken ? validateNetlessSDKToken(netlessSDKToken) : false
-    });
-
-    if (!appId || !appCertificate) {
-      console.error('[AGORA-INTEGRATION] Missing required credentials');
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing Agora credentials in environment" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    validateAgoraCredentials(appId, appCertificate);
-
-    console.log('[AGORA-INTEGRATION] Processing action:', action);
-    
-    // Handle action variations (with or without underscores/hyphens)
-    const normalizedAction = action?.toLowerCase().replace(/[-_]/g, '');
-    console.log('[AGORA-INTEGRATION] Normalized action:', normalizedAction);
-    
-    try {
-      switch (normalizedAction) {
-        case "createflexibleclassroom":
-          console.log('[AGORA-INTEGRATION] Handling create-flexible-classroom action');
-          if (!requestData.lessonId) {
-            return new Response(
-              JSON.stringify({ success: false, error: "Missing lessonId parameter" }),
-              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-          console.log('[AGORA-INTEGRATION] Calling createFlexibleClassroomSession with:', {
-            lessonId: requestData.lessonId,
-            userRole: requestData.userRole,
-            customUID: requestData.customUID,
-            displayName: requestData.displayName
-          });
-          return await createFlexibleClassroomSession(requestData, supabase, appId, appCertificate);
-          
-        case "createroom":
-          console.log('[AGORA-INTEGRATION] Handling create-room action');
-          return await createVideoRoom(requestData, supabase, appId, appCertificate, netlessSDKToken);
-          
-        case "gettokens":
-          console.log('[AGORA-INTEGRATION] Handling get-tokens action');
-          return await getTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
-          
-        case "regeneratetokens":
-          console.log('[AGORA-INTEGRATION] Handling regenerate-tokens action');
-          return await regenerateTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
-          
-        default:
-          console.error('[AGORA-INTEGRATION] Invalid action received:', action);
-          console.error('[AGORA-INTEGRATION] Normalized action was:', normalizedAction);
-          console.error('[AGORA-INTEGRATION] Available actions: create-flexible-classroom, create-room, get-tokens, regenerate-tokens');
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: "Invalid action", 
-              received: action,
-              normalized: normalizedAction,
-              available: ["create-flexible-classroom", "create-room", "get-tokens", "regenerate-tokens"]
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-      }
-    } catch (actionError) {
-      console.error('[AGORA-INTEGRATION] Error executing action:', actionError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Failed to execute action: ${actionError.message}`,
-          action: action,
-          stack: actionError.stack 
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-  } catch (error) {
-    console.error("[AGORA-INTEGRATION] Unexpected error:", error);
+  } catch (error: any) {
+    console.error('[AGORA-INTEGRATION] Error:', error)
     return new Response(
       JSON.stringify({ 
-        success: false, 
-        error: error.message || "Internal server error",
-        stack: error.stack 
+        error: error.message || 'Internal server error',
+        details: error.toString()
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
   }
-});
+})
 
-console.log('[AGORA-INTEGRATION] Function initialization complete');
+async function handleGenerateEducationToken(params: any) {
+  console.log('[AGORA-INTEGRATION] Generating education token with params:', params)
+  
+  const { roomUuid, userUuid, userRole, expireTimeInSeconds = 86400 } = params
+  
+  if (!roomUuid || !userUuid || !userRole) {
+    throw new Error('Missing required parameters: roomUuid, userUuid, userRole')
+  }
+
+  // Get credentials from environment
+  const appId = Deno.env.get('AGORA_APP_ID')
+  const appCertificate = Deno.env.get('AGORA_APP_CERTIFICATE')
+  
+  if (!appId || !appCertificate) {
+    throw new Error('Missing Agora credentials in environment variables')
+  }
+
+  // Map user role to education role number
+  let roleNumber: number
+  switch (userRole.toLowerCase()) {
+    case 'teacher':
+    case 'tutor':
+      roleNumber = EDUCATION_ROLES.TEACHER
+      break
+    case 'student':
+      roleNumber = EDUCATION_ROLES.STUDENT
+      break
+    case 'assistant':
+      roleNumber = EDUCATION_ROLES.ASSISTANT
+      break
+    case 'observer':
+      roleNumber = EDUCATION_ROLES.OBSERVER
+      break
+    default:
+      roleNumber = EDUCATION_ROLES.STUDENT // Default to student
+      break
+  }
+
+  try {
+    const educationToken = await generateEducationToken(
+      appId,
+      appCertificate,
+      roomUuid,
+      userUuid,
+      roleNumber,
+      expireTimeInSeconds
+    )
+
+    console.log('[AGORA-INTEGRATION] Education token generated successfully')
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        educationToken,
+        appId,
+        roomUuid,
+        userUuid,
+        userRole,
+        roleNumber,
+        expiresIn: expireTimeInSeconds,
+        debug: {
+          tokenLength: educationToken.length,
+          generatedAt: new Date().toISOString()
+        }
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  } catch (error: any) {
+    console.error('[AGORA-INTEGRATION] Education token generation failed:', error)
+    throw new Error(`Education token generation failed: ${error.message}`)
+  }
+}
