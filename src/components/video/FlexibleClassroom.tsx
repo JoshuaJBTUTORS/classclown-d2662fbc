@@ -1,7 +1,13 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
-import AgoraEduSDK from 'agora-classroom-sdk';
+
+// Import the correct Agora Classroom SDK
+declare global {
+  interface Window {
+    AgoraEduSDK: any;
+  }
+}
 
 interface FlexibleClassroomProps {
   credentials: FlexibleClassroomCredentials;
@@ -22,9 +28,47 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
   const classroomRef = useRef<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+
+  // Load SDK dynamically
+  useEffect(() => {
+    const loadSDK = async () => {
+      try {
+        // Import the SDK dynamically
+        const AgoraEduSDK = await import('agora-classroom-sdk');
+        
+        // Check if SDK has the launch method
+        if (AgoraEduSDK && typeof AgoraEduSDK.launch === 'function') {
+          window.AgoraEduSDK = AgoraEduSDK;
+          setSdkLoaded(true);
+          console.log('Agora Classroom SDK loaded successfully');
+        } else if (AgoraEduSDK.default && typeof AgoraEduSDK.default.launch === 'function') {
+          window.AgoraEduSDK = AgoraEduSDK.default;
+          setSdkLoaded(true);
+          console.log('Agora Classroom SDK loaded successfully (default export)');
+        } else {
+          // Try alternative import approach
+          const { AgoraEduSDK: SDK } = await import('agora-classroom-sdk');
+          if (SDK && typeof SDK.launch === 'function') {
+            window.AgoraEduSDK = SDK;
+            setSdkLoaded(true);
+            console.log('Agora Classroom SDK loaded successfully (named export)');
+          } else {
+            throw new Error('Unable to find launch method in Agora Classroom SDK');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load Agora Classroom SDK:', error);
+        setInitError(`Failed to load SDK: ${error.message}`);
+        setIsInitializing(false);
+      }
+    };
+
+    loadSDK();
+  }, []);
 
   useEffect(() => {
-    if (!containerRef.current || !credentials) return;
+    if (!containerRef.current || !credentials || !sdkLoaded) return;
 
     const initializeClassroom = async () => {
       try {
@@ -83,8 +127,8 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           rtmToken: launchOptions.rtmToken.substring(0, 20) + '...'
         });
 
-        // Launch the classroom using the npm package
-        classroomRef.current = await AgoraEduSDK.launch(
+        // Launch the classroom using the loaded SDK
+        classroomRef.current = await window.AgoraEduSDK.launch(
           containerRef.current,
           launchOptions
         );
@@ -128,7 +172,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
         }
       }
     };
-  }, [credentials, expectedStudents, onLeave]);
+  }, [credentials, expectedStudents, onLeave, sdkLoaded]);
 
   if (initError) {
     return (
@@ -186,7 +230,9 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           <div className="bg-white rounded-lg p-6 shadow-lg">
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-              <span className="text-gray-700">Initializing classroom...</span>
+              <span className="text-gray-700">
+                {!sdkLoaded ? 'Loading SDK...' : 'Initializing classroom...'}
+              </span>
             </div>
           </div>
         </div>
