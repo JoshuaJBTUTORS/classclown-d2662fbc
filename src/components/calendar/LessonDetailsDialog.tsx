@@ -14,7 +14,8 @@ import {
   Check,
   Plus,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import {
   Dialog,
@@ -22,6 +23,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -101,9 +103,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       
       // Initialize student attendances from lesson data
       if (lesson.students) {
-        const initialAttendances = lesson.students.map(student => ({
+        const initialAttendances: StudentAttendance[] = lesson.students.map(student => ({
           studentId: student.id,
-          attendanceStatus: student.attendance_status || 'attended',
+          attendanceStatus: (student.attendance_status as 'attended' | 'missed' | 'excused') || 'attended',
           feedback: student.feedback || '',
         }));
         setStudentAttendances(initialAttendances);
@@ -519,7 +521,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               <h3 className="text-lg font-semibold">Video Conference</h3>
               {lesson.flexible_classroom_room_id ? (
                 <>
-                  <VideoConferenceLink lesson={lesson} />
+                  <VideoConferenceLink 
+                    flexibleClassroomRoomId={lesson.flexible_classroom_room_id}
+                    flexibleClassroomSessionData={lesson.flexible_classroom_session_data}
+                    isGroupLesson={lesson.is_group}
+                    studentCount={lesson.students?.length || 0}
+                    lessonId={lesson.id}
+                  />
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
                       Join the video conference using the link above.
