@@ -1,321 +1,197 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Video, ExternalLink, Clipboard, CheckCircle, Users, ChevronDown, ChevronUp, Link } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useNavigate } from 'react-router-dom';
+import { 
+  Video, 
+  Globe, 
+  Users, 
+  ExternalLink, 
+  GraduationCap,
+  Loader2
+} from 'lucide-react';
 
 interface VideoConferenceLinkProps {
-  link: string | null;
-  provider: string | null;
+  link?: string;
+  provider?: 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora' | 'flexible_classroom' | null;
   className?: string;
   userRole?: 'tutor' | 'student' | 'admin' | 'owner';
   isGroupLesson?: boolean;
   studentCount?: number;
   lessonId?: string;
   hasLessonSpace?: boolean;
-  spaceId?: string;
-  // Agora-specific props
+  spaceId?: string | null;
   agoraChannelName?: string | null;
   agoraToken?: string | null;
   agoraAppId?: string;
+  flexibleClassroomRoomId?: string | null;
+  flexibleClassroomSessionData?: string | null;
 }
 
-const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({ 
-  link, 
-  provider, 
-  className,
-  userRole = 'tutor',
+const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
+  link,
+  provider,
+  className = "",
+  userRole = 'student',
   isGroupLesson = false,
   studentCount = 0,
   lessonId,
   hasLessonSpace = false,
   spaceId,
-  // Agora props
   agoraChannelName,
   agoraToken,
-  agoraAppId
+  agoraAppId,
+  flexibleClassroomRoomId,
+  flexibleClassroomSessionData
 }) => {
-  const [copied, setCopied] = React.useState(false);
-  const [isStudentLinksOpen, setIsStudentLinksOpen] = React.useState(false);
-  const [externalAgoraUrl, setExternalAgoraUrl] = React.useState<string | null>(null);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Check if we have any video conference capability
-  const hasAgoraRoom = provider === 'agora' && agoraChannelName && (agoraToken || lessonId);
-  const hasExternalAgora = provider === 'external_agora' && agoraChannelName;
-  const hasVideoConference = link || hasLessonSpace || hasAgoraRoom || hasExternalAgora;
-
-  console.log('VideoConferenceLink props:', {
-    provider,
-    agoraChannelName,
-    agoraToken,
-    hasAgoraRoom,
-    hasExternalAgora,
-    hasVideoConference,
-    lessonId
-  });
-
-  // Generate external Agora URL when needed
-  React.useEffect(() => {
-    if (hasExternalAgora && lessonId && !externalAgoraUrl) {
-      // This would be called when user clicks join - for now we'll prepare the URL structure
-      const baseUrl = 'https://your-agora-app.vercel.app'; // Replace with actual URL
-      const params = new URLSearchParams({
-        lessonId: lessonId,
-        channelName: agoraChannelName || '',
-        userRole: userRole
-      });
-      setExternalAgoraUrl(`${baseUrl}?${params.toString()}`);
+  useEffect(() => {
+    if (isLoading) {
+      toast.loading('Joining video conference...', { duration: 5000 });
     }
-  }, [hasExternalAgora, lessonId, agoraChannelName, userRole, externalAgoraUrl]);
+  }, [isLoading]);
 
-  // Don't render if no video conference capabilities are available
-  if (!hasVideoConference) return null;
-
-  const copyToClipboard = (url: string) => {
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    toast.success("Link copied to clipboard");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const getProviderName = () => {
-    switch (provider) {
-      case 'lesson_space':
-        return 'Lesson Space';
-      case 'google_meet':
-        return 'Google Meet';
-      case 'zoom':
-        return 'Zoom';
-      case 'agora':
-        return 'Agora Video Room';
-      case 'external_agora':
-        return 'External Agora App';
-      default:
-        return 'Video Conference';
-    }
-  };
-
-  const getJoinButtonText = () => {
-    if (userRole === 'tutor') {
-      return isGroupLesson ? 'Start Group Lesson' : 'Start Lesson';
-    }
-    return 'Join Lesson';
-  };
-
-  const getRoleDescription = () => {
-    if (userRole === 'tutor') {
-      return 'Teacher Access';
-    } else if (userRole === 'student') {
-      return 'Student Access';
-    }
-    return 'Admin Access';
-  };
-
-  // Update the getCorrectUrl function
-  const getCorrectUrl = () => {
-    if (provider === 'external_agora') {
-      return externalAgoraUrl;
-    }
-    if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
-      if (userRole === 'student') {
-        // Students get the simple invite URL
-        return `https://www.thelessonspace.com/space/${spaceId}`;
-      } else {
-        // Tutors and admins get the authenticated URL
-        return link;
-      }
-    }
-    return link;
-  };
-
-  const handleJoinLesson = () => {
-    // Handle External Agora differently - open in new window with token generation
-    if (provider === 'external_agora' && lessonId) {
-      console.log('Opening external Agora app for lesson:', lessonId);
-      // For external Agora, we need to generate fresh tokens and open the external app
-      if (externalAgoraUrl) {
-        window.open(externalAgoraUrl, '_blank', 'width=1200,height=800');
-        toast.success('Opening external Agora app...');
-      } else {
-        toast.error('External app URL not available');
-      }
-      return;
-    }
-
-    // Handle internal Agora rooms differently - navigate to internal video room
-    if (provider === 'agora' && hasAgoraRoom && lessonId) {
-      console.log('Navigating to internal Agora video room for lesson:', lessonId);
-      navigate(`/video-room/${lessonId}`);
-      return;
-    }
-
-    // For students and parents with other providers, redirect to consent flow
-    if ((userRole === 'student') && lessonId && provider !== 'agora' && provider !== 'external_agora') {
-      navigate(`/join-lesson/${lessonId}`);
-      return;
-    }
-
-    // For tutors, admins, and owners with non-Agora providers, join directly
-    const urlToUse = getCorrectUrl();
-    if (urlToUse) {
-      window.open(urlToUse, '_blank');
-      const providerName = getProviderName();
-      toast.success(`Redirecting to ${providerName}...`);
+  const handleJoin = () => {
+    setIsLoading(true);
+    if (link) {
+      window.open(link, '_blank');
     } else {
-      toast.error('Meeting room not available');
+      toast.error('No video conference link available');
+    }
+    setIsLoading(false);
+  };
+
+  const handleLessonSpaceJoin = () => {
+    setIsLoading(true);
+    if (hasLessonSpace && spaceId) {
+      const baseUrl = process.env.NEXT_PUBLIC_LESSON_SPACE_BASE_URL || 'https://lessons.space';
+      const joinUrl = `${baseUrl}/s/${spaceId}/session`;
+      window.open(joinUrl, '_blank');
+    } else {
+      toast.error('No Lesson Space room available');
+    }
+    setIsLoading(false);
+  };
+
+  const handleExternalAgoraJoin = () => {
+    setIsLoading(true);
+    if (agoraChannelName && agoraToken && agoraAppId) {
+      // Construct the URL with parameters
+      const baseUrl = process.env.NEXT_PUBLIC_AGORA_EXTERNAL_LINK || 'https://example.com/agora';
+      const agoraUrl = `${baseUrl}?channel=${agoraChannelName}&token=${agoraToken}&appid=${agoraAppId}&role=${userRole}&lessonId=${lessonId}`;
+      window.open(agoraUrl, '_blank');
+    } else {
+      toast.error('Missing Agora credentials');
+    }
+    setIsLoading(false);
+  };
+
+  const handleFlexibleClassroomJoin = () => {
+    if (!flexibleClassroomSessionData) {
+      toast.error('Flexible Classroom session data not available');
+      return;
+    }
+
+    try {
+      const sessionData = JSON.parse(flexibleClassroomSessionData);
+      
+      // Navigate to the flexible classroom component
+      const params = new URLSearchParams({
+        roomId: sessionData.roomId,
+        userUuid: sessionData.userUuid,
+        userName: sessionData.userName,
+        userRole: sessionData.userRole,
+        rtmToken: sessionData.rtmToken,
+        appId: sessionData.appId,
+        lessonTitle: sessionData.lessonTitle || ''
+      });
+      
+      // Open in new window for better experience
+      window.open(`/flexible-classroom?${params.toString()}`, '_blank', 'width=1200,height=800');
+    } catch (error) {
+      console.error('Error parsing flexible classroom session data:', error);
+      toast.error('Failed to join Flexible Classroom');
     }
   };
 
-  const urlToUse = getCorrectUrl();
-  const showStudentJoinLink = (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') && 
-                              provider === 'lesson_space' && hasLessonSpace && studentCount > 0 && spaceId;
+  const renderJoinButton = () => {
+    if (provider === 'flexible_classroom' && flexibleClassroomRoomId) {
+      return (
+        <Button
+          onClick={handleFlexibleClassroomJoin}
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+          disabled={!flexibleClassroomSessionData}
+        >
+          <GraduationCap className="h-4 w-4" />
+          Join Flexible Classroom
+        </Button>
+      );
+    }
+
+    if (provider === 'lesson_space' && hasLessonSpace && spaceId) {
+      return (
+        <Button onClick={handleLessonSpaceJoin} className="flex items-center gap-2">
+          <Globe className="h-4 w-4" />
+          Join Lesson Space
+        </Button>
+      );
+    }
+
+    if (provider === 'external_agora' && agoraChannelName && agoraToken && agoraAppId) {
+      return (
+        <Button onClick={handleExternalAgoraJoin} className="flex items-center gap-2">
+          <ExternalLink className="h-4 w-4" />
+          Join External Agora
+        </Button>
+      );
+    }
+
+    if (link) {
+      return (
+        <Button onClick={handleJoin} className="flex items-center gap-2">
+          <Video className="h-4 w-4" />
+          Join Video Conference
+        </Button>
+      );
+    }
+
+    return null;
+  };
 
   return (
-    <Card className={cn("p-4", className)}>
-      <div className="flex flex-col space-y-3">
-        {/* Main lesson URL section */}
-        {(urlToUse || hasAgoraRoom || hasExternalAgora) && (
-          <>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Video className="h-5 w-5 text-blue-500 mr-2" />
-                <div>
-                  <h3 className="text-sm font-medium">{getProviderName()}</h3>
-                  {isGroupLesson && (
-                    <div className="flex items-center text-xs text-muted-foreground mt-1">
-                      <Users className="h-3 w-3 mr-1" />
-                      <span>Group lesson • {studentCount} participants</span>
-                    </div>
-                  )}
-                  {(provider === 'agora' || provider === 'external_agora') && agoraChannelName && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Channel: {agoraChannelName}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={cn(
-                "text-xs px-2 py-1 rounded",
-                userRole === 'tutor' 
-                  ? "text-green-600 bg-green-50" 
-                  : userRole === 'student'
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-purple-600 bg-purple-50"
-              )}>
-                {getRoleDescription()}
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                onClick={handleJoinLesson}
-                className="flex-1"
-                variant={userRole === 'tutor' ? 'default' : 'outline'}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                {getJoinButtonText()}
-              </Button>
-              
-              {/* Only show copy button for tutors/admins/owners and when we have a URL */}
-              {userRole !== 'student' && urlToUse && provider !== 'external_agora' && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => copyToClipboard(urlToUse)}
-                >
-                  {copied ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Clipboard className="h-4 w-4" />
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Role-specific information messages */}
-            {userRole === 'tutor' && provider === 'lesson_space' && (
-              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Teacher privileges:</strong> You have full control of the lesson space with leader permissions.
-              </div>
-            )}
-
-            {userRole === 'tutor' && (provider === 'agora' || provider === 'external_agora') && (
-              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Host privileges:</strong> You have full control of the Agora meeting room with whiteboard access.
-              </div>
-            )}
-
-            {userRole === 'student' && provider === 'lesson_space' && (
-              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Student access:</strong> Click "Join Lesson" to review requirements and enter the lesson space.
-              </div>
-            )}
-
-            {userRole === 'student' && (provider === 'agora' || provider === 'external_agora') && (
-              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                <strong>Student access:</strong> Click "Join Lesson" to enter the interactive video classroom with whiteboard.
-              </div>
-            )}
-
-            {provider === 'external_agora' && (
-              <div className="text-xs text-muted-foreground bg-orange-50 p-2 rounded">
-                <strong>External App:</strong> This will open your custom Agora application in a new window with secure token authentication.
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Student invite link section for tutors/admins */}
-        {showStudentJoinLink && (
-          <div className="border-t pt-3">
-            <Collapsible open={isStudentLinksOpen} onOpenChange={setIsStudentLinksOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground">
-                <span>Student Invite Link</span>
-                {isStudentLinksOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 mt-2">
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div className="flex items-center">
-                    <Link className="h-4 w-4 text-blue-500 mr-2" />
-                    <span className="text-sm">Student invite URL</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(`https://www.thelessonspace.com/space/${spaceId}`, '_blank')}
-                      className="h-7 px-2"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(`https://www.thelessonspace.com/space/${spaceId}`)}
-                      className="h-7 px-2"
-                    >
-                      <Clipboard className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Share this simple URL with students to join the lesson.
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
+    <div className={`${className} flex items-center justify-between border rounded-lg p-4 bg-gray-50`}>
+      <div>
+        <h3 className="font-medium text-sm">
+          {provider === 'lesson_space' ? 'Lesson Space Room' :
+           provider === 'google_meet' ? 'Google Meet' :
+           provider === 'zoom' ? 'Zoom Meeting' :
+           provider === 'agora' ? 'Agora.io' :
+           provider === 'external_agora' ? 'External Agora App' :
+           provider === 'flexible_classroom' ? 'Flexible Classroom' :
+           'Video Conference'}
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          {provider === 'lesson_space' && hasLessonSpace && spaceId ? `Join your Lesson Space at ${spaceId}` :
+           provider === 'google_meet' ? 'Join your Google Meet session' :
+           provider === 'zoom' ? 'Join your Zoom meeting' :
+           provider === 'agora' ? 'Join your Agora.io session' :
+           provider === 'external_agora' ? 'Join your external Agora application' :
+           provider === 'flexible_classroom' ? 'Join your Flexible Classroom' :
+           'No video conference details available'}
+        </p>
+        {isGroupLesson && (
+          <p className="text-xs text-muted-foreground mt-1">
+            <Users className="h-3 w-3 inline-block mr-1" />
+            Group lesson ({studentCount} students)
+          </p>
         )}
       </div>
-    </Card>
+      {isLoading ? (
+        <Loader2 className="h-5 w-5 animate-spin" />
+      ) : (
+        renderJoinButton()
+      )}
+    </div>
   );
 };
 

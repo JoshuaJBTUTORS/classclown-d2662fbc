@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { useLessonSpace } from '@/hooks/useLessonSpace';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgora } from '@/hooks/useAgora';
+import { useFlexibleClassroom } from '@/hooks/useFlexibleClassroom';
 import VideoProviderSelector from '@/components/lessons/VideoProviderSelector';
 
 interface LessonDetailsDialogProps {
@@ -65,6 +66,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   const { createRoom, isCreatingRoom } = useLessonSpace();
   const { createRoom: createAgoraRoom, isCreatingRoom: isCreatingAgoraRoom } = useAgora();
+  const { createClassroomSession, isLoading: isCreatingFlexibleClassroom } = useFlexibleClassroom();
   
   // New state for provider selection
   const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
@@ -387,7 +389,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     setIsProviderSelectorOpen(true);
   };
 
-  const handleProviderSelected = async (provider: 'lesson_space' | 'agora') => {
+  const handleProviderSelected = async (provider: 'lesson_space' | 'agora' | 'external_agora' | 'flexible_classroom') => {
     if (!lesson) return;
     
     setIsProviderSelectorOpen(false);
@@ -434,6 +436,47 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           }
           
           toast.success('Agora room created! Room details have been updated.');
+        }
+      } else if (provider === 'flexible_classroom') {
+        const userRole = lesson.tutor?.id === lesson.tutor_id ? 'tutor' : 'student';
+        const displayName = userRole === 'tutor' ? 
+          `${lesson.tutor?.first_name} ${lesson.tutor?.last_name}` : 
+          'Student';
+
+        const result = await createClassroomSession(
+          lesson.id,
+          userRole,
+          undefined, // Let the system generate UID
+          displayName
+        );
+
+        if (result) {
+          // Update the lesson with flexible classroom data
+          const { error } = await supabase
+            .from('lessons')
+            .update({
+              video_conference_provider: 'flexible_classroom',
+              flexible_classroom_room_id: result.roomId,
+              flexible_classroom_session_data: JSON.stringify(result)
+            })
+            .eq('id', isRecurringInstance && originalLessonId ? originalLessonId : lesson.id);
+
+          if (error) {
+            console.error('Error updating lesson with flexible classroom data:', error);
+            toast.error('Failed to save flexible classroom details');
+            return;
+          }
+
+          // Refresh the lesson data to show the new room
+          if (isRecurringInstanceId(lesson.id)) {
+            const parts = lesson.id.split('-');
+            const baseId = parts.slice(0, 5).join('-');
+            await fetchRecurringInstance(baseId, lesson.id);
+          } else {
+            await fetchLessonDetails(lesson.id);
+          }
+          
+          toast.success('Flexible Classroom created! Room details have been updated.');
         }
       }
     } catch (error) {
@@ -546,11 +589,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Check if any video conference capability exists - updated to properly detect Agora
+  // Check if any video conference capability exists - updated to properly detect all providers
   const hasVideoConference = lesson?.video_conference_link || 
                             lesson?.lesson_space_room_url || 
                             lesson?.lesson_space_room_id ||
-                            (lesson?.agora_channel_name && lesson?.agora_token);
+                            (lesson?.agora_channel_name && lesson?.agora_token) ||
+                            lesson?.flexible_classroom_room_id;
 
   // Map userRole to VideoConferenceLink compatible type
   const getVideoConferenceUserRole = () => {
@@ -561,7 +605,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
 
   // Check if currently creating any type of room
-  const isCurrentlyCreating = isCreatingRoom || isCreatingAgoraRoom;
+  const isCurrentlyCreating = isCreatingRoom || isCreatingAgoraRoom || isCreatingFlexibleClassroom;
 
   return (
     <>
@@ -674,7 +718,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* Video Conference Section - Updated to properly handle Agora */}
+              {/* Video Conference Section - Updated to properly handle all providers */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}

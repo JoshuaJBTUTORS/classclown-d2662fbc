@@ -17,7 +17,7 @@ export interface Lesson {
   lesson_space_room_id?: string | null;
   lesson_space_room_url?: string | null;
   lesson_space_space_id?: string | null; // Add space ID field
-  video_conference_provider?: 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora' | null;
+  video_conference_provider?: 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora' | 'flexible_classroom' | null;
   video_conference_link?: string | null;
   // Additional Lesson Space fields
   lesson_space_session_id?: string | null;
@@ -33,6 +33,9 @@ export interface Lesson {
   netless_room_uuid?: string | null;
   netless_room_token?: string | null;
   netless_app_identifier?: string | null;
+  // Flexible Classroom fields
+  flexible_classroom_room_id?: string | null;
+  flexible_classroom_session_data?: string | null;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
