@@ -683,21 +683,18 @@ export type Database = {
           created_at: string | null
           id: string
           lesson_id: string
-          lesson_space_url: string | null
           student_id: number
         }
         Insert: {
           created_at?: string | null
           id?: string
           lesson_id: string
-          lesson_space_url?: string | null
           student_id: number
         }
         Update: {
           created_at?: string | null
           id?: string
           lesson_id?: string
-          lesson_space_url?: string | null
           student_id?: number
         }
         Relationships: [
@@ -719,13 +716,6 @@ export type Database = {
       }
       lessons: {
         Row: {
-          agora_channel_name: string | null
-          agora_recording_id: string | null
-          agora_recording_status: string | null
-          agora_rtm_token: string | null
-          agora_token: string | null
-          agora_uid: number | null
-          agora_whiteboard_token: string | null
           attendance_completed: boolean | null
           completion_date: string | null
           created_at: string | null
@@ -736,13 +726,7 @@ export type Database = {
           id: string
           is_group: boolean
           is_recurring: boolean
-          lesson_space_room_id: string | null
-          lesson_space_room_url: string | null
-          lesson_space_space_id: string | null
           lesson_type: string | null
-          netless_app_identifier: string | null
-          netless_room_token: string | null
-          netless_room_uuid: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
           recurrence_interval: string | null
@@ -753,17 +737,8 @@ export type Database = {
           trial_booking_id: string | null
           tutor_id: string
           updated_at: string | null
-          video_conference_link: string | null
-          video_conference_provider: string | null
         }
         Insert: {
-          agora_channel_name?: string | null
-          agora_recording_id?: string | null
-          agora_recording_status?: string | null
-          agora_rtm_token?: string | null
-          agora_token?: string | null
-          agora_uid?: number | null
-          agora_whiteboard_token?: string | null
           attendance_completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null
@@ -774,13 +749,7 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
-          lesson_space_room_id?: string | null
-          lesson_space_room_url?: string | null
-          lesson_space_space_id?: string | null
           lesson_type?: string | null
-          netless_app_identifier?: string | null
-          netless_room_token?: string | null
-          netless_room_uuid?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -791,17 +760,8 @@ export type Database = {
           trial_booking_id?: string | null
           tutor_id: string
           updated_at?: string | null
-          video_conference_link?: string | null
-          video_conference_provider?: string | null
         }
         Update: {
-          agora_channel_name?: string | null
-          agora_recording_id?: string | null
-          agora_recording_status?: string | null
-          agora_rtm_token?: string | null
-          agora_token?: string | null
-          agora_uid?: number | null
-          agora_whiteboard_token?: string | null
           attendance_completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null
@@ -812,13 +772,7 @@ export type Database = {
           id?: string
           is_group?: boolean
           is_recurring?: boolean
-          lesson_space_room_id?: string | null
-          lesson_space_room_url?: string | null
-          lesson_space_space_id?: string | null
           lesson_type?: string | null
-          netless_app_identifier?: string | null
-          netless_room_token?: string | null
-          netless_room_uuid?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -829,8 +783,6 @@ export type Database = {
           trial_booking_id?: string | null
           tutor_id?: string
           updated_at?: string | null
-          video_conference_link?: string | null
-          video_conference_provider?: string | null
         }
         Relationships: [
           {

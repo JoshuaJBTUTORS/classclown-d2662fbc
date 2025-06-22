@@ -1,286 +1,194 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Video, Users, Clock, Loader2, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
-import LessonConsentDialog from './LessonConsentDialog';
+import { format, parseISO, isBefore } from 'date-fns';
+import { 
+  Calendar,
+  Clock,
+  User,
+  Users,
+  BookOpen,
+  GraduationCap,
+  ArrowLeft,
+  AlertCircle
+} from 'lucide-react';
+
+interface Lesson {
+  id: string;
+  title: string;
+  description: string | null;
+  start_time: string;
+  end_time: string;
+  is_group: boolean;
+  status: string;
+  subject?: string;
+  tutor?: {
+    first_name: string;
+    last_name: string;
+  };
+  students?: Array<{
+    id: number;
+    first_name: string;
+    last_name: string;
+  }>;
+  flexible_classroom_room_id?: string | null;
+  flexible_classroom_session_data?: any;
+}
 
 const StudentJoinPage: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
-  const { user, userRole } = useAuth();
   const navigate = useNavigate();
-  const [lesson, setLesson] = useState<any>(null);
-  const [studentData, setStudentData] = useState<any>(null);
+  const { user, userRole } = useAuth();
+  const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [studentContext, setStudentContext] = useState<any>(null);
 
   useEffect(() => {
     if (!user || !lessonId) {
       navigate('/auth');
       return;
     }
-
-    // Only allow students and parents to access this page
-    if (userRole !== 'student' && userRole !== 'parent') {
-      navigate('/calendar');
-      return;
-    }
-
+    
     fetchLessonAndCheckAccess();
-  }, [user, lessonId, userRole]);
+  }, [user, lessonId]);
 
   const fetchLessonAndCheckAccess = async () => {
     try {
-      console.log('Fetching lesson data for ID:', lessonId);
+      setIsLoading(true);
       
-      // First, fetch lesson details without restrictive joins
+      // Fetch lesson details
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
         .select(`
           *,
-          tutor:tutors(first_name, last_name)
+          tutor:tutors(first_name, last_name),
+          lesson_students(
+            student:students(id, first_name, last_name)
+          )
         `)
         .eq('id', lessonId)
         .single();
 
       if (lessonError || !lessonData) {
-        console.error('Error fetching lesson:', lessonError);
-        toast.error('Lesson not found');
-        navigate('/calendar');
-        return;
+        throw new Error('Lesson not found');
       }
 
-      console.log('Lesson found:', lessonData);
-      console.log('Lesson Space Space ID:', lessonData.lesson_space_space_id);
-      console.log('Lesson Space Room ID:', lessonData.lesson_space_room_id);
-      console.log('Video Conference Link:', lessonData.video_conference_link);
-
-      // Fetch lesson students separately
-      const { data: lessonStudents, error: studentsError } = await supabase
-        .from('lesson_students')
-        .select(`
-          student:students(id, first_name, last_name, email)
-        `)
-        .eq('lesson_id', lessonId);
-
-      if (studentsError) {
-        console.error('Error fetching lesson students:', studentsError);
-      }
-
-      // Add students to lesson data
-      const processedLesson = {
+      const students = lessonData.lesson_students?.map((ls: any) => ls.student) || [];
+      
+      const processedLesson: Lesson = {
         ...lessonData,
-        lesson_students: lessonStudents || []
+        students
       };
 
       setLesson(processedLesson);
 
-      if (userRole === 'student') {
-        await checkStudentAccess(processedLesson);
-      } else if (userRole === 'parent') {
-        await checkParentAccess(processedLesson);
+      // Determine student context
+      let context = null;
+      if (userRole === 'parent') {
+        // Parent joining - find which child is in this lesson
+        const { data: parentData } = await supabase
+          .from('parents')
+          .select('id')
+          .eq('user_id', user?.id)
+          .single();
+
+        if (parentData) {
+          const parentChild = students.find(
+            student => student.parent_id === parentData.id
+          );
+
+          if (parentChild) {
+            context = {
+              studentId: parentChild.id,
+              studentName: `${parentChild.first_name} ${parentChild.last_name}`.trim(),
+              isParentJoin: true
+            };
+          }
+        }
+      } else if (userRole === 'student') {
+        // Direct student join
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('id, first_name, last_name')
+          .eq('user_id', user?.id)
+          .single();
+
+        if (studentData) {
+          context = {
+            studentId: studentData.id,
+            studentName: `${studentData.first_name} ${studentData.last_name}`.trim(),
+            isParentJoin: false
+          };
+        }
       }
-    } catch (error) {
-      console.error('Error in fetchLessonAndCheckAccess:', error);
-      toast.error('Failed to load lesson details');
-      navigate('/calendar');
+
+      setStudentContext(context);
+
+      if (!context) {
+        throw new Error('You are not enrolled in this lesson');
+      }
+
+    } catch (error: any) {
+      console.error('Error fetching lesson:', error);
+      setError(error.message);
+      toast.error(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const checkStudentAccess = async (lessonData: any) => {
-    try {
-      console.log('Checking student access for email:', user?.email);
-      
-      // Get student data based on email
-      const { data: student, error: studentError } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, email')
-        .eq('email', user?.email)
-        .maybeSingle();
-
-      if (studentError) {
-        console.error('Error fetching student data:', studentError);
-        toast.error('Error verifying student profile');
-        navigate('/calendar');
-        return;
-      }
-
-      if (!student) {
-        console.log('No student profile found for email:', user?.email);
-        toast.error('Student profile not found');
-        navigate('/calendar');
-        return;
-      }
-
-      console.log('Student found:', student);
-
-      // Check if student is enrolled in this lesson
-      const isEnrolled = lessonData.lesson_students?.some(
-        (ls: any) => ls.student?.id === student.id
-      );
-
-      if (!isEnrolled) {
-        console.log('Student not enrolled in lesson');
-        toast.error('You are not enrolled in this lesson');
-        navigate('/calendar');
-        return;
-      }
-
-      console.log('Student access granted');
-      setStudentData(student);
-    } catch (error) {
-      console.error('Error checking student access:', error);
-      toast.error('Error verifying lesson access');
-      navigate('/calendar');
-    }
-  };
-
-  const checkParentAccess = async (lessonData: any) => {
-    try {
-      console.log('Checking parent access for email:', user?.email);
-      
-      // Get parent data based on email
-      const { data: parent, error: parentError } = await supabase
-        .from('parents')
-        .select('id, first_name, last_name, email')
-        .eq('email', user?.email)
-        .maybeSingle();
-
-      if (parentError) {
-        console.error('Error fetching parent data:', parentError);
-        toast.error('Error verifying parent profile');
-        navigate('/calendar');
-        return;
-      }
-
-      if (!parent) {
-        console.log('No parent profile found for email:', user?.email);
-        toast.error('Parent profile not found');
-        navigate('/calendar');
-        return;
-      }
-
-      console.log('Parent found:', parent);
-
-      // Check if any of parent's children are enrolled in this lesson
-      const { data: parentStudents, error: parentStudentsError } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, email')
-        .eq('parent_id', parent.id);
-
-      if (parentStudentsError) {
-        console.error('Error fetching parent students:', parentStudentsError);
-        toast.error('Error verifying parent access');
-        navigate('/calendar');
-        return;
-      }
-
-      if (!parentStudents || parentStudents.length === 0) {
-        console.log('Parent has no students');
-        toast.error('No students found for this parent account');
-        navigate('/calendar');
-        return;
-      }
-
-      // Check if any of the parent's students are enrolled in this lesson
-      const hasEnrolledChild = lessonData.lesson_students?.some((ls: any) =>
-        parentStudents.some(student => student.id === ls.student?.id)
-      );
-
-      if (!hasEnrolledChild) {
-        console.log('None of parent\'s children are enrolled in this lesson');
-        toast.error('None of your children are enrolled in this lesson');
-        navigate('/calendar');
-        return;
-      }
-
-      console.log('Parent access granted');
-      // For parents, we'll use the parent's name in the consent dialog
-      setStudentData({
-        first_name: parent.first_name,
-        last_name: parent.last_name,
-        id: parent.id
-      });
-    } catch (error) {
-      console.error('Error checking parent access:', error);
-      toast.error('Error verifying lesson access');
-      navigate('/calendar');
-    }
-  };
-
-  const getStudentInviteUrl = () => {
-    // Use the lesson_space_room_id instead of lesson_space_space_id for the correct URL
-    if (!lesson?.lesson_space_room_id) {
-      console.warn('No lesson_space_room_id found in lesson data');
-      console.log('Available lesson space fields:', {
-        space_id: lesson?.lesson_space_space_id,
-        room_id: lesson?.lesson_space_room_id,
-        room_url: lesson?.lesson_space_room_url
-      });
-      return null;
-    }
-    const url = `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`;
-    console.log('Generated student invite URL:', url);
-    return url;
-  };
-
-  const handleStartConsentFlow = () => {
-    setShowConsentDialog(true);
-  };
-
-  const handleConsentAccepted = () => {
-    setShowConsentDialog(false);
-    handleJoinLesson();
-  };
-
-  const handleJoinLesson = () => {
-    // Handle Agora rooms differently - navigate to internal video room
-    if (lesson?.video_conference_provider === 'agora' && lesson?.agora_channel_name) {
-      navigate(`/video-room/${lessonId}`);
+  const handleJoinClassroom = () => {
+    if (!lesson?.flexible_classroom_room_id || !lessonId) {
+      toast.error('Classroom not available');
       return;
     }
 
-    // Handle Lesson Space rooms
-    const inviteUrl = getStudentInviteUrl();
-    console.log('Attempting to join lesson with URL:', inviteUrl);
-    if (inviteUrl) {
-      // Open the simple lesson space invite URL
-      window.open(inviteUrl, '_blank');
-      toast.success('Redirecting to Lesson Space...');
-    } else {
-      toast.error('Lesson space not available');
-    }
+    // Navigate to the embedded flexible classroom
+    navigate(`/flexible-classroom/${lessonId}`);
+  };
+
+  const handleGoBack = () => {
+    navigate('/calendar');
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading lesson details...</span>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading lesson details...</p>
         </div>
       </div>
     );
   }
 
-  if (!lesson || !studentData) {
+  if (error || !lesson) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">Lesson not found or access denied</p>
-            <Button
-              onClick={() => navigate('/calendar')}
-              className="mt-4"
-              variant="outline"
-            >
-              Go Back to Calendar
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="flex justify-center">
+              <AlertCircle className="h-12 w-12 text-red-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Unable to Access Lesson
+              </h3>
+              <p className="text-sm text-gray-600 mt-2">
+                {error || 'This lesson could not be found or you do not have permission to access it.'}
+              </p>
+            </div>
+            <Button onClick={handleGoBack} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
             </Button>
           </CardContent>
         </Card>
@@ -288,120 +196,139 @@ const StudentJoinPage: React.FC = () => {
     );
   }
 
-  // Check if lesson has video conference capability (updated to include Agora)
-  const hasVideoConference = lesson?.video_conference_link || 
-                            lesson?.lesson_space_room_url || 
-                            lesson?.lesson_space_room_id ||
-                            (lesson?.agora_channel_name && lesson?.agora_token);
+  const lessonStartTime = parseISO(lesson.start_time);
+  const isLessonStarted = isBefore(lessonStartTime, new Date());
+  const hasFlexibleClassroom = lesson.flexible_classroom_room_id && lesson.flexible_classroom_session_data;
 
-  // Update the main return JSX to handle Agora rooms
-  if (hasVideoConference) {
-    const isAgoraRoom = lesson?.video_conference_provider === 'agora' && lesson?.agora_channel_name;
-    const isLessonSpaceRoom = lesson?.video_conference_provider === 'lesson_space' && getStudentInviteUrl();
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={handleGoBack}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Calendar
+          </Button>
+        </div>
 
-    if (isAgoraRoom || isLessonSpaceRoom) {
-      return (
-        <>
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-lg">
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <Video className="h-8 w-8 text-blue-600" />
-                  </div>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                {lesson.title}
+              </CardTitle>
+              <Badge 
+                variant={lesson.status === 'completed' ? 'default' : 'outline'}
+                className={lesson.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+              >
+                {lesson.status.charAt(0).toUpperCase() + lesson.status.slice(1)}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {lesson.description && (
+              <div>
+                <h3 className="font-medium mb-2">Description</h3>
+                <p className="text-sm text-gray-600">{lesson.description}</p>
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">
+                  {format(lessonStartTime, 'EEEE, MMMM d, yyyy')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">
+                  {format(lessonStartTime, 'h:mm a')} - {format(parseISO(lesson.end_time), 'h:mm a')}
+                </span>
+              </div>
+            </div>
+
+            {lesson.tutor && (
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">
+                  Tutor: {lesson.tutor.first_name} {lesson.tutor.last_name}
+                </span>
+              </div>
+            )}
+
+            {lesson.is_group && lesson.students && lesson.students.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium">
+                    Group Lesson ({lesson.students.length} students)
+                  </span>
                 </div>
-                <CardTitle className="text-2xl">Join Lesson</CardTitle>
-                <p className="text-muted-foreground">
-                  You're about to join your online lesson
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="font-medium text-lg">{lesson.title}</h3>
-                    <p className="text-sm text-muted-foreground">{lesson.description}</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>
-                      Teacher: {lesson.tutor?.first_name} {lesson.tutor?.last_name}
-                    </span>
-                  </div>
+                <div className="text-xs text-gray-500">
+                  Students: {lesson.students.map(s => `${s.first_name} ${s.last_name}`).join(', ')}
+                </div>
+              </div>
+            )}
 
-                  {lesson.is_group && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span>Group lesson • {lesson.lesson_students?.length || 0} students</span>
-                    </div>
+            {studentContext && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-sm text-blue-800">
+                  Joining as: <span className="font-medium">{studentContext.studentName}</span>
+                  {studentContext.isParentJoin && (
+                    <span className="text-xs ml-2">(Parent Access)</span>
+                  )}
+                </p>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Flexible Classroom Section */}
+            <div>
+              <h3 className="font-medium mb-3 flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                Flexible Classroom
+              </h3>
+              
+              {hasFlexibleClassroom ? (
+                <div className="space-y-3">
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <p className="text-sm text-green-800">
+                      ✓ Interactive classroom is ready with whiteboard and collaboration tools
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleJoinClassroom}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                    disabled={!isLessonStarted && lesson.status !== 'completed'}
+                  >
+                    <GraduationCap className="h-4 w-4 mr-2" />
+                    Join Flexible Classroom
+                  </Button>
+                  
+                  {!isLessonStarted && (
+                    <p className="text-xs text-center text-gray-500">
+                      The classroom will be available when the lesson starts
+                    </p>
                   )}
                 </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>Welcome, {studentData.first_name}!</strong>
-                    <br />
-                    {isAgoraRoom 
-                      ? 'Please review and accept the camera/microphone requirements before joining the video conference.'
-                      : 'Please review and accept the camera/microphone requirements before joining.'
-                    }
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <p className="text-sm text-amber-800">
+                    The classroom has not been set up yet. Please contact your tutor.
                   </p>
                 </div>
-
-                <Button
-                  onClick={handleStartConsentFlow}
-                  className="w-full"
-                  size="lg"
-                >
-                  <ExternalLink className="h-5 w-5 mr-2" />
-                  Review Requirements & Join Lesson
-                </Button>
-
-                <div className="text-center">
-                  <Button
-                    onClick={() => navigate('/calendar')}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    Go Back to Calendar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <LessonConsentDialog
-            isOpen={showConsentDialog}
-            onClose={() => setShowConsentDialog(false)}
-            onAccept={handleConsentAccepted}
-            lesson={lesson}
-            studentName={studentData?.first_name || 'Student'}
-          />
-        </>
-      );
-    }
-  }
-
-  // Fallback for lessons without video conference
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">No video conference link available for this lesson</p>
-          <Button
-            onClick={() => navigate('/calendar')}
-            className="mt-4"
-            variant="outline"
-          >
-            Go Back to Calendar
-          </Button>
-        </CardContent>
-      </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

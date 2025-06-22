@@ -2,24 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { Check, Clock, BookOpen, Edit, Trash2, AlertTriangle, Video, Plus, Users, CheckCircle, XCircle } from 'lucide-react';
-import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
+import { Check, BookOpen, Edit, Trash2, AlertTriangle, Plus, Users, CheckCircle, XCircle } from 'lucide-react';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useLessonSpace } from '@/hooks/useLessonSpace';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAgora } from '@/hooks/useAgora';
 import { useFlexibleClassroom } from '@/hooks/useFlexibleClassroom';
-import VideoProviderSelector from '@/components/lessons/VideoProviderSelector';
 
 interface LessonDetailsDialogProps {
   isOpen: boolean;
@@ -64,12 +59,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     hasHomework: boolean;
   } | null>(null);
   
-  const { createRoom, isCreatingRoom } = useLessonSpace();
-  const { createRoom: createAgoraRoom, isCreatingRoom: isCreatingAgoraRoom } = useAgora();
   const { createClassroomSession, isLoading: isCreatingFlexibleClassroom } = useFlexibleClassroom();
-  
-  // New state for provider selection
-  const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
 
   // Check if user is a student or parent (both have read-only access)
   const isStudentOrParent = userRole === 'student' || userRole === 'parent';
@@ -79,7 +69,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     return RECURRING_INSTANCE_REGEX.test(id);
   };
 
-  // Fetch completion status for the lesson
   const fetchCompletionStatus = async (lessonId: string) => {
     try {
       // Fetch attendance data
@@ -157,7 +146,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   }, [lessonId, isOpen]);
 
-  // Function to check if a lesson has homework assigned to it
   const checkForHomework = async (lessonId: string) => {
     try {
       const { data, error } = await supabase
@@ -269,7 +257,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         students: students,
         tutor: tutorData,
         lesson_students: studentData || [],
-        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
       };
       
       console.log("Created instance lesson:", recurringLesson);
@@ -368,7 +355,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       const processedLesson: Lesson = {
         ...lessonData,
         lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
         students,
         tutor: tutorData,
         lesson_students: studentData || []
@@ -384,103 +370,51 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
-  const handleCreateOnlineRoom = async () => {
-    // Open provider selector instead of directly creating room
-    setIsProviderSelectorOpen(true);
-  };
-
-  const handleProviderSelected = async (provider: 'lesson_space' | 'agora' | 'external_agora' | 'flexible_classroom') => {
+  const handleCreateFlexibleClassroom = async () => {
     if (!lesson) return;
     
-    setIsProviderSelectorOpen(false);
-    
     try {
-      if (provider === 'lesson_space') {
-        const result = await createRoom({
-          lessonId: lesson.id,
-          title: lesson.title,
-          startTime: lesson.start_time,
-          duration: lesson.end_time ? 
-            Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60)) : 
-            60
-        });
+      const userRole = lesson.tutor?.id === lesson.tutor_id ? 'tutor' : 'student';
+      const displayName = userRole === 'tutor' ? 
+        `${lesson.tutor?.first_name} ${lesson.tutor?.last_name}` : 
+        'Student';
 
-        if (result) {
-          if (isRecurringInstanceId(lesson.id)) {
-            const parts = lesson.id.split('-');
-            const baseId = parts.slice(0, 5).join('-');
-            await fetchRecurringInstance(baseId, lesson.id);
-          } else {
-            await fetchLessonDetails(lesson.id);
-          }
-          
-          toast.success('Lesson Space room created! Room details have been updated.');
+      const result = await createClassroomSession(
+        lesson.id,
+        userRole,
+        undefined, // Let the system generate UID
+        displayName
+      );
+
+      if (result) {
+        // Update the lesson with flexible classroom data
+        const { error } = await supabase
+          .from('lessons')
+          .update({
+            flexible_classroom_room_id: result.roomId,
+            flexible_classroom_session_data: JSON.stringify(result)
+          })
+          .eq('id', isRecurringInstance && originalLessonId ? originalLessonId : lesson.id);
+
+        if (error) {
+          console.error('Error updating lesson with flexible classroom data:', error);
+          toast.error('Failed to save flexible classroom details');
+          return;
         }
-      } else if (provider === 'agora') {
-        const result = await createAgoraRoom({
-          lessonId: lesson.id,
-          title: lesson.title,
-          startTime: lesson.start_time,
-          duration: lesson.end_time ? 
-            Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60)) : 
-            60
-        });
 
-        if (result) {
-          if (isRecurringInstanceId(lesson.id)) {
-            const parts = lesson.id.split('-');
-            const baseId = parts.slice(0, 5).join('-');
-            await fetchRecurringInstance(baseId, lesson.id);
-          } else {
-            await fetchLessonDetails(lesson.id);
-          }
-          
-          toast.success('Agora room created! Room details have been updated.');
+        // Refresh the lesson data to show the new room
+        if (isRecurringInstanceId(lesson.id)) {
+          const parts = lesson.id.split('-');
+          const baseId = parts.slice(0, 5).join('-');
+          await fetchRecurringInstance(baseId, lesson.id);
+        } else {
+          await fetchLessonDetails(lesson.id);
         }
-      } else if (provider === 'flexible_classroom') {
-        const userRole = lesson.tutor?.id === lesson.tutor_id ? 'tutor' : 'student';
-        const displayName = userRole === 'tutor' ? 
-          `${lesson.tutor?.first_name} ${lesson.tutor?.last_name}` : 
-          'Student';
-
-        const result = await createClassroomSession(
-          lesson.id,
-          userRole,
-          undefined, // Let the system generate UID
-          displayName
-        );
-
-        if (result) {
-          // Update the lesson with flexible classroom data
-          const { error } = await supabase
-            .from('lessons')
-            .update({
-              video_conference_provider: 'flexible_classroom',
-              flexible_classroom_room_id: result.roomId,
-              flexible_classroom_session_data: JSON.stringify(result)
-            })
-            .eq('id', isRecurringInstance && originalLessonId ? originalLessonId : lesson.id);
-
-          if (error) {
-            console.error('Error updating lesson with flexible classroom data:', error);
-            toast.error('Failed to save flexible classroom details');
-            return;
-          }
-
-          // Refresh the lesson data to show the new room
-          if (isRecurringInstanceId(lesson.id)) {
-            const parts = lesson.id.split('-');
-            const baseId = parts.slice(0, 5).join('-');
-            await fetchRecurringInstance(baseId, lesson.id);
-          } else {
-            await fetchLessonDetails(lesson.id);
-          }
-          
-          toast.success('Flexible Classroom created! Room details have been updated.');
-        }
+        
+        toast.success('Flexible Classroom created! Room details have been updated.');
       }
     } catch (error) {
-      console.error('Error creating online room:', error);
+      console.error('Error creating flexible classroom:', error);
     }
   };
 
@@ -589,23 +523,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Check if any video conference capability exists - updated to properly detect all providers including Flexible Classroom
-  const hasVideoConference = lesson?.video_conference_link || 
-                            lesson?.lesson_space_room_url || 
-                            lesson?.lesson_space_room_id ||
-                            (lesson?.agora_channel_name && lesson?.agora_token) ||
-                            lesson?.flexible_classroom_room_id;
-
-  // Map userRole to VideoConferenceLink compatible type
-  const getVideoConferenceUserRole = () => {
-    if (userRole === 'parent') {
-      return 'student'; // Parents should have the same video conference access as students
-    }
-    return userRole as 'tutor' | 'student' | 'admin' | 'owner';
-  };
-
-  // Check if currently creating any type of room
-  const isCurrentlyCreating = isCreatingRoom || isCreatingAgoraRoom || isCreatingFlexibleClassroom;
+  // Check if flexible classroom exists
+  const hasFlexibleClassroom = lesson?.flexible_classroom_room_id;
 
   return (
     <>
@@ -632,7 +551,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             <div className="py-6 text-center">Loading lesson details...</div>
           ) : lesson ? (
             <div className="grid gap-4 py-4">
-              {/* Completion Status Section - only show for tutors, admins, and owners */}
               {completionStatus && !isStudentOrParent && (
                 <div className="border rounded-lg p-4 bg-gray-50">
                   <h3 className="font-medium mb-2 flex items-center gap-2">
@@ -718,25 +636,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* Video Conference Section - Updated to properly handle all providers including Flexible Classroom */}
-              {hasVideoConference ? (
+              {/* Flexible Classroom Section */}
+              {hasFlexibleClassroom ? (
                 <VideoConferenceLink 
-                  link={lesson.video_conference_link || lesson.lesson_space_room_url}
-                  provider={lesson.video_conference_provider}
+                  flexibleClassroomRoomId={lesson.flexible_classroom_room_id}
+                  flexibleClassroomSessionData={lesson.flexible_classroom_session_data}
                   className="mb-4"
-                  userRole={getVideoConferenceUserRole()}
                   isGroupLesson={lesson.is_group}
                   studentCount={lesson.students?.length || 0}
                   lessonId={lesson.id}
-                  hasLessonSpace={!!(lesson.lesson_space_room_url || lesson.lesson_space_room_id)}
-                  spaceId={lesson.lesson_space_room_id}
-                  // Agora-specific props - pass the actual environment values
-                  agoraChannelName={lesson.agora_channel_name}
-                  agoraToken={lesson.agora_token}
-                  agoraAppId="AGORA_APP_ID" // This will be replaced in the component
-                  // Flexible Classroom specific props
-                  flexibleClassroomRoomId={lesson.flexible_classroom_room_id}
-                  flexibleClassroomSessionData={lesson.flexible_classroom_session_data}
                 />
               ) : (
                 // Only show room creation for tutors, admins, and owners
@@ -744,22 +652,22 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-sm">Online Lesson Room</h3>
+                        <h3 className="font-medium text-sm">Flexible Classroom</h3>
                         <p className="text-sm text-muted-foreground">
                           {lesson.is_group 
-                            ? `No group room created yet (${lesson.students?.length || 0} students)`
-                            : 'No room created yet'
+                            ? `No classroom created yet (${lesson.students?.length || 0} students)`
+                            : 'No classroom created yet'
                           }
                         </p>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleCreateOnlineRoom}
-                        disabled={isCurrentlyCreating}
+                        onClick={handleCreateFlexibleClassroom}
+                        disabled={isCreatingFlexibleClassroom}
                         className="flex items-center gap-2"
                       >
-                        {isCurrentlyCreating ? (
+                        {isCreatingFlexibleClassroom ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                             Creating...
@@ -767,7 +675,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                         ) : (
                           <>
                             <Plus className="h-4 w-4" />
-                            {lesson.is_group ? 'Create Group Room' : 'Create Room'}
+                            Create Classroom
                           </>
                         )}
                       </Button>
@@ -810,7 +718,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           
           <div className="flex flex-wrap justify-between gap-2 mt-4">
             <div>
-              {/* Only show delete button for tutors, admins, and owners */}
               {onDelete && lesson && !isStudentOrParent && (
                 <Button 
                   variant="destructive" 
@@ -824,7 +731,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               )}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
-              {/* Only show homework assignment for tutors, admins, and owners */}
               {lesson && onAssignHomework && !isStudentOrParent && (
                 <Button
                   className="flex items-center gap-1"
@@ -836,7 +742,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   Complete Lesson
                 </Button>
               )}
-              {/* Only show edit button for tutors, admins, and owners */}
               {lesson && !isStudentOrParent && (
                 <Button 
                   onClick={handleEditLesson} 
@@ -848,7 +753,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   Edit
                 </Button>
               )}
-              {/* Only show complete session for tutors, admins, and owners */}
               {lesson && lesson.status !== 'completed' && onCompleteSession && !isStudentOrParent && (
                 <Button 
                   className="flex items-center gap-1" 
@@ -877,27 +781,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Provider Selection Dialog */}
-      <VideoProviderSelector
-        isOpen={isProviderSelectorOpen}
-        onClose={() => setIsProviderSelectorOpen(false)}
-        onSelectProvider={handleProviderSelected}
-        isCreating={isCurrentlyCreating}
-        isGroupLesson={lesson?.is_group || false}
-        studentCount={lesson?.students?.length || 0}
+      <EditLessonForm
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSuccess={handleEditSuccess}
+        lessonId={editLessonId}
       />
 
-      {/* Only show edit dialog for tutors, admins, and owners */}
-      {!isStudentOrParent && (
-        <EditLessonForm
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-          onSuccess={handleEditSuccess}
-          lessonId={editLessonId}
-        />
-      )}
-
-      {/* Regular delete confirmation dialog */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -929,7 +819,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Special confirmation dialog for lessons with homework */}
       <AlertDialog open={isHomeworkDeleteConfirmOpen} onOpenChange={setIsHomeworkDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

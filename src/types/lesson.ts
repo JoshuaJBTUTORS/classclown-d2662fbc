@@ -8,34 +8,14 @@ export interface Lesson {
   end_time: string;
   is_group: boolean;
   status: string;
-  subject?: string; // Add subject field
+  subject?: string;
   is_recurring?: boolean;
   recurrence_interval?: string | null;
   recurrence_day?: string | null;
   recurrence_end_date?: string | null;
-  // Enhanced video conference fields
-  lesson_space_room_id?: string | null;
-  lesson_space_room_url?: string | null;
-  lesson_space_space_id?: string | null; // Add space ID field
-  video_conference_provider?: 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora' | 'flexible_classroom' | null;
-  video_conference_link?: string | null;
-  // Additional Lesson Space fields
-  lesson_space_session_id?: string | null;
-  // Agora.io fields
-  agora_channel_name?: string | null;
-  agora_token?: string | null;
-  agora_uid?: number | null;
-  agora_rtm_token?: string | null;
-  agora_whiteboard_token?: string | null;
-  agora_recording_id?: string | null;
-  agora_recording_status?: string | null;
-  // Netless fields
-  netless_room_uuid?: string | null;
-  netless_room_token?: string | null;
-  netless_app_identifier?: string | null;
-  // Flexible Classroom fields - Updated to match database Json type
+  // Only Flexible Classroom fields remain
   flexible_classroom_room_id?: string | null;
-  flexible_classroom_session_data?: any; // Changed from string to any to match Json type from database
+  flexible_classroom_session_data?: any;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
@@ -52,7 +32,6 @@ export interface Lesson {
     email?: string;
     attendance_status?: string;
     feedback?: string;
-    lesson_space_url?: string; // Individual student URL for Lesson Space
   }[];
   completed?: boolean;
   completion_date?: string | null;
@@ -81,7 +60,6 @@ export interface Lesson {
       parent_last_name?: string;
       email?: string;
     };
-    lesson_space_url?: string;
   }[];
 }
 
