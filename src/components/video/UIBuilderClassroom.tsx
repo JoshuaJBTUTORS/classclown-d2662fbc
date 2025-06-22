@@ -1,11 +1,10 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Import FcrUIScene from the web-compatible package
-import { FcrUIScene } from 'fcr-ui-scene';
+// Import FcrUIScene as default export
+import FcrUIScene from 'fcr-ui-scene';
 import {
   FcrChatroom,
   FcrBoardWidget,
