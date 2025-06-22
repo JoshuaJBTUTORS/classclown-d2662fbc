@@ -14,7 +14,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 342 77% 60%;
+    --primary: 188 33% 78%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
@@ -26,7 +26,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 342 77% 60%;
+    --ring: 188 33% 78%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -150,8 +150,8 @@
 }
 
 .fc-button {
-  background-color: #e94b7f !important;
-  border-color: #e94b7f !important;
+  background-color: #b4dde2 !important;
+  border-color: #b4dde2 !important;
   color: white !important;
   font-weight: 500 !important;
   border-radius: 6px !important;
@@ -160,8 +160,8 @@
 }
 
 .fc-button:hover {
-  background-color: #d63c6f !important;
-  border-color: #d63c6f !important;
+  background-color: #9bd2d9 !important;
+  border-color: #9bd2d9 !important;
 }
 
 .fc-button:disabled {
@@ -171,8 +171,8 @@
 }
 
 .fc-button-primary:not(:disabled).fc-button-active {
-  background-color: #d63c6f !important;
-  border-color: #d63c6f !important;
+  background-color: #9bd2d9 !important;
+  border-color: #9bd2d9 !important;
 }
 
 .fc-daygrid-event .fc-event-main {
