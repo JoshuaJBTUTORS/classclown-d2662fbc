@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useVideoRoom } from '@/hooks/useVideoRoom';
 import { useFlexibleClassroom, FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
-import FlexibleClassroom from '@/components/video/FlexibleClassroom';
+import SimpleFlexibleClassroom from '@/components/video/SimpleFlexibleClassroom';
 import VideoRoomLoading from '@/components/video/VideoRoomLoading';
 import VideoRoomError from '@/components/video/VideoRoomError';
 
@@ -29,20 +29,17 @@ const VideoRoom: React.FC = () => {
   // Generate deterministic UID based on role and context
   const generateUID = async () => {
     if (videoRoomRole === 'tutor') {
-      // Get tutor ID from the lesson
       if (lesson?.tutor_id) {
-        // Convert tutor UUID to a number (use hash of first 8 chars)
         const tutorHash = lesson.tutor_id.substring(0, 8);
         const tutorNumericId = parseInt(tutorHash, 16) % 100000;
-        return 100000 + tutorNumericId; // Tutor range: 100000-199999
+        return 100000 + tutorNumericId;
       }
-      return 100001; // Fallback for tutors
+      return 100001;
     } else {
-      // For students/parents, use the student ID
       if (studentContext) {
         return studentContext.studentId;
       }
-      return 1; // Fallback for students
+      return 1;
     }
   };
 
@@ -51,23 +48,18 @@ const VideoRoom: React.FC = () => {
       if (!lesson || !lessonId) return;
 
       try {
-        console.log('Initializing Flexible Classroom for lesson:', lessonId);
+        console.log('Initializing simplified Flexible Classroom for lesson:', lessonId);
         
-        // Generate custom UID
         const customUID = await generateUID();
-        
-        // Get display name
         const displayName = getDisplayName();
         
         console.log('Creating classroom session:', {
           lessonId,
           videoRoomRole,
           customUID,
-          displayName,
-          studentContext
+          displayName
         });
 
-        // Create classroom session
         const credentials = await createClassroomSession(
           lessonId,
           videoRoomRole,
@@ -92,7 +84,6 @@ const VideoRoom: React.FC = () => {
     }
   }, [lesson, lessonId, isLoading, error, videoRoomRole, studentContext]);
 
-  // Show loading state
   if (isLoading || isCreatingSession) {
     return (
       <VideoRoomLoading 
@@ -102,7 +93,6 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  // Show error state
   if (error || classroomError) {
     return (
       <VideoRoomError
@@ -122,19 +112,9 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  // Show Flexible Classroom if credentials are ready
   if (classroomCredentials) {
-    console.log('🎉 Rendering Flexible Classroom with credentials:', {
-      roomId: classroomCredentials.roomId,
-      userRole: classroomCredentials.userRole,
-      userName: classroomCredentials.userName,
-      expectedStudentsCount: expectedStudents.length,
-      studentContext,
-      displayName: getDisplayName()
-    });
-
     return (
-      <FlexibleClassroom
+      <SimpleFlexibleClassroom
         credentials={classroomCredentials}
         expectedStudents={expectedStudents}
         onLeave={handleLeaveRoom}

@@ -8,14 +8,11 @@ import {
   usePublish,
   useRemoteAudioTracks,
   useRemoteUsers,
-  useRTCClient,
 } from 'agora-rtc-react';
 import VideoRoomHeader from './VideoRoomHeader';
 import VerticalVideoGrid from './VerticalVideoGrid';
 import AgoraChatPanel from './AgoraChatPanel';
 import FastboardWhiteboard from './FastboardWhiteboard';
-import ScreenShareDisplay from './ScreenShareDisplay';
-import { useScreenShare } from '@/hooks/useScreenShare';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, 
@@ -25,8 +22,6 @@ import {
   Video,
   VideoOff,
   PhoneOff,
-  Monitor,
-  MonitorOff,
   Circle,
   Square
 } from 'lucide-react';
@@ -97,36 +92,13 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     uid: validUid,
   }, calling);
 
-  // Use the proper RTC client hook
-  const client = useRTCClient();
-
-  // Screen sharing hook - pass the client
-  const { 
-    isScreenSharing, 
-    isScreenShareLoading,
-    isScreenSharePaused,
-    startScreenShare, 
-    stopScreenShare,
-    getScreenTracks,
-    attemptScreenShareRecovery
-  } = useScreenShare({ client });
-
-  // Get screen tracks
-  const { screenVideoTrack, screenAudioTrack } = getScreenTracks();
-
   // Publish tracks when joined and ready
   const tracksToPublish = [];
   if (localMicrophoneTrack && micOn) {
     tracksToPublish.push(localMicrophoneTrack);
   }
-  if (localCameraTrack && cameraOn && !isScreenSharing) {
+  if (localCameraTrack && cameraOn) {
     tracksToPublish.push(localCameraTrack);
-  }
-  if (screenVideoTrack && isScreenSharing) {
-    tracksToPublish.push(screenVideoTrack);
-  }
-  if (screenAudioTrack && isScreenSharing) {
-    tracksToPublish.push(screenAudioTrack);
   }
 
   usePublish(tracksToPublish);
@@ -163,10 +135,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       console.log('Leaving Agora room...');
       setCalling(false);
       setIsJoined(false);
-      // Clean up screen share when leaving
-      if (isScreenSharing) {
-        stopScreenShare();
-      }
     };
   }, []);
 
@@ -176,36 +144,18 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const toggleParticipants = () => setParticipantsOpen(prev => !prev);
   const toggleRecording = () => setIsRecording(prev => !prev);
 
-  const handleScreenShare = async () => {
-    if (isScreenSharing) {
-      await stopScreenShare();
-    } else {
-      await startScreenShare();
-    }
-  };
-
-  const handleManualRecovery = async () => {
-    await attemptScreenShareRecovery();
-  };
-
   const handleLeave = () => {
     setCalling(false);
     setIsJoined(false);
-    if (isScreenSharing) {
-      stopScreenShare();
-    }
     onLeave();
   };
 
-  const totalExpectedParticipants = expectedStudents.length + 1; // +1 for tutor/current user
+  const totalExpectedParticipants = expectedStudents.length + 1;
   const currentParticipants = remoteUsers.length + 1;
 
   const getLocalUserName = () => {
     if (displayName) {
       return displayName;
-    }
-    if (isScreenSharing) {
-      return `You (${userRole})`;
     }
     return `You (${userRole})`;
   };
@@ -222,34 +172,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
       />
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Main Content Area - Conditionally show Screen Share or Whiteboard */}
+        {/* Main Content Area - Whiteboard */}
         <div className="flex-1 flex flex-col">
-          {/* Tab Switch Warning for Screen Sharing */}
-          {isScreenSharePaused && (
-            <div className="bg-yellow-600 text-white px-4 py-2 text-sm flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Monitor className="h-4 w-4" />
-                <span>Screen sharing paused due to tab switch</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleManualRecovery}
-                className="bg-transparent border-white text-white hover:bg-white hover:text-yellow-600"
-              >
-                Restore
-              </Button>
-            </div>
-          )}
-
-          {/* Main Content */}
           <div className="flex-1 flex">
-            {isScreenSharing && screenVideoTrack ? (
-              <ScreenShareDisplay
-                screenVideoTrack={screenVideoTrack}
-                userName={getLocalUserName()}
-              />
-            ) : netlessCredentials ? (
+            {netlessCredentials ? (
               <FastboardWhiteboard
                 isReadOnly={userRole === 'student'}
                 userRole={userRole}
@@ -290,29 +216,11 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
                 size="lg"
                 onClick={toggleCamera}
                 className="rounded-full w-12 h-12 p-0"
-                disabled={isScreenSharing}
               >
                 {cameraOn ? (
                   <Video className="h-5 w-5" />
                 ) : (
                   <VideoOff className="h-5 w-5" />
-                )}
-              </Button>
-
-              {/* Screen Share */}
-              <Button
-                variant={isScreenSharing ? "default" : "ghost"}
-                size="lg"
-                onClick={handleScreenShare}
-                disabled={isScreenShareLoading}
-                className={`rounded-full w-12 h-12 p-0 text-gray-600 hover:text-gray-900 ${
-                  isScreenSharePaused ? 'ring-2 ring-yellow-500' : ''
-                }`}
-              >
-                {isScreenSharing ? (
-                  <MonitorOff className="h-5 w-5" />
-                ) : (
-                  <Monitor className="h-5 w-5" />
                 )}
               </Button>
 
@@ -392,7 +300,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
               studentContext={studentContext}
               displayName={getLocalUserName()}
               currentUID={validUid}
-              isScreenSharing={isScreenSharing}
+              isScreenSharing={false}
             />
           </div>
         </div>

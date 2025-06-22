@@ -55,7 +55,6 @@
     "@tanstack/react-query": "^5.56.2",
     "@types/uuid": "^10.0.0",
     "agora-access-token": "^2.0.4",
-    "agora-plugin-gallery": "^2.9.41",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

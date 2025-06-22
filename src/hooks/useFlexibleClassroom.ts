@@ -24,7 +24,7 @@ export const useFlexibleClassroom = () => {
   ): Promise<FlexibleClassroomCredentials | null> => {
     setIsLoading(true);
     try {
-      console.log('Creating Flexible Classroom session:', { lessonId, userRole, customUID, displayName });
+      console.log('Creating simplified Flexible Classroom session:', { lessonId, userRole, customUID, displayName });
       
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
@@ -43,7 +43,7 @@ export const useFlexibleClassroom = () => {
       }
 
       if (data?.success) {
-        console.log('Flexible Classroom session created:', data);
+        console.log('Flexible Classroom session created successfully');
         return {
           roomId: data.roomId,
           userUuid: data.userUuid,
