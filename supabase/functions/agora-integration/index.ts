@@ -35,7 +35,7 @@ serve(async (req) => {
     } catch (error) {
       console.error('[AGORA-INTEGRATION] JSON parsing error:', error);
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid JSON" }),
+        JSON.stringify({ success: false, error: "Invalid JSON in request body" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -58,7 +58,7 @@ serve(async (req) => {
     if (!appId || !appCertificate) {
       console.error('[AGORA-INTEGRATION] Missing required credentials');
       return new Response(
-        JSON.stringify({ success: false, error: "Missing Agora credentials" }),
+        JSON.stringify({ success: false, error: "Missing Agora credentials in environment" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -67,21 +67,29 @@ serve(async (req) => {
 
     console.log('[AGORA-INTEGRATION] Processing action:', action);
     
-    switch (action) {
-      case "create-flexible-classroom":
+    // Handle action variations (with or without underscores)
+    const normalizedAction = action?.toLowerCase().replace(/-/g, '_');
+    
+    switch (normalizedAction) {
+      case "create_flexible_classroom":
         console.log('[AGORA-INTEGRATION] Handling create-flexible-classroom action');
+        if (!requestData.lessonId) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Missing lessonId parameter" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return await createFlexibleClassroomSession(requestData, supabase, appId, appCertificate);
         
-      case "create-room":
+      case "create_room":
         console.log('[AGORA-INTEGRATION] Handling create-room action');
         return await createVideoRoom(requestData, supabase, appId, appCertificate, netlessSDKToken);
         
-      case "get-tokens":
       case "get_tokens":
         console.log('[AGORA-INTEGRATION] Handling get-tokens action');
         return await getTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
         
-      case "regenerate-tokens":
+      case "regenerate_tokens":
         console.log('[AGORA-INTEGRATION] Handling regenerate-tokens action');
         return await regenerateTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
         
@@ -99,9 +107,13 @@ serve(async (req) => {
         );
     }
   } catch (error) {
-    console.error("[AGORA-INTEGRATION] Error:", error);
+    console.error("[AGORA-INTEGRATION] Unexpected error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || "Internal server error",
+        stack: error.stack 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

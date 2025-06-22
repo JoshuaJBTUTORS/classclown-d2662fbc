@@ -19,32 +19,52 @@ export async function createFlexibleClassroomSession(
   try {
     const { lessonId, userRole, customUID, displayName } = requestData;
     
-    console.log('[FLEXIBLE-CLASSROOM] Creating simplified session:', { lessonId, userRole, customUID, displayName });
+    console.log('[FLEXIBLE-CLASSROOM] Creating session with data:', { lessonId, userRole, customUID, displayName });
 
-    // Get lesson details
+    // Validate required parameters
+    if (!lessonId) {
+      throw new Error('lessonId is required');
+    }
+    if (!userRole) {
+      throw new Error('userRole is required');
+    }
+
+    // Get lesson details with better error handling
     const { data: lesson, error: lessonError } = await supabase
       .from('lessons')
       .select('*')
       .eq('id', lessonId)
       .single();
 
-    if (lessonError || !lesson) {
+    if (lessonError) {
       console.error('[FLEXIBLE-CLASSROOM] Lesson fetch error:', lessonError);
-      throw new Error(`Lesson not found: ${lessonError?.message || 'Unknown error'}`);
+      throw new Error(`Failed to fetch lesson: ${lessonError.message}`);
     }
 
-    // Generate room ID from lesson ID
+    if (!lesson) {
+      throw new Error(`Lesson not found with ID: ${lessonId}`);
+    }
+
+    console.log('[FLEXIBLE-CLASSROOM] Lesson found:', lesson.title);
+
+    // Generate room ID from lesson ID (ensure it's valid for Agora)
     const roomId = `lesson_${lessonId.replace(/-/g, '_')}`;
     
-    // Use custom UID or generate one
+    // Use custom UID or generate deterministic one
     let userUuid: string;
     if (customUID) {
       userUuid = customUID.toString();
     } else if (userRole === 'tutor') {
-      const tutorHash = lesson.tutor_id.substring(0, 8);
-      const tutorNumericId = parseInt(tutorHash, 16) % 100000;
-      userUuid = (100000 + tutorNumericId).toString();
+      // Generate deterministic UID for tutor based on lesson tutor_id
+      if (lesson.tutor_id) {
+        const tutorHash = lesson.tutor_id.substring(0, 8);
+        const tutorNumericId = parseInt(tutorHash, 16) % 100000;
+        userUuid = (100000 + tutorNumericId).toString();
+      } else {
+        userUuid = '100001'; // Default tutor UID
+      }
     } else {
+      // Generate random UID for student (can be improved with student ID mapping)
       userUuid = Math.floor(Math.random() * 1000000).toString();
     }
 
@@ -73,8 +93,13 @@ export async function createFlexibleClassroomSession(
       userRole: userRole === 'tutor' ? 'teacher' : 'student',
       rtmToken: tokenData.rtmToken,
       appId,
-      lessonTitle: lesson.title
+      lessonTitle: lesson.title || 'Lesson'
     };
+
+    console.log('[FLEXIBLE-CLASSROOM] Response prepared:', { 
+      ...response, 
+      rtmToken: response.rtmToken ? '[PRESENT]' : '[MISSING]' 
+    });
 
     return new Response(
       JSON.stringify(response),
@@ -93,7 +118,8 @@ export async function createFlexibleClassroomSession(
     return new Response(
       JSON.stringify({
         success: false, 
-        error: error.message || 'Unknown error occurred'
+        error: error.message || 'Unknown error occurred',
+        details: error.stack
       }),
       { 
         status: 500, 
