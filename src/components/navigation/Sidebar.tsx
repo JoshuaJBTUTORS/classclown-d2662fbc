@@ -173,14 +173,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
   return (
     <div className={cn(
-      "fixed left-0 top-0 z-40 h-screen bg-white shadow-xl border-r border-gray-200/50 transition-all duration-300 ease-in-out lg:translate-x-0 font-sidebar",
+      "fixed left-0 top-0 z-40 h-screen luxury-sidebar border-r border-white/10 transition-all duration-300 ease-in-out lg:translate-x-0 font-sidebar",
       isOpen ? "translate-x-0" : "-translate-x-full",
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex h-full flex-col">
         {/* Header with Logo */}
         <div className={cn(
-          "flex h-16 items-center justify-between border-b border-gray-200/50 bg-gradient-to-r from-primary/5 to-primary/10 px-4",
+          "flex h-16 items-center justify-between border-b border-white/10 bg-white/10 backdrop-blur-sm px-4",
           isCollapsed && "px-2"
         )}>
           {!isCollapsed && (
@@ -188,7 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
               <img 
                 src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
                 alt="Class Clown Logo" 
-                className="h-10 w-auto" 
+                className="h-10 w-auto drop-shadow-lg" 
               />
             </div>
           )}
@@ -198,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             size="icon"
             onClick={toggleCollapse}
             className={cn(
-              "h-8 w-8 text-primary hover:bg-primary/10 hover:text-primary",
+              "h-8 w-8 text-white/80 hover:bg-white/10 hover:text-white transition-all duration-300",
               isCollapsed && "mx-auto"
             )}
           >
@@ -211,7 +211,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         </div>
         
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 space-y-2 px-3 py-4 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -219,23 +219,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                  "group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 relative overflow-hidden",
                   isActive
-                    ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:text-primary",
-                  isCollapsed && "justify-center px-2"
+                    ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
+                    : "text-white/70 hover:bg-white/10 hover:text-white hover:shadow-md",
+                  isCollapsed && "justify-center px-2",
+                  "shimmer-effect"
                 )}
                 title={isCollapsed ? item.name : undefined}
               >
                 <item.icon
                   className={cn(
-                    "h-5 w-5 flex-shrink-0 transition-colors",
-                    isActive ? "text-white" : "text-gray-500 group-hover:text-primary",
+                    "h-5 w-5 flex-shrink-0 transition-all duration-300",
+                    isActive ? "text-white drop-shadow-sm" : "text-white/70 group-hover:text-white",
                     !isCollapsed && "mr-3"
                   )}
                 />
                 {!isCollapsed && (
-                  <span className="truncate">{item.name}</span>
+                  <span className="truncate font-semibold tracking-wide">{item.name}</span>
+                )}
+                {isActive && (
+                  <div className="absolute right-0 top-0 h-full w-1 bg-white/40 rounded-l-full" />
                 )}
               </Link>
             );
@@ -244,10 +248,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
         {/* Footer */}
         {!isCollapsed && (
-          <div className="border-t border-gray-200/50 p-4">
-            <div className="text-xs text-gray-500 text-center">
-              <p className="font-playfair">Class Clown Tutoring</p>
-              <p className="mt-1">Excellence in Education</p>
+          <div className="border-t border-white/10 p-4 bg-white/5 backdrop-blur-sm">
+            <div className="text-xs text-white/60 text-center">
+              <p className="font-playfair text-white/80 font-semibold text-sm">Class Clown Tutoring</p>
+              <p className="mt-1 font-medium">Excellence in Education</p>
             </div>
           </div>
         )}

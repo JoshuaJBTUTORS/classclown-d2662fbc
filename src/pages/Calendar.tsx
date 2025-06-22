@@ -84,28 +84,32 @@ const Calendar = () => {
   const canUseFilters = userRole === 'admin' || userRole === 'owner';
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-[hsl(162,45%,98%)] via-white to-[hsl(162,45%,95%)]">
       <Sidebar isOpen={sidebarOpen} />
       <div className="flex flex-col flex-1 lg:pl-64">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto p-4 space-y-6">
+          <div className="container mx-auto p-4 space-y-8 luxury-fade-in">
             <CalendarHeader />
             
             {canUseFilters && (
-              <CalendarFilters
-                selectedStudents={selectedStudents}
-                selectedTutors={selectedTutors}
-                onStudentFilterChange={handleStudentFilterChange}
-                onTutorFilterChange={handleTutorFilterChange}
-                onClearFilters={handleClearFilters}
-              />
+              <div className="luxury-scale-in">
+                <CalendarFilters
+                  selectedStudents={selectedStudents}
+                  selectedTutors={selectedTutors}
+                  onStudentFilterChange={handleStudentFilterChange}
+                  onTutorFilterChange={handleTutorFilterChange}
+                  onClearFilters={handleClearFilters}
+                />
+              </div>
             )}
             
-            <CalendarDisplay
-              isLoading={isLoading}
-              events={events}
-            />
+            <div className="luxury-scale-in">
+              <CalendarDisplay
+                isLoading={isLoading}
+                events={events}
+              />
+            </div>
           </div>
         </main>
       </div>

@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @tailwind base;
@@ -8,33 +9,47 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    --background-alt: 240 5% 96%;
+    --background-alt: 210 20% 98%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 200 82% 83%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 162 45% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 162 45% 78%;
+    --primary-dark: 174 58% 40%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent: 162 45% 95%;
+    --accent-foreground: 174 58% 30%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 200 82% 83%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
+    --ring: 162 45% 58%;
+    --radius: 0.75rem;
+    --chart-1: 162 45% 58%;
+    --chart-2: 174 58% 40%;
+    --chart-3: 186 67% 32%;
+    --chart-4: 195 100% 35%;
     --chart-5: 27 87% 67%;
     --performance-low: 0 100% 67%;
     --performance-medium: 38 92% 56%;
-    --performance-high: 145 63% 49%;
+    --performance-high: 162 45% 58%;
+    
+    /* Luxury Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(162 45% 58%) 0%, hsl(174 58% 40%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(186 67% 32%) 0%, hsl(195 100% 35%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(162 45% 95%) 0%, hsl(162 45% 85%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(195 100% 35%) 0%, hsl(195 100% 25%) 100%);
+    
+    /* Luxury Shadows */
+    --shadow-luxury: 0 10px 40px -10px rgba(18, 97, 113, 0.2);
+    --shadow-luxury-hover: 0 20px 60px -10px rgba(18, 97, 113, 0.3);
+    --shadow-card: 0 4px 20px -2px rgba(18, 97, 113, 0.1);
+    --shadow-button: 0 4px 14px 0 rgba(18, 97, 113, 0.2);
   }
 
   .dark {
@@ -45,27 +60,29 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 162 45% 68%;
+    --primary-foreground: 195 100% 15%;
+    --primary-light: 162 45% 78%;
+    --primary-dark: 174 58% 50%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent-foreground: 162 45% 68%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
+    --ring: 162 45% 68%;
+    --chart-1: 162 45% 68%;
+    --chart-2: 174 58% 50%;
+    --chart-3: 186 67% 42%;
+    --chart-4: 195 100% 45%;
     --chart-5: 340 75% 55%;
     --performance-low: 0 90% 65%;
     --performance-medium: 38 90% 60%;
-    --performance-high: 145 60% 55%;
+    --performance-high: 162 45% 68%;
   }
 }
 
@@ -76,6 +93,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, hsl(162 45% 98%) 0%, hsl(0 0% 100%) 100%);
+    min-height: 100vh;
   }
   .font-playfair {
     font-family: 'Playfair Display', serif;
@@ -85,45 +104,123 @@
   }
 }
 
+/* Luxury Component Classes */
+@layer components {
+  .luxury-card {
+    @apply bg-white/90 backdrop-blur-sm border border-white/20 rounded-xl shadow-[var(--shadow-card)] transition-all duration-300;
+  }
+  
+  .luxury-card:hover {
+    @apply shadow-[var(--shadow-luxury-hover)] transform -translate-y-1;
+  }
+  
+  .luxury-button {
+    @apply bg-gradient-to-r from-[hsl(162,45%,58%)] to-[hsl(174,58%,40%)] text-white font-semibold rounded-lg shadow-[var(--shadow-button)] transition-all duration-300;
+  }
+  
+  .luxury-button:hover {
+    @apply shadow-[var(--shadow-luxury)] transform -translate-y-0.5 from-[hsl(174,58%,40%)] to-[hsl(186,67%,32%)];
+  }
+  
+  .luxury-input {
+    @apply border-2 border-[hsl(162,45%,85%)] rounded-lg bg-white/80 backdrop-blur-sm focus:border-[hsl(162,45%,58%)] focus:ring-2 focus:ring-[hsl(162,45%,58%)]/20 transition-all duration-300;
+  }
+  
+  .luxury-gradient-text {
+    @apply bg-gradient-to-r from-[hsl(162,45%,58%)] to-[hsl(174,58%,40%)] bg-clip-text text-transparent;
+  }
+  
+  .luxury-sidebar {
+    @apply bg-gradient-to-b from-[hsl(195,100%,35%)] to-[hsl(195,100%,25%)] text-white shadow-[var(--shadow-luxury)];
+  }
+  
+  .luxury-nav {
+    @apply bg-white/95 backdrop-blur-md border-b border-[hsl(162,45%,85%)] shadow-sm;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-[var(--shadow-luxury)] hover:transform hover:-translate-y-1;
+  }
+  
+  .shimmer-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .shimmer-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+}
+
 /* Calendar Custom Styling */
 .fc-theme-standard .fc-scrollgrid {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid hsl(162 45% 85%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .fc-theme-standard .fc-col-header-cell {
-  background-color: #f9fafb;
-  border-color: #e5e7eb;
+  background: linear-gradient(135deg, hsl(162 45% 95%) 0%, hsl(162 45% 90%) 100%);
+  border-color: hsl(162 45% 85%);
   font-weight: 600;
-  color: #374151;
+  color: hsl(195 100% 25%);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .fc-theme-standard .fc-daygrid-day {
-  border-color: #f3f4f6;
+  border-color: hsl(162 45% 90%);
+  transition: background-color 0.2s ease;
+}
+
+.fc-theme-standard .fc-daygrid-day:hover {
+  background-color: hsl(162 45% 98%);
 }
 
 .fc-theme-standard .fc-daygrid-day-top {
-  color: #6b7280;
+  color: hsl(195 100% 35%);
+  font-weight: 500;
 }
 
 .fc-theme-standard .fc-daygrid-day.fc-day-today {
-  background-color: #fef3f2;
+  background: linear-gradient(135deg, hsl(162 45% 95%) 0%, hsl(162 45% 90%) 100%);
+  border: 2px solid hsl(162 45% 58%);
 }
 
 .fc-event {
   border: none !important;
-  border-radius: 4px !important;
+  border-radius: 8px !important;
   font-size: 11px !important;
-  font-weight: 500 !important;
-  padding: 1px 3px !important;
-  margin: 1px 0 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+  padding: 2px 6px !important;
+  margin: 2px 0 !important;
+  box-shadow: 0 2px 8px rgba(18, 97, 113, 0.15) !important;
+  background: linear-gradient(135deg, hsl(162 45% 58%) 0%, hsl(174 58% 40%) 100%) !important;
+  color: white !important;
+  transition: all 0.2s ease !important;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(18, 97, 113, 0.25) !important;
 }
 
 .fc-event.time-off-event {
-  background-color: #6b7280 !important;
-  border-color: #6b7280 !important;
-  opacity: 0.8 !important;
+  background: linear-gradient(135deg, hsl(0 0% 60%) 0%, hsl(0 0% 45%) 100%) !important;
+  opacity: 0.9 !important;
   font-style: italic !important;
   cursor: default !important;
 }
@@ -134,7 +231,8 @@
 }
 
 .fc-event.recurring-event {
-  border-left: 3px solid #059669 !important;
+  border-left: 4px solid hsl(162 45% 78%) !important;
+  background: linear-gradient(135deg, hsl(174 58% 40%) 0%, hsl(186 67% 32%) 100%) !important;
 }
 
 .fc-event-title {
@@ -145,56 +243,112 @@
 
 .fc-toolbar-title {
   font-weight: 700 !important;
-  color: #111827 !important;
+  color: hsl(195 100% 25%) !important;
+  font-family: 'Playfair Display', serif !important;
+  font-size: 1.5rem !important;
 }
 
 .fc-button {
-  background-color: #aee7f8 !important;
-  border-color: #aee7f8 !important;
+  background: linear-gradient(135deg, hsl(162 45% 58%) 0%, hsl(174 58% 40%) 100%) !important;
+  border: none !important;
   color: white !important;
-  font-weight: 500 !important;
-  border-radius: 6px !important;
-  padding: 6px 12px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
   font-size: 14px !important;
+  box-shadow: var(--shadow-button) !important;
+  transition: all 0.3s ease !important;
 }
 
 .fc-button:hover {
-  background-color: #96ddf5 !important;
-  border-color: #96ddf5 !important;
+  background: linear-gradient(135deg, hsl(174 58% 40%) 0%, hsl(186 67% 32%) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-luxury) !important;
 }
 
 .fc-button:disabled {
-  background-color: #9ca3af !important;
-  border-color: #9ca3af !important;
+  background: hsl(0 0% 75%) !important;
   opacity: 0.6 !important;
+  transform: none !important;
 }
 
 .fc-button-primary:not(:disabled).fc-button-active {
-  background-color: #96ddf5 !important;
-  border-color: #96ddf5 !important;
+  background: linear-gradient(135deg, hsl(186 67% 32%) 0%, hsl(195 100% 35%) 100%) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
 .fc-daygrid-event .fc-event-main {
-  padding: 1px 2px !important;
+  padding: 2px 4px !important;
 }
 
 .calendar-container {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: var(--shadow-luxury);
 }
 
 /* Custom event colors and styling */
 .custom-calendar-event {
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .custom-calendar-event:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-luxury-hover) !important;
 }
 
 .time-off-event:hover {
-  transform: none !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Luxury Animations */
+@keyframes luxuryFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes luxuryScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.luxury-fade-in {
+  animation: luxuryFadeIn 0.6s ease-out;
+}
+
+.luxury-scale-in {
+  animation: luxuryScaleIn 0.4s ease-out;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(162 45% 95%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, hsl(162 45% 58%) 0%, hsl(174 58% 40%) 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, hsl(174 58% 40%) 0%, hsl(186 67% 32%) 100%);
 }
