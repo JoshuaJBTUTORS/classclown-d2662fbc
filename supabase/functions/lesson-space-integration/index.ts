@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -143,15 +144,13 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const spaceData = await spaceResponse.json();
     console.log("Created/Retrieved Lesson Space for teacher:", spaceData);
 
-    // Update the lesson with room details (now includes lesson_space_space_id)
+    // Update the lesson with room details (only updating existing columns)
     const { error: updateError } = await supabase
       .from("lessons")
       .update({
         lesson_space_room_id: spaceData.room_id,
         lesson_space_room_url: spaceData.client_url, // Teacher's authenticated URL
         lesson_space_space_id: spaceId, // Store the space ID for student joins
-        video_conference_provider: "lesson_space",
-        video_conference_link: spaceData.client_url
       })
       .eq("id", data.lessonId);
 
@@ -235,8 +234,7 @@ async function updateLessonWithRoom(data: UpdateLessonRequest, supabase: any) {
       .update({
         lesson_space_room_id: data.roomId,
         lesson_space_room_url: data.roomUrl,
-        video_conference_provider: data.provider || "lesson_space",
-        video_conference_link: data.roomUrl
+        lesson_space_space_id: data.provider
       })
       .eq("id", data.lessonId);
 
@@ -279,9 +277,7 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
       .update({
         lesson_space_room_id: null,
         lesson_space_room_url: null,
-        lesson_space_space_id: null,
-        video_conference_provider: null,
-        video_conference_link: null
+        lesson_space_space_id: null
       })
       .eq("lesson_space_room_id", roomId);
 
