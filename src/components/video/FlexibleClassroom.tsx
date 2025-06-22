@@ -2,13 +2,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
 
-// CDN URLs for Agora Flexible Classroom
-const AGORA_CDN_URL = 'https://download.agora.io/edu-apaas/release/edu_classroom_sdk.bundle.js';
-
-// Global interface for CDN-loaded SDK
+// Import the correct Flexible Classroom SDK
 declare global {
   interface Window {
-    AgoraEduSDK: any;
+    FcrUIScene: any;
+    FcrChatroom: any;
+    FcrBoardWidget: any;
+    FcrPollingWidget: any;
+    FcrStreamMediaPlayerWidget: any;
+    FcrWebviewWidget: any;
+    FcrCountdownWidget: any;
+    FcrPopupQuizWidget: any;
   }
 }
 
@@ -33,43 +37,48 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
   const [initError, setInitError] = useState<string | null>(null);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  // Load SDK from CDN
+  // Load SDK dynamically
   useEffect(() => {
-    const loadSDKFromCDN = async () => {
+    const loadSDK = async () => {
       try {
-        console.log('Loading Agora Flexible Classroom SDK from CDN...');
+        console.log('Loading FcrUIScene SDK and widgets...');
         
-        // Check if already loaded
-        if (window.AgoraEduSDK) {
-          setSdkLoaded(true);
-          return;
-        }
+        // Import the correct packages
+        const [FcrUISceneModule, WidgetsModule] = await Promise.all([
+          import('fcr-ui-scene'),
+          import('agora-plugin-gallery/scene')
+        ]);
+        
+        console.log('SDK modules loaded:', {
+          hasFcrUIScene: !!FcrUISceneModule.FcrUIScene,
+          hasWidgets: !!WidgetsModule
+        });
 
-        // Load SDK script
-        const script = document.createElement('script');
-        script.src = AGORA_CDN_URL;
-        script.async = true;
-        
-        script.onload = () => {
-          console.log('Agora SDK loaded from CDN successfully');
+        if (FcrUISceneModule.FcrUIScene && typeof FcrUISceneModule.FcrUIScene.launch === 'function') {
+          // Store SDK and widgets globally
+          window.FcrUIScene = FcrUISceneModule.FcrUIScene;
+          window.FcrChatroom = WidgetsModule.FcrChatroom;
+          window.FcrBoardWidget = WidgetsModule.FcrBoardWidget;
+          window.FcrPollingWidget = WidgetsModule.FcrPollingWidget;
+          window.FcrStreamMediaPlayerWidget = WidgetsModule.FcrStreamMediaPlayerWidget;
+          window.FcrWebviewWidget = WidgetsModule.FcrWebviewWidget;
+          window.FcrCountdownWidget = WidgetsModule.FcrCountdownWidget;
+          window.FcrPopupQuizWidget = WidgetsModule.FcrPopupQuizWidget;
+          
           setSdkLoaded(true);
-        };
-        
-        script.onerror = () => {
-          console.error('Failed to load Agora SDK from CDN');
-          setInitError('Failed to load Agora SDK from CDN');
-          setIsInitializing(false);
-        };
-        
-        document.head.appendChild(script);
+          console.log('FcrUIScene SDK loaded successfully');
+        } else {
+          console.error('FcrUIScene structure:', Object.keys(FcrUISceneModule));
+          throw new Error('Unable to find FcrUIScene.launch method in the imported SDK');
+        }
       } catch (error) {
-        console.error('Error loading SDK from CDN:', error);
+        console.error('Failed to load FcrUIScene SDK:', error);
         setInitError(`Failed to load SDK: ${error.message}`);
         setIsInitializing(false);
       }
     };
 
-    loadSDKFromCDN();
+    loadSDK();
   }, []);
 
   useEffect(() => {
@@ -85,9 +94,9 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
         });
 
         // Determine room type based on expected students
-        const roomType = expectedStudents.length <= 1 ? 0 : 10; // 0 = 1v1, 10 = Small Class
+        const roomType = expectedStudents.length <= 1 ? 0 : 10; // 0 = 1v1, 10 = Cloud Class
 
-        // Configure classroom launch options
+        // Configure classroom launch options according to documentation
         const launchOptions = {
           appId: credentials.appId,
           region: 'AP', // Asia Pacific region
@@ -97,38 +106,49 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           roomType: roomType,
           roomName: credentials.lessonTitle || `Lesson ${credentials.roomId}`,
           pretest: true, // Enable pre-class equipment detection
-          rtmToken: credentials.rtmToken, // RTM token for signaling
+          token: credentials.rtmToken, // RTM token for signaling
           language: 'en',
           duration: 3600, // 1 hour default (in seconds)
           roleType: credentials.userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
-          // Add UI configuration
-          uiConfig: {
-            aspectRatio: 9 / 16, // Mobile friendly aspect ratio
-            theme: 'light',
-            language: 'en'
-          }
+          widgets: {
+            easemobIM: window.FcrChatroom, // IM widget
+            netlessBoard: window.FcrBoardWidget, // Interactive whiteboard widget
+            poll: window.FcrPollingWidget, // Polling widget
+            mediaPlayer: window.FcrStreamMediaPlayerWidget, // Video sync player widget
+            webView: window.FcrWebviewWidget, // Embedded browser widget
+            countdownTimer: window.FcrCountdownWidget, // Countdown widget
+            popupQuiz: window.FcrPopupQuizWidget, // Popup quiz widget
+          },
         };
 
-        console.log('Launching Flexible Classroom with options:', {
+        console.log('Launching FcrUIScene with options:', {
           ...launchOptions,
-          rtmToken: launchOptions.rtmToken.substring(0, 20) + '...'
+          token: launchOptions.token.substring(0, 20) + '...'
         });
 
-        // Launch the classroom using AgoraEduSDK
-        if (!window.AgoraEduSDK) {
-          throw new Error('AgoraEduSDK not loaded from CDN');
-        }
+        // Launch the classroom using FcrUIScene
+        unmountRef.current = window.FcrUIScene.launch(
+          containerRef.current,
+          launchOptions,
+          () => {
+            // Success callback
+            console.log('Flexible Classroom launched successfully');
+            setIsInitializing(false);
+          },
+          (error: any) => {
+            // Error callback
+            console.error('Flexible Classroom launch error:', error);
+            setInitError(`Classroom error: ${error.message || error}`);
+            setIsInitializing(false);
+          },
+          (type: any) => {
+            // Destroy callback
+            console.log('Flexible Classroom destroyed with type:', type);
+            onLeave();
+          }
+        );
 
-        // Try to launch the classroom
-        const classroom = window.AgoraEduSDK.launch(containerRef.current, launchOptions);
-        
-        if (classroom && typeof classroom.destroy === 'function') {
-          unmountRef.current = () => classroom.destroy();
-        }
-
-        console.log('Flexible Classroom launched successfully');
-        setIsInitializing(false);
-        
+        console.log('FcrUIScene.launch called successfully');
       } catch (error: any) {
         console.error('Error initializing Flexible Classroom:', error);
         setInitError(`Failed to initialize classroom: ${error.message || error}`);
@@ -208,7 +228,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
               <span className="text-gray-700">
-                {!sdkLoaded ? 'Loading Flexible Classroom SDK...' : 'Initializing classroom...'}
+                {!sdkLoaded ? 'Loading FcrUIScene SDK...' : 'Initializing classroom...'}
               </span>
             </div>
           </div>

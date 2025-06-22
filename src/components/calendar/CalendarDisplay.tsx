@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -17,7 +18,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   isLoading,
   events
 }) => {
-  const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [homeworkLessonId, setHomeworkLessonId] = useState<string | null>(null);
@@ -26,23 +27,14 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   const handleEventClick = (info: any) => {
     console.log("Event clicked:", info.event.id, info.event);
     
-    // Find the lesson data from the event
-    const lessonData = {
-      id: info.event.id,
-      title: info.event.title,
-      start_time: info.event.start,
-      end_time: info.event.end,
-      ...info.event.extendedProps
-    };
-    
-    setSelectedLesson(lessonData);
+    setSelectedLessonId(info.event.id);
     setIsDetailsOpen(true);
   };
 
   const handleDetailsClose = () => {
     console.log("Closing lesson details dialog");
     setIsDetailsOpen(false);
-    setSelectedLesson(null);
+    setSelectedLessonId(null);
   };
 
   const handleAssignHomework = (lessonId: string, lessonData: any) => {
@@ -58,21 +50,23 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setPreloadedLessonData(null);
   };
 
-  // Fix function signature to match expected interface
-  const handleDeleteLesson = async () => {
-    console.log("Delete lesson called for:", selectedLesson?.id);
+  const handleDeleteLesson = async (lessonId: string, deleteAllFuture = false) => {
+    console.log("Delete lesson called:", lessonId, deleteAllFuture);
+    // This will be handled by the parent Calendar component
     setIsDetailsOpen(false);
-    setSelectedLesson(null);
+    setSelectedLessonId(null);
   };
 
   const handleCompleteSession = (lessonId: string) => {
     console.log("Complete session called:", lessonId);
+    // This will be handled by the parent Calendar component
     setIsDetailsOpen(false);
-    setSelectedLesson(null);
+    setSelectedLessonId(null);
   };
 
   const handleRefresh = () => {
     console.log("Refresh called from CalendarDisplay");
+    // This will trigger a refresh in the parent component
   };
 
   // Helper function to truncate text intelligently
@@ -259,7 +253,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                 meridiem: 'short'
               }}
               eventDidMount={(info) => {
-                const color = 'hsl(342 77% 60%)';
+                const color = 'hsl(342 77% 60%)'; // Primary pink for all lessons
                 info.el.style.backgroundColor = color;
                 info.el.style.borderColor = color;
                 info.el.style.color = 'white';
@@ -269,10 +263,12 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
         )}
 
         <LessonDetailsDialog
-          lesson={selectedLesson}
           isOpen={isDetailsOpen}
           onClose={handleDetailsClose}
+          lessonId={selectedLessonId}
           onDelete={handleDeleteLesson}
+          onCompleteSession={handleCompleteSession}
+          onAssignHomework={handleAssignHomework}
           onRefresh={handleRefresh}
         />
 
