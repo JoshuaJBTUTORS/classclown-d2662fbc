@@ -67,44 +67,66 @@ serve(async (req) => {
 
     console.log('[AGORA-INTEGRATION] Processing action:', action);
     
-    // Handle action variations (with or without underscores)
-    const normalizedAction = action?.toLowerCase().replace(/-/g, '_');
+    // Handle action variations (with or without underscores/hyphens)
+    const normalizedAction = action?.toLowerCase().replace(/[-_]/g, '');
+    console.log('[AGORA-INTEGRATION] Normalized action:', normalizedAction);
     
-    switch (normalizedAction) {
-      case "create_flexible_classroom":
-        console.log('[AGORA-INTEGRATION] Handling create-flexible-classroom action');
-        if (!requestData.lessonId) {
+    try {
+      switch (normalizedAction) {
+        case "createflexibleclassroom":
+          console.log('[AGORA-INTEGRATION] Handling create-flexible-classroom action');
+          if (!requestData.lessonId) {
+            return new Response(
+              JSON.stringify({ success: false, error: "Missing lessonId parameter" }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          console.log('[AGORA-INTEGRATION] Calling createFlexibleClassroomSession with:', {
+            lessonId: requestData.lessonId,
+            userRole: requestData.userRole,
+            customUID: requestData.customUID,
+            displayName: requestData.displayName
+          });
+          return await createFlexibleClassroomSession(requestData, supabase, appId, appCertificate);
+          
+        case "createroom":
+          console.log('[AGORA-INTEGRATION] Handling create-room action');
+          return await createVideoRoom(requestData, supabase, appId, appCertificate, netlessSDKToken);
+          
+        case "gettokens":
+          console.log('[AGORA-INTEGRATION] Handling get-tokens action');
+          return await getTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
+          
+        case "regeneratetokens":
+          console.log('[AGORA-INTEGRATION] Handling regenerate-tokens action');
+          return await regenerateTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
+          
+        default:
+          console.error('[AGORA-INTEGRATION] Invalid action received:', action);
+          console.error('[AGORA-INTEGRATION] Normalized action was:', normalizedAction);
+          console.error('[AGORA-INTEGRATION] Available actions: create-flexible-classroom, create-room, get-tokens, regenerate-tokens');
           return new Response(
-            JSON.stringify({ success: false, error: "Missing lessonId parameter" }),
+            JSON.stringify({ 
+              success: false, 
+              error: "Invalid action", 
+              received: action,
+              normalized: normalizedAction,
+              available: ["create-flexible-classroom", "create-room", "get-tokens", "regenerate-tokens"]
+            }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
-        }
-        return await createFlexibleClassroomSession(requestData, supabase, appId, appCertificate);
-        
-      case "create_room":
-        console.log('[AGORA-INTEGRATION] Handling create-room action');
-        return await createVideoRoom(requestData, supabase, appId, appCertificate, netlessSDKToken);
-        
-      case "get_tokens":
-        console.log('[AGORA-INTEGRATION] Handling get-tokens action');
-        return await getTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
-        
-      case "regenerate_tokens":
-        console.log('[AGORA-INTEGRATION] Handling regenerate-tokens action');
-        return await regenerateTokens(requestData, supabase, appId, appCertificate, netlessSDKToken);
-        
-      default:
-        console.error('[AGORA-INTEGRATION] Invalid action received:', action);
-        console.error('[AGORA-INTEGRATION] Available actions: create-flexible-classroom, create-room, get-tokens, regenerate-tokens');
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Invalid action", 
-            received: action,
-            available: ["create-flexible-classroom", "create-room", "get-tokens", "regenerate-tokens"]
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      }
+    } catch (actionError) {
+      console.error('[AGORA-INTEGRATION] Error executing action:', actionError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Failed to execute action: ${actionError.message}`,
+          action: action,
+          stack: actionError.stack 
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
   } catch (error) {
     console.error("[AGORA-INTEGRATION] Unexpected error:", error);

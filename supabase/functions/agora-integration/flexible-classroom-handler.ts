@@ -16,6 +16,8 @@ export async function createFlexibleClassroomSession(
   appId: string,
   appCertificate: string
 ) {
+  console.log('[FLEXIBLE-CLASSROOM] Starting session creation');
+  
   try {
     const { lessonId, userRole, customUID, displayName } = requestData;
     
@@ -29,6 +31,8 @@ export async function createFlexibleClassroomSession(
       throw new Error('userRole is required');
     }
 
+    console.log('[FLEXIBLE-CLASSROOM] Fetching lesson details...');
+    
     // Get lesson details with better error handling
     const { data: lesson, error: lessonError } = await supabase
       .from('lessons')
@@ -70,6 +74,8 @@ export async function createFlexibleClassroomSession(
 
     console.log('[FLEXIBLE-CLASSROOM] Generated identifiers:', { roomId, userUuid, userRole });
 
+    console.log('[FLEXIBLE-CLASSROOM] Generating tokens...');
+    
     // Generate RTM token (essential for Flexible Classroom)
     const tokenData = await generateTokensOfficial(
       appId,
