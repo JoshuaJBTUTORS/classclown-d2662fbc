@@ -30,6 +30,14 @@ declare global {
   }
 }
 
+interface LoadingStep {
+  name: string;
+  status: 'pending' | 'loading' | 'success' | 'error';
+  startTime?: number;
+  endTime?: number;
+  error?: string;
+}
+
 const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
   appId,
   rtmToken,
@@ -44,129 +52,283 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
   const unmountRef = useRef<(() => void) | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [loadingSteps, setLoadingSteps] = React.useState<LoadingStep[]>([
+    { name: 'Initialize SDK Loading', status: 'pending' },
+    { name: 'Check Existing SDK', status: 'pending' },
+    { name: 'Load CSS Resources', status: 'pending' },
+    { name: 'Load SDK JavaScript', status: 'pending' },
+    { name: 'Load Plugin Widgets', status: 'pending' },
+    { name: 'Launch Classroom', status: 'pending' }
+  ]);
+  const [debugMode, setDebugMode] = React.useState(false);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const updateLoadingStep = (stepName: string, status: LoadingStep['status'], error?: string) => {
+    const timestamp = Date.now();
+    console.log(`[FCRUISCENE-DEBUG] ${new Date().toISOString()} - ${stepName}: ${status}${error ? ` - ${error}` : ''}`);
+    
+    setLoadingSteps(prev => prev.map(step => {
+      if (step.name === stepName) {
+        return {
+          ...step,
+          status,
+          ...(status === 'loading' && { startTime: timestamp }),
+          ...(status !== 'loading' && status !== 'pending' && { endTime: timestamp }),
+          ...(error && { error })
+        };
+      }
+      return step;
+    }));
+  };
+
+  const logEnvironmentInfo = () => {
+    console.log('[FCRUISCENE-DEBUG] Environment Information:', {
+      userAgent: navigator.userAgent,
+      windowLocation: window.location.href,
+      documentReadyState: document.readyState,
+      hasContainer: !!containerRef.current,
+      containerDimensions: containerRef.current ? {
+        width: containerRef.current.offsetWidth,
+        height: containerRef.current.offsetHeight
+      } : null,
+      existingSDK: !!window.FcrUIScene,
+      existingWidgets: {
+        FcrChatroom: !!window.FcrChatroom,
+        FcrBoardWidget: !!window.FcrBoardWidget,
+        FcrPollingWidget: !!window.FcrPollingWidget,
+        FcrStreamMediaPlayerWidget: !!window.FcrStreamMediaPlayerWidget,
+        FcrWebviewWidget: !!window.FcrWebviewWidget,
+        FcrCountdownWidget: !!window.FcrCountdownWidget,
+        FcrPopupQuizWidget: !!window.FcrPopupQuizWidget,
+      }
+    });
+  };
+
+  const logNetworkRequest = (url: string, type: 'css' | 'js') => {
+    console.log(`[FCRUISCENE-DEBUG] Attempting to load ${type.toUpperCase()} from:`, url);
+    
+    // Test network connectivity to the resource
+    fetch(url, { method: 'HEAD', mode: 'no-cors' })
+      .then(() => console.log(`[FCRUISCENE-DEBUG] Network test for ${url}: SUCCESS`))
+      .catch(err => console.log(`[FCRUISCENE-DEBUG] Network test for ${url}: FAILED`, err));
+  };
 
   useEffect(() => {
+    // Set up loading timeout (30 seconds)
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.error('[FCRUISCENE-DEBUG] Loading timeout reached (30 seconds)');
+      setError('Loading timeout: FcrUIScene SDK failed to load within 30 seconds');
+      setIsLoading(false);
+    }, 30000);
+
     const loadFcrUIScene = async () => {
       try {
-        console.log('Loading FcrUIScene SDK...');
+        updateLoadingStep('Initialize SDK Loading', 'loading');
+        logEnvironmentInfo();
+        
+        updateLoadingStep('Initialize SDK Loading', 'success');
+        updateLoadingStep('Check Existing SDK', 'loading');
         
         // Check if SDK is already loaded
         if (window.FcrUIScene) {
-          console.log('FcrUIScene SDK already loaded');
-          launchClassroom();
+          console.log('[FCRUISCENE-DEBUG] FcrUIScene SDK already loaded, checking widgets...');
+          updateLoadingStep('Check Existing SDK', 'success');
+          updateLoadingStep('Load CSS Resources', 'success');
+          updateLoadingStep('Load SDK JavaScript', 'success');
+          
+          if (window.FcrChatroom && window.FcrBoardWidget) {
+            updateLoadingStep('Load Plugin Widgets', 'success');
+            launchClassroom();
+          } else {
+            console.log('[FCRUISCENE-DEBUG] Widgets missing, loading plugins...');
+            loadPlugins();
+          }
           return;
         }
 
+        updateLoadingStep('Check Existing SDK', 'success');
+        updateLoadingStep('Load CSS Resources', 'loading');
+
         // Load CSS
-        if (!document.querySelector('link[href*="scene_sdk"]')) {
+        const cssUrl = 'https://download.agora.io/edu-apaas/release/scene_sdk@2.9.0.bundle.css';
+        if (!document.querySelector(`link[href="${cssUrl}"]`)) {
+          logNetworkRequest(cssUrl, 'css');
+          
           const cssLink = document.createElement('link');
           cssLink.rel = 'stylesheet';
-          cssLink.href = 'https://download.agora.io/edu-apaas/release/scene_sdk@2.9.0.bundle.css';
-          cssLink.onload = () => console.log('FcrUIScene CSS loaded');
-          cssLink.onerror = () => {
+          cssLink.href = cssUrl;
+          
+          cssLink.onload = () => {
+            console.log('[FCRUISCENE-DEBUG] FcrUIScene CSS loaded successfully');
+            updateLoadingStep('Load CSS Resources', 'success');
+          };
+          
+          cssLink.onerror = (err) => {
+            console.error('[FCRUISCENE-DEBUG] Failed to load FcrUIScene CSS:', err);
+            updateLoadingStep('Load CSS Resources', 'error', 'Failed to load CSS from CDN');
             throw new Error('Failed to load FcrUIScene CSS');
           };
+          
           document.head.appendChild(cssLink);
+        } else {
+          console.log('[FCRUISCENE-DEBUG] CSS already loaded');
+          updateLoadingStep('Load CSS Resources', 'success');
         }
 
+        updateLoadingStep('Load SDK JavaScript', 'loading');
+
         // Load SDK JS
-        if (!document.querySelector('script[src*="scene_sdk"]')) {
+        const jsUrl = 'https://download.agora.io/edu-apaas/release/scene_sdk@2.9.0.bundle.js';
+        if (!document.querySelector(`script[src="${jsUrl}"]`)) {
+          logNetworkRequest(jsUrl, 'js');
+          
           const sdkScript = document.createElement('script');
-          sdkScript.src = 'https://download.agora.io/edu-apaas/release/scene_sdk@2.9.0.bundle.js';
+          sdkScript.src = jsUrl;
+          
           sdkScript.onload = () => {
-            console.log('FcrUIScene SDK loaded');
+            console.log('[FCRUISCENE-DEBUG] FcrUIScene SDK JavaScript loaded successfully');
+            console.log('[FCRUISCENE-DEBUG] Window.FcrUIScene available:', !!window.FcrUIScene);
+            updateLoadingStep('Load SDK JavaScript', 'success');
             loadPlugins();
           };
-          sdkScript.onerror = () => {
-            throw new Error('Failed to load FcrUIScene SDK');
+          
+          sdkScript.onerror = (err) => {
+            console.error('[FCRUISCENE-DEBUG] Failed to load FcrUIScene SDK JavaScript:', err);
+            updateLoadingStep('Load SDK JavaScript', 'error', 'Failed to load SDK JavaScript from CDN');
+            throw new Error('Failed to load FcrUIScene SDK JavaScript');
           };
+          
           document.head.appendChild(sdkScript);
+        } else {
+          console.log('[FCRUISCENE-DEBUG] SDK JavaScript already loaded');
+          updateLoadingStep('Load SDK JavaScript', 'success');
+          loadPlugins();
         }
 
       } catch (error: any) {
-        console.error('Failed to load FcrUIScene SDK:', error);
-        setError(error.message);
+        console.error('[FCRUISCENE-DEBUG] Failed to load FcrUIScene SDK:', error);
+        setError(`SDK Loading Error: ${error.message}`);
         setIsLoading(false);
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
       }
     };
 
     const loadPlugins = () => {
-      // Load plugins JS
-      if (!document.querySelector('script[src*="scene_widget"]')) {
+      updateLoadingStep('Load Plugin Widgets', 'loading');
+      
+      const pluginUrl = 'https://download.agora.io/edu-apaas/release/scene_widget@2.9.0.bundle.js';
+      if (!document.querySelector(`script[src="${pluginUrl}"]`)) {
+        logNetworkRequest(pluginUrl, 'js');
+        
         const pluginScript = document.createElement('script');
-        pluginScript.src = 'https://download.agora.io/edu-apaas/release/scene_widget@2.9.0.bundle.js';
+        pluginScript.src = pluginUrl;
+        
         pluginScript.onload = () => {
-          console.log('FcrUIScene plugins loaded');
+          console.log('[FCRUISCENE-DEBUG] FcrUIScene plugins loaded successfully');
+          console.log('[FCRUISCENE-DEBUG] Available widgets:', {
+            FcrChatroom: !!window.FcrChatroom,
+            FcrBoardWidget: !!window.FcrBoardWidget,
+            FcrPollingWidget: !!window.FcrPollingWidget,
+            FcrStreamMediaPlayerWidget: !!window.FcrStreamMediaPlayerWidget,
+            FcrWebviewWidget: !!window.FcrWebviewWidget,
+            FcrCountdownWidget: !!window.FcrCountdownWidget,
+            FcrPopupQuizWidget: !!window.FcrPopupQuizWidget,
+          });
+          updateLoadingStep('Load Plugin Widgets', 'success');
           // Small delay to ensure everything is initialized
           setTimeout(launchClassroom, 100);
         };
-        pluginScript.onerror = () => {
+        
+        pluginScript.onerror = (err) => {
+          console.error('[FCRUISCENE-DEBUG] Failed to load FcrUIScene plugins:', err);
+          updateLoadingStep('Load Plugin Widgets', 'error', 'Failed to load plugins from CDN');
           setError('Failed to load FcrUIScene plugins');
           setIsLoading(false);
         };
+        
         document.head.appendChild(pluginScript);
       } else {
+        console.log('[FCRUISCENE-DEBUG] Plugins already loaded');
+        updateLoadingStep('Load Plugin Widgets', 'success');
         launchClassroom();
       }
     };
 
     const launchClassroom = () => {
+      updateLoadingStep('Launch Classroom', 'loading');
+      
       try {
-        if (!containerRef.current || !window.FcrUIScene) {
-          throw new Error('FcrUIScene not available or container not ready');
+        if (!containerRef.current) {
+          throw new Error('Container not ready');
+        }
+        
+        if (!window.FcrUIScene) {
+          throw new Error('FcrUIScene not available');
         }
 
-        console.log('Launching FcrUIScene classroom with config:', {
-          appId: appId?.substring(0, 8) + '...',
+        const config = {
+          appId,
+          region: 'NA',
           userUuid: uid.toString(),
           userName,
           roomUuid: channelName,
-          roleType: userRole === 'teacher' ? 1 : 2,
+          roomType: 10, // Cloud Class room type
           roomName: lessonTitle || channelName,
-          tokenPresent: !!rtmToken
+          pretest: false, // Disable pre-class device check for now
+          token: rtmToken,
+          language: 'en',
+          duration: 60 * 60 * 2, // 2 hours default
+          roleType: userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
+          widgets: {
+            easemobIM: window.FcrChatroom,
+            netlessBoard: window.FcrBoardWidget,
+            poll: window.FcrPollingWidget,
+            mediaPlayer: window.FcrStreamMediaPlayerWidget,
+            webView: window.FcrWebviewWidget,
+            countdownTimer: window.FcrCountdownWidget,
+            popupQuiz: window.FcrPopupQuizWidget,
+          },
+        };
+
+        console.log('[FCRUISCENE-DEBUG] Launching FcrUIScene classroom with config:', {
+          ...config,
+          token: config.token ? '[PRESENT]' : '[MISSING]',
+          appId: config.appId?.substring(0, 8) + '...',
+          widgets: Object.keys(config.widgets).reduce((acc, key) => {
+            acc[key] = !!config.widgets[key];
+            return acc;
+          }, {} as Record<string, boolean>)
         });
 
         const unmount = window.FcrUIScene.launch(
           containerRef.current,
-          {
-            appId,
-            region: 'NA',
-            userUuid: uid.toString(),
-            userName,
-            roomUuid: channelName,
-            roomType: 10, // Cloud Class room type
-            roomName: lessonTitle || channelName,
-            pretest: false, // Disable pre-class device check for now
-            token: rtmToken,
-            language: 'en',
-            duration: 60 * 60 * 2, // 2 hours default
-            roleType: userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
-            widgets: {
-              easemobIM: window.FcrChatroom,
-              netlessBoard: window.FcrBoardWidget,
-              poll: window.FcrPollingWidget,
-              mediaPlayer: window.FcrStreamMediaPlayerWidget,
-              webView: window.FcrWebviewWidget,
-              countdownTimer: window.FcrCountdownWidget,
-              popupQuiz: window.FcrPopupQuizWidget,
-            },
-          },
+          config,
           () => {
             // Success callback
-            console.log('FcrUIScene classroom launched successfully');
+            console.log('[FCRUISCENE-DEBUG] FcrUIScene classroom launched successfully');
+            updateLoadingStep('Launch Classroom', 'success');
             setIsLoading(false);
             toast.success('Classroom connected successfully');
+            if (loadingTimeoutRef.current) {
+              clearTimeout(loadingTimeoutRef.current);
+            }
           },
           (error: any) => {
             // Error callback
-            console.error('FcrUIScene launch error:', error);
-            setError(error.message || 'Failed to launch classroom');
+            console.error('[FCRUISCENE-DEBUG] FcrUIScene launch error:', error);
+            updateLoadingStep('Launch Classroom', 'error', error.message || 'Launch failed');
+            setError(`Classroom Launch Error: ${error.message || 'Unknown error'}`);
             setIsLoading(false);
             toast.error(`Classroom error: ${error.message || 'Unknown error'}`);
+            if (loadingTimeoutRef.current) {
+              clearTimeout(loadingTimeoutRef.current);
+            }
           },
           (type: any) => {
             // Destroy callback
-            console.log('FcrUIScene classroom destroyed:', type);
+            console.log('[FCRUISCENE-DEBUG] FcrUIScene classroom destroyed:', type);
             onClose();
           }
         );
@@ -174,9 +336,13 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         unmountRef.current = unmount;
 
       } catch (error: any) {
-        console.error('Failed to launch FcrUIScene classroom:', error);
-        setError(error.message);
+        console.error('[FCRUISCENE-DEBUG] Failed to launch FcrUIScene classroom:', error);
+        updateLoadingStep('Launch Classroom', 'error', error.message);
+        setError(`Launch Error: ${error.message}`);
         setIsLoading(false);
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
       }
     };
 
@@ -184,11 +350,14 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
 
     // Cleanup
     return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
       if (unmountRef.current) {
         try {
           unmountRef.current();
         } catch (error) {
-          console.warn('Error during classroom cleanup:', error);
+          console.warn('[FCRUISCENE-DEBUG] Error during classroom cleanup:', error);
         }
       }
     };
@@ -197,22 +366,70 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center space-y-4 max-w-md">
+        <div className="text-center space-y-4 max-w-2xl">
           <div className="text-red-500 text-lg font-medium">
             Classroom Error
           </div>
           <p className="text-gray-600">
             {error}
           </p>
-          <div className="text-sm text-gray-500 space-y-1">
-            <p>Room: {channelName}</p>
-            <p>User: {userName} ({userRole})</p>
-            <p>Token: {rtmToken ? 'Present' : 'Missing'}</p>
+          
+          {/* Debug Information */}
+          <div className="mt-6 p-4 bg-gray-100 rounded-lg text-left text-sm">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium">Loading Steps Debug:</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDebugMode(!debugMode)}
+              >
+                {debugMode ? 'Hide' : 'Show'} Details
+              </Button>
+            </div>
+            
+            <div className="space-y-1">
+              {loadingSteps.map((step, index) => {
+                const duration = step.startTime && step.endTime ? step.endTime - step.startTime : null;
+                return (
+                  <div key={index} className="flex items-center gap-2 text-xs">
+                    <span className={`w-2 h-2 rounded-full ${
+                      step.status === 'success' ? 'bg-green-500' :
+                      step.status === 'error' ? 'bg-red-500' :
+                      step.status === 'loading' ? 'bg-yellow-500 animate-pulse' :
+                      'bg-gray-300'
+                    }`} />
+                    <span className="flex-1">{step.name}</span>
+                    <span className="text-gray-500">{step.status}</span>
+                    {duration && <span className="text-gray-400">({duration}ms)</span>}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {debugMode && (
+              <div className="mt-4 p-2 bg-white rounded text-xs">
+                <div className="font-medium mb-1">Configuration:</div>
+                <div>Room: {channelName}</div>
+                <div>User: {userName} ({userRole})</div>
+                <div>UID: {uid}</div>
+                <div>Token: {rtmToken ? 'Present' : 'Missing'}</div>
+                <div>AppId: {appId?.substring(0, 8)}...</div>
+              </div>
+            )}
           </div>
-          <Button onClick={onClose} className="mt-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Go Back
-          </Button>
+          
+          <div className="flex gap-2 justify-center">
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+            >
+              Retry Loading
+            </Button>
+            <Button onClick={onClose}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -238,6 +455,14 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
                 <h1 className="text-lg font-semibold text-gray-900">{lessonTitle}</h1>
               )}
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDebugMode(!debugMode)}
+              className="text-xs"
+            >
+              Debug
+            </Button>
           </div>
         </div>
       )}
@@ -245,7 +470,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       {/* Loading overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-40">
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6 max-w-md">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <div className="text-lg font-medium text-gray-900">
               Loading Flexible Classroom...
@@ -253,6 +478,46 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
             <div className="text-sm text-gray-600">
               Initializing Agora FcrUIScene SDK
             </div>
+            
+            {/* Loading Steps */}
+            <div className="space-y-2 text-left">
+              {loadingSteps.map((step, index) => {
+                const isActive = step.status === 'loading';
+                const isComplete = step.status === 'success';
+                const hasError = step.status === 'error';
+                
+                return (
+                  <div key={index} className="flex items-center gap-3 text-sm">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      hasError ? 'border-red-500 bg-red-500' :
+                      isComplete ? 'border-green-500 bg-green-500' :
+                      isActive ? 'border-blue-500 bg-blue-500 animate-pulse' :
+                      'border-gray-300'
+                    }`}>
+                      {(isComplete || hasError) && (
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      )}
+                    </div>
+                    <span className={`${
+                      hasError ? 'text-red-600' :
+                      isComplete ? 'text-green-600' :
+                      isActive ? 'text-blue-600 font-medium' :
+                      'text-gray-500'
+                    }`}>
+                      {step.name}
+                      {hasError && step.error && ` (${step.error})`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {debugMode && (
+              <div className="text-xs text-gray-500 text-left bg-gray-50 p-3 rounded">
+                <div>Check browser console for detailed logs</div>
+                <div>All logs prefixed with [FCRUISCENE-DEBUG]</div>
+              </div>
+            )}
           </div>
         </div>
       )}
