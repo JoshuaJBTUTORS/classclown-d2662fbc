@@ -147,20 +147,10 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
         }
       }));
       
+      // Simplified lesson data without removed video conference properties
       const processedLesson: Lesson = {
         ...data,
         lesson_type: (data.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        video_conference_provider: (data.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
-        agora_channel_name: data.agora_channel_name,
-        agora_recording_id: data.agora_recording_id,
-        agora_recording_status: data.agora_recording_status,
-        agora_rtm_token: data.agora_rtm_token,
-        agora_token: data.agora_token,
-        agora_uid: data.agora_uid,
-        agora_whiteboard_token: data.agora_whiteboard_token,
-        netless_app_identifier: data.netless_app_identifier,
-        netless_room_token: data.netless_room_token,
-        netless_room_uuid: data.netless_room_uuid,
         students: processedStudents,
         lesson_students: lessonStudentsData
       };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -164,21 +163,11 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
         }
       }));
 
+      // Simplified lesson data without removed video conference properties
       const processedLesson: Lesson = {
         ...lessonData,
         lesson_type: (lessonData.lesson_type as 'regular' | 'trial' | 'makeup') || 'regular',
-        video_conference_provider: (lessonData.video_conference_provider as 'lesson_space' | 'google_meet' | 'zoom' | 'agora' | 'external_agora') || null,
         students: processedStudents,
-        agora_channel_name: lessonData.agora_channel_name,
-        agora_recording_id: lessonData.agora_recording_id,
-        agora_recording_status: lessonData.agora_recording_status,
-        agora_rtm_token: lessonData.agora_rtm_token,
-        agora_token: lessonData.agora_token,
-        agora_uid: lessonData.agora_uid,
-        agora_whiteboard_token: lessonData.agora_whiteboard_token,
-        netless_app_identifier: lessonData.netless_app_identifier,
-        netless_room_token: lessonData.netless_room_token,
-        netless_room_uuid: lessonData.netless_room_uuid,
         lesson_students: lessonStudentsData
       };
 

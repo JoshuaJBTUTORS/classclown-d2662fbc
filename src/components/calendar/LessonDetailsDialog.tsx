@@ -1,19 +1,49 @@
-import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
+import React, { useState, useEffect } from 'react';
+import { format, parseISO, addMinutes, isBefore } from 'date-fns';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Calendar,
+  Clock, // Fixed: imported Clock instead of using undefined variable
+  User,
+  Users,
+  BookOpen,
+  GraduationCap,
+  X,
+  Edit,
+  Trash2,
+  CheckCircle,
+  UserCheck,
+  AlertCircle
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Lesson } from '@/types/lesson';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
-import { Check, BookOpen, Edit, Trash2, AlertTriangle, Plus, Users, CheckCircle, XCircle } from 'lucide-react';
-import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
-import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
+import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import { useFlexibleClassroom } from '@/hooks/useFlexibleClassroom';
 
 interface LessonDetailsDialogProps {
