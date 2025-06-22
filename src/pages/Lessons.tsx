@@ -49,7 +49,7 @@ const Lessons = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<Lesson[]>([]);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -150,8 +150,8 @@ const Lessons = () => {
     toast.success('Lesson added successfully!');
   };
 
-  const viewLessonDetails = (lessonId: string) => {
-    setSelectedLessonId(lessonId);
+  const viewLessonDetails = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
     setIsLessonDetailsOpen(true);
   };
 
@@ -290,7 +290,7 @@ const Lessons = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => viewLessonDetails(lesson.id)}
+                              onClick={() => viewLessonDetails(lesson)}
                             >
                               View
                             </Button>
@@ -315,9 +315,9 @@ const Lessons = () => {
         />
       )}
 
-      {/* Lesson Details Dialog - available for all users but with restricted actions for students */}
+      {/* Lesson Details Dialog - fix prop interface */}
       <LessonDetailsDialog
-        lessonId={selectedLessonId}
+        lesson={selectedLesson}
         isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
       />

@@ -45,10 +45,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [homework, setHomework] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Video conference hooks
+  // Video conference hooks - fix property names
   const { createRoom: createLessonSpaceRoom, isCreatingRoom: isCreatingLessonSpace } = useLessonSpace();
-  const { createVideoRoom: createAgoraRoom, isCreating: isCreatingAgora } = useAgora();
-  const { createExternalRoom, isCreating: isCreatingExternal } = useExternalAgora();
+  const { createRoom: createAgoraRoom, isCreatingRoom: isCreatingAgora } = useAgora();
+  const { createRoom: createExternalRoom, isCreatingRoom: isCreatingExternal } = useExternalAgora();
   const { createClassroomSession, isLoading: isCreatingFlexible } = useFlexibleClassroom();
 
   // Fetch lesson data
@@ -145,12 +145,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           break;
 
         case 'agora':
-          const agoraResult = await createAgoraRoom(lesson.id);
+          const agoraResult = await createAgoraRoom({
+            lessonId: lesson.id,
+            userRole: 'tutor'
+          });
           if (agoraResult) {
             updateData = {
               video_conference_provider: 'agora',
               agora_channel_name: agoraResult.channelName,
-              agora_token: agoraResult.token,
+              agora_token: agoraResult.rtcToken,
               agora_rtm_token: agoraResult.rtmToken,
               agora_uid: agoraResult.uid,
               netless_room_uuid: agoraResult.whiteboardRoomUuid,
@@ -161,7 +164,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           break;
 
         case 'external_agora':
-          const externalResult = await createExternalRoom(lesson.id);
+          const externalResult = await createExternalRoom({
+            lessonId: lesson.id,
+            userRole: 'tutor'
+          });
           if (externalResult) {
             updateData = {
               video_conference_provider: 'external_agora',
@@ -174,14 +180,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         case 'flexible_classroom':
           console.log('Creating Flexible Classroom session for lesson:', lesson.id);
           
-          // Get the tutor's role for the session
-          const userRole = 'tutor'; // This would come from auth context in real scenario
+          const userRole = 'tutor';
           
-          // Create the classroom session
           const flexibleResult = await createClassroomSession(
             lesson.id,
             userRole,
-            undefined, // Let the system generate UID
+            undefined,
             tutor?.first_name + ' ' + tutor?.last_name
           );
           
@@ -190,8 +194,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             
             updateData = {
               video_conference_provider: 'flexible_classroom',
-              agora_channel_name: flexibleResult.roomId, // Store room ID in channel name field
-              agora_token: JSON.stringify(flexibleResult), // Store full credentials as JSON
+              agora_channel_name: flexibleResult.roomId,
+              agora_token: JSON.stringify(flexibleResult),
               agora_rtm_token: flexibleResult.rtmToken
             };
             success = true;
@@ -335,9 +339,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Badge variant="outline">{lesson.video_conference_provider?.replace('_', ' ').toUpperCase()}</Badge>
                     </div>
                     <VideoConferenceLink 
-                      lesson={lesson} 
+                      link={lesson.video_conference_link}
+                      provider={lesson.video_conference_provider}
                       userRole="tutor"
-                      students={students}
+                      isGroupLesson={isGroupLesson}
+                      studentCount={students.length}
+                      lessonId={lesson.id}
+                      hasLessonSpace={!!lesson.lesson_space_room_url}
+                      spaceId={lesson.lesson_space_space_id}
+                      agoraChannelName={lesson.agora_channel_name}
+                      agoraToken={lesson.agora_token}
                     />
                   </div>
                 ) : (
@@ -420,7 +431,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       {/* Edit Dialog */}
       <EditLessonForm
-        lesson={lesson}
+        lessonId={lesson?.id || ''}
         isOpen={isEditDialogOpen}
         onClose={() => setIsEditDialogOpen(false)}
         onSuccess={() => {
@@ -431,8 +442,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       {/* Complete Session Dialog */}
       <CompleteSessionDialog
-        lesson={lesson}
-        students={students}
+        lessonId={lesson?.id || ''}
         isOpen={isCompleteDialogOpen}
         onClose={() => setIsCompleteDialogOpen(false)}
         onSuccess={() => {
@@ -443,12 +453,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       {/* Homework Dialog */}
       <AssignHomeworkDialog
-        lessonId={lesson.id}
+        preSelectedLessonId={lesson?.id || ''}
         isOpen={isHomeworkDialogOpen}
         onClose={() => setIsHomeworkDialogOpen(false)}
         onSuccess={() => {
           setIsHomeworkDialogOpen(false);
-          // Refresh homework list
           fetchHomework();
         }}
       />
