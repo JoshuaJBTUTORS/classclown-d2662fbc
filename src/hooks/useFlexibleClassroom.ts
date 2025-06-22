@@ -25,7 +25,7 @@ export const useFlexibleClassroom = () => {
   ): Promise<FlexibleClassroomCredentials | null> => {
     setIsLoading(true);
     try {
-      console.log('Creating Custom Flexible Classroom session:', { lessonId, userRole, customUID, displayName });
+      console.log('Creating FcrUIScene Flexible Classroom session:', { lessonId, userRole, customUID, displayName });
       
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
@@ -44,24 +44,24 @@ export const useFlexibleClassroom = () => {
       }
 
       if (data?.success) {
-        console.log('Custom Flexible Classroom session created successfully:', data);
+        console.log('FcrUIScene Flexible Classroom session created successfully:', data);
         return {
           roomId: data.roomId,
           userUuid: data.userUuid,
           userName: displayName || data.userName,
           userRole: data.userRole,
-          rtmToken: data.rtmToken,
-          rtcToken: data.rtcToken || data.rtmToken, // Fallback to RTM token if RTC not available
+          rtmToken: data.rtmToken, // FcrUIScene uses RTM token for signaling
+          rtcToken: data.rtcToken || data.rtmToken, // Fallback for compatibility
           appId: data.appId,
           lessonTitle: data.lessonTitle
         };
       } else {
-        console.error('Failed to create Custom Flexible Classroom session:', data);
+        console.error('Failed to create FcrUIScene Flexible Classroom session:', data);
         toast.error(data?.error || 'Failed to create classroom session');
         return null;
       }
     } catch (error: any) {
-      console.error('Error creating Custom Flexible Classroom session:', error);
+      console.error('Error creating FcrUIScene Flexible Classroom session:', error);
       toast.error(`Failed to create classroom session: ${error.message}`);
       return null;
     } finally {

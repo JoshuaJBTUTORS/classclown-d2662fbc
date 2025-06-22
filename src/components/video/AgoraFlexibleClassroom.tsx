@@ -1,6 +1,6 @@
 
 import React from 'react';
-import CustomFlexibleClassroom from './CustomFlexibleClassroom';
+import FcrUISceneClassroom from './FcrUISceneClassroom';
 
 interface AgoraFlexibleClassroomProps {
   roomId: string;
@@ -23,19 +23,14 @@ const AgoraFlexibleClassroom: React.FC<AgoraFlexibleClassroomProps> = ({
   rtmToken,
   appId,
   lessonTitle,
-  onClose,
-  onError
+  onClose
 }) => {
   // Convert userUuid to number for Agora
   const uid = parseInt(userUuid) || Math.floor(Math.random() * 1000000);
 
-  // Use RTM token as RTC token (they're compatible for basic use)
-  const rtcToken = rtmToken;
-
   return (
-    <CustomFlexibleClassroom
+    <FcrUISceneClassroom
       appId={appId}
-      rtcToken={rtcToken}
       rtmToken={rtmToken}
       channelName={roomId}
       uid={uid}
