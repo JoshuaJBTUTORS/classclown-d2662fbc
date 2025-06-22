@@ -731,6 +731,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           end_time: string
+          flexible_classroom_room_id: string | null
+          flexible_classroom_session_data: Json | null
           id: string
           is_group: boolean
           is_recurring: boolean
@@ -767,6 +769,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           end_time: string
+          flexible_classroom_room_id?: string | null
+          flexible_classroom_session_data?: Json | null
           id?: string
           is_group?: boolean
           is_recurring?: boolean
@@ -803,6 +807,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           end_time?: string
+          flexible_classroom_room_id?: string | null
+          flexible_classroom_session_data?: Json | null
           id?: string
           is_group?: boolean
           is_recurring?: boolean

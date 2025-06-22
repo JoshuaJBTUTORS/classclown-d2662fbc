@@ -589,7 +589,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const editLessonId = isRecurringInstance && originalLessonId ? originalLessonId : lesson?.id || null;
 
-  // Check if any video conference capability exists - updated to properly detect all providers
+  // Check if any video conference capability exists - updated to properly detect all providers including Flexible Classroom
   const hasVideoConference = lesson?.video_conference_link || 
                             lesson?.lesson_space_room_url || 
                             lesson?.lesson_space_room_id ||
@@ -718,7 +718,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
               )}
 
-              {/* Video Conference Section - Updated to properly handle all providers */}
+              {/* Video Conference Section - Updated to properly handle all providers including Flexible Classroom */}
               {hasVideoConference ? (
                 <VideoConferenceLink 
                   link={lesson.video_conference_link || lesson.lesson_space_room_url}
@@ -734,6 +734,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   agoraChannelName={lesson.agora_channel_name}
                   agoraToken={lesson.agora_token}
                   agoraAppId="AGORA_APP_ID" // This will be replaced in the component
+                  // Flexible Classroom specific props
+                  flexibleClassroomRoomId={lesson.flexible_classroom_room_id}
+                  flexibleClassroomSessionData={lesson.flexible_classroom_session_data}
                 />
               ) : (
                 // Only show room creation for tutors, admins, and owners

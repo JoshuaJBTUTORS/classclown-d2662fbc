@@ -33,7 +33,7 @@ export interface Lesson {
   netless_room_uuid?: string | null;
   netless_room_token?: string | null;
   netless_app_identifier?: string | null;
-  // Flexible Classroom fields
+  // Flexible Classroom fields - NEW
   flexible_classroom_room_id?: string | null;
   flexible_classroom_session_data?: string | null;
   // Trial lesson fields

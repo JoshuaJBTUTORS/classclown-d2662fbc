@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -95,19 +96,26 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     try {
       const sessionData = JSON.parse(flexibleClassroomSessionData);
       
-      // Navigate to the flexible classroom component
+      // Generate the Agora Flexible Classroom URL with parameters
+      const baseUrl = 'https://solutions.agora.io/education/web';
       const params = new URLSearchParams({
-        roomId: sessionData.roomId,
+        appId: sessionData.appId,
+        region: 'AP', // Asia Pacific
+        roomUuid: sessionData.roomId,
         userUuid: sessionData.userUuid,
         userName: sessionData.userName,
-        userRole: sessionData.userRole,
+        roleType: sessionData.userRole === 'teacher' ? '1' : '2',
+        roomType: studentCount <= 1 ? '0' : '10', // 0 = 1v1, 10 = Cloud Class
+        roomName: sessionData.lessonTitle || `Lesson ${sessionData.roomId}`,
         rtmToken: sessionData.rtmToken,
-        appId: sessionData.appId,
-        lessonTitle: sessionData.lessonTitle || ''
+        language: 'en',
+        duration: '3600' // 1 hour
       });
+
+      const classroomUrl = `${baseUrl}?${params.toString()}`;
       
       // Open in new window for better experience
-      window.open(`/flexible-classroom?${params.toString()}`, '_blank', 'width=1200,height=800');
+      window.open(classroomUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
     } catch (error) {
       console.error('Error parsing flexible classroom session data:', error);
       toast.error('Failed to join Flexible Classroom');
