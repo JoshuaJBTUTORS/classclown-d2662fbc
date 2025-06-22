@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Calendar, Clock, User, Users, Video, MapPin, Edit, Trash2, UserCheck, BookOpen, Plus, ExternalLink } from 'lucide-react';
@@ -45,7 +46,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [homework, setHomework] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Video conference hooks - fix property names
+  // Video conference hooks - using correct property names
   const { createRoom: createLessonSpaceRoom, isCreatingRoom: isCreatingLessonSpace } = useLessonSpace();
   const { createRoom: createAgoraRoom, isCreatingRoom: isCreatingAgora } = useAgora();
   const { createRoom: createExternalRoom, isCreatingRoom: isCreatingExternal } = useExternalAgora();
@@ -147,7 +148,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         case 'agora':
           const agoraResult = await createAgoraRoom({
             lessonId: lesson.id,
-            userRole: 'tutor'
+            title: lesson.title,
+            startTime: lesson.start_time,
+            duration: Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60))
           });
           if (agoraResult) {
             updateData = {
@@ -156,8 +159,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               agora_token: agoraResult.rtcToken,
               agora_rtm_token: agoraResult.rtmToken,
               agora_uid: agoraResult.uid,
-              netless_room_uuid: agoraResult.whiteboardRoomUuid,
-              netless_room_token: agoraResult.whiteboardRoomToken
+              netless_room_uuid: agoraResult.netlessRoomUuid,
+              netless_room_token: agoraResult.netlessRoomToken
             };
             success = true;
           }
@@ -166,12 +169,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         case 'external_agora':
           const externalResult = await createExternalRoom({
             lessonId: lesson.id,
-            userRole: 'tutor'
+            title: lesson.title,
+            startTime: lesson.start_time,
+            duration: Math.ceil((new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60))
           });
           if (externalResult) {
+            // Generate the external URL using the credentials
             updateData = {
               video_conference_provider: 'external_agora',
-              video_conference_link: externalResult.joinUrl
+              video_conference_link: `https://your-agora-app.vercel.app?appId=${externalResult.appId}&channelName=${externalResult.channelName}&token=${externalResult.rtcToken}&rtmToken=${externalResult.rtmToken}&uid=${externalResult.uid}&role=${externalResult.role}&lessonTitle=${encodeURIComponent(lesson.title)}`
             };
             success = true;
           }
