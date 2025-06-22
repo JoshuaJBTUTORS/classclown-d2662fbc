@@ -9,6 +9,7 @@ export interface FlexibleClassroomCredentials {
   userName: string;
   userRole: 'teacher' | 'student';
   rtmToken: string;
+  rtcToken: string;
   appId: string;
   lessonTitle?: string;
 }
@@ -24,11 +25,11 @@ export const useFlexibleClassroom = () => {
   ): Promise<FlexibleClassroomCredentials | null> => {
     setIsLoading(true);
     try {
-      console.log('Creating Flexible Classroom session:', { lessonId, userRole, customUID, displayName });
+      console.log('Creating Custom Flexible Classroom session:', { lessonId, userRole, customUID, displayName });
       
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
-          action: 'create-flexible-classroom', // Fixed: keeping consistent with backend
+          action: 'create-flexible-classroom',
           lessonId,
           userRole: userRole === 'tutor' ? 'tutor' : 'student',
           customUID,
@@ -43,23 +44,24 @@ export const useFlexibleClassroom = () => {
       }
 
       if (data?.success) {
-        console.log('Flexible Classroom session created successfully:', data);
+        console.log('Custom Flexible Classroom session created successfully:', data);
         return {
           roomId: data.roomId,
           userUuid: data.userUuid,
           userName: displayName || data.userName,
           userRole: data.userRole,
           rtmToken: data.rtmToken,
+          rtcToken: data.rtcToken || data.rtmToken, // Fallback to RTM token if RTC not available
           appId: data.appId,
           lessonTitle: data.lessonTitle
         };
       } else {
-        console.error('Failed to create Flexible Classroom session:', data);
+        console.error('Failed to create Custom Flexible Classroom session:', data);
         toast.error(data?.error || 'Failed to create classroom session');
         return null;
       }
     } catch (error: any) {
-      console.error('Error creating Flexible Classroom session:', error);
+      console.error('Error creating Custom Flexible Classroom session:', error);
       toast.error(`Failed to create classroom session: ${error.message}`);
       return null;
     } finally {

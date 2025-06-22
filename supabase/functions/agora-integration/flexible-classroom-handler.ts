@@ -7,6 +7,7 @@ export interface FlexibleClassroomCredentials {
   userName: string;
   userRole: 'teacher' | 'student';
   rtmToken: string;
+  rtcToken: string;
   appId: string;
 }
 
@@ -76,7 +77,7 @@ export async function createFlexibleClassroomSession(
 
     console.log('[FLEXIBLE-CLASSROOM] Generating tokens...');
     
-    // Generate RTM token (essential for Flexible Classroom)
+    // Generate both RTC and RTM tokens
     const tokenData = await generateTokensOfficial(
       appId,
       appCertificate,
@@ -85,11 +86,11 @@ export async function createFlexibleClassroomSession(
       userRole
     );
 
-    if (!tokenData.rtmToken) {
-      throw new Error('Failed to generate RTM token - required for Flexible Classroom');
+    if (!tokenData.rtmToken || !tokenData.rtcToken) {
+      throw new Error('Failed to generate required tokens for classroom');
     }
 
-    console.log('[FLEXIBLE-CLASSROOM] Token generated successfully');
+    console.log('[FLEXIBLE-CLASSROOM] Tokens generated successfully');
 
     const response = {
       success: true,
@@ -98,13 +99,15 @@ export async function createFlexibleClassroomSession(
       userName: displayName || `User ${userUuid}`,
       userRole: userRole === 'tutor' ? 'teacher' : 'student',
       rtmToken: tokenData.rtmToken,
+      rtcToken: tokenData.rtcToken,
       appId,
       lessonTitle: lesson.title || 'Lesson'
     };
 
     console.log('[FLEXIBLE-CLASSROOM] Response prepared:', { 
       ...response, 
-      rtmToken: response.rtmToken ? '[PRESENT]' : '[MISSING]' 
+      rtmToken: response.rtmToken ? '[PRESENT]' : '[MISSING]',
+      rtcToken: response.rtcToken ? '[PRESENT]' : '[MISSING]'
     });
 
     return new Response(
