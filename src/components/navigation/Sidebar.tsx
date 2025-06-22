@@ -177,9 +177,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex h-full flex-col">
-        {/* Header with Logo - Professional Blue Background */}
+        {/* Header with Logo - White Background */}
         <div className={cn(
-          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(210,45%,45%)] to-[hsl(210,35%,55%)] px-4",
+          "flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4",
           isCollapsed && "px-2"
         )}>
           {!isCollapsed && (
@@ -197,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             size="icon"
             onClick={toggleCollapse}
             className={cn(
-              "h-8 w-8 text-white hover:bg-white/10 hover:text-white transition-all duration-200",
+              "h-8 w-8 text-[hsl(210,45%,45%)] hover:bg-gray-100 hover:text-[hsl(210,45%,45%)] transition-all duration-200",
               isCollapsed && "mx-auto"
             )}
           >
