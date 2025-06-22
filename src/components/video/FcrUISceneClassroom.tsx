@@ -3,7 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { FcrUISceneCreator } from 'fcr-ui-scene';
+import { AgoraEduSDK } from '../../web/CloudClass-Desktop/packages/agora-classroom-sdk/src/infra/api';
+import { EduRoleTypeEnum, EduRoomTypeEnum, AgoraEduClassroomEvent } from 'agora-edu-core';
 
 interface FcrUISceneClassroomProps {
   appId: string;
@@ -35,35 +36,49 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
 
     const initializeClassroom = async () => {
       try {
-        console.log('[FCRUISCENE] Initializing classroom...');
+        console.log('[AGORA_EDU_SDK] Initializing classroom...');
         
-        // Configuration for FCR UI Scene
-        const config = {
+        // Configure the SDK
+        AgoraEduSDK.config({
           appId,
-          region: 'NA',
-          userId: uid.toString(),
+          region: 'NA'
+        });
+
+        // Map user role to EduRoleTypeEnum
+        const roleType = userRole === 'teacher' ? EduRoleTypeEnum.teacher : EduRoleTypeEnum.student;
+        
+        // Create launch option based on CloudClass Desktop pattern
+        const launchOption = {
+          userUuid: uid.toString(),
           userName,
           roomUuid: channelName,
-          roomType: 10, // Cloud Class room type
+          roleType,
+          roomType: EduRoomTypeEnum.RoomSmallClass, // Using small class type for flexible classroom
           roomName: lessonTitle || channelName,
-          pretest: false,
-          token: rtmToken,
-          language: 'en',
+          rtmToken,
+          language: 'en' as const,
           duration: 60 * 60 * 2, // 2 hours
-          roleType: userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
+          courseWareList: [],
+          pretest: false,
+          listener: (evt: AgoraEduClassroomEvent) => {
+            console.log('[AGORA_EDU_SDK] Classroom event:', evt);
+            if (evt === AgoraEduClassroomEvent.Destroyed) {
+              onClose();
+            }
+          }
         };
 
-        console.log('[FCRUISCENE] Config prepared:', config);
+        console.log('[AGORA_EDU_SDK] Launch option prepared:', launchOption);
 
-        // Create the classroom instance using the container element
-        await FcrUISceneCreator.createWithDOM(containerRef.current, config);
+        // Launch the classroom
+        AgoraEduSDK.launch(containerRef.current, launchOption);
         
-        console.log('[FCRUISCENE] Classroom initialized successfully');
+        console.log('[AGORA_EDU_SDK] Classroom launched successfully');
         setIsLoading(false);
         toast.success('Classroom connected successfully');
         
       } catch (error: any) {
-        console.error('[FCRUISCENE] Classroom initialization error:', error);
+        console.error('[AGORA_EDU_SDK] Classroom initialization error:', error);
         setError(`Classroom Error: ${error.message || 'Unknown error'}`);
         setIsLoading(false);
         toast.error(`Classroom error: ${error.message || 'Unknown error'}`);
@@ -75,13 +90,12 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
     // Cleanup function
     return () => {
       try {
-        // Clean up the classroom instance if needed
-        console.log('[FCRUISCENE] Cleaning up classroom');
+        console.log('[AGORA_EDU_SDK] Cleaning up classroom');
       } catch (error) {
-        console.error('[FCRUISCENE] Cleanup error:', error);
+        console.error('[AGORA_EDU_SDK] Cleanup error:', error);
       }
     };
-  }, [appId, rtmToken, channelName, uid, userName, userRole, lessonTitle]);
+  }, [appId, rtmToken, channelName, uid, userName, userRole, lessonTitle, onClose]);
 
   if (error) {
     return (
@@ -121,13 +135,13 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
               Loading Flexible Classroom...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing FCR UI Scene
+              Initializing Agora Education SDK
             </div>
           </div>
         </div>
       )}
 
-      {/* FCR UI Scene Container */}
+      {/* Agora Education SDK Container */}
       <div 
         ref={containerRef}
         className="w-full h-full"
