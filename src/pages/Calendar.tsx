@@ -6,7 +6,7 @@ import { useTrialBooking } from '@/hooks/useTrialBooking';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
-import CalendarFilters from '@/components/calendar/CalendarFilters';
+import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
@@ -84,27 +84,30 @@ const Calendar = () => {
   const canUseFilters = userRole === 'admin' || userRole === 'owner';
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-[hsl(162,45%,98%)] via-white to-[hsl(162,45%,95%)]">
+    <div className="flex min-h-screen bg-white">
       <Sidebar isOpen={sidebarOpen} />
       <div className="flex flex-col flex-1 lg:pl-64">
         <Navbar toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto p-4 space-y-8 luxury-fade-in">
+        <main className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
+          {/* Header - Fixed height */}
+          <div className="flex-shrink-0 px-4 md:px-6 py-4 border-b border-gray-200">
             <CalendarHeader />
+          </div>
+          
+          {/* Calendar Area - Full height with filters */}
+          <div className="flex-1 flex relative overflow-hidden">
+            {/* Collapsible Filters Sidebar */}
+            <CollapsibleFilters
+              selectedStudents={selectedStudents}
+              selectedTutors={selectedTutors}
+              onStudentFilterChange={handleStudentFilterChange}
+              onTutorFilterChange={handleTutorFilterChange}
+              onClearFilters={handleClearFilters}
+              canUseFilters={canUseFilters}
+            />
             
-            {canUseFilters && (
-              <div className="luxury-scale-in">
-                <CalendarFilters
-                  selectedStudents={selectedStudents}
-                  selectedTutors={selectedTutors}
-                  onStudentFilterChange={handleStudentFilterChange}
-                  onTutorFilterChange={handleTutorFilterChange}
-                  onClearFilters={handleClearFilters}
-                />
-              </div>
-            )}
-            
-            <div className="luxury-scale-in">
+            {/* Calendar Display - Takes remaining space */}
+            <div className="flex-1 p-4 md:p-6">
               <CalendarDisplay
                 isLoading={isLoading}
                 events={events}

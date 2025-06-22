@@ -1,10 +1,8 @@
-
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Card, CardContent } from '@/components/ui/card';
 import { Check } from 'lucide-react';
 import LessonDetailsDialog from './LessonDetailsDialog';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
@@ -104,76 +102,95 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   };
 
   return (
-    <Card className="border border-border/30 shadow-sm overflow-hidden rounded-xl">
-      <CardContent className="pt-6 px-4 md:px-6">
-        {isLoading ? (
-          <div className="h-[600px] flex items-center justify-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"></div>
-            <p className="ml-2 text-muted-foreground">Loading calendar...</p>
-          </div>
-        ) : (
-          <div className="h-[600px] calendar-container">
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              events={events}
-              height="100%"
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-              }}
-              eventClick={handleEventClick}
-              dayMaxEvents={false}
-              eventClassNames={(info) => {
-                let classes = ['custom-calendar-event'];
-                
-                if (info.event.extendedProps.isRecurring || info.event.extendedProps.isRecurringInstance) {
-                  classes.push('recurring-event');
-                }
-                if (info.event.extendedProps.isGroup) {
-                  classes.push('group-event');
-                }
-                if (info.event.extendedProps.isCompleted) {
-                  classes.push('completed-event');
-                }
-                
-                return classes;
-              }}
-              eventContent={(eventInfo) => {
-                const isMonthView = eventInfo.view.type === 'dayGridMonth';
-                const isWeekView = eventInfo.view.type === 'timeGridWeek';
-                const isDayView = eventInfo.view.type === 'timeGridDay';
-                
-                // Regular lesson event rendering
-                const isRecurring = eventInfo.event.extendedProps.isRecurring || 
-                                  eventInfo.event.extendedProps.isRecurringInstance;
-                const isCompleted = eventInfo.event.extendedProps.isCompleted;
-                const subject = eventInfo.event.extendedProps.subject;
-                
-                return (
-                  <div className="fc-event-main-frame p-0.5 min-h-0 overflow-hidden relative">
-                    {/* Completion indicator */}
-                    {isCompleted && (
-                      <div className="absolute top-0 right-0 z-10">
-                        <div className="bg-green-500 text-white rounded-full p-0.5 w-4 h-4 flex items-center justify-center">
-                          <Check className="w-2.5 h-2.5" />
-                        </div>
+    <div className="h-full w-full">
+      {isLoading ? (
+        <div className="h-full flex items-center justify-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-current border-r-transparent"></div>
+          <p className="ml-2 text-muted-foreground">Loading calendar...</p>
+        </div>
+      ) : (
+        <div className="h-full w-full calendar-container">
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            events={events}
+            height="100%"
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            }}
+            eventClick={handleEventClick}
+            dayMaxEvents={false}
+            eventClassNames={(info) => {
+              let classes = ['custom-calendar-event'];
+              
+              if (info.event.extendedProps.isRecurring || info.event.extendedProps.isRecurringInstance) {
+                classes.push('recurring-event');
+              }
+              if (info.event.extendedProps.isGroup) {
+                classes.push('group-event');
+              }
+              if (info.event.extendedProps.isCompleted) {
+                classes.push('completed-event');
+              }
+              
+              return classes;
+            }}
+            eventContent={(eventInfo) => {
+              const isMonthView = eventInfo.view.type === 'dayGridMonth';
+              const isWeekView = eventInfo.view.type === 'timeGridWeek';
+              const isDayView = eventInfo.view.type === 'timeGridDay';
+              
+              // Regular lesson event rendering
+              const isRecurring = eventInfo.event.extendedProps.isRecurring || 
+                                eventInfo.event.extendedProps.isRecurringInstance;
+              const isCompleted = eventInfo.event.extendedProps.isCompleted;
+              const subject = eventInfo.event.extendedProps.subject;
+              
+              return (
+                <div className="fc-event-main-frame p-0.5 min-h-0 overflow-hidden relative">
+                  {/* Completion indicator */}
+                  {isCompleted && (
+                    <div className="absolute top-0 right-0 z-10">
+                      <div className="bg-green-500 text-white rounded-full p-0.5 w-4 h-4 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="fc-event-title-container flex flex-col gap-0 min-h-0">
+                    {isMonthView && (
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="fc-event-time text-[10px] leading-tight opacity-90 flex-shrink-0">
+                          {eventInfo.timeText}
+                        </span>
+                        <span className="event-title text-[10px] leading-tight font-medium truncate min-w-0">
+                          {truncateText(eventInfo.event.title, 12)}
+                        </span>
+                        {isRecurring && (
+                          <span className="inline-flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                              <path d="M21 12a9 9 0 0 0-9-9 9 9 0 0 0-9 9"></path>
+                              <path d="M3 12h.01M21 12h.01M12 21v.01"></path>
+                              <path d="m9 3 3 3 3-3M3 9l3 3-3 3"></path>
+                              <path d="M21 9-3 3 3 3"></path>
+                              <path d="M9 21l3-3 3 3"></path>
+                            </svg>
+                          </span>
+                        )}
                       </div>
                     )}
                     
-                    <div className="fc-event-title-container flex flex-col gap-0 min-h-0">
-                      {isMonthView && (
+                    {(isWeekView || isDayView) && (
+                      <>
                         <div className="flex items-center gap-1 min-w-0">
-                          <span className="fc-event-time text-[10px] leading-tight opacity-90 flex-shrink-0">
-                            {eventInfo.timeText}
-                          </span>
-                          <span className="event-title text-[10px] leading-tight font-medium truncate min-w-0">
-                            {truncateText(eventInfo.event.title, 12)}
+                          <span className="event-title text-xs leading-tight font-semibold truncate min-w-0">
+                            {truncateText(eventInfo.event.title, isWeekView ? 20 : 30)}
                           </span>
                           {isRecurring && (
                             <span className="inline-flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
                                 <path d="M21 12a9 9 0 0 0-9-9 9 9 0 0 0-9 9"></path>
                                 <path d="M3 12h.01M21 12h.01M12 21v.01"></path>
                                 <path d="m9 3 3 3 3-3M3 9l3 3-3 3"></path>
@@ -183,87 +200,66 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
                             </span>
                           )}
                         </div>
-                      )}
-                      
-                      {(isWeekView || isDayView) && (
-                        <>
-                          <div className="flex items-center gap-1 min-w-0">
-                            <span className="event-title text-xs leading-tight font-semibold truncate min-w-0">
-                              {truncateText(eventInfo.event.title, isWeekView ? 20 : 30)}
-                            </span>
-                            {isRecurring && (
-                              <span className="inline-flex items-center justify-center flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                                  <path d="M21 12a9 9 0 0 0-9-9 9 9 0 0 0-9 9"></path>
-                                  <path d="M3 12h.01M21 12h.01M12 21v.01"></path>
-                                  <path d="m9 3 3 3 3-3M3 9l3 3-3 3"></path>
-                                  <path d="M21 9-3 3 3 3"></path>
-                                  <path d="M9 21l3-3 3 3"></path>
-                                </svg>
-                              </span>
-                            )}
+                        {subject && (
+                          <div className="text-[10px] leading-tight opacity-75 truncate">
+                            {abbreviateSubject(subject)}
                           </div>
-                          {subject && (
-                            <div className="text-[10px] leading-tight opacity-75 truncate">
-                              {abbreviateSubject(subject)}
-                            </div>
-                          )}
-                          {eventInfo.timeText && (
-                            <div className="fc-event-time text-[10px] leading-tight opacity-75">
-                              {eventInfo.timeText}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    
-                    {/* Show tutor info for admin/owner views - only in day view to save space */}
-                    {eventInfo.event.extendedProps.tutor && isDayView && (
-                      <div className="fc-event-tutor text-[10px] leading-tight opacity-75 truncate mt-0.5">
-                        {truncateText(`${eventInfo.event.extendedProps.tutor.first_name} ${eventInfo.event.extendedProps.tutor.last_name}`, 20)}
-                      </div>
-                    )}
-                    
-                    {/* Show student count for group lessons - only in day view */}
-                    {eventInfo.event.extendedProps.students && eventInfo.event.extendedProps.students.length > 1 && isDayView && (
-                      <div className="fc-event-students text-[10px] leading-tight opacity-75 truncate">
-                        {eventInfo.event.extendedProps.students.length} students
-                      </div>
+                        )}
+                        {eventInfo.timeText && (
+                          <div className="fc-event-time text-[10px] leading-tight opacity-75">
+                            {eventInfo.timeText}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-                );
-              }}
-              eventTimeFormat={{
-                hour: '2-digit',
-                minute: '2-digit',
-                meridiem: 'short'
-              }}
-              eventDidMount={(info) => {
-                const color = 'hsl(342 77% 60%)'; // Primary pink for all lessons
-                info.el.style.backgroundColor = color;
-                info.el.style.borderColor = color;
-                info.el.style.color = 'white';
-              }}
-            />
-          </div>
-        )}
+                  
+                  {/* Show tutor info for admin/owner views - only in day view to save space */}
+                  {eventInfo.event.extendedProps.tutor && isDayView && (
+                    <div className="fc-event-tutor text-[10px] leading-tight opacity-75 truncate mt-0.5">
+                      {truncateText(`${eventInfo.event.extendedProps.tutor.first_name} ${eventInfo.event.extendedProps.tutor.last_name}`, 20)}
+                    </div>
+                  )}
+                  
+                  {/* Show student count for group lessons - only in day view */}
+                  {eventInfo.event.extendedProps.students && eventInfo.event.extendedProps.students.length > 1 && isDayView && (
+                    <div className="fc-event-students text-[10px] leading-tight opacity-75 truncate">
+                      {eventInfo.event.extendedProps.students.length} students
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+            eventTimeFormat={{
+              hour: '2-digit',
+              minute: '2-digit',
+              meridiem: 'short'
+            }}
+            eventDidMount={(info) => {
+              const color = 'hsl(228 59% 20%)'; // Night blue for all lessons
+              info.el.style.backgroundColor = color;
+              info.el.style.borderColor = color;
+              info.el.style.color = 'white';
+            }}
+          />
+        </div>
+      )}
 
-        <LessonDetailsDialog
-          isOpen={isDetailsOpen}
-          onClose={handleDetailsClose}
-          lessonId={selectedLessonId}
-          onLessonUpdated={handleRefresh}
-        />
+      <LessonDetailsDialog
+        isOpen={isDetailsOpen}
+        onClose={handleDetailsClose}
+        lessonId={selectedLessonId}
+        onLessonUpdated={handleRefresh}
+      />
 
-        <AssignHomeworkDialog
-          isOpen={isAssigningHomework}
-          onClose={handleHomeworkDialogClose}
-          preSelectedLessonId={homeworkLessonId}
-          preloadedLessonData={preloadedLessonData}
-          onSuccess={handleHomeworkDialogClose}
-        />
-      </CardContent>
-    </Card>
+      <AssignHomeworkDialog
+        isOpen={isAssigningHomework}
+        onClose={handleHomeworkDialogClose}
+        preSelectedLessonId={homeworkLessonId}
+        preloadedLessonData={preloadedLessonData}
+        onSuccess={handleHomeworkDialogClose}
+      />
+    </div>
   );
 };
 
