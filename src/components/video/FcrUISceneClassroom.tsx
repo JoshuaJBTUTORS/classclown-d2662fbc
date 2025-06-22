@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -105,20 +104,14 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           onClose();
         };
 
-        // Launch the scene - try different approach based on API
-        if (typeof sceneCreator.launch === 'function') {
-          // Try calling launch with just the config and container element
-          await sceneCreator.launch(launchConfig);
-          
-          // Mount to container after launch
-          if (containerRef.current && sceneCreator.mount) {
-            sceneCreator.mount(containerRef.current);
-          }
-          
-          onSuccess();
-        } else {
-          throw new Error('Launch method not available on FcrUISceneCreator');
-        }
+        // Launch the scene with all 5 expected arguments
+        await sceneCreator.launch(
+          launchConfig,
+          containerRef.current,
+          onSuccess,
+          onError,
+          onDestroy
+        );
 
       } catch (error: any) {
         console.error('[FCRUISCENE] Failed to initialize classroom:', error);
