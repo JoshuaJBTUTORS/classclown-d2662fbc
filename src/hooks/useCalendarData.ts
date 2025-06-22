@@ -214,18 +214,6 @@ export const useCalendarData = ({
         console.log("Fetching lessons from Supabase for role:", userRole);
         let query;
 
-        // Define the base lesson fields including all Agora-related fields
-        const lessonFields = `
-          *,
-          agora_channel_name,
-          agora_token,
-          agora_uid,
-          agora_rtm_token,
-          netless_room_uuid,
-          netless_room_token,
-          netless_app_identifier
-        `;
-
         if (userRole === 'student') {
           const { data: studentData, error: studentError } = await supabase
             .from('students')
@@ -250,10 +238,9 @@ export const useCalendarData = ({
           query = supabase
             .from('lessons')
             .select(`
-              ${lessonFields},
+              *,
               lesson_students!inner(
-                student_id,
-                lesson_space_url
+                student_id
               )
             `)
             .eq('lesson_students.student_id', studentData.id);
@@ -305,10 +292,9 @@ export const useCalendarData = ({
           query = supabase
             .from('lessons')
             .select(`
-              ${lessonFields},
+              *,
               lesson_students!inner(
                 student_id,
-                lesson_space_url,
                 student:students(id, first_name, last_name)
               )
             `)
@@ -338,10 +324,9 @@ export const useCalendarData = ({
           query = supabase
             .from('lessons')
             .select(`
-              ${lessonFields},
+              *,
               lesson_students(
                 student_id,
-                lesson_space_url,
                 student:students(id, first_name, last_name)
               )
             `)
@@ -351,11 +336,10 @@ export const useCalendarData = ({
           query = supabase
             .from('lessons')
             .select(`
-              ${lessonFields},
+              *,
               tutor:tutors!inner(id, first_name, last_name, email),
               lesson_students(
                 student_id,
-                lesson_space_url,
                 student:students(id, first_name, last_name)
               )
             `);
