@@ -31,9 +31,9 @@ const VideoRoom: React.FC = () => {
       // Teachers get the authenticated room URL
       return lesson.lesson_space_room_url;
     } else {
-      // Students and parents get the invitation URL
-      return lesson.lesson_space_space_id 
-        ? `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`
+      // Students and parents get the invitation URL using room ID
+      return lesson.lesson_space_room_id 
+        ? `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`
         : null;
     }
   };

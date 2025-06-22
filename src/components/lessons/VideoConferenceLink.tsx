@@ -45,8 +45,8 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       // Teachers get the authenticated room URL with full controls
       return lessonSpaceRoomUrl;
     } else {
-      // Students and parents get the simple invitation URL
-      return lessonSpaceSpaceId ? `https://www.thelessonspace.com/space/${lessonSpaceSpaceId}` : null;
+      // Students and parents get the simple invitation URL using room ID
+      return lessonSpaceRoomId ? `https://www.thelessonspace.com/space/${lessonSpaceRoomId}` : null;
     }
   };
 
@@ -86,7 +86,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     }
   };
 
-  if (!lessonSpaceSpaceId && !lessonSpaceRoomUrl) {
+  if (!lessonSpaceRoomId && !lessonSpaceRoomUrl) {
     return null;
   }
 

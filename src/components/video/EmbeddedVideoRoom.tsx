@@ -40,17 +40,8 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
-  // Get the appropriate URL for display
-  const getDisplayUrl = () => {
-    if (isTeacherRole) {
-      return roomUrl; // Teacher's authenticated URL
-    } else {
-      // Student/parent invitation URL
-      return spaceId ? `https://www.thelessonspace.com/space/${spaceId}` : roomUrl;
-    }
-  };
-
-  const displayUrl = getDisplayUrl();
+  // Use the roomUrl directly since it's already the appropriate URL based on role
+  const displayUrl = roomUrl;
 
   useEffect(() => {
     // Reset states when roomUrl changes
