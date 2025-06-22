@@ -66,7 +66,7 @@ export async function handleFlexibleClassroom(params: any) {
     console.log('[STEP 4] ✓ Room parameters generated:')
     console.log('  - roomName:', roomName)
     console.log('  - roomUuid:', roomUuid)
-    console.log('  - roomType:', roomType)
+    console.log('  - roomType:', roomType)  
     console.log('  - maxUsers:', maxUsers)
     console.log('  - startTime:', startTime)
     console.log('  - endTime:', endTime)
@@ -122,79 +122,19 @@ export async function handleFlexibleClassroom(params: any) {
 
     console.log('[STEP 6] ✓ Time parameters calculated')
 
-    // STEP 7: Generate education token FIRST (before making API call)
-    console.log('[STEP 7] === TOKEN GENERATION START ===')
+    // STEP 7: Use HARD CODED TOKEN for testing
+    console.log('[STEP 7] === USING HARD CODED TOKEN FOR TESTING ===')
     
-    // Map user role to education role number
-    let roleNumber: number
-    switch (userRole.toLowerCase()) {
-      case 'teacher':
-      case 'tutor':
-        roleNumber = 1 // TEACHER
-        break
-      case 'student':
-        roleNumber = 2 // STUDENT
-        break
-      case 'assistant':
-        roleNumber = 3 // ASSISTANT
-        break
-      case 'observer':
-        roleNumber = 4 // OBSERVER
-        break
-      default:
-        roleNumber = 2 // Default to student
-        break
-    }
-
-    console.log('[TOKEN-DEBUG] Role mapping:')
-    console.log('  - Input role:', userRole)
-    console.log('  - Mapped role number:', roleNumber)
-
-    // Token generation parameters
-    const tokenExpireTime = 3600 // 1 hour
-    console.log('[TOKEN-DEBUG] Token generation parameters:')
-    console.log('  - appId:', appId.substring(0, 8) + '...')
-    console.log('  - appCertificate:', appCertificate.substring(0, 8) + '...')
-    console.log('  - roomUuid:', roomUuid)
-    console.log('  - userUuid:', userId)
-    console.log('  - roleNumber:', roleNumber)
-    console.log('  - expireTime:', tokenExpireTime, 'seconds')
-
-    // Generate official education token
-    console.log('[TOKEN-DEBUG] Generating official education token...')
-    const tokenStartTime = Date.now()
+    // Hard coded token from Agora official token generator
+    const educationToken = '007eJxSYLjPEsNpszg8W/P2b9u8iVx7P1oJbRLiMvaaMtfVn3PeS1cFBiNLUwPDZLMkU4NkAxNzi0QL4ySTZIM0A2OzVEMjM3MDG5eIjIZARoa7T60YGBmYGBgZGBlAfAYGQAAAAP//pC4aIw=='
     
-    let educationToken: string
-    try {
-      educationToken = await EducationTokenBuilder.buildRoomUserToken(
-        appId,
-        appCertificate,
-        roomUuid,
-        userId,
-        roleNumber,
-        tokenExpireTime
-      )
-      
-      const tokenGenerationTime = Date.now() - tokenStartTime
-      console.log(`[TOKEN-DEBUG] ✓ Official token generated successfully in ${tokenGenerationTime}ms`)
-      
-      // Token validation and debug information
-      console.log('[TOKEN-DEBUG] Token validation:')
-      console.log('  - Token length:', educationToken.length)
-      console.log('  - Token preview:', educationToken.substring(0, 20) + '...')
-      console.log('  - Starts with version "007":', educationToken.startsWith('007'))
-      console.log('  - Contains base64 content:', educationToken.length > 10)
-      
-      console.log('[TOKEN-DEBUG] ✓ Token validation completed')
-      
-    } catch (tokenError: any) {
-      console.error('[TOKEN-DEBUG] ERROR: Token generation failed:', tokenError)
-      console.error('  - Error message:', tokenError.message)
-      console.error('  - Error stack:', tokenError.stack)
-      throw new Error(`Official education token generation failed: ${tokenError.message}`)
-    }
+    console.log('[STEP 7] Hard coded token details:')
+    console.log('  - Token length:', educationToken.length)
+    console.log('  - Token preview:', educationToken.substring(0, 20) + '...')
+    console.log('  - Starts with version "007":', educationToken.startsWith('007'))
+    console.log('  - Token type: HARD CODED FROM AGORA OFFICIAL GENERATOR')
 
-    console.log('[STEP 7] === TOKEN GENERATION END ===')
+    console.log('[STEP 7] === HARD CODED TOKEN LOADED ===')
 
     // STEP 8: Prepare room payload
     console.log('[STEP 8] Preparing room payload...')
@@ -228,7 +168,8 @@ export async function handleFlexibleClassroom(params: any) {
       'Authorization': `agora token=${educationToken}` // CORRECT FORMAT per API docs
     }
 
-    console.log('[STEP 9] ✓ API call prepared with correct authentication')
+    console.log('[STEP 9] ✓ API call prepared with HARD CODED TOKEN authentication')
+    console.log('[STEP 9] Authorization header:', `agora token=${educationToken.substring(0, 20)}...`)
 
     console.log('[STEP 10] Making API request to Agora...')
     const requestStartTime = Date.now()
@@ -291,7 +232,6 @@ export async function handleFlexibleClassroom(params: any) {
       educationToken: educationToken,
       userUuid: userId,
       userRole: userRole,
-      roleNumber: roleNumber,
       createdAt: new Date().toISOString(),
       roomData: roomData,
       lessonId: lessonId,
@@ -300,33 +240,28 @@ export async function handleFlexibleClassroom(params: any) {
         tokenLength: educationToken.length,
         tokenPreview: educationToken.substring(0, 20) + '...',
         generatedAt: new Date().toISOString(),
-        expiresIn: tokenExpireTime,
-        roleMapping: {
-          inputRole: userRole,
-          mappedRoleNumber: roleNumber
-        },
+        tokenType: 'HARD_CODED_FROM_AGORA_OFFICIAL_GENERATOR',
         validationChecks: {
           startsWithVersion: educationToken.startsWith('007'),
           lengthValid: educationToken.length > 50,
           isBase64Format: /^[A-Za-z0-9+/]+=*$/.test(educationToken.substring(3))
-        },
-        tokenType: 'official_agora_education_token'
+        }
       },
       debug: {
         requestDuration: requestDuration,
         responseStatus: response.status,
         responseSize: responseText.length,
         timestamp: new Date().toISOString(),
-        authMethod: 'agora_token_header'
+        authMethod: 'agora_token_header_HARD_CODED'
       }
     }
 
     console.log('[STEP 12] ✓ Final result prepared')
-    console.log('[SUCCESS] Room created successfully with correct authentication!')
+    console.log('[SUCCESS] Room created successfully with HARD CODED TOKEN!')
     console.log('  - Room UUID:', result.roomUuid)
     console.log('  - Education token length:', result.educationToken.length)
     console.log('  - Token preview:', result.educationToken.substring(0, 20) + '...')
-    console.log('  - Authentication method: agora token= header')
+    console.log('  - Authentication method: agora token= header with HARD CODED TOKEN')
     console.log('=== AGORA FLEXIBLE CLASSROOM DEBUG END ===')
 
     return result
