@@ -1,7 +1,15 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { 
+  AgoraEduSDK,
+  EduRoleTypeEnum,
+  EduRoomTypeEnum,
+  Platform,
+  AgoraEduClassroomEvent
+} from 'agora-edu-core';
 
 interface UIBuilderClassroomProps {
   roomId: string;
@@ -14,31 +22,6 @@ interface UIBuilderClassroomProps {
   studentCount?: number;
   onError?: (error: string) => void;
   onClose: () => void;
-}
-
-declare global {
-  interface Window {
-    AgoraEduSDK: {
-      config: (options: {
-        appId: string;
-        region: string;
-      }) => void;
-      launch: (container: HTMLElement, options: {
-        rtmToken: string;
-        userUuid: string;
-        userName: string;
-        roomUuid: string;
-        roleType: number;
-        roomType: number;
-        roomName: string;
-        language: string;
-        duration: number;
-        courseWareList: any[];
-        pretest: boolean;
-        listener: (evt: any) => void;
-      }) => Promise<void>;
-    };
-  }
 }
 
 const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
@@ -56,13 +39,12 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sdkInstance, setSdkInstance] = useState<any>(null);
 
   useEffect(() => {
-    const loadSDK = async () => {
+    const initializeClassroom = async () => {
       try {
-        console.log('Loading Agora Education UI Builder SDK...');
-        console.log('Classroom config:', {
+        console.log('[DEBUG] === UIBuilder Classroom Initialization (NPM) ===');
+        console.log('[DEBUG] Classroom config:', {
           roomId,
           userUuid,
           userName,
@@ -71,55 +53,9 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           rtmTokenPresent: !!rtmToken
         });
         
-        // Check if SDK is already loaded
-        if (window.AgoraEduSDK) {
-          console.log('SDK already loaded, initializing classroom...');
-          initializeClassroom();
-          return;
+        if (!containerRef.current) {
+          throw new Error('Container not available');
         }
-        
-        // Load CSS first
-        if (!document.querySelector('link[href*="edu_sdk"]')) {
-          const cssLink = document.createElement('link');
-          cssLink.rel = 'stylesheet';
-          cssLink.href = 'https://download.agora.io/edu-apaas/release/edu_sdk_2.8.111.bundle.css';
-          cssLink.onload = () => console.log('CSS loaded successfully');
-          cssLink.onerror = () => {
-            throw new Error('Failed to load CSS');
-          };
-          document.head.appendChild(cssLink);
-        }
-
-        // Load JS SDK
-        if (!document.querySelector('script[src*="edu_sdk"]')) {
-          const script = document.createElement('script');
-          script.src = 'https://download.agora.io/edu-apaas/release/edu_sdk_2.8.111.bundle.js';
-          script.onload = () => {
-            console.log('Agora Education SDK loaded successfully');
-            // Small delay to ensure SDK is fully initialized
-            setTimeout(initializeClassroom, 100);
-          };
-          script.onerror = () => {
-            throw new Error('Failed to load Agora Education SDK');
-          };
-          document.head.appendChild(script);
-        }
-
-      } catch (error: any) {
-        console.error('Failed to load SDK:', error);
-        setError(error.message);
-        onError?.(error.message);
-        setIsLoading(false);
-      }
-    };
-
-    const initializeClassroom = async () => {
-      try {
-        if (!containerRef.current || !window.AgoraEduSDK) {
-          throw new Error('SDK not loaded or container not available');
-        }
-
-        console.log('Initializing UI Builder Classroom...');
 
         // Validate required parameters
         if (!rtmToken) {
@@ -132,39 +68,41 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           throw new Error('Room ID is required for classroom initialization');
         }
 
-        // Configure SDK
-        window.AgoraEduSDK.config({
+        console.log('[DEBUG] Configuring SDK...');
+        AgoraEduSDK.config({
           appId,
           region: 'NA' // North America region
         });
 
-        console.log('SDK configured, launching classroom...');
+        // Map user role
+        const roleType = userRole === 'teacher' ? EduRoleTypeEnum.teacher : EduRoleTypeEnum.student;
 
-        // Launch classroom with vocational (small class) room type
-        await window.AgoraEduSDK.launch(containerRef.current, {
-          rtmToken,
+        console.log('[DEBUG] Launching classroom with NPM SDK...');
+        await AgoraEduSDK.launch(containerRef.current, {
           userUuid,
           userName,
+          roleType,
           roomUuid: roomId,
-          roleType: userRole === 'teacher' ? 1 : 2, // 1: teacher, 2: student
-          roomType: 4, // 4: vocational class (small interactive classroom)
           roomName: lessonTitle || roomId,
+          roomType: EduRoomTypeEnum.RoomSmallClass, // Vocational/small interactive class
+          rtmToken,
           language: 'en',
           duration: 60 * 60 * 2, // 2 hours
           courseWareList: [],
           pretest: false,
-          listener: (evt: any) => {
-            console.log('Classroom event:', evt);
-            if (evt.type === 'ready') {
-              console.log('Classroom ready');
+          platform: Platform.PC,
+          listener: (evt: AgoraEduClassroomEvent) => {
+            console.log('[DEBUG] UIBuilder classroom event:', evt);
+            if (evt === AgoraEduClassroomEvent.Ready) {
+              console.log('[DEBUG] UIBuilder classroom ready');
               setIsLoading(false);
               toast.success('Classroom connected successfully');
-            } else if (evt.type === 'destroyed') {
-              console.log('Classroom destroyed');
+            } else if (evt === AgoraEduClassroomEvent.Destroyed) {
+              console.log('[DEBUG] UIBuilder classroom destroyed');
               onClose();
-            } else if (evt.type === 'error') {
-              console.error('Classroom error:', evt.data);
-              const errorMsg = evt.data?.message || 'Classroom error occurred';
+            } else if (evt === AgoraEduClassroomEvent.NetworkConnectionLost) {
+              console.error('[DEBUG] UIBuilder classroom network error');
+              const errorMsg = 'Network connection lost';
               setError(errorMsg);
               onError?.(errorMsg);
               toast.error(`Classroom error: ${errorMsg}`);
@@ -172,11 +110,10 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           }
         });
 
-        setSdkInstance(window.AgoraEduSDK);
-        console.log('Classroom launched successfully');
+        console.log('[DEBUG] UIBuilder classroom launched successfully');
         
       } catch (error: any) {
-        console.error('Failed to initialize classroom:', error);
+        console.error('[DEBUG] Failed to initialize UIBuilder classroom:', error);
         setError(error.message);
         onError?.(error.message);
         setIsLoading(false);
@@ -184,17 +121,11 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
       }
     };
 
-    loadSDK();
+    initializeClassroom();
 
     // Cleanup
     return () => {
-      if (sdkInstance) {
-        try {
-          console.log('Cleaning up classroom SDK');
-        } catch (error) {
-          console.warn('Error during cleanup:', error);
-        }
-      }
+      console.log('[DEBUG] UIBuilder classroom cleanup');
     };
   }, [roomId, userUuid, userName, userRole, rtmToken, appId, lessonTitle, onError, onClose]);
 
@@ -258,7 +189,7 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
               Loading Interactive Classroom...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing Agora UI Builder Vocational Class
+              Initializing Agora Education SDK (NPM)
             </div>
           </div>
         </div>

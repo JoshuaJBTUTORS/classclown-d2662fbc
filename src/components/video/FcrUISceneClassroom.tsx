@@ -3,6 +3,15 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { 
+  AgoraEduSDK,
+  EduClassroomConfig,
+  EduRoleTypeEnum,
+  EduRoomTypeEnum,
+  EduRegion,
+  Platform,
+  AgoraEduClassroomEvent
+} from 'agora-edu-core';
 
 interface FcrUISceneClassroomProps {
   appId: string;
@@ -13,31 +22,6 @@ interface FcrUISceneClassroomProps {
   userRole: 'teacher' | 'student';
   lessonTitle?: string;
   onClose: () => void;
-}
-
-declare global {
-  interface Window {
-    AgoraEduSDK: {
-      config: (options: {
-        appId: string;
-        region: string;
-      }) => void;
-      launch: (container: HTMLElement, options: {
-        rtmToken: string;
-        userUuid: string;
-        userName: string;
-        roomUuid: string;
-        roleType: number;
-        roomType: number;
-        roomName: string;
-        language: string;
-        duration: number;
-        courseWareList: any[];
-        pretest: boolean;
-        listener: (evt: any) => void;
-      }) => Promise<void>;
-    };
-  }
 }
 
 const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
@@ -55,11 +39,10 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    console.log('[DEBUG] === FcrUISceneClassroom Effect Started ===');
+    console.log('[DEBUG] === FcrUISceneClassroom Effect Started (NPM Approach) ===');
     console.log('[DEBUG] Props received:', {
       appId: appId?.substring(0, 8) + '...',
       rtmTokenPresent: !!rtmToken,
-      rtmTokenLength: rtmToken?.length,
       channelName,
       uid,
       userName,
@@ -67,10 +50,9 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       lessonTitle
     });
 
-    const loadSDK = async () => {
+    const initializeClassroom = async () => {
       try {
-        console.log('[DEBUG] === Starting SDK Loading Process ===');
-        console.log('[DEBUG] Timestamp:', new Date().toISOString());
+        console.log('[DEBUG] === Starting NPM SDK Initialization ===');
         
         // Container validation
         if (!containerRef.current) {
@@ -78,114 +60,10 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           throw new Error('Container not available');
         }
         
-        console.log('[DEBUG] Container validation passed:', {
-          containerExists: !!containerRef.current,
-          containerDimensions: {
-            offsetWidth: containerRef.current.offsetWidth,
-            offsetHeight: containerRef.current.offsetHeight,
-            clientWidth: containerRef.current.clientWidth,
-            clientHeight: containerRef.current.clientHeight
-          }
-        });
-        
-        // Check if SDK is already loaded
-        console.log('[DEBUG] Checking if SDK already exists...');
-        console.log('[DEBUG] window.AgoraEduSDK exists:', !!window.AgoraEduSDK);
-        
-        if (window.AgoraEduSDK) {
-          console.log('[DEBUG] SDK already loaded, proceeding to initialization...');
-          await initializeClassroom();
-          return;
-        }
-        
-        console.log('[DEBUG] SDK not found, loading from CDN...');
-
-        // Load JS SDK only (CSS loading removed)
-        console.log('[DEBUG] === Loading JavaScript SDK (No CSS) ===');
-        const existingScript = document.querySelector('script[src*="edu_sdk"]');
-        console.log('[DEBUG] Existing script found:', !!existingScript);
-        
-        if (!existingScript) {
-          console.log('[DEBUG] Creating script element...');
-          const script = document.createElement('script');
-          script.src = 'https://download.agora.io/edu-apaas/release/edu_sdk_2.8.111.bundle.js';
-          
-          const scriptLoadPromise = new Promise((resolve, reject) => {
-            script.onload = () => {
-              console.log('[DEBUG] JavaScript SDK loaded successfully');
-              console.log('[DEBUG] window.AgoraEduSDK available:', !!window.AgoraEduSDK);
-              resolve(true);
-            };
-            script.onerror = (error) => {
-              console.error('[DEBUG] JavaScript SDK load failed:', error);
-              reject(new Error('Failed to load Agora Education SDK'));
-            };
-          });
-          
-          console.log('[DEBUG] Appending script to head...');
-          document.head.appendChild(script);
-          await scriptLoadPromise;
-        }
-
-        // Wait a bit for SDK to fully initialize
-        console.log('[DEBUG] Waiting for SDK initialization...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        console.log('[DEBUG] Final SDK check:', {
-          sdkExists: !!window.AgoraEduSDK,
-          configExists: !!(window.AgoraEduSDK?.config),
-          launchExists: !!(window.AgoraEduSDK?.launch)
-        });
-        
-        await initializeClassroom();
-
-      } catch (error: any) {
-        console.error('[DEBUG] === SDK Loading Failed ===');
-        console.error('[DEBUG] Error details:', {
-          message: error.message,
-          stack: error.stack,
-          timestamp: new Date().toISOString()
-        });
-        setError(error.message);
-        setIsLoading(false);
-      }
-    };
-
-    const initializeClassroom = async () => {
-      try {
-        console.log('[DEBUG] === Starting Classroom Initialization ===');
-        console.log('[DEBUG] Timestamp:', new Date().toISOString());
-        
-        // Final container check
-        if (!containerRef.current) {
-          throw new Error('Container not available during initialization');
-        }
-        
-        if (!window.AgoraEduSDK) {
-          throw new Error('AgoraEduSDK not available during initialization');
-        }
-
-        console.log('[DEBUG] Pre-initialization checks passed');
-        console.log('[DEBUG] Container final check:', {
-          exists: !!containerRef.current,
-          dimensions: {
-            offsetWidth: containerRef.current.offsetWidth,
-            offsetHeight: containerRef.current.offsetHeight
-          }
-        });
+        console.log('[DEBUG] Container validation passed');
         
         // Validate required parameters
         console.log('[DEBUG] === Validating Parameters ===');
-        const validationChecks = {
-          rtmToken: !!rtmToken,
-          appId: !!appId,
-          channelName: !!channelName,
-          uid: uid !== undefined && uid !== null,
-          userName: !!userName
-        };
-        
-        console.log('[DEBUG] Validation results:', validationChecks);
-        
         if (!rtmToken) {
           throw new Error('RTM token is required for classroom initialization');
         }
@@ -197,95 +75,87 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         }
 
         // Configure the SDK
-        console.log('[DEBUG] === Configuring SDK ===');
-        const configOptions = {
+        console.log('[DEBUG] === Configuring Agora Education SDK ===');
+        AgoraEduSDK.config({
           appId,
-          region: 'NA'
-        };
-        console.log('[DEBUG] Config options:', {
-          appId: appId.substring(0, 8) + '...',
-          region: 'NA'
+          region: 'NA' // North America region
         });
-        
-        console.log('[DEBUG] Calling AgoraEduSDK.config...');
-        window.AgoraEduSDK.config(configOptions);
         console.log('[DEBUG] SDK configuration completed');
 
-        // Prepare launch options
-        console.log('[DEBUG] === Preparing Launch Options ===');
-        const launchOptions = {
-          rtmToken,
+        // Map user role to Agora role type
+        const roleType = userRole === 'teacher' ? EduRoleTypeEnum.teacher : EduRoleTypeEnum.student;
+        console.log('[DEBUG] Role mapping:', { userRole, roleType });
+
+        // Prepare session info
+        const sessionInfo = {
           userUuid: uid.toString(),
           userName,
+          role: roleType,
           roomUuid: channelName,
-          roleType: userRole === 'teacher' ? 1 : 2,
-          roomType: 4,
           roomName: lessonTitle || channelName,
+          roomType: EduRoomTypeEnum.RoomSmallClass, // Small class for interactive sessions
+          roomSubtype: 0, // Standard subtype
+          roomServiceType: 0, // Standard service
+          duration: 60 * 60 * 2, // 2 hours
+          flexProperties: {},
+          token: rtmToken,
+          startTime: Date.now()
+        };
+
+        console.log('[DEBUG] Session info prepared:', {
+          userUuid: sessionInfo.userUuid,
+          userName: sessionInfo.userName,
+          role: sessionInfo.role,
+          roomUuid: sessionInfo.roomUuid,
+          roomName: sessionInfo.roomName,
+          roomType: sessionInfo.roomType
+        });
+
+        // Launch options following CloudClass Desktop pattern
+        const launchOptions = {
+          userUuid: sessionInfo.userUuid,
+          userName: sessionInfo.userName,
+          roleType: sessionInfo.role,
+          roomUuid: sessionInfo.roomUuid,
+          roomName: sessionInfo.roomName,
+          roomType: sessionInfo.roomType,
+          rtmToken: sessionInfo.token,
           language: 'en',
-          duration: 60 * 60 * 2,
+          duration: sessionInfo.duration,
           courseWareList: [],
           pretest: false,
-          listener: (evt: any) => {
+          platform: Platform.PC,
+          listener: (evt: AgoraEduClassroomEvent) => {
             console.log('[DEBUG] === Classroom Event Received ===');
-            console.log('[DEBUG] Event details:', {
-              type: evt?.type || evt,
-              timestamp: new Date().toISOString(),
-              fullEvent: evt
-            });
+            console.log('[DEBUG] Event:', evt);
             
-            if (evt.type === 'ready') {
+            if (evt === AgoraEduClassroomEvent.Ready) {
               console.log('[DEBUG] Classroom ready - removing loading state');
               setIsLoading(false);
               toast.success('Classroom connected successfully');
-            } else if (evt.type === 'destroyed' || evt === 'Destroyed') {
+            } else if (evt === AgoraEduClassroomEvent.Destroyed) {
               console.log('[DEBUG] Classroom destroyed - closing');
               onClose();
-            } else if (evt.type === 'error') {
-              console.error('[DEBUG] Classroom error event:', evt.data);
-              const errorMsg = evt.data?.message || 'Classroom error occurred';
-              setError(errorMsg);
-              toast.error(`Classroom error: ${errorMsg}`);
+            } else if (evt === AgoraEduClassroomEvent.NetworkConnectionLost) {
+              console.error('[DEBUG] Network connection lost');
+              toast.error('Network connection lost');
             }
           }
         };
 
-        console.log('[DEBUG] Launch options prepared:', {
-          rtmTokenLength: rtmToken.length,
-          userUuid: uid.toString(),
-          userName,
-          roomUuid: channelName,
-          roleType: userRole === 'teacher' ? 1 : 2,
-          roomType: 4,
-          roomName: lessonTitle || channelName,
-          language: 'en',
-          duration: 60 * 60 * 2,
-          courseWareListLength: 0,
-          pretest: false,
-          listenerAttached: !!launchOptions.listener
-        });
-
         console.log('[DEBUG] === Launching Classroom ===');
-        console.log('[DEBUG] Container at launch:', {
-          exists: !!containerRef.current,
-          tagName: containerRef.current.tagName,
-          id: containerRef.current.id,
-          className: containerRef.current.className
-        });
+        console.log('[DEBUG] Launch options prepared');
         
-        console.log('[DEBUG] Calling AgoraEduSDK.launch...');
-        await window.AgoraEduSDK.launch(containerRef.current, launchOptions);
+        await AgoraEduSDK.launch(containerRef.current, launchOptions);
         
-        console.log('[DEBUG] AgoraEduSDK.launch completed successfully');
-        console.log('[DEBUG] === Classroom Launch Success ===');
+        console.log('[DEBUG] Agora Education SDK launched successfully');
         
       } catch (error: any) {
         console.error('[DEBUG] === Classroom Initialization Failed ===');
         console.error('[DEBUG] Error details:', {
           message: error.message,
           stack: error.stack,
-          timestamp: new Date().toISOString(),
-          containerExists: !!containerRef.current,
-          sdkExists: !!window.AgoraEduSDK
+          timestamp: new Date().toISOString()
         });
         setError(`Classroom Error: ${error.message || 'Unknown error'}`);
         setIsLoading(false);
@@ -293,14 +163,14 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       }
     };
 
-    // Start the process
+    // Start initialization immediately
     if (!containerRef.current) {
       console.log('[DEBUG] Container not ready, waiting...');
       const checkContainer = setInterval(() => {
         if (containerRef.current) {
-          console.log('[DEBUG] Container now available, starting SDK load');
+          console.log('[DEBUG] Container now available, starting initialization');
           clearInterval(checkContainer);
-          loadSDK();
+          initializeClassroom();
         }
       }, 100);
       
@@ -314,37 +184,19 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         }
       }, 10000);
     } else {
-      console.log('[DEBUG] Container ready immediately, starting SDK load');
-      loadSDK();
+      console.log('[DEBUG] Container ready immediately, starting initialization');
+      initializeClassroom();
     }
 
     // Cleanup function
     return () => {
       try {
         console.log('[DEBUG] === Component Cleanup ===');
-        console.log('[DEBUG] Cleaning up classroom');
       } catch (error) {
         console.error('[DEBUG] Cleanup error:', error);
       }
     };
   }, [appId, rtmToken, channelName, uid, userName, userRole, lessonTitle, onClose]);
-
-  // Add periodic status logging while loading
-  React.useEffect(() => {
-    if (!isLoading) return;
-    
-    const statusInterval = setInterval(() => {
-      console.log('[DEBUG] === Status Check ===', {
-        timestamp: new Date().toISOString(),
-        isLoading,
-        hasError: !!error,
-        containerExists: !!containerRef.current,
-        sdkExists: !!window.AgoraEduSDK
-      });
-    }, 2000);
-    
-    return () => clearInterval(statusInterval);
-  }, [isLoading, error]);
 
   if (error) {
     return (
@@ -384,7 +236,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
               Loading Flexible Classroom...
             </div>
             <div className="text-sm text-gray-600">
-              Initializing Agora Education SDK (No CSS)
+              Initializing Agora Education SDK (NPM)
             </div>
             <div className="text-xs text-gray-500">
               Check browser console for detailed logs
