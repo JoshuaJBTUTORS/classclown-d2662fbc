@@ -13,6 +13,12 @@ import Students from './pages/Students';
 import Tutors from './pages/Tutors';
 import Lessons from './pages/Lessons';
 import Auth from './pages/Auth';
+import Homework from './pages/Homework';
+import Progress from './pages/Progress';
+import Reports from './pages/Reports';
+import TimeOff from './pages/TimeOff';
+import TimeOffRequests from './pages/TimeOffRequests';
+import TrialBookings from './pages/TrialBookings';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
 import LearningHub from './pages/LearningHub';
@@ -73,6 +79,54 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Lessons />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/homework"
+                  element={
+                    <ProtectedRoute>
+                      <Homework />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/progress"
+                  element={
+                    <ProtectedRoute>
+                      <Progress />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute>
+                      <Reports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/time-off"
+                  element={
+                    <ProtectedRoute>
+                      <TimeOff />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/time-off-requests"
+                  element={
+                    <ProtectedRoute>
+                      <TimeOffRequests />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/trial-bookings"
+                  element={
+                    <ProtectedRoute>
+                      <TrialBookings />
                     </ProtectedRoute>
                   }
                 />
