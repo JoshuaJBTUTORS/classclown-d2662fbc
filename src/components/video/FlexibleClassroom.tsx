@@ -5,7 +5,7 @@ import { FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
 // Import the correct Flexible Classroom SDK
 declare global {
   interface Window {
-    FcrUIScene: any;
+    FcrUISceneCreator: any;
     FcrChatroom: any;
     FcrBoardWidget: any;
     FcrPollingWidget: any;
@@ -41,7 +41,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
   useEffect(() => {
     const loadSDK = async () => {
       try {
-        console.log('Loading FcrUIScene SDK and widgets...');
+        console.log('Loading FcrUISceneCreator SDK and widgets...');
         
         // Import the correct packages
         const [FcrUISceneModule, WidgetsModule] = await Promise.all([
@@ -50,29 +50,33 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
         ]);
         
         console.log('SDK modules loaded:', {
-          hasFcrUIScene: !!FcrUISceneModule.FcrUIScene,
-          hasWidgets: !!WidgetsModule
+          hasFcrUISceneCreator: !!FcrUISceneModule.FcrUISceneCreator,
+          hasDefault: !!FcrUISceneModule.default,
+          hasWidgets: !!WidgetsModule,
+          moduleKeys: Object.keys(FcrUISceneModule)
         });
 
-        if (FcrUISceneModule.FcrUIScene && typeof FcrUISceneModule.FcrUIScene.launch === 'function') {
-          // Store SDK and widgets globally
-          window.FcrUIScene = FcrUISceneModule.FcrUIScene;
-          window.FcrChatroom = WidgetsModule.FcrChatroom;
-          window.FcrBoardWidget = WidgetsModule.FcrBoardWidget;
-          window.FcrPollingWidget = WidgetsModule.FcrPollingWidget;
-          window.FcrStreamMediaPlayerWidget = WidgetsModule.FcrStreamMediaPlayerWidget;
-          window.FcrWebviewWidget = WidgetsModule.FcrWebviewWidget;
-          window.FcrCountdownWidget = WidgetsModule.FcrCountdownWidget;
-          window.FcrPopupQuizWidget = WidgetsModule.FcrPopupQuizWidget;
-          
-          setSdkLoaded(true);
-          console.log('FcrUIScene SDK loaded successfully');
+        // Store SDK and widgets globally - try both the creator and default export
+        if (FcrUISceneModule.FcrUISceneCreator) {
+          window.FcrUISceneCreator = FcrUISceneModule.FcrUISceneCreator;
+        } else if (FcrUISceneModule.default) {
+          window.FcrUISceneCreator = FcrUISceneModule.default;
         } else {
-          console.error('FcrUIScene structure:', Object.keys(FcrUISceneModule));
-          throw new Error('Unable to find FcrUIScene.launch method in the imported SDK');
+          throw new Error('Unable to find FcrUISceneCreator in the imported SDK');
         }
+
+        window.FcrChatroom = WidgetsModule.FcrChatroom;
+        window.FcrBoardWidget = WidgetsModule.FcrBoardWidget;
+        window.FcrPollingWidget = WidgetsModule.FcrPollingWidget;
+        window.FcrStreamMediaPlayerWidget = WidgetsModule.FcrStreamMediaPlayerWidget;
+        window.FcrWebviewWidget = WidgetsModule.FcrWebviewWidget;
+        window.FcrCountdownWidget = WidgetsModule.FcrCountdownWidget;
+        window.FcrPopupQuizWidget = WidgetsModule.FcrPopupQuizWidget;
+        
+        setSdkLoaded(true);
+        console.log('FcrUISceneCreator SDK loaded successfully');
       } catch (error) {
-        console.error('Failed to load FcrUIScene SDK:', error);
+        console.error('Failed to load FcrUISceneCreator SDK:', error);
         setInitError(`Failed to load SDK: ${error.message}`);
         setIsInitializing(false);
       }
@@ -121,13 +125,27 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           },
         };
 
-        console.log('Launching FcrUIScene with options:', {
+        console.log('Launching FcrUISceneCreator with options:', {
           ...launchOptions,
           token: launchOptions.token.substring(0, 20) + '...'
         });
 
-        // Launch the classroom using FcrUIScene
-        unmountRef.current = window.FcrUIScene.launch(
+        // Launch the classroom using FcrUISceneCreator
+        // Try different possible API patterns
+        let launchMethod = null;
+        if (window.FcrUISceneCreator && typeof window.FcrUISceneCreator.launch === 'function') {
+          launchMethod = window.FcrUISceneCreator.launch;
+        } else if (window.FcrUISceneCreator && typeof window.FcrUISceneCreator === 'function') {
+          // If FcrUISceneCreator itself is a function
+          launchMethod = window.FcrUISceneCreator;
+        }
+
+        if (!launchMethod) {
+          console.error('Available methods on FcrUISceneCreator:', Object.keys(window.FcrUISceneCreator || {}));
+          throw new Error('Unable to find launch method on FcrUISceneCreator');
+        }
+
+        unmountRef.current = launchMethod(
           containerRef.current,
           launchOptions,
           () => {
@@ -148,7 +166,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           }
         );
 
-        console.log('FcrUIScene.launch called successfully');
+        console.log('FcrUISceneCreator launch called successfully');
       } catch (error: any) {
         console.error('Error initializing Flexible Classroom:', error);
         setInitError(`Failed to initialize classroom: ${error.message || error}`);
@@ -228,7 +246,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
               <span className="text-gray-700">
-                {!sdkLoaded ? 'Loading FcrUIScene SDK...' : 'Initializing classroom...'}
+                {!sdkLoaded ? 'Loading FcrUISceneCreator SDK...' : 'Initializing classroom...'}
               </span>
             </div>
           </div>
