@@ -3,8 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { AgoraEduSDK } from '../../web/CloudClass-Desktop/packages/agora-classroom-sdk/src/infra/api';
-import { EduRoleTypeEnum, EduRoomTypeEnum, AgoraEduClassroomEvent } from 'agora-edu-core';
 
 interface FcrUISceneClassroomProps {
   appId: string;
@@ -15,6 +13,31 @@ interface FcrUISceneClassroomProps {
   userRole: 'teacher' | 'student';
   lessonTitle?: string;
   onClose: () => void;
+}
+
+declare global {
+  interface Window {
+    AgoraEduSDK: {
+      config: (options: {
+        appId: string;
+        region: string;
+      }) => void;
+      launch: (container: HTMLElement, options: {
+        rtmToken: string;
+        userUuid: string;
+        userName: string;
+        roomUuid: string;
+        roleType: number;
+        roomType: number;
+        roomName: string;
+        language: string;
+        duration: number;
+        courseWareList: any[];
+        pretest: boolean;
+        listener: (evt: any) => void;
+      }) => Promise<void>;
+    };
+  }
 }
 
 const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
@@ -32,50 +55,110 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (!containerRef.current) return;
+    const loadSDK = async () => {
+      try {
+        console.log('[AGORA_EDU_SDK] Loading Agora Education SDK...');
+        
+        // Check if SDK is already loaded
+        if (window.AgoraEduSDK) {
+          console.log('[AGORA_EDU_SDK] SDK already loaded, initializing classroom...');
+          initializeClassroom();
+          return;
+        }
+        
+        // Load CSS first
+        if (!document.querySelector('link[href*="edu_sdk"]')) {
+          const cssLink = document.createElement('link');
+          cssLink.rel = 'stylesheet';
+          cssLink.href = 'https://download.agora.io/edu-apaas/release/edu_sdk_2.8.111.bundle.css';
+          cssLink.onload = () => console.log('[AGORA_EDU_SDK] CSS loaded successfully');
+          cssLink.onerror = () => {
+            throw new Error('Failed to load CSS');
+          };
+          document.head.appendChild(cssLink);
+        }
+
+        // Load JS SDK
+        if (!document.querySelector('script[src*="edu_sdk"]')) {
+          const script = document.createElement('script');
+          script.src = 'https://download.agora.io/edu-apaas/release/edu_sdk_2.8.111.bundle.js';
+          script.onload = () => {
+            console.log('[AGORA_EDU_SDK] SDK loaded successfully');
+            // Small delay to ensure SDK is fully initialized
+            setTimeout(initializeClassroom, 100);
+          };
+          script.onerror = () => {
+            throw new Error('Failed to load Agora Education SDK');
+          };
+          document.head.appendChild(script);
+        }
+
+      } catch (error: any) {
+        console.error('[AGORA_EDU_SDK] Failed to load SDK:', error);
+        setError(error.message);
+        setIsLoading(false);
+      }
+    };
 
     const initializeClassroom = async () => {
       try {
+        if (!containerRef.current || !window.AgoraEduSDK) {
+          throw new Error('SDK not loaded or container not available');
+        }
+
         console.log('[AGORA_EDU_SDK] Initializing classroom...');
         
+        // Validate required parameters
+        if (!rtmToken) {
+          throw new Error('RTM token is required for classroom initialization');
+        }
+        if (!appId) {
+          throw new Error('App ID is required for classroom initialization');
+        }
+        if (!channelName) {
+          throw new Error('Channel name is required for classroom initialization');
+        }
+
         // Configure the SDK
-        AgoraEduSDK.config({
+        window.AgoraEduSDK.config({
           appId,
           region: 'NA'
         });
 
-        // Map user role to EduRoleTypeEnum
-        const roleType = userRole === 'teacher' ? EduRoleTypeEnum.teacher : EduRoleTypeEnum.student;
-        
-        // Create launch option based on CloudClass Desktop pattern
-        const launchOption = {
+        console.log('[AGORA_EDU_SDK] SDK configured, launching classroom...');
+
+        // Launch classroom with small class room type
+        await window.AgoraEduSDK.launch(containerRef.current, {
+          rtmToken,
           userUuid: uid.toString(),
           userName,
           roomUuid: channelName,
-          roleType,
-          roomType: EduRoomTypeEnum.RoomSmallClass, // Using small class type for flexible classroom
+          roleType: userRole === 'teacher' ? 1 : 2, // 1: teacher, 2: student
+          roomType: 4, // 4: vocational class (small interactive classroom)
           roomName: lessonTitle || channelName,
-          rtmToken,
-          language: 'en' as const,
+          language: 'en',
           duration: 60 * 60 * 2, // 2 hours
           courseWareList: [],
           pretest: false,
-          listener: (evt: AgoraEduClassroomEvent) => {
+          listener: (evt: any) => {
             console.log('[AGORA_EDU_SDK] Classroom event:', evt);
-            if (evt === AgoraEduClassroomEvent.Destroyed) {
+            if (evt.type === 'ready') {
+              console.log('[AGORA_EDU_SDK] Classroom ready');
+              setIsLoading(false);
+              toast.success('Classroom connected successfully');
+            } else if (evt.type === 'destroyed' || evt === 'Destroyed') {
+              console.log('[AGORA_EDU_SDK] Classroom destroyed');
               onClose();
+            } else if (evt.type === 'error') {
+              console.error('[AGORA_EDU_SDK] Classroom error:', evt.data);
+              const errorMsg = evt.data?.message || 'Classroom error occurred';
+              setError(errorMsg);
+              toast.error(`Classroom error: ${errorMsg}`);
             }
           }
-        };
+        });
 
-        console.log('[AGORA_EDU_SDK] Launch option prepared:', launchOption);
-
-        // Launch the classroom
-        AgoraEduSDK.launch(containerRef.current, launchOption);
-        
         console.log('[AGORA_EDU_SDK] Classroom launched successfully');
-        setIsLoading(false);
-        toast.success('Classroom connected successfully');
         
       } catch (error: any) {
         console.error('[AGORA_EDU_SDK] Classroom initialization error:', error);
@@ -85,7 +168,8 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
       }
     };
 
-    initializeClassroom();
+    if (!containerRef.current) return;
+    loadSDK();
 
     // Cleanup function
     return () => {
