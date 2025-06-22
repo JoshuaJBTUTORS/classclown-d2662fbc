@@ -1,29 +1,62 @@
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
 // Room creation handler for Agora Flexible Classroom with extensive debugging
 export async function handleFlexibleClassroom(params: any) {
   console.log('=== AGORA FLEXIBLE CLASSROOM DEBUG START ===')
   console.log('[FLEXIBLE-CLASSROOM] Input parameters received:', JSON.stringify(params, null, 2))
   
   const { 
-    roomName, 
-    roomType = 4, // Default to small class (1v1: 0, small class: 4, lecture: 2)
-    maxUsers = 200,
-    startTime,
-    endTime 
+    lessonId,
+    userId,
+    userRole
   } = params
   
   // Debug parameter validation
   console.log('[FLEXIBLE-CLASSROOM] Parameter validation:')
-  console.log('  - roomName:', roomName ? `"${roomName}" (length: ${roomName.length})` : 'MISSING')
-  console.log('  - roomType:', roomType, '(valid values: 0=1v1, 2=lecture, 4=small class)')
-  console.log('  - maxUsers:', maxUsers)
-  console.log('  - startTime:', startTime ? `"${startTime}"` : 'NOT PROVIDED')
-  console.log('  - endTime:', endTime ? `"${endTime}"` : 'NOT PROVIDED')
+  console.log('  - lessonId:', lessonId ? `"${lessonId}"` : 'MISSING')
+  console.log('  - userId:', userId ? `"${userId}"` : 'MISSING')
+  console.log('  - userRole:', userRole ? `"${userRole}"` : 'MISSING')
   
-  if (!roomName) {
-    console.error('[FLEXIBLE-CLASSROOM] ERROR: Missing required parameter: roomName')
-    throw new Error('Missing required parameter: roomName')
+  if (!lessonId || !userId || !userRole) {
+    console.error('[FLEXIBLE-CLASSROOM] ERROR: Missing required parameters')
+    throw new Error('Missing required parameters: lessonId, userId, userRole')
   }
+
+  // Initialize Supabase client to fetch lesson details
+  console.log('[FLEXIBLE-CLASSROOM] Initializing Supabase client...')
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // Fetch lesson details
+  console.log('[FLEXIBLE-CLASSROOM] Fetching lesson details for:', lessonId)
+  const { data: lesson, error: lessonError } = await supabase
+    .from('lessons')
+    .select('title, start_time, end_time, is_group')
+    .eq('id', lessonId)
+    .single()
+
+  if (lessonError || !lesson) {
+    console.error('[FLEXIBLE-CLASSROOM] ERROR: Failed to fetch lesson:', lessonError)
+    throw new Error(`Failed to fetch lesson details: ${lessonError?.message || 'Lesson not found'}`)
+  }
+
+  console.log('[FLEXIBLE-CLASSROOM] Lesson details:', JSON.stringify(lesson, null, 2))
+
+  // Generate room parameters from lesson data
+  const roomName = `${lesson.title}_${lessonId.substring(0, 8)}`
+  const roomType = lesson.is_group ? 4 : 0 // 0 for 1v1, 4 for small class
+  const maxUsers = lesson.is_group ? 200 : 2
+  const startTime = lesson.start_time
+  const endTime = lesson.end_time
+
+  console.log('[FLEXIBLE-CLASSROOM] Generated room parameters:')
+  console.log('  - roomName:', roomName)
+  console.log('  - roomType:', roomType)
+  console.log('  - maxUsers:', maxUsers)
+  console.log('  - startTime:', startTime)
+  console.log('  - endTime:', endTime)
 
   // Debug environment variable validation
   console.log('[FLEXIBLE-CLASSROOM] Environment variables check:')
@@ -199,6 +232,9 @@ export async function handleFlexibleClassroom(params: any) {
       appId: appId,
       createdAt: new Date().toISOString(),
       roomData: roomData.data,
+      lessonId: lessonId,
+      userId: userId,
+      userRole: userRole,
       debug: {
         requestDuration: requestDuration,
         responseStatus: response.status,
