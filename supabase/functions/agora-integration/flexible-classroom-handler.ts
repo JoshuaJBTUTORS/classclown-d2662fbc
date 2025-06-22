@@ -1,5 +1,4 @@
 
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { EducationTokenBuilder } from './education-token-builder.ts'
 
@@ -58,6 +57,7 @@ export async function handleFlexibleClassroom(params: any) {
     // Generate room parameters from lesson data
     console.log('[STEP 4] Generating room parameters...')
     const roomName = `${lesson.title}_${lessonId.substring(0, 8)}`
+    const roomUuid = lessonId // Use lesson ID as room UUID
     const roomType = lesson.is_group ? 4 : 0 // 0 for 1v1, 4 for small class
     const maxUsers = lesson.is_group ? 200 : 2
     const startTime = lesson.start_time
@@ -65,6 +65,7 @@ export async function handleFlexibleClassroom(params: any) {
 
     console.log('[STEP 4] ✓ Room parameters generated:')
     console.log('  - roomName:', roomName)
+    console.log('  - roomUuid:', roomUuid)
     console.log('  - roomType:', roomType)
     console.log('  - maxUsers:', maxUsers)
     console.log('  - startTime:', startTime)
@@ -121,102 +122,8 @@ export async function handleFlexibleClassroom(params: any) {
 
     console.log('[STEP 6] ✓ Time parameters calculated')
 
-    // Debug Basic Auth creation
-    console.log('[STEP 7] Setting up authentication...')
-    const credentials = btoa(`${appId}:${appCertificate}`)
-    console.log('[STEP 7] ✓ Authentication credentials prepared')
-    
-    // Debug room payload preparation
-    console.log('[STEP 8] Preparing room payload...')
-    const roomPayload = {
-      roomName: roomName,
-      roomType: roomType,
-      roomProperties: {
-        schedule: {
-          startTime: startTimestamp,
-          duration: duration,
-          closeDelay: 300
-        },
-        processes: {
-          handsUp: {
-            maxAccept: 1
-          }
-        }
-      }
-    }
-
-    console.log('[STEP 8] ✓ Room payload prepared:', JSON.stringify(roomPayload, null, 2))
-
-    // Debug API endpoint
-    const apiUrl = `https://api.agora.io/edu/apps/${appId}/v2/rooms`
-    console.log('[STEP 9] Preparing API call to:', apiUrl)
-    
-    // Debug request headers
-    const requestHeaders = {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/json',
-      'x-agora-token': '', // Empty for room creation
-      'x-agora-uid': '0'   // System user for room creation
-    }
-
-    console.log('[STEP 9] ✓ API call prepared')
-
-    console.log('[STEP 10] Making API request to Agora...')
-    const requestStartTime = Date.now()
-    
-    // Make API call to create room
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: requestHeaders,
-      body: JSON.stringify(roomPayload)
-    })
-
-    const requestDuration = Date.now() - requestStartTime
-    console.log(`[STEP 10] ✓ API request completed in ${requestDuration}ms`)
-
-    // Debug response details
-    console.log('[STEP 11] Processing API response...')
-    console.log('  - Status:', response.status)
-    console.log('  - Status text:', response.statusText)
-
-    // Get response text for debugging
-    const responseText = await response.text()
-    console.log('  - Response body length:', responseText.length)
-
-    if (!response.ok) {
-      console.error('[STEP 11] ERROR: API request failed!')
-      console.error('  - Status:', response.status)
-      console.error('  - Response body:', responseText)
-      
-      let errorDetails = 'Unknown error'
-      try {
-        const errorJson = JSON.parse(responseText)
-        errorDetails = JSON.stringify(errorJson)
-      } catch (parseError) {
-        errorDetails = responseText || 'Empty response body'
-      }
-      
-      throw new Error(`Room creation failed: ${response.status} - ${errorDetails}`)
-    }
-
-    // Parse successful response
-    console.log('[STEP 11] ✓ API response successful')
-    let roomData
-    try {
-      roomData = JSON.parse(responseText)
-      console.log('[STEP 11] ✓ Response parsed successfully')
-    } catch (parseError) {
-      console.error('[STEP 11] ERROR: Could not parse response as JSON')
-      throw new Error(`Invalid JSON response: ${parseError.message}`)
-    }
-
-    // Extract room UUID
-    console.log('[STEP 12] Extracting room information...')
-    const roomUuid = roomData.data?.roomUuid || roomName
-    console.log('[STEP 12] ✓ Room UUID extracted:', roomUuid)
-
-    // Generate education token using official EducationTokenBuilder
-    console.log('[STEP 13] === TOKEN GENERATION DEBUG START ===')
+    // STEP 7: Generate education token FIRST (before making API call)
+    console.log('[STEP 7] === TOKEN GENERATION START ===')
     
     // Map user role to education role number
     let roleNumber: number
@@ -278,15 +185,6 @@ export async function handleFlexibleClassroom(params: any) {
       console.log('  - Starts with version "007":', educationToken.startsWith('007'))
       console.log('  - Contains base64 content:', educationToken.length > 10)
       
-      // Additional token format validation
-      if (!educationToken.startsWith('007')) {
-        console.warn('[TOKEN-DEBUG] WARNING: Token does not start with expected version "007"')
-      }
-      
-      if (educationToken.length < 50) {
-        console.warn('[TOKEN-DEBUG] WARNING: Token seems too short (< 50 characters)')
-      }
-      
       console.log('[TOKEN-DEBUG] ✓ Token validation completed')
       
     } catch (tokenError: any) {
@@ -296,9 +194,93 @@ export async function handleFlexibleClassroom(params: any) {
       throw new Error(`Official education token generation failed: ${tokenError.message}`)
     }
 
-    console.log('[STEP 13] === TOKEN GENERATION DEBUG END ===')
+    console.log('[STEP 7] === TOKEN GENERATION END ===')
 
-    console.log('[STEP 14] Preparing final result...')
+    // STEP 8: Prepare room payload
+    console.log('[STEP 8] Preparing room payload...')
+    const roomPayload = {
+      roomName: roomName,
+      roomType: roomType,
+      roomProperties: {
+        schedule: {
+          startTime: startTimestamp * 1000, // API expects milliseconds
+          duration: duration,
+          closeDelay: 300
+        },
+        processes: {
+          handsUp: {
+            maxAccept: lesson.is_group ? 10 : 1
+          }
+        }
+      }
+    }
+
+    console.log('[STEP 8] ✓ Room payload prepared:', JSON.stringify(roomPayload, null, 2))
+
+    // STEP 9: Prepare API call with CORRECT authentication
+    const region = 'na' // Default to North America, could be made configurable
+    const apiUrl = `https://api.agora.io/${region}/edu/apps/${appId}/v2/rooms/${roomUuid}`
+    console.log('[STEP 9] Preparing API call to:', apiUrl)
+    
+    // FIXED: Use correct authentication format as per API documentation
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `agora token=${educationToken}` // CORRECT FORMAT per API docs
+    }
+
+    console.log('[STEP 9] ✓ API call prepared with correct authentication')
+
+    console.log('[STEP 10] Making API request to Agora...')
+    const requestStartTime = Date.now()
+    
+    // Make API call to create room
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: requestHeaders,
+      body: JSON.stringify(roomPayload)
+    })
+
+    const requestDuration = Date.now() - requestStartTime
+    console.log(`[STEP 10] ✓ API request completed in ${requestDuration}ms`)
+
+    // Debug response details
+    console.log('[STEP 11] Processing API response...')
+    console.log('  - Status:', response.status)
+    console.log('  - Status text:', response.statusText)
+
+    // Get response text for debugging
+    const responseText = await response.text()
+    console.log('  - Response body length:', responseText.length)
+
+    if (!response.ok) {
+      console.error('[STEP 11] ERROR: API request failed!')
+      console.error('  - Status:', response.status)
+      console.error('  - Response body:', responseText)
+      
+      let errorDetails = 'Unknown error'
+      try {
+        const errorJson = JSON.parse(responseText)
+        errorDetails = JSON.stringify(errorJson)
+      } catch (parseError) {
+        errorDetails = responseText || 'Empty response body'
+      }
+      
+      throw new Error(`Room creation failed: ${response.status} - ${errorDetails}`)
+    }
+
+    // Parse successful response
+    console.log('[STEP 11] ✓ API response successful')
+    let roomData
+    try {
+      roomData = JSON.parse(responseText)
+      console.log('[STEP 11] ✓ Response parsed successfully')
+    } catch (parseError) {
+      console.error('[STEP 11] ERROR: Could not parse response as JSON')
+      throw new Error(`Invalid JSON response: ${parseError.message}`)
+    }
+
+    // STEP 12: Prepare final result
+    console.log('[STEP 12] Preparing final result...')
     const result = {
       success: true,
       roomUuid: roomUuid,
@@ -311,7 +293,7 @@ export async function handleFlexibleClassroom(params: any) {
       userRole: userRole,
       roleNumber: roleNumber,
       createdAt: new Date().toISOString(),
-      roomData: roomData.data,
+      roomData: roomData,
       lessonId: lessonId,
       userId: userId,
       tokenDetails: {
@@ -334,16 +316,17 @@ export async function handleFlexibleClassroom(params: any) {
         requestDuration: requestDuration,
         responseStatus: response.status,
         responseSize: responseText.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        authMethod: 'agora_token_header'
       }
     }
 
-    console.log('[STEP 14] ✓ Final result prepared')
-    console.log('[SUCCESS] Room created successfully with official token!')
+    console.log('[STEP 12] ✓ Final result prepared')
+    console.log('[SUCCESS] Room created successfully with correct authentication!')
     console.log('  - Room UUID:', result.roomUuid)
     console.log('  - Education token length:', result.educationToken.length)
     console.log('  - Token preview:', result.educationToken.substring(0, 20) + '...')
-    console.log('  - Token type: Official Agora Education Token')
+    console.log('  - Authentication method: agora token= header')
     console.log('=== AGORA FLEXIBLE CLASSROOM DEBUG END ===')
 
     return result
