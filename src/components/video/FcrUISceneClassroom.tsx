@@ -3,31 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Import FCR UI Scene components
-import { 
-  FcrUISceneProvider, 
-  FcrRegion,
-  Layout,
-  NavigationBar,
-  RoomMidStreamsContainer,
-  Whiteboard,
-  ScreenShareContainer,
-  RemoteControlContainer,
-  StreamWindowsContainer,
-  WhiteboardToolbar,
-  ScenesController,
-  HandsUpContainer,
-  Chat,
-  DialogContainer,
-  LoadingContainer,
-  WidgetContainer,
-  ToastContainer,
-  Award,
-  Float,
-  FixedAspectRatioRootBox,
-  SceneSwitch
-} from 'fcr-ui-scene';
+import { FcrUISceneCreator } from 'fcr-ui-scene';
 
 interface FcrUISceneClassroomProps {
   appId: string;
@@ -52,40 +28,60 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
 }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
-  // Configuration for FCR UI Scene
-  const sceneConfig = {
-    appId,
-    region: FcrRegion.NA,
-    userId: uid.toString(),
-    userName,
-    roomUuid: channelName,
-    roomType: 10, // Cloud Class room type
-    roomName: lessonTitle || channelName,
-    pretest: false,
-    token: rtmToken,
-    language: 'en',
-    duration: 60 * 60 * 2, // 2 hours
-    roleType: userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
-  };
+  React.useEffect(() => {
+    if (!containerRef.current) return;
 
-  const handleSuccess = () => {
-    console.log('[FCRUISCENE] Classroom connected successfully');
-    setIsLoading(false);
-    toast.success('Classroom connected successfully');
-  };
+    const initializeClassroom = async () => {
+      try {
+        console.log('[FCRUISCENE] Initializing classroom...');
+        
+        // Configuration for FCR UI Scene
+        const config = {
+          appId,
+          region: 'NA',
+          userId: uid.toString(),
+          userName,
+          roomUuid: channelName,
+          roomType: 10, // Cloud Class room type
+          roomName: lessonTitle || channelName,
+          pretest: false,
+          token: rtmToken,
+          language: 'en',
+          duration: 60 * 60 * 2, // 2 hours
+          roleType: userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
+        };
 
-  const handleError = (error: any) => {
-    console.error('[FCRUISCENE] Classroom error:', error);
-    setError(`Classroom Error: ${error.message || 'Unknown error'}`);
-    setIsLoading(false);
-    toast.error(`Classroom error: ${error.message || 'Unknown error'}`);
-  };
+        console.log('[FCRUISCENE] Config prepared:', config);
 
-  const handleDestroy = () => {
-    console.log('[FCRUISCENE] Classroom destroyed');
-    onClose();
-  };
+        // Create the classroom instance using the container element
+        await FcrUISceneCreator.createWithDOM(containerRef.current, config);
+        
+        console.log('[FCRUISCENE] Classroom initialized successfully');
+        setIsLoading(false);
+        toast.success('Classroom connected successfully');
+        
+      } catch (error: any) {
+        console.error('[FCRUISCENE] Classroom initialization error:', error);
+        setError(`Classroom Error: ${error.message || 'Unknown error'}`);
+        setIsLoading(false);
+        toast.error(`Classroom error: ${error.message || 'Unknown error'}`);
+      }
+    };
+
+    initializeClassroom();
+
+    // Cleanup function
+    return () => {
+      try {
+        // Clean up the classroom instance if needed
+        console.log('[FCRUISCENE] Cleaning up classroom');
+      } catch (error) {
+        console.error('[FCRUISCENE] Cleanup error:', error);
+      }
+    };
+  }, [appId, rtmToken, channelName, uid, userName, userRole, lessonTitle]);
 
   if (error) {
     return (
@@ -131,39 +127,12 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         </div>
       )}
 
-      {/* FCR UI Scene Component-based Implementation */}
-      <FcrUISceneProvider
-        config={sceneConfig}
-        onSuccess={handleSuccess}
-        onError={handleError}
-        onDestroy={handleDestroy}
-      >
-        <FixedAspectRatioRootBox>
-          <SceneSwitch>
-            <Layout className="edu-room mid-class-room" direction="col">
-              <NavigationBar />
-              <Layout className="flex-grow items-stretch relative justify-center fcr-room-bg" direction="col">
-                <RoomMidStreamsContainer />
-                <Whiteboard />
-                <ScreenShareContainer />
-                <RemoteControlContainer />
-                <StreamWindowsContainer />
-              </Layout>
-              <WhiteboardToolbar />
-              <ScenesController />
-              <Float bottom={15} right={10} align="end" gap={2}>
-                <HandsUpContainer />
-                <Chat />
-              </Float>
-              <DialogContainer />
-              <LoadingContainer />
-            </Layout>
-            <WidgetContainer />
-            <ToastContainer />
-            <Award />
-          </SceneSwitch>
-        </FixedAspectRatioRootBox>
-      </FcrUISceneProvider>
+      {/* FCR UI Scene Container */}
+      <div 
+        ref={containerRef}
+        className="w-full h-full"
+        style={{ minHeight: '100vh' }}
+      />
     </div>
   );
 };
