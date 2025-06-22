@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   LocalUser,
@@ -80,17 +79,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
 
-  // Screen sharing hook
-  const { 
-    isScreenSharing, 
-    isScreenShareLoading,
-    isScreenSharePaused,
-    startScreenShare, 
-    stopScreenShare,
-    getScreenTracks,
-    attemptScreenShareRecovery
-  } = useScreenShare();
-
   // Validate UID to ensure it's a valid number
   const validUid = Math.max(1, Math.floor(Math.abs(uid))) || Math.floor(Math.random() * 1000000) + 1000;
 
@@ -100,6 +88,24 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   const { localCameraTrack } = useLocalCameraTrack(cameraOn);
   const remoteUsers = useRemoteUsers();
   const { audioTracks } = useRemoteAudioTracks(remoteUsers);
+
+  const joinState = useJoin({
+    appid: appId,
+    channel: channel,
+    token: token,
+    uid: validUid,
+  }, calling);
+
+  // Screen sharing hook - pass the client from joinState
+  const { 
+    isScreenSharing, 
+    isScreenShareLoading,
+    isScreenSharePaused,
+    startScreenShare, 
+    stopScreenShare,
+    getScreenTracks,
+    attemptScreenShareRecovery
+  } = useScreenShare({ client: joinState });
 
   // Get screen tracks
   const { screenVideoTrack, screenAudioTrack } = getScreenTracks();
@@ -120,13 +126,6 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
   }
 
   usePublish(tracksToPublish);
-
-  const joinState = useJoin({
-    appid: appId,
-    channel: channel,
-    token: token,
-    uid: validUid,
-  }, calling);
 
   // Track join state
   useEffect(() => {

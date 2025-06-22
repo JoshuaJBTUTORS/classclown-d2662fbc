@@ -1,14 +1,17 @@
+
 import { useState, useEffect, useCallback } from 'react';
-import AgoraRTC from 'agora-rtc-sdk-ng';
+import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack } from 'agora-rtc-sdk-ng';
 import { toast } from 'sonner';
 
 interface UseScreenShareProps {
-  client: AgoraRTC.IAgoraRTCClient | null;
+  client: IAgoraRTCClient | null;
 }
 
 export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [screenTrack, setScreenTrack] = useState<AgoraRTC.ILocalVideoTrack | null>(null);
+  const [isScreenShareLoading, setIsScreenShareLoading] = useState(false);
+  const [isScreenSharePaused, setIsScreenSharePaused] = useState(false);
+  const [screenTrack, setScreenTrack] = useState<ILocalVideoTrack | null>(null);
 
   const stopScreenShare = useCallback(async () => {
     if (!agoraClient || !isScreenSharing || !screenTrack) return;
@@ -39,24 +42,25 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
     if (!agoraClient || isScreenSharing) return;
 
     try {
+      setIsScreenShareLoading(true);
       setIsScreenSharing(true);
       
       // Create screen video track using the correct method
-      const screenTrack = await agoraClient.createScreenVideoTrack({
+      const newScreenTrack = await AgoraRTC.createScreenVideoTrack({
         encoderConfig: "1080p_1",
         optimizationMode: "detail"
       });
 
-      setScreenTrack(screenTrack);
+      setScreenTrack(newScreenTrack);
 
       // Publish the screen track
-      await agoraClient.publish(screenTrack);
+      await agoraClient.publish(newScreenTrack);
       
       console.log('Screen sharing started');
       toast.success('Screen sharing started');
 
       // Listen for screen share end (when user stops sharing)
-      screenTrack.on("track-ended", () => {
+      newScreenTrack.on("track-ended", () => {
         stopScreenShare();
         toast.info('Screen sharing ended');
       });
@@ -73,12 +77,49 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
       } else {
         toast.error('Failed to start screen sharing');
       }
+    } finally {
+      setIsScreenShareLoading(false);
     }
   }, [agoraClient, isScreenSharing]);
 
+  const getScreenTracks = useCallback(() => {
+    return {
+      screenVideoTrack: screenTrack,
+      screenAudioTrack: null // For now, we don't handle audio track separately
+    };
+  }, [screenTrack]);
+
+  const attemptScreenShareRecovery = useCallback(async () => {
+    if (isScreenSharePaused) {
+      setIsScreenSharePaused(false);
+      // Try to resume screen sharing
+      await startScreenShare();
+    }
+  }, [isScreenSharePaused, startScreenShare]);
+
+  // Listen for visibility changes to detect tab switches
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isScreenSharing) {
+        setIsScreenSharePaused(true);
+      } else if (!document.hidden && isScreenSharePaused) {
+        setIsScreenSharePaused(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isScreenSharing, isScreenSharePaused]);
+
   return {
     isScreenSharing,
+    isScreenShareLoading,
+    isScreenSharePaused,
     startScreenShare,
     stopScreenShare,
+    getScreenTracks,
+    attemptScreenShareRecovery,
   };
 };

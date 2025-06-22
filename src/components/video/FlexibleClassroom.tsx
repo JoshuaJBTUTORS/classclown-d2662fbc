@@ -54,7 +54,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           hasWidgets: !!WidgetsModule
         });
 
-        if (FcrUISceneModule.FcrUISceneCreator && typeof FcrUISceneModule.FcrUISceneCreator.createWithDomContainer === 'function') {
+        if (FcrUISceneModule.FcrUISceneCreator && typeof FcrUISceneModule.FcrUISceneCreator.create === 'function') {
           // Store SDK and widgets globally
           window.FcrUISceneCreator = FcrUISceneModule.FcrUISceneCreator;
           window.FcrChatroom = WidgetsModule.FcrChatroom;
@@ -69,7 +69,7 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           console.log('FcrUISceneCreator SDK loaded successfully');
         } else {
           console.error('FcrUISceneCreator structure:', Object.keys(FcrUISceneModule));
-          throw new Error('Unable to find FcrUISceneCreator.createWithDomContainer method in the imported SDK');
+          throw new Error('Unable to find FcrUISceneCreator.create method in the imported SDK');
         }
       } catch (error) {
         console.error('Failed to load FcrUISceneCreator SDK:', error);
@@ -126,11 +126,11 @@ const FlexibleClassroom: React.FC<FlexibleClassroomProps> = ({
           token: launchOptions.token.substring(0, 20) + '...'
         });
 
-        // Launch the classroom using FcrUISceneCreator
-        const scene = window.FcrUISceneCreator.createWithDomContainer(
-          containerRef.current,
-          launchOptions
-        );
+        // Launch the classroom using FcrUISceneCreator.create method
+        const scene = window.FcrUISceneCreator.create({
+          ...launchOptions,
+          dom: containerRef.current
+        });
 
         scene.join();
 
