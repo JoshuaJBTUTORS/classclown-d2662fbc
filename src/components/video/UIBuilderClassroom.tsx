@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -32,6 +31,10 @@ declare global {
         roleType: number;
         roomType: number;
         roomName: string;
+        language: string;
+        duration: number;
+        courseWareList: any[];
+        pretest: boolean;
         listener: (evt: any) => void;
       }) => Promise<void>;
     };
@@ -146,6 +149,10 @@ const UIBuilderClassroom: React.FC<UIBuilderClassroomProps> = ({
           roleType: userRole === 'teacher' ? 1 : 2, // 1: teacher, 2: student
           roomType: 4, // 4: vocational class (small interactive classroom)
           roomName: lessonTitle || roomId,
+          language: 'en',
+          duration: 60 * 60 * 2, // 2 hours
+          courseWareList: [],
+          pretest: false,
           listener: (evt: any) => {
             console.log('Classroom event:', evt);
             if (evt.type === 'ready') {
