@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useVideoRoom } from '@/hooks/useVideoRoom';
 import { useFlexibleClassroom, FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
-import SimpleFlexibleClassroom from '@/components/video/SimpleFlexibleClassroom';
+import AgoraFlexibleClassroom from '@/components/video/AgoraFlexibleClassroom';
 import VideoRoomLoading from '@/components/video/VideoRoomLoading';
 import VideoRoomError from '@/components/video/VideoRoomError';
 
@@ -48,7 +48,7 @@ const VideoRoom: React.FC = () => {
       if (!lesson || !lessonId) return;
 
       try {
-        console.log('Initializing simplified Flexible Classroom for lesson:', lessonId);
+        console.log('Initializing Flexible Classroom for lesson:', lessonId);
         
         const customUID = await generateUID();
         const displayName = getDisplayName();
@@ -84,6 +84,10 @@ const VideoRoom: React.FC = () => {
     }
   }, [lesson, lessonId, isLoading, error, videoRoomRole, studentContext]);
 
+  const handleClassroomError = (errorMsg: string) => {
+    setClassroomError(errorMsg);
+  };
+
   if (isLoading || isCreatingSession) {
     return (
       <VideoRoomLoading 
@@ -114,10 +118,17 @@ const VideoRoom: React.FC = () => {
 
   if (classroomCredentials) {
     return (
-      <SimpleFlexibleClassroom
-        credentials={classroomCredentials}
-        expectedStudents={expectedStudents}
-        onLeave={handleLeaveRoom}
+      <AgoraFlexibleClassroom
+        roomId={classroomCredentials.roomId}
+        userUuid={classroomCredentials.userUuid}
+        userName={classroomCredentials.userName}
+        userRole={classroomCredentials.userRole}
+        rtmToken={classroomCredentials.rtmToken}
+        appId={classroomCredentials.appId}
+        lessonTitle={classroomCredentials.lessonTitle}
+        studentCount={expectedStudents.length}
+        onError={handleClassroomError}
+        onClose={handleLeaveRoom}
       />
     );
   }

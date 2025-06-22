@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useFlexibleClassroom, FlexibleClassroomCredentials } from '@/hooks/useFlexibleClassroom';
 import { useVideoRoom } from '@/hooks/useVideoRoom';
-import EmbeddedFlexibleClassroom from './EmbeddedFlexibleClassroom';
+import AgoraFlexibleClassroom from './AgoraFlexibleClassroom';
 import VideoRoomLoading from './VideoRoomLoading';
 import VideoRoomError from './VideoRoomError';
 
 const FlexibleClassroomContainer: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
-  const navigate = useNavigate();
   const [classroomCredentials, setClassroomCredentials] = useState<FlexibleClassroomCredentials | null>(null);
   const [classroomError, setClassroomError] = useState<string | null>(null);
 
@@ -122,7 +121,7 @@ const FlexibleClassroomContainer: React.FC = () => {
 
   if (classroomCredentials) {
     return (
-      <EmbeddedFlexibleClassroom
+      <AgoraFlexibleClassroom
         roomId={classroomCredentials.roomId}
         userUuid={classroomCredentials.userUuid}
         userName={classroomCredentials.userName}
