@@ -33,9 +33,9 @@ export interface Lesson {
   netless_room_uuid?: string | null;
   netless_room_token?: string | null;
   netless_app_identifier?: string | null;
-  // Flexible Classroom fields - NEW
+  // Flexible Classroom fields - Updated to match database Json type
   flexible_classroom_room_id?: string | null;
-  flexible_classroom_session_data?: string | null;
+  flexible_classroom_session_data?: any; // Changed from string to any to match Json type from database
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
