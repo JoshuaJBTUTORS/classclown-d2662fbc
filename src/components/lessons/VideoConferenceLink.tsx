@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -88,36 +87,24 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleFlexibleClassroomJoin = () => {
-    if (!flexibleClassroomSessionData) {
+    if (!flexibleClassroomSessionData || !lessonId) {
       toast.error('Flexible Classroom session data not available');
       return;
     }
 
     try {
-      const sessionData = JSON.parse(flexibleClassroomSessionData);
+      // Parse session data if it's a string, otherwise use it directly
+      let sessionData;
+      if (typeof flexibleClassroomSessionData === 'string') {
+        sessionData = JSON.parse(flexibleClassroomSessionData);
+      } else {
+        sessionData = flexibleClassroomSessionData;
+      }
       
-      // Generate the Agora Flexible Classroom URL with parameters
-      const baseUrl = 'https://solutions.agora.io/education/web';
-      const params = new URLSearchParams({
-        appId: sessionData.appId,
-        region: 'AP', // Asia Pacific
-        roomUuid: sessionData.roomId,
-        userUuid: sessionData.userUuid,
-        userName: sessionData.userName,
-        roleType: sessionData.userRole === 'teacher' ? '1' : '2',
-        roomType: studentCount <= 1 ? '0' : '10', // 0 = 1v1, 10 = Cloud Class
-        roomName: sessionData.lessonTitle || `Lesson ${sessionData.roomId}`,
-        rtmToken: sessionData.rtmToken,
-        language: 'en',
-        duration: '3600' // 1 hour
-      });
-
-      const classroomUrl = `${baseUrl}?${params.toString()}`;
-      
-      // Open in new window for better experience
-      window.open(classroomUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+      // Navigate to the embedded flexible classroom page
+      window.location.href = `/flexible-classroom/${lessonId}`;
     } catch (error) {
-      console.error('Error parsing flexible classroom session data:', error);
+      console.error('Error handling flexible classroom join:', error);
       toast.error('Failed to join Flexible Classroom');
     }
   };
@@ -184,7 +171,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
            provider === 'zoom' ? 'Join your Zoom meeting' :
            provider === 'agora' ? 'Join your Agora.io session' :
            provider === 'external_agora' ? 'Join your external Agora application' :
-           provider === 'flexible_classroom' ? 'Join your Flexible Classroom' :
+           provider === 'flexible_classroom' ? 'Join your interactive classroom with whiteboard and collaboration tools' :
            'No video conference details available'}
         </p>
         {isGroupLesson && (

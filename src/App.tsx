@@ -1,12 +1,11 @@
-
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
-import { AuthProvider } from './contexts/AuthContext';
-import { OrganizationProvider } from './contexts/OrganizationContext';
-import { LearningHubProvider } from './contexts/LearningHubContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from '@/contexts/AuthContext';
+import { OrganizationProvider } from '@/contexts/OrganizationContext';
+import { LearningHubProvider } from '@/contexts/LearningHubContext';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Index from './pages/Index';
 import Calendar from './pages/Calendar';
 import Students from './pages/Students';
@@ -15,6 +14,7 @@ import Lessons from './pages/Lessons';
 import Auth from './pages/Auth';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
+import FlexibleClassroom from './pages/FlexibleClassroom';
 import LearningHub from './pages/LearningHub';
 import LearningHubLayout from './components/learningHub/LearningHubLayout';
 import LearningHubDashboard from './pages/LearningHubDashboard';
@@ -91,6 +91,16 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <VideoRoom />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* Flexible classroom route */}
+                <Route 
+                  path="/flexible-classroom/:lessonId" 
+                  element={
+                    <ProtectedRoute>
+                      <FlexibleClassroom />
                     </ProtectedRoute>
                   } 
                 />
