@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
+import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 
 interface LessonDetailsDialogProps {
   lessonId: string | null;
@@ -118,6 +120,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
+  const handleAttendanceUpdated = () => {
+    // Refresh lesson data when attendance is updated
+    fetchLesson();
+  };
+
   if (!lessonId) return null;
 
   return (
@@ -200,7 +207,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   )}
                 </div>
 
-                {lesson.lesson_space_room_url || lesson.lesson_space_space_id ? (
+                {lesson.lesson_space_room_url || lesson.lesson_space_room_id ? (
                   <VideoConferenceLink 
                     lessonId={lesson.id}
                     lessonSpaceRoomUrl={lesson.lesson_space_room_url}
@@ -248,7 +255,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               </CardContent>
             </Card>
 
-            {/* Students Section */}
+            {/* Students Section with Attendance */}
             {lesson.lesson_students && lesson.lesson_students.length > 0 && (
               <Card>
                 <CardContent className="p-4">
@@ -256,18 +263,19 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                     <Users className="h-4 w-4" />
                     Students ({lesson.lesson_students.length})
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {lesson.lesson_students.map((enrollment: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">
-                          {enrollment.student?.first_name} {enrollment.student?.last_name}
-                        </span>
-                        {enrollment.student?.email && (
-                          <span className="text-xs text-muted-foreground">
-                            {enrollment.student.email}
-                          </span>
-                        )}
-                      </div>
+                      <StudentAttendanceRow
+                        key={enrollment.student?.id || index}
+                        student={enrollment.student}
+                        lessonId={lesson.id}
+                        lessonData={{
+                          title: lesson.title,
+                          start_time: lesson.start_time,
+                          tutor: lesson.tutor
+                        }}
+                        isStudent={!isTeacherRole}
+                      />
                     ))}
                   </div>
                 </CardContent>
