@@ -220,8 +220,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 className={cn(
                   "group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 relative overflow-hidden",
                   isActive
-                    ? "bg-[hsl(150,45%,90%)] text-[hsl(150,50%,25%)] shadow-md sidebar-item-active"
-                    : "text-[hsl(228,59%,20%)] hover:bg-gray-50 hover:text-[hsl(150,50%,58%)] hover:shadow-sm",
+                    ? "bg-[hsl(228,45%,90%)] text-[hsl(228,59%,20%)] shadow-md sidebar-item-active"
+                    : "text-[hsl(228,59%,20%)] hover:bg-gray-50 hover:text-[hsl(228,45%,35%)] hover:shadow-sm",
                   isCollapsed && "justify-center px-2"
                 )}
                 title={isCollapsed ? item.name : undefined}
@@ -229,7 +229,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 <item.icon
                   className={cn(
                     "h-5 w-5 flex-shrink-0 transition-all duration-300",
-                    isActive ? "text-[hsl(150,50%,58%)]" : "text-[hsl(228,59%,20%)] group-hover:text-[hsl(150,50%,58%)]",
+                    isActive ? "text-[hsl(228,59%,20%)]" : "text-[hsl(228,59%,20%)] group-hover:text-[hsl(228,45%,35%)]",
                     !isCollapsed && "mr-3"
                   )}
                 />
@@ -237,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                   <span className="truncate font-semibold tracking-wide">{item.name}</span>
                 )}
                 {isActive && (
-                  <div className="absolute right-0 top-0 h-full w-1 bg-[hsl(150,50%,58%)] rounded-l-full" />
+                  <div className="absolute right-0 top-0 h-full w-1 bg-[hsl(228,59%,20%)] rounded-l-full" />
                 )}
               </Link>
             );
