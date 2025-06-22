@@ -74,7 +74,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
         const sceneCreator = new FcrUISceneCreator(sceneConfig);
         sceneRef.current = sceneCreator;
 
-        // Define callback functions for the 5-argument launch method
+        // Define callback functions
         const onSuccess = () => {
           console.log('[FCRUISCENE] Classroom launched successfully');
           setIsLoading(false);
@@ -93,25 +93,31 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           onClose();
         };
 
-        // Launch configuration object
-        const launchConfig = {
-          roomToken: rtmToken,
-          roomId: channelName,
-          userName,
-          userRole: userRole === 'teacher' ? 1 : 2,
-          language: 'en',
-          userProperties: {
-            uid: uid.toString(),
-            lessonTitle: lessonTitle || channelName
+        // Container mount callback - this is what the API expects as second parameter
+        const containerMountCallback = (containerId: string) => {
+          console.log('[FCRUISCENE] Mounting classroom to container:', containerId);
+          // The library will handle mounting to the provided container
+          if (containerRef.current) {
+            containerRef.current.id = containerId;
           }
         };
 
-        console.log('[FCRUISCENE] Launching with 5-argument method');
+        console.log('[FCRUISCENE] Launching with container callback method');
 
-        // Use the correct 5-argument launch method signature
+        // Use the correct launch method signature: (config, containerCallback, onSuccess, onFailure, onDestroy)
         await sceneCreator.launch(
-          launchConfig,
-          containerRef.current,
+          {
+            roomToken: rtmToken,
+            roomId: channelName,
+            userName,
+            userRole: userRole === 'teacher' ? 1 : 2,
+            language: 'en',
+            userProperties: {
+              uid: uid.toString(),
+              lessonTitle: lessonTitle || channelName
+            }
+          },
+          containerMountCallback,
           onSuccess,
           onFailure,
           onDestroy
