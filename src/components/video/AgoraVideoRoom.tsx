@@ -96,7 +96,10 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     uid: validUid,
   }, calling);
 
-  // Screen sharing hook - pass the client from joinState
+  // Extract the actual client from the join state
+  const client = joinState?.data || null;
+
+  // Screen sharing hook - pass the client
   const { 
     isScreenSharing, 
     isScreenShareLoading,
@@ -105,7 +108,7 @@ const AgoraVideoRoom: React.FC<AgoraVideoRoomProps> = ({
     stopScreenShare,
     getScreenTracks,
     attemptScreenShareRecovery
-  } = useScreenShare({ client: joinState });
+  } = useScreenShare({ client });
 
   // Get screen tracks
   const { screenVideoTrack, screenAudioTrack } = getScreenTracks();

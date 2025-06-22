@@ -18,7 +18,7 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
 
     try {
       setIsScreenSharing(false);
-      await agoraClient.unpublish(screenTrack);
+      await agoraClient.unpublish([screenTrack]);
       screenTrack.close();
       setScreenTrack(null);
       console.log('Screen sharing stopped');
@@ -54,7 +54,7 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
       setScreenTrack(newScreenTrack);
 
       // Publish the screen track
-      await agoraClient.publish(newScreenTrack);
+      await agoraClient.publish([newScreenTrack]);
       
       console.log('Screen sharing started');
       toast.success('Screen sharing started');
@@ -80,7 +80,7 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
     } finally {
       setIsScreenShareLoading(false);
     }
-  }, [agoraClient, isScreenSharing]);
+  }, [agoraClient, isScreenSharing, stopScreenShare]);
 
   const getScreenTracks = useCallback(() => {
     return {
