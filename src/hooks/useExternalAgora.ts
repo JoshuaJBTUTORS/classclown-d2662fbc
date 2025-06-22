@@ -14,7 +14,7 @@ export const useExternalAgora = () => {
       // Call the agora-integration edge function to create Flexible Classroom session
       const { data, error } = await supabase.functions.invoke('agora-integration', {
         body: {
-          action: 'create_flexible_classroom',
+          action: 'flexible-classroom',
           lessonId: lessonId,
           userId: userId,
           userRole: userRole
