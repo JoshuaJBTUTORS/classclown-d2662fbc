@@ -50,7 +50,25 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           tokenPresent: !!rtmToken
         });
 
-        const config = {
+        const launchConfig = {
+          roomToken: rtmToken,
+          roomId: channelName,
+          userName,
+          userRole: userRole === 'teacher' ? 1 : 2, // Convert to expected enum values
+          language: 'en',
+          userProperties: {
+            uid: uid.toString(),
+            lessonTitle: lessonTitle || channelName
+          }
+        };
+
+        console.log('[FCRUISCENE] Launch config:', {
+          ...launchConfig,
+          roomToken: launchConfig.roomToken ? '[PRESENT]' : '[MISSING]'
+        });
+
+        // Create the scene creator instance with full config
+        const fullConfig = {
           appId,
           region: FcrRegion.NA,
           userId: uid.toString(),
@@ -65,13 +83,7 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           roleType: userRole === 'teacher' ? 1 : 2, // 1 = teacher, 2 = student
         };
 
-        console.log('[FCRUISCENE] Creating FcrUISceneCreator with config:', {
-          ...config,
-          token: config.token ? '[PRESENT]' : '[MISSING]'
-        });
-
-        // Create the scene creator instance
-        const sceneCreator = new FcrUISceneCreator(config);
+        const sceneCreator = new FcrUISceneCreator(fullConfig);
         sceneRef.current = sceneCreator;
 
         // Define callback functions
@@ -93,8 +105,8 @@ const FcrUISceneClassroom: React.FC<FcrUISceneClassroomProps> = ({
           onClose();
         };
 
-        // Launch the scene with separate callback arguments
-        await sceneCreator.launch(containerRef.current, config, onSuccess, onError, onDestroy);
+        // Launch the scene with the launch config as first parameter
+        await sceneCreator.launch(launchConfig, containerRef.current, onSuccess, onError, onDestroy);
 
       } catch (error: any) {
         console.error('[FCRUISCENE] Failed to initialize classroom:', error);
