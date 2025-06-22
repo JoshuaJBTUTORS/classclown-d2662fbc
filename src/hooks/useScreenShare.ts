@@ -48,11 +48,39 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
       setIsScreenShareLoading(true);
       setIsScreenSharing(true);
       
-      // Create screen video track using the correct method
-      const newScreenTrack = await AgoraRTC.createScreenVideoTrack({
-        encoderConfig: "1080p_1",
-        optimizationMode: "detail"
-      });
+      // Create screen video track using the correct method - try different approaches
+      let newScreenTrack;
+      try {
+        // Method 1: Try the standard method
+        newScreenTrack = await AgoraRTC.createScreenVideoTrack({
+          encoderConfig: "1080p_1",
+          optimizationMode: "detail"
+        });
+      } catch (error1) {
+        try {
+          // Method 2: Try without config
+          newScreenTrack = await AgoraRTC.createScreenVideoTrack();
+        } catch (error2) {
+          try {
+            // Method 3: Try using getDisplayMedia directly
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+              video: {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                frameRate: { ideal: 30 }
+              },
+              audio: false
+            });
+            
+            // Create track from MediaStream
+            newScreenTrack = AgoraRTC.createCustomVideoTrack({
+              mediaStreamTrack: stream.getVideoTracks()[0]
+            });
+          } catch (error3) {
+            throw new Error('Unable to create screen video track');
+          }
+        }
+      }
 
       setScreenTrack(newScreenTrack);
 
@@ -65,19 +93,21 @@ export const useScreenShare = ({ client: agoraClient }: UseScreenShareProps) => 
       toast.success('Screen sharing started');
 
       // Listen for screen share end (when user stops sharing)
-      newScreenTrack.on("track-ended", () => {
-        stopScreenShare();
-        toast.info('Screen sharing ended');
-      });
+      if (newScreenTrack.on) {
+        newScreenTrack.on("track-ended", () => {
+          stopScreenShare();
+          toast.info('Screen sharing ended');
+        });
+      }
 
     } catch (error: any) {
       console.error('Failed to start screen sharing:', error);
       setIsScreenSharing(false);
       
       // Handle specific error cases
-      if (error.code === 'PERMISSION_DENIED') {
+      if (error.name === 'NotAllowedError' || error.code === 'PERMISSION_DENIED') {
         toast.error('Screen sharing permission denied');
-      } else if (error.code === 'NOT_SUPPORTED') {
+      } else if (error.name === 'NotSupportedError' || error.code === 'NOT_SUPPORTED') {
         toast.error('Screen sharing not supported in this browser');
       } else {
         toast.error('Failed to start screen sharing');
