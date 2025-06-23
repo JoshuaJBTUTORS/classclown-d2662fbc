@@ -30,6 +30,7 @@ import LearningHubRevision from './pages/LearningHubRevision';
 import LearningHubAssessments from './pages/LearningHubAssessments';
 import CourseDetail from './pages/CourseDetail';
 import CourseEdit from './pages/CourseEdit';
+import CourseCheckout from './pages/CourseCheckout';
 
 function App() {
   const queryClient = new QueryClient();
@@ -163,6 +164,16 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <CourseEdit />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Checkout route */}
+                <Route
+                  path="/checkout/:courseId"
+                  element={
+                    <ProtectedRoute>
+                      <CourseCheckout />
                     </ProtectedRoute>
                   }
                 />
