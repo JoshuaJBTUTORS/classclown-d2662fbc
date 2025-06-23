@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
@@ -13,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Homework: React.FC = () => {
   const { isLearningHubOnly } = useAuth();
@@ -30,12 +32,40 @@ const Homework: React.FC = () => {
     );
   }
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
+
   const [studentId, setStudentId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const { userRole, user, profile, parentProfile } = useAuth();
+
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   useEffect(() => {
     const fetchStudentId = async () => {
@@ -136,14 +166,14 @@ const Homework: React.FC = () => {
     fetchStudentId();
   }, [user, userRole, profile, parentProfile]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className="flex flex-col flex-1 lg:pl-64">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <PageTitle 
