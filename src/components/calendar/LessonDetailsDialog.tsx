@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,7 +18,8 @@ import {
   UserCheck,
   CheckCircle,
   Circle,
-  BookOpen
+  BookOpen,
+  Edit
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
+import EditLessonForm from '@/components/lessons/EditLessonForm';
 
 interface LessonDetailsDialogProps {
   lessonId: string | null;
@@ -45,12 +46,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isHomeworkDialogOpen, setIsHomeworkDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState({ allMarked: false, totalStudents: 0, markedCount: 0 });
   const [homeworkStatus, setHomeworkStatus] = useState({ exists: false, homework: null });
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
 
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
+  
+  // Check if user can edit lessons (admin/owner only)
+  const canEditLesson = isAdmin || isOwner;
 
   useEffect(() => {
     if (lessonId && isOpen) {
@@ -183,6 +188,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     fetchLesson();
     setIsHomeworkDialogOpen(false);
     toast.success('Homework assigned successfully!');
+  };
+
+  const handleEditSuccess = () => {
+    // Refresh lesson data when lesson is updated
+    fetchLesson();
+    setIsEditDialogOpen(false);
+    onLessonUpdated?.();
+    toast.success('Lesson updated successfully!');
   };
 
   if (!lessonId) return null;
@@ -433,6 +446,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>
                 
                 <div className="flex gap-2">
+                  {canEditLesson && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsEditDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Lesson
+                    </Button>
+                  )}
                   {isTeacherRole && (
                     <Button 
                       variant="outline" 
@@ -456,6 +479,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Lesson Dialog - Only for admins/owners */}
+      {canEditLesson && (
+        <EditLessonForm
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          onSuccess={handleEditSuccess}
+          lessonId={lessonId}
+        />
+      )}
 
       {/* Homework Assignment Dialog */}
       {isHomeworkDialogOpen && lesson && (
