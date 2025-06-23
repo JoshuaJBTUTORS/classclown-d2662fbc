@@ -29,43 +29,17 @@ const Auth = () => {
     }
   }, [user, navigate, location]);
 
-  const handleSignIn = async (e: React.FormEvent, role?: string) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
-
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Login failed",
-            description: "Invalid email or password. Please check your credentials and try again.",
-            variant: "destructive",
-          });
-        } else if (error.message.includes('Email not confirmed')) {
-          toast({
-            title: "Email not confirmed",
-            description: "Please check your email and click the confirmation link before signing in.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Sign in failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
-      }
+      await signIn(email, password);
+      // Success is handled by the AuthContext
     } catch (error: any) {
       toast({
-        title: "An error occurred",
-        description: "Please try again later.",
+        title: "Sign in failed",
+        description: error.message || "An error occurred during sign in",
         variant: "destructive",
       });
     } finally {
@@ -78,43 +52,16 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signUp(email, password, {
+      await signUp(email, password, {
         first_name: firstName,
         last_name: lastName,
-        role: role,
+        role: role as any, // Type assertion to handle the role conversion
       });
-
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          toast({
-            title: "Account exists",
-            description: "An account with this email already exists. Please sign in instead.",
-            variant: "destructive",
-          });
-        } else if (error.message.includes('Password should be at least 6 characters')) {
-          toast({
-            title: "Password too short",
-            description: "Password should be at least 6 characters long.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Sign up failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Account created successfully!",
-          description: "Please check your email to confirm your account.",
-        });
-        setActiveTab('login');
-      }
+      // Success is handled by the AuthContext
     } catch (error: any) {
       toast({
-        title: "An error occurred",
-        description: "Please try again later.",
+        title: "Sign up failed",
+        description: error.message || "An error occurred during sign up",
         variant: "destructive",
       });
     } finally {
@@ -186,7 +133,7 @@ const Auth = () => {
                 </TabsList>
                 
                 <TabsContent value="login" className="space-y-4 mt-6">
-                  <form onSubmit={(e) => handleSignIn(e)} className="space-y-4">
+                  <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
                       <label htmlFor="email" className="text-sm font-medium">
                         Email
