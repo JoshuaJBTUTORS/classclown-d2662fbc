@@ -43,39 +43,70 @@ const handler = async (req: Request): Promise<Response> => {
       tutorName 
     }: LateNotificationRequest = await req.json();
 
-    console.log(`Sending late notification for student ${studentName} in lesson ${lessonTitle}`);
+    console.log(`Sending late notification for student ${studentName} (ID: ${studentId}) in lesson ${lessonTitle}`);
 
     // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get student and parent information
-    const { data: student, error: studentError } = await supabase
+    // Get student and parent information with LEFT JOIN
+    const { data: studentData, error: studentError } = await supabase
       .from('students')
-      .select('email, parent_first_name, parent_last_name')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        email,
+        parent_id,
+        parents:parent_id (
+          id,
+          first_name,
+          last_name,
+          email
+        )
+      `)
       .eq('id', studentId)
       .single();
 
-    if (studentError || !student) {
+    if (studentError) {
       console.error('Error fetching student data:', studentError);
+      throw new Error(`Failed to fetch student data: ${studentError.message}`);
+    }
+
+    if (!studentData) {
+      console.error('Student not found:', studentId);
       throw new Error('Student not found');
     }
 
-    // Determine recipient email and name
-    let recipientEmail = student.email;
-    let recipientName = studentName;
-    
-    // If parent information exists, send to parent instead
-    if (student.parent_first_name && student.parent_last_name) {
-      recipientName = `${student.parent_first_name} ${student.parent_last_name}`;
-      // Note: We're using student email as parent email since there's no separate parent email field
-      // In a real implementation, you'd want a separate parent_email field
-    }
+    console.log('Student data retrieved:', {
+      studentId: studentData.id,
+      studentName: `${studentData.first_name} ${studentData.last_name}`,
+      hasParent: !!studentData.parent_id,
+      parentData: studentData.parents
+    });
 
-    if (!recipientEmail) {
+    // Determine recipient email and notification type
+    let recipientEmail: string;
+    let recipientName: string;
+    let isParentNotification = false;
+
+    if (studentData.parent_id && studentData.parents && studentData.parents.email) {
+      // Send to parent
+      recipientEmail = studentData.parents.email;
+      recipientName = `${studentData.parents.first_name} ${studentData.parents.last_name}`;
+      isParentNotification = true;
+      console.log(`Sending notification to parent: ${recipientName} (${recipientEmail})`);
+    } else if (studentData.email) {
+      // Send to independent student
+      recipientEmail = studentData.email;
+      recipientName = `${studentData.first_name} ${studentData.last_name}`;
+      isParentNotification = false;
+      console.log(`Sending notification to independent student: ${recipientName} (${recipientEmail})`);
+    } else {
+      console.error('No valid email address found for student or parent');
       throw new Error('No email address found for student or parent');
     }
 
-    // Render the React Email template
+    // Render the React Email template with appropriate content
     const html = await renderAsync(
       React.createElement(LateNotificationEmail, {
         studentName,
@@ -84,14 +115,20 @@ const handler = async (req: Request): Promise<Response> => {
         lessonDate,
         lessonTime,
         tutorName,
+        isParentNotification,
       })
     );
+
+    // Determine email subject based on recipient type
+    const emailSubject = isParentNotification 
+      ? `${studentName} is running late for ${lessonTitle}`
+      : `You are running late for ${lessonTitle}`;
 
     // Send the late notification email
     const emailResponse = await resend.emails.send({
       from: "JB Tutors <enquiries@jb-tutors.com>",
       to: [recipientEmail],
-      subject: `${studentName} is running late for ${lessonTitle}`,
+      subject: emailSubject,
       html,
     });
 
@@ -102,13 +139,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Late notification email sent successfully:", emailResponse);
 
-    // Log the notification in the database
+    // Log the notification in the database with recipient type
+    const notificationType = isParentNotification ? 'late_notification_parent' : 'late_notification_student';
     const { error: notificationError } = await supabase
       .from('notifications')
       .insert({
         email: recipientEmail,
-        type: 'late_notification',
-        subject: `${studentName} is running late for ${lessonTitle}`,
+        type: notificationType,
+        subject: emailSubject,
         status: 'sent',
         sent_at: new Date().toISOString()
       });
@@ -121,6 +159,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       success: true, 
       message: 'Late notification sent successfully',
+      recipient_type: isParentNotification ? 'parent' : 'student',
+      recipient_email: recipientEmail,
       emailId: emailResponse.data?.id 
     }), {
       status: 200,

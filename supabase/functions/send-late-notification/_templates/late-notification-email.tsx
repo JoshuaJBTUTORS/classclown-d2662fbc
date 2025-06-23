@@ -1,15 +1,6 @@
 
-import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Preview,
-  Text,
-  Section,
-} from 'npm:@react-email/components@0.0.22'
-import * as React from 'npm:react@18.3.1'
+import { Html, Head, Body, Container, Text, Link, Hr } from 'npm:@react-email/components@0.0.22';
+import React from 'npm:react@18.3.1';
 
 interface LateNotificationEmailProps {
   studentName: string;
@@ -18,6 +9,7 @@ interface LateNotificationEmailProps {
   lessonDate: string;
   lessonTime: string;
   tutorName: string;
+  isParentNotification?: boolean;
 }
 
 export const LateNotificationEmail = ({
@@ -27,102 +19,72 @@ export const LateNotificationEmail = ({
   lessonDate,
   lessonTime,
   tutorName,
-}: LateNotificationEmailProps) => (
-  <Html>
-    <Head />
-    <Preview>{studentName} is running late for {lessonTitle}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>Student Late Notification</Heading>
-        
-        <Text style={text}>Dear {recipientName},</Text>
-        
-        <Text style={text}>
-          We wanted to inform you that <strong>{studentName}</strong> is running late for their scheduled lesson.
-        </Text>
-        
-        <Section style={lessonDetailsSection}>
-          <Heading style={h3}>Lesson Details:</Heading>
-          <Text style={detailText}><strong>Lesson:</strong> {lessonTitle}</Text>
-          <Text style={detailText}><strong>Date:</strong> {lessonDate}</Text>
-          <Text style={detailText}><strong>Time:</strong> {lessonTime}</Text>
-          <Text style={detailText}><strong>Tutor:</strong> {tutorName}</Text>
-        </Section>
-        
-        <Text style={text}>
-          Please ensure {studentName} joins the lesson as soon as possible. If there are any issues or if {studentName} will not be able to attend, please contact us immediately.
-        </Text>
-        
-        <Text style={text}>Thank you for your attention to this matter.</Text>
-        
-        <Text style={text}>
-          Best regards,<br />
-          The JB Tutors Team
-        </Text>
-        
-        <Text style={footer}>
-          This is an automated notification. If you have any questions, please contact your tutor or our support team at enquiries@jb-tutors.com.
-        </Text>
-      </Container>
-    </Body>
-  </Html>
-)
+  isParentNotification = false,
+}: LateNotificationEmailProps) => {
+  const greeting = isParentNotification 
+    ? `Dear ${recipientName},`
+    : `Dear ${studentName},`;
 
-export default LateNotificationEmail
+  const mainMessage = isParentNotification
+    ? `We wanted to let you know that ${studentName} is running late for their lesson today.`
+    : `We noticed that you are running late for your lesson today.`;
 
-const main = {
-  backgroundColor: '#ffffff',
-  fontFamily: 'Arial, sans-serif',
-}
+  const actionMessage = isParentNotification
+    ? `Please ensure ${studentName} joins the lesson as soon as possible.`
+    : `Please join the lesson as soon as possible.`;
 
-const container = {
-  margin: '0 auto',
-  padding: '20px 0 48px',
-  maxWidth: '600px',
-}
-
-const h1 = {
-  color: '#e74c3c',
-  fontSize: '24px',
-  fontWeight: 'bold',
-  margin: '40px 0',
-  padding: '0',
-  lineHeight: '42px',
-}
-
-const h3 = {
-  color: '#343a40',
-  fontSize: '18px',
-  fontWeight: 'bold',
-  margin: '0 0 12px 0',
-}
-
-const text = {
-  color: '#333',
-  fontSize: '14px',
-  lineHeight: '24px',
-  margin: '16px 0',
-}
-
-const detailText = {
-  color: '#333',
-  fontSize: '14px',
-  lineHeight: '20px',
-  margin: '8px 0',
-}
-
-const lessonDetailsSection = {
-  backgroundColor: '#f8f9fa',
-  padding: '20px',
-  borderRadius: '8px',
-  margin: '20px 0',
-}
-
-const footer = {
-  color: '#6c757d',
-  fontSize: '12px',
-  lineHeight: '18px',
-  marginTop: '30px',
-  paddingTop: '30px',
-  borderTop: '1px solid #eee',
-}
+  return (
+    <Html>
+      <Head />
+      <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#f4f4f4', margin: 0, padding: 0 }}>
+        <Container style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: '#ffffff', padding: '20px' }}>
+          <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#333333', marginBottom: '20px' }}>
+            JB Tutors - Late Notification
+          </Text>
+          
+          <Text style={{ fontSize: '16px', color: '#555555', lineHeight: '1.5', marginBottom: '15px' }}>
+            {greeting}
+          </Text>
+          
+          <Text style={{ fontSize: '16px', color: '#555555', lineHeight: '1.5', marginBottom: '15px' }}>
+            {mainMessage}
+          </Text>
+          
+          <Container style={{ backgroundColor: '#f8f9fa', padding: '15px', border: '1px solid #e9ecef', borderRadius: '5px', marginBottom: '20px' }}>
+            <Text style={{ fontSize: '14px', color: '#333333', margin: '5px 0' }}>
+              <strong>Lesson:</strong> {lessonTitle}
+            </Text>
+            <Text style={{ fontSize: '14px', color: '#333333', margin: '5px 0' }}>
+              <strong>Date:</strong> {lessonDate}
+            </Text>
+            <Text style={{ fontSize: '14px', color: '#333333', margin: '5px 0' }}>
+              <strong>Time:</strong> {lessonTime}
+            </Text>
+            <Text style={{ fontSize: '14px', color: '#333333', margin: '5px 0' }}>
+              <strong>Tutor:</strong> {tutorName}
+            </Text>
+          </Container>
+          
+          <Text style={{ fontSize: '16px', color: '#555555', lineHeight: '1.5', marginBottom: '20px' }}>
+            {actionMessage}
+          </Text>
+          
+          <Text style={{ fontSize: '16px', color: '#555555', lineHeight: '1.5', marginBottom: '5px' }}>
+            If you need assistance, please contact us immediately.
+          </Text>
+          
+          <Hr style={{ border: 'none', borderTop: '1px solid #e9ecef', margin: '20px 0' }} />
+          
+          <Text style={{ fontSize: '14px', color: '#666666', lineHeight: '1.4' }}>
+            Best regards,<br />
+            The JB Tutors Team
+          </Text>
+          
+          <Text style={{ fontSize: '12px', color: '#999999', marginTop: '20px' }}>
+            This is an automated message from JB Tutors. Please do not reply to this email.
+          </Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+};
