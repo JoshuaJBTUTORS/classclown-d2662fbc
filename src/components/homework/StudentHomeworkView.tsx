@@ -231,22 +231,12 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `submissions/${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         
-        console.log("Uploading file:", fileName);
+        console.log("Uploading file to homework-submissions bucket:", fileName);
         
         try {
-          // Check if storage bucket exists
-          const { data: buckets } = await supabase.storage.listBuckets();
-          const homeworkBucket = buckets?.find(b => b.name === 'homework');
-          
-          if (!homeworkBucket) {
-            console.error("Homework storage bucket not found");
-            toast.error("Storage not configured properly. Please contact support.");
-            throw new Error("Homework storage bucket not found");
-          }
-          
-          // Upload the file to Supabase Storage
+          // Upload the file to the homework-submissions bucket
           const { error: uploadError } = await supabase.storage
-            .from('homework')
+            .from('homework-submissions')
             .upload(fileName, selectedFile, {
               cacheControl: '3600',
               upsert: false,
@@ -260,7 +250,7 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
           
           // Get the public URL of the uploaded file
           const { data: urlData } = supabase.storage
-            .from('homework')
+            .from('homework-submissions')
             .getPublicUrl(fileName);
           
           attachmentUrl = urlData.publicUrl;
