@@ -312,6 +312,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               info.el.style.backgroundColor = color;
               info.el.style.borderColor = color;
               info.el.style.color = 'white';
+              // Semi-transparency is now handled by CSS class .fc-event with opacity: 0.75
             }}
           />
         </div>

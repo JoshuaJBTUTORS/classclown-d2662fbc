@@ -206,9 +206,9 @@
   }
 }
 
-/* Calendar Styling - Updated with vibrant colors and clean headers */
+/* Calendar Styling - Solid headers, semi-transparent events */
 .fc-theme-standard .fc-scrollgrid {
-  border: 1px solid hsl(var(--cyan-blue) / 0.3);
+  border: 1px solid hsl(var(--gray-200));
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--shadow-card);
@@ -217,7 +217,7 @@
 .fc-toolbar {
   background: white !important;
   padding: 16px !important;
-  border-bottom: 1px solid hsl(var(--cyan-blue) / 0.2) !important;
+  border-bottom: 1px solid hsl(var(--gray-200)) !important;
   border-radius: 12px 12px 0 0 !important;
 }
 
@@ -261,22 +261,24 @@
   box-shadow: var(--shadow-subtle) !important;
   color: white !important;
   transition: all 0.2s ease !important;
+  opacity: 0.75 !important; /* Make all events semi-transparent */
 }
 
 .fc-event:hover {
   transform: translateY(-1px) !important;
   box-shadow: var(--shadow-card) !important;
+  opacity: 0.9 !important; /* Slightly more opaque on hover */
   filter: brightness(1.1) !important;
 }
 
 .fc-event.time-off-event {
   background: linear-gradient(135deg, hsl(var(--cyan-blue)) 0%, hsl(var(--light-green)) 100%) !important;
-  opacity: 0.85 !important;
+  opacity: 0.7 !important;
   font-style: italic !important;
 }
 
 .fc-event.completed-event {
-  opacity: 0.6;
+  opacity: 0.4 !important; /* More transparent for completed events */
   text-decoration: line-through;
 }
 
@@ -284,7 +286,7 @@
   border-left: 3px solid white !important;
 }
 
-/* Vibrant subject-specific event colors */
+/* Vibrant subject-specific event colors with transparency */
 .fc-event.ks2-event {
   background: hsl(var(--ks2-color)) !important;
 }

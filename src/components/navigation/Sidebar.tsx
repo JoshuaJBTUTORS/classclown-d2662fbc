@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -203,14 +204,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
   return (
     <div className={cn(
-      "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-white via-[hsl(var(--light-green))]/5 to-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-200 ease-in-out lg:translate-x-0 font-sidebar",
+      "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-200 ease-in-out lg:translate-x-0 font-sidebar",
       isOpen ? "translate-x-0" : "-translate-x-full",
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex h-full flex-col">
-        {/* Header with Logo - Blue-Green Gradient Background */}
+        {/* Header with Logo - Solid White Background */}
         <div className={cn(
-          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 px-4",
+          "flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4",
           isCollapsed && "px-2"
         )}>
           {!isCollapsed && (
@@ -241,7 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         </div>
         
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto bg-white">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -274,7 +275,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
         {/* Footer */}
         {!isCollapsed && (
-          <div className="border-t border-gray-200 p-4 bg-gradient-to-r from-[hsl(var(--light-green))]/10 to-[hsl(var(--medium-green))]/10">
+          <div className="border-t border-gray-200 p-4 bg-white">
             <div className="text-xs text-gray-600 text-center">
               <p className="font-playfair text-[hsl(var(--deep-purple-blue))] font-semibold text-sm">Class Clown Tutoring</p>
               <p className="mt-1 font-medium text-[hsl(var(--medium-blue))]">Excellence in Education</p>
