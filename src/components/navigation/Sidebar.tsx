@@ -44,6 +44,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     }
   }, [location.pathname, onClose, isOpen]);
 
+  // Handle backdrop click
+  const handleBackdropClick = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  // Prevent event bubbling when clicking inside sidebar
+  const handleSidebarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   const navigationItems = [
     {
       title: 'Dashboard',
@@ -219,22 +231,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={onClose}
+          onClick={handleBackdropClick}
         />
       )}
 
       {/* Sidebar */}
-      <div className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-300 ease-in-out font-sidebar",
-        // Mobile/Tablet: Modal overlay behavior
-        "lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full",
-        // Desktop: Fixed sidebar with collapse
-        "lg:z-40",
-        isCollapsed ? "lg:w-16" : "lg:w-64",
-        // Mobile: Always full width when open
-        "w-64"
-      )}>
+      <div 
+        className={cn(
+          "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-300 ease-in-out font-sidebar",
+          // Mobile/Tablet: Modal overlay behavior
+          "lg:translate-x-0",
+          isOpen ? "translate-x-0" : "-translate-x-full",
+          // Desktop: Fixed sidebar with collapse
+          "lg:z-40",
+          isCollapsed ? "lg:w-16" : "lg:w-64",
+          // Mobile: Always full width when open
+          "w-64"
+        )}
+        onClick={handleSidebarClick}
+      >
         <div className="flex h-full flex-col">
           {/* Header with Logo */}
           <div className={cn(

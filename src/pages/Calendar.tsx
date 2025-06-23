@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
@@ -15,8 +16,13 @@ const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
   const { openBookingModal } = useTrialBooking();
   
-  // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
   
   // Filter state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -25,6 +31,19 @@ const Calendar = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
+
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -41,9 +60,13 @@ const Calendar = () => {
   // If user has learning_hub_only role, show locked feature
   if (isLearningHubOnly) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-gray-50 w-full">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className="flex flex-col flex-1 w-full">
+        <div className={cn(
+          "flex flex-col flex-1 transition-all duration-300 w-full",
+          "lg:ml-0",
+          sidebarOpen && "lg:ml-64"
+        )}>
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <LockedFeature
