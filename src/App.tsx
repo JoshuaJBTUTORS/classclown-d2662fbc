@@ -168,7 +168,7 @@ function App() {
                   }
                 />
 
-                {/* Checkout route */}
+                {/* Checkout route - THIS WAS MISSING */}
                 <Route
                   path="/checkout/:courseId"
                   element={
