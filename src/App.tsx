@@ -178,6 +178,7 @@ function App() {
                 >
                   <Route index element={<LearningHub />} />
                   <Route path="dashboard" element={<LearningHubDashboard />} />
+                  <Route path="library" element={<LearningHub />} />
                   <Route path="my-courses" element={<LearningHubMyCourses />} />
                   <Route path="assessments" element={<LearningHubAssessments />} />
                   <Route path="revision" element={<LearningHubRevision />} />
