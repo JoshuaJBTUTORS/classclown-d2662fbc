@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -21,6 +22,51 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [homeworkLessonId, setHomeworkLessonId] = useState<string | null>(null);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
+
+  // Subject color mapping function
+  const getSubjectColor = (subject: string): string => {
+    if (!subject) return '#3541A5'; // Default to deep purple-blue
+    
+    const subjectLower = subject.toLowerCase();
+    
+    // KS2 subjects - Light Green
+    if (subjectLower.includes('ks2') || subjectLower.includes('early ks2')) {
+      return '#ACD696';
+    }
+    
+    // 11 Plus subjects - Deep Purple-Blue
+    if (subjectLower.includes('11 plus') || subjectLower.includes('11+')) {
+      return '#3541A5';
+    }
+    
+    // KS3 subjects - Medium Blue
+    if (subjectLower.includes('ks3')) {
+      return '#3784CB';
+    }
+    
+    // GCSE subjects - Cyan
+    if (subjectLower.includes('gcse')) {
+      return '#3CA7CB';
+    }
+    
+    // SATS subjects - Medium Green
+    if (subjectLower.includes('sats')) {
+      return '#4AAD64';
+    }
+    
+    // Year 11 subjects - Between Medium Blue and Cyan
+    if (subjectLower.includes('year 11')) {
+      return '#3791CB';
+    }
+    
+    // A-Level subjects - Bright Green
+    if (subjectLower.includes('a-level') || subjectLower.includes('a level')) {
+      return '#299631';
+    }
+    
+    // Default fallback
+    return '#3541A5';
+  };
 
   const handleEventClick = (info: any) => {
     console.log("Event clicked:", info.event.id, info.event);
@@ -50,7 +96,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 
   const handleRefresh = () => {
     console.log("Refresh called from CalendarDisplay");
-    // This will trigger a refresh in the parent component
   };
 
   // Helper function to truncate text intelligently
@@ -236,7 +281,8 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               meridiem: 'short'
             }}
             eventDidMount={(info) => {
-              const color = 'hsl(228 59% 20%)'; // Night blue for all lessons
+              const subject = info.event.extendedProps.subject || '';
+              const color = getSubjectColor(subject);
               info.el.style.backgroundColor = color;
               info.el.style.borderColor = color;
               info.el.style.color = 'white';

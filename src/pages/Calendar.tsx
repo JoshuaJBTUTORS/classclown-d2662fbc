@@ -107,7 +107,7 @@ const Calendar = () => {
             />
             
             {/* Calendar Display - Takes remaining space */}
-            <div className="flex-1 p-4 md:p-6 overflow-hidden">
+            <div className="flex-1 overflow-hidden">
               <CalendarDisplay
                 isLoading={isLoading}
                 events={events}
