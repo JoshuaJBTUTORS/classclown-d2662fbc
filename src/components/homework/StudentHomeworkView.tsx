@@ -190,6 +190,7 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         return;
       }
       setSelectedFile(file);
+      console.log("File selected:", file.name, "Size:", (file.size / 1024 / 1024).toFixed(2), "MB");
     }
   };
 
@@ -248,13 +249,13 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
             throw uploadError;
           }
           
-          // Get the public URL of the uploaded file
+          // Get the public URL of the uploaded file (now that bucket is public)
           const { data: urlData } = supabase.storage
             .from('homework-submissions')
             .getPublicUrl(fileName);
           
           attachmentUrl = urlData.publicUrl;
-          console.log("File uploaded successfully:", attachmentUrl);
+          console.log("File uploaded successfully. Public URL:", attachmentUrl);
         } catch (uploadError) {
           console.error('Error during file upload:', uploadError);
           setFileUploadError("Failed to upload file. Please try again.");
@@ -469,6 +470,7 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log("Opening homework attachment:", selectedHomework.attachment_url);
                       window.open(selectedHomework.attachment_url!, '_blank');
                     }}
                     className="gap-2"
@@ -598,6 +600,7 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log("Opening homework attachment:", selectedHomework.attachment_url);
                       window.open(selectedHomework.attachment_url!, '_blank');
                     }}
                     className="gap-2"
@@ -631,7 +634,8 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(selectedHomework.submission.attachment_url!, '_blank');
+                          console.log("Opening submission attachment:", selectedHomework.submission!.attachment_url);
+                          window.open(selectedHomework.submission!.attachment_url!, '_blank');
                         }}
                         className="gap-2"
                       >
