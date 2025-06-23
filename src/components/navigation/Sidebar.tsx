@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import ChatModal from '@/components/chat/ChatModal';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { userRole } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const previousPathnameRef = useRef(location.pathname);
 
   // Auto-close sidebar on mobile when route changes (not when toggling)
@@ -68,9 +70,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     e.stopPropagation();
   };
 
-  // Handle chat click
+  // Handle chat click - open modal instead of external link
   const handleChatClick = () => {
-    window.open('https://mail.google.com/chat/u/0/#chat/space/AAAAbvw8Bfs', '_blank');
+    setIsChatModalOpen(true);
   };
 
   const navigationItems = [
@@ -229,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const colorMap = {
       'Dashboard': isActive 
         ? 'bg-[hsl(var(--deep-purple-blue))]/20 text-[hsl(var(--deep-purple-blue))]' 
-        : 'text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--deep-purple-blue))]/10 hover:text-[hsl(var(--deep-purple-blue))]',
+        : 'text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))]',
       'Calendar': isActive 
         ? 'bg-[hsl(var(--medium-blue))]/20 text-[hsl(var(--medium-blue))]' 
         : 'text-[hsl(var(--medium-blue))] hover:bg-[hsl(var(--medium-blue))]/10 hover:text-[hsl(var(--medium-blue))]',
@@ -391,6 +393,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           )}
         </div>
       </div>
+
+      {/* Chat Modal */}
+      <ChatModal 
+        isOpen={isChatModalOpen}
+        onClose={() => setIsChatModalOpen(false)}
+      />
     </>
   );
 };
