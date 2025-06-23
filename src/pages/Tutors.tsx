@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Edit, PlusIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import DeleteTutorDialog from '@/components/tutors/DeleteTutorDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Tutor } from '@/types/tutor';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -27,7 +27,14 @@ interface TutorWithSubjects extends Tutor {
 }
 
 const Tutors = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
+  
   const [tutors, setTutors] = useState<TutorWithSubjects[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddTutorOpen, setIsAddTutorOpen] = useState(false);
@@ -37,8 +44,25 @@ const Tutors = () => {
   const [isDeleteTutorOpen, setIsDeleteTutorOpen] = useState(false);
   const { isOwner } = useAuth();
 
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
   };
 
   const fetchTutors = async () => {
@@ -128,8 +152,12 @@ const Tutors = () => {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <div className="flex justify-between items-center mb-6">

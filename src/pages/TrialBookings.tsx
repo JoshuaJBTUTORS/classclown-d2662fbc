@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -49,6 +48,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import TrialBookingApprovalDialog from '@/components/trialBooking/TrialBookingApprovalDialog';
+import { cn } from '@/lib/utils';
 
 interface TrialBooking {
   id: string;
@@ -69,7 +69,14 @@ interface TrialBooking {
 }
 
 const TrialBookings = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
+  
   const [bookings, setBookings] = useState<TrialBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<TrialBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +85,27 @@ const TrialBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState<TrialBooking | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isApprovalOpen, setIsApprovalOpen] = useState(false);
+
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   useEffect(() => {
     fetchBookings();
@@ -153,10 +181,6 @@ const TrialBookings = () => {
     fetchBookings();
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   const viewBookingDetails = (booking: TrialBooking) => {
     setSelectedBooking(booking);
     setIsDetailsOpen(true);
@@ -179,8 +203,12 @@ const TrialBookings = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">

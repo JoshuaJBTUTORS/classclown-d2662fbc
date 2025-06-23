@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -38,6 +37,7 @@ import AddStudentForm from '@/components/students/AddStudentForm';
 import AddParentStudentForm from '@/components/students/AddParentStudentForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 const Students = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -50,8 +50,37 @@ const Students = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
+  
   const { isParent, isAdmin, isOwner, user, userRole } = useAuth();
+
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   // Fetch students from Supabase with parent information
   const fetchStudents = async () => {
@@ -229,14 +258,14 @@ const Students = () => {
     setIsEditDialogOpen(false);
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className="flex flex-col flex-1 lg:pl-64">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col md:flex-row items-center justify-between mb-6">
@@ -368,16 +397,15 @@ const Students = () => {
                                 View Profile
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditClick(student)}>
-                                Edit Student
+                                Edit Profile
                               </DropdownMenuItem>
-                              {(isAdmin || isOwner) && (
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => handleDeleteClick(student)}
-                                >
-                                  Delete Student
-                                </DropdownMenuItem>
-                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteClick(student)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                Delete Student
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -388,51 +416,46 @@ const Students = () => {
               </Table>
             </CardContent>
           </Card>
+          
+          <AddStudentForm 
+            isOpen={isAddDialogOpen} 
+            onClose={() => setIsAddDialogOpen(false)}
+            onSuccess={() => {
+              setIsAddDialogOpen(false);
+              fetchStudents();
+            }}
+          />
+
+          <AddParentStudentForm 
+            isOpen={isAddFamilyDialogOpen} 
+            onClose={() => setIsAddFamilyDialogOpen(false)}
+            onSuccess={() => {
+              setIsAddFamilyDialogOpen(false);
+              fetchStudents();
+            }}
+          />
+
+          <ViewStudentProfile
+            student={selectedStudent}
+            isOpen={isViewDialogOpen}
+            onClose={() => setIsViewDialogOpen(false)}
+          />
+
+          <EditStudentForm
+            student={selectedStudent}
+            isOpen={isEditDialogOpen}
+            onClose={() => setIsEditDialogOpen(false)}
+            onUpdate={handleStudentUpdated}
+          />
+
+          <DeleteStudentDialog
+            student={selectedStudent}
+            isOpen={isDeleteDialogOpen}
+            onClose={() => setIsDeleteDialogOpen(false)}
+            onDeleted={fetchStudents}
+          />
         </main>
       </div>
-
-      {/* Add Family Dialog */}
-      <AddParentStudentForm
-        isOpen={isAddFamilyDialogOpen}
-        onClose={() => setIsAddFamilyDialogOpen(false)}
-        onSuccess={fetchStudents}
-      />
-
-      {/* Add Student Only Dialog */}
-      <AddStudentForm
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onSuccess={fetchStudents}
-      />
-
-      {/* Edit Student Dialog */}
-      {selectedStudent && (
-        <EditStudentForm
-          student={selectedStudent}
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-          onUpdate={handleStudentUpdated}
-        />
-      )}
-
-      {/* View Student Dialog */}
-      {selectedStudent && (
-        <ViewStudentProfile
-          student={selectedStudent}
-          isOpen={isViewDialogOpen}
-          onClose={() => setIsViewDialogOpen(false)}
-        />
-      )}
-      
-      {/* Delete Student Dialog */}
-      {selectedStudent && (
-        <DeleteStudentDialog
-          student={selectedStudent}
-          isOpen={isDeleteDialogOpen}
-          onClose={() => setIsDeleteDialogOpen(false)}
-          onDeleted={fetchStudents}
-        />
-      )}
     </div>
   );
 };
