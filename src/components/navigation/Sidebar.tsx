@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -28,6 +27,13 @@ import { Button } from '@/components/ui/button';
 interface SidebarProps {
   isOpen: boolean;
   onClose?: () => void;
+}
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  onClick?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
@@ -143,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     }
   ];
 
-  const getNavigation = () => {
+  const getNavigation = (): NavigationItem[] => {
     // For students, start with Progress and exclude Dashboard
     if (userRole === 'student') {
       return [
@@ -178,7 +184,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     }
 
     // For all other roles, keep the original navigation with Dashboard first
-    const baseNavigation = [
+    const baseNavigation: NavigationItem[] = [
       { name: 'Dashboard', href: '/', icon: Home },
       { name: 'Calendar', href: '/calendar', icon: Calendar },
     ];
