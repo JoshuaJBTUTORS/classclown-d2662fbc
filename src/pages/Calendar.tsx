@@ -87,9 +87,6 @@ const Calendar = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Check if user can see filters (admin/owner only for full filters)
-  const canUseFilters = userRole === 'admin' || userRole === 'owner';
-
   return (
     <div className="flex min-h-screen bg-white">
       <Sidebar isOpen={sidebarOpen} />
@@ -114,7 +111,7 @@ const Calendar = () => {
                 onStudentFilterChange={handleStudentFilterChange}
                 onTutorFilterChange={handleTutorFilterChange}
                 onClearFilters={handleClearFilters}
-                canUseFilters={canUseFilters}
+                canUseFilters={true}
               />
             )}
             

@@ -25,8 +25,6 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!canUseFilters) return null;
-
   return (
     <>
       {/* Desktop Collapsible Sidebar */}
