@@ -1,22 +1,51 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
 import UpcomingSessions from '@/components/dashboard/UpcomingSessions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
+
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="flex min-h-screen bg-white">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className="flex flex-col flex-1 lg:pl-0">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div>

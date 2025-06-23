@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -11,6 +11,7 @@ import ProgressFilters from '@/components/progress/ProgressFilters';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProgressFilters {
   dateRange: { from: Date | null; to: Date | null };
@@ -19,7 +20,14 @@ interface ProgressFilters {
 }
 
 const Progress: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
+  
   const [filters, setFilters] = useState<ProgressFilters>({
     dateRange: { from: null, to: null },
     selectedStudents: [],
@@ -28,8 +36,25 @@ const Progress: React.FC = () => {
 
   const { userRole, user } = useAuth();
 
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
   };
 
   const handleFiltersChange = (newFilters: Partial<ProgressFilters>) => {
@@ -40,8 +65,12 @@ const Progress: React.FC = () => {
   if (userRole !== 'student' && userRole !== 'owner' && userRole !== 'parent') {
     return (
       <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className={cn(
+          "flex flex-col flex-1 transition-all duration-300 w-full",
+          "lg:ml-0",
+          sidebarOpen && "lg:ml-64"
+        )}>
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-8">
             <Alert variant="destructive">
@@ -79,8 +108,12 @@ const Progress: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <PageTitle 
