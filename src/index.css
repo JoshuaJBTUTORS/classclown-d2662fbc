@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @tailwind base;
@@ -9,74 +8,73 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    --background-alt: 270 20% 98%;
+    --background-alt: 220 25% 98%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     
-    /* Pastel Primary Colors - Soft Lavender */
-    --primary: 270 25% 75%;
-    --primary-foreground: 270 45% 25%;
-    --primary-light: 270 20% 85%;
-    --primary-dark: 270 35% 65%;
+    /* Blue to Green Gradient Primary Colors */
+    --deep-purple-blue: 235 65% 45%; /* #3541A5 */
+    --medium-blue: 210 60% 50%; /* #3784CB */
+    --cyan-blue: 195 65% 52%; /* #3CA7CB */
+    --light-green: 85 45% 70%; /* #ACD696 */
+    --medium-green: 140 45% 45%; /* #4AAD64 */
+    --bright-green: 140 70% 35%; /* #299631 */
     
-    --secondary: 120 15% 95%;
-    --secondary-foreground: 120 25% 25%;
-    --muted: 60 15% 96%;
+    /* Primary system using deep purple-blue */
+    --primary: var(--deep-purple-blue);
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 235 45% 65%;
+    --primary-dark: 235 75% 35%;
+    
+    --secondary: 220 15% 95%;
+    --secondary-foreground: 220 25% 25%;
+    --muted: 220 15% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
     
-    /* Pastel Accent - Mint Green */
-    --accent: 120 25% 85%;
-    --accent-foreground: 120 35% 25%;
+    /* Accent using cyan-blue */
+    --accent: var(--cyan-blue);
+    --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 45% 75%;
-    --destructive-foreground: 0 65% 25%;
+    --destructive: 0 60% 60%;
+    --destructive-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 270 25% 75%;
+    --ring: var(--cyan-blue);
     --radius: 0.75rem;
     
-    /* Pastel Chart Colors */
-    --chart-1: 270 25% 75%;
-    --chart-2: 120 25% 75%;
-    --chart-3: 30 35% 80%;
-    --chart-4: 340 25% 80%;
-    --chart-5: 200 25% 80%;
+    /* Chart Colors using gradient palette */
+    --chart-1: var(--deep-purple-blue);
+    --chart-2: var(--medium-blue);
+    --chart-3: var(--cyan-blue);
+    --chart-4: var(--light-green);
+    --chart-5: var(--medium-green);
     
-    /* Performance Colors - Pastels */
-    --performance-low: 0 45% 75%;
-    --performance-medium: 38 35% 75%;
-    --performance-high: 120 25% 75%;
+    /* Performance Colors */
+    --performance-low: 0 60% 60%;
+    --performance-medium: 45 70% 60%;
+    --performance-high: var(--bright-green);
     
-    /* Pastel Color System */
-    --soft-lavender: 270 25% 75%;
-    --mint-green: 120 25% 85%;
-    --peach: 20 35% 85%;
-    --powder-blue: 200 25% 85%;
-    --pale-pink: 340 25% 85%;
-    --light-coral: 15 45% 75%;
-    --honeydew: 120 15% 95%;
-    --lavender-blush: 340 15% 95%;
+    /* Subject Color Mapping using gradient spectrum */
+    --math-color: var(--deep-purple-blue);
+    --english-color: var(--medium-blue);
+    --science-color: var(--cyan-blue);
+    --history-color: var(--light-green);
+    --art-color: var(--medium-green);
+    --success-color: var(--bright-green);
     
-    /* Subject Color Mapping */
-    --math-color: 270 25% 85%;
-    --english-color: 20 35% 85%;
-    --science-color: 120 25% 85%;
-    --history-color: 200 25% 85%;
-    --art-color: 340 25% 85%;
+    /* Gradients using adjacent colors */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-blue)) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--cyan-blue)) 0%, hsl(var(--light-green)) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(var(--medium-green)) 0%, hsl(var(--bright-green)) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(var(--deep-purple-blue) / 0.1) 0%, hsl(var(--cyan-blue) / 0.1) 100%);
     
-    /* Pastel Gradients - Subtle */
-    --gradient-primary: linear-gradient(135deg, hsl(270 25% 75%) 0%, hsl(270 20% 85%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(120 25% 85%) 0%, hsl(120 15% 95%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(20 35% 85%) 0%, hsl(20 25% 90%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(270 20% 98%) 0%, hsl(270 15% 95%) 100%);
-    
-    /* Refined Shadows */
-    --shadow-subtle: 0 2px 8px -2px rgba(130, 120, 140, 0.08);
-    --shadow-card: 0 4px 12px -2px rgba(130, 120, 140, 0.12);
-    --shadow-elevated: 0 8px 24px -4px rgba(130, 120, 140, 0.15);
-    --shadow-focus: 0 0 0 3px rgba(130, 120, 140, 0.15);
+    /* Enhanced Shadows with blue-green tints */
+    --shadow-subtle: 0 2px 8px -2px hsl(var(--deep-purple-blue) / 0.08);
+    --shadow-card: 0 4px 12px -2px hsl(var(--medium-blue) / 0.12);
+    --shadow-elevated: 0 8px 24px -4px hsl(var(--cyan-blue) / 0.15);
+    --shadow-focus: 0 0 0 3px hsl(var(--cyan-blue) / 0.15);
   }
 
   .dark {
@@ -87,21 +85,21 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 270 30% 60%;
+    --primary: var(--medium-blue);
     --primary-foreground: 0 0% 100%;
-    --primary-light: 270 25% 70%;
-    --primary-dark: 270 40% 50%;
+    --primary-light: 210 45% 70%;
+    --primary-dark: 210 70% 40%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 120 30% 68%;
+    --accent-foreground: hsl(var(--light-green));
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 270 30% 60%;
+    --ring: var(--cyan-blue);
   }
 }
 
@@ -123,7 +121,7 @@
   }
 }
 
-/* Pastel Component Classes */
+/* Blue-Green Component Classes */
 @layer components {
   .luxury-card {
     @apply bg-white border border-gray-200 rounded-xl shadow-[var(--shadow-card)] transition-all duration-200;
@@ -134,7 +132,7 @@
   }
   
   .luxury-button {
-    @apply bg-gradient-to-r from-[hsl(var(--light-coral))] to-[hsl(var(--peach))] text-white font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
+    @apply bg-gradient-to-r from-[hsl(var(--deep-purple-blue))] to-[hsl(var(--medium-blue))] text-white font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
   }
   
   .luxury-button:hover {
@@ -142,23 +140,31 @@
   }
   
   .luxury-button-green {
-    @apply bg-gradient-to-r from-[hsl(var(--mint-green))] to-[hsl(var(--honeydew))] text-[hsl(120,35%,25%)] font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
+    @apply bg-gradient-to-r from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] text-white font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
   }
   
   .luxury-button-green:hover {
     @apply shadow-[var(--shadow-card)] transform -translate-y-0.5 opacity-90;
   }
   
+  .luxury-button-cyan {
+    @apply bg-gradient-to-r from-[hsl(var(--cyan-blue))] to-[hsl(var(--light-green))] text-white font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
+  }
+  
+  .luxury-button-cyan:hover {
+    @apply shadow-[var(--shadow-card)] transform -translate-y-0.5 opacity-90;
+  }
+  
   .luxury-input {
-    @apply border border-gray-300 rounded-lg bg-white focus:border-[hsl(var(--light-coral))] focus:ring-2 focus:ring-[hsl(var(--light-coral))]/10 transition-all duration-200;
+    @apply border border-gray-300 rounded-lg bg-white focus:border-[hsl(var(--cyan-blue))] focus:ring-2 focus:ring-[hsl(var(--cyan-blue))]/10 transition-all duration-200;
   }
   
   .luxury-gradient-text {
-    @apply bg-gradient-to-r from-[hsl(var(--soft-lavender))] to-[hsl(var(--pale-pink))] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[hsl(var(--deep-purple-blue))] to-[hsl(var(--cyan-blue))] bg-clip-text text-transparent;
   }
   
   .luxury-gradient-text-green {
-    @apply bg-gradient-to-r from-[hsl(var(--mint-green))] to-[hsl(var(--honeydew))] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] bg-clip-text text-transparent;
   }
   
   .luxury-nav {
@@ -179,58 +185,58 @@
       transform: scale(1);
     }
     50% {
-      background-color: hsl(var(--pale-pink));
+      background-color: hsl(var(--cyan-blue) / 0.2);
       transform: scale(1.01);
     }
     100% {
-      background-color: hsl(var(--lavender-blush));
+      background-color: hsl(var(--light-green) / 0.1);
       transform: scale(1);
     }
   }
 }
 
-/* Calendar Pastel Styling */
+/* Calendar Blue-Green Styling */
 .fc-theme-standard .fc-scrollgrid {
-  border: 1px solid hsl(var(--soft-lavender) / 0.3);
+  border: 1px solid hsl(var(--cyan-blue) / 0.3);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--shadow-card);
 }
 
 .fc-toolbar {
-  background: hsl(var(--powder-blue)) !important;
+  background: hsl(var(--medium-blue)) !important;
   padding: 16px !important;
-  border-bottom: 1px solid hsl(var(--soft-lavender) / 0.2) !important;
+  border-bottom: 1px solid hsl(var(--cyan-blue) / 0.2) !important;
   border-radius: 12px 12px 0 0 !important;
 }
 
 .fc-theme-standard .fc-col-header-cell {
-  background: hsl(var(--honeydew)) !important;
-  border-color: hsl(var(--mint-green) / 0.3);
+  background: hsl(var(--light-green) / 0.3) !important;
+  border-color: hsl(var(--medium-green) / 0.3);
   font-weight: 500;
-  color: hsl(120 35% 25%) !important;
+  color: hsl(var(--deep-purple-blue)) !important;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   font-size: 12px;
 }
 
 .fc-theme-standard .fc-daygrid-day {
-  border-color: hsl(var(--soft-lavender) / 0.15);
+  border-color: hsl(var(--cyan-blue) / 0.15);
   transition: background-color 0.2s ease;
 }
 
 .fc-theme-standard .fc-daygrid-day:hover {
-  background-color: hsl(var(--lavender-blush));
+  background-color: hsl(var(--light-green) / 0.1);
 }
 
 .fc-theme-standard .fc-daygrid-day-top {
-  color: hsl(270 35% 35%);
+  color: hsl(var(--deep-purple-blue));
   font-weight: 500;
 }
 
 .fc-theme-standard .fc-daygrid-day.fc-day-today {
-  background: linear-gradient(135deg, hsl(var(--pale-pink)) 0%, hsl(var(--lavender-blush)) 100%);
-  border: 1px solid hsl(var(--light-coral));
+  background: linear-gradient(135deg, hsl(var(--bright-green) / 0.2) 0%, hsl(var(--light-green) / 0.1) 100%);
+  border: 1px solid hsl(var(--bright-green));
 }
 
 .fc-event {
@@ -241,8 +247,8 @@
   padding: 2px 6px !important;
   margin: 1px 0 !important;
   box-shadow: var(--shadow-subtle) !important;
-  background: linear-gradient(135deg, hsl(var(--soft-lavender)) 0%, hsl(var(--pale-pink)) 100%) !important;
-  color: hsl(270 45% 25%) !important;
+  background: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-blue)) 100%) !important;
+  color: white !important;
   transition: all 0.2s ease !important;
 }
 
@@ -253,7 +259,7 @@
 }
 
 .fc-event.time-off-event {
-  background: linear-gradient(135deg, hsl(var(--peach)) 0%, hsl(20 25% 85%) 100%) !important;
+  background: linear-gradient(135deg, hsl(var(--cyan-blue)) 0%, hsl(var(--light-green)) 100%) !important;
   opacity: 0.85 !important;
   font-style: italic !important;
 }
@@ -264,20 +270,20 @@
 }
 
 .fc-event.recurring-event {
-  border-left: 3px solid hsl(var(--mint-green)) !important;
+  border-left: 3px solid hsl(var(--bright-green)) !important;
 }
 
 .fc-toolbar-title {
   font-weight: 600 !important;
-  color: hsl(200 45% 35%) !important;
+  color: white !important;
   font-family: 'Playfair Display', serif !important;
   font-size: 1.5rem !important;
 }
 
 .fc-button {
   background: white !important;
-  border: 1px solid hsl(var(--light-coral)) !important;
-  color: hsl(15 45% 45%) !important;
+  border: 1px solid hsl(var(--cyan-blue)) !important;
+  color: hsl(var(--deep-purple-blue)) !important;
   font-weight: 500 !important;
   border-radius: 6px !important;
   padding: 6px 12px !important;
@@ -287,7 +293,7 @@
 }
 
 .fc-button:hover {
-  background: hsl(var(--light-coral)) !important;
+  background: hsl(var(--cyan-blue)) !important;
   color: white !important;
   transform: translateY(-1px) !important;
   box-shadow: var(--shadow-card) !important;
@@ -302,7 +308,7 @@
 }
 
 .fc-button-primary:not(:disabled).fc-button-active {
-  background: hsl(var(--light-coral)) !important;
+  background: hsl(var(--medium-blue)) !important;
   color: white !important;
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.1) !important;
 }
@@ -314,21 +320,21 @@
   box-shadow: var(--shadow-card);
 }
 
-/* Professional Scrollbar */
+/* Professional Scrollbar with gradient colors */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--honeydew));
+  background: hsl(var(--light-green) / 0.1);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, hsl(var(--soft-lavender)) 0%, hsl(var(--pale-pink)) 100%);
+  background: linear-gradient(135deg, hsl(var(--medium-blue)) 0%, hsl(var(--cyan-blue)) 100%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, hsl(var(--mint-green)) 0%, hsl(var(--light-coral)) 100%);
+  background: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-green)) 100%);
 }

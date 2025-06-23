@@ -29,28 +29,28 @@ const Index = () => {
             <DashboardMetrics />
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               <Card className="lg:col-span-2 card-hover border-gray-200 shadow-[var(--shadow-card)]">
-                <CardHeader className="pb-4 bg-gradient-to-r from-[hsl(270,20%,95%)] to-[hsl(200,15%,95%)]">
-                  <CardTitle className="font-playfair text-2xl text-[hsl(270,35%,35%)]">Weekly Activity</CardTitle>
+                <CardHeader className="pb-4 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10">
+                  <CardTitle className="font-playfair text-2xl text-[hsl(var(--deep-purple-blue))]">Weekly Activity</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(120,15%,95%)] to-[hsl(340,10%,95%)] rounded-lg border border-gray-100">
-                  <p className="text-[hsl(270,35%,35%)] text-sm font-medium">Activity chart will be shown here</p>
+                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(var(--light-green))]/5 to-[hsl(var(--cyan-blue))]/5 rounded-lg border border-gray-100">
+                  <p className="text-[hsl(var(--deep-purple-blue))] text-sm font-medium">Activity chart will be shown here</p>
                 </CardContent>
               </Card>
               <Card className="card-hover border-gray-200 shadow-[var(--shadow-card)]">
-                <CardHeader className="pb-4 bg-gradient-to-r from-[hsl(340,20%,95%)] to-[hsl(20,15%,95%)]">
-                  <CardTitle className="font-playfair text-2xl text-[hsl(340,35%,35%)]">Student Distribution</CardTitle>
+                <CardHeader className="pb-4 bg-gradient-to-r from-[hsl(var(--cyan-blue))]/10 to-[hsl(var(--light-green))]/10">
+                  <CardTitle className="font-playfair text-2xl text-[hsl(var(--cyan-blue))]">Student Distribution</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(200,15%,95%)] to-[hsl(60,10%,95%)] rounded-lg border border-gray-100">
-                  <p className="text-[hsl(340,35%,35%)] text-sm font-medium">Distribution chart will be shown here</p>
+                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(var(--medium-blue))]/5 to-[hsl(var(--medium-green))]/5 rounded-lg border border-gray-100">
+                  <p className="text-[hsl(var(--cyan-blue))] text-sm font-medium">Distribution chart will be shown here</p>
                 </CardContent>
               </Card>
               <UpcomingSessions />
               <Card className="lg:col-span-2 card-hover border-gray-200 shadow-[var(--shadow-card)]">
-                <CardHeader className="pb-4 bg-gradient-to-r from-[hsl(60,20%,95%)] to-[hsl(120,15%,95%)]">
-                  <CardTitle className="font-playfair text-2xl text-[hsl(60,45%,35%)]">Recent Activities</CardTitle>
+                <CardHeader className="pb-4 bg-gradient-to-r from-[hsl(var(--medium-green))]/10 to-[hsl(var(--bright-green))]/10">
+                  <CardTitle className="font-playfair text-2xl text-[hsl(var(--medium-green))]">Recent Activities</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(15,15%,95%)] to-[hsl(270,10%,95%)] rounded-lg border border-gray-100">
-                  <p className="text-[hsl(60,45%,35%)] text-sm font-medium">Activity log will be shown here</p>
+                <CardContent className="h-[300px] flex items-center justify-center bg-gradient-to-br from-[hsl(var(--light-green))]/5 to-[hsl(var(--deep-purple-blue))]/5 rounded-lg border border-gray-100">
+                  <p className="text-[hsl(var(--medium-green))] text-sm font-medium">Activity log will be shown here</p>
                 </CardContent>
               </Card>
             </div>

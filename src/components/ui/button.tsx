@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -9,17 +10,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-[hsl(15,45%,75%)] to-[hsl(20,35%,85%)] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
+        default: "bg-gradient-to-r from-[hsl(var(--deep-purple-blue))] to-[hsl(var(--medium-blue))] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
         destructive:
-          "bg-gradient-to-r from-[hsl(0,45%,75%)] to-[hsl(0,35%,85%)] text-white hover:opacity-90 shadow-sm",
+          "bg-gradient-to-r from-[hsl(0,60%,60%)] to-[hsl(0,50%,55%)] text-white hover:opacity-90 shadow-sm",
         outline:
-          "border border-[hsl(15,45%,75%)] bg-white hover:bg-[hsl(15,45%,75%)] hover:text-white transition-all duration-200",
+          "border border-[hsl(var(--cyan-blue))] bg-white hover:bg-[hsl(var(--cyan-blue))] hover:text-white transition-all duration-200",
         secondary:
-          "bg-gradient-to-r from-[hsl(270,25%,75%)] to-[hsl(270,20%,85%)] text-[hsl(270,45%,25%)] shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
-        ghost: "hover:bg-[hsl(340,25%,85%)]/30 hover:text-[hsl(340,35%,35%)] transition-all duration-200",
-        link: "text-[hsl(15,45%,75%)] underline-offset-4 hover:underline font-medium",
-        premium: "bg-gradient-to-r from-white to-[hsl(270,20%,95%)] border border-[hsl(270,25%,75%)] text-[hsl(270,35%,35%)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-[hsl(120,25%,75%)] hover:text-[hsl(120,35%,35%)] transition-all duration-200 hover:-translate-y-0.5",
-        success: "bg-gradient-to-r from-[hsl(120,25%,75%)] to-[hsl(120,15%,85%)] text-[hsl(120,35%,25%)] shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
+          "bg-gradient-to-r from-[hsl(var(--cyan-blue))] to-[hsl(var(--light-green))] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
+        ghost: "hover:bg-[hsl(var(--light-green))]/30 hover:text-[hsl(var(--deep-purple-blue))] transition-all duration-200",
+        link: "text-[hsl(var(--cyan-blue))] underline-offset-4 hover:underline font-medium",
+        premium: "bg-gradient-to-r from-white to-[hsl(var(--light-green))]/20 border border-[hsl(var(--medium-blue))] text-[hsl(var(--deep-purple-blue))] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-[hsl(var(--bright-green))] hover:text-[hsl(var(--bright-green))] transition-all duration-200 hover:-translate-y-0.5",
+        success: "bg-gradient-to-r from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
       },
       size: {
         default: "h-10 px-6 py-2",

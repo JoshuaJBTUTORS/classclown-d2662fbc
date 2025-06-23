@@ -24,7 +24,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6 bg-gradient-to-r from-[hsl(270,20%,95%)] to-[hsl(340,15%,95%)] border-b border-gray-100 rounded-t-xl", className)}
+    className={cn("flex flex-col space-y-1.5 p-6 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 border-b border-gray-100 rounded-t-xl", className)}
     {...props}
   />
 ))
@@ -37,7 +37,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-2xl font-semibold leading-none tracking-tight text-[hsl(270,35%,35%)] font-playfair",
+      "text-2xl font-semibold leading-none tracking-tight text-[hsl(var(--deep-purple-blue))] font-playfair",
       className
     )}
     {...props}
@@ -51,7 +51,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-[hsl(270,35%,35%)]/70 font-medium", className)}
+    className={cn("text-sm text-[hsl(var(--medium-blue))]/70 font-medium", className)}
     {...props}
   />
 ))
@@ -71,7 +71,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0 bg-gradient-to-r from-[hsl(120,15%,95%)] to-[hsl(200,15%,95%)] border-t border-gray-100 rounded-b-xl", className)}
+    className={cn("flex items-center p-6 pt-0 bg-gradient-to-r from-[hsl(var(--light-green))]/10 to-[hsl(var(--medium-green))]/10 border-t border-gray-100 rounded-b-xl", className)}
     {...props}
   />
 ))

@@ -170,47 +170,47 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     setIsCollapsed(!isCollapsed);
   };
 
-  // Color mapping for different navigation items
+  // Color mapping for different navigation items using blue-green gradient
   const getItemColors = (itemName: string, isActive: boolean) => {
     const colorMap = {
       'Dashboard': isActive 
-        ? 'bg-[hsl(270,20%,90%)] text-[hsl(270,35%,35%)]' 
-        : 'text-[hsl(270,35%,35%)] hover:bg-[hsl(270,15%,95%)] hover:text-[hsl(270,25%,25%)]',
+        ? 'bg-[hsl(var(--deep-purple-blue))]/20 text-[hsl(var(--deep-purple-blue))]' 
+        : 'text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--deep-purple-blue))]/10 hover:text-[hsl(var(--deep-purple-blue))]',
       'Calendar': isActive 
-        ? 'bg-[hsl(200,20%,90%)] text-[hsl(200,35%,35%)]' 
-        : 'text-[hsl(200,35%,35%)] hover:bg-[hsl(200,15%,95%)] hover:text-[hsl(200,25%,25%)]',
+        ? 'bg-[hsl(var(--medium-blue))]/20 text-[hsl(var(--medium-blue))]' 
+        : 'text-[hsl(var(--medium-blue))] hover:bg-[hsl(var(--medium-blue))]/10 hover:text-[hsl(var(--medium-blue))]',
       'Students': isActive 
-        ? 'bg-[hsl(120,20%,90%)] text-[hsl(120,35%,35%)]' 
-        : 'text-[hsl(120,35%,35%)] hover:bg-[hsl(120,15%,95%)] hover:text-[hsl(120,25%,25%)]',
+        ? 'bg-[hsl(var(--cyan-blue))]/20 text-[hsl(var(--cyan-blue))]' 
+        : 'text-[hsl(var(--cyan-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))]',
       'Tutors': isActive 
-        ? 'bg-[hsl(340,20%,90%)] text-[hsl(340,35%,35%)]' 
-        : 'text-[hsl(340,35%,35%)] hover:bg-[hsl(340,15%,95%)] hover:text-[hsl(340,25%,25%)]',
+        ? 'bg-[hsl(var(--light-green))]/20 text-[hsl(var(--medium-green))]' 
+        : 'text-[hsl(var(--light-green))] hover:bg-[hsl(var(--light-green))]/10 hover:text-[hsl(var(--medium-green))]',
       'Homework': isActive 
-        ? 'bg-[hsl(20,25%,90%)] text-[hsl(20,45%,35%)]' 
-        : 'text-[hsl(20,45%,35%)] hover:bg-[hsl(20,15%,95%)] hover:text-[hsl(20,35%,25%)]',
+        ? 'bg-[hsl(var(--medium-green))]/20 text-[hsl(var(--medium-green))]' 
+        : 'text-[hsl(var(--medium-green))] hover:bg-[hsl(var(--medium-green))]/10 hover:text-[hsl(var(--medium-green))]',
       'Progress': isActive 
-        ? 'bg-[hsl(15,25%,90%)] text-[hsl(15,45%,35%)]'  
-        : 'text-[hsl(15,45%,35%)] hover:bg-[hsl(15,15%,95%)] hover:text-[hsl(15,35%,25%)]',
+        ? 'bg-[hsl(var(--bright-green))]/20 text-[hsl(var(--bright-green))]'  
+        : 'text-[hsl(var(--bright-green))] hover:bg-[hsl(var(--bright-green))]/10 hover:text-[hsl(var(--bright-green))]',
       'Learning Hub': isActive 
-        ? 'bg-[hsl(60,20%,90%)] text-[hsl(60,45%,35%)]' 
-        : 'text-[hsl(60,45%,35%)] hover:bg-[hsl(60,15%,95%)] hover:text-[hsl(60,35%,25%)]',
+        ? 'bg-[hsl(var(--cyan-blue))]/20 text-[hsl(var(--cyan-blue))]' 
+        : 'text-[hsl(var(--cyan-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))]',
     };
     
     return colorMap[itemName] || (isActive 
-      ? 'bg-[hsl(270,20%,90%)] text-[hsl(270,35%,35%)]' 
-      : 'text-[hsl(270,35%,35%)] hover:bg-[hsl(270,15%,95%)] hover:text-[hsl(270,25%,25%)]');
+      ? 'bg-[hsl(var(--deep-purple-blue))]/20 text-[hsl(var(--deep-purple-blue))]' 
+      : 'text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--deep-purple-blue))]/10 hover:text-[hsl(var(--deep-purple-blue))]');
   };
 
   return (
     <div className={cn(
-      "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-[hsl(270,15%,98%)] to-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-200 ease-in-out lg:translate-x-0 font-sidebar",
+      "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-white via-[hsl(var(--light-green))]/5 to-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-200 ease-in-out lg:translate-x-0 font-sidebar",
       isOpen ? "translate-x-0" : "-translate-x-full",
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="flex h-full flex-col">
-        {/* Header with Logo - Soft Lavender Background */}
+        {/* Header with Logo - Blue-Green Gradient Background */}
         <div className={cn(
-          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(270,25%,95%)] to-[hsl(340,20%,95%)] px-4",
+          "flex h-16 items-center justify-between border-b border-gray-200 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 px-4",
           isCollapsed && "px-2"
         )}>
           {!isCollapsed && (
@@ -228,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             size="icon"
             onClick={toggleCollapse}
             className={cn(
-              "h-8 w-8 text-[hsl(270,35%,35%)] hover:bg-[hsl(270,15%,90%)] hover:text-[hsl(270,25%,25%)] transition-all duration-200",
+              "h-8 w-8 text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))] transition-all duration-200",
               isCollapsed && "mx-auto"
             )}
           >
@@ -265,7 +265,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                   <span className="truncate font-medium tracking-wide">{item.name}</span>
                 )}
                 {isActive && (
-                  <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-[hsl(15,45%,75%)] to-[hsl(340,25%,75%)] rounded-l-full" />
+                  <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] rounded-l-full" />
                 )}
               </Link>
             );
@@ -274,10 +274,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
         {/* Footer */}
         {!isCollapsed && (
-          <div className="border-t border-gray-200 p-4 bg-gradient-to-r from-[hsl(120,15%,95%)] to-[hsl(200,15%,95%)]">
+          <div className="border-t border-gray-200 p-4 bg-gradient-to-r from-[hsl(var(--light-green))]/10 to-[hsl(var(--medium-green))]/10">
             <div className="text-xs text-gray-600 text-center">
-              <p className="font-playfair text-[hsl(270,35%,35%)] font-semibold text-sm">Class Clown Tutoring</p>
-              <p className="mt-1 font-medium">Excellence in Education</p>
+              <p className="font-playfair text-[hsl(var(--deep-purple-blue))] font-semibold text-sm">Class Clown Tutoring</p>
+              <p className="mt-1 font-medium text-[hsl(var(--medium-blue))]">Excellence in Education</p>
             </div>
           </div>
         )}
