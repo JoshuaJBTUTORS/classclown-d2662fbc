@@ -18,7 +18,7 @@ interface Student {
 }
 
 interface StudentAttendanceRowProps {
-  student: Student;
+  student: Student | null;
   lessonId: string;
   lessonData: {
     title: string;
@@ -38,10 +38,32 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   const [attendanceStatus, setAttendanceStatus] = useState<string>('pending');
   const [lastMarked, setLastMarked] = useState<string | null>(null);
 
+  // Handle null student data gracefully
+  if (!student || !student.id) {
+    console.warn('StudentAttendanceRow: Missing student data', { student, lessonId });
+    return (
+      <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="font-medium text-gray-500">Student data unavailable</p>
+            <Badge variant="outline" className="mt-1">
+              Data Missing
+            </Badge>
+          </div>
+        </div>
+        <div className="text-sm text-gray-400">
+          Unable to load student information
+        </div>
+      </div>
+    );
+  }
+
   const studentName = `${student.first_name} ${student.last_name}`;
 
   useEffect(() => {
-    loadAttendanceData();
+    if (student.id) {
+      loadAttendanceData();
+    }
   }, [lessonId, student.id]);
 
   const loadAttendanceData = async () => {
@@ -59,6 +81,11 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   };
 
   const handleMarkAttendance = async (status: 'attended' | 'absent' | 'excused') => {
+    if (!student.id) {
+      console.error('Cannot mark attendance: student ID is missing');
+      return;
+    }
+    
     const success = await markAttendance(lessonId, student.id, status);
     if (success) {
       setAttendanceStatus(status);
@@ -67,6 +94,11 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   };
 
   const handleSendLateNotification = async () => {
+    if (!student.id) {
+      console.error('Cannot send late notification: student ID is missing');
+      return;
+    }
+    
     const success = await sendLateNotification(lessonId, student.id, lessonData, studentName);
     if (success) {
       setAttendanceStatus('late');
@@ -77,9 +109,9 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   const getStatusBadge = () => {
     switch (attendanceStatus) {
       case 'attended':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Attended</Badge>;
+        return <Badge variant="success"><CheckCircle className="h-3 w-3 mr-1" />Attended</Badge>;
       case 'late':
-        return <Badge className="bg-orange-100 text-orange-800"><Clock className="h-3 w-3 mr-1" />Late</Badge>;
+        return <Badge variant="blue"><Clock className="h-3 w-3 mr-1" />Late</Badge>;
       case 'absent':
         return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Absent</Badge>;
       case 'excused':
@@ -112,7 +144,7 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
             variant="outline"
             size="sm"
             onClick={handleSendLateNotification}
-            disabled={isSendingNotification || isUpdating}
+            disabled={isSendingNotification || isUpdating || !student.id}
             className="text-orange-600 border-orange-200 hover:bg-orange-50"
           >
             {isSendingNotification ? (
@@ -133,7 +165,7 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={isUpdating}
+                disabled={isUpdating || !student.id}
                 className="text-green-600 border-green-200 hover:bg-green-50"
               >
                 <UserCheck className="h-3 w-3 mr-1" />

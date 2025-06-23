@@ -81,6 +81,17 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .single();
 
       if (error) throw error;
+      
+      // Add debugging logs to identify null student records
+      console.log('Raw lesson data:', data);
+      if (data?.lesson_students) {
+        console.log('Lesson students:', data.lesson_students);
+        const nullStudents = data.lesson_students.filter(ls => !ls.student);
+        if (nullStudents.length > 0) {
+          console.warn('Found null student records:', nullStudents);
+        }
+      }
+      
       setLesson(data);
       
       // Check attendance and homework status
@@ -200,6 +211,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   if (!lessonId) return null;
 
+  // Filter out null student records to prevent crashes
+  const validStudents = lesson?.lesson_students?.filter(enrollment => 
+    enrollment && enrollment.student && enrollment.student.id
+  ) || [];
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -303,9 +319,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <Badge variant="outline">Group Lesson</Badge>
-                      {lesson.lesson_students?.length > 0 && (
+                      {validStudents.length > 0 && (
                         <span className="text-sm text-muted-foreground">
-                          ({lesson.lesson_students.length} students)
+                          ({validStudents.length} students)
                         </span>
                       )}
                     </div>
@@ -339,7 +355,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       lessonSpaceRoomId={lesson.lesson_space_room_id}
                       lessonSpaceSpaceId={lesson.lesson_space_space_id}
                       isGroupLesson={lesson.is_group}
-                      studentCount={lesson.lesson_students?.length || 0}
+                      studentCount={validStudents.length}
                     />
                   ) : (
                     <div className="space-y-3">
@@ -380,16 +396,21 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </CardContent>
               </Card>
 
-              {/* Students Section with Attendance */}
-              {lesson.lesson_students && lesson.lesson_students.length > 0 && (
+              {/* Students Section with Attendance - Only show if there are valid students */}
+              {validStudents.length > 0 && (
                 <Card>
                   <CardContent className="p-4">
                     <h3 className="font-medium mb-3 flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      Students ({lesson.lesson_students.length})
+                      Students ({validStudents.length})
+                      {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && (
+                        <Badge variant="destructive" className="ml-2 text-xs">
+                          {lesson.lesson_students.length - validStudents.length} missing data
+                        </Badge>
+                      )}
                     </h3>
                     <div className="space-y-3">
-                      {lesson.lesson_students.map((enrollment: any, index: number) => (
+                      {validStudents.map((enrollment: any, index: number) => (
                         <StudentAttendanceRow
                           key={enrollment.student?.id || index}
                           student={enrollment.student}
@@ -402,6 +423,24 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                           isStudent={!isTeacherRole}
                         />
                       ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Show warning if there are students with missing data */}
+              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && (
+                <Card className="border-amber-200 bg-amber-50/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-amber-700">
+                        <p className="font-medium">Some student data is missing</p>
+                        <p>
+                          {lesson.lesson_students.length - validStudents.length} student record(s) could not be loaded. 
+                          This may be due to data synchronization issues.
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
