@@ -18,6 +18,9 @@ const Calendar = () => {
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
+  // Filter state
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  
   // State for calendar functionality
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -25,6 +28,10 @@ const Calendar = () => {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const toggleFilters = () => {
+    setFiltersOpen(!filtersOpen);
   };
 
   // If user has learning_hub_only role, show locked feature
@@ -80,7 +87,7 @@ const Calendar = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Check if user can see filters (admin/owner only)
+  // Check if user can see filters (admin/owner only for full filters)
   const canUseFilters = userRole === 'admin' || userRole === 'owner';
 
   return (
@@ -91,20 +98,25 @@ const Calendar = () => {
         <main className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
           {/* Header - Fixed height */}
           <div className="flex-shrink-0 px-4 md:px-6 py-4 border-b border-gray-200">
-            <CalendarHeader />
+            <CalendarHeader 
+              onToggleFilters={toggleFilters}
+              filtersOpen={filtersOpen}
+            />
           </div>
           
-          {/* Calendar Area - Full height with filters */}
+          {/* Calendar Area - Full height with optional filters */}
           <div className="flex-1 flex overflow-hidden">
-            {/* Collapsible Filters Sidebar */}
-            <CollapsibleFilters
-              selectedStudents={selectedStudents}
-              selectedTutors={selectedTutors}
-              onStudentFilterChange={handleStudentFilterChange}
-              onTutorFilterChange={handleTutorFilterChange}
-              onClearFilters={handleClearFilters}
-              canUseFilters={canUseFilters}
-            />
+            {/* Collapsible Filters Sidebar - only show when filters are open */}
+            {filtersOpen && (
+              <CollapsibleFilters
+                selectedStudents={selectedStudents}
+                selectedTutors={selectedTutors}
+                onStudentFilterChange={handleStudentFilterChange}
+                onTutorFilterChange={handleTutorFilterChange}
+                onClearFilters={handleClearFilters}
+                canUseFilters={canUseFilters}
+              />
+            )}
             
             {/* Calendar Display - Takes remaining space */}
             <div className="flex-1 overflow-hidden p-4">

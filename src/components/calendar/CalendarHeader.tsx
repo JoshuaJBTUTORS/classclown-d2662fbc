@@ -1,12 +1,17 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, Info } from 'lucide-react';
+import { CalendarPlus, Info, Filter } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 
-const CalendarHeader: React.FC = () => {
+interface CalendarHeaderProps {
+  onToggleFilters?: () => void;
+  filtersOpen?: boolean;
+}
+
+const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onToggleFilters, filtersOpen }) => {
   const { userRole } = useAuth();
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
@@ -55,9 +60,19 @@ const CalendarHeader: React.FC = () => {
         </TooltipProvider>
       </div>
       
-      {/* Only show buttons for admins and owners */}
-      {canScheduleLessons && (
-        <div className="flex gap-2">
+      <div className="flex gap-2">
+        {/* Filter button - show to all users */}
+        <Button 
+          onClick={onToggleFilters}
+          variant={filtersOpen ? "default" : "outline"}
+          className="flex items-center gap-2"
+        >
+          <Filter className="h-4 w-4" />
+          {filtersOpen ? 'Hide Filters' : 'Show Filters'}
+        </Button>
+
+        {/* Only show schedule lesson button for admins and owners */}
+        {canScheduleLessons && (
           <Button 
             onClick={openAddLessonDialog}
             className="flex items-center gap-2"
@@ -65,8 +80,8 @@ const CalendarHeader: React.FC = () => {
             <CalendarPlus className="h-4 w-4" />
             Schedule Lesson
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Only show dialogs for admins and owners */}
       {canScheduleLessons && (
