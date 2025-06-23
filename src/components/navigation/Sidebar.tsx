@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Calendar, 
@@ -32,17 +32,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { userRole } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const previousPathnameRef = useRef(location.pathname);
 
-  // Auto-close sidebar on mobile when route changes
+  // Auto-close sidebar on mobile when route changes (not when toggling)
   useEffect(() => {
-    if (onClose && isOpen) {
+    // Only close if the pathname actually changed (not just sidebar toggle)
+    if (previousPathnameRef.current !== location.pathname && onClose && isOpen) {
       // Check if we're on mobile/tablet (< 1024px)
       const isMobile = window.innerWidth < 1024;
       if (isMobile) {
         onClose();
       }
+      // Update the ref to the new pathname
+      previousPathnameRef.current = location.pathname;
     }
-  }, [location.pathname, onClose, isOpen]);
+  }, [location.pathname, onClose]); // Removed isOpen from dependencies
 
   // Handle backdrop click
   const handleBackdropClick = () => {
