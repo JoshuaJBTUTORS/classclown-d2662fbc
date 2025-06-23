@@ -23,49 +23,74 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   const [homeworkLessonId, setHomeworkLessonId] = useState<string | null>(null);
   const [preloadedLessonData, setPreloadedLessonData] = useState<any>(null);
 
-  // Subject color mapping function
+  // Vibrant subject color mapping function
   const getSubjectColor = (subject: string): string => {
-    if (!subject) return '#3541A5'; // Default to deep purple-blue
+    if (!subject) {
+      console.log('No subject provided, using default color');
+      return '#FF7043'; // Default to bright orange
+    }
     
     const subjectLower = subject.toLowerCase();
+    console.log('Processing subject:', subject, 'lowercased:', subjectLower);
     
-    // KS2 subjects - Light Green
+    // KS2 subjects - Bright Orange
     if (subjectLower.includes('ks2') || subjectLower.includes('early ks2')) {
-      return '#ACD696';
+      console.log('Matched KS2 subject, using orange');
+      return '#FF7043';
     }
     
-    // 11 Plus subjects - Deep Purple-Blue
+    // 11 Plus subjects - Royal Purple
     if (subjectLower.includes('11 plus') || subjectLower.includes('11+')) {
-      return '#3541A5';
+      console.log('Matched 11 Plus subject, using purple');
+      return '#7B1FA2';
     }
     
-    // KS3 subjects - Medium Blue
+    // KS3 subjects - Electric Blue
     if (subjectLower.includes('ks3')) {
-      return '#3784CB';
+      console.log('Matched KS3 subject, using blue');
+      return '#1976D2';
     }
     
-    // GCSE subjects - Cyan
+    // GCSE subjects - Emerald Green
     if (subjectLower.includes('gcse')) {
-      return '#3CA7CB';
+      console.log('Matched GCSE subject, using green');
+      return '#388E3C';
     }
     
-    // SATS subjects - Medium Green
+    // SATS subjects - Coral Red
     if (subjectLower.includes('sats')) {
-      return '#4AAD64';
+      console.log('Matched SATS subject, using red');
+      return '#E53935';
     }
     
-    // Year 11 subjects - Between Medium Blue and Cyan
+    // Year 11 subjects - Teal
     if (subjectLower.includes('year 11')) {
-      return '#3791CB';
+      console.log('Matched Year 11 subject, using teal');
+      return '#00796B';
     }
     
-    // A-Level subjects - Bright Green
+    // A-Level subjects - Deep Orange
     if (subjectLower.includes('a-level') || subjectLower.includes('a level')) {
-      return '#299631';
+      console.log('Matched A-Level subject, using deep orange');
+      return '#F57C00';
     }
     
-    // Default fallback
-    return '#3541A5';
+    // Trial lessons - Pink
+    if (subjectLower.includes('trial')) {
+      console.log('Matched Trial subject, using pink');
+      return '#C2185B';
+    }
+    
+    // Check if it's a UUID (indicating invalid data)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(subject)) {
+      console.warn('Subject appears to be a UUID, indicating data issue:', subject);
+      return '#E91E63'; // Magenta to highlight data issues
+    }
+    
+    // Default fallback - use bright orange instead of blue
+    console.log('No specific match found for subject:', subject, 'using default orange');
+    return '#FF7043';
   };
 
   const handleEventClick = (info: any) => {
@@ -283,6 +308,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
             eventDidMount={(info) => {
               const subject = info.event.extendedProps.subject || '';
               const color = getSubjectColor(subject);
+              console.log('Setting event color for subject:', subject, 'color:', color);
               info.el.style.backgroundColor = color;
               info.el.style.borderColor = color;
               info.el.style.color = 'white';

@@ -65,14 +65,15 @@
     --art-color: var(--medium-green);
     --success-color: var(--bright-green);
     
-    /* Subject-based color coding */
-    --ks2-color: 85 45% 70%; /* Light Green - #ACD696 */
-    --eleven-plus-color: 235 65% 45%; /* Deep Purple-Blue - #3541A5 */
-    --ks3-color: 210 60% 50%; /* Medium Blue - #3784CB */
-    --gcse-color: 195 65% 52%; /* Cyan - #3CA7CB */
-    --sats-color: 140 45% 45%; /* Medium Green - #4AAD64 */
-    --year-11-color: 202 62% 51%; /* Between Medium Blue and Cyan */
-    --a-level-color: 140 70% 35%; /* Bright Green - #299631 */
+    /* Vibrant Subject-based color coding */
+    --ks2-color: 16 100% 66%; /* Bright Orange - #FF7043 */
+    --eleven-plus-color: 291 65% 40%; /* Royal Purple - #7B1FA2 */
+    --ks3-color: 207 77% 47%; /* Electric Blue - #1976D2 */
+    --gcse-color: 122 44% 41%; /* Emerald Green - #388E3C */
+    --sats-color: 4 77% 56%; /* Coral Red - #E53935 */
+    --year-11-color: 174 100% 29%; /* Teal - #00796B */
+    --a-level-color: 32 89% 48%; /* Deep Orange - #F57C00 */
+    --trial-color: 340 69% 42%; /* Pink - #C2185B */
     
     /* Gradients using adjacent colors */
     --gradient-primary: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-blue)) 100%);
@@ -205,7 +206,7 @@
   }
 }
 
-/* Calendar Blue-Green Styling - Updated */
+/* Calendar Styling - Updated with vibrant colors and clean headers */
 .fc-theme-standard .fc-scrollgrid {
   border: 1px solid hsl(var(--cyan-blue) / 0.3);
   border-radius: 12px;
@@ -221,22 +222,23 @@
 }
 
 .fc-theme-standard .fc-col-header-cell {
-  background: hsl(var(--light-green) / 0.3) !important;
-  border-color: hsl(var(--medium-green) / 0.3);
-  font-weight: 500;
+  background: white !important;
+  border-color: hsl(var(--gray-200));
+  font-weight: 600;
   color: hsl(var(--deep-purple-blue)) !important;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-size: 12px;
+  letter-spacing: 0.5px;
+  font-size: 13px;
+  padding: 12px 8px;
 }
 
 .fc-theme-standard .fc-daygrid-day {
-  border-color: hsl(var(--cyan-blue) / 0.15);
+  border-color: hsl(var(--gray-200));
   transition: background-color 0.2s ease;
 }
 
 .fc-theme-standard .fc-daygrid-day:hover {
-  background-color: hsl(var(--light-green) / 0.1);
+  background-color: hsl(var(--gray-50));
 }
 
 .fc-theme-standard .fc-daygrid-day-top {
@@ -245,8 +247,8 @@
 }
 
 .fc-theme-standard .fc-daygrid-day.fc-day-today {
-  background: linear-gradient(135deg, hsl(var(--bright-green) / 0.2) 0%, hsl(var(--light-green) / 0.1) 100%);
-  border: 1px solid hsl(var(--bright-green));
+  background: linear-gradient(135deg, hsl(var(--cyan-blue) / 0.1) 0%, hsl(var(--light-green) / 0.05) 100%);
+  border: 1px solid hsl(var(--cyan-blue));
 }
 
 .fc-event {
@@ -264,7 +266,7 @@
 .fc-event:hover {
   transform: translateY(-1px) !important;
   box-shadow: var(--shadow-card) !important;
-  opacity: 0.95 !important;
+  filter: brightness(1.1) !important;
 }
 
 .fc-event.time-off-event {
@@ -279,10 +281,10 @@
 }
 
 .fc-event.recurring-event {
-  border-left: 3px solid hsl(var(--bright-green)) !important;
+  border-left: 3px solid white !important;
 }
 
-/* Subject-specific event colors */
+/* Vibrant subject-specific event colors */
 .fc-event.ks2-event {
   background: hsl(var(--ks2-color)) !important;
 }
@@ -309,6 +311,10 @@
 
 .fc-event.a-level-event {
   background: hsl(var(--a-level-color)) !important;
+}
+
+.fc-event.trial-event {
+  background: hsl(var(--trial-color)) !important;
 }
 
 .fc-toolbar-title {
