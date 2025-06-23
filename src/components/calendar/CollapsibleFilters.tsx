@@ -13,6 +13,9 @@ interface CollapsibleFiltersProps {
   onTutorFilterChange: (tutorIds: string[]) => void;
   onClearFilters: () => void;
   canUseFilters: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  sidebarOpen: boolean;
 }
 
 const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
@@ -21,36 +24,40 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
   onStudentFilterChange,
   onTutorFilterChange,
   onClearFilters,
-  canUseFilters
+  canUseFilters,
+  isOpen,
+  onToggle,
+  sidebarOpen
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  if (!canUseFilters) return null;
+
+  // Calculate left position based on main sidebar state
+  const leftPosition = sidebarOpen ? 'left-64' : 'left-16';
 
   return (
     <>
-      {/* Desktop Collapsible Sidebar */}
-      <div className="hidden lg:flex">
-        <div
-          className={cn(
-            "h-full bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex-shrink-0",
-            isOpen ? "w-80" : "w-12"
-          )}
-        >
-          <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between p-3 border-b border-gray-200">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(!isOpen)}
-                className="h-8 w-8"
-              >
-                {isOpen ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-              </Button>
-              {isOpen && (
+      {/* Desktop Fixed Sidebar */}
+      <div className="hidden lg:block">
+        {isOpen && (
+          <div 
+            className={cn(
+              "fixed top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 shadow-lg z-40 transition-all duration-300 ease-in-out w-80",
+              leftPosition
+            )}
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between p-3 border-b border-gray-200">
                 <span className="text-sm font-medium text-gray-700">Filters</span>
-              )}
-            </div>
-            
-            {isOpen && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onToggle}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
               <div className="flex-1 overflow-y-auto p-4">
                 <CalendarFilters
                   selectedStudents={selectedStudents}
@@ -60,20 +67,14 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                   onClearFilters={onClearFilters}
                 />
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Mobile Sheet */}
       <div className="lg:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="fixed top-20 left-4 z-30">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
-          </SheetTrigger>
+        <Sheet open={isOpen} onOpenChange={onToggle}>
           <SheetContent side="left" className="w-80">
             <SheetHeader>
               <SheetTitle>Calendar Filters</SheetTitle>

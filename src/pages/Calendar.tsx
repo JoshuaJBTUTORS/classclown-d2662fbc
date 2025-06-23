@@ -87,6 +87,9 @@ const Calendar = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  // Check if user can see filters (admin/owner only for full filters)
+  const canUseFilters = userRole === 'admin' || userRole === 'owner';
+
   return (
     <div className="flex min-h-screen bg-white">
       <Sidebar isOpen={sidebarOpen} />
@@ -101,30 +104,28 @@ const Calendar = () => {
             />
           </div>
           
-          {/* Calendar Area - Full height with optional filters */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Collapsible Filters Sidebar - only show when filters are open */}
-            {filtersOpen && (
-              <CollapsibleFilters
-                selectedStudents={selectedStudents}
-                selectedTutors={selectedTutors}
-                onStudentFilterChange={handleStudentFilterChange}
-                onTutorFilterChange={handleTutorFilterChange}
-                onClearFilters={handleClearFilters}
-                canUseFilters={true}
-              />
-            )}
-            
-            {/* Calendar Display - Takes remaining space */}
-            <div className="flex-1 overflow-hidden p-4">
-              <CalendarDisplay
-                isLoading={isLoading}
-                events={events}
-              />
-            </div>
+          {/* Calendar Display - Full height */}
+          <div className="flex-1 overflow-hidden p-4">
+            <CalendarDisplay
+              isLoading={isLoading}
+              events={events}
+            />
           </div>
         </main>
       </div>
+
+      {/* Fixed Positioned Filters Sidebar */}
+      <CollapsibleFilters
+        selectedStudents={selectedStudents}
+        selectedTutors={selectedTutors}
+        onStudentFilterChange={handleStudentFilterChange}
+        onTutorFilterChange={handleTutorFilterChange}
+        onClearFilters={handleClearFilters}
+        canUseFilters={canUseFilters}
+        isOpen={filtersOpen}
+        onToggle={toggleFilters}
+        sidebarOpen={sidebarOpen}
+      />
     </div>
   );
 };
