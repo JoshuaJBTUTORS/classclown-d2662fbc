@@ -129,7 +129,7 @@ const CourseDetail = () => {
 
   if (isLoading || !course) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -138,13 +138,13 @@ const CourseDetail = () => {
   const hasAccess = isOwner || hasPurchased;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Back Button - Always visible */}
       <div className="fixed top-4 left-4 z-30">
         <Button
           onClick={selectedLessonId ? handleBackToCourse : handleBackToLearningHub}
           variant="ghost"
-          className="bg-white/80 backdrop-blur-sm hover:bg-white/90 text-gray-700 hover:text-pink-600 shadow-sm"
+          className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary shadow-sm"
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
           {selectedLessonId ? 'Back to Course' : 'Back to Learning Hub'}
@@ -159,7 +159,7 @@ const CourseDetail = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 text-gray-700 hover:text-pink-600 shadow-sm"
+                className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary shadow-sm"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -180,7 +180,7 @@ const CourseDetail = () => {
       {selectedLessonId && selectedLesson ? (
         <CourseAccessControl courseId={course.id}>
           {/* Full Screen Layout with Course Sidebar */}
-          <div className="fixed inset-0 bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100 pt-16">
+          <div className="fixed inset-0 bg-gray-50 pt-16">
             <div className="flex h-full">
               {/* Desktop Sidebar - Hidden on mobile */}
               {!isMobile && (
@@ -202,8 +202,8 @@ const CourseDetail = () => {
                 <div className={`h-full ${isMobile ? 'p-4' : 'p-6'}`}>
                   <div className="max-w-4xl mx-auto space-y-6">
                     {/* Lesson Title - More compact on mobile */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 p-4 md:p-6">
-                      <Badge variant="outline" className="mb-3 border-pink-200 text-pink-700 bg-pink-50">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+                      <Badge variant="outline" className="mb-3 border-primary/20 text-primary bg-primary/5">
                         {course.subject}
                       </Badge>
                       <h1 className={`font-bold text-gray-900 mb-2 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
@@ -226,12 +226,12 @@ const CourseDetail = () => {
                     </div>
 
                     {/* Video Content */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                       <ContentViewer lesson={selectedLesson} />
                     </div>
 
                     {/* Flash Cards Section */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                       <NotesSection 
                         courseId={course.id}
                         lessonId={selectedLesson.id}
