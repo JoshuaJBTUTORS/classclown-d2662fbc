@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -17,7 +18,8 @@ import {
   CalendarX,
   BookOpen,
   Book,
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -60,6 +62,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     e.stopPropagation();
   };
 
+  // Handle chat click
+  const handleChatClick = () => {
+    window.open('https://mail.google.com/chat/u/0/#chat/space/AAAAbvw8Bfs', '_blank');
+  };
+
   const navigationItems = [
     {
       title: 'Dashboard',
@@ -84,6 +91,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       href: '/tutors',
       icon: GraduationCap,
       allowedRoles: ['admin', 'owner']
+    },
+    {
+      title: 'Chat',
+      href: '#',
+      icon: MessageSquare,
+      allowedRoles: ['admin', 'owner', 'tutor'],
+      onClick: handleChatClick
     },
     {
       title: 'Homework',
@@ -150,12 +164,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       ];
     }
 
-    // For tutors, include time off requests
+    // For tutors, include chat and time off requests
     if (userRole === 'tutor') {
       return [
         { name: 'Dashboard', href: '/', icon: Home },
         { name: 'Calendar', href: '/calendar', icon: Calendar },
         { name: 'Students', href: '/students', icon: Users },
+        { name: 'Chat', href: '#', icon: MessageSquare, onClick: handleChatClick },
         { name: 'Homework', href: '/homework', icon: BookMarked },
         { name: 'Time Off', href: '/time-off', icon: Clock },
         { name: 'Learning Hub', href: '/learning-hub', icon: Library },
@@ -172,6 +187,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     if (userRole === 'admin' || userRole === 'owner') {
       baseNavigation.push({ name: 'Students', href: '/students', icon: Users });
       baseNavigation.push({ name: 'Tutors', href: '/tutors', icon: GraduationCap });
+    }
+
+    // Add chat for admins and owners
+    if (userRole === 'admin' || userRole === 'owner') {
+      baseNavigation.push({ name: 'Chat', href: '#', icon: MessageSquare, onClick: handleChatClick });
     }
 
     baseNavigation.push({ name: 'Homework', href: '/homework', icon: BookMarked });
@@ -213,6 +233,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       'Tutors': isActive 
         ? 'bg-[hsl(var(--light-green))]/20 text-[hsl(var(--medium-green))]' 
         : 'text-[hsl(var(--light-green))] hover:bg-[hsl(var(--light-green))]/10 hover:text-[hsl(var(--medium-green))]',
+      'Chat': isActive 
+        ? 'bg-[hsl(var(--medium-green))]/20 text-[hsl(var(--medium-green))]' 
+        : 'text-[hsl(var(--medium-green))] hover:bg-[hsl(var(--medium-green))]/10 hover:text-[hsl(var(--medium-green))]',
       'Homework': isActive 
         ? 'bg-[hsl(var(--medium-green))]/20 text-[hsl(var(--medium-green))]' 
         : 'text-[hsl(var(--medium-green))] hover:bg-[hsl(var(--medium-green))]/10 hover:text-[hsl(var(--medium-green))]',
@@ -291,7 +314,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto bg-white">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = location.pathname === item.href && item.href !== '#';
+              
+              if (item.onClick) {
+                // Handle chat and other onClick items
+                return (
+                  <button
+                    key={item.name}
+                    onClick={item.onClick}
+                    className={cn(
+                      "group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200 relative overflow-hidden w-full text-left",
+                      getItemColors(item.name, isActive),
+                      isCollapsed && window.innerWidth >= 1024 && "justify-center px-2"
+                    )}
+                    title={isCollapsed && window.innerWidth >= 1024 ? item.name : undefined}
+                  >
+                    <item.icon
+                      className={cn(
+                        "h-5 w-5 flex-shrink-0 transition-all duration-200",
+                        (!isCollapsed || window.innerWidth < 1024) && "mr-3"
+                      )}
+                    />
+                    {(!isCollapsed || window.innerWidth < 1024) && (
+                      <span className="truncate font-medium tracking-wide">{item.name}</span>
+                    )}
+                    {isActive && (
+                      <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] rounded-l-full" />
+                    )}
+                  </button>
+                );
+              }
+
+              // Handle regular navigation links
               return (
                 <Link
                   key={item.name}
