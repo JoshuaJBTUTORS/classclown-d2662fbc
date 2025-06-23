@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
@@ -10,6 +9,7 @@ import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { cn } from '@/lib/utils';
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
@@ -30,6 +30,10 @@ const Calendar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
   const toggleFilters = () => {
     setFiltersOpen(!filtersOpen);
   };
@@ -38,8 +42,8 @@ const Calendar = () => {
   if (isLearningHubOnly) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className={`flex flex-col flex-1 transition-all duration-200 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className="flex flex-col flex-1 w-full">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <LockedFeature
@@ -91,9 +95,14 @@ const Calendar = () => {
   const canUseFilters = userRole === 'admin' || userRole === 'owner';
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className={`flex flex-col flex-1 transition-all duration-200 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+    <div className="flex min-h-screen bg-white w-full">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
           {/* Header - Fixed height */}
