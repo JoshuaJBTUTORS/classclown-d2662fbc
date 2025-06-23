@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -11,6 +12,7 @@ import TutorHoursReport from '@/components/reports/TutorHoursReport';
 import StudentAbsenceReport from '@/components/reports/StudentAbsenceReport';
 import ReportSummaryCards from '@/components/reports/ReportSummaryCards';
 import PayrollSummaryReport from '@/components/reports/PayrollSummaryReport';
+import { cn } from '@/lib/utils';
 
 interface ReportFilters {
   dateRange: { from: Date | null; to: Date | null };
@@ -19,7 +21,14 @@ interface ReportFilters {
 }
 
 const Reports: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Responsive sidebar state - start closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return false;
+  });
+  
   const [filters, setFilters] = useState<ReportFilters>({
     dateRange: { from: null, to: null },
     selectedTutors: [],
@@ -28,8 +37,25 @@ const Reports: React.FC = () => {
 
   const { userRole } = useAuth();
 
+  // Handle window resize to adjust sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (!isDesktop && sidebarOpen) {
+        setSidebarOpen(false); // Auto-close on mobile
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
   };
 
   const handleFiltersChange = (newFilters: Partial<ReportFilters>) => {
@@ -40,8 +66,12 @@ const Reports: React.FC = () => {
   if (userRole !== 'owner') {
     return (
       <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className={cn(
+          "flex flex-col flex-1 transition-all duration-300 w-full",
+          "lg:ml-0",
+          sidebarOpen && "lg:ml-64"
+        )}>
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-8">
             <Alert variant="destructive">
@@ -59,8 +89,12 @@ const Reports: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}`}>
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <PageTitle 
