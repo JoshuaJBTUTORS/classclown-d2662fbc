@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
 interface DeleteStudentDialogProps {
-  student: Student;
+  student: Student | null;
   isOpen: boolean;
   onClose: () => void;
   onDeleted: () => void;
@@ -23,6 +23,11 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
 }) => {
   const [isHardDelete, setIsHardDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Don't render if student is null
+  if (!student) {
+    return null;
+  }
 
   const handleDelete = async () => {
     setIsDeleting(true);
