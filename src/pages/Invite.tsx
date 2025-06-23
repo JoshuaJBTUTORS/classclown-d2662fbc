@@ -25,7 +25,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Gift, Sparkles } from 'lucide-react';
 
 const formSchema = z.object({
   password: z.string().min(8, {
@@ -147,8 +148,8 @@ const Invite = () => {
       if (acceptError) throw acceptError;
       
       toast({
-        title: "Account created successfully!",
-        description: "You can now log in to the platform.",
+        title: "Welcome aboard! 🎉",
+        description: "Your account is ready - start learning for free!",
       });
       
       // Redirect to login page
@@ -210,10 +211,24 @@ const Invite = () => {
               className="h-36 w-auto" 
             />
           </div>
-          <CardTitle>Complete Your Registration</CardTitle>
-          <CardDescription>
-            Welcome to {invitation?.organization_name || "our tutoring platform"}! You've been 
-            invited to join as a {invitation?.role}.
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Badge variant="success" className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2">
+              <Gift className="h-4 w-4 mr-2" />
+              Start for Free
+            </Badge>
+          </div>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            Complete Your Registration
+          </CardTitle>
+          <CardDescription className="text-base">
+            <div className="flex items-center justify-center gap-1 mb-2">
+              <Sparkles className="h-4 w-4 text-yellow-500" />
+              <span className="font-semibold text-green-600">Free access</span>
+              <span>to {invitation?.organization_name || "our learning platform"}!</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              You've been invited to join as a {invitation?.role}. Get started with full access to our courses and resources.
+            </p>
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -256,21 +271,28 @@ const Invite = () => {
                 )}
               />
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-3">
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600" 
                 disabled={processingSignup}
+                size="lg"
               >
                 {processingSignup ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
+                    Creating your free account...
                   </>
                 ) : (
-                  "Complete Registration"
+                  <>
+                    <Gift className="mr-2 h-4 w-4" />
+                    Start Learning for Free
+                  </>
                 )}
               </Button>
+              <p className="text-xs text-center text-gray-500">
+                No credit card required • Full access to all features
+              </p>
             </CardFooter>
           </form>
         </Form>
