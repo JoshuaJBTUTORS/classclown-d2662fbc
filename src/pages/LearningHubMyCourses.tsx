@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -158,7 +157,7 @@ const LearningHubMyCourses = () => {
                 {/* Action Button */}
                 <Button 
                   className="w-full" 
-                  onClick={() => navigate(`/learning-hub/course/${course.id}`)}
+                  onClick={() => navigate(`/course/${course.id}`)}
                 >
                   <Play className="h-4 w-4 mr-2" />
                   {course.isStarted ? 'Continue Learning' : 'Start Course'}
