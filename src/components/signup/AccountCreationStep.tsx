@@ -17,6 +17,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { SignupData } from '@/pages/InteractiveSignup';
+import PasswordCreationForm from './PasswordCreationForm';
 
 interface AccountCreationStepProps {
   data: SignupData;
@@ -29,8 +30,10 @@ interface AccountCreationStepProps {
 
 const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
   data,
+  updateData,
   onPrev
 }) => {
+  const [showPasswordForm, setShowPasswordForm] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -39,18 +42,30 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
   const { signUp } = useAuth();
 
   const loadingSteps = [
-    "Creating your account...",
+    "Creating your learning hub account...",
     "Setting up student profile...",
     "Preparing learning materials...",
     "Personalizing experience...",
     "Almost ready!"
   ];
 
+  // Check if password form is valid
+  const passwordRequirements = [
+    data.password.length >= 8,
+    /[A-Z]/.test(data.password),
+    /[a-z]/.test(data.password),
+    /\d/.test(data.password),
+    /[!@#$%^&*(),.?":{}|<>]/.test(data.password),
+  ];
+  const allRequirementsMet = passwordRequirements.every(req => req);
+  const passwordsMatch = data.password && data.confirmPassword && data.password === data.confirmPassword;
+  const canProceed = allRequirementsMet && passwordsMatch;
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     let stepInterval: NodeJS.Timeout;
 
-    if (!isComplete) {
+    if (!showPasswordForm && !isComplete) {
       // Progress animation
       interval = setInterval(() => {
         setLoadingProgress(prev => {
@@ -74,26 +89,34 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
       clearInterval(interval);
       clearInterval(stepInterval);
     };
-  }, [isComplete]);
+  }, [showPasswordForm, isComplete]);
 
   const handleCreateAccount = async () => {
-    try {
-      const password = `${data.studentFirstName.toLowerCase()}${Math.floor(Math.random() * 1000)}!`;
-      
-      await signUp(data.parentEmail, password, {
-        first_name: data.parentFirstName,
-        last_name: data.parentLastName,
-        role: 'parent'
-      });
+    if (!canProceed) return;
 
-      toast.success('Account created successfully! Check your email for confirmation.');
+    try {
+      setShowPasswordForm(false);
       
-      // Wait a moment then redirect
-      setTimeout(() => {
-        navigate('/learning-hub');
-      }, 2000);
+      // Wait for loading animation to complete
+      setTimeout(async () => {
+        await signUp(data.parentEmail, data.password, {
+          first_name: data.parentFirstName,
+          last_name: data.parentLastName,
+          role: 'learning_hub_only'
+        });
+
+        toast.success('Learning Hub account created successfully! Check your email for confirmation.');
+        
+        // Wait a moment then redirect
+        setTimeout(() => {
+          navigate('/learning-hub');
+        }, 2000);
+      }, 5000); // 5 seconds for loading animation
       
     } catch (error: any) {
+      setShowPasswordForm(true);
+      setLoadingProgress(0);
+      setCurrentStep(0);
       toast.error('Failed to create account. Please try again.');
       console.error('Account creation error:', error);
     }
@@ -124,6 +147,74 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
     />
   );
 
+  // Show password creation form
+  if (showPasswordForm) {
+    return (
+      <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+              Create Your Learning Hub Password 🔐
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 mb-6">
+              Choose a secure password to protect your learning hub account.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-md mx-auto"
+          >
+            <PasswordCreationForm
+              password={data.password}
+              confirmPassword={data.confirmPassword}
+              onPasswordChange={(password) => updateData({ password })}
+              onConfirmPasswordChange={(confirmPassword) => updateData({ confirmPassword })}
+            />
+          </motion.div>
+
+          {/* Navigation Buttons */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col sm:flex-row justify-between gap-4 pt-4 sm:pt-6"
+          >
+            <Button
+              variant="outline"
+              onClick={onPrev}
+              className="flex items-center justify-center gap-2 h-12 sm:w-auto order-2 sm:order-1"
+            >
+              ← Back
+            </Button>
+            
+            <Button
+              onClick={handleCreateAccount}
+              disabled={!canProceed}
+              size="lg"
+              className="bg-purple-600 hover:bg-purple-700 h-12 text-base font-semibold order-1 sm:order-2"
+            >
+              Create Learning Hub Account →
+            </Button>
+          </motion.div>
+          
+          {!canProceed && (
+            <p className="text-xs sm:text-sm text-gray-500 text-center">
+              Please create a secure password and confirm it to continue
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading animation
   if (!isComplete) {
     return (
       <div className="space-y-6 sm:space-y-8 text-center">
@@ -144,7 +235,7 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
 
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Creating Your Account
+              Creating Your Learning Hub Account
             </h2>
             <Progress value={loadingProgress} className="w-full max-w-xs sm:max-w-md mx-auto h-2 sm:h-3 mb-3 sm:mb-4" />
             <motion.p
@@ -162,20 +253,11 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
             <p>{Math.round(loadingProgress)}% Complete</p>
           </div>
         </motion.div>
-
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={onPrev}
-            className="flex items-center gap-2 h-10 sm:h-12"
-          >
-            ← Back
-          </Button>
-        </div>
       </div>
     );
   }
 
+  // Show success screen
   return (
     <div className="space-y-6 sm:space-y-8 text-center relative overflow-hidden">
       {/* Confetti Animation */}
@@ -219,14 +301,14 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
           transition={{ delay: 0.4 }}
         >
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Your account is ready! 🎉
+            Welcome to JB Tutors Learning Hub! 🎉
           </h2>
           <p className="text-base sm:text-lg text-gray-600 mb-3 sm:mb-4">
-            Welcome to JB Tutors, {data.parentFirstName}!
+            Your learning hub account is ready, {data.parentFirstName}!
           </p>
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 inline-block max-w-full">
             <p className="text-sm sm:text-base text-green-800 font-medium">
-              Account created for {data.studentFirstName} {data.studentLastName}
+              Learning hub account created for {data.studentFirstName} {data.studentLastName}
             </p>
             <p className="text-xs sm:text-sm text-green-600">
               {data.yearGroup} • {data.subjects.length} subject{data.subjects.length > 1 ? 's' : ''} selected
@@ -244,9 +326,9 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
           <Card className="bg-purple-50 border-purple-200 hover:shadow-md transition-shadow">
             <CardContent className="p-3 sm:p-4">
               <Download className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mx-auto mb-2 sm:mb-3" />
-              <h4 className="font-semibold text-purple-900 mb-1 sm:mb-2 text-sm sm:text-base">Welcome Packet</h4>
+              <h4 className="font-semibold text-purple-900 mb-1 sm:mb-2 text-sm sm:text-base">Welcome Guide</h4>
               <p className="text-xs sm:text-sm text-purple-700 mb-2 sm:mb-3">
-                Download your starter guide with tips and resources
+                Download your learning hub starter guide
               </p>
               <Button variant="outline" size="sm" className="border-purple-300 text-xs sm:text-sm h-8 sm:h-auto">
                 Download PDF
@@ -257,12 +339,12 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
           <Card className="bg-blue-50 border-blue-200 hover:shadow-md transition-shadow">
             <CardContent className="p-3 sm:p-4">
               <Play className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mx-auto mb-2 sm:mb-3" />
-              <h4 className="font-semibold text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">Getting Started</h4>
+              <h4 className="font-semibold text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">Platform Tour</h4>
               <p className="text-xs sm:text-sm text-blue-700 mb-2 sm:mb-3">
-                Watch a quick video tour of the learning platform
+                Take a quick tour of your learning hub
               </p>
               <Button variant="outline" size="sm" className="border-blue-300 text-xs sm:text-sm h-8 sm:h-auto">
-                Watch Video
+                Start Tour
               </Button>
             </CardContent>
           </Card>
@@ -276,17 +358,17 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
           className="space-y-3 sm:space-y-4"
         >
           <Button
-            onClick={handleCreateAccount}
+            onClick={() => navigate('/learning-hub')}
             size="lg"
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto"
           >
             <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            Go to Learning Hub
+            Enter Learning Hub
             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-2" />
           </Button>
           
           <p className="text-xs sm:text-sm text-gray-500">
-            Start exploring courses, homework, and progress tracking!
+            Start exploring courses, assessments, and track your progress!
           </p>
         </motion.div>
 

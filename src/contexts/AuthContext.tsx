@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (roleError) throw roleError;
       console.log('🎭 AuthContext: Role data:', roleData);
 
-      // Fetch parent profile if user is a parent
+      // Fetch parent profile if user is a parent or learning hub user
       const { data: parentData, error: parentError } = await supabase
         .from('parents')
         .select('*')
@@ -107,8 +107,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       console.log('👨‍👩‍👧‍👦 AuthContext: Parent data:', parentData);
-
-      // Don't throw error if no parent profile found - user might be student/tutor
 
       if (profileData) {
         setProfile(profileData);
@@ -120,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('✅ AuthContext: Role set to:', roleData.role);
       } else if (user) {
         // If no role found, create default based on whether they have parent profile
-        const defaultRole = parentData ? 'parent' : 'student';
+        const defaultRole = parentData ? 'learning_hub_only' : 'student';
         console.log('⚠️ AuthContext: No role found, creating default:', defaultRole);
         try {
           const { error: insertError } = await supabase

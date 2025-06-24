@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
@@ -18,6 +17,8 @@ export interface SignupData {
   parentPhone: string;
   studentFirstName: string;
   studentLastName: string;
+  password: string;
+  confirmPassword: string;
 }
 
 const InteractiveSignup = () => {
@@ -32,6 +33,8 @@ const InteractiveSignup = () => {
     parentPhone: '',
     studentFirstName: '',
     studentLastName: '',
+    password: '',
+    confirmPassword: '',
   });
 
   const steps = [
@@ -76,7 +79,7 @@ const InteractiveSignup = () => {
         <div className="max-w-4xl mx-auto mb-6 sm:mb-8">
           <div className="text-center mb-4 sm:mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Join JB Tutors
+              Join JB Tutors Learning Hub
             </h1>
             <p className="text-sm sm:text-base text-gray-600">
               Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
