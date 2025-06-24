@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -7,6 +6,10 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import Dashboard from './pages/Dashboard';
+import InteractiveSignup from './pages/InteractiveSignup';
 import Index from './pages/Index';
 import Calendar from './pages/Calendar';
 import Students from './pages/Students';
@@ -42,12 +45,18 @@ function App() {
           <OrganizationProvider>
             <LearningHubProvider>
               <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/interactive-signup" element={<InteractiveSignup />} />
                 <Route path="/auth" element={<Auth />} />
+                
+                {/* Protected routes */}
                 <Route
-                  path="/"
+                  path="/dashboard"
                   element={
                     <ProtectedRoute>
-                      <Index />
+                      <Dashboard />
                     </ProtectedRoute>
                   }
                 />
@@ -168,7 +177,7 @@ function App() {
                   }
                 />
 
-                {/* Checkout route - THIS WAS MISSING */}
+                {/* Checkout route */}
                 <Route
                   path="/checkout/:courseId"
                   element={
