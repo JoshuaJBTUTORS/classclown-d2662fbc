@@ -62,6 +62,7 @@ interface YearGroupSubjectStepProps {
   onNext: () => void;
   onPrev: () => void;
   isFirst: boolean;
+  isLast: boolean;
 }
 
 const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
