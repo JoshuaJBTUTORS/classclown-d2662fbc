@@ -294,7 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setParentProfile(null);
       setUserRole(null);
-      navigate('/auth');
+      navigate('/');
     } catch (error: any) {
       console.error("Sign-out error:", error);
       toast({
