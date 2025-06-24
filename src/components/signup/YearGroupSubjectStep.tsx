@@ -91,42 +91,42 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
   const canProceed = data.yearGroup && data.subjects.length > 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Video Testimonial Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6"
+        className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 sm:p-6"
       >
-        <div className="flex items-center justify-center mb-4">
+        <div className="flex items-center justify-center mb-3 sm:mb-4">
           <div className="relative">
-            <div className="w-32 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-              <Play className="h-8 w-8 text-gray-600" />
+            <div className="w-24 h-16 sm:w-32 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+              <Play className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />
             </div>
             <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
               <span className="text-white text-xs font-medium">Success Stories</span>
             </div>
           </div>
         </div>
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-xs sm:text-sm text-gray-600">
           Watch how our students achieve their academic goals
         </p>
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6 text-center lg:text-left">
               Tell us about your student 📚
             </h2>
 
             {/* Year Group Selection */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Which year group is your child in?
               </label>
@@ -134,7 +134,7 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
                 value={data.yearGroup}
                 onValueChange={(value) => updateData({ yearGroup: value })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-12">
                   <SelectValue placeholder="Select year group..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -149,14 +149,14 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
 
             {/* Subject Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-3 sm:mb-4">
                 Which subjects need support? (Select all that apply)
               </label>
               
               {/* Popular Subjects */}
               <div className="mb-4">
                 <h4 className="text-sm font-medium text-purple-600 mb-2">Popular Choices ⭐</h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {GCSE_SUBJECTS.filter(s => s.popular).map((subject) => (
                     <motion.div
                       key={subject.name}
@@ -171,13 +171,13 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
                         }`}
                         onClick={() => handleSubjectToggle(subject.name)}
                       >
-                        <CardContent className="p-4 flex items-center justify-between">
+                        <CardContent className="p-3 sm:p-4 flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <span className="text-2xl">{subject.icon}</span>
-                            <span className="font-medium">{subject.name}</span>
+                            <span className="text-xl sm:text-2xl">{subject.icon}</span>
+                            <span className="font-medium text-sm sm:text-base">{subject.name}</span>
                           </div>
                           {data.subjects.includes(subject.name) && (
-                            <CheckCircle className="h-5 w-5 text-purple-600" />
+                            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                           )}
                         </CardContent>
                       </Card>
@@ -189,12 +189,12 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
               {/* All Subjects */}
               <div>
                 <h4 className="text-sm font-medium text-gray-600 mb-2">All Subjects</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {GCSE_SUBJECTS.filter(s => !s.popular).map((subject) => (
                     <Badge
                       key={subject.name}
                       variant={data.subjects.includes(subject.name) ? "default" : "outline"}
-                      className="cursor-pointer justify-center p-2 hover:bg-purple-100"
+                      className="cursor-pointer justify-center p-2 sm:p-3 hover:bg-purple-100 text-xs sm:text-sm h-auto"
                       onClick={() => handleSubjectToggle(subject.name)}
                     >
                       {subject.icon} {subject.name}
@@ -210,39 +210,39 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="pt-6"
+            className="pt-4 sm:pt-6"
           >
             <Button
               onClick={onNext}
               disabled={!canProceed}
               size="lg"
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-purple-600 hover:bg-purple-700 h-12 text-base font-semibold"
             >
               Continue to Parent Information →
             </Button>
             {!canProceed && (
-              <p className="text-sm text-gray-500 mt-2 text-center">
+              <p className="text-xs sm:text-sm text-gray-500 mt-2 text-center">
                 Please select a year group and at least one subject
               </p>
             )}
           </motion.div>
         </div>
 
-        {/* Reviews Sidebar */}
+        {/* Reviews Sidebar - Hidden on mobile, shown below on tablet+ */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="space-y-4"
+          className="space-y-4 lg:block"
         >
-          <h3 className="font-semibold text-gray-900">What parents say</h3>
+          <h3 className="font-semibold text-gray-900 text-center lg:text-left">What parents say</h3>
           
           <Card className="relative overflow-hidden">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex justify-between items-start mb-2">
                 <div className="flex text-yellow-400">
                   {[...Array(5)].map((_, i) => (
-                    <span key={i}>⭐</span>
+                    <span key={i} className="text-sm">⭐</span>
                   ))}
                 </div>
                 <div className="flex space-x-1">
@@ -271,7 +271,7 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <p className="text-sm text-gray-700 mb-3">
+                <p className="text-xs sm:text-sm text-gray-700 mb-3">
                   "{TESTIMONIALS[currentTestimonial].text}"
                 </p>
                 <div className="text-xs text-gray-500">
@@ -285,8 +285,8 @@ const YearGroupSubjectStep: React.FC<YearGroupSubjectStepProps> = ({
 
           {/* Motivational Quote */}
           <Card className="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
-            <CardContent className="p-4 text-center">
-              <p className="text-sm font-medium text-purple-800 mb-1">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-xs sm:text-sm font-medium text-purple-800 mb-1">
                 "Education is the key to success"
               </p>
               <p className="text-xs text-purple-600">

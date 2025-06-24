@@ -71,25 +71,25 @@ const InteractiveSignup = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         {/* Progress Header */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="max-w-4xl mx-auto mb-6 sm:mb-8">
+          <div className="text-center mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Join JB Tutors
             </h1>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
             </p>
           </div>
           
           <div className="relative">
-            <Progress value={progressPercentage} className="h-3 mb-4" />
+            <Progress value={progressPercentage} className="h-2 sm:h-3 mb-3 sm:mb-4" />
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500">
+              <span className="text-xs sm:text-sm text-gray-500">
                 {Math.round(progressPercentage)}% Complete
               </span>
-              <span className="text-sm text-purple-600 font-medium">
+              <span className="text-xs sm:text-sm text-purple-600 font-medium">
                 Almost there! 🎓
               </span>
             </div>
@@ -107,7 +107,7 @@ const InteractiveSignup = () => {
             className="max-w-4xl mx-auto"
           >
             <Card className="shadow-lg">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 <CurrentStepComponent
                   data={signupData}
                   updateData={updateSignupData}
@@ -122,8 +122,8 @@ const InteractiveSignup = () => {
         </AnimatePresence>
 
         {/* Help Text */}
-        <div className="text-center max-w-4xl mx-auto mt-8">
-          <div className="text-sm text-gray-500">
+        <div className="text-center max-w-4xl mx-auto mt-6 sm:mt-8">
+          <div className="text-xs sm:text-sm text-gray-500">
             Need help? Contact us at hello@jbtutors.co.uk
           </div>
         </div>

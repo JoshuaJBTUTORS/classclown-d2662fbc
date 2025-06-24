@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -72,23 +73,23 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
     data.studentLastName.trim().length >= 2;
 
   return (
-    <div className="space-y-8">
-      <div className="grid lg:grid-cols-3 gap-8">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 text-center lg:text-left">
               Now about your student! 🎓
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center lg:text-left">
               Let's personalize the learning experience for your child.
             </p>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Student First Name */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -106,7 +107,7 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
                     placeholder="Enter student's first name..."
                     value={data.studentFirstName}
                     onChange={(e) => handleInputChange('studentFirstName', e.target.value)}
-                    className={`pr-12 transition-all duration-200 ${
+                    className={`h-12 pr-12 transition-all duration-200 ${
                       validationState.firstName ? 'border-green-500 focus:border-green-500' : ''
                     }`}
                   />
@@ -133,7 +134,7 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-sm text-green-600 mt-1 flex items-center"
+                    className="text-xs sm:text-sm text-green-600 mt-1 flex items-center"
                   >
                     <Sparkles className="h-3 w-3 mr-1" />
                     Beautiful name! ✓
@@ -158,7 +159,7 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
                     placeholder="Enter student's last name..."
                     value={data.studentLastName}
                     onChange={(e) => handleInputChange('studentLastName', e.target.value)}
-                    className={`pr-12 transition-all duration-200 ${
+                    className={`h-12 pr-12 transition-all duration-200 ${
                       validationState.lastName ? 'border-green-500 focus:border-green-500' : ''
                     }`}
                   />
@@ -190,12 +191,12 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="flex justify-between pt-6"
+            className="flex flex-col sm:flex-row justify-between gap-4 pt-4 sm:pt-6"
           >
             <Button
               variant="outline"
               onClick={onPrev}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 h-12 sm:w-auto order-2 sm:order-1"
             >
               ← Back
             </Button>
@@ -204,14 +205,14 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
               onClick={onNext}
               disabled={!canProceed}
               size="lg"
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-purple-600 hover:bg-purple-700 h-12 text-base font-semibold order-1 sm:order-2"
             >
               Create Account →
             </Button>
           </motion.div>
           
           {!canProceed && (
-            <p className="text-sm text-gray-500 text-center">
+            <p className="text-xs sm:text-sm text-gray-500 text-center">
               Please enter both first and last name
             </p>
           )}
@@ -225,8 +226,8 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
           className="space-y-4"
         >
           <Card className="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
-            <CardContent className="p-6 text-center">
-              <h4 className="font-medium text-gray-900 mb-4">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm">
                 Student Profile Preview
               </h4>
               
@@ -235,10 +236,10 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="mb-4"
+                className="mb-3 sm:mb-4"
               >
-                <Avatar className={`h-20 w-20 mx-auto ${getAvatarColor()} ring-4 ring-white shadow-lg`}>
-                  <AvatarFallback className="text-white text-xl font-bold">
+                <Avatar className={`h-16 w-16 sm:h-20 sm:w-20 mx-auto ${getAvatarColor()} ring-4 ring-white shadow-lg`}>
+                  <AvatarFallback className="text-white text-lg sm:text-xl font-bold">
                     {getInitials() || '??'}
                   </AvatarFallback>
                 </Avatar>
@@ -250,10 +251,10 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <h5 className="font-semibold text-lg text-gray-900 mb-1">
+                <h5 className="font-semibold text-base sm:text-lg text-gray-900 mb-1">
                   {data.studentFirstName || 'First'} {data.studentLastName || 'Last'}
                 </h5>
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-xs sm:text-sm text-gray-600 mb-2">
                   {data.yearGroup || 'Year Group'} Student
                 </p>
                 <p className="text-xs text-purple-600">
@@ -268,13 +269,13 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
 
           {/* Fun Facts */}
           <Card className="bg-yellow-50 border-yellow-200">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="text-center">
-                <div className="text-2xl mb-2">🎯</div>
-                <h4 className="font-medium text-yellow-900 mb-1">
+                <div className="text-xl sm:text-2xl mb-2">🎯</div>
+                <h4 className="font-medium text-yellow-900 mb-1 text-sm">
                   Did you know?
                 </h4>
-                <p className="text-sm text-yellow-700">
+                <p className="text-xs sm:text-sm text-yellow-700">
                   Students with personalized learning plans improve their grades by an average of 30%!
                 </p>
               </div>
@@ -283,9 +284,9 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
 
           {/* Encouragement */}
           <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl mb-2">🚀</div>
-              <p className="text-sm font-medium text-green-800 mb-1">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl mb-2">🚀</div>
+              <p className="text-xs sm:text-sm font-medium text-green-800 mb-1">
                 "Almost ready to start the learning journey!"
               </p>
               <p className="text-xs text-green-600">

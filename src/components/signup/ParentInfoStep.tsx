@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -70,23 +71,23 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
     validatePhone(data.parentPhone);
 
   return (
-    <div className="space-y-8">
-      <div className="grid lg:grid-cols-3 gap-8">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 text-center lg:text-left">
               Let's get your details 👋
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center lg:text-left">
               We'll use this information to create your account and keep you updated on your child's progress.
             </p>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* First Name */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -104,7 +105,7 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                     placeholder="Enter your first name here..."
                     value={data.parentFirstName}
                     onChange={(e) => handleInputChange('parentFirstName', e.target.value)}
-                    className={`pr-10 transition-all duration-200 ${
+                    className={`h-12 pr-10 transition-all duration-200 ${
                       validationState.firstName ? 'border-green-500 focus:border-green-500' : ''
                     }`}
                   />
@@ -122,7 +123,7 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-sm text-green-600 mt-1"
+                    className="text-xs sm:text-sm text-green-600 mt-1"
                   >
                     Great! Name looks good. ✓
                   </motion.p>
@@ -146,7 +147,7 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                     placeholder="Enter your last name here..."
                     value={data.parentLastName}
                     onChange={(e) => handleInputChange('parentLastName', e.target.value)}
-                    className={`pr-10 transition-all duration-200 ${
+                    className={`h-12 pr-10 transition-all duration-200 ${
                       validationState.lastName ? 'border-green-500 focus:border-green-500' : ''
                     }`}
                   />
@@ -179,7 +180,7 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                     placeholder="your.email@example.com"
                     value={data.parentEmail}
                     onChange={(e) => handleInputChange('parentEmail', e.target.value)}
-                    className={`pr-10 transition-all duration-200 ${
+                    className={`h-12 pr-10 transition-all duration-200 ${
                       validationState.email ? 'border-green-500 focus:border-green-500' : ''
                     }`}
                   />
@@ -197,7 +198,7 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-sm text-green-600 mt-1"
+                    className="text-xs sm:text-sm text-green-600 mt-1"
                   >
                     Perfect! Email looks good. ✓
                   </motion.p>
@@ -221,7 +222,7 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                     placeholder="+44 7123 456789"
                     value={data.parentPhone}
                     onChange={(e) => handleInputChange('parentPhone', e.target.value)}
-                    className={`pr-10 transition-all duration-200 ${
+                    className={`h-12 pr-10 transition-all duration-200 ${
                       validationState.phone ? 'border-green-500 focus:border-green-500' : ''
                     }`}
                   />
@@ -244,12 +245,12 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="flex justify-between pt-6"
+            className="flex flex-col sm:flex-row justify-between gap-4 pt-4 sm:pt-6"
           >
             <Button
               variant="outline"
               onClick={onPrev}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 h-12 sm:w-auto order-2 sm:order-1"
             >
               ← Back
             </Button>
@@ -258,14 +259,14 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
               onClick={onNext}
               disabled={!canProceed}
               size="lg"
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-purple-600 hover:bg-purple-700 h-12 text-base font-semibold order-1 sm:order-2"
             >
               Continue to Student Details →
             </Button>
           </motion.div>
           
           {!canProceed && (
-            <p className="text-sm text-gray-500 text-center">
+            <p className="text-xs sm:text-sm text-gray-500 text-center">
               Please fill in all fields correctly to continue
             </p>
           )}
@@ -279,14 +280,14 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
           className="space-y-4"
         >
           <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-start space-x-3">
-                <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                <Info className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h4 className="font-medium text-blue-900 mb-1">
+                  <h4 className="font-medium text-blue-900 mb-1 text-sm">
                     We'll use this info to:
                   </h4>
-                  <ul className="text-sm text-blue-700 space-y-1">
+                  <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
                     <li>• Send progress updates</li>
                     <li>• Schedule lessons</li>
                     <li>• Share homework feedback</li>
@@ -298,12 +299,12 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
           </Card>
 
           <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl mb-2">🔒</div>
-              <h4 className="font-medium text-green-900 mb-1">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl mb-2">🔒</div>
+              <h4 className="font-medium text-green-900 mb-1 text-sm">
                 Your Privacy Matters
               </h4>
-              <p className="text-sm text-green-700">
+              <p className="text-xs sm:text-sm text-green-700">
                 We never share your personal information with third parties. 
                 Your data is secure with us.
               </p>
@@ -312,9 +313,9 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
 
           {/* Motivational Message */}
           <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl mb-2">🌟</div>
-              <p className="text-sm font-medium text-purple-800">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl mb-2">🌟</div>
+              <p className="text-xs sm:text-sm font-medium text-purple-800">
                 "You're making a great investment in your child's future!"
               </p>
             </CardContent>
