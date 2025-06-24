@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,8 @@ interface ParentInfoStepProps {
   updateData: (data: Partial<SignupData>) => void;
   onNext: () => void;
   onPrev: () => void;
+  isFirst: boolean;
+  isLast: boolean;
 }
 
 const ParentInfoStep: React.FC<ParentInfoStepProps> = ({

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ interface AccountCreationStepProps {
   updateData: (data: Partial<SignupData>) => void;
   onNext: () => void;
   onPrev: () => void;
+  isFirst: boolean;
   isLast: boolean;
 }
 
