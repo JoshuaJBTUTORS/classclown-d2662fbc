@@ -2,9 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
 import WelcomePage from '@/components/signup/WelcomePage';
 import YearGroupSubjectStep from '@/components/signup/YearGroupSubjectStep';
 import ParentInfoStep from '@/components/signup/ParentInfoStep';
@@ -123,32 +121,12 @@ const InteractiveSignup = () => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation */}
-        {currentStep < steps.length - 1 && (
-          <div className="flex justify-between items-center max-w-4xl mx-auto mt-8">
-            <Button
-              variant="ghost"
-              onClick={prevStep}
-              disabled={currentStep === 0}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            
-            <div className="text-sm text-gray-500">
-              Need help? Contact us at hello@jbtutors.co.uk
-            </div>
-            
-            <Button
-              onClick={nextStep}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-            >
-              Next
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+        {/* Help Text */}
+        <div className="text-center max-w-4xl mx-auto mt-8">
+          <div className="text-sm text-gray-500">
+            Need help? Contact us at hello@jbtutors.co.uk
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
