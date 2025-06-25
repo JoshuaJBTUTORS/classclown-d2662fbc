@@ -1,525 +1,383 @@
-import React, { useState, useEffect } from 'react';
-import { format, addDays } from 'date-fns';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Check, Loader2, CheckCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Tutor } from '@/types/tutor';
-import { Student } from '@/types/student';
-import { LESSON_SUBJECTS } from '@/constants/subjects';
-import { useAvailabilityCheck } from '@/hooks/useAvailabilityCheck';
-import AvailabilityStatus from './AvailabilityStatus';
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Loader2, BookOpen, Repeat } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import RecurringLessonDialog from "./RecurringLessonDialog";
+import LessonPlanSelector from "./LessonPlanSelector";
+import { useLessonPlans } from "@/hooks/useLessonPlans";
 
 interface AddLessonFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+  onLessonAdded: () => void;
+  onCancel: () => void;
 }
 
-const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSuccess }) => {
-  const [tutors, setTutors] = useState<Tutor[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<string>('');
+const AddLessonForm: React.FC<AddLessonFormProps> = ({ onLessonAdded, onCancel }) => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [isGroup, setIsGroup] = useState(false);
+  const [subject, setSubject] = useState("");
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
-  const [isFetchingData, setIsFetchingData] = useState(false);
+  const [lessonType, setLessonType] = useState<"regular" | "trial" | "makeup">("regular");
+  const [loading, setLoading] = useState(false);
+  const [tutors, setTutors] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [selectedTutor, setSelectedTutor] = useState("");
+  const [createdLessonId, setCreatedLessonId] = useState<string | null>(null);
+  const [showRecurringOption, setShowRecurringOption] = useState(false);
+  const [suggestedPlan, setSuggestedPlan] = useState<any>(null);
 
-  const formSchema = z.object({
-    title: z.string().min(1, { message: "Title is required" }),
-    description: z.string().optional(),
-    subject: z.string().min(1, { message: "Subject is required" }),
-    tutorId: z.string().min(1, { message: "Tutor is required" }),
-    date: z.date({ required_error: "Date is required" }),
-    startTime: z.string().min(1, { message: "Start time is required" }),
-    endTime: z.string().min(1, { message: "End time is required" }),
-    isGroup: z.boolean().default(false),
-  }).refine(data => {
-    return !data.isGroup || (data.isGroup && selectedStudents.length > 0);
-  }, {
-    message: "Select at least one student for group sessions",
-    path: ["studentIds"],
-  });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      subject: "",
-      tutorId: "",
-      date: new Date(),
-      startTime: "",
-      endTime: "",
-      isGroup: false,
-    },
-  });
-
-  // Availability checking integration
-  const { checkAvailability, isChecking, checkResult, resetCheckResult } = useAvailabilityCheck();
+  const { userRole, isAdmin, isOwner } = useAuth();
+  const { suggestLessonPlanForDate } = useLessonPlans();
 
   useEffect(() => {
-    if (isOpen) {
-      fetchTutors();
-      fetchStudents();
+    fetchTutors();
+    fetchStudents();
+  }, []);
+
+  useEffect(() => {
+    // Suggest lesson plan when subject and start time are selected
+    if (subject && startTime) {
+      suggestLessonPlanForDate(subject, startTime).then(setSuggestedPlan);
     }
-  }, [isOpen]);
+  }, [subject, startTime, suggestLessonPlanForDate]);
 
   const fetchTutors = async () => {
-    setIsFetchingData(true);
     try {
       const { data, error } = await supabase
-        .from('tutors')
-        .select('*')
-        .eq('status', 'active')
-        .order('last_name', { ascending: true });
+        .from("tutors")
+        .select("id, first_name, last_name, email")
+        .eq("status", "active");
 
       if (error) throw error;
-      // Now we have a more flexible status field in our Tutor type
       setTutors(data || []);
-    } catch (error) {
-      console.error('Error fetching tutors:', error);
-      toast.error('Failed to load tutors');
-    } finally {
-      setIsFetchingData(false);
+    } catch (error: any) {
+      console.error("Error fetching tutors:", error);
+      toast.error("Failed to fetch tutors");
     }
   };
 
   const fetchStudents = async () => {
-    setIsFetchingData(true);
     try {
       const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('status', 'active')
-        .order('last_name', { ascending: true });
+        .from("students")
+        .select("id, first_name, last_name, email")
+        .neq("status", "inactive");
 
       if (error) throw error;
       setStudents(data || []);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      toast.error('Failed to load students');
-    } finally {
-      setIsFetchingData(false);
+    } catch (error: any) {
+      console.error("Error fetching students:", error);
+      toast.error("Failed to fetch students");
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      setIsLoading(true);
-      setLoadingStep('Creating lesson...');
-
-      // Format the date and times into ISO strings
-      const startTime = new Date(values.date);
-      const [startHours, startMinutes] = values.startTime.split(':');
-      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
-
-      const endTime = new Date(values.date);
-      const [endHours, endMinutes] = values.endTime.split(':');
-      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
-
-      const { data: lessonData, error: lessonError } = await supabase
-        .from('lessons')
-        .insert([
-          {
-            title: values.title,
-            description: values.description || '',
-            subject: values.subject,
-            tutor_id: values.tutorId,
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-            is_group: values.isGroup,
-            status: 'scheduled',
-          },
-        ])
-        .select()
-
-      if (lessonError) throw lessonError;
-
-      setLoadingStep('Adding students...');
-
-      // Get the ID of the newly created lesson
-      const newLessonId = lessonData?.[0]?.id;
-
-      // Add students to the lesson
-      if (newLessonId) {
-        const lessonStudentsData = selectedStudents.map(studentId => ({
-          lesson_id: newLessonId,
-          student_id: studentId
-        }));
-
-        const { error: studentsError } = await supabase
-          .from('lesson_students')
-          .insert(lessonStudentsData);
-
-        if (studentsError) throw studentsError;
-      }
-
-      setIsLoading(false);
-      onSuccess();
-      onClose();
-    } catch (error) {
-      console.error('Error creating lesson:', error);
-      toast.error('Failed to create lesson');
-      setIsLoading(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !startTime || !endTime || !selectedTutor) {
+      toast.error("Please fill in all required fields");
+      return;
     }
-  };
 
-  const handleStudentSelect = (studentId: number) => {
-    setSelectedStudents(prev => {
-      if (prev.includes(studentId)) {
-        return prev.filter(id => id !== studentId);
-      } else {
-        return [...prev, studentId];
-      }
-    });
-  };
-
-  const handleManualAvailabilityCheck = async () => {
-    const values = form.getValues();
-
-    if (!values.tutorId || !values.date || !values.startTime || !values.endTime) {
-      toast.error('Please fill in tutor, date, and time fields first');
+    if (isGroup && selectedStudents.length === 0) {
+      toast.error("Please select at least one student for group lessons");
       return;
     }
 
     try {
-      const startTime = new Date(values.date);
-      const [startHours, startMinutes] = values.startTime.split(':');
-      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
+      setLoading(true);
 
-      const endTime = new Date(values.date);
-      const [endHours, endMinutes] = values.endTime.split(':');
-      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
+      const lessonData = {
+        title,
+        description: description || null,
+        tutor_id: selectedTutor,
+        start_time: startTime,
+        end_time: endTime,
+        is_group: isGroup,
+        status: "scheduled",
+        subject: subject || null,
+        lesson_type: lessonType,
+      };
 
-      await checkAvailability({
-        tutorId: values.tutorId,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        studentIds: selectedStudents.length > 0 ? selectedStudents : undefined
-      });
-    } catch (error) {
-      console.error('Error performing availability check:', error);
+      const { data: lesson, error: lessonError } = await supabase
+        .from("lessons")
+        .insert(lessonData)
+        .select()
+        .single();
+
+      if (lessonError) throw lessonError;
+
+      // Add students to lesson
+      if (selectedStudents.length > 0) {
+        const studentInserts = selectedStudents.map(studentId => ({
+          lesson_id: lesson.id,
+          student_id: studentId
+        }));
+
+        const { error: studentsError } = await supabase
+          .from("lesson_students")
+          .insert(studentInserts);
+
+        if (studentsError) throw studentsError;
+      }
+
+      setCreatedLessonId(lesson.id);
+      setShowRecurringOption(true);
+      toast.success("Lesson created successfully!");
+      
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setStartTime("");
+      setEndTime("");
+      setIsGroup(false);
+      setSubject("");
+      setSelectedStudents([]);
+      setSelectedTutor("");
+      setSuggestedPlan(null);
+      
+      onLessonAdded();
+    } catch (error: any) {
+      console.error("Error creating lesson:", error);
+      toast.error("Failed to create lesson");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSelectAlternativeTutor = (tutorId: string, tutorName: string) => {
-    form.setValue('tutorId', tutorId);
-    resetCheckResult();
-    toast.success(`Switched to ${tutorName}`);
+  const handleStudentToggle = (studentId: number) => {
+    setSelectedStudents(prev =>
+      prev.includes(studentId)
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open && !isLoading) onClose();
-    }}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Lesson</DialogTitle>
-          <DialogDescription>
-            Create a new tutoring session for your students.
-          </DialogDescription>
-        </DialogHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>Add New Lesson</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Basic lesson details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="title">Lesson Title *</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter lesson title"
+                required
+              />
+            </div>
 
-        {isLoading && !form.formState.isSubmitting ? (
-          <div className="flex justify-center items-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2">{loadingStep}</span>
+            <div>
+              <Label htmlFor="subject">Subject</Label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mathematics">Mathematics</SelectItem>
+                  <SelectItem value="English">English</SelectItem>
+                  <SelectItem value="Science">Science</SelectItem>
+                  <SelectItem value="GCSE Chemistry">GCSE Chemistry</SelectItem>
+                  <SelectItem value="Year 11 Chemistry">Year 11 Chemistry</SelectItem>
+                  <SelectItem value="Physics">Physics</SelectItem>
+                  <SelectItem value="Biology">Biology</SelectItem>
+                  <SelectItem value="History">History</SelectItem>
+                  <SelectItem value="Geography">Geography</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Math Tutoring Session" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subject</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a subject" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {LESSON_SUBJECTS.map((subject) => (
-                          <SelectItem key={subject} value={subject}>
-                            {subject}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Details about the tutoring session"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="tutorId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tutor</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a tutor" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {tutors.map((tutor) => (
-                            <SelectItem key={tutor.id} value={tutor.id}>
-                              {tutor.first_name} {tutor.last_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isGroup"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
-                      <FormLabel>Group Session</FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="isGroup"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Students</FormLabel>
-                    <div className="border rounded-md p-2 max-h-48 overflow-y-auto">
-                      {students.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-2 px-1">No students available</p>
-                      ) : (
-                        students.map((student) => {
-                          // Convert ID to number for comparison
-                          const studentId = typeof student.id === 'string'
-                            ? parseInt(student.id, 10)
-                            : student.id;
-
-                          return (
-                            <div
-                              key={student.id}
-                              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                              onClick={() => handleStudentSelect(studentId)}
-                            >
-                              <div className={`w-4 h-4 border rounded flex items-center justify-center
-                                ${selectedStudents.includes(studentId) ? 'bg-primary border-primary' : 'border-gray-300'}`}
-                              >
-                                {selectedStudents.includes(studentId) && (
-                                  <Check className="h-3 w-3 text-white" />
-                                )}
-                              </div>
-                              <span>{student.first_name} {student.last_name}</span>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                    {selectedStudents.length === 0 && form.getValues('isGroup') && (
-                      <p className="text-sm font-medium text-destructive">Select at least one student for group sessions</p>
-                    )}
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className="pl-3 text-left font-normal w-full"
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="startTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Time</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="endTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End Time</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Manual Availability Check Section */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Availability Check</label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleManualAvailabilityCheck}
-                    disabled={isChecking}
-                    className="flex items-center gap-2"
-                  >
-                    {isChecking ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-3 w-3" />
-                    )}
-                    Check Availability
-                  </Button>
+          {/* Suggested lesson plan */}
+          {suggestedPlan && (
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-start gap-3">
+                <BookOpen className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-blue-900">Suggested Lesson Plan</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Week {suggestedPlan.week_number}: {suggestedPlan.topic_title}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">{suggestedPlan.description}</p>
                 </div>
-
-                <AvailabilityStatus
-                  isChecking={isChecking}
-                  checkResult={checkResult}
-                  onSelectAlternativeTutor={handleSelectAlternativeTutor}
-                />
               </div>
+            </div>
+          )}
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-                  Cancel
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter lesson description"
+              rows={3}
+            />
+          </div>
+
+          {/* Time and tutor selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startTime">Start Time *</Label>
+              <Input
+                id="startTime"
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="endTime">End Time *</Label>
+              <Input
+                id="endTime"
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {(isAdmin || isOwner) && (
+            <div>
+              <Label htmlFor="tutor">Select Tutor *</Label>
+              <Select value={selectedTutor} onValueChange={setSelectedTutor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tutor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tutors.map((tutor) => (
+                    <SelectItem key={tutor.id} value={tutor.id}>
+                      {tutor.first_name} {tutor.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Lesson type and group settings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="lessonType">Lesson Type</Label>
+              <Select value={lessonType} onValueChange={(value: any) => setLessonType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regular">Regular</SelectItem>
+                  <SelectItem value="trial">Trial</SelectItem>
+                  <SelectItem value="makeup">Makeup</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-2 pt-6">
+              <Checkbox
+                id="isGroup"
+                checked={isGroup}
+                onCheckedChange={setIsGroup}
+              />
+              <Label htmlFor="isGroup">Group Lesson</Label>
+            </div>
+          </div>
+
+          {/* Student selection for group lessons */}
+          {isGroup && (
+            <div>
+              <Label>Select Students</Label>
+              <div className="max-h-32 overflow-y-auto border rounded p-2 space-y-2">
+                {students.map((student) => (
+                  <div key={student.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`student-${student.id}`}
+                      checked={selectedStudents.includes(student.id)}
+                      onCheckedChange={() => handleStudentToggle(student.id)}
+                    />
+                    <Label htmlFor={`student-${student.id}`} className="text-sm">
+                      {student.first_name} {student.last_name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Lesson"
+              )}
+            </Button>
+          </div>
+        </form>
+
+        {/* Post-creation options */}
+        {showRecurringOption && createdLessonId && (
+          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h4 className="font-medium text-green-900 mb-3">Lesson Created Successfully!</h4>
+            <div className="flex flex-wrap gap-3">
+              <RecurringLessonDialog
+                lessonId={createdLessonId}
+                lessonTitle={title}
+              >
+                <Button size="sm" variant="outline" className="gap-2">
+                  <Repeat className="h-4 w-4" />
+                  Make Recurring
                 </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {loadingStep}
-                    </>
-                  ) : 'Create Lesson'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+              </RecurringLessonDialog>
+
+              {subject && (
+                <LessonPlanSelector
+                  lessonId={createdLessonId}
+                  subject={subject}
+                  lessonDate={startTime}
+                >
+                  <Button size="sm" variant="outline" className="gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Assign Lesson Plan
+                  </Button>
+                </LessonPlanSelector>
+              )}
+
+              <Button 
+                size="sm" 
+                onClick={() => setShowRecurringOption(false)}
+                variant="ghost"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 };
 

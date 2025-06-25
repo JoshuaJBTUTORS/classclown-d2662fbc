@@ -1,554 +1,268 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/contexts/AuthContext';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
+  Calendar, 
   Clock, 
   Users, 
-  MapPin, 
-  Calendar,
-  Video,
-  Loader2,
-  ExternalLink,
-  AlertCircle,
-  Shield,
-  UserCheck,
-  CheckCircle,
-  Circle,
-  BookOpen,
-  Edit
+  User, 
+  BookOpen, 
+  MapPin,
+  Repeat,
+  Trash2,
+  Edit,
+  GraduationCap
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { Lesson } from '@/types/lesson';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
-import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
-import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
-import EditLessonForm from '@/components/lessons/EditLessonForm';
+import { useAuth } from '@/contexts/AuthContext';
+import CompleteSessionDialog from '@/components/lessons/CompleteSessionDialog';
+import RecurringLessonDialog from '@/components/lessons/RecurringLessonDialog';
+import LessonPlanSelector from '@/components/lessons/LessonPlanSelector';
+import DeleteLessonButton from '@/components/lessons/DeleteLessonButton';
 
 interface LessonDetailsDialogProps {
-  lessonId: string | null;
-  isOpen: boolean;
-  onClose: () => void;
+  lesson: Lesson | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onLessonUpdated?: () => void;
 }
 
 const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
-  lessonId,
-  isOpen,
-  onClose,
+  lesson,
+  open,
+  onOpenChange,
   onLessonUpdated
 }) => {
-  const [lesson, setLesson] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [isHomeworkDialogOpen, setIsHomeworkDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [attendanceStatus, setAttendanceStatus] = useState({ allMarked: false, totalStudents: 0, markedCount: 0 });
-  const [homeworkStatus, setHomeworkStatus] = useState({ exists: false, homework: null });
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
-
-  // Determine if user has teacher/host privileges
-  const isTeacherRole = isTutor || isAdmin || isOwner;
+  const [lessonPlanAssignment, setLessonPlanAssignment] = useState<any>(null);
   
-  // Check if user can edit lessons (admin/owner only)
-  const canEditLesson = isAdmin || isOwner;
-
   useEffect(() => {
-    if (lessonId && isOpen) {
-      fetchLesson();
+    if (lesson?.id) {
+      fetchLessonPlanAssignment();
     }
-  }, [lessonId, isOpen]);
+  }, [lesson?.id]);
 
-  const fetchLesson = async () => {
-    if (!lessonId) return;
+  const fetchLessonPlanAssignment = async () => {
+    if (!lesson?.id) return;
     
-    setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('lessons')
+        .from('lesson_plan_assignments')
         .select(`
           *,
-          tutor:tutors(id, first_name, last_name),
-          lesson_students(
-            student:students(id, first_name, last_name, email)
-          )
+          lesson_plan:lesson_plans (*)
         `)
-        .eq('id', lessonId)
+        .eq('lesson_id', lesson.id)
         .single();
 
-      if (error) throw error;
-      
-      // Add debugging logs to identify null student records
-      console.log('Raw lesson data:', data);
-      if (data?.lesson_students) {
-        console.log('Lesson students:', data.lesson_students);
-        const nullStudents = data.lesson_students.filter(ls => !ls.student);
-        if (nullStudents.length > 0) {
-          console.warn('Found null student records:', nullStudents);
-        }
+      if (!error && data) {
+        setLessonPlanAssignment(data);
       }
-      
-      setLesson(data);
-      
-      // Check attendance and homework status
-      await Promise.all([
-        checkAttendanceStatus(lessonId),
-        checkHomeworkStatus(lessonId)
-      ]);
     } catch (error) {
-      console.error('Error fetching lesson:', error);
-      toast.error('Failed to load lesson details');
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching lesson plan assignment:', error);
     }
   };
 
-  const checkAttendanceStatus = async (lessonId: string) => {
-    try {
-      const { data: attendanceData } = await supabase
-        .from('lesson_attendance')
-        .select('student_id, attendance_status')
-        .eq('lesson_id', lessonId);
+  if (!lesson) return null;
 
-      const { data: lessonStudents } = await supabase
-        .from('lesson_students')
-        .select('student_id')
-        .eq('lesson_id', lessonId);
+  const canModifyLesson = isAdmin || isOwner || (isTutor && lesson.tutor?.id);
+  const canDeleteLesson = isAdmin || isOwner;
 
-      const totalStudents = lessonStudents?.length || 0;
-      const markedCount = attendanceData?.length || 0;
-      const allMarked = totalStudents > 0 && markedCount >= totalStudents;
-
-      setAttendanceStatus({ allMarked, totalStudents, markedCount });
-    } catch (error) {
-      console.error('Error checking attendance status:', error);
-    }
-  };
-
-  const checkHomeworkStatus = async (lessonId: string) => {
-    try {
-      const { data: homework } = await supabase
-        .from('homework')
-        .select('*')
-        .eq('lesson_id', lessonId)
-        .single();
-
-      setHomeworkStatus({ 
-        exists: !!homework, 
-        homework: homework 
-      });
-    } catch (error) {
-      // No homework found is expected, not an error
-      setHomeworkStatus({ exists: false, homework: null });
-    }
-  };
-
-  const handleCreateLessonSpaceRoom = async () => {
-    if (!lesson?.id) return;
-
-    setIsCreatingRoom(true);
-    try {
-      console.log('Creating LessonSpace room for lesson:', lesson.id);
-
-      const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
-        body: {
-          action: 'create-room',
-          lessonId: lesson.id,
-          lessonTitle: lesson.title,
-          tutorName: `${lesson.tutor?.first_name} ${lesson.tutor?.last_name}`,
-          startTime: lesson.start_time,
-          endTime: lesson.end_time,
-          isGroupLesson: lesson.is_group || false
-        }
-      });
-
-      if (error) {
-        console.error('Error creating LessonSpace room:', error);
-        toast.error(`Failed to create video room: ${error.message}`);
-        return;
-      }
-
-      if (data?.success) {
-        console.log('LessonSpace room created successfully:', data);
-        toast.success('Video room created successfully!');
-        await fetchLesson(); // Refresh lesson data
-        onLessonUpdated?.();
-      } else {
-        console.error('Failed to create LessonSpace room:', data);
-        toast.error(data?.error || 'Failed to create video room');
-      }
-    } catch (error: any) {
-      console.error('Error in handleCreateLessonSpaceRoom:', error);
-      toast.error('Failed to create video room');
-    } finally {
-      setIsCreatingRoom(false);
-    }
-  };
-
-  const handleAttendanceUpdated = () => {
-    // Refresh lesson data when attendance is updated
-    fetchLesson();
-  };
-
-  const handleHomeworkSuccess = () => {
-    // Refresh lesson data when homework is assigned
-    fetchLesson();
-    setIsHomeworkDialogOpen(false);
-    toast.success('Homework assigned successfully!');
-  };
-
-  const handleEditSuccess = () => {
-    // Refresh lesson data when lesson is updated
-    fetchLesson();
-    setIsEditDialogOpen(false);
+  const handleLessonDeleted = () => {
+    onOpenChange(false);
     onLessonUpdated?.();
-    toast.success('Lesson updated successfully!');
   };
 
-  if (!lessonId) return null;
-
-  // Filter out null student records to prevent crashes
-  const validStudents = lesson?.lesson_students?.filter(enrollment => 
-    enrollment && enrollment.student && enrollment.student.id
-  ) || [];
+  const handleLessonPlanAssigned = () => {
+    fetchLessonPlanAssignment();
+  };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              {lesson?.title || 'Loading...'}
-            </DialogTitle>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <GraduationCap className="h-5 w-5" />
+            {lesson.title}
+          </DialogTitle>
+        </DialogHeader>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : lesson ? (
-            <div className="space-y-6">
-              {/* Lesson Progress Tracking - Only for teachers */}
-              {isTeacherRole && (
-                <Card className="border-blue-200 bg-blue-50/50">
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2 text-blue-800">
-                      <CheckCircle className="h-4 w-4" />
-                      Lesson Completion Progress
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                        <div className="flex items-center gap-3">
-                          {attendanceStatus.allMarked ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                          ) : (
-                            <Circle className="h-5 w-5 text-gray-400" />
-                          )}
-                          <div>
-                            <p className="font-medium text-sm">Mark Attendance</p>
-                            <p className="text-xs text-muted-foreground">
-                              {attendanceStatus.markedCount} of {attendanceStatus.totalStudents} students marked
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant={attendanceStatus.allMarked ? "default" : "secondary"}>
-                          {attendanceStatus.allMarked ? "Complete" : "Pending"}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                        <div className="flex items-center gap-3">
-                          {homeworkStatus.exists ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                          ) : (
-                            <Circle className="h-5 w-5 text-gray-400" />
-                          )}
-                          <div>
-                            <p className="font-medium text-sm">Set Homework</p>
-                            <p className="text-xs text-muted-foreground">
-                              {homeworkStatus.exists ? "Homework assigned" : "No homework assigned yet"}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant={homeworkStatus.exists ? "default" : "secondary"}>
-                          {homeworkStatus.exists ? "Complete" : "Pending"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Basic Information */}
-              <Card>
-                <CardContent className="p-4 space-y-3">
-                  {lesson.description && (
-                    <p className="text-sm text-muted-foreground">{lesson.description}</p>
-                  )}
-                  
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {lesson.start_time && format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}
-                      {lesson.end_time && ` - ${format(parseISO(lesson.end_time), 'h:mm a')}`}
-                    </span>
-                  </div>
-
-                  {lesson.tutor && (
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        Teacher: {lesson.tutor.first_name} {lesson.tutor.last_name}
-                      </span>
-                    </div>
-                  )}
-
-                  {lesson.subject && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="secondary">{lesson.subject}</Badge>
-                    </div>
-                  )}
-
-                  {lesson.is_group && (
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="outline">Group Lesson</Badge>
-                      {validStudents.length > 0 && (
-                        <span className="text-sm text-muted-foreground">
-                          ({validStudents.length} students)
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Video Conference Section */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Video className="h-4 w-4" />
-                    <h3 className="font-medium">Video Conference</h3>
-                    {isTeacherRole ? (
-                      <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs ml-auto">
-                        <Shield className="h-3 w-3" />
-                        Host Access
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs ml-auto">
-                        <UserCheck className="h-3 w-3" />
-                        Student Access
-                      </div>
-                    )}
-                  </div>
-
-                  {lesson.lesson_space_room_url || lesson.lesson_space_room_id ? (
-                    <VideoConferenceLink 
-                      lessonId={lesson.id}
-                      lessonSpaceRoomUrl={lesson.lesson_space_room_url}
-                      lessonSpaceRoomId={lesson.lesson_space_room_id}
-                      lessonSpaceSpaceId={lesson.lesson_space_space_id}
-                      isGroupLesson={lesson.is_group}
-                      studentCount={validStudents.length}
-                    />
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-amber-700">
-                          <p className="font-medium">No video room created yet</p>
-                          <p>
-                            {isTeacherRole 
-                              ? 'Create a LessonSpace room to enable video conferencing for this lesson.'
-                              : 'Ask your teacher to create a video room for this lesson.'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {isTeacherRole && (
-                        <Button
-                          onClick={handleCreateLessonSpaceRoom}
-                          disabled={isCreatingRoom}
-                          className="w-full"
-                        >
-                          {isCreatingRoom ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Creating Room...
-                            </>
-                          ) : (
-                            <>
-                              <Video className="h-4 w-4 mr-2" />
-                              Create LessonSpace Room
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Students Section with Attendance - Only show if there are valid students */}
-              {validStudents.length > 0 && (
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Students ({validStudents.length})
-                      {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && (
-                        <Badge variant="destructive" className="ml-2 text-xs">
-                          {lesson.lesson_students.length - validStudents.length} missing data
-                        </Badge>
-                      )}
-                    </h3>
-                    <div className="space-y-3">
-                      {validStudents.map((enrollment: any, index: number) => (
-                        <StudentAttendanceRow
-                          key={enrollment.student?.id || index}
-                          student={enrollment.student}
-                          lessonId={lesson.id}
-                          lessonData={{
-                            title: lesson.title,
-                            start_time: lesson.start_time,
-                            tutor: lesson.tutor
-                          }}
-                          isStudent={!isTeacherRole}
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Show warning if there are students with missing data */}
-              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && (
-                <Card className="border-amber-200 bg-amber-50/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-amber-700">
-                        <p className="font-medium">Some student data is missing</p>
-                        <p>
-                          {lesson.lesson_students.length - validStudents.length} student record(s) could not be loaded. 
-                          This may be due to data synchronization issues.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Homework Section */}
-              {homeworkStatus.exists && (
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      Assigned Homework
-                    </h3>
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-sm font-medium text-green-800">
-                        {homeworkStatus.homework?.title}
-                      </p>
-                      {homeworkStatus.homework?.description && (
-                        <p className="text-sm text-green-700 mt-1">
-                          {homeworkStatus.homework.description}
-                        </p>
-                      )}
-                      {homeworkStatus.homework?.due_date && (
-                        <p className="text-xs text-green-600 mt-2">
-                          Due: {format(parseISO(homeworkStatus.homework.due_date), 'MMM d, yyyy')}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Status and Actions */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge variant={lesson.status === 'completed' ? 'default' : 'secondary'}>
-                    {lesson.status || 'scheduled'}
-                  </Badge>
-                  {lesson.is_recurring && (
-                    <Badge variant="outline">Recurring</Badge>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  {canEditLesson && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsEditDialogOpen(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Edit Lesson
-                    </Button>
-                  )}
-                  {isTeacherRole && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsHomeworkDialogOpen(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <BookOpen className="h-4 w-4" />
-                      {homeworkStatus.exists ? 'Edit Homework' : 'Set Homework'}
-                    </Button>
-                  )}
-                  <Button variant="outline" onClick={onClose}>
-                    Close
-                  </Button>
-                </div>
+        <ScrollArea className="max-h-[60vh]">
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">
+                  {format(new Date(lesson.start_time), 'PPP')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">
+                  {format(new Date(lesson.start_time), 'HH:mm')} - {format(new Date(lesson.end_time), 'HH:mm')}
+                </span>
               </div>
             </div>
-          ) : (
-            <div className="text-center p-8">
-              <p className="text-muted-foreground">Failed to load lesson details</p>
+
+            {/* Status and Type Badges */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={lesson.status === 'completed' ? 'default' : 'secondary'}>
+                {lesson.status}
+              </Badge>
+              {lesson.lesson_type && lesson.lesson_type !== 'regular' && (
+                <Badge variant="outline">{lesson.lesson_type}</Badge>
+              )}
+              {lesson.is_group && (
+                <Badge variant="outline">Group Lesson</Badge>
+              )}
+              {lesson.subject && (
+                <Badge variant="outline">{lesson.subject}</Badge>
+              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
-      {/* Edit Lesson Dialog - Only for admins/owners */}
-      {canEditLesson && (
-        <EditLessonForm
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-          onSuccess={handleEditSuccess}
-          lessonId={lessonId}
-        />
-      )}
+            {/* Description */}
+            {lesson.description && (
+              <div>
+                <h4 className="font-medium mb-2">Description</h4>
+                <p className="text-sm text-gray-600">{lesson.description}</p>
+              </div>
+            )}
 
-      {/* Homework Assignment Dialog */}
-      {isHomeworkDialogOpen && lesson && (
-        <AssignHomeworkDialog
-          isOpen={isHomeworkDialogOpen}
-          onClose={() => setIsHomeworkDialogOpen(false)}
-          onSuccess={handleHomeworkSuccess}
-          preSelectedLessonId={lesson.id}
-          preloadedLessonData={lesson}
-          editingHomework={homeworkStatus.homework ? {
-            id: homeworkStatus.homework.id,
-            title: homeworkStatus.homework.title,
-            description: homeworkStatus.homework.description,
-            lesson_id: homeworkStatus.homework.lesson_id,
-            due_date: homeworkStatus.homework.due_date ? new Date(homeworkStatus.homework.due_date) : undefined,
-            attachment_url: homeworkStatus.homework.attachment_url,
-            attachment_type: homeworkStatus.homework.attachment_type
-          } : undefined}
-        />
-      )}
-    </>
+            {/* Lesson Plan Assignment */}
+            {lessonPlanAssignment && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <BookOpen className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-900">Assigned Lesson Plan</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Week {lessonPlanAssignment.lesson_plan.week_number}: {lessonPlanAssignment.lesson_plan.topic_title}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      {lessonPlanAssignment.lesson_plan.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tutor Info */}
+            {lesson.tutor && (
+              <div>
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Tutor
+                </h4>
+                <p className="text-sm">
+                  {lesson.tutor.first_name} {lesson.tutor.last_name}
+                </p>
+              </div>
+            )}
+
+            {/* Students */}
+            {lesson.students && lesson.students.length > 0 && (
+              <div>
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Students ({lesson.students.length})
+                </h4>
+                <div className="space-y-2">
+                  {lesson.students.map((student) => (
+                    <div key={student.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm">
+                        {student.first_name} {student.last_name}
+                      </span>
+                      {student.attendance_status && (
+                        <Badge variant={student.attendance_status === 'present' ? 'default' : 'secondary'}>
+                          {student.attendance_status}
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Room Information */}
+            {(lesson.lesson_space_room_url || lesson.flexible_classroom_room_id) && (
+              <div>
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Virtual Room
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {lesson.lesson_space_room_url ? 'LessonSpace Room' : 'Flexible Classroom'}
+                </p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        <Separator />
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2 justify-between">
+          <div className="flex flex-wrap gap-2">
+            {canModifyLesson && lesson.status !== 'completed' && (
+              <CompleteSessionDialog lesson={lesson} onSessionCompleted={onLessonUpdated}>
+                <Button size="sm" variant="outline">
+                  <Edit className="h-4 w-4 mr-1" />
+                  Complete Session
+                </Button>
+              </CompleteSessionDialog>
+            )}
+
+            {canModifyLesson && !lesson.is_recurring && (
+              <RecurringLessonDialog
+                lessonId={lesson.id}
+                lessonTitle={lesson.title}
+              >
+                <Button size="sm" variant="outline">
+                  <Repeat className="h-4 w-4 mr-1" />
+                  Make Recurring
+                </Button>
+              </RecurringLessonDialog>
+            )}
+
+            {canModifyLesson && lesson.subject && !lessonPlanAssignment && (
+              <LessonPlanSelector
+                lessonId={lesson.id}
+                subject={lesson.subject}
+                lessonDate={lesson.start_time}
+                onPlanAssigned={handleLessonPlanAssigned}
+              >
+                <Button size="sm" variant="outline">
+                  <BookOpen className="h-4 w-4 mr-1" />
+                  Assign Plan
+                </Button>
+              </LessonPlanSelector>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            {canDeleteLesson && (
+              <DeleteLessonButton
+                lessonId={lesson.id}
+                lessonTitle={lesson.title}
+                onDeleted={handleLessonDeleted}
+                size="sm"
+              />
+            )}
+            
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
