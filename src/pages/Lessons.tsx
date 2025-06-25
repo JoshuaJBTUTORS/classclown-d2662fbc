@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import AddLessonDialog from '@/components/lessons/AddLessonDialog';
+import AddLessonForm from '@/components/lessons/AddLessonForm';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import { Lesson } from '@/types/lesson';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -300,7 +300,7 @@ const Lessons = () => {
 
       {/* Only show Add Lesson Dialog for non-students */}
       {!isStudent && (
-        <AddLessonDialog 
+        <AddLessonForm 
           isOpen={isAddingLesson} 
           onClose={() => setIsAddingLesson(false)}
           onSuccess={handleAddLessonSuccess}
@@ -310,9 +310,8 @@ const Lessons = () => {
       {/* Lesson Details Dialog - available for all users but with restricted actions for students */}
       <LessonDetailsDialog
         lessonId={selectedLessonId}
-        open={isLessonDetailsOpen}
+        isOpen={isLessonDetailsOpen}
         onClose={() => setIsLessonDetailsOpen(false)}
-        onLessonUpdated={fetchLessons}
       />
     </div>
   );
