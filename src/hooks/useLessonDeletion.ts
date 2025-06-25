@@ -24,20 +24,24 @@ export const useLessonDeletion = () => {
       // Delete related records in the correct order to avoid foreign key constraints
       
       // 1. Delete homework submissions first
-      const { error: submissionsError } = await supabase
-        .from('homework_submissions')
-        .delete()
-        .in('homework_id', 
-          supabase
-            .from('homework')
-            .select('id')
-            .eq('lesson_id', lessonId)
-        );
+      const { data: homeworkIds } = await supabase
+        .from('homework')
+        .select('id')
+        .eq('lesson_id', lessonId);
 
-      if (submissionsError) {
-        console.error('❌ Error deleting homework submissions:', submissionsError);
-      } else {
-        console.log('✅ Deleted homework submissions');
+      if (homeworkIds && homeworkIds.length > 0) {
+        const homeworkIdList = homeworkIds.map(h => h.id);
+        
+        const { error: submissionsError } = await supabase
+          .from('homework_submissions')
+          .delete()
+          .in('homework_id', homeworkIdList);
+
+        if (submissionsError) {
+          console.error('❌ Error deleting homework submissions:', submissionsError);
+        } else {
+          console.log('✅ Deleted homework submissions');
+        }
       }
 
       // 2. Delete homework

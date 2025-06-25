@@ -13,7 +13,6 @@ import {
   BookOpen, 
   MapPin,
   Repeat,
-  Trash2,
   Edit,
   GraduationCap
 } from 'lucide-react';
@@ -27,29 +26,65 @@ import LessonPlanSelector from '@/components/lessons/LessonPlanSelector';
 import DeleteLessonButton from '@/components/lessons/DeleteLessonButton';
 
 interface LessonDetailsDialogProps {
-  lesson: Lesson | null;
+  lessonId: string | null;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   onLessonUpdated?: () => void;
 }
 
 const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
-  lesson,
+  lessonId,
   open,
-  onOpenChange,
+  onClose,
   onLessonUpdated
 }) => {
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
+  const [lesson, setLesson] = useState<Lesson | null>(null);
   const [lessonPlanAssignment, setLessonPlanAssignment] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    if (lesson?.id) {
+    if (lessonId && open) {
+      fetchLesson();
       fetchLessonPlanAssignment();
     }
-  }, [lesson?.id]);
+  }, [lessonId, open]);
+
+  const fetchLesson = async () => {
+    if (!lessonId) return;
+    
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('lessons')
+        .select(`
+          *,
+          tutor:tutors(id, first_name, last_name),
+          lesson_students!inner(
+            student:students(id, first_name, last_name)
+          )
+        `)
+        .eq('id', lessonId)
+        .single();
+
+      if (error) throw error;
+
+      // Transform the data
+      const students = data.lesson_students.map((ls: any) => ls.student);
+      setLesson({
+        ...data,
+        students,
+        lesson_students: undefined
+      });
+    } catch (error) {
+      console.error('Error fetching lesson:', error);
+    } finally {
+      setLoading(false);
+    }   
+  };
 
   const fetchLessonPlanAssignment = async () => {
-    if (!lesson?.id) return;
+    if (!lessonId) return;
     
     try {
       const { data, error } = await supabase
@@ -58,7 +93,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           *,
           lesson_plan:lesson_plans (*)
         `)
-        .eq('lesson_id', lesson.id)
+        .eq('lesson_id', lessonId)
         .single();
 
       if (!error && data) {
@@ -69,13 +104,32 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     }
   };
 
-  if (!lesson) return null;
+  if (!lesson) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Loading...</DialogTitle>
+          </DialogHeader>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p>Lesson not found</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const canModifyLesson = isAdmin || isOwner || (isTutor && lesson.tutor?.id);
   const canDeleteLesson = isAdmin || isOwner;
 
   const handleLessonDeleted = () => {
-    onOpenChange(false);
+    onClose();
     onLessonUpdated?.();
   };
 
@@ -83,8 +137,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     fetchLessonPlanAssignment();
   };
 
+  const handleSessionCompleted = () => {
+    fetchLesson();
+    onLessonUpdated?.();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
@@ -211,7 +270,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         <div className="flex flex-wrap gap-2 justify-between">
           <div className="flex flex-wrap gap-2">
             {canModifyLesson && lesson.status !== 'completed' && (
-              <CompleteSessionDialog lesson={lesson} onSessionCompleted={onLessonUpdated}>
+              <CompleteSessionDialog lesson={lesson} onSessionCompleted={handleSessionCompleted}>
                 <Button size="sm" variant="outline">
                   <Edit className="h-4 w-4 mr-1" />
                   Complete Session
@@ -256,7 +315,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               />
             )}
             
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={onClose}>
               Close
             </Button>
           </div>

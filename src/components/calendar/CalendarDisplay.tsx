@@ -319,9 +319,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
       )}
 
       <LessonDetailsDialog
-        isOpen={isDetailsOpen}
-        onClose={handleDetailsClose}
         lessonId={selectedLessonId}
+        open={isDetailsOpen}
+        onClose={handleDetailsClose}
         onLessonUpdated={handleRefresh}
       />
 
