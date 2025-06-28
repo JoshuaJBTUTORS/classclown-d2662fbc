@@ -678,6 +678,78 @@ export type Database = {
           },
         ]
       }
+      lesson_plan_assignments: {
+        Row: {
+          assigned_week_date: string
+          created_at: string | null
+          id: string
+          lesson_id: string
+          lesson_plan_id: string
+        }
+        Insert: {
+          assigned_week_date: string
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          lesson_plan_id: string
+        }
+        Update: {
+          assigned_week_date?: string
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          lesson_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_plan_assignments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_plan_assignments_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          subject: string
+          term: string
+          topic_title: string
+          updated_at: string | null
+          week_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          subject: string
+          term: string
+          topic_title: string
+          updated_at?: string | null
+          week_number: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          subject?: string
+          term?: string
+          topic_title?: string
+          updated_at?: string | null
+          week_number?: number
+        }
+        Relationships: []
+      }
       lesson_students: {
         Row: {
           created_at: string | null
@@ -923,6 +995,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      recurring_lesson_groups: {
+        Row: {
+          created_at: string | null
+          group_name: string
+          id: string
+          next_extension_date: string | null
+          original_lesson_id: string
+          recurrence_pattern: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          group_name: string
+          id?: string
+          next_extension_date?: string | null
+          original_lesson_id: string
+          recurrence_pattern?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          group_name?: string
+          id?: string
+          next_extension_date?: string | null
+          original_lesson_id?: string
+          recurrence_pattern?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_lesson_groups_original_lesson_id_fkey"
+            columns: ["original_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       revision_progress: {
         Row: {
@@ -1277,6 +1387,51 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      teaching_materials: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          material_type: string
+          mime_type: string | null
+          subject: string
+          updated_at: string
+          uploaded_by: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          material_type?: string
+          mime_type?: string | null
+          subject: string
+          updated_at?: string
+          uploaded_by: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          material_type?: string
+          mime_type?: string | null
+          subject?: string
+          updated_at?: string
+          uploaded_by?: string
+          week_number?: number
         }
         Relationships: []
       }
@@ -1693,6 +1848,10 @@ export type Database = {
         Args: { submission_homework_id: string; submission_student_id: number }
         Returns: boolean
       }
+      extend_recurring_lessons: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_current_tutor_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1708,6 +1867,10 @@ export type Database = {
       get_current_user_tutor_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_current_week_number: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       get_next_lesson: {
         Args: { current_lesson_id: string }

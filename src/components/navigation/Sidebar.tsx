@@ -18,7 +18,10 @@ import {
   BookOpen,
   Book,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  X,
+  FileText,
+  User
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -27,7 +30,7 @@ import ChatModal from '@/components/chat/ChatModal';
 
 interface SidebarProps {
   isOpen: boolean;
-  onClose?: () => void;
+  onToggle?: () => void;
 }
 
 interface NavigationItem {
@@ -37,368 +40,248 @@ interface NavigationItem {
   onClick?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
+  const { userRole, isAdmin, isOwner, isTutor, isParent, isStudent } = useAuth();
   const location = useLocation();
-  const { userRole } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const previousPathnameRef = useRef(location.pathname);
 
-  // Auto-close sidebar on mobile when route changes (not when toggling)
-  useEffect(() => {
-    // Only close if the pathname actually changed (not just sidebar toggle)
-    if (previousPathnameRef.current !== location.pathname && onClose && isOpen) {
-      // Check if we're on mobile/tablet (< 1024px)
-      const isMobile = window.innerWidth < 1024;
-      if (isMobile) {
-        onClose();
-      }
-      // Update the ref to the new pathname
-      previousPathnameRef.current = location.pathname;
-    }
-  }, [location.pathname, onClose]); // Removed isOpen from dependencies
-
-  // Handle backdrop click
-  const handleBackdropClick = () => {
-    if (onClose) {
-      onClose();
-    }
+  const isActive = (path: string) => {
+    return location.pathname === path;
   };
 
-  // Prevent event bubbling when clicking inside sidebar
-  const handleSidebarClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
-  // Handle chat click - open modal instead of external link
-  const handleChatClick = () => {
-    setIsChatModalOpen(true);
-  };
-
-  const navigationItems = [
-    {
-      title: 'Dashboard',
-      href: '/',
-      icon: LayoutDashboard,
-      allowedRoles: ['admin', 'owner', 'tutor']
-    },
-    {
-      title: 'Calendar',
-      href: '/calendar',
-      icon: Calendar,
-      allowedRoles: ['admin', 'owner', 'tutor', 'student', 'parent']
-    },
-    {
-      title: 'Students',
-      href: '/students',
-      icon: Users,
-      allowedRoles: ['admin', 'owner', 'tutor']
-    },
-    {
-      title: 'Tutors',
-      href: '/tutors',
-      icon: GraduationCap,
-      allowedRoles: ['admin', 'owner']
-    },
-    {
-      title: 'Chat',
-      href: '#',
-      icon: MessageSquare,
-      allowedRoles: ['admin', 'owner', 'tutor'],
-      onClick: handleChatClick
-    },
-    {
-      title: 'Homework',
-      href: '/homework',
-      icon: BookOpen,
-      allowedRoles: ['admin', 'owner', 'tutor', 'student', 'parent']
-    },
-    {
-      title: 'Progress',
-      href: '/progress',
-      icon: TrendingUp,
-      allowedRoles: ['student', 'owner', 'parent']
-    },
-    {
-      title: 'Learning Hub',
-      href: '/learning-hub',
-      icon: Book,
-      allowedRoles: ['admin', 'owner', 'tutor', 'student', 'parent']
-    },
-    {
-      title: 'Reports',
-      href: '/reports',
-      icon: BarChart3,
-      allowedRoles: ['owner']
-    },
-    {
-      title: 'Time Off',
-      href: '/time-off',
-      icon: CalendarX,
-      allowedRoles: ['tutor']
-    },
-    {
-      title: 'Time Off Requests',
-      href: '/time-off-requests',
-      icon: Clock,
-      allowedRoles: ['admin', 'owner']
-    },
-    {
-      title: 'Trial Bookings',
-      href: '/trial-bookings',
-      icon: Calendar,
-      allowedRoles: ['admin', 'owner']
-    }
-  ];
-
-  const getNavigation = (): NavigationItem[] => {
-    // For students, start with Progress and exclude Dashboard
-    if (userRole === 'student') {
-      return [
-        { name: 'Progress', href: '/progress', icon: TrendingUp },
-        { name: 'Calendar', href: '/calendar', icon: Calendar },
-        { name: 'Homework', href: '/homework', icon: BookMarked },
-        { name: 'Learning Hub', href: '/learning-hub', icon: Library },
-      ];
-    }
-
-    // For parents, start with Progress and exclude Dashboard
-    if (userRole === 'parent') {
-      return [
-        { name: 'Progress', href: '/progress', icon: TrendingUp },
-        { name: 'Calendar', href: '/calendar', icon: Calendar },
-        { name: 'Homework', href: '/homework', icon: BookMarked },
-        { name: 'Learning Hub', href: '/learning-hub', icon: Library },
-      ];
-    }
-
-    // For tutors, include chat and time off requests
-    if (userRole === 'tutor') {
-      return [
-        { name: 'Dashboard', href: '/', icon: Home },
-        { name: 'Calendar', href: '/calendar', icon: Calendar },
-        { name: 'Students', href: '/students', icon: Users },
-        { name: 'Chat', href: '#', icon: MessageSquare, onClick: handleChatClick },
-        { name: 'Homework', href: '/homework', icon: BookMarked },
-        { name: 'Time Off', href: '/time-off', icon: Clock },
-        { name: 'Learning Hub', href: '/learning-hub', icon: Library },
-      ];
-    }
-
-    // For all other roles, keep the original navigation with Dashboard first
-    const baseNavigation: NavigationItem[] = [
-      { name: 'Dashboard', href: '/', icon: Home },
-      { name: 'Calendar', href: '/calendar', icon: Calendar },
-    ];
-
-    // Add role-specific navigation items
-    if (userRole === 'admin' || userRole === 'owner') {
-      baseNavigation.push({ name: 'Students', href: '/students', icon: Users });
-      baseNavigation.push({ name: 'Tutors', href: '/tutors', icon: GraduationCap });
-    }
-
-    // Add chat for admins and owners
-    if (userRole === 'admin' || userRole === 'owner') {
-      baseNavigation.push({ name: 'Chat', href: '#', icon: MessageSquare, onClick: handleChatClick });
-    }
-
-    baseNavigation.push({ name: 'Homework', href: '/homework', icon: BookMarked });
-
-    // Add time off requests for admins and owners
-    if (userRole === 'admin' || userRole === 'owner') {
-      baseNavigation.push({ name: 'Time Off Requests', href: '/time-off-requests', icon: Clock });
-      baseNavigation.push({ name: 'Trial Bookings', href: '/trial-bookings', icon: UserPlus });
-    }
-
-    if (userRole === 'owner') {
-      baseNavigation.push({ name: 'Progress', href: '/progress', icon: TrendingUp });
-      baseNavigation.push({ name: 'Reports', href: '/reports', icon: FileBarChart });
-    }
-
-    baseNavigation.push({ name: 'Learning Hub', href: '/learning-hub', icon: Library });
-
-    return baseNavigation;
-  };
-
-  const navigation = getNavigation();
-
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
-  // Color mapping for different navigation items using blue-green gradient
-  const getItemColors = (itemName: string, isActive: boolean) => {
-    const colorMap = {
-      'Dashboard': isActive 
-        ? 'bg-[hsl(var(--deep-purple-blue))]/20 text-[hsl(var(--deep-purple-blue))]' 
-        : 'text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))]',
-      'Calendar': isActive 
-        ? 'bg-[hsl(var(--medium-blue))]/20 text-[hsl(var(--medium-blue))]' 
-        : 'text-[hsl(var(--medium-blue))] hover:bg-[hsl(var(--medium-blue))]/10 hover:text-[hsl(var(--medium-blue))]',
-      'Students': isActive 
-        ? 'bg-[hsl(var(--cyan-blue))]/20 text-[hsl(var(--cyan-blue))]' 
-        : 'text-[hsl(var(--cyan-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))]',
-      'Tutors': isActive 
-        ? 'bg-[hsl(var(--light-green))]/20 text-[hsl(var(--medium-green))]' 
-        : 'text-[hsl(var(--light-green))] hover:bg-[hsl(var(--light-green))]/10 hover:text-[hsl(var(--medium-green))]',
-      'Chat': isActive 
-        ? 'bg-[hsl(var(--medium-green))]/20 text-[hsl(var(--medium-green))]' 
-        : 'text-[hsl(var(--medium-green))] hover:bg-[hsl(var(--medium-green))]/10 hover:text-[hsl(var(--medium-green))]',
-      'Homework': isActive 
-        ? 'bg-[hsl(var(--medium-green))]/20 text-[hsl(var(--medium-green))]' 
-        : 'text-[hsl(var(--medium-green))] hover:bg-[hsl(var(--medium-green))]/10 hover:text-[hsl(var(--medium-green))]',
-      'Progress': isActive 
-        ? 'bg-[hsl(var(--bright-green))]/20 text-[hsl(var(--bright-green))]'  
-        : 'text-[hsl(var(--bright-green))] hover:bg-[hsl(var(--bright-green))]/10 hover:text-[hsl(var(--bright-green))]',
-      'Learning Hub': isActive 
-        ? 'bg-[hsl(var(--cyan-blue))]/20 text-[hsl(var(--cyan-blue))]' 
-        : 'text-[hsl(var(--cyan-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))]',
-    };
-    
-    return colorMap[itemName] || (isActive 
-      ? 'bg-[hsl(var(--deep-purple-blue))]/20 text-[hsl(var(--deep-purple-blue))]' 
-      : 'text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--deep-purple-blue))]/10 hover:text-[hsl(var(--deep-purple-blue))]');
-  };
+  // Only show admin/management features to admin and owner roles
+  const showAdminFeatures = isAdmin || isOwner;
+  const showTutorFeatures = isTutor || showAdminFeatures;
 
   return (
     <>
-      {/* Mobile/Tablet Backdrop */}
+      {/* Overlay for mobile */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={handleBackdropClick}
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={onToggle}
         />
       )}
-
+      
       {/* Sidebar */}
-      <div 
-        className={cn(
-          "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 shadow-[var(--shadow-card)] transition-all duration-300 ease-in-out font-sidebar",
-          // Mobile/Tablet: Modal overlay behavior
-          "lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full",
-          // Desktop: Fixed sidebar with collapse
-          "lg:z-40",
-          isCollapsed ? "lg:w-16" : "lg:w-64",
-          // Mobile: Always full width when open
-          "w-64"
-        )}
-        onClick={handleSidebarClick}
-      >
-        <div className="flex h-full flex-col">
-          {/* Header with Logo */}
-          <div className={cn(
-            "flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4",
-            isCollapsed && "lg:px-2"
-          )}>
-            {(!isCollapsed || window.innerWidth < 1024) && (
-              <div className="flex items-center">
-                <img 
-                  src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
-                  alt="Class Clown Logo" 
-                  className="h-10 w-auto drop-shadow-sm" 
-                />
-              </div>
-            )}
-            
-            {/* Collapse button - only show on desktop */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleCollapse}
-              className={cn(
-                "hidden lg:flex h-8 w-8 text-[hsl(var(--deep-purple-blue))] hover:bg-[hsl(var(--cyan-blue))]/10 hover:text-[hsl(var(--cyan-blue))] transition-all duration-200",
-                isCollapsed && "mx-auto"
-              )}
+      <div className={`
+        fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-50 transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:static lg:z-auto
+        w-64
+      `}>
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center">
+              <span className="text-xl font-bold text-primary">TutorCRM</span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onToggle}
+              className="lg:hidden"
             >
-              {isCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
+              <X className="h-4 w-4" />
             </Button>
           </div>
-          
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto bg-white">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href && item.href !== '#';
-              
-              if (item.onClick) {
-                // Handle chat and other onClick items
-                return (
-                  <button
-                    key={item.name}
-                    onClick={item.onClick}
-                    className={cn(
-                      "group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200 relative overflow-hidden w-full text-left",
-                      getItemColors(item.name, isActive),
-                      isCollapsed && window.innerWidth >= 1024 && "justify-center px-2"
-                    )}
-                    title={isCollapsed && window.innerWidth >= 1024 ? item.name : undefined}
-                  >
-                    <item.icon
-                      className={cn(
-                        "h-5 w-5 flex-shrink-0 transition-all duration-200",
-                        (!isCollapsed || window.innerWidth < 1024) && "mr-3"
-                      )}
-                    />
-                    {(!isCollapsed || window.innerWidth < 1024) && (
-                      <span className="truncate font-medium tracking-wide">{item.name}</span>
-                    )}
-                    {isActive && (
-                      <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] rounded-l-full" />
-                    )}
-                  </button>
-                );
-              }
 
-              // Handle regular navigation links
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    "group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200 relative overflow-hidden",
-                    getItemColors(item.name, isActive),
-                    isCollapsed && window.innerWidth >= 1024 && "justify-center px-2"
-                  )}
-                  title={isCollapsed && window.innerWidth >= 1024 ? item.name : undefined}
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-2">
+              <Link 
+                to="/dashboard" 
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/dashboard') 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Home className="h-4 w-4" />
+                Dashboard
+              </Link>
+
+              <Link 
+                to="/calendar" 
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/calendar') 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Calendar className="h-4 w-4" />
+                Calendar
+              </Link>
+
+              {/* Admin/Owner Features */}
+              {showAdminFeatures && (
+                <>
+                  <Link 
+                    to="/students" 
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/students') 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Users className="h-4 w-4" />
+                    Students
+                  </Link>
+
+                  <Link 
+                    to="/tutors" 
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/tutors') 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Tutors
+                  </Link>
+                </>
+              )}
+
+              <Link 
+                to="/lessons" 
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/lessons') 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <BookOpen className="h-4 w-4" />
+                Lessons
+              </Link>
+
+              {/* Lesson Plans - Admin/Owner Only */}
+              {showAdminFeatures && (
+                <Link 
+                  to="/lesson-plans" 
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive('/lesson-plans') 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
                 >
-                  <item.icon
-                    className={cn(
-                      "h-5 w-5 flex-shrink-0 transition-all duration-200",
-                      (!isCollapsed || window.innerWidth < 1024) && "mr-3"
-                    )}
-                  />
-                  {(!isCollapsed || window.innerWidth < 1024) && (
-                    <span className="truncate font-medium tracking-wide">{item.name}</span>
-                  )}
-                  {isActive && (
-                    <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] rounded-l-full" />
-                  )}
+                  <FileText className="h-4 w-4" />
+                  Lesson Plans
                 </Link>
-              );
-            })}
+              )}
+
+              <Link 
+                to="/homework" 
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/homework') 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <BookOpen className="h-4 w-4" />
+                Homework
+              </Link>
+
+              <Link 
+                to="/progress" 
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/progress') 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Progress
+              </Link>
+
+              {/* Learning Hub for all authenticated users */}
+              <Link 
+                to="/learning-hub" 
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname.startsWith('/learning-hub')
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <BookOpen className="h-4 w-4" />
+                Learning Hub
+              </Link>
+
+              {/* Admin/Owner Features */}
+              {showAdminFeatures && (
+                <>
+                  <Link 
+                    to="/reports" 
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/reports') 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Reports
+                  </Link>
+
+                  <Link 
+                    to="/trial-bookings" 
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/trial-bookings') 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Trial Bookings
+                  </Link>
+                </>
+              )}
+
+              {/* Tutor Features */}
+              {showTutorFeatures && (
+                <>
+                  <Link 
+                    to="/time-off" 
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/time-off') 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Time Off
+                  </Link>
+
+                  {showAdminFeatures && (
+                    <Link 
+                      to="/time-off-requests" 
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        isActive('/time-off-requests') 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Clock className="h-4 w-4" />
+                      Time Off Requests
+                    </Link>
+                  )}
+                </>
+              )}
+            </div>
           </nav>
 
-          {/* Footer */}
-          {(!isCollapsed || window.innerWidth < 1024) && (
-            <div className="border-t border-gray-200 p-4 bg-white">
-              <div className="text-xs text-gray-600 text-center">
-                <p className="font-playfair text-[hsl(var(--deep-purple-blue))] font-semibold text-sm">Class Clown Tutoring</p>
-                <p className="mt-1 font-medium text-[hsl(var(--medium-blue))]">Excellence in Education</p>
+          {/* User Info */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <User className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {userRole?.charAt(0).toUpperCase() + userRole?.slice(1)}
+                </p>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
-
-      {/* Chat Modal */}
-      <ChatModal 
-        isOpen={isChatModalOpen}
-        onClose={() => setIsChatModalOpen(false)}
-      />
     </>
   );
 };

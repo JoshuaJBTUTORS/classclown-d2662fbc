@@ -15,6 +15,7 @@ import Calendar from './pages/Calendar';
 import Students from './pages/Students';
 import Tutors from './pages/Tutors';
 import Lessons from './pages/Lessons';
+import LessonPlans from './pages/LessonPlans';
 import Auth from './pages/Auth';
 import Homework from './pages/Homework';
 import Progress from './pages/Progress';
@@ -89,6 +90,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Lessons />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/lesson-plans"
+                  element={
+                    <ProtectedRoute>
+                      <LessonPlans />
                     </ProtectedRoute>
                   }
                 />
