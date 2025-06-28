@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -30,7 +31,7 @@ import ChatModal from '@/components/chat/ChatModal';
 
 interface SidebarProps {
   isOpen: boolean;
-  onToggle?: () => void;
+  onClose: () => void;
 }
 
 interface NavigationItem {
@@ -40,7 +41,7 @@ interface NavigationItem {
   onClick?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { userRole, isAdmin, isOwner, isTutor, isParent, isStudent } = useAuth();
   const location = useLocation();
 
@@ -58,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onToggle}
+          onClick={onClose}
         />
       )}
       
@@ -78,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={onToggle}
+              onClick={onClose}
               className="lg:hidden"
             >
               <X className="h-4 w-4" />
