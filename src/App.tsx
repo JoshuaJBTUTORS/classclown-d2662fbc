@@ -1,89 +1,216 @@
-
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { OrganizationProvider } from "@/contexts/OrganizationContext";
-import { LearningHubProvider } from "@/contexts/LearningHubContext";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Students from "./pages/Students";
-import Tutors from "./pages/Tutors";
-import Lessons from "./pages/Lessons";
-import LessonPlans from "./pages/LessonPlans";
-import Calendar from "./pages/Calendar";
-import Progress from "./pages/Progress";
-import Reports from "./pages/Reports";
-import Homework from "./pages/Homework";
-import VideoRoom from "./pages/VideoRoom";
-import Unauthorized from "./pages/Unauthorized";
-import NotFound from "./pages/NotFound";
-import LoginPage from "./pages/LoginPage";
-import InteractiveSignup from "./pages/InteractiveSignup";
-import LandingPage from "./pages/LandingPage";
-import TrialBooking from "./pages/TrialBooking";
-import Invite from "./pages/Invite";
-import CourseCheckout from "./pages/CourseCheckout";
-import TimeOff from "./pages/TimeOff";
-import TimeOffRequests from "./pages/TimeOffRequests";
-import TrialBookings from "./pages/TrialBookings";
-import CreateAdmin from "./pages/CreateAdmin";
-import LearningHub from "./pages/LearningHub";
-
-const queryClient = new QueryClient();
+import { AuthProvider } from '@/contexts/AuthContext';
+import { OrganizationProvider } from '@/contexts/OrganizationContext';
+import { LearningHubProvider } from '@/contexts/LearningHubContext';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import Dashboard from './pages/Dashboard';
+import InteractiveSignup from './pages/InteractiveSignup';
+import Index from './pages/Index';
+import Calendar from './pages/Calendar';
+import Students from './pages/Students';
+import Tutors from './pages/Tutors';
+import Lessons from './pages/Lessons';
+import Auth from './pages/Auth';
+import Homework from './pages/Homework';
+import Progress from './pages/Progress';
+import Reports from './pages/Reports';
+import TimeOff from './pages/TimeOff';
+import TimeOffRequests from './pages/TimeOffRequests';
+import TrialBookings from './pages/TrialBookings';
+import StudentJoinPage from './components/lessons/StudentJoinPage';
+import VideoRoom from './pages/VideoRoom';
+import LearningHub from './pages/LearningHub';
+import LearningHubLayout from './components/learningHub/LearningHubLayout';
+import LearningHubDashboard from './pages/LearningHubDashboard';
+import LearningHubMyCourses from './pages/LearningHubMyCourses';
+import LearningHubSettings from './pages/LearningHubSettings';
+import LearningHubRevision from './pages/LearningHubRevision';
+import LearningHubAssessments from './pages/LearningHubAssessments';
+import CourseDetail from './pages/CourseDetail';
+import CourseEdit from './pages/CourseEdit';
+import CourseCheckout from './pages/CourseCheckout';
 
 function App() {
+  const queryClient = new QueryClient();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <AuthProvider>
-            <OrganizationProvider>
-              <LearningHubProvider>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/signup" element={<InteractiveSignup />} />
-                  <Route path="/landing" element={<LandingPage />} />
-                  <Route path="/trial-booking" element={<TrialBooking />} />
-                  <Route path="/invite/:token" element={<Invite />} />
-                  <Route path="/course/:courseId/checkout" element={<CourseCheckout />} />
-                  
-                  {/* Protected Routes */}
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
-                  <Route path="/tutors" element={<ProtectedRoute><Tutors /></ProtectedRoute>} />
-                  <Route path="/lessons" element={<ProtectedRoute><Lessons /></ProtectedRoute>} />
-                  <Route path="/lesson-plans" element={<ProtectedRoute><LessonPlans /></ProtectedRoute>} />
-                  <Route path="/lesson-plans/:subject" element={<ProtectedRoute><LessonPlans /></ProtectedRoute>} />
-                  <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-                  <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-                  <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-                  <Route path="/homework" element={<ProtectedRoute><Homework /></ProtectedRoute>} />
-                  <Route path="/video-room/:lessonId" element={<ProtectedRoute><VideoRoom /></ProtectedRoute>} />
-                  <Route path="/time-off" element={<ProtectedRoute><TimeOff /></ProtectedRoute>} />
-                  <Route path="/time-off-requests" element={<ProtectedRoute><TimeOffRequests /></ProtectedRoute>} />
-                  <Route path="/trial-bookings" element={<ProtectedRoute><TrialBookings /></ProtectedRoute>} />
-                  <Route path="/create-admin" element={<ProtectedRoute><CreateAdmin /></ProtectedRoute>} />
-                  
-                  {/* Learning Hub Routes */}
-                  <Route path="/learning-hub" element={<ProtectedRoute><LearningHub /></ProtectedRoute>} />
-                  
-                  {/* Error Routes */}
-                  <Route path="/unauthorized" element={<Unauthorized />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </LearningHubProvider>
-            </OrganizationProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <OrganizationProvider>
+            <LearningHubProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/interactive-signup" element={<InteractiveSignup />} />
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* Protected routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/calendar"
+                  element={
+                    <ProtectedRoute>
+                      <Calendar />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/students"
+                  element={
+                    <ProtectedRoute>
+                      <Students />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tutors"
+                  element={
+                    <ProtectedRoute>
+                      <Tutors />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/lessons"
+                  element={
+                    <ProtectedRoute>
+                      <Lessons />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/homework"
+                  element={
+                    <ProtectedRoute>
+                      <Homework />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/progress"
+                  element={
+                    <ProtectedRoute>
+                      <Progress />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute>
+                      <Reports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/time-off"
+                  element={
+                    <ProtectedRoute>
+                      <TimeOff />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/time-off-requests"
+                  element={
+                    <ProtectedRoute>
+                      <TimeOffRequests />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/trial-bookings"
+                  element={
+                    <ProtectedRoute>
+                      <TrialBookings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/join-lesson/:lessonId"
+                  element={
+                    <ProtectedRoute>
+                      <StudentJoinPage />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* Video room route */}
+                <Route 
+                  path="/video-room/:lessonId" 
+                  element={
+                    <ProtectedRoute>
+                      <VideoRoom />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* Course routes - standalone pages */}
+                <Route
+                  path="/course/:id"
+                  element={
+                    <ProtectedRoute>
+                      <CourseDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course/:id/edit"
+                  element={
+                    <ProtectedRoute>
+                      <CourseEdit />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Checkout route */}
+                <Route
+                  path="/checkout/:courseId"
+                  element={
+                    <ProtectedRoute>
+                      <CourseCheckout />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Learning Hub routes */}
+                <Route
+                  path="/learning-hub"
+                  element={
+                    <ProtectedRoute>
+                      <LearningHubLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<LearningHub />} />
+                  <Route path="dashboard" element={<LearningHubDashboard />} />
+                  <Route path="library" element={<LearningHub />} />
+                  <Route path="my-courses" element={<LearningHubMyCourses />} />
+                  <Route path="assessments" element={<LearningHubAssessments />} />
+                  <Route path="revision" element={<LearningHubRevision />} />
+                  <Route path="settings" element={<LearningHubSettings />} />
+                </Route>
+              </Routes>
+              <Toaster />
+            </LearningHubProvider>
+          </OrganizationProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 

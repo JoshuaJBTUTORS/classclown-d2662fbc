@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus, Info, Filter } from 'lucide-react';
-import AddLessonDialog from '@/components/lessons/AddLessonDialog';
+import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,6 +17,14 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onToggleFilters, filter
 
   // Only allow admins and owners to schedule lessons
   const canScheduleLessons = userRole === 'admin' || userRole === 'owner';
+
+  const openAddLessonDialog = () => {
+    setShowAddLessonDialog(true);
+  };
+
+  const closeAddLessonDialog = () => {
+    setShowAddLessonDialog(false);
+  };
 
   const handleLessonAdded = () => {
     // This will trigger a refresh of the calendar data
@@ -66,7 +74,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onToggleFilters, filter
         {/* Only show schedule lesson button for admins and owners */}
         {canScheduleLessons && (
           <Button 
-            onClick={() => setShowAddLessonDialog(true)}
+            onClick={openAddLessonDialog}
             className="flex items-center gap-2"
           >
             <CalendarPlus className="h-4 w-4" />
@@ -77,9 +85,9 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onToggleFilters, filter
 
       {/* Only show dialogs for admins and owners */}
       {canScheduleLessons && (
-        <AddLessonDialog
-          open={showAddLessonDialog}
-          onOpenChange={setShowAddLessonDialog}
+        <AddLessonForm 
+          isOpen={showAddLessonDialog} 
+          onClose={closeAddLessonDialog}
           onSuccess={handleLessonAdded}
         />
       )}

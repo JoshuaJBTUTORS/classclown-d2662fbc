@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,10 +162,6 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ onLessonAdded, onCancel }
     );
   };
 
-  const handleGroupToggle = (checked: boolean) => {
-    setIsGroup(checked);
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -298,7 +293,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ onLessonAdded, onCancel }
               <Checkbox
                 id="isGroup"
                 checked={isGroup}
-                onCheckedChange={handleGroupToggle}
+                onCheckedChange={setIsGroup}
               />
               <Label htmlFor="isGroup">Group Lesson</Label>
             </div>

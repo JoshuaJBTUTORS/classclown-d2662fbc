@@ -67,26 +67,6 @@ export interface Lesson {
   }[];
 }
 
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  is_recurring?: boolean;
-  subject?: string;
-  tutor?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-  };
-  students?: {
-    id: number;
-    first_name: string;
-    last_name: string;
-  }[];
-}
-
 export interface HomeworkSubmission {
   id: string;
   homework_id: string;

@@ -13,6 +13,7 @@ import {
   BookOpen, 
   MapPin,
   Repeat,
+  Trash2,
   Edit,
   GraduationCap
 } from 'lucide-react';
@@ -210,16 +211,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         <div className="flex flex-wrap gap-2 justify-between">
           <div className="flex flex-wrap gap-2">
             {canModifyLesson && lesson.status !== 'completed' && (
-              <CompleteSessionDialog 
-                lessonId={lesson.id}
-                onSessionCompleted={onLessonUpdated}
-                trigger={
-                  <Button size="sm" variant="outline">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Complete Session
-                  </Button>
-                }
-              />
+              <CompleteSessionDialog lesson={lesson} onSessionCompleted={onLessonUpdated}>
+                <Button size="sm" variant="outline">
+                  <Edit className="h-4 w-4 mr-1" />
+                  Complete Session
+                </Button>
+              </CompleteSessionDialog>
             )}
 
             {canModifyLesson && !lesson.is_recurring && (

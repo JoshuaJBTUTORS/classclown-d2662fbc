@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
@@ -38,7 +37,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import AddLessonDialog from '@/components/lessons/AddLessonDialog';
+import AddLessonForm from '@/components/lessons/AddLessonForm';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import { Lesson } from '@/types/lesson';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -50,7 +49,7 @@ const Lessons = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<Lesson[]>([]);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -143,8 +142,8 @@ const Lessons = () => {
     toast.success('Lesson added successfully!');
   };
 
-  const viewLessonDetails = (lesson: Lesson) => {
-    setSelectedLesson(lesson);
+  const viewLessonDetails = (lessonId: string) => {
+    setSelectedLessonId(lessonId);
     setIsLessonDetailsOpen(true);
   };
 
@@ -283,7 +282,7 @@ const Lessons = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => viewLessonDetails(lesson)}
+                              onClick={() => viewLessonDetails(lesson.id)}
                             >
                               View
                             </Button>
@@ -301,19 +300,18 @@ const Lessons = () => {
 
       {/* Only show Add Lesson Dialog for non-students */}
       {!isStudent && (
-        <AddLessonDialog
-          open={isAddingLesson}
-          onOpenChange={setIsAddingLesson}
+        <AddLessonForm 
+          isOpen={isAddingLesson} 
+          onClose={() => setIsAddingLesson(false)}
           onSuccess={handleAddLessonSuccess}
         />
       )}
 
       {/* Lesson Details Dialog - available for all users but with restricted actions for students */}
       <LessonDetailsDialog
-        lesson={selectedLesson}
-        open={isLessonDetailsOpen}
-        onOpenChange={setIsLessonDetailsOpen}
-        onLessonUpdated={fetchLessons}
+        lessonId={selectedLessonId}
+        isOpen={isLessonDetailsOpen}
+        onClose={() => setIsLessonDetailsOpen(false)}
       />
     </div>
   );

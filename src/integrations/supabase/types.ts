@@ -1390,51 +1390,6 @@ export type Database = {
         }
         Relationships: []
       }
-      teaching_materials: {
-        Row: {
-          created_at: string
-          description: string | null
-          file_name: string
-          file_path: string
-          file_size: number | null
-          id: string
-          material_type: string
-          mime_type: string | null
-          subject: string
-          updated_at: string
-          uploaded_by: string
-          week_number: number
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          file_name: string
-          file_path: string
-          file_size?: number | null
-          id?: string
-          material_type?: string
-          mime_type?: string | null
-          subject: string
-          updated_at?: string
-          uploaded_by: string
-          week_number: number
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          file_name?: string
-          file_path?: string
-          file_size?: number | null
-          id?: string
-          material_type?: string
-          mime_type?: string | null
-          subject?: string
-          updated_at?: string
-          uploaded_by?: string
-          week_number?: number
-        }
-        Relationships: []
-      }
       time_off_requests: {
         Row: {
           admin_notes: string | null
