@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -30,18 +31,7 @@ import TimeOff from "./pages/TimeOff";
 import TimeOffRequests from "./pages/TimeOffRequests";
 import TrialBookings from "./pages/TrialBookings";
 import CreateAdmin from "./pages/CreateAdmin";
-import LearningHubEntry from "./pages/learningHub/LearningHubEntry";
-import LearningHubDashboard from "./pages/learningHub/LearningHubDashboard";
-import LearningHubMyCourses from "./pages/learningHub/LearningHubMyCourses";
-import LearningHubAssessments from "./pages/learningHub/LearningHubAssessments";
-import LearningHubRevision from "./pages/learningHub/LearningHubRevision";
-import LearningHubSettings from "./pages/learningHub/LearningHubSettings";
-import CourseDetail from "./pages/learningHub/CourseDetail";
-import CourseEdit from "./pages/learningHub/CourseEdit";
-import CourseCreate from "./pages/learningHub/CourseCreate";
-import AssessmentEdit from "./pages/learningHub/AssessmentEdit";
-import AssessmentPreview from "./pages/learningHub/AssessmentPreview";
-import LearningHub from "./pages/learningHub/LearningHub";
+import LearningHub from "./pages/LearningHub";
 
 const queryClient = new QueryClient();
 
@@ -82,17 +72,6 @@ function App() {
                   <Route path="/create-admin" element={<ProtectedRoute><CreateAdmin /></ProtectedRoute>} />
                   
                   {/* Learning Hub Routes */}
-                  <Route path="/learning-hub" element={<ProtectedRoute><LearningHubEntry /></ProtectedRoute>} />
-                  <Route path="/learning-hub/dashboard" element={<ProtectedRoute><LearningHubDashboard /></ProtectedRoute>} />
-                  <Route path="/learning-hub/my-courses" element={<ProtectedRoute><LearningHubMyCourses /></ProtectedRoute>} />
-                  <Route path="/learning-hub/assessments" element={<ProtectedRoute><LearningHubAssessments /></ProtectedRoute>} />
-                  <Route path="/learning-hub/revision" element={<ProtectedRoute><LearningHubRevision /></ProtectedRoute>} />
-                  <Route path="/learning-hub/settings" element={<ProtectedRoute><LearningHubSettings /></ProtectedRoute>} />
-                  <Route path="/learning-hub/course/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-                  <Route path="/learning-hub/course/:courseId/edit" element={<ProtectedRoute><CourseEdit /></ProtectedRoute>} />
-                  <Route path="/learning-hub/course/create" element={<ProtectedRoute><CourseCreate /></ProtectedRoute>} />
-                  <Route path="/learning-hub/assessment/:assessmentId/edit" element={<ProtectedRoute><AssessmentEdit /></ProtectedRoute>} />
-                  <Route path="/learning-hub/assessment/:assessmentId/preview" element={<ProtectedRoute><AssessmentPreview /></ProtectedRoute>} />
                   <Route path="/learning-hub" element={<ProtectedRoute><LearningHub /></ProtectedRoute>} />
                   
                   {/* Error Routes */}

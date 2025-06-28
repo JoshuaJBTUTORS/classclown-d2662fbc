@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
+import { FullCalendarApi } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -13,20 +14,22 @@ interface CalendarDisplayProps {
   events: CalendarEvent[];
   onDateSelect?: (selectInfo: any) => void;
   onEventClick?: (clickInfo: any) => void;
-  viewMode: 'month' | 'week' | 'day';
-  onRefresh: () => void;
+  viewMode?: 'month' | 'week' | 'day';
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
 const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   events,
   onDateSelect,
   onEventClick,
-  viewMode,
-  onRefresh
+  viewMode = 'month',
+  onRefresh,
+  isLoading = false
 }) => {
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const calendarRef = useRef<FullCalendar>(null);
+  const calendarRef = useRef<any>(null);
 
   const processedEvents = events.map(event => ({
     id: event.id,
@@ -57,9 +60,21 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 
   const handleLessonUpdated = () => {
     setIsDialogOpen(false);
-    onRefresh();
+    if (onRefresh) {
+      onRefresh();
+    }
     toast.success('Lesson updated successfully');
   };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-8">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-gray-500">Loading calendar...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -84,7 +99,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           select={onDateSelect}
           eventClick={handleEventClick}
           height="auto"
-          eventDisplay="block"
           eventBackgroundColor="#3b82f6"
           eventBorderColor="#2563eb"
           eventTextColor="#ffffff"

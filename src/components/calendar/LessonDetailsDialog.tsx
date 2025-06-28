@@ -211,7 +211,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           <div className="flex flex-wrap gap-2">
             {canModifyLesson && lesson.status !== 'completed' && (
               <CompleteSessionDialog 
-                lesson={lesson} 
+                lessonId={lesson.id}
                 onSessionCompleted={onLessonUpdated}
                 trigger={
                   <Button size="sm" variant="outline">
