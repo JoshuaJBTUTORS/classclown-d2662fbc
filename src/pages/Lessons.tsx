@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import AddLessonForm from '@/components/lessons/AddLessonForm';
+import AddLessonDialog from '@/components/lessons/AddLessonDialog';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 import { Lesson } from '@/types/lesson';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -49,7 +49,7 @@ const Lessons = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [filteredLessons, setFilteredLessons] = useState<Lesson[]>([]);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isLessonDetailsOpen, setIsLessonDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -142,8 +142,8 @@ const Lessons = () => {
     toast.success('Lesson added successfully!');
   };
 
-  const viewLessonDetails = (lessonId: string) => {
-    setSelectedLessonId(lessonId);
+  const viewLessonDetails = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
     setIsLessonDetailsOpen(true);
   };
 
@@ -282,7 +282,7 @@ const Lessons = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => viewLessonDetails(lesson.id)}
+                              onClick={() => viewLessonDetails(lesson)}
                             >
                               View
                             </Button>
@@ -300,18 +300,19 @@ const Lessons = () => {
 
       {/* Only show Add Lesson Dialog for non-students */}
       {!isStudent && (
-        <AddLessonForm 
-          isOpen={isAddingLesson} 
-          onClose={() => setIsAddingLesson(false)}
+        <AddLessonDialog
+          open={isAddingLesson}
+          onOpenChange={setIsAddingLesson}
           onSuccess={handleAddLessonSuccess}
         />
       )}
 
       {/* Lesson Details Dialog - available for all users but with restricted actions for students */}
       <LessonDetailsDialog
-        lessonId={selectedLessonId}
-        isOpen={isLessonDetailsOpen}
-        onClose={() => setIsLessonDetailsOpen(false)}
+        lesson={selectedLesson}
+        open={isLessonDetailsOpen}
+        onOpenChange={setIsLessonDetailsOpen}
+        onLessonUpdated={fetchLessons}
       />
     </div>
   );

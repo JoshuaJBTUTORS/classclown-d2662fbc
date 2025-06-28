@@ -162,6 +162,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ onLessonAdded, onCancel }
     );
   };
 
+  const handleGroupToggle = (checked: boolean | "indeterminate") => {
+    setIsGroup(checked === true);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -293,7 +297,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ onLessonAdded, onCancel }
               <Checkbox
                 id="isGroup"
                 checked={isGroup}
-                onCheckedChange={setIsGroup}
+                onCheckedChange={handleGroupToggle}
               />
               <Label htmlFor="isGroup">Group Lesson</Label>
             </div>
