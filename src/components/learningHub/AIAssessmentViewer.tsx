@@ -17,15 +17,20 @@ import AssessmentCompletion from './AssessmentCompletion';
 import AssessmentCompletionDialog from './AssessmentCompletionDialog';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface AIAssessmentViewerProps {
   assessmentId?: string;
   embedded?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ 
   assessmentId: propAssessmentId, 
-  embedded = false 
+  embedded = false, 
+  isOpen, 
+  onClose 
 }) => {
   const { id: paramId } = useParams<{ id: string }>();
   const id = propAssessmentId || paramId;
@@ -34,7 +39,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [studentAnswers, setStudentAnswers] = useState<{ [key: string]: string }>({});
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
@@ -45,6 +50,10 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const [completionScore, setCompletionScore] = useState<AssessmentScore | null>(null);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [bestScore, setBestScore] = useState<UserAssessmentStats | null>(null);
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   const { data: assessment, isLoading: assessmentLoading, error: assessmentError } = useQuery({
     queryKey: ['assessment', id],
@@ -466,22 +475,23 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   }
 
   return (
-    <AssessmentAccessControl 
-      assessment={assessment} 
-      requiredAccess="take"
-    >
-      <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
-        
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
+        <div className="flex h-full">
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
           
-          <main className="flex-1 overflow-x-hidden overflow-y-auto">
-            {renderMainContent()}
-          </main>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+            
+            <main className="flex-1 overflow-x-hidden overflow-y-auto">
+              <div className="container py-8">
+                {renderMainContent()}
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
-    </AssessmentAccessControl>
+      </DialogContent>
+    </Dialog>
   );
 };
 

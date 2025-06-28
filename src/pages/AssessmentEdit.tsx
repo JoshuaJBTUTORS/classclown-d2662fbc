@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +21,14 @@ const AssessmentEdit: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
 
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const { data: assessment, isLoading, error, refetch } = useQuery({
     queryKey: ['assessment', id],
     queryFn: () => aiAssessmentService.getAssessmentById(id!),
@@ -34,14 +41,10 @@ const AssessmentEdit: React.FC = () => {
     enabled: !!id,
   });
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   if (error || (!isLoading && !assessment)) {
     return (
       <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
@@ -67,7 +70,7 @@ const AssessmentEdit: React.FC = () => {
       requiredAccess="edit"
     >
       <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar toggleSidebar={toggleSidebar} />

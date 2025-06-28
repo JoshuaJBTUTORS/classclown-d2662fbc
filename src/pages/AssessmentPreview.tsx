@@ -20,6 +20,14 @@ const AssessmentPreview: React.FC = () => {
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const { data: assessment, isLoading, error } = useQuery({
     queryKey: ['assessment', id],
     queryFn: () => aiAssessmentService.getAssessmentById(id!),
@@ -34,14 +42,10 @@ const AssessmentPreview: React.FC = () => {
 
   const permissions = useAssessmentPermissions(assessment);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   if (isLoading) {
     return (
       <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
@@ -61,7 +65,7 @@ const AssessmentPreview: React.FC = () => {
   if (error || !assessment) {
     return (
       <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
@@ -100,7 +104,7 @@ const AssessmentPreview: React.FC = () => {
       requiredAccess="view"
     >
       <div className="flex min-h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar toggleSidebar={toggleSidebar} />

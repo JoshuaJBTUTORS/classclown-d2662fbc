@@ -13,6 +13,7 @@ import { Check, X, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { cn } from '@/lib/utils';
 
 const TimeOffRequests = () => {
   const { userRole, user } = useAuth();
@@ -21,6 +22,10 @@ const TimeOffRequests = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [actionType, setActionType] = useState<'approve' | 'deny' | null>(null);
   const queryClient = useQueryClient();
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -123,8 +128,12 @@ const TimeOffRequests = () => {
   if (userRole !== 'admin' && userRole !== 'owner') {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar isOpen={sidebarOpen} />
-        <div className="flex flex-col flex-1 lg:pl-64">
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className={cn(
+          "flex flex-col flex-1 transition-all duration-300 w-full",
+          "lg:ml-0",
+          sidebarOpen && "lg:ml-64"
+        )}>
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <div className="text-center py-8">
@@ -139,8 +148,12 @@ const TimeOffRequests = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className="flex flex-col flex-1 lg:pl-64">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="container mx-auto space-y-6">

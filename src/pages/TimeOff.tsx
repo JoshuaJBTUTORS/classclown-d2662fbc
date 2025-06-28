@@ -24,6 +24,10 @@ const TimeOff = () => {
   const [reason, setReason] = useState('');
   const queryClient = useQueryClient();
 
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -136,8 +140,8 @@ const TimeOff = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} />
-      <div className="flex flex-col flex-1 lg:pl-64">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className="flex-1">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="container mx-auto space-y-6">
