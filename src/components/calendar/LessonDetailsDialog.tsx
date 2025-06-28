@@ -13,7 +13,6 @@ import {
   BookOpen, 
   MapPin,
   Repeat,
-  Trash2,
   Edit,
   GraduationCap
 } from 'lucide-react';
