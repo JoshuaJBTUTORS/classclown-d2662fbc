@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -124,7 +123,7 @@ const TimeOff = () => {
   if (userRole !== 'tutor') {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 lg:pl-64">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
