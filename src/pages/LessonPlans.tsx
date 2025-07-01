@@ -4,11 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Search, Plus, Calendar, FileText } from 'lucide-react';
+import { BookOpen, Search, Calendar, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import SubjectDetailDialog from '@/components/lessonPlans/SubjectDetailDialog';
+import Navbar from '@/components/navigation/Navbar';
+import Sidebar from '@/components/navigation/Sidebar';
+import PageTitle from '@/components/ui/PageTitle';
+import { cn } from '@/lib/utils';
 
 interface LessonPlan {
   id: string;
@@ -22,12 +26,26 @@ interface LessonPlan {
 }
 
 const LessonPlans: React.FC = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return false;
+  });
   const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<LessonPlan[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { isAdmin, isOwner } = useAuth();
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   // Get unique subjects from lesson plans
   const subjects = Array.from(new Set(lessonPlans.map(plan => plan.subject))).sort();
@@ -95,10 +113,20 @@ const LessonPlans: React.FC = () => {
 
   if (!isAdmin && !isOwner) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You don't have permission to access lesson plans.</p>
+      <div className="flex min-h-screen bg-background">
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className={cn(
+          "flex flex-col flex-1 transition-all duration-300 w-full",
+          "lg:ml-0",
+          sidebarOpen && "lg:ml-64"
+        )}>
+          <Navbar toggleSidebar={toggleSidebar} />
+          <main className="flex-1 p-4 md:p-6">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+              <p className="text-gray-600">You don't have permission to access lesson plans.</p>
+            </div>
+          </main>
         </div>
       </div>
     );
@@ -106,120 +134,136 @@ const LessonPlans: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen bg-background">
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className={cn(
+          "flex flex-col flex-1 transition-all duration-300 w-full",
+          "lg:ml-0",
+          sidebarOpen && "lg:ml-64"
+        )}>
+          <Navbar toggleSidebar={toggleSidebar} />
+          <main className="flex-1 p-4 md:p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </main>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <BookOpen className="h-8 w-8 text-primary" />
-            Lesson Plans
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Manage teaching materials and curriculum planning
-          </p>
-        </div>
-      </div>
-
-      {/* Search and Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-        <div className="lg:col-span-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search subjects, topics, or terms..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+    <div className="flex min-h-screen bg-background">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className={cn(
+        "flex flex-col flex-1 transition-all duration-300 w-full",
+        "lg:ml-0",
+        sidebarOpen && "lg:ml-64"
+      )}>
+        <Navbar toggleSidebar={toggleSidebar} />
+        <main className="flex-1 p-4 md:p-6">
+          <div className="flex items-center justify-between mb-6">
+            <PageTitle 
+              title="Lesson Plans" 
+              subtitle="Manage teaching materials and curriculum planning"
+              className="mb-4 md:mb-0"
             />
           </div>
-        </div>
 
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary">{subjects.length}</div>
-            <div className="text-sm text-gray-600">Subjects</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary">{lessonPlans.length}</div>
-            <div className="text-sm text-gray-600">Total Plans</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Subject Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {subjectStats.map((stats) => (
-          <Card key={stats.subject} className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>{stats.subject}</span>
-                <Badge variant="secondary">{stats.totalPlans} plans</Badge>
-              </CardTitle>
-              <CardDescription>
-                {stats.terms} term{stats.terms !== 1 ? 's' : ''} • {stats.weeks} week{stats.weeks !== 1 ? 's' : ''}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Last updated:</span>
-                  <span>{new Date(stats.lastUpdated).toLocaleDateString()}</span>
-                </div>
-                
-                <Button
-                  onClick={() => setSelectedSubject(stats.subject)}
-                  className="w-full"
-                  variant="outline"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  View Weekly Plans
-                </Button>
+          {/* Search and Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+            <div className="lg:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search subjects, topics, or terms..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{subjects.length}</div>
+                <div className="text-sm text-gray-600">Subjects</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{lessonPlans.length}</div>
+                <div className="text-sm text-gray-600">Total Plans</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Subject Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subjectStats.map((stats) => (
+              <Card key={stats.subject} className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{stats.subject}</span>
+                    <Badge variant="secondary">{stats.totalPlans} plans</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    {stats.terms} term{stats.terms !== 1 ? 's' : ''} • {stats.weeks} week{stats.weeks !== 1 ? 's' : ''}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Last updated:</span>
+                      <span>{new Date(stats.lastUpdated).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <Button
+                      onClick={() => setSelectedSubject(stats.subject)}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      View Weekly Plans
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {subjects.length === 0 && (
+            <Card className="text-center p-8">
+              <CardContent>
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Lesson Plans Found</h3>
+                <p className="text-gray-600 mb-4">
+                  {searchTerm 
+                    ? `No lesson plans match your search for "${searchTerm}"`
+                    : "Get started by creating your first lesson plan"
+                  }
+                </p>
+                {searchTerm && (
+                  <Button onClick={() => setSearchTerm('')} variant="outline">
+                    Clear Search
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Subject Detail Dialog */}
+          {selectedSubject && (
+            <SubjectDetailDialog
+              subject={selectedSubject}
+              isOpen={!!selectedSubject}
+              onClose={() => setSelectedSubject(null)}
+              onUpdate={fetchLessonPlans}
+            />
+          )}
+        </main>
       </div>
-
-      {subjects.length === 0 && (
-        <Card className="text-center p-8">
-          <CardContent>
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Lesson Plans Found</h3>
-            <p className="text-gray-600 mb-4">
-              {searchTerm 
-                ? `No lesson plans match your search for "${searchTerm}"`
-                : "Get started by creating your first lesson plan"
-              }
-            </p>
-            {searchTerm && (
-              <Button onClick={() => setSearchTerm('')} variant="outline">
-                Clear Search
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Subject Detail Dialog */}
-      {selectedSubject && (
-        <SubjectDetailDialog
-          subject={selectedSubject}
-          isOpen={!!selectedSubject}
-          onClose={() => setSelectedSubject(null)}
-          onUpdate={fetchLessonPlans}
-        />
-      )}
     </div>
   );
 };
