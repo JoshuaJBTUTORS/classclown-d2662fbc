@@ -18,7 +18,7 @@ export const LESSON_SUBJECTS = [
   'GCSE English',
   'GCSE Combined Science',
   'Year 11 Maths Highier',
-  'Year 11 Maths Foundation'
+  'Year 11 Maths Foundation',
   'Year 11 English',
   'Year 11 Combined Science',
   'GCSE Physics',
