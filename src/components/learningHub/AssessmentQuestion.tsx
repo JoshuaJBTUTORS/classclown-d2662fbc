@@ -17,6 +17,7 @@ interface AssessmentQuestionProps {
   onMark?: () => void;
   feedback?: any;
   embedded?: boolean;
+  isMarked?: boolean;
 }
 
 interface MultipleChoiceQuestionProps {
@@ -65,6 +66,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
   onMark,
   feedback,
   embedded = false,
+  isMarked = false,
 }) => {
   return (
     <Card className={embedded ? "border-0 shadow-none rounded-none" : ""}>
@@ -118,10 +120,11 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
         <div className="flex justify-center pt-4">
           <Button 
             onClick={onMark} 
-            disabled={isMarking || !studentAnswer.trim()}
-            className="w-full max-w-xs"
+            disabled={isMarking || !studentAnswer.trim() || isMarked}
+            className={`w-full max-w-xs ${isMarked ? 'bg-green-600 hover:bg-green-600' : ''}`}
+            variant={isMarked ? 'default' : 'default'}
           >
-            {isMarking ? 'Marking Answer...' : 'Mark Answer'}
+            {isMarking ? 'Marking Answer...' : isMarked ? 'Already Marked' : 'Mark Answer'}
           </Button>
         </div>
         

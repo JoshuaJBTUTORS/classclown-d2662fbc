@@ -46,6 +46,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ [key: string]: any }>({});
   const [isMarking, setIsMarking] = useState<{ [key: string]: boolean }>({});
+  const [markedQuestions, setMarkedQuestions] = useState<Set<string>>(new Set());
   const [isCompletingAssessment, setIsCompletingAssessment] = useState(false);
   const [completionScore, setCompletionScore] = useState<AssessmentScore | null>(null);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
@@ -150,6 +151,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         ...prev,
         [variables.questionId]: false,
       }));
+      setMarkedQuestions(prev => new Set([...prev, variables.questionId]));
       toast({
         title: "Answer marked successfully",
         description: `Score: ${data.marks}/${data.maxMarks} marks`,
@@ -236,6 +238,16 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     const question = questions[currentQuestionIndex];
     const answer = studentAnswers[question.id] || '';
 
+    // Check if question is already marked
+    if (markedQuestions.has(question.id)) {
+      toast({
+        title: "Question Already Marked",
+        description: "This question has already been marked in this session.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!answer.trim()) {
       console.warn('⚠️ Empty answer provided');
       toast({
@@ -299,8 +311,9 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     setBestScore(null);
     setStudentAnswers({});
     setFeedback({});
+    setMarkedQuestions(new Set());
     setCurrentQuestionIndex(0);
-    createSession();
+    createSession(); // This will create a new session with incremented attempt_number
   };
 
   const handleBackToCourse = () => {
@@ -410,6 +423,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                       onMark={markCurrentQuestion}
                       feedback={feedback[questions[currentQuestionIndex].id]}
                       embedded={embedded}
+                      isMarked={markedQuestions.has(questions[currentQuestionIndex].id)}
                     />
 
                     <AssessmentNavigation

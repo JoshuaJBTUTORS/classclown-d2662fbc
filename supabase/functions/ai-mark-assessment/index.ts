@@ -186,6 +186,8 @@ Be fair but constructive in your feedback.`;
         marking_breakdown: markingBreakdown,
         confidence_score: markingResult.confidence,
         marked_at: new Date().toISOString(),
+      }, {
+        onConflict: 'session_id,question_id'
       });
 
     if (insertError) {
