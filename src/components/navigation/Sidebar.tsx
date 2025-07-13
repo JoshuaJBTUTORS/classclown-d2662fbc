@@ -74,7 +74,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Logo */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center">
-              <span className="text-xl font-bold text-primary">TutorCRM</span>
+              <img 
+                src="/lovable-uploads/e1ea034d-772d-44aa-a7d7-37815cae9930.png" 
+                alt="JB Tutors Logo" 
+                className="h-8 w-auto drop-shadow-sm" 
+              />
             </div>
             <Button 
               variant="ghost" 
