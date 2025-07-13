@@ -72,7 +72,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
             <img 
               src="/lovable-uploads/e1ea034d-772d-44aa-a7d7-37815cae9930.png" 
               alt="JB Tutors Logo" 
-              className="h-6 w-auto lg:hidden drop-shadow-sm" 
+              className="h-6 w-auto drop-shadow-sm" 
             />
           </div>
         </div>
