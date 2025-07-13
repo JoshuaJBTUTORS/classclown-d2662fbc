@@ -15,8 +15,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // We'll provide a simplified organization object for backwards compatibility
   const defaultOrganization: Organization = {
     id: '1',
-    name: 'JB Tutors',
-    subdomain: 'jbtutors',
+    name: 'ClassClown',
+    subdomain: 'classclown',
     logo_url: null,
     primary_color: '#4f46e5',
     status: 'active'
