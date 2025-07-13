@@ -70,8 +70,8 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
         <div className="flex items-center gap-2">
           <div className="bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 rounded-lg p-2 shadow-sm border border-gray-100">
             <img 
-              src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
-              alt="Class Clown Logo" 
+              src="/lovable-uploads/e1ea034d-772d-44aa-a7d7-37815cae9930.png" 
+              alt="JB Tutors Logo" 
               className="h-6 w-auto lg:hidden drop-shadow-sm" 
             />
           </div>
