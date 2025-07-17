@@ -35,6 +35,7 @@ import LearningHubAssessments from './pages/LearningHubAssessments';
 import CourseDetail from './pages/CourseDetail';
 import CourseEdit from './pages/CourseEdit';
 import CourseCheckout from './pages/CourseCheckout';
+import CourseCreate from './pages/CourseCreate';
 import AssessmentEdit from './pages/AssessmentEdit';
 import AssessmentPreview from './pages/AssessmentPreview';
 
@@ -171,6 +172,14 @@ function App() {
                 />
 
                 {/* Course routes - standalone pages */}
+                <Route
+                  path="/course/create"
+                  element={
+                    <ProtectedRoute>
+                      <CourseCreate />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/course/:id"
                   element={
