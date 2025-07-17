@@ -35,6 +35,8 @@ import LearningHubAssessments from './pages/LearningHubAssessments';
 import CourseDetail from './pages/CourseDetail';
 import CourseEdit from './pages/CourseEdit';
 import CourseCheckout from './pages/CourseCheckout';
+import AssessmentEdit from './pages/AssessmentEdit';
+import AssessmentPreview from './pages/AssessmentPreview';
 
 function App() {
   const queryClient = new QueryClient();
@@ -192,6 +194,24 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <CourseCheckout />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Assessment routes */}
+                <Route
+                  path="/assessment/:id/edit"
+                  element={
+                    <ProtectedRoute>
+                      <AssessmentEdit />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/assessment/:id/preview"
+                  element={
+                    <ProtectedRoute>
+                      <AssessmentPreview />
                     </ProtectedRoute>
                   }
                 />
