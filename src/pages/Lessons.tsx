@@ -287,7 +287,7 @@ const Lessons = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <VideoConferenceLink lesson={lesson} />
+                              <VideoConferenceLink lessonId={lesson.id} />
                               {canCreateLessons && (
                                 <>
                                   <Button
@@ -331,7 +331,7 @@ const Lessons = () => {
               />
 
               <EditLessonForm
-                lesson={selectedLesson}
+                lessonId={selectedLesson?.id || null}
                 isOpen={isEditDialogOpen}
                 onClose={() => setIsEditDialogOpen(false)}
                 onSuccess={() => {
@@ -341,7 +341,7 @@ const Lessons = () => {
               />
 
               <CompleteSessionDialog
-                lesson={selectedLesson}
+                lessonId={selectedLesson?.id || null}
                 isOpen={isCompleteDialogOpen}
                 onClose={() => setIsCompleteDialogOpen(false)}
                 onSuccess={() => {
