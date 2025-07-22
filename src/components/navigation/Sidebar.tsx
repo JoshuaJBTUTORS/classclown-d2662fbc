@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -148,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold text-gray-900">EduManage</span>
+              <span className="text-xl font-bold text-gray-900">Classclown - powered by JB Tutors</span>
             </div>
             <button
               onClick={onClose}
