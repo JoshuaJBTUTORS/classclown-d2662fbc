@@ -45,6 +45,7 @@ import { LESSON_SUBJECTS } from '@/constants/subjects';
 import { useAvailabilityCheck } from '@/hooks/useAvailabilityCheck';
 import AvailabilityStatus from './AvailabilityStatus';
 import { cn } from '@/lib/utils';
+import { generateRecurringLessonInstances } from '@/services/recurringLessonService';
 
 interface AddLessonFormProps {
   isOpen: boolean;
@@ -72,6 +73,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     isRecurring: z.boolean().default(false),
     recurrenceInterval: z.string().optional(),
     recurrenceEndDate: z.date().optional(),
+    noEndDate: z.boolean().default(false),
   }).refine(data => {
     return !data.isGroup || (data.isGroup && selectedStudents.length > 0);
   }, {
@@ -83,12 +85,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     message: "Recurrence pattern is required for recurring lessons",
     path: ["recurrenceInterval"],
   }).refine(data => {
-    return !data.isRecurring || (data.isRecurring && data.recurrenceEndDate);
+    return !data.isRecurring || (data.isRecurring && (data.recurrenceEndDate || data.noEndDate));
   }, {
-    message: "End date is required for recurring lessons",
+    message: "End date is required for recurring lessons (or select 'No End Date')",
     path: ["recurrenceEndDate"],
   }).refine(data => {
-    if (data.isRecurring && data.recurrenceEndDate && data.date) {
+    if (data.isRecurring && data.recurrenceEndDate && data.date && !data.noEndDate) {
       return data.recurrenceEndDate > data.date;
     }
     return true;
@@ -111,6 +113,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       isRecurring: false,
       recurrenceInterval: "",
       recurrenceEndDate: undefined,
+      noEndDate: false,
     },
   });
 
@@ -179,6 +182,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       // Get the day name for recurring lessons
       const dayName = values.date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
+      // Create the original lesson
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
         .insert([
@@ -192,8 +196,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
             is_group: values.isGroup,
             status: 'scheduled',
             is_recurring: values.isRecurring,
+            is_recurring_instance: false,
+            parent_lesson_id: null,
+            instance_date: null,
             recurrence_interval: values.isRecurring ? values.recurrenceInterval : null,
-            recurrence_end_date: values.isRecurring && values.recurrenceEndDate ? values.recurrenceEndDate.toISOString() : null,
+            recurrence_end_date: values.isRecurring && values.recurrenceEndDate && !values.noEndDate ? values.recurrenceEndDate.toISOString() : null,
             recurrence_day: values.isRecurring ? dayName : null,
           },
         ])
@@ -201,13 +208,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
 
       if (lessonError) throw lessonError;
 
-      setLoadingStep('Adding students...');
-
-      // Get the ID of the newly created lesson
       const newLessonId = lessonData?.[0]?.id;
 
-      // Add students to the lesson
-      if (newLessonId) {
+      setLoadingStep('Adding students...');
+
+      // Add students to the original lesson
+      if (newLessonId && selectedStudents.length > 0) {
         const lessonStudentsData = selectedStudents.map(studentId => ({
           lesson_id: newLessonId,
           student_id: studentId
@@ -220,7 +226,30 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
         if (studentsError) throw studentsError;
       }
 
+      // Generate recurring instances if this is a recurring lesson
+      if (values.isRecurring && newLessonId) {
+        setLoadingStep('Generating recurring lessons...');
+        
+        const instancesGenerated = await generateRecurringLessonInstances({
+          originalLessonId: newLessonId,
+          title: values.title,
+          description: values.description,
+          subject: values.subject,
+          tutorId: values.tutorId,
+          startTime,
+          endTime,
+          isGroup: values.isGroup,
+          recurrenceInterval: values.recurrenceInterval as any,
+          recurrenceEndDate: values.recurrenceEndDate,
+          isInfinite: values.noEndDate,
+          selectedStudents
+        });
+
+        console.log(`Generated ${instancesGenerated} recurring lesson instances`);
+      }
+
       setIsLoading(false);
+      toast.success(`Lesson created successfully${values.isRecurring ? ` with recurring instances` : ''}`);
       onSuccess();
       onClose();
     } catch (error) {
@@ -555,41 +584,69 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
 
                     <FormField
                       control={form.control}
-                      name="recurrenceEndDate"
+                      name="noEndDate"
                       render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>End Date</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className="pl-3 text-left font-normal w-full"
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick end date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
-                                disabled={(date) => date <= form.getValues('date')}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
+                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                if (checked) {
+                                  form.setValue('recurrenceEndDate', undefined);
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm font-medium">No End Date</FormLabel>
+                            <div className="text-xs text-muted-foreground">
+                              Lessons continue indefinitely
+                            </div>
+                          </div>
                         </FormItem>
                       )}
                     />
+
+                    {!form.watch('noEndDate') && (
+                      <FormField
+                        control={form.control}
+                        name="recurrenceEndDate"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>End Date</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={"outline"}
+                                    className="pl-3 text-left font-normal w-full"
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick end date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                  disabled={(date) => date <= form.getValues('date')}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
                 )}
               </div>

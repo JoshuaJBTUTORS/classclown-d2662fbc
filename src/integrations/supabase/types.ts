@@ -801,12 +801,15 @@ export type Database = {
           flexible_classroom_room_id: string | null
           flexible_classroom_session_data: Json | null
           id: string
+          instance_date: string | null
           is_group: boolean
           is_recurring: boolean
+          is_recurring_instance: boolean | null
           lesson_space_room_id: string | null
           lesson_space_room_url: string | null
           lesson_space_space_id: string | null
           lesson_type: string | null
+          parent_lesson_id: string | null
           recurrence_day: string | null
           recurrence_end_date: string | null
           recurrence_interval: string | null
@@ -827,12 +830,15 @@ export type Database = {
           flexible_classroom_room_id?: string | null
           flexible_classroom_session_data?: Json | null
           id?: string
+          instance_date?: string | null
           is_group?: boolean
           is_recurring?: boolean
+          is_recurring_instance?: boolean | null
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
           lesson_space_space_id?: string | null
           lesson_type?: string | null
+          parent_lesson_id?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -853,12 +859,15 @@ export type Database = {
           flexible_classroom_room_id?: string | null
           flexible_classroom_session_data?: Json | null
           id?: string
+          instance_date?: string | null
           is_group?: boolean
           is_recurring?: boolean
+          is_recurring_instance?: boolean | null
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
           lesson_space_space_id?: string | null
           lesson_type?: string | null
+          parent_lesson_id?: string | null
           recurrence_day?: string | null
           recurrence_end_date?: string | null
           recurrence_interval?: string | null
@@ -871,6 +880,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lessons_parent_lesson_id_fkey"
+            columns: ["parent_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lessons_trial_booking_id_fkey"
             columns: ["trial_booking_id"]
@@ -1006,27 +1022,36 @@ export type Database = {
           created_at: string | null
           group_name: string
           id: string
+          instances_generated_until: string | null
+          is_infinite: boolean | null
           next_extension_date: string | null
           original_lesson_id: string
           recurrence_pattern: Json
+          total_instances_generated: number | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           group_name: string
           id?: string
+          instances_generated_until?: string | null
+          is_infinite?: boolean | null
           next_extension_date?: string | null
           original_lesson_id: string
           recurrence_pattern?: Json
+          total_instances_generated?: number | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           group_name?: string
           id?: string
+          instances_generated_until?: string | null
+          is_infinite?: boolean | null
           next_extension_date?: string | null
           original_lesson_id?: string
           recurrence_pattern?: Json
+          total_instances_generated?: number | null
           updated_at?: string | null
         }
         Relationships: [
