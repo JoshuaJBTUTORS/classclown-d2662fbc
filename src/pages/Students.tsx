@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/navigation/Navbar';
+import Navbar from '@/components/navigation/Sidebar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
@@ -59,7 +59,7 @@ const Students = () => {
     return false;
   });
   
-  const { isParent, isAdmin, isOwner, user, userRole } = useAuth();
+  const { isParent, isAdmin, isOwner, user, userRole, parentProfile } = useAuth();
 
   // Handle window resize to adjust sidebar behavior
   useEffect(() => {
@@ -93,10 +93,16 @@ const Students = () => {
       console.log('Is owner:', isOwner);
       console.log('Is parent:', isParent);
       
-      // Get students data with detailed error handling
-      const { data: studentsData, error: studentsError } = await supabase
+      let studentsQuery = supabase
         .from('students')
-        .select('*')
+        .select('*');
+
+      // If user is a parent, only show their own children
+      if (isParent && parentProfile?.id) {
+        studentsQuery = studentsQuery.eq('parent_id', parentProfile.id);
+      }
+
+      const { data: studentsData, error: studentsError } = await studentsQuery
         .order('last_name', { ascending: true });
 
       console.log('Students query result:', { studentsData, studentsError });
@@ -218,7 +224,7 @@ const Students = () => {
       console.log('User not authenticated, skipping fetch');
       setIsLoading(false);
     }
-  }, [user, userRole]);
+  }, [user, userRole, parentProfile]);
 
   // Filter students based on search query
   useEffect(() => {
@@ -319,7 +325,9 @@ const Students = () => {
                   <TableRow>
                     <TableHead>Student Name</TableHead>
                     <TableHead className="hidden md:table-cell">Email</TableHead>
-                    <TableHead className="hidden lg:table-cell">Parent</TableHead>
+                    {!isParent && (
+                      <TableHead className="hidden lg:table-cell">Parent</TableHead>
+                    )}
                     <TableHead className="hidden md:table-cell">Subjects</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -335,7 +343,8 @@ const Students = () => {
                   ) : filteredStudents.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-10">
-                        {searchQuery ? 'No students found matching your search.' : 'No students found. Add your first student to get started.'}
+                        {searchQuery ? 'No students found matching your search.' : 
+                         isParent ? 'No children found.' : 'No students found. Add your first student to get started.'}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -352,14 +361,16 @@ const Students = () => {
                         <TableCell className="hidden md:table-cell">
                           {student.email || <span className="text-gray-400">Not provided</span>}
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <div className="text-sm">
-                            <div className="font-medium">{student.parentName}</div>
-                            {student.parentEmail && (
-                              <div className="text-gray-500">{student.parentEmail}</div>
-                            )}
-                          </div>
-                        </TableCell>
+                        {!isParent && (
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="text-sm">
+                              <div className="font-medium">{student.parentName}</div>
+                              {student.parentEmail && (
+                                <div className="text-gray-500">{student.parentEmail}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
                         <TableCell className="hidden md:table-cell">
                           <div className="flex flex-wrap gap-1">
                             {typeof student.subjects === 'string' && student.subjects ? 
@@ -399,13 +410,17 @@ const Students = () => {
                               <DropdownMenuItem onClick={() => handleEditClick(student)}>
                                 Edit Profile
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteClick(student)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                Delete Student
-                              </DropdownMenuItem>
+                              {(isAdmin || isOwner) && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteClick(student)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    Delete Student
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -417,23 +432,34 @@ const Students = () => {
             </CardContent>
           </Card>
           
-          <AddStudentForm 
-            isOpen={isAddDialogOpen} 
-            onClose={() => setIsAddDialogOpen(false)}
-            onSuccess={() => {
-              setIsAddDialogOpen(false);
-              fetchStudents();
-            }}
-          />
+          {(isAdmin || isOwner) && (
+            <>
+              <AddStudentForm 
+                isOpen={isAddDialogOpen} 
+                onClose={() => setIsAddDialogOpen(false)}
+                onSuccess={() => {
+                  setIsAddDialogOpen(false);
+                  fetchStudents();
+                }}
+              />
 
-          <AddParentStudentForm 
-            isOpen={isAddFamilyDialogOpen} 
-            onClose={() => setIsAddFamilyDialogOpen(false)}
-            onSuccess={() => {
-              setIsAddFamilyDialogOpen(false);
-              fetchStudents();
-            }}
-          />
+              <AddParentStudentForm 
+                isOpen={isAddFamilyDialogOpen} 
+                onClose={() => setIsAddFamilyDialogOpen(false)}
+                onSuccess={() => {
+                  setIsAddFamilyDialogOpen(false);
+                  fetchStudents();
+                }}
+              />
+
+              <DeleteStudentDialog
+                student={selectedStudent}
+                isOpen={isDeleteDialogOpen}
+                onClose={() => setIsDeleteDialogOpen(false)}
+                onDeleted={fetchStudents}
+              />
+            </>
+          )}
 
           <ViewStudentProfile
             student={selectedStudent}
@@ -446,13 +472,6 @@ const Students = () => {
             isOpen={isEditDialogOpen}
             onClose={() => setIsEditDialogOpen(false)}
             onUpdate={handleStudentUpdated}
-          />
-
-          <DeleteStudentDialog
-            student={selectedStudent}
-            isOpen={isDeleteDialogOpen}
-            onClose={() => setIsDeleteDialogOpen(false)}
-            onDeleted={fetchStudents}
           />
         </main>
       </div>

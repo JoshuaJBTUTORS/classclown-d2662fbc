@@ -2,18 +2,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AIAssessment } from '@/services/aiAssessmentService';
 
 export const useAssessmentPermissions = (assessment?: AIAssessment | null) => {
-  const { user, isOwner } = useAuth();
+  const { user, isOwner, isAdmin, isTutor } = useAuth();
 
   const canEdit = () => {
     if (!user || !assessment) return false;
-    return isOwner || assessment.created_by === user.id;
+    // Only owners, admins, tutors, and creators can edit
+    return isOwner || isAdmin || isTutor || assessment.created_by === user.id;
   };
 
   const canView = () => {
     if (!user || !assessment) return false;
     
-    // Owners and creators can always view
-    if (isOwner || assessment.created_by === user.id) return true;
+    // Owners, admins, tutors, and creators can always view
+    if (isOwner || isAdmin || isTutor || assessment.created_by === user.id) return true;
     
     // Others can only view published assessments
     return assessment.status === 'published';
@@ -25,8 +26,8 @@ export const useAssessmentPermissions = (assessment?: AIAssessment | null) => {
     // Can't take archived assessments
     if (assessment.status === 'archived') return false;
     
-    // Owners and creators can always take (for testing)
-    if (isOwner || assessment.created_by === user.id) return true;
+    // Owners, admins, tutors, and creators can always take (for testing)
+    if (isOwner || isAdmin || isTutor || assessment.created_by === user.id) return true;
     
     // Others can only take published assessments
     return assessment.status === 'published';
@@ -34,12 +35,14 @@ export const useAssessmentPermissions = (assessment?: AIAssessment | null) => {
 
   const canPublish = () => {
     if (!user || !assessment) return false;
-    return isOwner || assessment.created_by === user.id;
+    // Only owners, admins, tutors, and creators can publish
+    return isOwner || isAdmin || isTutor || assessment.created_by === user.id;
   };
 
   const canDelete = () => {
     if (!user || !assessment) return false;
-    return isOwner || assessment.created_by === user.id;
+    // Only owners, admins, tutors, and creators can delete
+    return isOwner || isAdmin || isTutor || assessment.created_by === user.id;
   };
 
   return {

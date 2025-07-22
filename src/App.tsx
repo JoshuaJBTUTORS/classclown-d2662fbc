@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -75,7 +76,7 @@ function App() {
                 <Route
                   path="/students"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner', 'parent']}>
                       <Students />
                     </ProtectedRoute>
                   }
@@ -83,7 +84,7 @@ function App() {
                 <Route
                   path="/tutors"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner']}>
                       <Tutors />
                     </ProtectedRoute>
                   }
@@ -99,7 +100,7 @@ function App() {
                 <Route
                   path="/lesson-plans"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
                       <LessonPlans />
                     </ProtectedRoute>
                   }
@@ -123,7 +124,7 @@ function App() {
                 <Route
                   path="/reports"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
                       <Reports />
                     </ProtectedRoute>
                   }
@@ -131,7 +132,7 @@ function App() {
                 <Route
                   path="/time-off"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['tutor']}>
                       <TimeOff />
                     </ProtectedRoute>
                   }
@@ -139,7 +140,7 @@ function App() {
                 <Route
                   path="/time-off-requests"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner']}>
                       <TimeOffRequests />
                     </ProtectedRoute>
                   }
@@ -147,7 +148,7 @@ function App() {
                 <Route
                   path="/trial-bookings"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner']}>
                       <TrialBookings />
                     </ProtectedRoute>
                   }
@@ -171,11 +172,11 @@ function App() {
                   } 
                 />
 
-                {/* Course routes - standalone pages */}
+                {/* Course routes - restricted to admin/owner/tutor */}
                 <Route
                   path="/course/create"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
                       <CourseCreate />
                     </ProtectedRoute>
                   }
@@ -191,7 +192,7 @@ function App() {
                 <Route
                   path="/course/:id/edit"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
                       <CourseEdit />
                     </ProtectedRoute>
                   }
