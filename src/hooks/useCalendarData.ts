@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -73,9 +72,8 @@ export const useCalendarData = ({
         if (format(currentDate, 'yyyy-MM-dd') !== format(startDate, 'yyyy-MM-dd')) {
           const instanceStartDate = new Date(currentDate);
           const instanceEndDate = new Date(instanceStartDate.getTime() + durationMs);
-          const instanceId = `${lesson.id}-${format(currentDate, 'yyyy-MM-dd')}`;
           
-          // Recurring instances are typically not completed (they inherit from main lesson)
+          // Use the original lesson ID instead of composite ID
           const completionInfo = completionData[lesson.id];
           const isCompleted = completionInfo?.isCompleted || false;
           
@@ -85,7 +83,7 @@ export const useCalendarData = ({
           }
           
           events.push({
-            id: instanceId,
+            id: lesson.id, // Use original lesson ID
             title: lesson.title,
             start: instanceStartDate.toISOString(),
             end: instanceEndDate.toISOString(),
@@ -93,6 +91,9 @@ export const useCalendarData = ({
             extendedProps: {
               isRecurringInstance: true,
               originalLessonId: lesson.id,
+              instanceDate: format(currentDate, 'yyyy-MM-dd'),
+              instanceStart: instanceStartDate.toISOString(),
+              instanceEnd: instanceEndDate.toISOString(),
               description: lesson.description,
               subject: lesson.subject,
               userRole: userRole,

@@ -34,13 +34,19 @@ interface LessonDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onLessonUpdated?: () => void;
+  instanceDate?: string;
+  instanceStart?: string;
+  instanceEnd?: string;
 }
 
 const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   lessonId,
   isOpen,
   onClose,
-  onLessonUpdated
+  onLessonUpdated,
+  instanceDate,
+  instanceStart,
+  instanceEnd
 }) => {
   const [lesson, setLesson] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +62,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   // Check if user can edit lessons (admin/owner only)
   const canEditLesson = isAdmin || isOwner;
+
+  // Check if this is a recurring instance
+  const isRecurringInstance = Boolean(instanceDate && instanceStart && instanceEnd);
 
   useEffect(() => {
     if (lessonId && isOpen) {
@@ -216,6 +225,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     enrollment && enrollment.student && enrollment.student.id
   ) || [];
 
+  // Use instance-specific dates if this is a recurring instance
+  const displayStartTime = instanceStart || lesson?.start_time;
+  const displayEndTime = instanceEnd || lesson?.end_time;
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -224,6 +237,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               {lesson?.title || 'Loading...'}
+              {isRecurringInstance && (
+                <Badge variant="outline" className="ml-2">
+                  Recurring Instance
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
 
@@ -294,9 +312,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {lesson.start_time && format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}
-                      {lesson.end_time && ` - ${format(parseISO(lesson.end_time), 'h:mm a')}`}
+                      {displayStartTime && format(parseISO(displayStartTime), 'MMM d, yyyy h:mm a')}
+                      {displayEndTime && ` - ${format(parseISO(displayEndTime), 'h:mm a')}`}
                     </span>
+                    {isRecurringInstance && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        Instance on {format(parseISO(instanceDate!), 'MMM d, yyyy')}
+                      </Badge>
+                    )}
                   </div>
 
                   {lesson.tutor && (
@@ -324,6 +347,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                           ({validStudents.length} students)
                         </span>
                       )}
+                    </div>
+                  )}
+
+                  {lesson.is_recurring && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="outline">
+                        Recurring ({lesson.recurrence_interval})
+                      </Badge>
                     </div>
                   )}
                 </CardContent>
@@ -417,7 +449,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                           lessonId={lesson.id}
                           lessonData={{
                             title: lesson.title,
-                            start_time: lesson.start_time,
+                            start_time: displayStartTime,
                             tutor: lesson.tutor
                           }}
                           isStudent={!isTeacherRole}

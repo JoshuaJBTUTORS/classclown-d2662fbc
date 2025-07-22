@@ -18,6 +18,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   events
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [selectedEventData, setSelectedEventData] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAssigningHomework, setIsAssigningHomework] = useState(false);
   const [homeworkLessonId, setHomeworkLessonId] = useState<string | null>(null);
@@ -97,6 +98,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     console.log("Event clicked:", info.event.id, info.event);
     
     setSelectedLessonId(info.event.id);
+    setSelectedEventData(info.event.extendedProps);
     setIsDetailsOpen(true);
   };
 
@@ -104,6 +106,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     console.log("Closing lesson details dialog");
     setIsDetailsOpen(false);
     setSelectedLessonId(null);
+    setSelectedEventData(null);
   };
 
   const handleAssignHomework = (lessonId: string, lessonData: any) => {
@@ -323,6 +326,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
         onClose={handleDetailsClose}
         lessonId={selectedLessonId}
         onLessonUpdated={handleRefresh}
+        instanceDate={selectedEventData?.instanceDate}
+        instanceStart={selectedEventData?.instanceStart}
+        instanceEnd={selectedEventData?.instanceEnd}
       />
 
       <AssignHomeworkDialog
