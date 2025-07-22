@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
@@ -81,11 +81,11 @@ const Calendar = () => {
     );
   }
 
-  // Prepare filters for calendar data
-  const filters = {
+  // Memoize filters to prevent infinite loop - only recreate when dependencies change
+  const filters = useMemo(() => ({
     selectedStudents,
     selectedTutors
-  };
+  }), [selectedStudents, selectedTutors]);
 
   // Fetch calendar data using the hook
   const { events, isLoading } = useCalendarData({

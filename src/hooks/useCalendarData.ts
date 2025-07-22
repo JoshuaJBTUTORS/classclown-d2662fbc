@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
@@ -25,6 +25,9 @@ export const useCalendarData = ({
 }: UseCalendarDataProps) => {
   const [rawLessons, setRawLessons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Add ref to track current fetch to prevent overlapping calls
+  const currentFetchRef = useRef<Promise<void> | null>(null);
 
   // Fixed: Create stable lessonIds memoization with null safety
   const lessonIds = useMemo(() => {
@@ -191,7 +194,7 @@ export const useCalendarData = ({
 
       calendarEvents.push(...lessonEvents);
 
-      // Add recurring events
+      // Add recurring events - only for lessons that actually need them
       for (const lesson of rawLessons) {
         if (lesson && lesson.is_recurring && lesson.recurrence_interval) {
           const recurringEvents = generateRecurringEvents(lesson, userRole, completionData);
@@ -205,6 +208,12 @@ export const useCalendarData = ({
 
   useEffect(() => {
     const fetchEvents = async () => {
+      // Prevent overlapping fetch calls
+      if (currentFetchRef.current) {
+        console.log('Fetch already in progress, skipping...');
+        return;
+      }
+
       if (!isAuthenticated || !userRole || !userEmail) {
         setRawLessons([]);
         setIsLoading(false);
@@ -213,175 +222,182 @@ export const useCalendarData = ({
 
       try {
         console.log("Fetching lessons from Supabase for role:", userRole);
-        let query;
-
-        if (userRole === 'student') {
-          const { data: studentData, error: studentError } = await supabase
-            .from('students')
-            .select('id')
-            .eq('email', userEmail)
-            .maybeSingle();
-
-          if (studentError) {
-            console.error('Error fetching student data:', studentError);
-            toast.error('Failed to load student data');
-            setIsLoading(false);
-            return;
-          }
-
-          if (!studentData) {
-            console.log('No student record found for email:', userEmail);
-            setRawLessons([]);
-            setIsLoading(false);
-            return;
-          }
-
-          query = supabase
-            .from('lessons')
-            .select(`
-              *,
-              lesson_students!inner(
-                student_id
-              )
-            `)
-            .eq('lesson_students.student_id', studentData.id);
-
-        } else if (userRole === 'parent') {
-          // For parents, first get the parent record
-          const { data: parentData, error: parentError } = await supabase
-            .from('parents')
-            .select('id')
-            .eq('email', userEmail)
-            .maybeSingle();
-
-          if (parentError) {
-            console.error('Error fetching parent data:', parentError);
-            toast.error('Failed to load parent data');
-            setIsLoading(false);
-            return;
-          }
-
-          if (!parentData) {
-            console.log('No parent record found for email:', userEmail);
-            setRawLessons([]);
-            setIsLoading(false);
-            return;
-          }
-
-          // Get all students linked to this parent
-          const { data: studentData, error: studentError } = await supabase
-            .from('students')
-            .select('id')
-            .eq('parent_id', parentData.id);
-
-          if (studentError) {
-            console.error('Error fetching parent\'s students:', studentError);
-            toast.error('Failed to load student data');
-            setIsLoading(false);
-            return;
-          }
-
-          if (!studentData || studentData.length === 0) {
-            console.log('No students found for parent:', parentData.id);
-            setRawLessons([]);
-            setIsLoading(false);
-            return;
-          }
-
-          const studentIds = studentData.map(s => s.id);
-
-          query = supabase
-            .from('lessons')
-            .select(`
-              *,
-              lesson_students!inner(
-                student_id,
-                student:students(id, first_name, last_name)
-              )
-            `)
-            .in('lesson_students.student_id', studentIds);
-
-        } else if (userRole === 'tutor') {
-          const { data: tutorData, error: tutorError } = await supabase
-            .from('tutors')
-            .select('id')
-            .eq('email', userEmail)
-            .maybeSingle();
-
-          if (tutorError) {
-            console.error('Error fetching tutor data:', tutorError);
-            toast.error('Failed to load tutor data');
-            setIsLoading(false);
-            return;
-          }
-
-          if (!tutorData) {
-            console.log('No tutor record found for email:', userEmail);
-            setRawLessons([]);
-            setIsLoading(false);
-            return;
-          }
-
-          query = supabase
-            .from('lessons')
-            .select(`
-              *,
-              lesson_students(
-                student_id,
-                student:students(id, first_name, last_name)
-              )
-            `)
-            .eq('tutor_id', tutorData.id);
-
-        } else if (userRole === 'admin' || userRole === 'owner') {
-          query = supabase
-            .from('lessons')
-            .select(`
-              *,
-              tutor:tutors!inner(id, first_name, last_name, email),
-              lesson_students(
-                student_id,
-                student:students(id, first_name, last_name)
-              )
-            `);
-
-          if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
-            query = query.in('tutor_id', filters.selectedTutors);
-          }
-
-          if (filters?.selectedStudents && filters.selectedStudents.length > 0) {
-            query = query.in('lesson_students.student_id', filters.selectedStudents.map(id => parseInt(id)));
-          }
-
-        } else {
-          setRawLessons([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        console.log("Lessons fetched:", data);
         
-        let filteredData = data || [];
-        if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
-          filteredData = filteredData.filter(lesson => {
-            if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
-            return lesson.lesson_students.some(ls => 
-              filters.selectedStudents.includes(ls.student_id.toString())
-            );
-          });
-        }
+        const fetchPromise = (async () => {
+          let query;
 
-        setRawLessons(filteredData);
+          if (userRole === 'student') {
+            const { data: studentData, error: studentError } = await supabase
+              .from('students')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+
+            if (studentError) {
+              console.error('Error fetching student data:', studentError);
+              toast.error('Failed to load student data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!studentData) {
+              console.log('No student record found for email:', userEmail);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                lesson_students!inner(
+                  student_id
+                )
+              `)
+              .eq('lesson_students.student_id', studentData.id);
+
+          } else if (userRole === 'parent') {
+            // For parents, first get the parent record
+            const { data: parentData, error: parentError } = await supabase
+              .from('parents')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+
+            if (parentError) {
+              console.error('Error fetching parent data:', parentError);
+              toast.error('Failed to load parent data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!parentData) {
+              console.log('No parent record found for email:', userEmail);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            // Get all students linked to this parent
+            const { data: studentData, error: studentError } = await supabase
+              .from('students')
+              .select('id')
+              .eq('parent_id', parentData.id);
+
+            if (studentError) {
+              console.error('Error fetching parent\'s students:', studentError);
+              toast.error('Failed to load student data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!studentData || studentData.length === 0) {
+              console.log('No students found for parent:', parentData.id);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            const studentIds = studentData.map(s => s.id);
+
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                lesson_students!inner(
+                  student_id,
+                  student:students(id, first_name, last_name)
+                )
+              `)
+              .in('lesson_students.student_id', studentIds);
+
+          } else if (userRole === 'tutor') {
+            const { data: tutorData, error: tutorError } = await supabase
+              .from('tutors')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+
+            if (tutorError) {
+              console.error('Error fetching tutor data:', tutorError);
+              toast.error('Failed to load tutor data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!tutorData) {
+              console.log('No tutor record found for email:', userEmail);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                lesson_students(
+                  student_id,
+                  student:students(id, first_name, last_name)
+                )
+              `)
+              .eq('tutor_id', tutorData.id);
+
+          } else if (userRole === 'admin' || userRole === 'owner') {
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                tutor:tutors!inner(id, first_name, last_name, email),
+                lesson_students(
+                  student_id,
+                  student:students(id, first_name, last_name)
+                )
+              `);
+
+            if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
+              query = query.in('tutor_id', filters.selectedTutors);
+            }
+
+            if (filters?.selectedStudents && filters.selectedStudents.length > 0) {
+              query = query.in('lesson_students.student_id', filters.selectedStudents.map(id => parseInt(id)));
+            }
+
+          } else {
+            setRawLessons([]);
+            setIsLoading(false);
+            return;
+          }
+
+          const { data, error } = await query;
+
+          if (error) throw error;
+
+          console.log("Lessons fetched:", data);
+          
+          let filteredData = data || [];
+          if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
+            filteredData = filteredData.filter(lesson => {
+              if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
+              return lesson.lesson_students.some(ls => 
+                filters.selectedStudents.includes(ls.student_id.toString())
+              );
+            });
+          }
+
+          setRawLessons(filteredData);
+        })();
+
+        currentFetchRef.current = fetchPromise;
+        await fetchPromise;
 
       } catch (error) {
         console.error('Error fetching lessons:', error);
         toast.error('Failed to load lessons');
       } finally {
         setIsLoading(false);
+        currentFetchRef.current = null;
       }
     };
 
