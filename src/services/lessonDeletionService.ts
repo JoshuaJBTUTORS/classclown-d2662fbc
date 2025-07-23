@@ -179,7 +179,7 @@ export const lessonDeletionService = {
     }
   },
 
-  private async cleanupRelatedData(lessonIds: string[]): Promise<void> {
+  async cleanupRelatedData(lessonIds: string[]): Promise<void> {
     try {
       // Get homework IDs for these lessons
       const { data: homework } = await supabase
@@ -221,7 +221,7 @@ export const lessonDeletionService = {
     }
   },
 
-  private async syncGoogleCalendarDeletion(lessonId: string): Promise<void> {
+  async syncGoogleCalendarDeletion(lessonId: string): Promise<void> {
     try {
       // This would call the Google Calendar sync function to delete the event
       // For now, we'll just log it as the Google Calendar integration may not be fully set up
