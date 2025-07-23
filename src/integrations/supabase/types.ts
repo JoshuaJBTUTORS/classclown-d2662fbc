@@ -888,13 +888,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lessons_trial_booking_id_fkey"
-            columns: ["trial_booking_id"]
-            isOneToOne: false
-            referencedRelation: "trial_bookings"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lessons_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
