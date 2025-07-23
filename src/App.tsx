@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import AuthRedirect from '@/components/routing/AuthRedirect';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
@@ -50,8 +51,11 @@ function App() {
           <OrganizationProvider>
             <LearningHubProvider>
               <Routes>
+                {/* Root route with auth redirect */}
+                <Route path="/" element={<AuthRedirect />} />
+                
                 {/* Public routes */}
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/landing" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/interactive-signup" element={<InteractiveSignup />} />
                 <Route path="/auth" element={<Auth />} />

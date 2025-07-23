@@ -107,7 +107,7 @@ const LearningHubSidebar = () => {
             className="w-full"
             asChild
           >
-            <Link to="/">
+            <Link to="/dashboard">
               <Home className="h-4 w-4 mr-2" />
               Back to Main App
             </Link>
