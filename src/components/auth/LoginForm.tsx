@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import ForgotPasswordForm from './ForgotPasswordForm';
 
 interface LoginFormProps {
   onLoginSuccess?: () => void;
@@ -16,6 +17,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +39,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       setIsLoading(false);
     }
   };
+
+  if (showForgotPassword) {
+    return (
+      <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,6 +93,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         </div>
       </div>
 
+      <div className="text-right">
+        <button
+          type="button"
+          className="text-sm text-muted-foreground hover:text-primary hover:underline"
+          onClick={() => setShowForgotPassword(true)}
+        >
+          Forgot password?
+        </button>
+      </div>
+
       <Button
         type="submit"
         className="w-full"
@@ -93,11 +111,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         {isLoading ? 'Signing in...' : 'Sign In'}
       </Button>
 
-      <p className="text-sm text-gray-600 text-center">
+      <p className="text-sm text-muted-foreground text-center">
         Don't have an account?{' '}
         <button
           type="button"
-          className="text-purple-600 hover:underline"
+          className="text-primary hover:underline"
           onClick={() => window.location.href = '/interactive-signup'}
         >
           Sign up here
