@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -37,6 +38,7 @@ import AddStudentForm from '@/components/students/AddStudentForm';
 import AddParentStudentForm from '@/components/students/AddParentStudentForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { studentDataService } from '@/services/studentDataService';
 import { cn } from '@/lib/utils';
 
 const Students = () => {
@@ -122,6 +124,11 @@ const Students = () => {
         setFilteredStudents([]);
         setIsLoading(false);
         return;
+      }
+
+      // Check for data consistency issues and fix them
+      if (user?.email && userRole === 'student') {
+        await studentDataService.ensureStudentUserIdLink(user.email);
       }
 
       // Get all unique parent IDs (excluding null values)

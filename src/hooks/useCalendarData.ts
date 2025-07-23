@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -121,9 +122,12 @@ export const useCalendarData = ({
           let query;
 
           if (userRole === 'student') {
+            console.log('Fetching student data for email:', userEmail);
+            
+            // Enhanced student lookup with better error handling
             const { data: studentData, error: studentError } = await supabase
               .from('students')
-              .select('id')
+              .select('id, user_id, first_name, last_name, email')
               .eq('email', userEmail)
               .maybeSingle();
 
@@ -139,6 +143,26 @@ export const useCalendarData = ({
               setRawLessons([]);
               setIsLoading(false);
               return;
+            }
+
+            console.log('Found student data:', studentData);
+
+            // Check if student record needs user_id update
+            const currentUser = await supabase.auth.getUser();
+            if (currentUser.data.user && !studentData.user_id) {
+              console.log('Student record missing user_id, updating...');
+              
+              // Update student record to link user_id
+              const { error: updateError } = await supabase
+                .from('students')
+                .update({ user_id: currentUser.data.user.id })
+                .eq('id', studentData.id);
+
+              if (updateError) {
+                console.error('Failed to update student user_id:', updateError);
+              } else {
+                console.log('Successfully updated student user_id');
+              }
             }
 
             // Fetch both original lessons and instances for this student
@@ -263,6 +287,7 @@ export const useCalendarData = ({
             }
 
           } else {
+            console.log('Unknown user role:', userRole);
             setRawLessons([]);
             setIsLoading(false);
             return;
@@ -270,9 +295,12 @@ export const useCalendarData = ({
 
           const { data, error } = await query;
 
-          if (error) throw error;
+          if (error) {
+            console.error('Error fetching lessons:', error);
+            throw error;
+          }
 
-          console.log("Lessons fetched:", data);
+          console.log(`Lessons fetched for ${userRole}:`, data);
           
           let filteredData = data || [];
           if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
