@@ -73,7 +73,6 @@ const Calendar = () => {
               featureName="Calendar & Scheduling"
               featureIcon={<CalendarIcon className="h-16 w-16 text-gray-300" />}
               description="Access your lesson calendar, book sessions, and manage your tutoring schedule."
-              onBookTrial={openBookingModal}
             />
           </main>
         </div>

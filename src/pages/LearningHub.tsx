@@ -159,11 +159,11 @@ const LearningHub: React.FC = () => {
                         : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <IconComponent className="h-5 w-5" />
-                      <span className="font-medium">{stage.label}</span>
-                    </div>
-                  </div>
+                     <div className="flex items-center gap-3">
+                       <IconComponent className="h-5 w-5" />
+                       <span className="font-medium">{stage.label}</span>
+                     </div>
+                   </button>
                 );
               })}
             </div>

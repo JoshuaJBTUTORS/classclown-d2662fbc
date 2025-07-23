@@ -27,7 +27,6 @@ const Homework: React.FC = () => {
         featureName="Homework & Assignments"
         featureIcon={<BookOpen className="h-16 w-16 text-gray-300" />}
         description="Access homework assignments, submit work, and track your progress with personalized feedback from tutors."
-        onBookTrial={openBookingModal}
       />
     );
   }
