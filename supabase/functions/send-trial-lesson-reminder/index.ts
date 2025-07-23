@@ -49,9 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
           parent_name,
           child_name,
           email,
-          phone,
-          child_first_name,
-          child_last_name
+          phone
         )
       `)
       .eq('lesson_type', 'trial')
@@ -109,10 +107,8 @@ const handler = async (req: Request): Promise<Response> => {
           minute: '2-digit' 
         })}`;
 
-        // Use child name from trial booking (prefer structured first/last names)
-        const childName = trialBooking.child_first_name && trialBooking.child_last_name 
-          ? `${trialBooking.child_first_name} ${trialBooking.child_last_name}`
-          : trialBooking.child_name || 'your child';
+        // Use child name from trial booking
+        const childName = trialBooking.child_name || 'your child';
 
         // Generate lesson URL - for trial lessons, this could be the lesson space URL or a direct join link
         const lessonUrl = lesson.lesson_space_room_url || 
