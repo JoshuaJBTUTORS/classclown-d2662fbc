@@ -65,6 +65,23 @@ serve(async (req) => {
   }
 });
 
+function generateSpaceId(lesson: any): string {
+  if (lesson.is_group) {
+    // For group lessons: group_{lesson_id}_t{tutor_id}
+    const lessonIdShort = lesson.id.substring(0, 8);
+    const tutorIdShort = lesson.tutor_id.substring(0, 8);
+    return `group_${lessonIdShort}_t${tutorIdShort}`;
+  } else {
+    // For individual lessons: t{tutor_id}_s{student_id}
+    const tutorIdShort = lesson.tutor_id.substring(0, 8);
+    const studentId = lesson.lesson_students?.[0]?.student?.id;
+    if (!studentId) {
+      throw new Error("No student found for individual lesson");
+    }
+    return `t${tutorIdShort}_s${studentId}`;
+  }
+}
+
 async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
   const lessonSpaceApiKey = "832a4e97-e402-4757-8ba3-a8afb14941b2";
   
@@ -93,18 +110,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       throw new Error("No students found for this lesson");
     }
 
-    // Generate space ID based on lesson type (ensuring it's under 64 characters)
-    let spaceId: string;
-    if (lesson.is_group) {
-      spaceId = `group_${data.lessonId.substring(0, 30)}`;
-    } else {
-      const studentId = lesson.lesson_students[0]?.student?.id;
-      if (!studentId) {
-        throw new Error("No student found for individual lesson");
-      }
-      spaceId = `t${lesson.tutor_id.substring(0, 8)}_s${studentId}`;
-    }
-
+    // Generate space ID based on new logic
+    const spaceId = generateSpaceId(lesson);
     console.log("Generated space ID:", spaceId);
 
     // Create space with teacher as leader using the Launch endpoint
@@ -144,7 +151,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const spaceData = await spaceResponse.json();
     console.log("Created/Retrieved Lesson Space for teacher:", spaceData);
 
-    // Update the lesson with room details (only updating existing columns)
+    // Update the lesson with room details
     const { error: updateError } = await supabase
       .from("lessons")
       .update({

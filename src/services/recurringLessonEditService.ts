@@ -27,6 +27,37 @@ export interface EditRecurringOptions {
   instanceDate?: string;
 }
 
+const createNewLessonSpaceRoom = async (lessonId: string) => {
+  try {
+    console.log('Creating new LessonSpace room for lesson:', lessonId);
+    
+    const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
+      body: {
+        action: 'create-room',
+        lessonId: lessonId,
+        title: 'Updated Lesson Room',
+        startTime: new Date().toISOString(),
+        duration: 60
+      }
+    });
+
+    if (error) {
+      console.error('Error creating new LessonSpace room:', error);
+      return null;
+    }
+
+    if (data && data.success) {
+      console.log('New LessonSpace room created successfully:', data);
+      return data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in createNewLessonSpaceRoom:', error);
+    return null;
+  }
+};
+
 // Update only a single recurring instance
 export const updateSingleRecurringInstance = async (
   lessonId: string, 
@@ -36,6 +67,9 @@ export const updateSingleRecurringInstance = async (
   
   const { selectedStudents, ...lessonData } = updates;
   
+  // Check if tutor is changing
+  const tutorChanged = updates.tutor_id !== undefined;
+  
   // Update the lesson
   const { error: lessonError } = await supabase
     .from('lessons')
@@ -43,6 +77,15 @@ export const updateSingleRecurringInstance = async (
     .eq('id', lessonId);
   
   if (lessonError) throw lessonError;
+  
+  // If tutor changed, create a new room
+  if (tutorChanged) {
+    console.log('Tutor changed, creating new LessonSpace room');
+    const roomData = await createNewLessonSpaceRoom(lessonId);
+    if (!roomData) {
+      console.warn('Failed to create new room for lesson after tutor change');
+    }
+  }
   
   // Update students if provided
   if (selectedStudents) {
@@ -88,6 +131,7 @@ const calculateLessonChanges = (originalLesson: any, updates: LessonUpdate) => {
   }
   if (updates.tutor_id && updates.tutor_id !== originalLesson.tutor_id) {
     changes.tutor_id = updates.tutor_id;
+    changes.tutorChanged = true; // Flag to indicate tutor change
   }
   if (updates.is_group !== undefined && updates.is_group !== originalLesson.is_group) {
     changes.is_group = updates.is_group;
@@ -237,6 +281,15 @@ export const updateAllFutureLessons = async (
   
   if (parentError) throw parentError;
   
+  // If tutor changed, create new room for parent lesson
+  if (changes.tutorChanged) {
+    console.log('Tutor changed, creating new LessonSpace room for parent lesson');
+    const roomData = await createNewLessonSpaceRoom(parentLessonId);
+    if (!roomData) {
+      console.warn('Failed to create new room for parent lesson after tutor change');
+    }
+  }
+  
   // Get all future instances to update
   const { data: futureInstances, error: instancesError } = await supabase
     .from('lessons')
@@ -262,6 +315,15 @@ export const updateAllFutureLessons = async (
       if (updateError) {
         console.error(`Failed to update instance ${instance.id}:`, updateError);
         continue;
+      }
+      
+      // If tutor changed, create new room for this instance
+      if (changes.tutorChanged) {
+        console.log(`Creating new LessonSpace room for instance ${instance.id}`);
+        const roomData = await createNewLessonSpaceRoom(instance.id);
+        if (!roomData) {
+          console.warn(`Failed to create new room for instance ${instance.id} after tutor change`);
+        }
       }
       
       updatedCount++;

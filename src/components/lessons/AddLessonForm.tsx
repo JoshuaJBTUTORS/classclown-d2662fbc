@@ -165,6 +165,37 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     }
   };
 
+  const createLessonSpaceRoom = async (lessonId: string, tutorId: string, isGroup: boolean) => {
+    try {
+      console.log('Creating LessonSpace room for lesson:', lessonId);
+      
+      const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
+        body: {
+          action: 'create-room',
+          lessonId: lessonId,
+          title: 'Lesson Room',
+          startTime: new Date().toISOString(),
+          duration: 60
+        }
+      });
+
+      if (error) {
+        console.error('Error creating LessonSpace room:', error);
+        throw error;
+      }
+
+      if (data && data.success) {
+        console.log('LessonSpace room created successfully:', data);
+        return data;
+      } else {
+        throw new Error(data?.error || 'Failed to create LessonSpace room');
+      }
+    } catch (error) {
+      console.error('Error in createLessonSpaceRoom:', error);
+      throw error;
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
@@ -224,6 +255,19 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
           .insert(lessonStudentsData);
 
         if (studentsError) throw studentsError;
+      }
+
+      // Automatically create LessonSpace room for the lesson
+      if (newLessonId) {
+        try {
+          setLoadingStep('Creating video room...');
+          const roomData = await createLessonSpaceRoom(newLessonId, values.tutorId, values.isGroup);
+          console.log('Room created successfully:', roomData);
+        } catch (roomError) {
+          console.error('Room creation failed:', roomError);
+          // Don't fail the entire lesson creation if room creation fails
+          toast.error('Lesson created but video room creation failed. You can create it manually later.');
+        }
       }
 
       // Generate recurring instances if this is a recurring lesson
@@ -311,7 +355,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
         <DialogHeader>
           <DialogTitle>Add New Lesson</DialogTitle>
           <DialogDescription>
-            Create a new tutoring session for your students.
+            Create a new tutoring session for your students. A video room will be created automatically.
           </DialogDescription>
         </DialogHeader>
 

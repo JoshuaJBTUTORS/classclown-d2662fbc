@@ -144,6 +144,10 @@ serve(async (req) => {
               recurrence_interval: null,
               recurrence_end_date: null,
               recurrence_day: null,
+              // Inherit room details from template lesson
+              lesson_space_room_id: templateLesson.lesson_space_room_id,
+              lesson_space_room_url: templateLesson.lesson_space_room_url,
+              lesson_space_space_id: templateLesson.lesson_space_space_id,
             });
 
             instanceCount++;
