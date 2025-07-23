@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -54,7 +55,27 @@ serve(async (req) => {
           continue;
         }
 
-        // Get students for the original lesson
+        // Get the most recent lesson instance to use as a template
+        // This ensures we use the latest changes applied to the recurring series
+        const { data: recentInstance, error: recentError } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('parent_lesson_id', originalLesson.id)
+          .eq('is_recurring_instance', true)
+          .order('start_time', { ascending: false })
+          .limit(1)
+          .single();
+
+        // Use the most recent instance if available, otherwise fall back to original
+        const templateLesson = recentInstance || originalLesson;
+        
+        if (recentError && recentError.code !== 'PGRST116') {
+          console.error(`Failed to get recent instance for group ${group.id}:`, recentError);
+        }
+
+        console.log(`Using template lesson: ${templateLesson.id} (${recentInstance ? 'recent instance' : 'original lesson'})`);
+
+        // Get students for the original lesson (students list doesn't change)
         const { data: lessonStudents, error: studentsError } = await supabase
           .from('lesson_students')
           .select('student_id')
@@ -65,11 +86,16 @@ serve(async (req) => {
           continue;
         }
 
+        // Calculate the time difference between template and original for pattern preservation
+        const templateStartTime = new Date(templateLesson.start_time);
+        const originalStartTime = new Date(originalLesson.start_time);
+        const timeDifference = templateStartTime.getTime() - originalStartTime.getTime();
+        
         // Generate next batch of instances (20 at a time)
         const instances = [];
         const lastGeneratedDate = new Date(group.instances_generated_until);
         const recurrencePattern = group.recurrence_pattern as any;
-        const lessonDuration = new Date(originalLesson.end_time).getTime() - new Date(originalLesson.start_time).getTime();
+        const lessonDuration = new Date(templateLesson.end_time).getTime() - new Date(templateLesson.start_time).getTime();
 
         let currentDate = new Date(lastGeneratedDate);
         let instanceCount = 0;
@@ -98,17 +124,18 @@ serve(async (req) => {
           }
 
           if (currentDate <= endDate) {
-            const instanceStartTime = new Date(currentDate);
-            const instanceEndTime = new Date(currentDate.getTime() + lessonDuration);
+            // Apply the time difference from template to maintain pattern
+            const instanceStartTime = new Date(currentDate.getTime() + timeDifference);
+            const instanceEndTime = new Date(instanceStartTime.getTime() + lessonDuration);
 
             instances.push({
-              title: originalLesson.title,
-              description: originalLesson.description || '',
-              subject: originalLesson.subject,
-              tutor_id: originalLesson.tutor_id,
+              title: templateLesson.title,
+              description: templateLesson.description || '',
+              subject: templateLesson.subject,
+              tutor_id: templateLesson.tutor_id,
               start_time: instanceStartTime.toISOString(),
               end_time: instanceEndTime.toISOString(),
-              is_group: originalLesson.is_group,
+              is_group: templateLesson.is_group,
               status: 'scheduled',
               is_recurring: false,
               is_recurring_instance: true,
