@@ -68,13 +68,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       icon: TrendingUp,
       label: 'Progress',
       href: '/progress',
-      roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+      roles: ['admin', 'owner', 'parent', 'student'],
     },
     {
       icon: BarChart3,
       label: 'Reports',
       href: '/reports',
-      roles: ['admin', 'owner', 'tutor'],
+      roles: ['admin', 'owner'],
     },
     {
       icon: Clock,
