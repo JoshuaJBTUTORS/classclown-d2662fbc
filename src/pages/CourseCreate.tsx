@@ -23,13 +23,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
 import { LESSON_SUBJECTS, isValidLessonSubject, LessonSubject } from '@/constants/subjects';
+import CourseImageUploadField from '@/components/learningHub/CourseImageUploadField';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters long' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long' }),
   subject: z.string().optional(),
   difficulty_level: z.string().optional(),
-  cover_image_url: z.string().url().optional().or(z.literal('')),
+  cover_image_url: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -201,12 +202,15 @@ const CourseCreate: React.FC = () => {
                 name="cover_image_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cover Image URL (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/image.jpg" {...field} />
+                      <CourseImageUploadField
+                        value={field.value || ''}
+                        onChange={(url) => field.onChange(url || '')}
+                        disabled={createCourse.isPending}
+                      />
                     </FormControl>
                     <FormDescription>
-                      Provide a URL to an image that represents this course.
+                      Upload an image that represents this course. This will be displayed as the course cover.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

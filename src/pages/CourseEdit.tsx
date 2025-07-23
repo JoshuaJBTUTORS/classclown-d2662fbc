@@ -21,6 +21,7 @@ import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
 import ModuleManager from '@/components/learningHub/ModuleManager';
 import { LESSON_SUBJECTS, isValidLessonSubject, LessonSubject } from '@/constants/subjects';
+import CourseImageUploadField from '@/components/learningHub/CourseImageUploadField';
 
 interface CourseEditFormData {
   title: string;
@@ -264,12 +265,10 @@ const CourseEdit: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Cover Image URL</label>
-                  <Input
+                  <CourseImageUploadField
                     value={courseData.cover_image_url}
-                    onChange={(e) => handleInputChange('cover_image_url', e.target.value)}
-                    placeholder="Enter image URL"
-                    className="w-full"
+                    onChange={(url) => handleInputChange('cover_image_url', url || '')}
+                    disabled={updateCourseMutation.isPending}
                   />
                 </div>
               </div>
