@@ -126,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Send email
         const emailResult = await resend.emails.send({
-          from: 'JB Tutors <lessons@jbtutors.co.uk>',
+          from: 'JB Tutors <lessons@jb-tutors.com>',
           to: [trialBooking.email],
           subject: `Exciting Trial Lesson ${isToday ? 'Today' : 'Tomorrow'} - ${lesson.subject || 'Tutoring'}`,
           html: emailHtml,
