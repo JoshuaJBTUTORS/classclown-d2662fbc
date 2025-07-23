@@ -8,10 +8,9 @@ import { createTrialStudent } from '@/services/trialAccountService';
 import { createTrialLesson } from '@/services/trialLessonService';
 import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
 import StepIndicator from '@/components/trialBooking/StepIndicator';
-import ContactInfoStep from '@/components/trialBooking/ContactInfoStep';
 import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
 import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
-import ConfirmationStep from '@/components/trialBooking/ConfirmationStep';
+import ContactInfoStep from '@/components/trialBooking/ContactInfoStep';
 
 interface FormData {
   parentName: string;
@@ -39,13 +38,13 @@ const TrialBookingPage: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const stepLabels = ['Contact', 'Subject', 'Date & Time', 'Confirm'];
+  const stepLabels = ['Subject', 'Date & Time', 'Contact'];
   const totalSteps = stepLabels.length;
 
-  // Only fetch availability when we have subject and are on step 3
+  // Only fetch availability when we have subject and are on step 2
   const { slots, isLoading: availabilityLoading } = useAggregatedAvailability(
-    currentStep === 3 && formData.subject ? formData.subject.id : undefined, 
-    currentStep === 3 && formData.date ? formData.date : undefined
+    currentStep === 2 && formData.subject ? formData.subject.id : undefined, 
+    currentStep === 2 && formData.date ? formData.date : undefined
   );
 
   const updateFormData = (field: string, value: string | { id: string; name: string } | null) => {
@@ -61,17 +60,17 @@ const TrialBookingPage: React.FC = () => {
 
     switch (step) {
       case 1:
+        if (!formData.subject) newErrors.subject = 'Please select a subject';
+        break;
+      case 2:
+        if (!formData.date) newErrors.date = 'Please select a date';
+        if (!formData.time) newErrors.time = 'Please select a time';
+        break;
+      case 3:
         if (!formData.parentName.trim()) newErrors.parentName = 'Parent name is required';
         if (!formData.childName.trim()) newErrors.childName = 'Child name is required';
         if (!formData.email.trim()) newErrors.email = 'Email is required';
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
-        break;
-      case 2:
-        if (!formData.subject) newErrors.subject = 'Please select a subject';
-        break;
-      case 3:
-        if (!formData.date) newErrors.date = 'Please select a date';
-        if (!formData.time) newErrors.time = 'Please select a time';
         break;
     }
 
@@ -143,21 +142,13 @@ const TrialBookingPage: React.FC = () => {
     switch (currentStep) {
       case 1:
         return (
-          <ContactInfoStep
-            formData={formData}
-            onChange={updateFormData}
-            errors={errors}
-          />
-        );
-      case 2:
-        return (
           <SubjectSelectionStep
             selectedSubject={formData.subject}
             onSubjectChange={(subject) => updateFormData('subject', subject)}
             error={errors.subject}
           />
         );
-      case 3:
+      case 2:
         return (
           <DateTimeSelector
             slots={slots}
@@ -169,8 +160,17 @@ const TrialBookingPage: React.FC = () => {
             subjectId={formData.subject?.id}
           />
         );
-      case 4:
-        return <ConfirmationStep formData={formData} />;
+      case 3:
+        return (
+          <ContactInfoStep
+            formData={formData}
+            onChange={updateFormData}
+            errors={errors}
+            selectedSubject={formData.subject}
+            selectedDate={formData.date}
+            selectedTime={formData.time}
+          />
+        );
       default:
         return null;
     }
