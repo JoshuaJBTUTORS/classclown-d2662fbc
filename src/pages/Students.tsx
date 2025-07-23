@@ -469,9 +469,9 @@ const Students = () => {
                               <DropdownMenuItem onClick={() => handleViewClick(student)}>
                                 View Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditClick(student)}>
-                                Edit Client
-                              </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(student)}>
+                          Edit Student
+                        </DropdownMenuItem>
                               {(isAdmin || isOwner) && student.parent_id && (
                                 <DropdownMenuItem onClick={() => handleEditParentClick(student)}>
                                   Edit Parent
