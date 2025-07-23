@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
 
           // Send email
           const emailResult = await resend.emails.send({
-            from: 'JB Tutors <lessons@jbtutors.co.uk>',
+            from: 'JB Tutors <lessons@jb-tutors.com>',
             to: [parent.email],
             subject: `Lesson Reminder - ${lesson.subject || 'Tutoring'} ${isToday ? 'Today' : 'Tomorrow'}`,
             html: emailHtml,
@@ -141,7 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
 
           if (emailResult.error) {
             console.error(`Failed to send email to ${parent.email}:`, emailResult.error);
-            errors.push(`Failed to send to ${parent.email}: ${emailResult.error.message}`);
+            errors.push(`Failed to send to ${parent.email}: ${emailResult.error.error || emailResult.error.message || JSON.stringify(emailResult.error)}`);
           } else {
             console.log(`Email sent successfully to ${parent.email} for lesson ${lesson.id}`);
             emailsSent++;
