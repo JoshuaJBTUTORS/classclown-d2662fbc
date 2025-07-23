@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Home, Calendar, Phone, Mail } from 'lucide-react';
+import { CheckCircle, Home, Clock, Phone, Mail } from 'lucide-react';
 
 const TrialBookingConfirmation: React.FC = () => {
   const navigate = useNavigate();
@@ -23,25 +23,26 @@ const TrialBookingConfirmation: React.FC = () => {
               </div>
             </div>
             <CardTitle className="text-2xl text-green-800">
-              Trial Lesson Booked Successfully!
+              Trial Lesson Request Submitted!
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center">
               <p className="text-gray-600 mb-6">
-                Thank you for booking a trial lesson with us. We're excited to help you get started on your learning journey!
+                Thank you for your trial lesson request. We've received your information and will review it shortly.
               </p>
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <h3 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+              <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                <Clock className="h-5 w-5" />
                 What happens next?
               </h3>
-              <ul className="space-y-2 text-sm text-green-800">
-                <li>• You'll receive a confirmation email within the next few minutes</li>
-                <li>• One of our qualified tutors will be assigned to your lesson</li>
-                <li>• We'll send you the video lesson link 24 hours before your appointment</li>
+              <ul className="space-y-2 text-sm text-orange-800">
+                <li>• Our team will review your trial lesson request</li>
+                <li>• We'll contact you within 24 hours to confirm your booking</li>
+                <li>• Once approved, we'll assign a qualified tutor to your lesson</li>
+                <li>• You'll receive the video lesson link before your appointment</li>
                 <li>• Your trial lesson is completely free - no payment required</li>
               </ul>
             </div>

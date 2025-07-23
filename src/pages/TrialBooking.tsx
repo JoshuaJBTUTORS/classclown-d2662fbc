@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
-import { createTrialStudent } from '@/services/trialAccountService';
-import { createTrialLesson } from '@/services/trialLessonService';
+import { createTrialBooking } from '@/services/trialBookingService';
 import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
 import StepIndicator from '@/components/trialBooking/StepIndicator';
 import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
@@ -77,14 +76,12 @@ const TrialBookingPage: React.FC = () => {
       case 2:
         if (!formData.date) newErrors.date = 'Please select a date';
         if (!formData.time) newErrors.time = 'Please select a time';
-        if (!formData.selectedTutorId) newErrors.selectedTutorId = 'No tutor available for selected time';
         break;
       case 3:
         if (!formData.parentName.trim()) newErrors.parentName = 'Parent name is required';
         if (!formData.childName.trim()) newErrors.childName = 'Child name is required';
         if (!formData.email.trim()) newErrors.email = 'Email is required';
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
-        if (!formData.selectedTutorId) newErrors.selectedTutorId = 'No tutor selected for the lesson';
         break;
     }
 
@@ -105,49 +102,38 @@ const TrialBookingPage: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
 
-    console.log('Submitting trial booking with data:', formData);
+    console.log('Submitting trial booking request with data:', formData);
 
     setIsSubmitting(true);
     try {
-      // Create trial student account
-      const trialAccountResult = await createTrialStudent({
+      // Create trial booking request (no lesson created yet)
+      const trialBookingResult = await createTrialBooking({
         parent_name: formData.parentName,
         child_name: formData.childName,
         email: formData.email,
-        phone: formData.phone
+        phone: formData.phone,
+        preferred_date: formData.date,
+        preferred_time: formData.time,
+        subject_id: formData.subject?.id || '',
+        message: `Trial lesson request for ${formData.childName}`
       });
 
-      if (!trialAccountResult.success) {
-        throw new Error(trialAccountResult.error || 'Failed to create trial student account.');
-      }
-
-      // Create trial lesson using the stored tutor ID
-      const trialLessonResult = await createTrialLesson({
-        bookingId: 'trial-booking-' + Date.now(),
-        tutorId: formData.selectedTutorId,
-        studentId: trialAccountResult.studentId,
-        preferredDate: formData.date,
-        preferredTime: formData.time,
-        subjectId: formData.subject?.id,
-        approvedBy: 'system'
-      });
-
-      if (!trialLessonResult.success) {
-        throw new Error(trialLessonResult.error || 'Failed to create trial lesson.');
+      if (!trialBookingResult.success) {
+        throw new Error(trialBookingResult.error || 'Failed to submit trial booking request.');
       }
 
       toast({
-        title: "Success!",
-        description: "Trial lesson booked successfully!",
+        title: "Trial Booking Submitted!",
+        description: "Your request has been submitted for review. We'll contact you within 24 hours.",
       });
 
       navigate('/trial-booking-confirmation');
     } catch (err: any) {
-      console.error('Error during trial booking:', err);
+      console.error('Error during trial booking submission:', err);
       toast({
         variant: "destructive",
         title: "Error!",
-        description: err.message || 'An error occurred while booking the trial lesson.',
+        description: err.message || 'An error occurred while submitting your trial booking request.',
       });
     } finally {
       setIsSubmitting(false);
@@ -197,7 +183,7 @@ const TrialBookingPage: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-2">Book a Trial Lesson</h1>
         <p className="text-gray-600 text-center mb-8">
-          Get started with a free 60-minute trial lesson with one of our qualified tutors
+          Submit a request for a free 60-minute trial lesson with one of our qualified tutors
         </p>
 
         <StepIndicator
@@ -245,10 +231,10 @@ const TrialBookingPage: React.FC = () => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Booking...
+                  Submitting...
                 </>
               ) : (
-                'Book Trial Lesson'
+                'Submit Request'
               )}
             </Button>
           )}
