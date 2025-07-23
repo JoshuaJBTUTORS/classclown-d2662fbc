@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,14 +11,18 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, ArrowRight, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
+import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
+import { validateEmail, sanitizeInput } from '@/utils/validation';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (user) {
@@ -28,8 +32,17 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    
+    const sanitizedEmail = sanitizeInput(email);
+    const sanitizedPassword = sanitizeInput(password);
+    
+    if (!sanitizedEmail || !sanitizedPassword) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (!validateEmail(sanitizedEmail)) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -37,7 +50,7 @@ const Auth = () => {
     setError('');
     
     try {
-      await signIn(email, password);
+      await signIn(sanitizedEmail, sanitizedPassword);
       toast.success('Welcome back!');
     } catch (error: any) {
       setError(error.message || 'Failed to sign in');
@@ -49,12 +62,21 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    
+    const sanitizedEmail = sanitizeInput(email);
+    const sanitizedPassword = sanitizeInput(password);
+    
+    if (!sanitizedEmail || !sanitizedPassword) {
       setError('Please fill in all fields');
       return;
     }
 
-    if (password.length < 8) {
+    if (!validateEmail(sanitizedEmail)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (sanitizedPassword.length < 8) {
       setError('Password must be at least 8 characters long');
       return;
     }
@@ -63,7 +85,7 @@ const Auth = () => {
     setError('');
     
     try {
-      await signUp(email, password);
+      await signUp(sanitizedEmail, sanitizedPassword);
       toast.success('Account created! Please check your email for confirmation.');
     } catch (error: any) {
       setError(error.message || 'Failed to create account');
@@ -72,6 +94,15 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  // Handle showing forgot password form
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -217,6 +248,18 @@ const Auth = () => {
                           'Sign In'
                         )}
                       </Button>
+
+                      <div className="text-center">
+                        <Button
+                          type="button"
+                          variant="link"
+                          onClick={() => setShowForgotPassword(true)}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                          disabled={loading}
+                        >
+                          Forgot your password?
+                        </Button>
+                      </div>
                     </form>
                   </TabsContent>
                   

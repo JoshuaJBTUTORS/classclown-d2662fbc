@@ -124,7 +124,10 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
                   <User className="h-4 w-4 mr-2 text-[hsl(var(--deep-purple-blue))]" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer hover:bg-[hsl(var(--medium-blue))]/10 transition-colors duration-200">
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-[hsl(var(--medium-blue))]/10 transition-colors duration-200"
+                  onClick={() => window.location.href = '/settings'}
+                >
                   <Settings className="h-4 w-4 mr-2 text-[hsl(var(--medium-blue))]" />
                   Settings
                 </DropdownMenuItem>

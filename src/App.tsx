@@ -42,6 +42,7 @@ import CourseCheckout from './pages/CourseCheckout';
 import CourseCreate from './pages/CourseCreate';
 import AssessmentEdit from './pages/AssessmentEdit';
 import AssessmentPreview from './pages/AssessmentPreview';
+import Settings from './pages/Settings';
 
 function App() {
   const queryClient = new QueryClient();
@@ -230,6 +231,16 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <AssessmentPreview />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Settings route */}
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
                     </ProtectedRoute>
                   }
                 />
