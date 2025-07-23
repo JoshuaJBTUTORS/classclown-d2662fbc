@@ -57,7 +57,7 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
         <CardHeader>
           <CardTitle className="text-lg">Booking Summary</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-start gap-3 space-y-1">
             <BookOpen className="h-4 w-4 text-muted-foreground mt-0.5" />
             <div className="space-y-1">
