@@ -12,6 +12,11 @@ export const getSubjectClass = (subject: string, lessonType?: string): string =>
 
   const subjectLower = subject.toLowerCase();
 
+  // Handle 11 Plus subjects
+  if (subjectLower.includes('11 plus') || subjectLower.includes('11plus') || subjectLower.includes('eleven plus')) {
+    return 'eleven-plus-event';
+  }
+
   // Map subjects to their appropriate year group classes
   // Based on the CSS classes defined in index.css
   
