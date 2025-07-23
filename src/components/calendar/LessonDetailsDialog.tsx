@@ -341,12 +341,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {displayStartTime && format(parseISO(displayStartTime), 'MMM d, yyyy h:mm a')}
-                      {displayEndTime && ` - ${format(parseISO(displayEndTime), 'h:mm a')}`}
+                      {displayStartTime && typeof displayStartTime === 'string' && format(parseISO(displayStartTime), 'MMM d, yyyy h:mm a')}
+                      {displayEndTime && typeof displayEndTime === 'string' && ` - ${format(parseISO(displayEndTime), 'h:mm a')}`}
                     </span>
-                    {isRecurringInstance && (
+                    {isRecurringInstance && instanceDate && typeof instanceDate === 'string' && (
                       <Badge variant="secondary" className="ml-2 text-xs">
-                        Instance on {format(parseISO(instanceDate!), 'MMM d, yyyy')}
+                        Instance on {format(parseISO(instanceDate), 'MMM d, yyyy')}
                       </Badge>
                     )}
                   </div>
