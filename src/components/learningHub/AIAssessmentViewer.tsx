@@ -385,7 +385,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
 
         <Card className={embedded ? "mb-0 border-0 shadow-none rounded-none" : "mb-6"}>
           <CardHeader className={embedded ? "px-0 py-3" : ""}>
-            <CardTitle className={embedded ? "text-lg sm:text-2xl text-center sm:text-left px-2 sm:px-0" : "text-2xl"}>{assessment.title}</CardTitle>
+            <CardTitle className={embedded ? "text-lg sm:text-2xl text-center px-2 sm:px-0" : "text-2xl text-center"}>{assessment.title}</CardTitle>
           </CardHeader>
           <CardContent className={embedded ? "px-2 sm:px-0 pb-0" : ""}>
             {session ? (
@@ -450,7 +450,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
               </>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-600 mb-4 text-center sm:text-left">Ready to start the assessment?</p>
+                <p className="text-gray-600 mb-4 text-center">Ready to start the assessment?</p>
                 <Button onClick={startAssessment} disabled={assessmentLoading}>
                   Start Assessment
                 </Button>
