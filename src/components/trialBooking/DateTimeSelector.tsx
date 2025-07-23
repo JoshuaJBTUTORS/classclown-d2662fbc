@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   isLoading,
   subjectId
 }) => {
-  const availableSlots = slots.filter(slot => slot.available);
+  const availableSlots = slots?.filter(slot => slot.available) || [];
   const { nextAvailableDates, isLoading: loadingNextDates } = useNextAvailableDates(
     subjectId, 
     selectedDate
@@ -59,11 +60,24 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     if (date) {
       const dateString = format(date, 'yyyy-MM-dd');
       onDateSelect(dateString);
+      // Reset time selection when date changes
+      onTimeSelect('');
     }
   };
 
+  if (!subjectId) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="text-center py-8">
+          <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">Please select a subject first to see available times</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-2xl mx-auto space-y-6">
       {/* Date Selection */}
       <Card>
         <CardHeader>

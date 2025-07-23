@@ -1,104 +1,131 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { createTrialStudent } from '@/services/trialAccountService';
 import { createTrialLesson } from '@/services/trialLessonService';
-import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
 import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
+import StepIndicator from '@/components/trialBooking/StepIndicator';
+import ContactInfoStep from '@/components/trialBooking/ContactInfoStep';
+import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
+import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
+import ConfirmationStep from '@/components/trialBooking/ConfirmationStep';
+
+interface FormData {
+  parentName: string;
+  childName: string;
+  email: string;
+  phone: string;
+  subject: string;
+  date: string;
+  time: string;
+}
 
 const TrialBookingPage: React.FC = () => {
-  const [parentName, setParentName] = useState('');
-  const [childName, setChildName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState<string | undefined>(undefined);
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
-  const [subjects, setSubjects] = useState<{ id: string; name: string; }[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<FormData>({
+    parentName: '',
+    childName: '',
+    email: '',
+    phone: '',
+    subject: '',
+    date: '',
+    time: ''
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch subjects on mount
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/subjects');
-        const data = await response.json();
-        setSubjects(data);
-      } catch (error) {
-        console.error('Error fetching subjects:', error);
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: "Failed to load subjects. Please try again.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const stepLabels = ['Contact', 'Subject', 'Date & Time', 'Confirm'];
+  const totalSteps = stepLabels.length;
 
-    fetchSubjects();
-  }, [toast]);
+  // Only fetch availability when we have subject and are on step 3
+  const { slots, isLoading: availabilityLoading } = useAggregatedAvailability(
+    currentStep === 3 && formData.subject ? formData.subject : undefined, 
+    currentStep === 3 && formData.date ? formData.date : undefined
+  );
 
-  const { slots, isLoading: availabilityLoading, error } = useAggregatedAvailability(selectedSubject, selectedDate);
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    if (!parentName || !childName || !email || !selectedSubject || !selectedDate || !selectedTime) {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: "Please fill in all required fields.",
-      });
-      return;
+  const updateFormData = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const validateStep = (step: number): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    switch (step) {
+      case 1:
+        if (!formData.parentName.trim()) newErrors.parentName = 'Parent name is required';
+        if (!formData.childName.trim()) newErrors.childName = 'Child name is required';
+        if (!formData.email.trim()) newErrors.email = 'Email is required';
+        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
+        break;
+      case 2:
+        if (!formData.subject) newErrors.subject = 'Please select a subject';
+        break;
+      case 3:
+        if (!formData.date) newErrors.date = 'Please select a date';
+        if (!formData.time) newErrors.time = 'Please select a time';
+        break;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep(currentStep)) return;
 
     setIsSubmitting(true);
     try {
-      // 1. Create trial student account
+      // Create trial student account
       const trialAccountResult = await createTrialStudent({
-        parent_name: parentName,
-        child_name: childName,
-        email: email,
-        phone: phone
+        parent_name: formData.parentName,
+        child_name: formData.childName,
+        email: formData.email,
+        phone: formData.phone
       });
 
       if (!trialAccountResult.success) {
         throw new Error(trialAccountResult.error || 'Failed to create trial student account.');
       }
 
-      // 2. Create trial lesson
+      // Create trial lesson
       const trialLessonResult = await createTrialLesson({
-        bookingId: 'trial-booking-' + Date.now(), // Temporary booking ID
-        tutorId: slots.find(slot => slot.time === selectedTime)?.availableTutorIds[0] || '', // Select first available tutor
+        bookingId: 'trial-booking-' + Date.now(),
+        tutorId: slots.find(slot => slot.time === formData.time)?.availableTutorIds[0] || '',
         studentId: trialAccountResult.studentId,
-        preferredDate: selectedDate,
-        preferredTime: selectedTime,
-        subjectId: selectedSubject,
-        approvedBy: 'system' // Or get current user
+        preferredDate: formData.date,
+        preferredTime: formData.time,
+        subjectId: formData.subject,
+        approvedBy: 'system'
       });
 
       if (!trialLessonResult.success) {
         throw new Error(trialLessonResult.error || 'Failed to create trial lesson.');
       }
 
-      // Success!
       toast({
         title: "Success!",
         description: "Trial lesson booked successfully!",
       });
 
-      // Redirect to success page or dashboard
       navigate('/trial-booking-confirmation');
     } catch (err: any) {
       console.error('Error during trial booking:', err);
@@ -112,110 +139,104 @@ const TrialBookingPage: React.FC = () => {
     }
   };
 
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <ContactInfoStep
+            formData={formData}
+            onChange={updateFormData}
+            errors={errors}
+          />
+        );
+      case 2:
+        return (
+          <SubjectSelectionStep
+            selectedSubject={formData.subject}
+            onSubjectChange={(subject) => updateFormData('subject', subject)}
+            error={errors.subject}
+          />
+        );
+      case 3:
+        return (
+          <DateTimeSelector
+            slots={slots}
+            selectedDate={formData.date}
+            selectedTime={formData.time}
+            onDateSelect={(date) => updateFormData('date', date)}
+            onTimeSelect={(time) => updateFormData('time', time)}
+            isLoading={availabilityLoading}
+            subjectId={formData.subject}
+          />
+        );
+      case 4:
+        return <ConfirmationStep formData={formData} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">Book a Trial Lesson</h1>
+    <div className="container mx-auto py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-2">Book a Trial Lesson</h1>
+        <p className="text-gray-600 text-center mb-8">
+          Get started with a free 60-minute trial lesson with one of our qualified tutors
+        </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Contact Information Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="parentName">Parent Name *</Label>
-                <Input
-                  type="text"
-                  id="parentName"
-                  value={parentName}
-                  onChange={(e) => setParentName(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="childName">Child Name *</Label>
-                <Input
-                  type="text"
-                  id="childName"
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        <StepIndicator
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          stepLabels={stepLabels}
+        />
 
-        {/* Date and Time Selection */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Lesson Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="subject">Subject *</Label>
-                <Select onValueChange={setSelectedSubject}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <DateTimeSelector
-                slots={slots}
-                selectedDate={selectedDate}
-                selectedTime={selectedTime}
-                onDateSelect={setSelectedDate}
-                onTimeSelect={setSelectedTime}
-                isLoading={availabilityLoading}
-                subjectId={selectedSubject}
-              />
-            </CardContent>
-          </Card>
+        <div className="mt-8">
+          {renderStep()}
         </div>
-      </div>
 
-      {/* Submit Button */}
-      <div className="mt-6">
-        <Button type="submit" size="lg" className="w-full md:w-auto" onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Booking...
-            </>
+        <div className="flex justify-between items-center mt-8 max-w-2xl mx-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentStep === 1}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Previous
+          </Button>
+
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            Step {currentStep} of {totalSteps}
+          </div>
+
+          {currentStep < totalSteps ? (
+            <Button
+              type="button"
+              onClick={handleNext}
+              className="flex items-center gap-2 bg-[#e94b7f] hover:bg-[#d63d6f]"
+            >
+              Next
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           ) : (
-            "Book Trial Lesson"
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 bg-[#e94b7f] hover:bg-[#d63d6f]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Booking...
+                </>
+              ) : (
+                'Book Trial Lesson'
+              )}
+            </Button>
           )}
-        </Button>
+        </div>
       </div>
     </div>
   );
