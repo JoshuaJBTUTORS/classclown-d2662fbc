@@ -139,11 +139,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
 
           if (studentAuthError) {
             console.error('Student auth creation failed:', studentAuthError);
-            toast({
-              title: "Student created but login failed",
-              description: studentAuthError.message,
-              variant: "destructive"
-            });
+            toast.error("Student created but login failed: " + studentAuthError.message);
           } else if (studentAuthData.user) {
             // Link student account to student record
             const { error: linkError } = await supabase
@@ -153,42 +149,24 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
 
             if (linkError) {
               console.error('Failed to link student account:', linkError);
-              toast({
-                title: "Student created but linking failed",
-                description: "The student was created but the login account could not be linked.",
-                variant: "destructive"
-              });
+              toast.error("Student created but linking failed: The student was created but the login account could not be linked.");
             } else {
-              toast({
-                title: "Student created successfully!",
-                description: `Student account created with login credentials. Default password: ${data.studentPassword || DEFAULT_STUDENT_PASSWORD}`,
-              });
+              toast.success(`Student created successfully! Student account created with login credentials. Default password: ${data.studentPassword || DEFAULT_STUDENT_PASSWORD}`);
             }
           }
         } catch (error: any) {
           console.error('Error creating student login:', error);
-          toast({
-            title: "Student created but login failed",
-            description: error.message,
-            variant: "destructive"
-          });
+          toast.error("Student created but login failed: " + error.message);
         }
       } else {
-        toast({
-          title: "Student created successfully!",
-          description: "The student has been added to the system.",
-        });
+        toast.success("Student created successfully! The student has been added to the system.");
       }
 
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error('Error creating student:', error);
-      toast({
-        title: "Failed to create student",
-        description: error.message || "Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to create student: " + (error.message || "Please try again."));
     } finally {
       setLoading(false);
     }
