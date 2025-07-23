@@ -52,11 +52,11 @@ const TrialBookingConfirmation: React.FC = () => {
               <div className="space-y-2 text-sm text-blue-800">
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  <span>Call us: +44 (0) 20 1234 5678</span>
+                  <span>Call us: +44 01438582848</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  <span>Email: support@tutorplatform.com</span>
+                  <span>Email: enquiries@jb-tutors.com</span>
                 </div>
               </div>
             </div>
