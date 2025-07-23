@@ -110,7 +110,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
         phone: data.phone || null,
         grade: data.grade || null,
         subjects: data.subjects || null,
-        parent_id: data.parent_id || null,
+        parent_id: data.parent_id === "none" ? null : data.parent_id || null,
         status: 'active'
       };
 
@@ -197,9 +197,9 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Standalone Student (No Parent)</SelectItem>
+                      <SelectItem value="none">Standalone Student (No Parent)</SelectItem>
                       {loadingParents ? (
-                        <SelectItem value="" disabled>Loading parents...</SelectItem>
+                        <SelectItem value="loading" disabled>Loading parents...</SelectItem>
                       ) : (
                         parents.map((parent) => (
                           <SelectItem key={parent.id} value={parent.id}>
