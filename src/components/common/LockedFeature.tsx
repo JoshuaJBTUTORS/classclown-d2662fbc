@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lock, Calendar, BookOpen, Phone, Mail } from 'lucide-react';
@@ -8,15 +9,19 @@ interface LockedFeatureProps {
   featureName: string;
   featureIcon?: React.ReactNode;
   description: string;
-  onBookTrial: () => void;
 }
 
 const LockedFeature: React.FC<LockedFeatureProps> = ({
   featureName,
   featureIcon,
-  description,
-  onBookTrial
+  description
 }) => {
+  const navigate = useNavigate();
+
+  const handleBookTrial = () => {
+    navigate('/book-trial');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-primary/5 flex items-center justify-center p-6">
       <Card className="max-w-2xl w-full shadow-xl bg-white/90 backdrop-blur-sm border border-white/20">
@@ -46,7 +51,7 @@ const LockedFeature: React.FC<LockedFeatureProps> = ({
               Book a free trial lesson with one of our expert tutors to unlock all platform features including scheduling, homework management, and personalized learning plans.
             </p>
             <Button 
-              onClick={onBookTrial}
+              onClick={handleBookTrial}
               size="lg"
               className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-medium shadow-lg"
             >

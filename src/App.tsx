@@ -25,6 +25,7 @@ import Reports from './pages/Reports';
 import TimeOff from './pages/TimeOff';
 import TimeOffRequests from './pages/TimeOffRequests';
 import TrialBookings from './pages/TrialBookings';
+import TrialBooking from './pages/TrialBooking';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
 import LearningHub from './pages/LearningHub';
@@ -59,6 +60,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/interactive-signup" element={<InteractiveSignup />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/book-trial" element={<TrialBooking />} />
                 
                 {/* Protected routes */}
                 <Route

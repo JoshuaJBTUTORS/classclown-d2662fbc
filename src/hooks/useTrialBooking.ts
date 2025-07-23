@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
 interface TrialBookingData {
@@ -13,15 +14,15 @@ interface TrialBookingData {
 }
 
 export const useTrialBooking = () => {
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const openBookingModal = () => {
-    setIsBookingModalOpen(true);
+    navigate('/book-trial');
   };
 
   const closeBookingModal = () => {
-    setIsBookingModalOpen(false);
+    navigate(-1); // Go back to previous page
   };
 
   const submitTrialBooking = async (data: TrialBookingData) => {
@@ -36,7 +37,8 @@ export const useTrialBooking = () => {
         description: "We'll contact you within 24 hours to schedule your free trial lesson.",
       });
       
-      closeBookingModal();
+      // Navigate back to home or landing page after successful submission
+      navigate('/');
     } catch (error) {
       toast({
         title: "Error",
@@ -49,7 +51,6 @@ export const useTrialBooking = () => {
   };
 
   return {
-    isBookingModalOpen,
     isSubmitting,
     openBookingModal,
     closeBookingModal,

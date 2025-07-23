@@ -39,6 +39,10 @@ const LearningHub: React.FC = () => {
     retryDelay: 1000,
   });
 
+  const handleBookTrial = () => {
+    navigate('/book-trial');
+  };
+
   // Filter courses by stage, subject area, and search query
   const filteredCourses = courses?.filter((course: Course) => {
     // Stage filter
@@ -140,7 +144,28 @@ const LearningHub: React.FC = () => {
                 </div>
               </button>
               
-              {/* ... keep existing code (stage buttons) */}
+              {Object.entries(EDUCATIONAL_STAGES).slice(2).map(([key, stage]) => {
+                const IconComponent = getStageIcon(key);
+                return (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setActiveStage(key);
+                      setShowFilters(false);
+                    }}
+                    className={`w-full p-3 rounded-lg text-left transition-all duration-200 border ${
+                      activeStage === key
+                        ? 'bg-primary text-white border-transparent'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <IconComponent className="h-5 w-5" />
+                      <span className="font-medium">{stage.label}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -222,7 +247,11 @@ const LearningHub: React.FC = () => {
                       Explore our educational resources. Ready for personalized tutoring? Book a free trial lesson to unlock calendar and homework features.
                     </p>
                   </div>
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto mt-2 sm:mt-0">
+                  <Button 
+                    size="sm" 
+                    className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto mt-2 sm:mt-0"
+                    onClick={handleBookTrial}
+                  >
                     Book Trial Lesson
                   </Button>
                 </div>
