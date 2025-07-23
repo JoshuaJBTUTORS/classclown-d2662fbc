@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     },
     {
       icon: Users,
-      label: isParent ? 'My Children' : 'Students',
+      label: isParent ? 'My Children' : 'Clients',
       href: '/students',
       roles: ['admin', 'owner', 'parent'],
     },

@@ -330,8 +330,8 @@ const Students = () => {
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col md:flex-row items-center justify-between mb-6">
             <PageTitle 
-              title={isParent ? "My Children" : "Students"} 
-              subtitle={isParent ? "Manage your children's profiles" : "Manage student accounts and family relationships"}
+              title={isParent ? "My Children" : "Clients"} 
+              subtitle={isParent ? "Manage your children's profiles" : "Manage client accounts and family relationships"}
               className="mb-4 md:mb-0"
             />
             <div className="flex gap-2">
@@ -359,7 +359,7 @@ const Students = () => {
                     variant="outline"
                   >
                     <Plus className="h-4 w-4" />
-                    Add Student Only
+                    Add Client Only
                   </Button>
                 </>
               )}
@@ -369,11 +369,11 @@ const Students = () => {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <CardTitle>{isParent ? "Children" : "Student List"}</CardTitle>
+                <CardTitle>{isParent ? "Children" : "Client List"}</CardTitle>
                 <div className="relative w-full md:w-64">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search students or parents..."
+                    placeholder="Search clients or parents..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8"
@@ -385,7 +385,7 @@ const Students = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student Name</TableHead>
+                    <TableHead>Client Name</TableHead>
                     <TableHead className="hidden md:table-cell">Email</TableHead>
                     {!isParent && (
                       <TableHead className="hidden lg:table-cell">Parent</TableHead>
@@ -399,14 +399,14 @@ const Students = () => {
                   {isLoading ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-10">
-                        Loading students...
+                        Loading clients...
                       </TableCell>
                     </TableRow>
                   ) : filteredStudents.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-10">
-                        {searchQuery ? 'No students found matching your search.' : 
-                         isParent ? 'No children found.' : 'No students found. Add your first student to get started.'}
+                        {searchQuery ? 'No clients found matching your search.' : 
+                         isParent ? 'No children found.' : 'No clients found. Add your first client to get started.'}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -428,16 +428,6 @@ const Students = () => {
                             <div className="text-sm">
                               <div className="font-medium">
                                 {student.parentName}
-                                {(isAdmin || isOwner) && student.parent_id && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="ml-2 h-6 px-2 text-blue-600 hover:text-blue-800"
-                                    onClick={() => handleEditParentClick(student)}
-                                  >
-                                    Edit
-                                  </Button>
-                                )}
                               </div>
                               {student.parentEmail && (
                                 <div className="text-gray-500">{student.parentEmail}</div>
@@ -480,8 +470,13 @@ const Students = () => {
                                 View Profile
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditClick(student)}>
-                                Edit Profile
+                                Edit Client
                               </DropdownMenuItem>
+                              {(isAdmin || isOwner) && student.parent_id && (
+                                <DropdownMenuItem onClick={() => handleEditParentClick(student)}>
+                                  Edit Parent
+                                </DropdownMenuItem>
+                              )}
                               {(isAdmin || isOwner) && (
                                 <>
                                   <DropdownMenuSeparator />
@@ -489,7 +484,7 @@ const Students = () => {
                                     onClick={() => handleDeleteClick(student)}
                                     className="text-destructive focus:text-destructive"
                                   >
-                                    Delete Student
+                                    Delete Client
                                   </DropdownMenuItem>
                                 </>
                               )}
