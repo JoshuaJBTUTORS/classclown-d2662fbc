@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 interface CreateTrialBookingData {
   parent_name: string;
@@ -44,6 +45,56 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
     }
 
     console.log('Trial booking created successfully:', bookingData);
+
+    // Fetch subject name for emails
+    const { data: subjectData } = await supabase
+      .from('subjects')
+      .select('name')
+      .eq('id', data.subject_id)
+      .single();
+
+    const subjectName = subjectData?.name || 'Unknown Subject';
+    const formattedDate = format(new Date(data.preferred_date), 'EEEE, MMMM do, yyyy');
+
+    // Send confirmation email to parent (don't fail if email fails)
+    try {
+      await supabase.functions.invoke('send-trial-booking-confirmation', {
+        body: {
+          parentName: data.parent_name,
+          childName: data.child_name,
+          email: data.email,
+          subject: subjectName,
+          preferredDate: formattedDate,
+          preferredTime: data.preferred_time,
+          message: data.message,
+        }
+      });
+      console.log('Trial booking confirmation email sent');
+    } catch (emailError) {
+      console.error('Failed to send trial booking confirmation email:', emailError);
+      // Don't fail the booking creation if email fails
+    }
+
+    // Send sales notification email (don't fail if email fails)
+    try {
+      await supabase.functions.invoke('send-trial-sales-notification', {
+        body: {
+          parentName: data.parent_name,
+          childName: data.child_name,
+          email: data.email,
+          phone: data.phone,
+          subject: subjectName,
+          preferredDate: formattedDate,
+          preferredTime: data.preferred_time,
+          message: data.message,
+          bookingId: bookingData.id,
+        }
+      });
+      console.log('Trial sales notification email sent');
+    } catch (emailError) {
+      console.error('Failed to send trial sales notification email:', emailError);
+      // Don't fail the booking creation if email fails
+    }
 
     return {
       success: true,

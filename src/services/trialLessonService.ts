@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 import { addMinutes } from 'date-fns';
 
 interface CreateTrialLessonData {
@@ -134,6 +135,38 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       console.error('Booking update error:', updateError);
       // Don't throw here as the lesson was created successfully
       console.warn('Lesson created but booking status update failed:', updateError.message);
+    }
+
+    // Fetch trial booking details for parent email
+    const { data: bookingData } = await supabase
+      .from('trial_bookings')
+      .select('parent_name, child_name, email')
+      .eq('id', data.bookingId)
+      .single();
+
+    // Send trial lesson approval email to parent (don't fail if email fails)
+    if (bookingData && lessonData.lesson_space_space_id) {
+      try {
+        const studentLessonLink = `https://www.thelessonspace.com/space/${lessonData.lesson_space_space_id}`;
+        const formattedDate = format(startDateTime, 'EEEE, MMMM do, yyyy');
+        const formattedTime = format(startDateTime, 'h:mm a');
+
+        await supabase.functions.invoke('send-trial-lesson-approval', {
+          body: {
+            parentName: bookingData.parent_name,
+            childName: bookingData.child_name,
+            email: bookingData.email,
+            subject: subjectName,
+            lessonDate: formattedDate,
+            lessonTime: formattedTime,
+            studentLessonLink: studentLessonLink,
+          }
+        });
+        console.log('Trial lesson approval email sent');
+      } catch (emailError) {
+        console.error('Failed to send trial lesson approval email:', emailError);
+        // Don't fail the lesson creation if email fails
+      }
     }
 
     console.log('Trial lesson creation completed successfully');
