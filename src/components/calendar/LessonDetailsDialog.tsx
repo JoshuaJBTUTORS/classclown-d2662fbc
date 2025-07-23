@@ -19,7 +19,8 @@ import {
   CheckCircle,
   Circle,
   BookOpen,
-  Edit
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,8 @@ import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
+import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
+import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
 
 interface LessonDetailsDialogProps {
   lessonId: string | null;
@@ -53,6 +56,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isHomeworkDialogOpen, setIsHomeworkDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState({ allMarked: false, totalStudents: 0, markedCount: 0 });
   const [homeworkStatus, setHomeworkStatus] = useState({ exists: false, homework: null });
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
@@ -62,6 +67,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   // Check if user can edit lessons (admin/owner only)
   const canEditLesson = isAdmin || isOwner;
+
+  // Check if user can delete lessons (admin/owner only)
+  const canDeleteLesson = isAdmin || isOwner;
 
   // Check if this is a recurring instance
   const isRecurringInstance = Boolean(instanceDate && instanceStart && instanceEnd);
@@ -216,6 +224,27 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     setIsEditDialogOpen(false);
     onLessonUpdated?.();
     toast.success('Lesson updated successfully!');
+  };
+
+  const handleDeleteLesson = async (deleteScope: DeleteScope) => {
+    if (!lesson?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      if (deleteScope === DeleteScope.THIS_LESSON_ONLY) {
+        await lessonDeletionService.deleteSingleLesson(lesson.id);
+      } else {
+        await lessonDeletionService.deleteAllRecurringLessons(lesson.id);
+      }
+      
+      setIsDeleteDialogOpen(false);
+      onClose();
+      onLessonUpdated?.();
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (!lessonId) return null;
@@ -527,6 +556,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       Edit Lesson
                     </Button>
                   )}
+                  {canDeleteLesson && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      className="flex items-center gap-2 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Lesson
+                    </Button>
+                  )}
                   {isTeacherRole && (
                     <Button 
                       variant="outline" 
@@ -550,6 +589,20 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Lesson Dialog */}
+      {canDeleteLesson && lesson && (
+        <DeleteLessonDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={handleDeleteLesson}
+          lessonTitle={lesson.title}
+          isRecurring={lesson.is_recurring}
+          isRecurringInstance={lesson.is_recurring_instance}
+          lessonId={lesson.id}
+          isLoading={isDeleting}
+        />
+      )}
 
       {/* Edit Lesson Dialog - Only for admins/owners */}
       {canEditLesson && (
