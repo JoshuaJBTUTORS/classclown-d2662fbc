@@ -88,7 +88,6 @@ const Students = () => {
     setSidebarOpen(false);
   };
 
-  // Fetch students from Supabase with parent information
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
@@ -301,6 +300,24 @@ const Students = () => {
     setIsEditParentDialogOpen(false);
   };
 
+  // Helper function to get status badge variant and text
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'trial':
+        return (
+          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+            Trial
+          </Badge>
+        );
+      case 'active':
+        return <Badge variant="default">Active</Badge>;
+      case 'inactive':
+        return <Badge variant="secondary">Inactive</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
@@ -447,9 +464,7 @@ const Students = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
-                            {student.status === 'active' ? 'Active' : 'Inactive'}
-                          </Badge>
+                          {getStatusBadge(student.status)}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>

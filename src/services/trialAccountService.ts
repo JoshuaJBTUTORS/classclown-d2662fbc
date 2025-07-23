@@ -36,7 +36,7 @@ export const createTrialStudent = async (bookingData: TrialBookingData): Promise
         parent_id: null, // Standalone student - no parent
         account_type: 'trial',
         trial_status: 'pending',
-        status: 'active'
+        status: 'trial' // Set status to trial instead of active
       })
       .select()
       .single();
