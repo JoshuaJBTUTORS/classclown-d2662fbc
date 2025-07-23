@@ -2,10 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Clock, Calendar, Users } from 'lucide-react';
-import { format } from 'date-fns';
+import { Clock, Calendar as CalendarIcon, Users } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format, addDays, isBefore, isAfter } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface AggregatedTimeSlot {
   time: string;
@@ -33,6 +35,26 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   isLoading
 }) => {
   const availableSlots = slots.filter(slot => slot.available);
+  
+  // Calculate date restrictions
+  const today = new Date();
+  const minDate = addDays(today, 1); // Tomorrow (no same-day booking)
+  const maxDate = addDays(today, 7); // 7 days from today
+  
+  const selectedDateObj = selectedDate ? new Date(selectedDate) : undefined;
+  
+  // Helper function to check if a date is disabled
+  const isDateDisabled = (date: Date) => {
+    return isBefore(date, minDate) || isAfter(date, maxDate);
+  };
+  
+  // Handle date selection from calendar
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const dateString = format(date, 'yyyy-MM-dd');
+      onDateSelect(dateString);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -40,20 +62,52 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <CalendarIcon className="h-5 w-5" />
             Select Date
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Label htmlFor="preferredDate">Preferred Date *</Label>
-          <Input
-            id="preferredDate"
-            type="date"
-            value={selectedDate || ''}
-            onChange={(e) => onDateSelect(e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className="mt-2"
-          />
+          <Label htmlFor="dateSelector">Preferred Date *</Label>
+          <div className="mt-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? (
+                    format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDateObj}
+                  onSelect={handleDateSelect}
+                  disabled={isDateDisabled}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          {/* Booking restrictions info */}
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Booking Window:</strong> You can book lessons from tomorrow up to 7 days in advance.
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Available dates: {format(minDate, 'MMM d')} - {format(maxDate, 'MMM d')}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -79,12 +133,12 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
             </div>
           ) : !selectedDate ? (
             <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">Please select a date to see available times</p>
             </div>
           ) : availableSlots.length === 0 ? (
             <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No availability</h3>
               <p className="text-gray-500">
                 No tutors are available on {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
