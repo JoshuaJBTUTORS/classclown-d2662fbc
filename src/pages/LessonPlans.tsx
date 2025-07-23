@@ -37,7 +37,7 @@ const LessonPlans: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAdmin, isOwner } = useAuth();
+  const { isAdmin, isOwner, isTutor } = useAuth();
 
   const closeSidebar = () => {
     setSidebarOpen(false);
@@ -69,10 +69,10 @@ const LessonPlans: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isAdmin || isOwner) {
+    if (isAdmin || isOwner || isTutor) {
       fetchLessonPlans();
     }
-  }, [isAdmin, isOwner]);
+  }, [isAdmin, isOwner, isTutor]);
 
   useEffect(() => {
     filterPlans();
@@ -111,7 +111,7 @@ const LessonPlans: React.FC = () => {
     setFilteredPlans(filtered);
   };
 
-  if (!isAdmin && !isOwner) {
+  if (!isAdmin && !isOwner && !isTutor) {
     return (
       <div className="flex min-h-screen bg-background">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
