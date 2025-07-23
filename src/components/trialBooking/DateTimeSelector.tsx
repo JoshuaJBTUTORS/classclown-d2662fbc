@@ -1,13 +1,13 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Clock, Calendar as CalendarIcon, Users } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, Users, ArrowRight } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, addDays, isBefore, isAfter } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useNextAvailableDates } from '@/hooks/useNextAvailableDates';
 
 interface AggregatedTimeSlot {
   time: string;
@@ -24,6 +24,7 @@ interface DateTimeSelectorProps {
   onDateSelect: (date: string) => void;
   onTimeSelect: (time: string) => void;
   isLoading?: boolean;
+  subjectId?: string;
 }
 
 const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
@@ -32,9 +33,14 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   selectedTime,
   onDateSelect,
   onTimeSelect,
-  isLoading
+  isLoading,
+  subjectId
 }) => {
   const availableSlots = slots.filter(slot => slot.available);
+  const { nextAvailableDates, isLoading: loadingNextDates } = useNextAvailableDates(
+    subjectId, 
+    selectedDate
+  );
   
   // Calculate date restrictions
   const today = new Date();
@@ -137,12 +143,67 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
               <p className="text-gray-500">Please select a date to see available times</p>
             </div>
           ) : availableSlots.length === 0 ? (
-            <div className="text-center py-8">
-              <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No availability</h3>
-              <p className="text-gray-500">
-                No tutors are available on {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
-              </p>
+            <div className="space-y-6">
+              <div className="text-center py-4">
+                <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No availability</h3>
+                <p className="text-gray-500 mb-4">
+                  No tutors are available on {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
+                </p>
+              </div>
+
+              {/* Next Available Dates Suggestions */}
+              {loadingNextDates ? (
+                <div className="border-t pt-4">
+                  <p className="text-sm text-gray-600 mb-3">Finding next available dates...</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>
+                    ))}
+                  </div>
+                </div>
+              ) : nextAvailableDates.length > 0 ? (
+                <div className="border-t pt-4">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Try these available dates instead:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {nextAvailableDates.map((availableDate) => (
+                      <Button
+                        key={availableDate.date}
+                        variant="outline"
+                        className="h-auto p-4 flex flex-col items-start hover:border-[#e94b7f] hover:bg-[#e94b7f]/5 transition-colors"
+                        onClick={() => onDateSelect(availableDate.date)}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="text-left">
+                            <p className="font-medium text-gray-900">{availableDate.dayName}</p>
+                            <p className="text-sm text-gray-500">{availableDate.formattedDate}</p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <div className="flex items-center gap-1 mt-2 text-xs text-gray-600">
+                          <Users className="h-3 w-3" />
+                          <span>{availableDate.tutorCount} tutor{availableDate.tutorCount !== 1 ? 's' : ''}</span>
+                          <span className="text-gray-400">•</span>
+                          <span>{availableDate.availableSlots} slot{availableDate.availableSlots !== 1 ? 's' : ''}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t pt-4">
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      No availability found in the next 7 days.
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Please try selecting a different subject or contact us for assistance.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
