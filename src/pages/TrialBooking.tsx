@@ -18,7 +18,7 @@ interface FormData {
   childName: string;
   email: string;
   phone: string;
-  subject: string;
+  subject: { id: string; name: string } | null;
   date: string;
   time: string;
 }
@@ -30,7 +30,7 @@ const TrialBookingPage: React.FC = () => {
     childName: '',
     email: '',
     phone: '',
-    subject: '',
+    subject: null,
     date: '',
     time: ''
   });
@@ -44,11 +44,11 @@ const TrialBookingPage: React.FC = () => {
 
   // Only fetch availability when we have subject and are on step 3
   const { slots, isLoading: availabilityLoading } = useAggregatedAvailability(
-    currentStep === 3 && formData.subject ? formData.subject : undefined, 
+    currentStep === 3 && formData.subject ? formData.subject.id : undefined, 
     currentStep === 3 && formData.date ? formData.date : undefined
   );
 
-  const updateFormData = (field: string, value: string) => {
+  const updateFormData = (field: string, value: string | { id: string; name: string } | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -113,7 +113,7 @@ const TrialBookingPage: React.FC = () => {
         studentId: trialAccountResult.studentId,
         preferredDate: formData.date,
         preferredTime: formData.time,
-        subjectId: formData.subject,
+        subjectId: formData.subject?.id,
         approvedBy: 'system'
       });
 
@@ -166,7 +166,7 @@ const TrialBookingPage: React.FC = () => {
             onDateSelect={(date) => updateFormData('date', date)}
             onTimeSelect={(time) => updateFormData('time', time)}
             isLoading={availabilityLoading}
-            subjectId={formData.subject}
+            subjectId={formData.subject?.id}
           />
         );
       case 4:
