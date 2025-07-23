@@ -57,26 +57,26 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
         <CardHeader>
           <CardTitle className="text-lg">Booking Summary</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-gray-500" />
-            <div>
-              <p className="text-sm font-medium">Subject</p>
-              <p className="text-sm text-gray-600">{selectedSubject?.name}</p>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-start gap-3 space-y-1">
+            <BookOpen className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium">Subject</h4>
+              <p className="text-sm text-muted-foreground">{selectedSubject?.name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-500" />
-            <div>
-              <p className="text-sm font-medium">Date</p>
-              <p className="text-sm text-gray-600">{formatDate(selectedDate)}</p>
+          <div className="flex items-start gap-3 space-y-1">
+            <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium">Date</h4>
+              <p className="text-sm text-muted-foreground">{formatDate(selectedDate)}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-500" />
-            <div>
-              <p className="text-sm font-medium">Time</p>
-              <p className="text-sm text-gray-600">{formatTime(selectedTime)}</p>
+          <div className="flex items-start gap-3 space-y-1">
+            <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium">Time</h4>
+              <p className="text-sm text-muted-foreground">{formatTime(selectedTime)}</p>
             </div>
           </div>
         </CardContent>
