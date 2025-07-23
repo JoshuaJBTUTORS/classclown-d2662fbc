@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Parent } from '@/types/parent';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -33,49 +34,53 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface AddStudentFormProps {
+interface AddStudentToParentFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  preselectedParentId?: string;
 }
 
 const formSchema = z.object({
-  first_name: z.string().min(2, { message: "Student's first name must be at least 2 characters." }),
-  last_name: z.string().min(2, { message: "Student's last name must be at least 2 characters." }),
+  parent_id: z.string().min(1, { message: "Please select a parent." }),
+  first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
+  last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email format." }).optional().or(z.literal("")),
   phone: z.string().optional(),
   grade: z.string().optional(),
   subjects: z.string().optional(),
-  parent_id: z.string().optional(),
   createStudentLogin: z.boolean().default(false),
-  studentPassword: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 const DEFAULT_STUDENT_PASSWORD = 'jbtutors123!';
 
-const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSuccess }) => {
+const AddStudentToParentForm: React.FC<AddStudentToParentFormProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  preselectedParentId 
+}) => {
   const [loading, setLoading] = useState(false);
-  const [parents, setParents] = useState<any[]>([]);
-  const [loadingParents, setLoadingParents] = useState(false);
+  const [parents, setParents] = useState<Parent[]>([]);
+  const [loadingParents, setLoadingParents] = useState(true);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      parent_id: preselectedParentId || "",
       first_name: "",
       last_name: "",
       email: "",
       phone: "",
       grade: "",
       subjects: "",
-      parent_id: "",
       createStudentLogin: false,
-      studentPassword: DEFAULT_STUDENT_PASSWORD,
     },
   });
 
-  // Fetch parents when dialog opens
+  // Fetch parents
   useEffect(() => {
     if (isOpen) {
       fetchParents();
@@ -94,6 +99,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
       setParents(data || []);
     } catch (error: any) {
       console.error('Error fetching parents:', error);
+      toast.error('Failed to load parents');
     } finally {
       setLoadingParents(false);
     }
@@ -103,20 +109,18 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
     setLoading(true);
     try {
       // Create student record
-      const studentData = {
-        first_name: data.first_name,
-        last_name: data.last_name,
-        email: data.email || null,
-        phone: data.phone || null,
-        grade: data.grade || null,
-        subjects: data.subjects || null,
-        parent_id: data.parent_id || null,
-        status: 'active'
-      };
-
-      const { data: createdStudent, error: studentError } = await supabase
+      const { data: studentData, error: studentError } = await supabase
         .from('students')
-        .insert(studentData)
+        .insert({
+          parent_id: data.parent_id,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          email: data.email || null,
+          phone: data.phone || null,
+          grade: data.grade || null,
+          subjects: data.subjects || null,
+          status: 'active'
+        })
         .select()
         .single();
 
@@ -127,7 +131,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
         try {
           const { data: studentAuthData, error: studentAuthError } = await supabase.auth.signUp({
             email: data.email,
-            password: data.studentPassword || DEFAULT_STUDENT_PASSWORD,
+            password: DEFAULT_STUDENT_PASSWORD,
             options: {
               data: {
                 first_name: data.first_name,
@@ -139,56 +143,34 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
 
           if (studentAuthError) {
             console.error('Student auth creation failed:', studentAuthError);
-            toast({
-              title: "Student created but login failed",
-              description: studentAuthError.message,
-              variant: "destructive"
-            });
+            toast.error(`Student created but login account failed: ${studentAuthError.message}`);
           } else if (studentAuthData.user) {
             // Link student account to student record
             const { error: linkError } = await supabase
               .from('students')
               .update({ user_id: studentAuthData.user.id })
-              .eq('id', createdStudent.id);
+              .eq('id', studentData.id);
 
             if (linkError) {
               console.error('Failed to link student account:', linkError);
-              toast({
-                title: "Student created but linking failed",
-                description: "The student was created but the login account could not be linked.",
-                variant: "destructive"
-              });
+              toast.error('Student created but failed to link login account');
             } else {
-              toast({
-                title: "Student created successfully!",
-                description: `Student account created with login credentials. Default password: ${data.studentPassword || DEFAULT_STUDENT_PASSWORD}`,
-              });
+              toast.success(`Student created with login account! Default password: ${DEFAULT_STUDENT_PASSWORD}`);
             }
           }
         } catch (error: any) {
           console.error('Error creating student login:', error);
-          toast({
-            title: "Student created but login failed",
-            description: error.message,
-            variant: "destructive"
-          });
+          toast.error(`Student created but login account failed: ${error.message}`);
         }
       } else {
-        toast({
-          title: "Student created successfully!",
-          description: "The student has been added to the system.",
-        });
+        toast.success('Student added successfully!');
       }
 
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error('Error creating student:', error);
-      toast({
-        title: "Failed to create student",
-        description: error.message || "Please try again.",
-        variant: "destructive"
-      });
+      toast.error(error.message || 'Failed to create student');
     } finally {
       setLoading(false);
     }
@@ -198,10 +180,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New Student</DialogTitle>
-          <DialogDescription>
-            Create a new student account. You can optionally link them to an existing parent.
-          </DialogDescription>
+          <DialogTitle>Add Student to Parent</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
@@ -211,17 +190,18 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
               name="parent_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Parent (Optional)</FormLabel>
+                  <FormLabel>Parent *</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a parent or leave empty for standalone student" />
+                        <SelectValue placeholder="Select a parent" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Standalone Student (No Parent)</SelectItem>
                       {loadingParents ? (
                         <SelectItem value="" disabled>Loading parents...</SelectItem>
+                      ) : parents.length === 0 ? (
+                        <SelectItem value="" disabled>No parents found</SelectItem>
                       ) : (
                         parents.map((parent) => (
                           <SelectItem key={parent.id} value={parent.id}>
@@ -340,28 +320,12 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
                       Create student login account
                     </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      Student will get login credentials to access the system.
+                      Student will get login credentials (default password: <strong>{DEFAULT_STUDENT_PASSWORD}</strong>)
                     </p>
                   </div>
                 </FormItem>
               )}
             />
-
-            {form.watch('createStudentLogin') && (
-              <FormField
-                control={form.control}
-                name="studentPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Student Password</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter password" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
 
             <DialogFooter>
               <Button
@@ -373,7 +337,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Student"}
+                {loading ? "Adding..." : "Add Student"}
               </Button>
             </DialogFooter>
           </form>
@@ -383,4 +347,4 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
   );
 };
 
-export default AddStudentForm;
+export default AddStudentToParentForm;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -36,6 +35,8 @@ import ViewStudentProfile from '@/components/students/ViewStudentProfile';
 import { Student } from '@/types/student';
 import AddStudentForm from '@/components/students/AddStudentForm';
 import AddParentStudentForm from '@/components/students/AddParentStudentForm';
+import AddStudentToParentForm from '@/components/students/AddStudentToParentForm';
+import EditParentForm from '@/components/parents/EditParentForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentDataService } from '@/services/studentDataService';
@@ -47,11 +48,14 @@ const Students = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddFamilyDialogOpen, setIsAddFamilyDialogOpen] = useState(false);
+  const [isAddToParentDialogOpen, setIsAddToParentDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedParent, setSelectedParent] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditParentDialogOpen, setIsEditParentDialogOpen] = useState(false);
   
   // Responsive sidebar state - start closed on mobile, open on desktop
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -266,9 +270,35 @@ const Students = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleEditParentClick = (student: Student) => {
+    // Create a parent object from the student's parent data
+    if (student.parent_id) {
+      const parentData = {
+        id: student.parent_id,
+        user_id: '', // We'll need to fetch this if needed
+        first_name: student.parentName?.split(' ')[0] || '',
+        last_name: student.parentName?.split(' ').slice(1).join(' ') || '',
+        email: student.parentEmail || '',
+        phone: student.parentPhone || '',
+        billing_address: '',
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
+        created_at: '',
+        updated_at: '',
+      };
+      setSelectedParent(parentData);
+      setIsEditParentDialogOpen(true);
+    }
+  };
+
   const handleStudentUpdated = (updatedStudent: Student) => {
     fetchStudents();
     setIsEditDialogOpen(false);
+  };
+
+  const handleParentUpdated = (updatedParent: any) => {
+    fetchStudents();
+    setIsEditParentDialogOpen(false);
   };
 
   return (
@@ -297,6 +327,14 @@ const Students = () => {
                   >
                     <Plus className="h-4 w-4" />
                     Add Family
+                  </Button>
+                  <Button 
+                    onClick={() => setIsAddToParentDialogOpen(true)} 
+                    className="flex items-center gap-2"
+                    variant="outline"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add to Parent
                   </Button>
                   <Button 
                     onClick={() => setIsAddDialogOpen(true)} 
@@ -371,7 +409,19 @@ const Students = () => {
                         {!isParent && (
                           <TableCell className="hidden lg:table-cell">
                             <div className="text-sm">
-                              <div className="font-medium">{student.parentName}</div>
+                              <div className="font-medium">
+                                {student.parentName}
+                                {(isAdmin || isOwner) && student.parent_id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-2 h-6 px-2 text-blue-600 hover:text-blue-800"
+                                    onClick={() => handleEditParentClick(student)}
+                                  >
+                                    Edit
+                                  </Button>
+                                )}
+                              </div>
                               {student.parentEmail && (
                                 <div className="text-gray-500">{student.parentEmail}</div>
                               )}
@@ -457,6 +507,22 @@ const Students = () => {
                   setIsAddFamilyDialogOpen(false);
                   fetchStudents();
                 }}
+              />
+
+              <AddStudentToParentForm 
+                isOpen={isAddToParentDialogOpen} 
+                onClose={() => setIsAddToParentDialogOpen(false)}
+                onSuccess={() => {
+                  setIsAddToParentDialogOpen(false);
+                  fetchStudents();
+                }}
+              />
+
+              <EditParentForm
+                parent={selectedParent}
+                isOpen={isEditParentDialogOpen}
+                onClose={() => setIsEditParentDialogOpen(false)}
+                onUpdate={handleParentUpdated}
               />
 
               <DeleteStudentDialog
