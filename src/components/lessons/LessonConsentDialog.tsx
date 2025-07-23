@@ -85,29 +85,31 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
             </CardContent>
           </Card>
 
-          {/* Consent Information */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          {/* Updated Camera Rules */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="space-y-3">
-                <h4 className="font-medium text-amber-800">
-                  Camera & Microphone Requirements
+                <h4 className="font-medium text-red-800">
+                  Important: Camera & Microphone Requirements
                 </h4>
-                <div className="text-sm text-amber-700 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Camera className="h-4 w-4" />
-                    <span>Your camera must remain on throughout the lesson</span>
+                <div className="text-sm text-red-700 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Camera className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>
+                      <strong>Please ensure your camera is working and remains on for the entire duration of the lesson</strong>, unless previously agreed upon with your instructor.
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mic className="h-4 w-4" />
-                    <span>Your microphone must remain on unless instructed otherwise by your teacher</span>
+                  <div className="flex items-start gap-2">
+                    <Mic className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>Your microphone should be ready to use when called upon by your teacher.</span>
+                  </div>
+                  <div className="bg-red-100 p-3 rounded border border-red-300">
+                    <p className="text-sm text-red-800 font-medium">
+                      ⚠️ <strong>Important Notice:</strong> Failure to comply with the camera policy may result in removal from the lesson.
+                    </p>
                   </div>
                 </div>
-                <p className="text-sm text-amber-700">
-                  <strong>By joining this lesson, you acknowledge and agree to these requirements.</strong>
-                  <br />
-                  Your teacher may provide specific instructions during the lesson about when to mute/unmute.
-                </p>
               </div>
             </div>
           </div>
@@ -117,7 +119,7 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
             <p className="text-sm text-blue-800">
               <strong>Welcome, {studentName}!</strong>
               <br />
-              Click "I Accept & Join Lesson" below to proceed to your lesson space.
+              By clicking "I Accept & Join Lesson" below, you confirm that you understand and agree to follow the camera and microphone requirements.
             </p>
           </div>
 
