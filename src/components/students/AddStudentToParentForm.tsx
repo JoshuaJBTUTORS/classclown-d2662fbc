@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -199,9 +198,9 @@ const AddStudentToParentForm: React.FC<AddStudentToParentFormProps> = ({
                     </FormControl>
                     <SelectContent>
                       {loadingParents ? (
-                        <SelectItem value="" disabled>Loading parents...</SelectItem>
+                        <SelectItem value="loading" disabled>Loading parents...</SelectItem>
                       ) : parents.length === 0 ? (
-                        <SelectItem value="" disabled>No parents found</SelectItem>
+                        <SelectItem value="no-parents" disabled>No parents found</SelectItem>
                       ) : (
                         parents.map((parent) => (
                           <SelectItem key={parent.id} value={parent.id}>
