@@ -39,19 +39,10 @@ const handler = async (req: Request): Promise<Response> => {
     const dateStr = targetDate.toISOString().split('T')[0];
     console.log(`Target date: ${dateStr}`);
 
-    // Query trial lessons with booking info
+    // Query trial lessons for the target date
     const { data: lessons, error: lessonsError } = await supabase
       .from('lessons')
-      .select(`
-        *,
-        trial_booking:trial_bookings!trial_booking_id (
-          id,
-          parent_name,
-          child_name,
-          email,
-          phone
-        )
-      `)
+      .select('*')
       .eq('lesson_type', 'trial')
       .gte('start_time', `${dateStr}T00:00:00`)
       .lt('start_time', `${dateStr}T23:59:59`)
@@ -82,10 +73,15 @@ const handler = async (req: Request): Promise<Response> => {
     // Process each trial lesson
     for (const lesson of lessons) {
       try {
-        const trialBooking = lesson.trial_booking;
+        // Fetch the trial booking data separately
+        const { data: trialBooking, error: bookingError } = await supabase
+          .from('trial_bookings')
+          .select('id, parent_name, child_name, email, phone')
+          .eq('id', lesson.trial_booking_id)
+          .single();
 
-        if (!trialBooking || !trialBooking.email) {
-          console.warn(`No trial booking email found for lesson ${lesson.id}`);
+        if (bookingError || !trialBooking || !trialBooking.email) {
+          console.warn(`No trial booking email found for lesson ${lesson.id}:`, bookingError);
           continue;
         }
 
