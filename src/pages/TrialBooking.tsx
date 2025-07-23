@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ interface FormData {
   subject: { id: string; name: string } | null;
   date: string;
   time: string;
+  selectedTutorId: string;
 }
 
 const TrialBookingPage: React.FC = () => {
@@ -31,7 +31,8 @@ const TrialBookingPage: React.FC = () => {
     phone: '',
     subject: null,
     date: '',
-    time: ''
+    time: '',
+    selectedTutorId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,10 +42,10 @@ const TrialBookingPage: React.FC = () => {
   const stepLabels = ['Subject', 'Date & Time', 'Contact'];
   const totalSteps = stepLabels.length;
 
-  // Only fetch availability when we have subject and are on step 2
+  // Keep availability data loaded when we have subject and date, regardless of current step
   const { slots, isLoading: availabilityLoading } = useAggregatedAvailability(
-    currentStep === 2 && formData.subject ? formData.subject.id : undefined, 
-    currentStep === 2 && formData.date ? formData.date : undefined
+    formData.subject ? formData.subject.id : undefined, 
+    formData.date ? formData.date : undefined
   );
 
   const updateFormData = (field: string, value: string | { id: string; name: string } | null) => {
@@ -53,6 +54,17 @@ const TrialBookingPage: React.FC = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  // Enhanced time selection handler to store tutor ID
+  const handleTimeSelect = (time: string) => {
+    const selectedSlot = slots.find(slot => slot.time === time);
+    const tutorId = selectedSlot?.availableTutorIds[0] || '';
+    
+    console.log('Selected time slot:', { time, selectedSlot, tutorId });
+    
+    updateFormData('time', time);
+    updateFormData('selectedTutorId', tutorId);
   };
 
   const validateStep = (step: number): boolean => {
@@ -65,12 +77,14 @@ const TrialBookingPage: React.FC = () => {
       case 2:
         if (!formData.date) newErrors.date = 'Please select a date';
         if (!formData.time) newErrors.time = 'Please select a time';
+        if (!formData.selectedTutorId) newErrors.selectedTutorId = 'No tutor available for selected time';
         break;
       case 3:
         if (!formData.parentName.trim()) newErrors.parentName = 'Parent name is required';
         if (!formData.childName.trim()) newErrors.childName = 'Child name is required';
         if (!formData.email.trim()) newErrors.email = 'Email is required';
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
+        if (!formData.selectedTutorId) newErrors.selectedTutorId = 'No tutor selected for the lesson';
         break;
     }
 
@@ -91,6 +105,8 @@ const TrialBookingPage: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
 
+    console.log('Submitting trial booking with data:', formData);
+
     setIsSubmitting(true);
     try {
       // Create trial student account
@@ -105,10 +121,10 @@ const TrialBookingPage: React.FC = () => {
         throw new Error(trialAccountResult.error || 'Failed to create trial student account.');
       }
 
-      // Create trial lesson
+      // Create trial lesson using the stored tutor ID
       const trialLessonResult = await createTrialLesson({
         bookingId: 'trial-booking-' + Date.now(),
-        tutorId: slots.find(slot => slot.time === formData.time)?.availableTutorIds[0] || '',
+        tutorId: formData.selectedTutorId,
         studentId: trialAccountResult.studentId,
         preferredDate: formData.date,
         preferredTime: formData.time,
@@ -155,7 +171,7 @@ const TrialBookingPage: React.FC = () => {
             selectedDate={formData.date}
             selectedTime={formData.time}
             onDateSelect={(date) => updateFormData('date', date)}
-            onTimeSelect={(time) => updateFormData('time', time)}
+            onTimeSelect={handleTimeSelect}
             isLoading={availabilityLoading}
             subjectId={formData.subject?.id}
           />
