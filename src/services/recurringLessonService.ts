@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
 
@@ -31,6 +32,17 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
     isInfinite,
     selectedStudents
   } = data;
+
+  // Fetch the original lesson to get room details
+  const { data: originalLesson, error: originalLessonError } = await supabase
+    .from('lessons')
+    .select('lesson_space_room_id, lesson_space_room_url, lesson_space_space_id')
+    .eq('id', originalLessonId)
+    .single();
+
+  if (originalLessonError) {
+    console.error('Error fetching original lesson room details:', originalLessonError);
+  }
 
   const instances = [];
   const lessonDuration = endTime.getTime() - startTime.getTime();
@@ -82,13 +94,17 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
         recurrence_interval: null,
         recurrence_end_date: null,
         recurrence_day: null,
+        // Inherit room details from original lesson
+        lesson_space_room_id: originalLesson?.lesson_space_room_id || null,
+        lesson_space_room_url: originalLesson?.lesson_space_room_url || null,
+        lesson_space_space_id: originalLesson?.lesson_space_space_id || null,
       });
 
       instanceCount++;
     }
   }
 
-  console.log(`Generated ${instances.length} recurring lesson instances`);
+  console.log(`Generated ${instances.length} recurring lesson instances with inherited room details`);
 
   // Insert all instances at once
   if (instances.length > 0) {

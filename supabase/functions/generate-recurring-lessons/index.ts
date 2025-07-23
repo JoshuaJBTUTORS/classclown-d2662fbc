@@ -55,25 +55,7 @@ serve(async (req) => {
           continue;
         }
 
-        // Get the most recent lesson instance to use as a template
-        // This ensures we use the latest changes applied to the recurring series
-        const { data: recentInstance, error: recentError } = await supabase
-          .from('lessons')
-          .select('*')
-          .eq('parent_lesson_id', originalLesson.id)
-          .eq('is_recurring_instance', true)
-          .order('start_time', { ascending: false })
-          .limit(1)
-          .single();
-
-        // Use the most recent instance if available, otherwise fall back to original
-        const templateLesson = recentInstance || originalLesson;
-        
-        if (recentError && recentError.code !== 'PGRST116') {
-          console.error(`Failed to get recent instance for group ${group.id}:`, recentError);
-        }
-
-        console.log(`Using template lesson: ${templateLesson.id} (${recentInstance ? 'recent instance' : 'original lesson'})`);
+        console.log(`Using original lesson as template: ${originalLesson.id}`);
 
         // Get students for the original lesson (students list doesn't change)
         const { data: lessonStudents, error: studentsError } = await supabase
@@ -86,16 +68,10 @@ serve(async (req) => {
           continue;
         }
 
-        // Calculate the time difference between template and original for pattern preservation
-        const templateStartTime = new Date(templateLesson.start_time);
-        const originalStartTime = new Date(originalLesson.start_time);
-        const timeDifference = templateStartTime.getTime() - originalStartTime.getTime();
-        
         // Generate next batch of instances (20 at a time)
         const instances = [];
         const lastGeneratedDate = new Date(group.instances_generated_until);
-        const recurrencePattern = group.recurrence_pattern as any;
-        const lessonDuration = new Date(templateLesson.end_time).getTime() - new Date(templateLesson.start_time).getTime();
+        const lessonDuration = new Date(originalLesson.end_time).getTime() - new Date(originalLesson.start_time).getTime();
 
         let currentDate = new Date(lastGeneratedDate);
         let instanceCount = 0;
@@ -124,18 +100,17 @@ serve(async (req) => {
           }
 
           if (currentDate <= endDate) {
-            // Apply the time difference from template to maintain pattern
-            const instanceStartTime = new Date(currentDate.getTime() + timeDifference);
+            const instanceStartTime = new Date(currentDate);
             const instanceEndTime = new Date(instanceStartTime.getTime() + lessonDuration);
 
             instances.push({
-              title: templateLesson.title,
-              description: templateLesson.description || '',
-              subject: templateLesson.subject,
-              tutor_id: templateLesson.tutor_id,
+              title: originalLesson.title,
+              description: originalLesson.description || '',
+              subject: originalLesson.subject,
+              tutor_id: originalLesson.tutor_id,
               start_time: instanceStartTime.toISOString(),
               end_time: instanceEndTime.toISOString(),
-              is_group: templateLesson.is_group,
+              is_group: originalLesson.is_group,
               status: 'scheduled',
               is_recurring: false,
               is_recurring_instance: true,
@@ -144,10 +119,10 @@ serve(async (req) => {
               recurrence_interval: null,
               recurrence_end_date: null,
               recurrence_day: null,
-              // Inherit room details from template lesson
-              lesson_space_room_id: templateLesson.lesson_space_room_id,
-              lesson_space_room_url: templateLesson.lesson_space_room_url,
-              lesson_space_space_id: templateLesson.lesson_space_space_id,
+              // Always inherit room details from original lesson
+              lesson_space_room_id: originalLesson.lesson_space_room_id,
+              lesson_space_room_url: originalLesson.lesson_space_room_url,
+              lesson_space_space_id: originalLesson.lesson_space_space_id,
             });
 
             instanceCount++;
@@ -155,7 +130,7 @@ serve(async (req) => {
         }
 
         if (instances.length > 0) {
-          console.log(`Generating ${instances.length} instances for ${group.group_name}`);
+          console.log(`Generating ${instances.length} instances for ${group.group_name} with inherited room details`);
 
           // Insert lesson instances
           const { data: insertedLessons, error: lessonsError } = await supabase
@@ -218,7 +193,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Generated ${totalInstancesGenerated} lesson instances`,
+        message: `Generated ${totalInstancesGenerated} lesson instances with inherited room details`,
         groupsProcessed: recurringGroups?.length || 0,
         totalInstancesGenerated
       }),

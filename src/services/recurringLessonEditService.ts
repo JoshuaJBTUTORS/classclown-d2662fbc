@@ -274,21 +274,27 @@ export const updateAllFutureLessons = async (
   
   // Update the parent lesson
   const parentUpdateData = applyChangesToInstance(originalParentLesson, changes);
+  let newRoomData = null;
+  
+  // If tutor changed, create new room for parent lesson
+  if (changes.tutorChanged) {
+    console.log('Tutor changed, creating new LessonSpace room for parent lesson');
+    newRoomData = await createNewLessonSpaceRoom(parentLessonId);
+    if (newRoomData) {
+      parentUpdateData.lesson_space_room_id = newRoomData.roomId;
+      parentUpdateData.lesson_space_room_url = newRoomData.roomUrl;
+      parentUpdateData.lesson_space_space_id = newRoomData.spaceId;
+    } else {
+      console.warn('Failed to create new room for parent lesson after tutor change');
+    }
+  }
+  
   const { error: parentError } = await supabase
     .from('lessons')
     .update(parentUpdateData)
     .eq('id', parentLessonId);
   
   if (parentError) throw parentError;
-  
-  // If tutor changed, create new room for parent lesson
-  if (changes.tutorChanged) {
-    console.log('Tutor changed, creating new LessonSpace room for parent lesson');
-    const roomData = await createNewLessonSpaceRoom(parentLessonId);
-    if (!roomData) {
-      console.warn('Failed to create new room for parent lesson after tutor change');
-    }
-  }
   
   // Get all future instances to update
   const { data: futureInstances, error: instancesError } = await supabase
@@ -307,6 +313,13 @@ export const updateAllFutureLessons = async (
     for (const instance of futureInstances) {
       const instanceUpdateData = applyChangesToInstance(instance, changes);
       
+      // If tutor changed and we have new room data, apply it to all instances
+      if (changes.tutorChanged && newRoomData) {
+        instanceUpdateData.lesson_space_room_id = newRoomData.roomId;
+        instanceUpdateData.lesson_space_room_url = newRoomData.roomUrl;
+        instanceUpdateData.lesson_space_space_id = newRoomData.spaceId;
+      }
+      
       const { error: updateError } = await supabase
         .from('lessons')
         .update(instanceUpdateData)
@@ -315,15 +328,6 @@ export const updateAllFutureLessons = async (
       if (updateError) {
         console.error(`Failed to update instance ${instance.id}:`, updateError);
         continue;
-      }
-      
-      // If tutor changed, create new room for this instance
-      if (changes.tutorChanged) {
-        console.log(`Creating new LessonSpace room for instance ${instance.id}`);
-        const roomData = await createNewLessonSpaceRoom(instance.id);
-        if (!roomData) {
-          console.warn(`Failed to create new room for instance ${instance.id} after tutor change`);
-        }
       }
       
       updatedCount++;
@@ -380,7 +384,7 @@ export const updateAllFutureLessons = async (
     }
   }
   
-  console.log(`Successfully updated ${updatedCount} lessons`);
+  console.log(`Successfully updated ${updatedCount} lessons with room details`);
   return updatedCount;
 };
 
