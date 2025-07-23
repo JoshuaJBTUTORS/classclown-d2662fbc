@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -56,7 +55,7 @@ interface AssignHomeworkDialogProps {
     attachment_type?: string;
   };
   preSelectedLessonId?: string;
-  preloadedLessonData?: any; // Add the new prop here
+  preloadedLessonData?: any;
 }
 
 interface Lesson {
@@ -103,6 +102,27 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       attachment: undefined,
     },
   });
+
+  const sendHomeworkNotification = async (homeworkId: string) => {
+    try {
+      console.log('Sending homework notification for:', homeworkId);
+      
+      const { data, error } = await supabase.functions.invoke('send-homework-notification', {
+        body: { homeworkId }
+      });
+
+      if (error) {
+        console.error('Error sending homework notification:', error);
+        toast.error('Homework assigned but failed to send notifications');
+      } else {
+        console.log('Homework notification sent successfully:', data);
+        toast.success('Homework assigned and notifications sent!');
+      }
+    } catch (error) {
+      console.error('Error invoking homework notification function:', error);
+      toast.error('Homework assigned but failed to send notifications');
+    }
+  };
 
   // Effect to set preSelectedLessonId when it changes
   useEffect(() => {
@@ -281,7 +301,13 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       }
       
       console.log(isEditing ? "Homework updated successfully:" : "Homework created successfully:", insertData);
-      toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
+      
+      // Send notification emails only for new homework (not when editing)
+      if (!isEditing && insertData && insertData[0]) {
+        await sendHomeworkNotification(insertData[0].id);
+      } else {
+        toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
+      }
       
       onSuccess?.();
       onClose();

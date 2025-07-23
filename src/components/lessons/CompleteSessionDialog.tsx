@@ -120,6 +120,25 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     }
   }, [lesson, form, homeworkData, skipHomeworkStep]);
 
+  const sendHomeworkNotification = async (homeworkId: string) => {
+    try {
+      console.log('Sending homework notification for:', homeworkId);
+      
+      const { data, error } = await supabase.functions.invoke('send-homework-notification', {
+        body: { homeworkId }
+      });
+
+      if (error) {
+        console.error('Error sending homework notification:', error);
+        // Don't show error toast here as it might be confusing in the context of session completion
+      } else {
+        console.log('Homework notification sent successfully:', data);
+      }
+    } catch (error) {
+      console.error('Error invoking homework notification function:', error);
+    }
+  };
+
   const fetchLessonDetails = async (id: string) => {
     try {
       setLoading(true);
@@ -219,23 +238,29 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
 
         console.log('Processing student attendance and homework');
         // 2. Process each student's data
-        const studentUpdates = data.students.map(async (student) => {
+        const homeworkPromises = data.students.map(async (student) => {
           console.log(`Processing student ${student.id}: ${student.attendance}`);
 
           // Add the homework to the homework table if it was provided
           if (student.homework) {
             try {
-              const { error: homeworkError } = await supabase
+              const { error: homeworkError, data: homeworkData } = await supabase
                 .from('homework')
                 .insert({
                   lesson_id: lessonId,
                   title: `${lesson.title} Homework - ${student.first_name} ${student.last_name}`,
                   description: student.homework,
-                });
+                })
+                .select();
               
               if (homeworkError) {
                 console.error('Error adding homework:', homeworkError);
                 throw homeworkError;
+              }
+
+              // Send notification for the homework if it was created successfully
+              if (homeworkData && homeworkData[0]) {
+                await sendHomeworkNotification(homeworkData[0].id);
               }
             } catch (homeworkError) {
               console.error('Error saving homework:', homeworkError);
@@ -249,7 +274,7 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
           }
         });
 
-        await Promise.all(studentUpdates);
+        await Promise.all(homeworkPromises);
 
         toast.success('Session completed successfully!');
         
