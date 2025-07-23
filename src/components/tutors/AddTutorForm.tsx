@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -54,7 +54,7 @@ const formSchema = z.object({
   bio: z.string().optional(),
   education: z.string().optional(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
-  absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
+  absence_hourly_rate: z.number().optional(), // No validation as it's auto-calculated
   createAccount: z.boolean().default(false),
   sendInvite: z.boolean().default(false),
   availability: z.array(z.object({
@@ -85,12 +85,23 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
       bio: "",
       education: "",
       normal_hourly_rate: 25.00,
-      absence_hourly_rate: 12.50,
+      absence_hourly_rate: 6.25, // (25.00 / 60) * 15
       createAccount: false,
       sendInvite: false,
       availability: []
     },
   });
+
+  // Auto-calculate absence hourly rate when normal hourly rate changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'normal_hourly_rate' && value.normal_hourly_rate !== undefined) {
+        const calculatedRate = Number(((value.normal_hourly_rate / 60) * 15).toFixed(2));
+        form.setValue('absence_hourly_rate', calculatedRate);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   // Functions for availability management
   const addAvailabilitySlot = () => {
@@ -646,11 +657,16 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                           type="number" 
                           step="0.01" 
                           min="0" 
-                          placeholder="12.50" 
+                          placeholder="6.25" 
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          disabled
+                          className="bg-muted text-muted-foreground cursor-not-allowed"
+                          title="Auto-calculated: (Normal Rate ÷ 60) × 15"
                         />
                       </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Auto-calculated based on normal hourly rate
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

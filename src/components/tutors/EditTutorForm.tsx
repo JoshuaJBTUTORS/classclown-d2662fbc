@@ -52,7 +52,7 @@ const formSchema = z.object({
   bio: z.string().optional(),
   status: z.string(),
   normal_hourly_rate: z.number().min(0, { message: "Hourly rate must be positive." }),
-  absence_hourly_rate: z.number().min(0, { message: "Absence rate must be positive." }),
+  absence_hourly_rate: z.number().optional(), // No validation as it's auto-calculated
   subjectIds: z.array(z.string()).default([]),
   availability: z.array(z.object({
     id: z.string(),
@@ -147,6 +147,9 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
   // Set form values when tutor changes
   useEffect(() => {
     if (tutor) {
+      const normalRate = tutor.normal_hourly_rate || 25.00;
+      const calculatedAbsenceRate = Number(((normalRate / 60) * 15).toFixed(2));
+      
       form.reset({
         first_name: tutor.first_name,
         last_name: tutor.last_name,
@@ -154,8 +157,8 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
         phone: tutor.phone || "",
         bio: tutor.bio || "",
         status: tutor.status,
-        normal_hourly_rate: tutor.normal_hourly_rate || 25.00,
-        absence_hourly_rate: tutor.absence_hourly_rate || 12.50,
+        normal_hourly_rate: normalRate,
+        absence_hourly_rate: calculatedAbsenceRate,
         subjectIds: [],
         availability: []
       });
@@ -164,6 +167,17 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
       fetchTutorSubjects(tutor.id);
     }
   }, [tutor, form]);
+
+  // Auto-calculate absence hourly rate when normal hourly rate changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'normal_hourly_rate' && value.normal_hourly_rate !== undefined) {
+        const calculatedRate = Number(((value.normal_hourly_rate / 60) * 15).toFixed(2));
+        form.setValue('absence_hourly_rate', calculatedRate);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const addAvailabilitySlot = () => {
     const newSlot: AvailabilitySlot = {
@@ -522,11 +536,16 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
                         type="number" 
                         step="0.01" 
                         min="0" 
-                        placeholder="12.50" 
+                        placeholder="6.25" 
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        disabled
+                        className="bg-muted text-muted-foreground cursor-not-allowed"
+                        title="Auto-calculated: (Normal Rate ÷ 60) × 15"
                       />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-calculated based on normal hourly rate
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
