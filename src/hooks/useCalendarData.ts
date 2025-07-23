@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
 import { AppRole } from '@/contexts/AuthContext';
 import { useLessonCompletion } from './useLessonCompletion';
+import { getSubjectClass } from '@/utils/calendarColors';
 
 interface UseCalendarDataProps {
   userRole: AppRole | null;
@@ -54,7 +55,10 @@ export const useCalendarData = ({
         const completionInfo = completionData[lesson.id];
         const isCompleted = completionInfo?.isCompleted || false;
 
-        let className = 'calendar-event';
+        // Get subject-specific class for proper coloring
+        const subjectClass = getSubjectClass(lesson.subject, lesson.lesson_type);
+        let className = `calendar-event ${subjectClass}`;
+        
         if (lesson.is_recurring_instance) {
           className += ' recurring-instance';
         }
