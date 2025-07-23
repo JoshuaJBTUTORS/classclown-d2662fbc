@@ -182,7 +182,7 @@ const detailsBox = {
 
 const contactBox = {
   backgroundColor: '#e3f2fd',
-  border: '1px solid '#2196f3',
+  border: '1px solid #2196f3',
   borderRadius: '6px',
   padding: '20px',
   margin: '20px 0',
