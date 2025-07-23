@@ -44,7 +44,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('lessons')
       .select(`
         *,
-        trial_booking:trial_bookings!inner (
+        trial_booking:trial_bookings!trial_booking_id (
           id,
           parent_name,
           child_name,
