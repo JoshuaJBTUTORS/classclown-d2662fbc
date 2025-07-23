@@ -40,7 +40,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         is_group: false,
         status: 'scheduled',
         lesson_type: 'trial',
-        trial_booking_id: data.bookingId,
+        trial_booking_id: null, // Set to null since we don't have a proper trial booking system yet
         subject: data.subjectId || null
       })
       .select()
