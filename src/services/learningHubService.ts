@@ -577,26 +577,28 @@ export const learningHubService = {
   // Module access control
   checkModuleAccess: async (moduleId: string): Promise<boolean> => {
     try {
-      const userEmail = await learningHubService.getCurrentUserEmail();
-      
-      // Get current module details
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return false;
+      }
+
+      // Get the current module and its position
       const { data: currentModule, error: moduleError } = await supabase
         .from('course_modules')
-        .select('position, course_id')
+        .select('course_id, position')
         .eq('id', moduleId)
         .single();
 
       if (moduleError || !currentModule) {
-        console.error('Error fetching module:', moduleError);
         return false;
       }
 
-      // If this is the first module, allow access
+      // First module is always accessible
       if (currentModule.position <= 1) {
         return true;
       }
 
-      // Get previous module
+      // Get the previous module
       const { data: previousModule, error: prevModuleError } = await supabase
         .from('course_modules')
         .select('id')
@@ -605,28 +607,64 @@ export const learningHubService = {
         .single();
 
       if (prevModuleError || !previousModule) {
-        console.error('Error fetching previous module:', prevModuleError);
         return false;
       }
 
-      // Check if previous module has assessments
-      const { data: assessments, error: assessmentError } = await supabase
-        .from('module_assessments')
+      // Check if the previous module has any AI assessment lessons
+      const { data: aiAssessmentLessons, error: assessmentError } = await supabase
+        .from('course_lessons')
+        .select('id')
+        .eq('module_id', previousModule.id)
+        .eq('content_type', 'ai-assessment');
+
+      if (assessmentError) {
+        console.error('Error fetching AI assessment lessons:', assessmentError);
+        return false;
+      }
+
+      // If previous module has AI assessment lessons, check if they're completed
+      if (aiAssessmentLessons && aiAssessmentLessons.length > 0) {
+        // Check if user completed all AI assessment lessons in the previous module
+        const { data: completedAssessments, error: progressError } = await supabase
+          .from('student_progress')
+          .select('id')
+          .eq('user_id', user.id)
+          .in('lesson_id', aiAssessmentLessons.map(l => l.id))
+          .eq('status', 'completed');
+
+        if (progressError) {
+          console.error('Error checking assessment completion:', progressError);
+          return false;
+        }
+
+        // Must complete all AI assessments in previous module
+        return (completedAssessments?.length || 0) === aiAssessmentLessons.length;
+      }
+
+      // If no AI assessments in previous module, check if all lessons are completed
+      const { data: allPreviousLessons, error: lessonsError } = await supabase
+        .from('course_lessons')
         .select('id')
         .eq('module_id', previousModule.id);
 
-      if (assessmentError) {
-        console.error('Error fetching assessments:', assessmentError);
+      if (lessonsError || !allPreviousLessons) {
         return false;
       }
 
-      // If no assessments required, allow access
-      if (!assessments || assessments.length === 0) {
-        return true;
+      const { data: completedLessons, error: completedError } = await supabase
+        .from('student_progress')
+        .select('id')
+        .eq('user_id', user.id)
+        .in('lesson_id', allPreviousLessons.map(l => l.id))
+        .eq('status', 'completed');
+
+      if (completedError) {
+        console.error('Error checking lesson completion:', completedError);
+        return false;
       }
 
-      // Check if assessment is completed
-      return await learningHubService.isModuleAssessmentCompleted(previousModule.id);
+      // Must complete all lessons in previous module
+      return (completedLessons?.length || 0) === allPreviousLessons.length;
     } catch (error) {
       console.error('Error checking module access:', error);
       return false;
@@ -659,19 +697,27 @@ export const learningHubService = {
   getModuleAssessments: async (moduleId: string): Promise<any[]> => {
     try {
       const { data, error } = await supabase
-        .from('module_assessments')
-        .select(`
-          *,
-          ai_assessments!inner(id, title, description, status)
-        `)
-        .eq('module_id', moduleId);
+        .from('course_lessons')
+        .select('*')
+        .eq('module_id', moduleId)
+        .eq('content_type', 'ai-assessment');
 
       if (error) {
-        console.error('Error fetching module assessments:', error);
+        console.error('Error fetching AI assessment lessons:', error);
         return [];
       }
 
-      return data || [];
+      // Convert to format expected by components
+      return (data || []).map(lesson => ({
+        id: lesson.id,
+        module_id: moduleId,
+        is_required: true,
+        passing_score: 70,
+        ai_assessments: {
+          id: lesson.content_url || lesson.id, // Use content_url as assessment ID if available
+          title: lesson.title
+        }
+      }));
     } catch (error) {
       console.error('Error fetching module assessments:', error);
       return [];
@@ -724,45 +770,41 @@ export const learningHubService = {
 
   isModuleAssessmentCompleted: async (moduleId: string): Promise<boolean> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return false;
+      }
 
-      const userEmail = await learningHubService.getCurrentUserEmail();
-      
-      // Get student ID if exists
-      const { data: studentData } = await supabase
-        .from('students')
-        .select('id')
-        .eq('email', userEmail)
-        .maybeSingle();
-
-      // First get lesson IDs for this module
-      const { data: lessons } = await supabase
+      // Get AI assessment lessons in this module
+      const { data: aiAssessmentLessons, error: assessmentError } = await supabase
         .from('course_lessons')
         .select('id')
-        .eq('module_id', moduleId);
+        .eq('module_id', moduleId)
+        .eq('content_type', 'ai-assessment');
 
-      if (!lessons || lessons.length === 0) {
-        return false;
+      if (assessmentError || !aiAssessmentLessons) {
+        return true; // No AI assessments means module is "completed"
       }
 
-      const lessonIds = lessons.map(l => l.id);
+      if (aiAssessmentLessons.length === 0) {
+        return true; // No AI assessments means module is "completed"
+      }
 
-      // Check if any lesson in this module has completed assessment
-      const { data, error } = await supabase
+      // Check if all AI assessment lessons are completed
+      const { data: completedAssessments, error: progressError } = await supabase
         .from('student_progress')
-        .select('assessment_completed')
-        .in('lesson_id', lessonIds)
-        .eq(studentData ? 'student_id' : 'user_id', studentData?.id || user.id)
-        .eq('assessment_completed', true)
-        .limit(1);
+        .select('id')
+        .eq('user_id', user.id)
+        .in('lesson_id', aiAssessmentLessons.map(l => l.id))
+        .eq('status', 'completed');
 
-      if (error) {
-        console.error('Error checking module assessment completion:', error);
+      if (progressError) {
+        console.error('Error checking assessment completion:', progressError);
         return false;
       }
 
-      return data && data.length > 0;
+      // All AI assessment lessons must be completed
+      return (completedAssessments?.length || 0) === aiAssessmentLessons.length;
     } catch (error) {
       console.error('Error checking module assessment completion:', error);
       return false;

@@ -938,51 +938,6 @@ export type Database = {
           },
         ]
       }
-      module_assessments: {
-        Row: {
-          assessment_id: string
-          created_at: string
-          id: string
-          is_required: boolean
-          module_id: string
-          passing_score: number
-          updated_at: string
-        }
-        Insert: {
-          assessment_id: string
-          created_at?: string
-          id?: string
-          is_required?: boolean
-          module_id: string
-          passing_score?: number
-          updated_at?: string
-        }
-        Update: {
-          assessment_id?: string
-          created_at?: string
-          id?: string
-          is_required?: boolean
-          module_id?: string
-          passing_score?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "module_assessments_assessment_id_fkey"
-            columns: ["assessment_id"]
-            isOneToOne: false
-            referencedRelation: "ai_assessments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "module_assessments_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "course_modules"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notifications: {
         Row: {
           created_at: string
