@@ -1871,6 +1871,10 @@ export type Database = {
         Args: { submission_homework_id: string; submission_student_id: number }
         Returns: boolean
       }
+      cleanup_old_time_off_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       extend_recurring_lessons: {
         Args: Record<PropertyKey, never>
         Returns: undefined
