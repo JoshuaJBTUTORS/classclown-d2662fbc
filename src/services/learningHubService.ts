@@ -205,35 +205,36 @@ export const learningHubService = {
     return await paymentService.checkCoursePurchase(courseId);
   },
 
-  // Fixed Student Progress method - simplified query without complex joins
+  // Updated Student Progress method - supports both traditional students and learning hub users
   getStudentProgress: async (userEmail?: string, courseId?: string): Promise<StudentProgress[]> => {
     try {
       const email = userEmail || await learningHubService.getCurrentUserEmail();
       console.log('Getting student progress for email:', email, 'courseId:', courseId);
       
+      // Check if user is a traditional student first
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id')
         .eq('email', email)
         .maybeSingle();
 
-      if (studentError) {
-        console.error('Error fetching student record:', studentError);
-        return [];
+      let query = supabase.from('student_progress').select('*');
+
+      if (student && !studentError) {
+        // Traditional student - use student_id
+        console.log('Found student record:', student);
+        query = query.eq('student_id', student.id);
+      } else {
+        // Learning Hub user - use user_id from auth
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.email === email) {
+          console.log('Using user_id for Learning Hub user:', user.id);
+          query = query.eq('user_id', user.id);
+        } else {
+          console.log('No student record or auth user found for email:', email);
+          return [];
+        }
       }
-
-      if (!student) {
-        console.log('No student record found for email:', email);
-        return [];
-      }
-
-      console.log('Found student record:', student);
-
-      // Simplified query - just get student progress without complex joins
-      let query = supabase
-        .from('student_progress')
-        .select('*')
-        .eq('student_id', student.id);
 
       // If courseId is provided, we need to filter by lessons in that course
       if (courseId) {
@@ -277,11 +278,12 @@ export const learningHubService = {
     }
   },
 
-  // New manual toggle completion method
+  // Updated manual toggle completion method - supports both user types
   toggleLessonCompletion: async (userEmail: string, lessonId: string): Promise<StudentProgress> => {
     try {
       console.log('toggleLessonCompletion called with:', { userEmail, lessonId });
       
+      // Check if user is a traditional student first
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id')
@@ -290,18 +292,28 @@ export const learningHubService = {
 
       console.log('Student lookup result:', { student, studentError });
 
-      if (studentError || !student) {
-        throw new Error('Student record not found');
+      let existingQuery = supabase.from('student_progress').select('*').eq('lesson_id', lessonId);
+      let insertData: any = { lesson_id: lessonId };
+
+      if (student && !studentError) {
+        // Traditional student - use student_id
+        console.log('Processing as traditional student');
+        existingQuery = existingQuery.eq('student_id', student.id);
+        insertData.student_id = student.id;
+      } else {
+        // Learning Hub user - use user_id from auth
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.email === userEmail) {
+          console.log('Processing as Learning Hub user:', user.id);
+          existingQuery = existingQuery.eq('user_id', user.id);
+          insertData.user_id = user.id;
+        } else {
+          throw new Error('User not found or not authenticated');
+        }
       }
 
       // Check if progress already exists
-      const { data: existing } = await supabase
-        .from('student_progress')
-        .select('*')
-        .eq('student_id', student.id)
-        .eq('lesson_id', lessonId)
-        .maybeSingle();
-
+      const { data: existing } = await existingQuery.maybeSingle();
       console.log('Existing progress check:', existing);
 
       if (existing) {
@@ -332,9 +344,8 @@ export const learningHubService = {
         return data as StudentProgress;
       } else {
         // Create new completed progress
-        const insertData = {
-          student_id: student.id,
-          lesson_id: lessonId,
+        insertData = {
+          ...insertData,
           status: 'completed',
           completion_percentage: 100,
           completed_at: new Date().toISOString(),
@@ -367,29 +378,67 @@ export const learningHubService = {
     try {
       const email = userEmail || await learningHubService.getCurrentUserEmail();
       
+      // Check if user is a traditional student first
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id')
         .eq('email', email)
         .maybeSingle();
 
-      if (studentError || !student) {
-        console.log('No student record found for course progress calculation');
-        return 0;
-      }
+      if (student && !studentError) {
+        // Traditional student - use the existing RPC function
+        const { data, error } = await supabase
+          .rpc('calculate_course_completion', {
+            course_id_param: courseId,
+            student_id_param: student.id
+          });
 
-      const { data, error } = await supabase
-        .rpc('calculate_course_completion', {
-          course_id_param: courseId,
-          student_id_param: student.id
-        });
+        if (error) {
+          console.error('Error calculating course progress:', error);
+          return 0;
+        }
+        
+        return data || 0;
+      } else {
+        // Learning Hub user - calculate progress manually
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || user.email !== email) {
+          console.log('No auth user found for course progress calculation');
+          return 0;
+        }
 
-      if (error) {
-        console.error('Error calculating course progress:', error);
-        return 0;
+        // Get all lessons in the course
+        const { data: courseModules } = await supabase
+          .from('course_modules')
+          .select('id')
+          .eq('course_id', courseId);
+
+        if (!courseModules || courseModules.length === 0) {
+          return 0;
+        }
+
+        const { data: lessons } = await supabase
+          .from('course_lessons')
+          .select('id')
+          .in('module_id', courseModules.map(m => m.id));
+
+        if (!lessons || lessons.length === 0) {
+          return 0;
+        }
+
+        // Get completed lessons for this user
+        const { data: completedProgress } = await supabase
+          .from('student_progress')
+          .select('id')
+          .eq('user_id', user.id)
+          .in('lesson_id', lessons.map(l => l.id))
+          .eq('status', 'completed');
+
+        const completedCount = completedProgress?.length || 0;
+        const totalCount = lessons.length;
+        
+        return totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
       }
-      
-      return data || 0;
     } catch (error) {
       console.error('Error in getCourseProgress:', error);
       return 0;
