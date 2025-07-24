@@ -295,9 +295,9 @@ export const personalizedLearningPathService = {
     // Create a copy of modules to avoid mutation
     const modules = [...originalModules].sort((a, b) => a.position - b.position);
     
-    // Always keep the first module (Getting Started) at position 1
-    const gettingStartedModule = modules.find(m => m.position === 1);
-    const otherModules = modules.filter(m => m.position !== 1);
+    // Always keep the first module (Getting Started) at position 0
+    const gettingStartedModule = modules.find(m => m.position === 0);
+    const otherModules = modules.filter(m => m.position !== 0);
     
     // Create struggle score map for quick lookup
     const struggleMap = new Map(
@@ -323,10 +323,10 @@ export const personalizedLearningPathService = {
       ? [gettingStartedModule, ...prioritizedModules]
       : prioritizedModules;
     
-    // Update positions to maintain sequence
+    // Update positions to maintain sequence - Getting Started stays at 0, others start from 1
     return reorderedModules.map((module, index) => ({
       ...module,
-      position: index + 1
+      position: index === 0 && gettingStartedModule ? 0 : index
     }));
   },
 

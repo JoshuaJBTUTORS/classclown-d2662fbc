@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { aiAssessmentService, AssessmentScore, UserAssessmentStats } from '@/services/aiAssessmentService';
+import { learningHubService } from '@/services/learningHubService';
 import { useAuth } from '@/contexts/AuthContext';
 import AssessmentAccessControl from './AssessmentAccessControl';
 import AssessmentTimer from './AssessmentTimer';
@@ -106,11 +108,38 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         setBestScore(userBestScore);
       }
       
-      return score;
+      return { score, sessionId };
     },
-    onSuccess: (score) => {
+    onSuccess: async ({ score, sessionId }) => {
       setIsCompletingAssessment(false);
       setCompletionScore(score);
+      
+      // Try to find the current module from the URL or context
+      const courseMatch = location.pathname.match(/\/course\/([^\/]+)/);
+      if (courseMatch && user?.id) {
+        const courseId = courseMatch[1];
+        
+        // Find which module this assessment belongs to
+        const { data: assessmentLesson } = await supabase
+          .from('course_lessons')
+          .select('module_id, course_modules!inner(course_id)')
+          .eq('content_url', id)
+          .eq('content_type', 'ai-assessment')
+          .single();
+        
+        if (assessmentLesson) {
+          // Mark assessment as completed in progress
+          await learningHubService.markAssessmentCompleted(assessmentLesson.module_id, score.percentage_score || 0);
+          
+          // Try to unlock the next module
+          await learningHubService.unlockNextModuleAfterAssessment(
+            courseId, 
+            assessmentLesson.module_id, 
+            user.id
+          );
+        }
+      }
+      
       setShowCompletionDialog(true);
       
       // Call the onAssessmentComplete callback if provided
@@ -118,9 +147,18 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         onAssessmentComplete(score.percentage_score);
       }
       
-      // Invalidate relevant queries
+      // Invalidate relevant queries to refresh progress data
       queryClient.invalidateQueries({ queryKey: ['assessmentSession', id] });
       queryClient.invalidateQueries({ queryKey: ['student-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['user-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['module-access-list'] });
+      queryClient.invalidateQueries({ queryKey: ['personalized-learning-path'] });
+      
+      // Show success toast
+      toast({
+        title: "Assessment completed!",
+        description: `You scored ${score.percentage_score}%. Checking for unlocked content...`,
+      });
     },
     onError: (error: any) => {
       setIsCompletingAssessment(false);
@@ -326,17 +364,29 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const handleBackToCourse = () => {
     setShowCompletionDialog(false);
     
-    // Improved navigation logic
+    // Show loading toast while navigating
+    toast({
+      title: "Updating your progress...",
+      description: "Redirecting you back to the learning path.",
+    });
+    
+    // Improved navigation logic - always go back to learning path
     const isFromCourse = location.pathname.includes('/course/');
     if (embedded || isFromCourse) {
       const courseMatch = location.pathname.match(/\/course\/([^\/]+)/);
       if (courseMatch) {
-        navigate(`/course/${courseMatch[1]}`);
+        // Navigate to the learning path section of the course
+        navigate(`/course/${courseMatch[1]}`, { replace: true });
       } else {
-        navigate('/learning-hub');
+        navigate('/learning-hub', { replace: true });
       }
     } else {
-      navigate('/learning-hub');
+      navigate('/learning-hub', { replace: true });
+    }
+    
+    // Close modal if provided
+    if (onClose) {
+      onClose();
     }
   };
 
@@ -447,6 +497,13 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                         isLoading={isCompletingAssessment}
                         hasAnsweredQuestions={hasAnsweredQuestions}
                       />
+                      {isCompletingAssessment && (
+                        <div className="mt-4 text-center">
+                          <p className="text-sm text-muted-foreground">
+                            Processing your answers and updating your learning path...
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (

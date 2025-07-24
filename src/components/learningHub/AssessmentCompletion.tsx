@@ -33,7 +33,7 @@ const AssessmentCompletion: React.FC<AssessmentCompletionProps> = ({
         {isLoading ? (
           <>
             <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-            Calculating Score...
+            Processing Assessment...
           </>
         ) : (
           <>

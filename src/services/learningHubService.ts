@@ -613,60 +613,153 @@ export const learningHubService = {
       // Check if the previous module has any AI assessment lessons
       const { data: aiAssessmentLessons, error: assessmentError } = await supabase
         .from('course_lessons')
-        .select('id')
+        .select('id, content_url')
         .eq('module_id', previousModule.id)
         .eq('content_type', 'ai-assessment');
 
       if (assessmentError) {
-        console.error('Error fetching AI assessment lessons:', assessmentError);
         return false;
       }
 
-      // If previous module has AI assessment lessons, check if they're completed
-      if (aiAssessmentLessons && aiAssessmentLessons.length > 0) {
-        // Check if user completed all AI assessment lessons in the previous module
-        const { data: completedAssessments, error: progressError } = await supabase
-          .from('student_progress')
-          .select('id')
+      // If no AI assessment lessons in the previous module, allow access
+      if (!aiAssessmentLessons || aiAssessmentLessons.length === 0) {
+        return true;
+      }
+
+      // Check if any assessment in the previous module has been completed
+      for (const lesson of aiAssessmentLessons) {
+        if (!lesson.content_url) continue;
+        
+        const { data: completedSessions, error: sessionError } = await supabase
+          .from('assessment_sessions')
+          .select('id, status, completed_at')
+          .eq('assessment_id', lesson.content_url)
           .eq('user_id', user.id)
-          .in('lesson_id', aiAssessmentLessons.map(l => l.id))
           .eq('status', 'completed');
 
-        if (progressError) {
-          console.error('Error checking assessment completion:', progressError);
-          return false;
+        if (sessionError) {
+          continue;
         }
 
-        // Must complete all AI assessments in previous module
-        return (completedAssessments?.length || 0) === aiAssessmentLessons.length;
+        if (completedSessions && completedSessions.length > 0) {
+          return true; // User has completed at least one assessment in the previous module
+        }
       }
 
-      // If no AI assessments in previous module, check if all lessons are completed
-      const { data: allPreviousLessons, error: lessonsError } = await supabase
-        .from('course_lessons')
-        .select('id')
-        .eq('module_id', previousModule.id);
-
-      if (lessonsError || !allPreviousLessons) {
-        return false;
-      }
-
-      const { data: completedLessons, error: completedError } = await supabase
-        .from('student_progress')
-        .select('id')
-        .eq('user_id', user.id)
-        .in('lesson_id', allPreviousLessons.map(l => l.id))
-        .eq('status', 'completed');
-
-      if (completedError) {
-        console.error('Error checking lesson completion:', completedError);
-        return false;
-      }
-
-      // Must complete all lessons in previous module
-      return (completedLessons?.length || 0) === allPreviousLessons.length;
+      return false;
     } catch (error) {
       console.error('Error checking module access:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Mark assessment as completed
+   */
+  markAssessmentCompleted: async (
+    moduleId: string,
+    score: number
+  ): Promise<boolean> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      // Get all lessons in this module
+      const { data: moduleLessons } = await supabase
+        .from('course_lessons')
+        .select('id')
+        .eq('module_id', moduleId);
+
+      if (!moduleLessons) return false;
+
+      // Update progress for all lessons in the module to mark as completed
+      for (const lesson of moduleLessons) {
+        await supabase
+          .from('student_progress')
+          .upsert({
+            user_id: user.id,
+            lesson_id: lesson.id,
+            status: 'completed',
+            path_status: 'completed',
+            assessment_completed: true,
+            assessment_score: score,
+            assessment_completed_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+            completion_percentage: 100,
+            last_accessed_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id,lesson_id'
+          });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error marking assessment completed:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Unlock next module after assessment completion
+   */
+  unlockNextModuleAfterAssessment: async (
+    courseId: string,
+    currentModuleId: string,
+    userId: string
+  ): Promise<boolean> => {
+    try {
+      // Get current module position
+      const { data: currentModule, error: moduleError } = await supabase
+        .from('course_modules')
+        .select('position')
+        .eq('id', currentModuleId)
+        .single();
+
+      if (moduleError || !currentModule) {
+        return false;
+      }
+
+      // Get next module
+      const { data: nextModule, error: nextModuleError } = await supabase
+        .from('course_modules')
+        .select('id, title')
+        .eq('course_id', courseId)
+        .eq('position', currentModule.position + 1)
+        .single();
+
+      if (nextModuleError || !nextModule) {
+        return false; // No next module to unlock
+      }
+
+      // Update or create student progress for the next module's lessons
+      const { data: nextModuleLessons, error: lessonsError } = await supabase
+        .from('course_lessons')
+        .select('id')
+        .eq('module_id', nextModule.id);
+
+      if (lessonsError || !nextModuleLessons) {
+        return false;
+      }
+
+      // Create/update progress for each lesson in the next module
+      for (const lesson of nextModuleLessons) {
+        await supabase
+          .from('student_progress')
+          .upsert({
+            user_id: userId,
+            lesson_id: lesson.id,
+            status: 'not_started',
+            path_status: 'available',
+            unlocked_at: new Date().toISOString(),
+            last_accessed_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id,lesson_id'
+          });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error unlocking next module:', error);
       return false;
     }
   },
@@ -724,49 +817,6 @@ export const learningHubService = {
     }
   },
 
-  markAssessmentCompleted: async (lessonId: string, score: number): Promise<boolean> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
-
-      const userEmail = await learningHubService.getCurrentUserEmail();
-      
-      // Check if student_progress exists for traditional students
-      const { data: studentData } = await supabase
-        .from('students')
-        .select('id')
-        .eq('email', userEmail)
-        .maybeSingle();
-
-      // Update or insert progress record
-      const progressData = {
-        lesson_id: lessonId,
-        assessment_completed: true,
-        assessment_score: score,
-        assessment_completed_at: new Date().toISOString(),
-        status: 'completed',
-        completion_percentage: 100,
-        completed_at: new Date().toISOString(),
-        ...(studentData ? { student_id: studentData.id } : { user_id: user.id })
-      };
-
-      const { error } = await supabase
-        .from('student_progress')
-        .upsert(progressData, {
-          onConflict: studentData ? 'lesson_id,student_id' : 'lesson_id,user_id'
-        });
-
-      if (error) {
-        console.error('Error marking assessment completed:', error);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error marking assessment completed:', error);
-      return false;
-    }
-  },
 
   isModuleAssessmentCompleted: async (moduleId: string): Promise<boolean> => {
     try {
