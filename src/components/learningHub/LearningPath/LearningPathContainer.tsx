@@ -32,6 +32,14 @@ const LearningPathContainer: React.FC = () => {
   const [activeCourse, setActiveCourse] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
+  // Pan/Drag state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [lastPanPosition, setLastPanPosition] = useState<{ x: number; y: number } | null>(null);
+  const [momentum, setMomentum] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [lastInteractionTime, setLastInteractionTime] = useState(0);
+  const momentumRef = useRef<number | null>(null);
+  
   // Data fetching
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses-with-path'],
@@ -186,6 +194,51 @@ const LearningPathContainer: React.FC = () => {
     }
   }, [courses, userProgress, activeCourse, isInitialized]);
   
+  // Momentum animation effect
+  useEffect(() => {
+    if (momentum.x !== 0 || momentum.y !== 0) {
+      const animate = () => {
+        const now = Date.now();
+        const deltaTime = Math.min(now - lastInteractionTime, 16);
+        
+        const friction = 0.95;
+        const newMomentumX = momentum.x * friction;
+        const newMomentumY = momentum.y * friction;
+        
+        if (Math.abs(newMomentumX) < 0.1 && Math.abs(newMomentumY) < 0.1) {
+          setMomentum({ x: 0, y: 0 });
+          if (momentumRef.current) {
+            cancelAnimationFrame(momentumRef.current);
+            momentumRef.current = null;
+          }
+          return;
+        }
+        
+        setViewport(prev => ({
+          ...prev,
+          centerX: prev.centerX + newMomentumX / prev.zoom,
+          centerY: prev.centerY + newMomentumY / prev.zoom
+        }));
+        
+        setMomentum({ x: newMomentumX, y: newMomentumY });
+        setLastInteractionTime(now);
+        
+        momentumRef.current = requestAnimationFrame(animate);
+      };
+      
+      if (!momentumRef.current) {
+        momentumRef.current = requestAnimationFrame(animate);
+      }
+    }
+    
+    return () => {
+      if (momentumRef.current) {
+        cancelAnimationFrame(momentumRef.current);
+        momentumRef.current = null;
+      }
+    };
+  }, [momentum, lastInteractionTime]);
+  
   // Event handlers
   const handleWaypointClick = (courseId: string) => {
     navigate(`/course/${courseId}`);
@@ -227,6 +280,81 @@ const LearningPathContainer: React.FC = () => {
       centerX: position.x,
       centerY: position.y
     }));
+  };
+  
+  // Pan/Drag event handlers
+  const handlePanStart = (event: React.MouseEvent | React.TouchEvent) => {
+    event.preventDefault();
+    setIsDragging(true);
+    setMomentum({ x: 0, y: 0 });
+    
+    const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+    const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+    
+    setDragStart({ x: clientX, y: clientY });
+    setLastPanPosition({ x: clientX, y: clientY });
+    setLastInteractionTime(Date.now());
+    
+    if (momentumRef.current) {
+      cancelAnimationFrame(momentumRef.current);
+      momentumRef.current = null;
+    }
+  };
+  
+  const handlePanMove = (event: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || !dragStart || !lastPanPosition) return;
+    
+    event.preventDefault();
+    const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+    const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+    
+    const deltaX = clientX - lastPanPosition.x;
+    const deltaY = clientY - lastPanPosition.y;
+    
+    const now = Date.now();
+    const deltaTime = Math.max(now - lastInteractionTime, 1);
+    
+    // Calculate velocity for momentum
+    const velocityX = deltaX / deltaTime * 16; // normalize to 60fps
+    const velocityY = deltaY / deltaTime * 16;
+    
+    setViewport(prev => ({
+      ...prev,
+      centerX: prev.centerX - deltaX / prev.zoom,
+      centerY: prev.centerY - deltaY / prev.zoom
+    }));
+    
+    setMomentum({ x: velocityX, y: velocityY });
+    setLastPanPosition({ x: clientX, y: clientY });
+    setLastInteractionTime(now);
+  };
+  
+  const handlePanEnd = (event: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging) return;
+    
+    event.preventDefault();
+    setIsDragging(false);
+    setDragStart(null);
+    setLastPanPosition(null);
+    
+    // Let momentum continue if there's significant velocity
+    if (Math.abs(momentum.x) < 2 && Math.abs(momentum.y) < 2) {
+      setMomentum({ x: 0, y: 0 });
+    }
+  };
+  
+  const handleWheel = (event: React.WheelEvent) => {
+    event.preventDefault();
+    
+    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.5, Math.min(2, viewport.zoom * zoomFactor));
+    
+    if (newZoom !== viewport.zoom) {
+      setViewport(prev => ({
+        ...prev,
+        zoom: newZoom
+      }));
+    }
   };
   
   const pathBounds = React.useMemo(() => {
@@ -292,7 +420,16 @@ const LearningPathContainer: React.FC = () => {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-[600px] bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200"
+      className="relative w-full h-[600px] bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200 select-none touch-none"
+      style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      onMouseDown={handlePanStart}
+      onMouseMove={handlePanMove}
+      onMouseUp={handlePanEnd}
+      onMouseLeave={handlePanEnd}
+      onTouchStart={handlePanStart}
+      onTouchMove={handlePanMove}
+      onTouchEnd={handlePanEnd}
+      onWheel={handleWheel}
     >
       {/* Background */}
       <PathBackground 
