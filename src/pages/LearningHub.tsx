@@ -18,6 +18,7 @@ import { EDUCATIONAL_STAGES, SUBJECT_AREAS, getSubjectArea, isValidLessonSubject
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import LearningHubErrorBoundary from '@/components/learningHub/LearningHubErrorBoundary';
+import LearningPathContainer from '@/components/learningHub/LearningPath/LearningPathContainer';
 
 const LearningHub: React.FC = () => {
   const navigate = useNavigate();
@@ -263,13 +264,21 @@ const LearningHub: React.FC = () => {
           <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
             <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl mb-4 sm:mb-6 shadow-xl overflow-hidden">
               <TabsList className="h-14 sm:h-16 bg-transparent p-0 w-full justify-start border-b border-gray-200/50">
-                <TabsTrigger 
-                  value="courses" 
-                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 text-gray-600 data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/20 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full font-medium text-sm sm:text-base"
-                >
-                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>Courses</span>
-                </TabsTrigger>
+                 <TabsTrigger 
+                   value="courses" 
+                   className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 text-gray-600 data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/20 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full font-medium text-sm sm:text-base"
+                 >
+                   <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+                   <span>Courses</span>
+                 </TabsTrigger>
+                 <TabsTrigger 
+                   value="learning-path" 
+                   className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 text-gray-600 data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/20 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full font-medium text-sm sm:text-base"
+                 >
+                   <School className="h-4 w-4 sm:h-5 sm:w-5" />
+                   <span className="hidden sm:inline">Learning Path</span>
+                   <span className="sm:hidden">Path</span>
+                 </TabsTrigger>
                 {isOwner && (
                   <TabsTrigger 
                     value="ai-assessments" 
@@ -582,6 +591,21 @@ const LearningHub: React.FC = () => {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="learning-path" className="space-y-4 sm:space-y-6">
+              <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl">
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-gradient-to-r from-primary/20 to-primary/30 rounded-lg backdrop-blur-sm">
+                      <School className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Learning Path</h2>
+                  </div>
+                  <p className="text-gray-600 text-base sm:text-lg">Follow your personalized learning journey</p>
+                </div>
+                <LearningPathContainer />
+              </div>
             </TabsContent>
 
             {isOwner && (
