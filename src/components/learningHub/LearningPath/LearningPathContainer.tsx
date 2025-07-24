@@ -275,11 +275,12 @@ const LearningPathContainer: React.FC = () => {
         >
           {/* Path Line */}
           {pathData && (
-            <PathLine 
-              pathData={pathData} 
-              theme={theme} 
-              progress={pathCompletion} 
-            />
+        <PathLine 
+          pathData={pathData} 
+          positions={waypoints.map(w => w.position)}
+          theme={theme} 
+          progress={pathCompletion} 
+        />
           )}
         </svg>
         
