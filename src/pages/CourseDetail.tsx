@@ -261,6 +261,7 @@ const CourseDetail = () => {
                 <CardContent className="p-6">
                   <LearningPathContainer
                     modules={modules}
+                    courseId={course.id}
                     onModuleClick={handleModuleSelect}
                   />
                 </CardContent>

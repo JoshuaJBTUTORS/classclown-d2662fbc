@@ -6,41 +6,53 @@ import { WaypointStatus } from '@/types/learningPath';
 import { CourseModule } from '@/types/course';
 import SimplePathStop from './SimplePathStop';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Target } from 'lucide-react';
+import { usePersonalizedLearningPath } from '@/hooks/usePersonalizedLearningPath';
+import { Badge } from '@/components/ui/badge';
 
 interface LearningPathContainerProps {
   modules: CourseModule[];
+  courseId: string;
   onModuleClick: (moduleId: string) => void;
 }
 
-const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, onModuleClick }) => {
+const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, courseId, onModuleClick }) => {
+  // Get personalized module order
+  const { data: personalizedOrder } = usePersonalizedLearningPath({
+    courseId,
+    modules,
+    enabled: modules.length > 0
+  });
+
+  // Use personalized modules or fallback to original
+  const orderedModules = personalizedOrder?.modules || modules;
   const { data: userProgress } = useQuery({
-    queryKey: ['user-progress', modules.map(m => m.id)],
+    queryKey: ['user-progress', orderedModules.map(m => m.id)],
     queryFn: () => learningHubService.getStudentProgress(),
-    enabled: modules.length > 0,
+    enabled: orderedModules.length > 0,
   });
   
   // Add assessment status query
   const { data: moduleAccessList } = useQuery({
-    queryKey: ['module-access-list', modules.map(m => m.id)],
+    queryKey: ['module-access-list', orderedModules.map(m => m.id)],
     queryFn: async () => {
-      if (!modules.length) return {};
-      const accessPromises = modules.map(async (module) => {
+      if (!orderedModules.length) return {};
+      const accessPromises = orderedModules.map(async (module) => {
         const hasAccess = await learningHubService.checkModuleAccess(module.id);
         return [module.id, hasAccess];
       });
       const results = await Promise.all(accessPromises);
       return Object.fromEntries(results);
     },
-    enabled: modules.length > 0,
+    enabled: orderedModules.length > 0,
   });
 
   // Fixed learning path stops from modules
   const learningStops = React.useMemo(() => {
-    if (!modules || modules.length === 0) return [];
+    if (!orderedModules || orderedModules.length === 0) return [];
     
     // Take up to 10 modules and map them to learning stops
-    return modules.slice(0, 10).map((module, index) => {
+    return orderedModules.slice(0, 10).map((module, index) => {
       // Calculate progress for this module
       const moduleProgress = userProgress?.filter(progress => {
         // Check if this progress belongs to lessons in this module
@@ -78,10 +90,11 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
         title: module.title,
         status,
         progress,
-        module
+        module,
+        isPersonalized: personalizedOrder?.isPersonalized && index > 0 // Don't mark first module as personalized
       };
     });
-  }, [modules, userProgress, moduleAccessList]);
+  }, [orderedModules, userProgress, moduleAccessList, personalizedOrder]);
   
   // Event handlers
   const handleStopClick = (stopId: string) => {
@@ -91,7 +104,7 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
     }
   };
   
-  if (!modules || modules.length === 0) {
+  if (!orderedModules || orderedModules.length === 0) {
     return (
       <div className="relative w-full h-[400px] bg-gradient-to-br from-slate-50 to-primary/5 rounded-2xl overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
@@ -120,8 +133,21 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
         
         {/* Progress Header */}
         <div className="relative z-10 mb-8 text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Your Learning Journey</h2>
-          <p className="text-muted-foreground">Complete each step to unlock the next level</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <h2 className="text-2xl font-bold text-foreground">Your Learning Journey</h2>
+            {personalizedOrder?.isPersonalized && (
+              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                <Target className="w-3 h-3 mr-1" />
+                Personalized
+              </Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground">
+            {personalizedOrder?.isPersonalized 
+              ? "Customized based on your assessment performance" 
+              : "Complete each step to unlock the next level"
+            }
+          </p>
           
           {/* Progress Bar */}
           <div className="mt-4 max-w-md mx-auto">
@@ -145,14 +171,15 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
           <div className="md:hidden">
             <div className="space-y-8">
               {learningStops.map((stop, index) => (
-                <div key={stop.id} className="flex items-center space-x-4">
-                  <SimplePathStop
-                    stopNumber={stop.stopNumber}
-                    title={stop.title}
-                    status={stop.status}
-                    progress={stop.progress}
-                    onClick={() => handleStopClick(stop.id)}
-                  />
+                  <div key={stop.id} className="flex items-center space-x-4">
+                   <SimplePathStop
+                     stopNumber={stop.stopNumber}
+                     title={stop.title}
+                     status={stop.status}
+                     progress={stop.progress}
+                     onClick={() => handleStopClick(stop.id)}
+                     isPersonalized={stop.isPersonalized}
+                   />
                   {index < learningStops.length - 1 && (
                     <div className="flex-1 h-px bg-gradient-to-r from-muted to-transparent" />
                   )}
@@ -171,13 +198,14 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
               <div className="grid grid-cols-5 gap-8 lg:gap-12">
                 {learningStops.slice(0, 5).map((stop) => (
                   <div key={stop.id} className="relative z-10">
-                    <SimplePathStop
-                      stopNumber={stop.stopNumber}
-                      title={stop.title}
-                      status={stop.status}
-                      progress={stop.progress}
-                      onClick={() => handleStopClick(stop.id)}
-                    />
+                      <SimplePathStop
+                        stopNumber={stop.stopNumber}
+                        title={stop.title}
+                        status={stop.status}
+                        progress={stop.progress}
+                        onClick={() => handleStopClick(stop.id)}
+                        isPersonalized={stop.isPersonalized}
+                      />
                   </div>
                 ))}
               </div>
@@ -188,13 +216,14 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
                 <div className="grid grid-cols-5 gap-8 lg:gap-12">
                   {learningStops.slice(5, 10).map((stop) => (
                     <div key={stop.id} className="relative z-10">
-                      <SimplePathStop
-                        stopNumber={stop.stopNumber}
-                        title={stop.title}
-                        status={stop.status}
-                        progress={stop.progress}
-                        onClick={() => handleStopClick(stop.id)}
-                      />
+                    <SimplePathStop
+                      stopNumber={stop.stopNumber}
+                      title={stop.title}
+                      status={stop.status}
+                      progress={stop.progress}
+                      onClick={() => handleStopClick(stop.id)}
+                      isPersonalized={stop.isPersonalized}
+                    />
                     </div>
                   ))}
                 </div>

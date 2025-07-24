@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Lock, CheckCircle, Play } from 'lucide-react';
+import { BookOpen, Lock, CheckCircle, Play, Target } from 'lucide-react';
 import { WaypointStatus } from '@/types/learningPath';
+import { Badge } from '@/components/ui/badge';
 
 interface SimplePathStopProps {
   stopNumber: number;
@@ -10,6 +11,7 @@ interface SimplePathStopProps {
   progress: number;
   onClick: () => void;
   isActive?: boolean;
+  isPersonalized?: boolean;
 }
 
 const SimplePathStop: React.FC<SimplePathStopProps> = ({
@@ -18,7 +20,8 @@ const SimplePathStop: React.FC<SimplePathStopProps> = ({
   status,
   progress,
   onClick,
-  isActive = false
+  isActive = false,
+  isPersonalized = false
 }) => {
   const getStatusIcon = () => {
     switch (status) {
@@ -113,6 +116,12 @@ const SimplePathStop: React.FC<SimplePathStopProps> = ({
         `}>
           {title}
         </h4>
+        {isPersonalized && (
+          <Badge variant="secondary" className="mt-1 text-xs bg-primary/10 text-primary hover:bg-primary/20">
+            <Target className="w-2 h-2 mr-1" />
+            Focus
+          </Badge>
+        )}
       </div>
     </motion.div>
   );

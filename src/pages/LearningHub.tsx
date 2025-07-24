@@ -604,7 +604,7 @@ const LearningHub: React.FC = () => {
                   </div>
                   <p className="text-gray-600 text-base sm:text-lg">Follow your personalized learning journey</p>
                 </div>
-                <LearningPathContainer modules={[]} onModuleClick={() => {}} />
+                <LearningPathContainer modules={[]} courseId="" onModuleClick={() => {}} />
               </div>
             </TabsContent>
 
