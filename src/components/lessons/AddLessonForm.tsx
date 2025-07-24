@@ -44,6 +44,7 @@ import { Student } from '@/types/student';
 import { LESSON_SUBJECTS } from '@/constants/subjects';
 import { useAvailabilityCheck } from '@/hooks/useAvailabilityCheck';
 import AvailabilityStatus from './AvailabilityStatus';
+import MultiSelectStudents from './MultiSelectStudents';
 import { cn } from '@/lib/utils';
 import { generateRecurringLessonInstances } from '@/services/recurringLessonService';
 
@@ -304,13 +305,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   };
 
   const handleStudentSelect = (studentId: number) => {
-    setSelectedStudents(prev => {
-      if (prev.includes(studentId)) {
-        return prev.filter(id => id !== studentId);
-      } else {
-        return [...prev, studentId];
-      }
-    });
+    setSelectedStudents(prev => [...prev, studentId]);
+  };
+
+  const handleStudentRemove = (studentId: number) => {
+    setSelectedStudents(prev => prev.filter(id => id !== studentId));
   };
 
   const handleManualAvailabilityCheck = async () => {
@@ -476,37 +475,17 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 render={() => (
                   <FormItem>
                     <FormLabel>Students</FormLabel>
-                    <div className="border rounded-md p-2 max-h-48 overflow-y-auto">
-                      {students.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-2 px-1">No students available</p>
-                      ) : (
-                        students.map((student) => {
-                          const studentId = typeof student.id === 'string'
-                            ? parseInt(student.id, 10)
-                            : student.id;
-
-                          return (
-                            <div
-                              key={student.id}
-                              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                              onClick={() => handleStudentSelect(studentId)}
-                            >
-                              <div className={`w-4 h-4 border rounded flex items-center justify-center
-                                ${selectedStudents.includes(studentId) ? 'bg-primary border-primary' : 'border-gray-300'}`}
-                              >
-                                {selectedStudents.includes(studentId) && (
-                                  <Check className="h-3 w-3 text-white" />
-                                )}
-                              </div>
-                              <span>{student.first_name} {student.last_name}</span>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                    {selectedStudents.length === 0 && form.getValues('isGroup') && (
-                      <p className="text-sm font-medium text-destructive">Select at least one student for group sessions</p>
-                    )}
+                    <FormControl>
+                      <MultiSelectStudents
+                        students={students}
+                        selectedStudents={selectedStudents}
+                        onStudentSelect={handleStudentSelect}
+                        onStudentRemove={handleStudentRemove}
+                        placeholder={form.watch('isGroup') ? "Select students for group lesson..." : "Select a student..."}
+                        disabled={isFetchingData}
+                      />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -521,9 +500,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
-                            <Button
+                           <Button
                               variant={"outline"}
-                              className="pl-3 text-left font-normal w-full"
+                              className={cn(
+                                "pl-3 text-left font-normal w-full h-[42px]",
+                                !field.value && "text-muted-foreground"
+                              )}
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
@@ -556,7 +538,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     <FormItem>
                       <FormLabel>Start Time</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <Input type="time" className="h-[42px]" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -570,7 +552,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     <FormItem>
                       <FormLabel>End Time</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <Input type="time" className="h-[42px]" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
