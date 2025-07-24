@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import { Check, X, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { TimeOffFilters } from '@/components/timeOff/TimeOffFilters';
 import { cn } from '@/lib/utils';
 
 const TimeOffRequests = () => {
@@ -21,6 +22,13 @@ const TimeOffRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [actionType, setActionType] = useState<'approve' | 'deny' | null>(null);
+  
+  // Filter states
+  const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  
   const queryClient = useQueryClient();
 
   const closeSidebar = () => {
@@ -30,6 +38,21 @@ const TimeOffRequests = () => {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // Fetch all tutors for filter dropdown
+  const { data: tutors } = useQuery({
+    queryKey: ['tutors'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name')
+        .eq('status', 'active')
+        .order('first_name');
+
+      if (error) throw error;
+      return data;
+    }
+  });
 
   // Fetch all time off requests
   const { data: timeOffRequests, isLoading } = useQuery({
@@ -117,12 +140,47 @@ const TimeOffRequests = () => {
     }
   };
 
+  // Filter logic
+  const filteredRequests = useMemo(() => {
+    if (!timeOffRequests) return [];
+    
+    return timeOffRequests.filter(request => {
+      // Tutor filter
+      if (selectedTutors.length > 0 && !selectedTutors.includes(request.tutor_id)) {
+        return false;
+      }
+      
+      // Status filter
+      if (statusFilter !== 'all' && request.status !== statusFilter) {
+        return false;
+      }
+      
+      // Date range filter
+      const requestDate = new Date(request.created_at);
+      if (startDate && requestDate < startDate) {
+        return false;
+      }
+      if (endDate && requestDate > endDate) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [timeOffRequests, selectedTutors, statusFilter, startDate, endDate]);
+
   const getPendingRequests = () => {
-    return timeOffRequests?.filter(request => request.status === 'pending') || [];
+    return filteredRequests.filter(request => request.status === 'pending');
   };
 
   const getProcessedRequests = () => {
-    return timeOffRequests?.filter(request => request.status !== 'pending') || [];
+    return filteredRequests.filter(request => request.status !== 'pending');
+  };
+
+  const handleClearFilters = () => {
+    setSelectedTutors([]);
+    setStatusFilter('all');
+    setStartDate(undefined);
+    setEndDate(undefined);
   };
 
   if (userRole !== 'admin' && userRole !== 'owner') {
@@ -161,6 +219,21 @@ const TimeOffRequests = () => {
               <h1 className="text-3xl font-bold text-gray-900">Time Off Requests</h1>
               <p className="text-gray-600 mt-1">Review and manage tutor time off requests</p>
             </div>
+
+            {/* Filters */}
+            <TimeOffFilters
+              selectedTutors={selectedTutors}
+              onTutorChange={setSelectedTutors}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
+              onClearFilters={handleClearFilters}
+              tutors={tutors || []}
+              isLoading={isLoading}
+            />
 
             {/* Pending Requests */}
             <Card>
