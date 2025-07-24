@@ -594,7 +594,7 @@ export const learningHubService = {
       }
 
       // First module is always accessible
-      if (currentModule.position <= 1) {
+      if (currentModule.position === 0) {
         return true;
       }
 
