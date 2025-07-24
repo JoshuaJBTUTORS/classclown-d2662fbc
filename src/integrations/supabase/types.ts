@@ -460,11 +460,14 @@ export type Database = {
           description: string | null
           difficulty_level: string | null
           id: string
+          path_position: number | null
+          prerequisites: Json | null
           price: number | null
           status: string
           stripe_price_id: string | null
           subject: string | null
           title: string
+          unlock_requirements: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -473,11 +476,14 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
+          path_position?: number | null
+          prerequisites?: Json | null
           price?: number | null
           status?: string
           stripe_price_id?: string | null
           subject?: string | null
           title: string
+          unlock_requirements?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -486,11 +492,14 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
+          path_position?: number | null
+          prerequisites?: Json | null
           price?: number | null
           status?: string
           stripe_price_id?: string | null
           subject?: string | null
           title?: string
+          unlock_requirements?: Json | null
           updated_at?: string | null
         }
         Relationships: []
@@ -629,6 +638,39 @@ export type Database = {
           id?: string
           role?: string
           token?: string
+        }
+        Relationships: []
+      }
+      learning_paths: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          path_config: Json | null
+          theme: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          path_config?: Json | null
+          theme?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          path_config?: Json | null
+          theme?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1220,8 +1262,10 @@ export type Database = {
           id: string
           last_accessed_at: string | null
           lesson_id: string | null
+          path_status: string | null
           status: string
           student_id: number | null
+          unlocked_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1231,8 +1275,10 @@ export type Database = {
           id?: string
           last_accessed_at?: string | null
           lesson_id?: string | null
+          path_status?: string | null
           status?: string
           student_id?: number | null
+          unlocked_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1242,8 +1288,10 @@ export type Database = {
           id?: string
           last_accessed_at?: string | null
           lesson_id?: string | null
+          path_status?: string | null
           status?: string
           student_id?: number | null
+          unlocked_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
