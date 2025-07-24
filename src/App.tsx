@@ -37,6 +37,7 @@ import LearningHubSettings from './pages/LearningHubSettings';
 import LearningHubRevision from './pages/LearningHubRevision';
 import LearningHubAssessments from './pages/LearningHubAssessments';
 import CourseDetail from './pages/CourseDetail';
+import ModuleDetail from './pages/ModuleDetail';
 import CourseEdit from './pages/CourseEdit';
 import CourseCheckout from './pages/CourseCheckout';
 import CourseCreate from './pages/CourseCreate';
@@ -195,6 +196,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <CourseDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course/:courseId/module/:moduleId"
+                  element={
+                    <ProtectedRoute>
+                      <ModuleDetail />
                     </ProtectedRoute>
                   }
                 />

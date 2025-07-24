@@ -3,119 +3,103 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { learningHubService } from '@/services/learningHubService';
 import { WaypointStatus } from '@/types/learningPath';
+import { CourseModule } from '@/types/course';
 import SimplePathStop from './SimplePathStop';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 
-const LearningPathContainer: React.FC = () => {
-  const navigate = useNavigate();
-  
-  // Data fetching
-  const { data: courses, isLoading, error } = useQuery({
-    queryKey: ['courses-with-path'],
-    queryFn: learningHubService.getCourses
-  });
-  
+interface LearningPathContainerProps {
+  modules: CourseModule[];
+  onModuleClick: (moduleId: string) => void;
+}
+
+const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, onModuleClick }) => {
   const { data: userProgress } = useQuery({
-    queryKey: ['user-progress'],
-    queryFn: async () => {
-      try {
-        const progress = await learningHubService.getStudentProgress();
-        const progressMap: Record<string, number> = {};
-        
-        // Simple progress mapping for now
-        courses?.forEach((course, index) => {
-          // Simulate some progress based on course position
-          if (index === 0) progressMap[course.id] = 100; // First course completed
-          else if (index === 1) progressMap[course.id] = 60; // Second course in progress
-          else progressMap[course.id] = 0; // Rest are not started
-        });
-        
-        return progressMap;
-      } catch (error) {
-        console.error('Error fetching user progress:', error);
-        return {};
-      }
-    },
-    enabled: !!courses
+    queryKey: ['user-progress', modules.map(m => m.id)],
+    queryFn: () => learningHubService.getStudentProgress(),
+    enabled: modules.length > 0,
   });
   
-  // Fixed learning path stops (10 stops)
+  // Fixed learning path stops from modules
   const learningStops = React.useMemo(() => {
-    if (!courses || courses.length === 0) return [];
+    if (!modules || modules.length === 0) return [];
     
-    // Take first 10 courses or pad with placeholders
-    const stopTitles = [
-      'Foundations', 'Basics', 'Core Concepts', 'Practice', 'Intermediate',
-      'Advanced', 'Mastery', 'Projects', 'Specialization', 'Expert'
-    ];
-    
-    return Array.from({ length: 10 }, (_, index) => {
-      const course = courses[index];
-      const progress = userProgress?.[course?.id] || 0;
-      
+    // Take up to 10 modules and map them to learning stops
+    return modules.slice(0, 10).map((module, index) => {
+      // Calculate progress for this module
+      const moduleProgress = userProgress?.filter(progress => {
+        // Check if this progress belongs to lessons in this module
+        return module.lessons?.some((lesson: any) => lesson.id === progress.lesson_id);
+      }) || [];
+
+      // Determine status based on progress
       let status: WaypointStatus = 'locked';
-      if (index === 0) status = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'available';
-      else if (index === 1 && (userProgress?.[courses[0]?.id] || 0) >= 100) {
-        status = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'available';
-      } else if (index > 1) {
-        const prevCourse = courses[index - 1];
-        const prevProgress = userProgress?.[prevCourse?.id] || 0;
-        if (prevProgress >= 100) {
-          status = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'available';
+      let progress = 0;
+
+      const totalLessons = module.lessons?.length || 0;
+      const completedLessons = moduleProgress.filter(p => p.status === 'completed').length;
+
+      if (index === 0) {
+        // First module is always available
+        if (completedLessons === totalLessons && totalLessons > 0) {
+          status = 'completed';
+          progress = 100;
+        } else if (completedLessons > 0) {
+          status = 'in_progress';
+          progress = Math.round((completedLessons / totalLessons) * 100);
+        } else {
+          status = 'available';
+          progress = 0;
+        }
+      } else {
+        // Check if previous module is completed
+        const prevModule = modules[index - 1];
+        const prevModuleProgress = userProgress?.filter(progress => {
+          return prevModule.lessons?.some((lesson: any) => lesson.id === progress.lesson_id);
+        }) || [];
+        const prevCompletedLessons = prevModuleProgress.filter(p => p.status === 'completed').length;
+        const prevTotalLessons = prevModule.lessons?.length || 0;
+        
+        if (prevCompletedLessons === prevTotalLessons && prevTotalLessons > 0) {
+          // Previous module completed, this one is available
+          if (completedLessons === totalLessons && totalLessons > 0) {
+            status = 'completed';
+            progress = 100;
+          } else if (completedLessons > 0) {
+            status = 'in_progress';
+            progress = Math.round((completedLessons / totalLessons) * 100);
+          } else {
+            status = 'available';
+            progress = 0;
+          }
+        } else {
+          status = 'locked';
+          progress = 0;
         }
       }
-      
+
       return {
-        id: course?.id || `placeholder-${index}`,
+        id: module.id,
         stopNumber: index + 1,
-        title: course?.title || stopTitles[index],
+        title: module.title,
         status,
         progress,
-        course
+        module
       };
     });
-  }, [courses, userProgress]);
+  }, [modules, userProgress]);
   
   // Event handlers
   const handleStopClick = (stopId: string) => {
     const stop = learningStops.find(s => s.id === stopId);
-    if (stop?.course && stop.status !== 'locked') {
-      navigate(`/course/${stop.course.id}`);
+    if (stop && stop.status !== 'locked') {
+      onModuleClick(stopId);
     }
   };
   
-  if (isLoading) {
+  if (!modules || modules.length === 0) {
     return (
-      <div className="relative w-full h-[600px] bg-gradient-to-br from-slate-50 to-primary/5 rounded-2xl overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <Skeleton className="h-16 w-16 rounded-full mx-auto" />
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (error || !courses) {
-    return (
-      <div className="relative w-full h-[600px] bg-gradient-to-br from-slate-50 to-primary/5 rounded-2xl overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
-            <h3 className="text-lg font-semibold text-gray-900">Unable to Load Learning Path</h3>
-            <p className="text-gray-600">There was an error loading your learning journey.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (courses.length === 0) {
-    return (
-      <div className="relative w-full h-[600px] bg-gradient-to-br from-slate-50 to-primary/5 rounded-2xl overflow-hidden">
+      <div className="relative w-full h-[400px] bg-gradient-to-br from-slate-50 to-primary/5 rounded-2xl overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto">
@@ -123,8 +107,8 @@ const LearningPathContainer: React.FC = () => {
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">No Courses Available</h3>
-            <p className="text-gray-600">Courses will appear here when they're published.</p>
+            <h3 className="text-lg font-semibold text-gray-900">No Modules Available</h3>
+            <p className="text-gray-600">Course content is being prepared.</p>
           </div>
         </div>
       </div>
