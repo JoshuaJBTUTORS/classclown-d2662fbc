@@ -5,10 +5,12 @@ import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
 import ContentViewer from '@/components/learningHub/ContentViewer';
 import NotesSection from '@/components/learningHub/NotesSection';
 import AssessmentNavigation from '@/components/learningHub/AssessmentNavigation';
+import ModuleAssessmentDialog from '@/components/learningHub/ModuleAssessmentDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +30,9 @@ const ModuleDetail = () => {
   const navigate = useNavigate();
   const { isOwner } = useAuth();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  const [showAssessmentDialog, setShowAssessmentDialog] = useState(false);
 
   const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -51,6 +55,30 @@ const ModuleDetail = () => {
   const { data: userProgress } = useQuery({
     queryKey: ['user-progress', moduleId],
     queryFn: () => learningHubService.getStudentProgress(),
+    enabled: !!moduleId,
+  });
+
+  const { data: moduleAssessments } = useQuery({
+    queryKey: ['module-assessments', moduleId],
+    queryFn: () => learningHubService.getModuleAssessments(moduleId!),
+    enabled: !!moduleId,
+  });
+
+  const { data: canProgressToNext } = useQuery({
+    queryKey: ['can-progress', moduleId],
+    queryFn: async () => {
+      if (!modules || !moduleId) return true;
+      const currentModuleIndex = modules.findIndex(m => m.id === moduleId);
+      const nextModule = modules[currentModuleIndex + 1];
+      if (!nextModule) return true; // No next module, can always progress
+      return await learningHubService.canProgressToModule(nextModule.id);
+    },
+    enabled: !!modules && !!moduleId,
+  });
+
+  const { data: isAssessmentCompleted } = useQuery({
+    queryKey: ['assessment-completed', moduleId],
+    queryFn: () => learningHubService.isModuleAssessmentCompleted(moduleId!),
     enabled: !!moduleId,
   });
 
@@ -77,10 +105,54 @@ const ModuleDetail = () => {
       const currentModuleIndex = modules?.findIndex(m => m.id === moduleId) || 0;
       const nextModule = modules?.[currentModuleIndex + 1];
       if (nextModule) {
-        navigate(`/course/${courseId}/module/${nextModule.id}`);
+        // Check if user can progress to next module (assessment requirement)
+        if (canProgressToNext) {
+          navigate(`/course/${courseId}/module/${nextModule.id}`);
+        } else {
+          // Show assessment requirement message
+          console.log('Assessment completion required before progressing to next module');
+        }
       }
     }
   };
+
+  const handleTakeAssessment = () => {
+    setShowAssessmentDialog(true);
+  };
+
+  const handleAssessmentComplete = async (score: number) => {
+    setShowAssessmentDialog(false);
+    
+    if (currentLesson && moduleAssessments && moduleAssessments.length > 0) {
+      const passingScore = moduleAssessments[0].passing_score || 70;
+      
+      if (score >= passingScore) {
+        await learningHubService.markAssessmentCompleted(currentLesson.id, score);
+        
+        toast({
+          title: "Assessment Completed!",
+          description: `You scored ${score}% and passed the assessment. Next module unlocked!`,
+        });
+        
+        const currentModuleIndex = modules?.findIndex(m => m.id === moduleId) || 0;
+        const nextModule = modules?.[currentModuleIndex + 1];
+        if (nextModule) {
+          navigate(`/course/${courseId}/module/${nextModule.id}`);
+        }
+      } else {
+        toast({
+          title: "Assessment Not Passed",
+          description: `You scored ${score}%. You need at least ${passingScore}% to unlock the next module.`,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const isLastLessonInModule = currentLessonIndex === lessons.length - 1;
+  const hasRequiredAssessment = moduleAssessments && moduleAssessments.length > 0;
+  const allLessonsCompleted = lessons.every(lesson => isLessonCompleted(lesson.id));
+  const needsAssessment = isLastLessonInModule && hasRequiredAssessment && allLessonsCompleted && !isAssessmentCompleted;
 
   const handleCompleteLesson = async () => {
     if (currentLesson) {
@@ -213,6 +285,25 @@ const ModuleDetail = () => {
                       />
                     </div>
 
+                    {/* Assessment requirement notification */}
+                    {needsAssessment && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Trophy className="h-5 w-5 text-yellow-600" />
+                          <h4 className="font-medium text-yellow-800">Assessment Required</h4>
+                        </div>
+                        <p className="text-sm text-yellow-700 mb-3">
+                          Complete the module assessment to unlock the next module.
+                        </p>
+                        <Button
+                          onClick={handleTakeAssessment}
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        >
+                          Take Assessment
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Navigation buttons */}
                     <div className="flex justify-between">
                       <Button
@@ -224,22 +315,33 @@ const ModuleDetail = () => {
                         <ChevronLeft className="h-4 w-4" />
                         Previous
                       </Button>
-                      <Button
-                        onClick={isLessonCompleted(currentLesson.id) ? handleNextLesson : handleCompleteLesson}
-                        className="flex items-center gap-2"
-                      >
-                        {isLessonCompleted(currentLesson.id) ? (
-                          <>
-                            Next
-                            <ChevronRight className="h-4 w-4" />
-                          </>
-                        ) : (
-                          <>
-                            Complete & Continue
-                            <CheckCircle className="h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
+                      
+                      {needsAssessment ? (
+                        <Button
+                          onClick={handleTakeAssessment}
+                          className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700"
+                        >
+                          Take Assessment
+                          <Trophy className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={isLessonCompleted(currentLesson.id) ? handleNextLesson : handleCompleteLesson}
+                          className="flex items-center gap-2"
+                        >
+                          {isLessonCompleted(currentLesson.id) ? (
+                            <>
+                              Next
+                              <ChevronRight className="h-4 w-4" />
+                            </>
+                          ) : (
+                            <>
+                              Complete & Continue
+                              <CheckCircle className="h-4 w-4" />
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -272,6 +374,16 @@ const ModuleDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Assessment Dialog */}
+        {moduleAssessments && moduleAssessments.length > 0 && (
+          <ModuleAssessmentDialog
+            isOpen={showAssessmentDialog}
+            onClose={() => setShowAssessmentDialog(false)}
+            assessmentId={moduleAssessments[0].ai_assessments.id}
+            onAssessmentComplete={handleAssessmentComplete}
+          />
+        )}
       </div>
     </CourseAccessControl>
   );

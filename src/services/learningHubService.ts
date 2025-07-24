@@ -573,4 +573,140 @@ export const learningHubService = {
       throw new Error('Failed to reorder lessons');
     }
   },
+
+  // Assessment progression methods
+  canProgressToModule: async (moduleId: string): Promise<boolean> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data, error } = await supabase.rpc('can_progress_to_module', {
+        current_module_id: moduleId,
+        user_id_param: user.id
+      });
+
+      if (error) {
+        console.error('Error checking module progression:', error);
+        return false;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error checking module progression:', error);
+      return false;
+    }
+  },
+
+  getModuleAssessments: async (moduleId: string): Promise<any[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('module_assessments')
+        .select(`
+          *,
+          ai_assessments!inner(id, title, description, status)
+        `)
+        .eq('module_id', moduleId);
+
+      if (error) {
+        console.error('Error fetching module assessments:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching module assessments:', error);
+      return [];
+    }
+  },
+
+  markAssessmentCompleted: async (lessonId: string, score: number): Promise<boolean> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const userEmail = await learningHubService.getCurrentUserEmail();
+      
+      // Check if student_progress exists for traditional students
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      // Update or insert progress record
+      const progressData = {
+        lesson_id: lessonId,
+        assessment_completed: true,
+        assessment_score: score,
+        assessment_completed_at: new Date().toISOString(),
+        status: 'completed',
+        completion_percentage: 100,
+        completed_at: new Date().toISOString(),
+        ...(studentData ? { student_id: studentData.id } : { user_id: user.id })
+      };
+
+      const { error } = await supabase
+        .from('student_progress')
+        .upsert(progressData, {
+          onConflict: studentData ? 'lesson_id,student_id' : 'lesson_id,user_id'
+        });
+
+      if (error) {
+        console.error('Error marking assessment completed:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error marking assessment completed:', error);
+      return false;
+    }
+  },
+
+  isModuleAssessmentCompleted: async (moduleId: string): Promise<boolean> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const userEmail = await learningHubService.getCurrentUserEmail();
+      
+      // Get student ID if exists
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      // First get lesson IDs for this module
+      const { data: lessons } = await supabase
+        .from('course_lessons')
+        .select('id')
+        .eq('module_id', moduleId);
+
+      if (!lessons || lessons.length === 0) {
+        return false;
+      }
+
+      const lessonIds = lessons.map(l => l.id);
+
+      // Check if any lesson in this module has completed assessment
+      const { data, error } = await supabase
+        .from('student_progress')
+        .select('assessment_completed')
+        .in('lesson_id', lessonIds)
+        .eq(studentData ? 'student_id' : 'user_id', studentData?.id || user.id)
+        .eq('assessment_completed', true)
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking module assessment completion:', error);
+        return false;
+      }
+
+      return data && data.length > 0;
+    } catch (error) {
+      console.error('Error checking module assessment completion:', error);
+      return false;
+    }
+  },
 };

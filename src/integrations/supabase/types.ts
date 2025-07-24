@@ -938,6 +938,51 @@ export type Database = {
           },
         ]
       }
+      module_assessments: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          is_required: boolean
+          module_id: string
+          passing_score: number
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          module_id: string
+          passing_score?: number
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          module_id?: string
+          passing_score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_assessments_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_assessments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1256,6 +1301,9 @@ export type Database = {
       }
       student_progress: {
         Row: {
+          assessment_completed: boolean | null
+          assessment_completed_at: string | null
+          assessment_score: number | null
           completed_at: string | null
           completion_percentage: number | null
           created_at: string | null
@@ -1270,6 +1318,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          assessment_completed?: boolean | null
+          assessment_completed_at?: string | null
+          assessment_score?: number | null
           completed_at?: string | null
           completion_percentage?: number | null
           created_at?: string | null
@@ -1284,6 +1335,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          assessment_completed?: boolean | null
+          assessment_completed_at?: string | null
+          assessment_score?: number | null
           completed_at?: string | null
           completion_percentage?: number | null
           created_at?: string | null
@@ -1923,6 +1977,10 @@ export type Database = {
       }
       can_access_homework_submission: {
         Args: { submission_homework_id: string; submission_student_id: number }
+        Returns: boolean
+      }
+      can_progress_to_module: {
+        Args: { current_module_id: string; user_id_param: string }
         Returns: boolean
       }
       cleanup_old_time_off_requests: {

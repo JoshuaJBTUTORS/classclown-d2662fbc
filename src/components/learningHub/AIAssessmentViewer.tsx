@@ -24,13 +24,15 @@ interface AIAssessmentViewerProps {
   embedded?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
+  onAssessmentComplete?: (score: number) => void;
 }
 
 const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ 
   assessmentId: propAssessmentId, 
   embedded = false, 
   isOpen, 
-  onClose 
+  onClose,
+  onAssessmentComplete
 }) => {
   const { id: paramId } = useParams<{ id: string }>();
   const id = propAssessmentId || paramId;
@@ -110,6 +112,11 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
       setIsCompletingAssessment(false);
       setCompletionScore(score);
       setShowCompletionDialog(true);
+      
+      // Call the onAssessmentComplete callback if provided
+      if (onAssessmentComplete && score.percentage_score !== undefined) {
+        onAssessmentComplete(score.percentage_score);
+      }
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['assessmentSession', id] });
