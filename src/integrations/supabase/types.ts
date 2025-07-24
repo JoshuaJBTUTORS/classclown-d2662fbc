@@ -1336,6 +1336,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           first_name: string | null
+          grade: string | null
           id: number
           last_name: string | null
           parent_id: string | null
@@ -1351,6 +1352,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           first_name?: string | null
+          grade?: string | null
           id?: number
           last_name?: string | null
           parent_id?: string | null
@@ -1366,6 +1368,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           first_name?: string | null
+          grade?: string | null
           id?: number
           last_name?: string | null
           parent_id?: string | null
