@@ -17,18 +17,20 @@ import { AlertCircle } from 'lucide-react';
 const LearningPathContainer: React.FC = () => {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 1200, height: 600 });
   
   // State
   const [theme, setTheme] = useState<'desert' | 'forest' | 'space' | 'ocean'>('desert');
   const [viewport, setViewport] = useState<PathViewport>({
     centerX: 600,
-    centerY: 400,
+    centerY: 300,
     zoom: 1,
     width: 1200,
-    height: 800
+    height: 600
   });
   const [showMinimap, setShowMinimap] = useState(false);
   const [activeCourse, setActiveCourse] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Data fetching
   const { data: courses, isLoading, error } = useQuery({
@@ -87,8 +89,8 @@ const LearningPathContainer: React.FC = () => {
     const positions = generateWaypointPositions(
       courses,
       pathConfig,
-      viewport.width,
-      viewport.height
+      containerSize.width,
+      containerSize.height
     );
     
     const completedCourses = Object.entries(userProgress || {})
@@ -98,12 +100,12 @@ const LearningPathContainer: React.FC = () => {
     return courses.map((course, index) => ({
       id: course.id,
       course,
-      position: positions[index] || { x: 600, y: 400, angle: 0 },
+      position: positions[index] || { x: containerSize.width / 2, y: containerSize.height / 2, angle: 0 },
       status: calculateWaypointStatus(course, userProgress || {}, completedCourses),
       isUnlocked: course.path_position <= 100 || completedCourses.length > 0, // Simplified logic
       progress: userProgress?.[course.id] || 0
     }));
-  }, [courses, userProgress, viewport.width, viewport.height]);
+  }, [courses, userProgress, containerSize.width, containerSize.height]);
   
   const pathData = React.useMemo(() => {
     if (waypoints.length < 2) return '';
@@ -118,30 +120,71 @@ const LearningPathContainer: React.FC = () => {
     return calculatePathCompletion(courses, completedCourses);
   }, [courses, userProgress]);
   
-  // Auto-focus on next available course
+  // Initialize container size and viewport
   useEffect(() => {
-    if (courses && !activeCourse) {
-      const nextCourse = getNextAvailableCourse(
-        courses,
-        userProgress || {},
-        Object.entries(userProgress || {})
-          .filter(([_, progress]) => progress >= 100)
-          .map(([courseId]) => courseId)
-      );
-      
-      if (nextCourse) {
-        setActiveCourse(nextCourse.id);
-        const waypoint = waypoints.find(w => w.id === nextCourse.id);
-        if (waypoint) {
-          setViewport(prev => ({
-            ...prev,
-            centerX: waypoint.position.x,
-            centerY: waypoint.position.y
-          }));
-        }
+    const updateContainerSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const newSize = { width: rect.width, height: rect.height };
+        setContainerSize(newSize);
+        setViewport(prev => ({
+          ...prev,
+          width: newSize.width,
+          height: newSize.height
+        }));
       }
+    };
+
+    updateContainerSize();
+
+    const resizeObserver = new ResizeObserver(updateContainerSize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
     }
-  }, [courses, waypoints, userProgress, activeCourse]);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Center the path initially when waypoints are available
+  useEffect(() => {
+    if (waypoints.length > 0 && !isInitialized) {
+      const calculatedViewport = calculateViewport(
+        waypoints.map(w => w.position),
+        containerSize.width,
+        containerSize.height
+      );
+      setViewport(prev => ({
+        ...prev,
+        centerX: calculatedViewport.centerX,
+        centerY: calculatedViewport.centerY,
+        zoom: 0.8
+      }));
+      setIsInitialized(true);
+    }
+  }, [waypoints, containerSize, isInitialized]);
+
+  // Auto-focus on next available course (delayed)
+  useEffect(() => {
+    if (courses && !activeCourse && isInitialized) {
+      const timer = setTimeout(() => {
+        const nextCourse = getNextAvailableCourse(
+          courses,
+          userProgress || {},
+          Object.entries(userProgress || {})
+            .filter(([_, progress]) => progress >= 100)
+            .map(([courseId]) => courseId)
+        );
+        
+        if (nextCourse) {
+          setActiveCourse(nextCourse.id);
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [courses, userProgress, activeCourse, isInitialized]);
   
   // Event handlers
   const handleWaypointClick = (courseId: string) => {
@@ -166,13 +209,14 @@ const LearningPathContainer: React.FC = () => {
     if (waypoints.length > 0) {
       const calculatedViewport = calculateViewport(
         waypoints.map(w => w.position),
-        viewport.width,
-        viewport.height
+        containerSize.width,
+        containerSize.height
       );
       setViewport(prev => ({
         ...prev,
-        ...calculatedViewport,
-        zoom: 1
+        centerX: calculatedViewport.centerX,
+        centerY: calculatedViewport.centerY,
+        zoom: 0.8
       }));
     }
   };
@@ -187,7 +231,7 @@ const LearningPathContainer: React.FC = () => {
   
   const pathBounds = React.useMemo(() => {
     if (waypoints.length === 0) {
-      return { minX: 0, maxX: viewport.width, minY: 0, maxY: viewport.height };
+      return { minX: 0, maxX: containerSize.width, minY: 0, maxY: containerSize.height };
     }
     
     const positions = waypoints.map(w => w.position);
@@ -197,7 +241,7 @@ const LearningPathContainer: React.FC = () => {
       minY: Math.min(...positions.map(p => p.y)),
       maxY: Math.max(...positions.map(p => p.y))
     };
-  }, [waypoints, viewport]);
+  }, [waypoints, containerSize]);
   
   if (isLoading) {
     return (
@@ -253,23 +297,23 @@ const LearningPathContainer: React.FC = () => {
       {/* Background */}
       <PathBackground 
         theme={theme} 
-        width={viewport.width} 
-        height={viewport.height} 
+        width={containerSize.width} 
+        height={containerSize.height} 
       />
       
       {/* Main SVG Canvas */}
       <motion.div
         className="absolute inset-0"
         animate={{
-          x: (viewport.width / 2) - (viewport.centerX * viewport.zoom),
-          y: (viewport.height / 2) - (viewport.centerY * viewport.zoom),
+          x: (containerSize.width / 2) - (viewport.centerX * viewport.zoom),
+          y: (containerSize.height / 2) - (viewport.centerY * viewport.zoom),
           scale: viewport.zoom
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         <svg
-          width={viewport.width}
-          height={viewport.height}
+          width={containerSize.width}
+          height={containerSize.height}
           className="absolute inset-0"
           style={{ pointerEvents: 'none' }}
         >
