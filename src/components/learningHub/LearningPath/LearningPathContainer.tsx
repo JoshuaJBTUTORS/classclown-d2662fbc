@@ -1,52 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { learningHubService } from '@/services/learningHubService';
-import { CourseWithPath, PathWaypoint as PathWaypointType, PathViewport } from '@/types/learningPath';
-import { generateWaypointPositions, generatePathLines, calculateViewport } from './utils/pathGeneration';
-import { calculateWaypointStatus, calculatePathCompletion, getNextAvailableCourse } from './utils/progressCalculation';
-import PathBackground from './PathBackground';
-import PathLine from './PathLine';
-import PathWaypoint from './PathWaypoint';
-import PathControls from './PathControls';
-import PathMinimap from './PathMinimap';
+import { WaypointStatus } from '@/types/learningPath';
+import SimplePathStop from './SimplePathStop';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 
 const LearningPathContainer: React.FC = () => {
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 1200, height: 600 });
-  
-  // State
-  const [theme, setTheme] = useState<'desert' | 'forest' | 'space' | 'ocean'>('desert');
-  const [viewport, setViewport] = useState<PathViewport>({
-    centerX: 600,
-    centerY: 300,
-    zoom: 1,
-    width: 1200,
-    height: 600
-  });
-  const [showMinimap, setShowMinimap] = useState(false);
-  const [activeCourse, setActiveCourse] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  // Pan/Drag state
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const [lastPanPosition, setLastPanPosition] = useState<{ x: number; y: number } | null>(null);
-  const [momentum, setMomentum] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [lastInteractionTime, setLastInteractionTime] = useState(0);
-  const momentumRef = useRef<number | null>(null);
   
   // Data fetching
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses-with-path'],
-    queryFn: async () => {
-      const coursesData = await learningHubService.getCourses();
-      return coursesData as CourseWithPath[];
-    }
+    queryFn: learningHubService.getCourses
   });
   
   const { data: userProgress } = useQuery({
@@ -56,23 +23,12 @@ const LearningPathContainer: React.FC = () => {
         const progress = await learningHubService.getStudentProgress();
         const progressMap: Record<string, number> = {};
         
-        // Group progress by course and calculate completion
-        const courseProgress: Record<string, any[]> = {};
-        progress.forEach(p => {
-          if (p.lesson_id) {
-            // We'd need to map lessons to courses here
-            // For now, let's simulate some progress
-            const courseId = `course_${Math.floor(Math.random() * 5) + 1}`;
-            if (!courseProgress[courseId]) courseProgress[courseId] = [];
-            courseProgress[courseId].push(p);
-          }
-        });
-        
-        // Calculate completion percentage for each course
-        Object.entries(courseProgress).forEach(([courseId, progressArray]) => {
-          const completedLessons = progressArray.filter(p => p.status === 'completed').length;
-          const totalLessons = progressArray.length;
-          progressMap[courseId] = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+        // Simple progress mapping for now
+        courses?.forEach((course, index) => {
+          // Simulate some progress based on course position
+          if (index === 0) progressMap[course.id] = 100; // First course completed
+          else if (index === 1) progressMap[course.id] = 60; // Second course in progress
+          else progressMap[course.id] = 0; // Rest are not started
         });
         
         return progressMap;
@@ -84,292 +40,50 @@ const LearningPathContainer: React.FC = () => {
     enabled: !!courses
   });
   
-  // Calculate waypoints and path
-  const waypoints: PathWaypointType[] = React.useMemo(() => {
+  // Fixed learning path stops (10 stops)
+  const learningStops = React.useMemo(() => {
     if (!courses || courses.length === 0) return [];
     
-    const pathConfig = {
-      pathType: 'spiral' as const,
-      spacing: 120,
-      curvature: 0.3
-    };
+    // Take first 10 courses or pad with placeholders
+    const stopTitles = [
+      'Foundations', 'Basics', 'Core Concepts', 'Practice', 'Intermediate',
+      'Advanced', 'Mastery', 'Projects', 'Specialization', 'Expert'
+    ];
     
-    const positions = generateWaypointPositions(
-      courses,
-      pathConfig,
-      containerSize.width,
-      containerSize.height
-    );
-    
-    const completedCourses = Object.entries(userProgress || {})
-      .filter(([_, progress]) => progress >= 100)
-      .map(([courseId]) => courseId);
-    
-    return courses.map((course, index) => ({
-      id: course.id,
-      course,
-      position: positions[index] || { x: containerSize.width / 2, y: containerSize.height / 2, angle: 0 },
-      status: calculateWaypointStatus(course, userProgress || {}, completedCourses),
-      isUnlocked: course.path_position <= 100 || completedCourses.length > 0, // Simplified logic
-      progress: userProgress?.[course.id] || 0
-    }));
-  }, [courses, userProgress, containerSize.width, containerSize.height]);
-  
-  const pathData = React.useMemo(() => {
-    if (waypoints.length < 2) return '';
-    return generatePathLines(waypoints.map(w => w.position));
-  }, [waypoints]);
-  
-  const pathCompletion = React.useMemo(() => {
-    if (!courses) return 0;
-    const completedCourses = Object.entries(userProgress || {})
-      .filter(([_, progress]) => progress >= 100)
-      .map(([courseId]) => courseId);
-    return calculatePathCompletion(courses, completedCourses);
+    return Array.from({ length: 10 }, (_, index) => {
+      const course = courses[index];
+      const progress = userProgress?.[course?.id] || 0;
+      
+      let status: WaypointStatus = 'locked';
+      if (index === 0) status = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'available';
+      else if (index === 1 && (userProgress?.[courses[0]?.id] || 0) >= 100) {
+        status = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'available';
+      } else if (index > 1) {
+        const prevCourse = courses[index - 1];
+        const prevProgress = userProgress?.[prevCourse?.id] || 0;
+        if (prevProgress >= 100) {
+          status = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'available';
+        }
+      }
+      
+      return {
+        id: course?.id || `placeholder-${index}`,
+        stopNumber: index + 1,
+        title: course?.title || stopTitles[index],
+        status,
+        progress,
+        course
+      };
+    });
   }, [courses, userProgress]);
   
-  // Initialize container size and viewport
-  useEffect(() => {
-    const updateContainerSize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const newSize = { width: rect.width, height: rect.height };
-        setContainerSize(newSize);
-        setViewport(prev => ({
-          ...prev,
-          width: newSize.width,
-          height: newSize.height
-        }));
-      }
-    };
-
-    updateContainerSize();
-
-    const resizeObserver = new ResizeObserver(updateContainerSize);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  // Center the path initially when waypoints are available
-  useEffect(() => {
-    if (waypoints.length > 0 && !isInitialized) {
-      const calculatedViewport = calculateViewport(
-        waypoints.map(w => w.position),
-        containerSize.width,
-        containerSize.height
-      );
-      setViewport(prev => ({
-        ...prev,
-        centerX: calculatedViewport.centerX,
-        centerY: calculatedViewport.centerY,
-        zoom: 0.8
-      }));
-      setIsInitialized(true);
-    }
-  }, [waypoints, containerSize, isInitialized]);
-
-  // Auto-focus on next available course (delayed)
-  useEffect(() => {
-    if (courses && !activeCourse && isInitialized) {
-      const timer = setTimeout(() => {
-        const nextCourse = getNextAvailableCourse(
-          courses,
-          userProgress || {},
-          Object.entries(userProgress || {})
-            .filter(([_, progress]) => progress >= 100)
-            .map(([courseId]) => courseId)
-        );
-        
-        if (nextCourse) {
-          setActiveCourse(nextCourse.id);
-        }
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [courses, userProgress, activeCourse, isInitialized]);
-  
-  // Momentum animation effect
-  useEffect(() => {
-    if (momentum.x !== 0 || momentum.y !== 0) {
-      const animate = () => {
-        const now = Date.now();
-        const deltaTime = Math.min(now - lastInteractionTime, 16);
-        
-        const friction = 0.95;
-        const newMomentumX = momentum.x * friction;
-        const newMomentumY = momentum.y * friction;
-        
-        if (Math.abs(newMomentumX) < 0.1 && Math.abs(newMomentumY) < 0.1) {
-          setMomentum({ x: 0, y: 0 });
-          if (momentumRef.current) {
-            cancelAnimationFrame(momentumRef.current);
-            momentumRef.current = null;
-          }
-          return;
-        }
-        
-        setViewport(prev => ({
-          ...prev,
-          centerX: prev.centerX + newMomentumX / prev.zoom,
-          centerY: prev.centerY + newMomentumY / prev.zoom
-        }));
-        
-        setMomentum({ x: newMomentumX, y: newMomentumY });
-        setLastInteractionTime(now);
-        
-        momentumRef.current = requestAnimationFrame(animate);
-      };
-      
-      if (!momentumRef.current) {
-        momentumRef.current = requestAnimationFrame(animate);
-      }
-    }
-    
-    return () => {
-      if (momentumRef.current) {
-        cancelAnimationFrame(momentumRef.current);
-        momentumRef.current = null;
-      }
-    };
-  }, [momentum, lastInteractionTime]);
-  
   // Event handlers
-  const handleWaypointClick = (courseId: string) => {
-    navigate(`/course/${courseId}`);
-  };
-  
-  const handleZoomIn = () => {
-    setViewport(prev => ({
-      ...prev,
-      zoom: Math.min(prev.zoom * 1.2, 2)
-    }));
-  };
-  
-  const handleZoomOut = () => {
-    setViewport(prev => ({
-      ...prev,
-      zoom: Math.max(prev.zoom / 1.2, 0.5)
-    }));
-  };
-  
-  const handleReset = () => {
-    if (waypoints.length > 0) {
-      const calculatedViewport = calculateViewport(
-        waypoints.map(w => w.position),
-        containerSize.width,
-        containerSize.height
-      );
-      setViewport(prev => ({
-        ...prev,
-        centerX: calculatedViewport.centerX,
-        centerY: calculatedViewport.centerY,
-        zoom: 0.8
-      }));
+  const handleStopClick = (stopId: string) => {
+    const stop = learningStops.find(s => s.id === stopId);
+    if (stop?.course && stop.status !== 'locked') {
+      navigate(`/course/${stop.course.id}`);
     }
   };
-  
-  const handleNavigate = (position: { x: number; y: number }) => {
-    setViewport(prev => ({
-      ...prev,
-      centerX: position.x,
-      centerY: position.y
-    }));
-  };
-  
-  // Pan/Drag event handlers
-  const handlePanStart = (event: React.MouseEvent | React.TouchEvent) => {
-    event.preventDefault();
-    setIsDragging(true);
-    setMomentum({ x: 0, y: 0 });
-    
-    const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
-    const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
-    
-    setDragStart({ x: clientX, y: clientY });
-    setLastPanPosition({ x: clientX, y: clientY });
-    setLastInteractionTime(Date.now());
-    
-    if (momentumRef.current) {
-      cancelAnimationFrame(momentumRef.current);
-      momentumRef.current = null;
-    }
-  };
-  
-  const handlePanMove = (event: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || !dragStart || !lastPanPosition) return;
-    
-    event.preventDefault();
-    const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
-    const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
-    
-    const deltaX = clientX - lastPanPosition.x;
-    const deltaY = clientY - lastPanPosition.y;
-    
-    const now = Date.now();
-    const deltaTime = Math.max(now - lastInteractionTime, 1);
-    
-    // Calculate velocity for momentum
-    const velocityX = deltaX / deltaTime * 16; // normalize to 60fps
-    const velocityY = deltaY / deltaTime * 16;
-    
-    setViewport(prev => ({
-      ...prev,
-      centerX: prev.centerX - deltaX / prev.zoom,
-      centerY: prev.centerY - deltaY / prev.zoom
-    }));
-    
-    setMomentum({ x: velocityX, y: velocityY });
-    setLastPanPosition({ x: clientX, y: clientY });
-    setLastInteractionTime(now);
-  };
-  
-  const handlePanEnd = (event: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) return;
-    
-    event.preventDefault();
-    setIsDragging(false);
-    setDragStart(null);
-    setLastPanPosition(null);
-    
-    // Let momentum continue if there's significant velocity
-    if (Math.abs(momentum.x) < 2 && Math.abs(momentum.y) < 2) {
-      setMomentum({ x: 0, y: 0 });
-    }
-  };
-  
-  const handleWheel = (event: React.WheelEvent) => {
-    event.preventDefault();
-    
-    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.5, Math.min(2, viewport.zoom * zoomFactor));
-    
-    if (newZoom !== viewport.zoom) {
-      setViewport(prev => ({
-        ...prev,
-        zoom: newZoom
-      }));
-    }
-  };
-  
-  const pathBounds = React.useMemo(() => {
-    if (waypoints.length === 0) {
-      return { minX: 0, maxX: containerSize.width, minY: 0, maxY: containerSize.height };
-    }
-    
-    const positions = waypoints.map(w => w.position);
-    return {
-      minX: Math.min(...positions.map(p => p.x)),
-      maxX: Math.max(...positions.map(p => p.x)),
-      minY: Math.min(...positions.map(p => p.y)),
-      maxY: Math.max(...positions.map(p => p.y))
-    };
-  }, [waypoints, containerSize]);
   
   if (isLoading) {
     return (
@@ -418,91 +132,99 @@ const LearningPathContainer: React.FC = () => {
   }
   
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full h-[600px] bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200 select-none touch-none"
-      style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-      onMouseDown={handlePanStart}
-      onMouseMove={handlePanMove}
-      onMouseUp={handlePanEnd}
-      onMouseLeave={handlePanEnd}
-      onTouchStart={handlePanStart}
-      onTouchMove={handlePanMove}
-      onTouchEnd={handlePanEnd}
-      onWheel={handleWheel}
-    >
-      {/* Background */}
-      <PathBackground 
-        theme={theme} 
-        width={containerSize.width} 
-        height={containerSize.height} 
-      />
-      
-      {/* Main SVG Canvas */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          x: (containerSize.width / 2) - (viewport.centerX * viewport.zoom),
-          y: (containerSize.height / 2) - (viewport.centerY * viewport.zoom),
-          scale: viewport.zoom
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
-        <svg
-          width={containerSize.width}
-          height={containerSize.height}
-          className="absolute inset-0"
-          style={{ pointerEvents: 'none' }}
-        >
-          {/* Path Line */}
-          {pathData && (
-        <PathLine 
-          pathData={pathData} 
-          positions={waypoints.map(w => w.position)}
-          theme={theme} 
-          progress={pathCompletion} 
-        />
-          )}
-        </svg>
-        
-        {/* Waypoints */}
-        <div className="relative w-full h-full">
-          {waypoints.map((waypoint) => (
-            <PathWaypoint
-              key={waypoint.id}
-              waypoint={waypoint}
-              onClick={handleWaypointClick}
-              isActive={activeCourse === waypoint.id}
-              theme={theme}
-            />
-          ))}
+    <div className="w-full">
+      {/* Learning Path Grid */}
+      <div className="relative bg-gradient-to-br from-background to-muted/20 rounded-2xl p-8 overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,hsl(var(--primary))_1px,transparent_0)] bg-[size:24px_24px]" />
         </div>
-      </motion.div>
-      
-      {/* Controls */}
-      <PathControls
-        zoom={viewport.zoom}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onReset={handleReset}
-        onThemeChange={setTheme}
-        currentTheme={theme}
-        pathCompletion={pathCompletion}
-        totalCourses={courses.length}
-        completedCourses={Object.entries(userProgress || {}).filter(([_, progress]) => progress >= 100).length}
-        showMinimap={showMinimap}
-        onToggleMinimap={() => setShowMinimap(!showMinimap)}
-      />
-      
-      {/* Minimap */}
-      {showMinimap && (
-        <PathMinimap
-          waypoints={waypoints}
-          currentPosition={{ x: viewport.centerX, y: viewport.centerY }}
-          onNavigate={handleNavigate}
-          pathBounds={pathBounds}
-        />
-      )}
+        
+        {/* Progress Header */}
+        <div className="relative z-10 mb-8 text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Your Learning Journey</h2>
+          <p className="text-muted-foreground">Complete each step to unlock the next level</p>
+          
+          {/* Progress Bar */}
+          <div className="mt-4 max-w-md mx-auto">
+            <div className="bg-muted rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${(learningStops.filter(s => s.status === 'completed').length / learningStops.length) * 100}%` 
+                }}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {learningStops.filter(s => s.status === 'completed').length} of {learningStops.length} completed
+            </p>
+          </div>
+        </div>
+        
+        {/* Learning Path Steps */}
+        <div className="relative z-10">
+          {/* Mobile: Vertical Layout */}
+          <div className="md:hidden">
+            <div className="space-y-8">
+              {learningStops.map((stop, index) => (
+                <div key={stop.id} className="flex items-center space-x-4">
+                  <SimplePathStop
+                    stopNumber={stop.stopNumber}
+                    title={stop.title}
+                    status={stop.status}
+                    progress={stop.progress}
+                    onClick={() => handleStopClick(stop.id)}
+                  />
+                  {index < learningStops.length - 1 && (
+                    <div className="flex-1 h-px bg-gradient-to-r from-muted to-transparent" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Desktop: Horizontal Layout */}
+          <div className="hidden md:block">
+            <div className="relative">
+              {/* Connection Line */}
+              <div className="absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-muted via-primary/30 to-muted" />
+              
+              {/* Steps Grid */}
+              <div className="grid grid-cols-5 gap-8 lg:gap-12">
+                {learningStops.slice(0, 5).map((stop) => (
+                  <div key={stop.id} className="relative z-10">
+                    <SimplePathStop
+                      stopNumber={stop.stopNumber}
+                      title={stop.title}
+                      status={stop.status}
+                      progress={stop.progress}
+                      onClick={() => handleStopClick(stop.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              {/* Second Row */}
+              <div className="mt-16 relative">
+                <div className="absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-muted via-primary/30 to-muted" />
+                <div className="grid grid-cols-5 gap-8 lg:gap-12">
+                  {learningStops.slice(5, 10).map((stop) => (
+                    <div key={stop.id} className="relative z-10">
+                      <SimplePathStop
+                        stopNumber={stop.stopNumber}
+                        title={stop.title}
+                        status={stop.status}
+                        progress={stop.progress}
+                        onClick={() => handleStopClick(stop.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
