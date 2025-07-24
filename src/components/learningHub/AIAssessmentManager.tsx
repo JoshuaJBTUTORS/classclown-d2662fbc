@@ -9,11 +9,13 @@ import { aiAssessmentService } from '@/services/aiAssessmentService';
 import AssessmentCard from './AssessmentCard';
 import CreateAssessmentDialog from './CreateAssessmentDialog';
 import CreateAIAssessmentDialog from './CreateAIAssessmentDialog';
+import CreateExamDialog from './CreateExamDialog';
 
 const AIAssessmentManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAICreateDialogOpen, setIsAICreateDialogOpen] = useState(false);
+  const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const { toast } = useToast();
 
@@ -161,6 +163,13 @@ const AIAssessmentManager: React.FC = () => {
             <Plus className="h-4 w-4 mr-2" />
             AI Create
           </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setIsExamDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Exam
+          </Button>
         </div>
       </div>
 
@@ -247,6 +256,15 @@ const AIAssessmentManager: React.FC = () => {
         onClose={() => setIsAICreateDialogOpen(false)}
         onSuccess={() => {
           setIsAICreateDialogOpen(false);
+          refetch();
+        }}
+      />
+
+      <CreateExamDialog
+        isOpen={isExamDialogOpen}
+        onClose={() => setIsExamDialogOpen(false)}
+        onSuccess={() => {
+          setIsExamDialogOpen(false);
           refetch();
         }}
       />

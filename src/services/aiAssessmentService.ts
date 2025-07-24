@@ -495,6 +495,71 @@ export const aiAssessmentService = {
     }));
   },
 
+  // Generate exam from existing assessments by subject
+  async generateExamFromSubject(subject: string): Promise<AIAssessment> {
+    // Get all published assessments with the selected subject
+    const { data: assessments, error: assessmentsError } = await supabase
+      .from('ai_assessments')
+      .select('*')
+      .eq('status', 'published')
+      .eq('subject', subject);
+
+    if (assessmentsError) throw assessmentsError;
+    if (!assessments || assessments.length === 0) {
+      throw new Error(`No published assessments found for subject: ${subject}`);
+    }
+
+    // Get questions from all assessments
+    const allQuestions: AssessmentQuestion[] = [];
+    for (const assessment of assessments) {
+      const questions = await this.getAssessmentQuestions(assessment.id);
+      if (questions.length >= 2) {
+        // Randomly select 2 questions from this assessment
+        const shuffled = questions.sort(() => 0.5 - Math.random());
+        allQuestions.push(...shuffled.slice(0, 2));
+      } else if (questions.length > 0) {
+        // If less than 2 questions, take all available
+        allQuestions.push(...questions);
+      }
+    }
+
+    if (allQuestions.length === 0) {
+      throw new Error(`No questions found in ${subject} assessments`);
+    }
+
+    // Calculate total marks
+    const totalMarks = allQuestions.reduce((sum, q) => sum + q.marks_available, 0);
+
+    // Create the exam assessment
+    const examTitle = `${subject} Exam - ${new Date().toLocaleDateString()}`;
+    const examAssessment = await this.createAssessment({
+      title: examTitle,
+      description: `Combined exam generated from ${assessments.length} ${subject} assessments`,
+      subject: subject,
+      total_marks: totalMarks,
+      time_limit_minutes: Math.max(60, allQuestions.length * 3), // 3 minutes per question, minimum 60 minutes
+    });
+
+    // Create questions for the exam with proper numbering
+    for (let i = 0; i < allQuestions.length; i++) {
+      const originalQuestion = allQuestions[i];
+      await this.createQuestion({
+        assessment_id: examAssessment.id,
+        question_number: i + 1,
+        question_text: originalQuestion.question_text,
+        question_type: originalQuestion.question_type,
+        marks_available: originalQuestion.marks_available,
+        correct_answer: originalQuestion.correct_answer,
+        marking_scheme: originalQuestion.marking_scheme,
+        keywords: originalQuestion.keywords,
+        position: i + 1,
+        image_url: originalQuestion.image_url,
+      });
+    }
+
+    return examAssessment;
+  },
+
   // Mark all answers in a session using AI
   async markAnswers(sessionId: string): Promise<void> {
     const { data, error } = await supabase.functions.invoke('ai-mark-assessment', {
