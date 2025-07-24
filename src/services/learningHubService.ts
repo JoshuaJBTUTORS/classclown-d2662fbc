@@ -574,6 +574,65 @@ export const learningHubService = {
     }
   },
 
+  // Module access control
+  checkModuleAccess: async (moduleId: string): Promise<boolean> => {
+    try {
+      const userEmail = await learningHubService.getCurrentUserEmail();
+      
+      // Get current module details
+      const { data: currentModule, error: moduleError } = await supabase
+        .from('course_modules')
+        .select('position, course_id')
+        .eq('id', moduleId)
+        .single();
+
+      if (moduleError || !currentModule) {
+        console.error('Error fetching module:', moduleError);
+        return false;
+      }
+
+      // If this is the first module, allow access
+      if (currentModule.position <= 1) {
+        return true;
+      }
+
+      // Get previous module
+      const { data: previousModule, error: prevModuleError } = await supabase
+        .from('course_modules')
+        .select('id')
+        .eq('course_id', currentModule.course_id)
+        .eq('position', currentModule.position - 1)
+        .single();
+
+      if (prevModuleError || !previousModule) {
+        console.error('Error fetching previous module:', prevModuleError);
+        return false;
+      }
+
+      // Check if previous module has assessments
+      const { data: assessments, error: assessmentError } = await supabase
+        .from('module_assessments')
+        .select('id')
+        .eq('module_id', previousModule.id);
+
+      if (assessmentError) {
+        console.error('Error fetching assessments:', assessmentError);
+        return false;
+      }
+
+      // If no assessments required, allow access
+      if (!assessments || assessments.length === 0) {
+        return true;
+      }
+
+      // Check if assessment is completed
+      return await learningHubService.isModuleAssessmentCompleted(previousModule.id);
+    } catch (error) {
+      console.error('Error checking module access:', error);
+      return false;
+    }
+  },
+
   // Assessment progression methods
   canProgressToModule: async (moduleId: string): Promise<boolean> => {
     try {

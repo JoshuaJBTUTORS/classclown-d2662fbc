@@ -20,6 +20,21 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
     enabled: modules.length > 0,
   });
   
+  // Add assessment status query
+  const { data: moduleAccessList } = useQuery({
+    queryKey: ['module-access-list', modules.map(m => m.id)],
+    queryFn: async () => {
+      if (!modules.length) return {};
+      const accessPromises = modules.map(async (module) => {
+        const hasAccess = await learningHubService.checkModuleAccess(module.id);
+        return [module.id, hasAccess];
+      });
+      const results = await Promise.all(accessPromises);
+      return Object.fromEntries(results);
+    },
+    enabled: modules.length > 0,
+  });
+
   // Fixed learning path stops from modules
   const learningStops = React.useMemo(() => {
     if (!modules || modules.length === 0) return [];
@@ -32,15 +47,19 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
         return module.lessons?.some((lesson: any) => lesson.id === progress.lesson_id);
       }) || [];
 
-      // Determine status based on progress
+      // Determine status based on progress and access control
       let status: WaypointStatus = 'locked';
       let progress = 0;
 
       const totalLessons = module.lessons?.length || 0;
       const completedLessons = moduleProgress.filter(p => p.status === 'completed').length;
+      const hasAccess = moduleAccessList?.[module.id] ?? (index === 0); // First module always accessible by default
 
-      if (index === 0) {
-        // First module is always available
+      if (!hasAccess) {
+        status = 'locked';
+        progress = 0;
+      } else {
+        // Module is accessible
         if (completedLessons === totalLessons && totalLessons > 0) {
           status = 'completed';
           progress = 100;
@@ -49,31 +68,6 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
           progress = Math.round((completedLessons / totalLessons) * 100);
         } else {
           status = 'available';
-          progress = 0;
-        }
-      } else {
-        // Check if previous module is completed
-        const prevModule = modules[index - 1];
-        const prevModuleProgress = userProgress?.filter(progress => {
-          return prevModule.lessons?.some((lesson: any) => lesson.id === progress.lesson_id);
-        }) || [];
-        const prevCompletedLessons = prevModuleProgress.filter(p => p.status === 'completed').length;
-        const prevTotalLessons = prevModule.lessons?.length || 0;
-        
-        if (prevCompletedLessons === prevTotalLessons && prevTotalLessons > 0) {
-          // Previous module completed, this one is available
-          if (completedLessons === totalLessons && totalLessons > 0) {
-            status = 'completed';
-            progress = 100;
-          } else if (completedLessons > 0) {
-            status = 'in_progress';
-            progress = Math.round((completedLessons / totalLessons) * 100);
-          } else {
-            status = 'available';
-            progress = 0;
-          }
-        } else {
-          status = 'locked';
           progress = 0;
         }
       }
@@ -87,7 +81,7 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
         module
       };
     });
-  }, [modules, userProgress]);
+  }, [modules, userProgress, moduleAccessList]);
   
   // Event handlers
   const handleStopClick = (stopId: string) => {

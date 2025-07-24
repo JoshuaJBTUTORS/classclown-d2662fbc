@@ -101,8 +101,26 @@ const CourseDetail = () => {
     }
   };
 
-  const handleModuleSelect = (moduleId: string) => {
-    navigate(`/course/${course.id}/module/${moduleId}`);
+  const handleModuleSelect = async (moduleId: string) => {
+    try {
+      const hasAccess = await learningHubService.checkModuleAccess(moduleId);
+      if (hasAccess) {
+        navigate(`/course/${course.id}/module/${moduleId}`);
+      } else {
+        toast({
+          title: "Module Locked",
+          description: "Complete the previous module's assessment to unlock this module.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error checking module access:', error);
+      toast({
+        title: "Error",
+        description: "Unable to check module access. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleBackToLearningHub = () => {

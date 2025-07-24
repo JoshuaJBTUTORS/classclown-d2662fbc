@@ -82,6 +82,12 @@ const ModuleDetail = () => {
     enabled: !!moduleId,
   });
 
+  const { data: hasModuleAccess, isLoading: accessLoading } = useQuery({
+    queryKey: ['module-access', moduleId],
+    queryFn: () => learningHubService.checkModuleAccess(moduleId!),
+    enabled: !!moduleId,
+  });
+
   const currentModule = modules?.find(m => m.id === moduleId);
   const lessons = currentModule?.lessons || [];
   const currentLesson = lessons[currentLessonIndex];
@@ -105,13 +111,18 @@ const ModuleDetail = () => {
       const currentModuleIndex = modules?.findIndex(m => m.id === moduleId) || 0;
       const nextModule = modules?.[currentModuleIndex + 1];
       if (nextModule) {
-        // Check if user can progress to next module (assessment requirement)
-        if (canProgressToNext) {
-          navigate(`/course/${courseId}/module/${nextModule.id}`);
-        } else {
-          // Show assessment requirement message
-          console.log('Assessment completion required before progressing to next module');
+        // Check if current module has required assessment
+        if (hasRequiredAssessment && !isAssessmentCompleted) {
+          toast({
+            title: "Assessment Required",
+            description: "You must complete the module assessment before proceeding to the next module.",
+            variant: "destructive",
+          });
+          setShowAssessmentDialog(true);
+          return;
         }
+        // Navigate to next module
+        navigate(`/course/${courseId}/module/${nextModule.id}`);
       }
     }
   };
@@ -185,7 +196,7 @@ const ModuleDetail = () => {
   };
 
 
-  if (courseLoading || !course || !currentModule) {
+  if (courseLoading || accessLoading || !course || !currentModule) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -201,6 +212,29 @@ const ModuleDetail = () => {
             <p className="text-gray-600 mb-4">You need to purchase this course to access the content.</p>
             <Button onClick={() => navigate(`/checkout/${courseId}`)}>
               Purchase Course
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check module access control
+  if (hasModuleAccess === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-lg">
+          <CardContent className="pt-6 text-center">
+            <div className="mb-4">
+              <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Module Locked</h2>
+              <p className="text-gray-600 mb-4">
+                You need to complete the assessment from the previous module to unlock this content.
+              </p>
+            </div>
+            <Button onClick={handleBackToCourse} variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Course
             </Button>
           </CardContent>
         </Card>
