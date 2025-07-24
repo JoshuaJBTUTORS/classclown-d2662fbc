@@ -151,6 +151,22 @@ const ModuleDetail = () => {
 
   const isLastLessonInModule = currentLessonIndex === lessons.length - 1;
   const hasRequiredAssessment = moduleAssessments && moduleAssessments.length > 0;
+
+  const getLessonProgress = (lessonId: string) => {
+    return userProgress?.find(p => p.lesson_id === lessonId);
+  };
+
+  const isLessonCompleted = (lessonId: string) => {
+    const progress = getLessonProgress(lessonId);
+    return progress?.status === 'completed';
+  };
+
+  const getModuleProgress = () => {
+    if (!lessons.length) return 0;
+    const completedLessons = lessons.filter(lesson => isLessonCompleted(lesson.id)).length;
+    return Math.round((completedLessons / lessons.length) * 100);
+  };
+
   const allLessonsCompleted = lessons.every(lesson => isLessonCompleted(lesson.id));
   const needsAssessment = isLastLessonInModule && hasRequiredAssessment && allLessonsCompleted && !isAssessmentCompleted;
 
@@ -168,20 +184,6 @@ const ModuleDetail = () => {
     }
   };
 
-  const getLessonProgress = (lessonId: string) => {
-    return userProgress?.find(p => p.lesson_id === lessonId);
-  };
-
-  const isLessonCompleted = (lessonId: string) => {
-    const progress = getLessonProgress(lessonId);
-    return progress?.status === 'completed';
-  };
-
-  const getModuleProgress = () => {
-    if (!lessons.length) return 0;
-    const completedLessons = lessons.filter(lesson => isLessonCompleted(lesson.id)).length;
-    return Math.round((completedLessons / lessons.length) * 100);
-  };
 
   if (courseLoading || !course || !currentModule) {
     return (
