@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
@@ -10,19 +10,13 @@ import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
   const { openBookingModal } = useTrialBooking();
-  
-  // Responsive sidebar state - start closed on mobile, open on desktop
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1024; // lg breakpoint
-    }
-    return false;
-  });
+  const { open: sidebarOpen, toggleSidebar } = useSidebar();
   
   // Filter state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -47,25 +41,10 @@ const Calendar = () => {
     filters
   });
 
-  // Handle window resize to adjust sidebar behavior
-  useEffect(() => {
-    const handleResize = () => {
-      const isDesktop = window.innerWidth >= 1024;
-      if (!isDesktop && sidebarOpen) {
-        setSidebarOpen(false); // Auto-close on mobile
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarOpen]);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   const closeSidebar = () => {
-    setSidebarOpen(false);
+    if (sidebarOpen) {
+      toggleSidebar();
+    }
   };
 
   const toggleFilters = () => {
@@ -96,13 +75,9 @@ const Calendar = () => {
   // If user has learning_hub_only role, show locked feature
   if (isLearningHubOnly) {
     return (
-      <div className="flex min-h-screen bg-gray-50 w-full">
+      <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className={cn(
-          "flex flex-col flex-1 transition-all duration-300 w-full",
-          "lg:ml-0",
-          sidebarOpen && "lg:ml-64"
-        )}>
+        <div className="flex flex-col flex-1 w-full">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <LockedFeature
@@ -112,19 +87,15 @@ const Calendar = () => {
             />
           </main>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-white w-full">
+    <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       
-      <div className={cn(
-        "flex flex-col flex-1 transition-all duration-300 w-full",
-        "lg:ml-0",
-        sidebarOpen && "lg:ml-64"
-      )}>
+      <div className="flex flex-col flex-1 w-full">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
           {/* Header - Fixed height */}
@@ -157,7 +128,7 @@ const Calendar = () => {
         onToggle={toggleFilters}
         sidebarOpen={sidebarOpen}
       />
-    </div>
+    </>
   );
 };
 
