@@ -26,6 +26,7 @@ export default {
 		extend: {
 			fontFamily: {
 				playfair: ['Playfair Display', 'serif'],
+				bubble: ['Fredoka One', 'cursive'],
 				sans: ['Helvetica', 'Arial', 'sans-serif'],
 				sidebar: ['Inter', 'sans-serif']
 			},
