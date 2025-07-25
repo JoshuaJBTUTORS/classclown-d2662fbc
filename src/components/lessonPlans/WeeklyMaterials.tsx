@@ -6,6 +6,7 @@ import { ChevronDown, Upload, Download, Trash2, FileText, Image, File } from 'lu
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import MaterialUpload from './MaterialUpload';
+import { useMaterialPermissions } from '@/hooks/useMaterialPermissions';
 
 interface TeachingMaterial {
   id: string;
@@ -32,6 +33,7 @@ const WeeklyMaterials: React.FC<WeeklyMaterialsProps> = ({ subject, weekNumber, 
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const permissions = useMaterialPermissions();
 
   useEffect(() => {
     if (isOpen) {
@@ -167,15 +169,17 @@ const WeeklyMaterials: React.FC<WeeklyMaterialsProps> = ({ subject, weekNumber, 
                 <span className="text-xs text-muted-foreground">
                   Week {weekNumber} Materials
                 </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowUpload(!showUpload)}
-                  className="h-7 text-xs"
-                >
-                  <Upload className="h-3 w-3 mr-1" />
-                  Upload
-                </Button>
+                {permissions.canUpload && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowUpload(!showUpload)}
+                    className="h-7 text-xs"
+                  >
+                    <Upload className="h-3 w-3 mr-1" />
+                    Upload
+                  </Button>
+                )}
               </div>
 
               {showUpload && (
@@ -229,14 +233,16 @@ const WeeklyMaterials: React.FC<WeeklyMaterialsProps> = ({ subject, weekNumber, 
                         >
                           <Download className="h-3 w-3" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDelete(material)}
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {permissions.canDelete && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(material)}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

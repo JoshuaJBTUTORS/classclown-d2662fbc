@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMaterialPermissions } from '@/hooks/useMaterialPermissions';
 
 interface MaterialUploadProps {
   subject: string;
@@ -28,6 +29,12 @@ const MaterialUpload: React.FC<MaterialUploadProps> = ({
   const [description, setDescription] = useState('');
   const [materialType, setMaterialType] = useState<string>('document');
   const [isUploading, setIsUploading] = useState(false);
+  const permissions = useMaterialPermissions();
+
+  // Don't render if user doesn't have upload permissions
+  if (!permissions.canUpload) {
+    return null;
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];

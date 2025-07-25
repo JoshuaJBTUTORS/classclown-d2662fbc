@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { FileText, Download, Trash2, Search, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMaterialPermissions } from '@/hooks/useMaterialPermissions';
 
 interface TeachingMaterial {
   id: string;
@@ -32,6 +33,7 @@ const MaterialList: React.FC<MaterialListProps> = ({ subject, onUpdate }) => {
   const [filteredMaterials, setFilteredMaterials] = useState<TeachingMaterial[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const permissions = useMaterialPermissions();
 
   useEffect(() => {
     fetchMaterials();
@@ -209,14 +211,16 @@ const MaterialList: React.FC<MaterialListProps> = ({ subject, onUpdate }) => {
                     >
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(material)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {permissions.canDelete && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(material)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
