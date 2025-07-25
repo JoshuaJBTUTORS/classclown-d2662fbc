@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -21,13 +22,7 @@ interface ReportFilters {
 }
 
 const Reports: React.FC = () => {
-  // Responsive sidebar state - start closed on mobile, open on desktop
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1024; // lg breakpoint
-    }
-    return false;
-  });
+  const { open: sidebarOpen, toggleSidebar } = useSidebar();
   
   const [filters, setFilters] = useState<ReportFilters>({
     dateRange: { from: null, to: null },
@@ -37,25 +32,10 @@ const Reports: React.FC = () => {
 
   const { userRole } = useAuth();
 
-  // Handle window resize to adjust sidebar behavior
-  useEffect(() => {
-    const handleResize = () => {
-      const isDesktop = window.innerWidth >= 1024;
-      if (!isDesktop && sidebarOpen) {
-        setSidebarOpen(false); // Auto-close on mobile
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarOpen]);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   const closeSidebar = () => {
-    setSidebarOpen(false);
+    if (sidebarOpen) {
+      toggleSidebar();
+    }
   };
 
   const handleFiltersChange = (newFilters: Partial<ReportFilters>) => {
@@ -65,13 +45,9 @@ const Reports: React.FC = () => {
   // Check if user has access to reports
   if (userRole !== 'owner') {
     return (
-      <div className="flex min-h-screen bg-background">
+      <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className={cn(
-          "flex flex-col flex-1 transition-all duration-300 w-full",
-          "lg:ml-0",
-          sidebarOpen && "lg:ml-64"
-        )}>
+        <div className="flex flex-col flex-1 w-full">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-8">
             <Alert variant="destructive">
@@ -83,18 +59,14 @@ const Reports: React.FC = () => {
             </Alert>
           </main>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className={cn(
-        "flex flex-col flex-1 transition-all duration-300 w-full",
-        "lg:ml-0",
-        sidebarOpen && "lg:ml-64"
-      )}>
+      <div className="flex flex-col flex-1 w-full">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <PageTitle 
@@ -132,7 +104,7 @@ const Reports: React.FC = () => {
           </div>
         </main>
       </div>
-    </div>
+    </>
   );
 };
 

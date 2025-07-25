@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -57,35 +58,14 @@ const Students = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditParentDialogOpen, setIsEditParentDialogOpen] = useState(false);
   
-  // Responsive sidebar state - start closed on mobile, open on desktop
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1024; // lg breakpoint
-    }
-    return false;
-  });
+  const { open: sidebarOpen, toggleSidebar } = useSidebar();
   
   const { isParent, isAdmin, isOwner, user, userRole, parentProfile } = useAuth();
 
-  // Handle window resize to adjust sidebar behavior
-  useEffect(() => {
-    const handleResize = () => {
-      const isDesktop = window.innerWidth >= 1024;
-      if (!isDesktop && sidebarOpen) {
-        setSidebarOpen(false); // Auto-close on mobile
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarOpen]);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   const closeSidebar = () => {
-    setSidebarOpen(false);
+    if (sidebarOpen) {
+      toggleSidebar();
+    }
   };
 
   const fetchStudents = async () => {
@@ -319,13 +299,9 @@ const Students = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className={cn(
-        "flex flex-col flex-1 transition-all duration-300 w-full",
-        "lg:ml-0",
-        sidebarOpen && "lg:ml-64"
-      )}>
+      <div className="flex flex-col flex-1 w-full">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col md:flex-row items-center justify-between mb-6">
@@ -558,7 +534,7 @@ const Students = () => {
           />
         </main>
       </div>
-    </div>
+    </>
   );
 };
 

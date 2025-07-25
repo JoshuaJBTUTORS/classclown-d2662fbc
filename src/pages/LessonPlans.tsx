@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,12 +27,7 @@ interface LessonPlan {
 }
 
 const LessonPlans: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1024;
-    }
-    return false;
-  });
+  const { open: sidebarOpen, toggleSidebar } = useSidebar();
   const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<LessonPlan[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,11 +36,9 @@ const LessonPlans: React.FC = () => {
   const { isAdmin, isOwner, isTutor } = useAuth();
 
   const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+    if (sidebarOpen) {
+      toggleSidebar();
+    }
   };
 
   // Get unique subjects from lesson plans
@@ -113,13 +107,9 @@ const LessonPlans: React.FC = () => {
 
   if (!isAdmin && !isOwner && !isTutor) {
     return (
-      <div className="flex min-h-screen bg-background">
+      <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className={cn(
-          "flex flex-col flex-1 transition-all duration-300 w-full",
-          "lg:ml-0",
-          sidebarOpen && "lg:ml-64"
-        )}>
+        <div className="flex flex-col flex-1 w-full">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <div className="text-center">
@@ -128,19 +118,15 @@ const LessonPlans: React.FC = () => {
             </div>
           </main>
         </div>
-      </div>
+      </>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-background">
+      <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className={cn(
-          "flex flex-col flex-1 transition-all duration-300 w-full",
-          "lg:ml-0",
-          sidebarOpen && "lg:ml-64"
-        )}>
+        <div className="flex flex-col flex-1 w-full">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <div className="flex items-center justify-center h-64">
@@ -148,18 +134,14 @@ const LessonPlans: React.FC = () => {
             </div>
           </main>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className={cn(
-        "flex flex-col flex-1 transition-all duration-300 w-full",
-        "lg:ml-0",
-        sidebarOpen && "lg:ml-64"
-      )}>
+      <div className="flex flex-col flex-1 w-full">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="flex items-center justify-between mb-6">
@@ -264,7 +246,7 @@ const LessonPlans: React.FC = () => {
           )}
         </main>
       </div>
-    </div>
+    </>
   );
 };
 
