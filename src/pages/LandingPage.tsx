@@ -22,7 +22,7 @@ const LandingPage = () => {
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
-    navigate('/dashboard');
+    navigate('/');
   };
 
   return (
