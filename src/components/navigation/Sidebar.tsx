@@ -154,6 +154,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     return null;
   };
 
+  const getGroupLabelByRole = (defaultLabel: string, userRole: string | null): string => {
+    // Keep original labels for admins and owners
+    if (userRole === 'admin' || userRole === 'owner') {
+      return defaultLabel;
+    }
+    
+    // Use new labels for tutors, parents, and students
+    switch (defaultLabel) {
+      case 'Core Operations':
+        return 'Lesson Management';
+      case 'People Management':
+        return 'Admin Support';
+      case 'Business Development':
+        return 'Extra Support';
+      default:
+        return defaultLabel;
+    }
+  };
+
   const currentUserRole = getCurrentUserRole();
   
   const filteredMenuGroups = menuGroups.map(group => ({
@@ -244,9 +263,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             ? "bg-primary/10 text-primary shadow-sm" 
                             : "text-muted-foreground"
                         )}>
-                          <span className="transition-all duration-200 group-hover:tracking-wide">
-                            {group.label}
-                          </span>
+                           <span className="transition-all duration-200 group-hover:tracking-wide">
+                             {getGroupLabelByRole(group.label, currentUserRole)}
+                           </span>
                           {isExpanded ? (
                             <ChevronDown className="h-3 w-3 transition-transform duration-200 group-hover:scale-110" />
                           ) : (
