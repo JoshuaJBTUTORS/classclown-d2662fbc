@@ -249,12 +249,14 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
           </div>
         )}
 
-        {/* LessonSpace Iframe - No key prop to prevent forced recreation */}
+        {/* LessonSpace Iframe - Aligned with LessonSpace best practices */}
         <iframe
+          id="lessonspace-video-room"
           src={displayUrl}
           className="w-full h-full border-0"
-          allow="camera; microphone; display-capture; fullscreen"
+          allow="camera; microphone; display-capture; autoplay; fullscreen"
           allowFullScreen
+          frameBorder="0"
           onLoad={handleIframeLoad}
           onError={handleIframeError}
           title="LessonSpace Video Room"
