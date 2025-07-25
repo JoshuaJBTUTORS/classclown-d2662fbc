@@ -70,6 +70,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           href: '/homework',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
+        {
+          icon: Building2,
+          label: 'Learning Hub',
+          href: '/learning-hub',
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
+        },
       ]
     },
     {
@@ -111,12 +117,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Business Development',
       items: [
-        {
-          icon: Building2,
-          label: 'Learning Hub',
-          href: '/learning-hub',
-          roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
-        },
         {
           icon: Video,
           label: 'Trial Bookings',
