@@ -42,6 +42,7 @@ const BIOLOGY_QUESTION_MODULE_MAPPING: QuestionModuleMapping = {
 
 // Map module names to topic keywords for matching
 const MODULE_TOPIC_MAPPING: { [key: string]: string[] } = {
+  'getting-started': ['getting', 'started', 'introduction', 'intro', 'welcome', 'beginning'],
   'cell-biology': ['cell', 'biology', 'cellular', 'organelle', 'membrane', 'cytoplasm', 'nucleus'],
   'organisation': ['organisation', 'organization', 'tissue', 'organ', 'system', 'structure'],
   'infection-response': ['infection', 'response', 'immune', 'disease', 'pathogen', 'antibody'],
@@ -174,10 +175,10 @@ export const personalizedLearningPathService = {
         moduleData: CourseModule;
       } } = {};
 
-      // Initialize module performance tracking
+      // Initialize module performance tracking, but exclude "Getting Started"
       modules.forEach(module => {
         const moduleKey = personalizedLearningPathService.getModuleKeyFromModule(module);
-        if (moduleKey) {
+        if (moduleKey && moduleKey !== 'getting-started') {
           modulePerformance[moduleKey] = {
             responses: [],
             moduleData: module
@@ -295,9 +296,14 @@ export const personalizedLearningPathService = {
     // Create a copy of modules to avoid mutation
     const modules = [...originalModules].sort((a, b) => a.position - b.position);
     
-    // Always keep the first module (Getting Started) at position 0
-    const gettingStartedModule = modules.find(m => m.position === 0);
-    const otherModules = modules.filter(m => m.position !== 0);
+    // Find "Getting Started" module by title keywords, not just position
+    const isGettingStartedModule = (module: CourseModule): boolean => {
+      const moduleKey = personalizedLearningPathService.getModuleKeyFromModule(module);
+      return moduleKey === 'getting-started' || module.position === 0;
+    };
+    
+    const gettingStartedModule = modules.find(isGettingStartedModule);
+    const otherModules = modules.filter(m => !isGettingStartedModule(m));
     
     // Create struggle score map for quick lookup
     const struggleMap = new Map(
@@ -326,7 +332,7 @@ export const personalizedLearningPathService = {
     // Update positions to maintain sequence - Getting Started stays at 0, others start from 1
     return reorderedModules.map((module, index) => ({
       ...module,
-      position: index === 0 && gettingStartedModule ? 0 : index
+      position: gettingStartedModule && index === 0 ? 0 : (gettingStartedModule ? index : index + 1)
     }));
   },
 
