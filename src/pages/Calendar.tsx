@@ -32,6 +32,21 @@ const Calendar = () => {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
 
+  // Memoize filters to prevent infinite loop - only recreate when dependencies change
+  const filters = useMemo(() => ({
+    selectedStudents,
+    selectedTutors
+  }), [selectedStudents, selectedTutors]);
+
+  // Fetch calendar data using the hook (always call hooks)
+  const { events, isLoading } = useCalendarData({
+    userRole,
+    userEmail: user?.email || null,
+    isAuthenticated: !!user,
+    refreshKey,
+    filters
+  });
+
   // Handle window resize to adjust sidebar behavior
   useEffect(() => {
     const handleResize = () => {
@@ -57,6 +72,27 @@ const Calendar = () => {
     setFiltersOpen(!filtersOpen);
   };
 
+  // Filter handlers
+  const handleStudentFilterChange = (studentIds: string[]) => {
+    setSelectedStudents(studentIds);
+  };
+
+  const handleTutorFilterChange = (tutorIds: string[]) => {
+    setSelectedTutors(tutorIds);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedStudents([]);
+    setSelectedTutors([]);
+  };
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  // Check if user can see filters (admin/owner only for full filters)
+  const canUseFilters = userRole === 'admin' || userRole === 'owner';
+
   // If user has learning_hub_only role, show locked feature
   if (isLearningHubOnly) {
     return (
@@ -79,42 +115,6 @@ const Calendar = () => {
       </div>
     );
   }
-
-  // Memoize filters to prevent infinite loop - only recreate when dependencies change
-  const filters = useMemo(() => ({
-    selectedStudents,
-    selectedTutors
-  }), [selectedStudents, selectedTutors]);
-
-  // Fetch calendar data using the hook
-  const { events, isLoading } = useCalendarData({
-    userRole,
-    userEmail: user?.email || null,
-    isAuthenticated: !!user,
-    refreshKey,
-    filters
-  });
-
-  // Filter handlers
-  const handleStudentFilterChange = (studentIds: string[]) => {
-    setSelectedStudents(studentIds);
-  };
-
-  const handleTutorFilterChange = (tutorIds: string[]) => {
-    setSelectedTutors(tutorIds);
-  };
-
-  const handleClearFilters = () => {
-    setSelectedStudents([]);
-    setSelectedTutors([]);
-  };
-
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  // Check if user can see filters (admin/owner only for full filters)
-  const canUseFilters = userRole === 'admin' || userRole === 'owner';
 
   return (
     <div className="flex min-h-screen bg-white w-full">
