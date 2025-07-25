@@ -18,6 +18,17 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from '@/components/ui/sidebar';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -29,79 +40,99 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly } = useAuth();
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
-  const menuItems = [
+  const menuGroups = [
     {
-      icon: Calendar,
-      label: 'Calendar',
-      href: '/calendar',
-      roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+      label: 'Core Operations',
+      items: [
+        {
+          icon: Calendar,
+          label: 'Calendar',
+          href: '/calendar',
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+        },
+        {
+          icon: GraduationCap,
+          label: 'Lesson Plans',
+          href: '/lesson-plans',
+          roles: ['admin', 'owner', 'tutor'],
+        },
+        {
+          icon: FileText,
+          label: 'Homework',
+          href: '/homework',
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+        },
+      ]
     },
     {
-      icon: Users,
-      label: isParent ? 'My Children' : 'Clients',
-      href: '/students',
-      roles: ['admin', 'owner', 'parent'],
+      label: 'People Management',
+      items: [
+        {
+          icon: Users,
+          label: isParent ? 'My Children' : 'Clients',
+          href: '/students',
+          roles: ['admin', 'owner', 'parent'],
+        },
+        {
+          icon: UserCheck,
+          label: 'Tutors',
+          href: '/tutors',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: ClipboardList,
+          label: 'Time Off Requests',
+          href: '/time-off-requests',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: Clock,
+          label: 'Time Off',
+          href: '/time-off',
+          roles: ['tutor'],
+        },
+        {
+          icon: MessageSquare,
+          label: 'Team Chat',
+          href: '#',
+          roles: ['admin', 'owner', 'tutor'],
+          onClick: () => setIsChatModalOpen(true),
+        },
+      ]
     },
     {
-      icon: UserCheck,
-      label: 'Tutors',
-      href: '/tutors',
-      roles: ['admin', 'owner'],
+      label: 'Business Development',
+      items: [
+        {
+          icon: Building2,
+          label: 'Learning Hub',
+          href: '/learning-hub',
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
+        },
+        {
+          icon: Video,
+          label: 'Trial Bookings',
+          href: '/trial-bookings',
+          roles: ['admin', 'owner'],
+        },
+      ]
     },
     {
-      icon: GraduationCap,
-      label: 'Lesson Plans',
-      href: '/lesson-plans',
-      roles: ['admin', 'owner', 'tutor'],
-    },
-    {
-      icon: FileText,
-      label: 'Homework',
-      href: '/homework',
-      roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
-    },
-    {
-      icon: TrendingUp,
-      label: 'Progress',
-      href: '/progress',
-      roles: ['admin', 'owner', 'parent', 'student'],
-    },
-    {
-      icon: BarChart3,
-      label: 'Reports',
-      href: '/reports',
-      roles: ['admin', 'owner'],
-    },
-    {
-      icon: Clock,
-      label: 'Time Off',
-      href: '/time-off',
-      roles: ['tutor'],
-    },
-    {
-      icon: ClipboardList,
-      label: 'Time Off Requests',
-      href: '/time-off-requests',
-      roles: ['admin', 'owner'],
-    },
-    {
-      icon: Video,
-      label: 'Trial Bookings',
-      href: '/trial-bookings',
-      roles: ['admin', 'owner'],
-    },
-    {
-      icon: Building2,
-      label: 'Learning Hub',
-      href: '/learning-hub',
-      roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
-    },
-    {
-      icon: MessageSquare,
-      label: 'Team Chat',
-      href: '#',
-      roles: ['admin', 'owner', 'tutor'],
-      onClick: () => setIsChatModalOpen(true),
+      label: 'Analytics & Insights',
+      items: [
+        {
+          icon: TrendingUp,
+          label: 'Progress',
+          href: '/progress',
+          roles: ['admin', 'owner', 'parent', 'student'],
+        },
+        {
+          icon: BarChart3,
+          label: 'Reports',
+          href: '/reports',
+          roles: ['admin', 'owner'],
+        },
+      ]
     },
   ];
 
@@ -116,9 +147,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   };
 
   const currentUserRole = getCurrentUserRole();
-  const filteredMenuItems = menuItems.filter(item => 
-    currentUserRole && item.roles.includes(currentUserRole)
-  );
+  
+  const filteredMenuGroups = menuGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => 
+      currentUserRole && item.roles.includes(currentUserRole)
+    )
+  })).filter(group => group.items.length > 0);
 
   return (
     <>
@@ -153,46 +188,54 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto py-4">
-            <ul className="space-y-2 px-3">
-              {filteredMenuItems.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <li key={item.href}>
-                    {item.href === '#' ? (
-                      <button
-                        onClick={() => {
-                          item.onClick?.();
-                          onClose();
-                        }}
-                        className={cn(
-                          'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left',
-                          'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                        )}
-                      >
-                        <item.icon className="h-5 w-5" />
-                        {item.label}
-                      </button>
-                    ) : (
-                      <Link
-                        to={item.href}
-                        onClick={onClose}
-                        className={cn(
-                          'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                        )}
-                      >
-                        <item.icon className="h-5 w-5" />
-                        {item.label}
-                      </Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          <SidebarContent className="flex-1 overflow-y-auto py-4">
+            {filteredMenuGroups.map((group, groupIndex) => (
+              <div key={group.label}>
+                <SidebarGroup>
+                  <SidebarGroupLabel className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    {group.label}
+                  </SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {group.items.map((item) => {
+                        const isActive = location.pathname === item.href;
+                        return (
+                          <SidebarMenuItem key={item.href}>
+                            <SidebarMenuButton asChild isActive={isActive}>
+                              {item.href === '#' ? (
+                                <button
+                                  onClick={() => {
+                                    item.onClick?.();
+                                    onClose();
+                                  }}
+                                  className="w-full flex items-center gap-3 text-left"
+                                >
+                                  <item.icon className="h-4 w-4" />
+                                  <span>{item.label}</span>
+                                </button>
+                              ) : (
+                                <Link
+                                  to={item.href}
+                                  onClick={onClose}
+                                  className="flex items-center gap-3"
+                                >
+                                  <item.icon className="h-4 w-4" />
+                                  <span>{item.label}</span>
+                                </Link>
+                              )}
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+                {groupIndex < filteredMenuGroups.length - 1 && (
+                  <SidebarSeparator className="mx-3 my-4" />
+                )}
+              </div>
+            ))}
+          </SidebarContent>
         </div>
       </aside>
 
