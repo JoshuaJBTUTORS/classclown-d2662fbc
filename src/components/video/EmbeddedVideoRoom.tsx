@@ -32,7 +32,6 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   onExit,
   className = ""
 }) => {
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isTabVisible, setIsTabVisible] = useState(true);
@@ -85,10 +84,6 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
     toast.error('Failed to load video room');
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
   const handleSoftRefresh = () => {
     setIsLoading(true);
     setHasError(false);
@@ -132,9 +127,9 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   }
 
   return (
-    <div className={`${className} ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'w-full h-full'}`}>
+    <div className={`${className} fixed inset-0 z-50 bg-black`}>
       {/* Header Controls */}
-      <div className={`flex items-center justify-between p-2 md:p-4 bg-gradient-to-r from-background to-background/95 border-b border-border/20 ${isFullscreen ? 'shadow-lg' : ''}`}>
+      <div className="flex items-center justify-between p-2 md:p-4 bg-gradient-to-r from-background to-background/95 border-b border-border/20 shadow-lg">
         <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
           <Button 
             onClick={onExit} 
@@ -143,7 +138,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
             className="flex items-center gap-1 md:gap-2 shrink-0"
           >
             <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
-            {!isMobile ? (isFullscreen ? 'Exit Room' : 'Back') : ''}
+            {!isMobile ? 'Exit Room' : ''}
           </Button>
           <div className="flex items-center gap-1 md:gap-2 min-w-0 flex-1">
             <h2 className="font-semibold text-foreground text-sm md:text-base truncate">{lessonTitle}</h2>
@@ -183,20 +178,11 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
             <ExternalLink className="h-3 w-3 md:h-4 md:w-4" />
             {!isMobile && <span className="ml-2">New Tab</span>}
           </Button>
-          
-          <Button onClick={toggleFullscreen} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
-            {isFullscreen ? (
-              <Minimize2 className="h-3 w-3 md:h-4 md:w-4" />
-            ) : (
-              <Maximize2 className="h-3 w-3 md:h-4 md:w-4" />
-            )}
-            {!isMobile && <span className="ml-2">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>}
-          </Button>
         </div>
       </div>
 
       {/* Video Room Content */}
-      <div className={`relative ${isFullscreen ? 'h-[calc(100vh-80px)]' : 'h-[600px]'} bg-gray-100`}>
+      <div className="relative h-[calc(100vh-80px)] bg-gray-100">
         {/* Tab Switch Message */}
         {showTabMessage && !isTabVisible && (
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg z-20 text-sm">
