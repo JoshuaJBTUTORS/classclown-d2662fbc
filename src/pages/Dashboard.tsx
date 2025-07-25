@@ -20,6 +20,11 @@ const Dashboard = () => {
     return <Navigate to="/progress" replace />;
   }
 
+  // Redirect learning hub users to learning hub
+  if (userRole === 'learning_hub_only') {
+    return <Navigate to="/learning-hub" replace />;
+  }
+
   // Show admin dashboard for other roles
   return <Index />;
 };

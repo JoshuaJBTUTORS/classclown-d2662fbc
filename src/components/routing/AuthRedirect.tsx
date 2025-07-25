@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage';
 
 const AuthRedirect = () => {
-  const { user, loading } = useAuth();
+  const { user, userRole, loading } = useAuth();
 
   if (loading) {
     return (
@@ -14,8 +14,13 @@ const AuthRedirect = () => {
     );
   }
 
-  // If user is authenticated, redirect to dashboard
+  // If user is authenticated, redirect based on role
   if (user) {
+    // Learning hub users should go directly to learning hub
+    if (userRole === 'learning_hub_only') {
+      return <Navigate to="/learning-hub" replace />;
+    }
+    // All other users go to dashboard
     return <Navigate to="/dashboard" replace />;
   }
 
