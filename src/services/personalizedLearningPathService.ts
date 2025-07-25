@@ -389,5 +389,41 @@ export const personalizedLearningPathService = {
       console.error('Error getting cached personalized path:', error);
       return null;
     }
+  },
+
+  /**
+   * Clear cached personalized path for a specific user and course
+   */
+  clearCachedPersonalizedPath: async (
+    userId: string, 
+    courseId: string
+  ): Promise<void> => {
+    try {
+      const cacheKey = `personalized_path_${userId}_${courseId}`;
+      localStorage.removeItem(cacheKey);
+      console.log(`Cleared personalized path cache for user ${userId}, course ${courseId}`);
+    } catch (error) {
+      console.error('Error clearing cached personalized path:', error);
+    }
+  },
+
+  /**
+   * Clear all personalized path cache for a user
+   */
+  clearAllUserCache: async (userId: string): Promise<void> => {
+    try {
+      // Get all localStorage keys
+      const keys = Object.keys(localStorage);
+      const userCacheKeys = keys.filter(key => key.startsWith(`personalized_path_${userId}_`));
+      
+      // Remove all user's cached paths
+      userCacheKeys.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      console.log(`Cleared ${userCacheKeys.length} cached personalized paths for user ${userId}`);
+    } catch (error) {
+      console.error('Error clearing all user cache:', error);
+    }
   }
 };

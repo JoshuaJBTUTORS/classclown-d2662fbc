@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
 import LearningPathContainer from '@/components/learningHub/LearningPath/LearningPathContainer';
+import { CacheClearButton } from '@/components/learningHub/CacheClearButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -192,10 +193,13 @@ const CourseDetail = () => {
                 </div>
 
                 {hasAccess ? (
-                  <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90 w-full md:w-auto">
-                    <Play className="h-5 w-5 mr-2" />
-                    {isOwner ? 'Access Course (Admin)' : 'Continue Learning'}
-                  </Button>
+                  <div className="flex gap-3 flex-wrap">
+                    <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90 flex-1 md:flex-none">
+                      <Play className="h-5 w-5 mr-2" />
+                      {isOwner ? 'Access Course (Admin)' : 'Continue Learning'}
+                    </Button>
+                    <CacheClearButton courseId={course.id} variant="outline" />
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     <div className={`flex items-center gap-3 ${isMobile ? 'flex-col items-start' : ''}`}>
