@@ -209,7 +209,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center gap-2">
-              <GraduationCap className="h-8 w-8 text-primary" />
+              <img 
+                src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+                alt="JB Tutors Logo" 
+                className="h-8 w-8 object-contain"
+              />
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-gray-900">Classclown</span>
                 <span className="text-xs text-gray-500">powered by JB Tutors</span>
@@ -232,12 +236,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(group.label)}>
                     <SidebarGroup>
                       <CollapsibleTrigger asChild>
-                        <button className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/50 rounded-md transition-colors">
-                          <span>{group.label}</span>
+                        <button className={cn(
+                          "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-all duration-200 ease-in-out group",
+                          "hover:bg-primary/10 hover:text-primary hover:scale-[1.02] hover:shadow-sm",
+                          "active:scale-[0.98] active:bg-primary/20",
+                          isExpanded 
+                            ? "bg-primary/10 text-primary shadow-sm" 
+                            : "text-muted-foreground"
+                        )}>
+                          <span className="transition-all duration-200 group-hover:tracking-wide">
+                            {group.label}
+                          </span>
                           {isExpanded ? (
-                            <ChevronDown className="h-3 w-3" />
+                            <ChevronDown className="h-3 w-3 transition-transform duration-200 group-hover:scale-110" />
                           ) : (
-                            <ChevronRight className="h-3 w-3" />
+                            <ChevronRight className="h-3 w-3 transition-transform duration-200 group-hover:scale-110" />
                           )}
                         </button>
                       </CollapsibleTrigger>
