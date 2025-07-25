@@ -35,7 +35,8 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  const [showTabMessage, setShowTabMessage] = useState(false);
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
   const isMobile = useIsMobile();
 
@@ -49,8 +50,29 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
     // Reset states when roomUrl changes
     setIsLoading(true);
     setHasError(false);
-    setRetryCount(0);
   }, [displayUrl]);
+
+  // Handle tab visibility changes to provide better UX
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isVisible = !document.hidden;
+      setIsTabVisible(isVisible);
+      
+      if (!isVisible) {
+        // Tab is hidden - video will freeze naturally (LessonSpace behavior)
+        setShowTabMessage(true);
+      } else if (showTabMessage) {
+        // Tab is visible again - clear message after a delay
+        setTimeout(() => setShowTabMessage(false), 3000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [showTabMessage]);
 
   const handleIframeLoad = () => {
     setIsLoading(false);
@@ -67,10 +89,19 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
+  const handleSoftRefresh = () => {
     setIsLoading(true);
     setHasError(false);
+    // Soft refresh without destroying iframe
+    const iframe = document.querySelector('iframe[title="LessonSpace Video Room"]') as HTMLIFrameElement;
+    if (iframe) {
+      iframe.src = iframe.src; // Refresh without destroying
+    }
+  };
+
+  const handleHardRefresh = () => {
+    // Force page reload as last resort
+    window.location.reload();
   };
 
   const openInNewTab = () => {
@@ -136,10 +167,16 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
         
         <div className="flex items-center gap-1 md:gap-2 shrink-0">
           {hasError && (
-            <Button onClick={handleRetry} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
-              <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
-              {!isMobile && <span className="ml-2">Retry</span>}
-            </Button>
+            <>
+              <Button onClick={handleSoftRefresh} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
+                <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
+                {!isMobile && <span className="ml-2">Refresh</span>}
+              </Button>
+              <Button onClick={handleHardRefresh} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2 text-destructive">
+                <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
+                {!isMobile && <span className="ml-2">Hard Reset</span>}
+              </Button>
+            </>
           )}
           
           <Button onClick={openInNewTab} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
@@ -160,6 +197,13 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
 
       {/* Video Room Content */}
       <div className={`relative ${isFullscreen ? 'h-[calc(100vh-80px)]' : 'h-[600px]'} bg-gray-100`}>
+        {/* Tab Switch Message */}
+        {showTabMessage && !isTabVisible && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg z-20 text-sm">
+            Video paused due to tab switch - click here when you return
+          </div>
+        )}
+
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
@@ -179,29 +223,34 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Failed to Load Video Room
+                  Connection Issue
                 </h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  There was an error loading the video room. You can try refreshing or open it in a new tab.
+                  Video room connection lost. Try refreshing gently first, or use hard reset if needed.
                 </p>
               </div>
-              <div className="flex gap-2 justify-center">
-                <Button onClick={handleRetry} variant="outline">
+              <div className="flex flex-col gap-2 justify-center">
+                <Button onClick={handleSoftRefresh} variant="outline">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Try Again
+                  Refresh Connection
                 </Button>
-                <Button onClick={openInNewTab}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Open in New Tab
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={openInNewTab} variant="outline" size="sm">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    New Tab
+                  </Button>
+                  <Button onClick={handleHardRefresh} variant="destructive" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Hard Reset
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* LessonSpace Iframe */}
+        {/* LessonSpace Iframe - No key prop to prevent forced recreation */}
         <iframe
-          key={`${displayUrl}-${retryCount}`} // Force reload on retry
           src={displayUrl}
           className="w-full h-full border-0"
           allow="camera; microphone; display-capture; fullscreen"
