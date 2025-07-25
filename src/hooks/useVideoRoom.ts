@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,9 +26,15 @@ export const useVideoRoom = (lessonId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [expectedStudents, setExpectedStudents] = useState<ExpectedStudent[]>([]);
   const [studentContext, setStudentContext] = useState<StudentContext | null>(null);
+  
+  // Track if initial load has completed to prevent unnecessary reloads
+  const hasLoadedRef = useRef(false);
 
-  // Map admin/owner roles to video room role
-  const videoRoomRole = (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student');
+  // Memoize video room role to prevent unnecessary recalculations
+  const videoRoomRole = useMemo(() => 
+    (userRole === 'admin' || userRole === 'owner') ? 'tutor' : (userRole as 'tutor' | 'student'),
+    [userRole]
+  );
 
   const determineStudentContext = async (): Promise<StudentContext | null> => {
     try {
@@ -100,13 +106,17 @@ export const useVideoRoom = (lessonId: string) => {
   };
 
   useEffect(() => {
-    if (!user || !lessonId) {
+    if (!user?.id || !lessonId) {
       navigate('/auth');
       return;
     }
     
-    loadVideoRoom();
-  }, [user, lessonId]);
+    // Only load if we haven't loaded yet or if the user ID or lesson ID actually changed
+    if (!hasLoadedRef.current) {
+      loadVideoRoom();
+      hasLoadedRef.current = true;
+    }
+  }, [user?.id, lessonId]); // Watch user.id instead of user object reference
 
   const loadVideoRoom = async () => {
     try {
