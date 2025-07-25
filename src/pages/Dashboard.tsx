@@ -2,7 +2,9 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import Index from './Index';
+import AdminDashboard from '@/components/dashboard/AdminDashboard';
+import TutorDashboard from '@/components/dashboard/TutorDashboard';
+import StudentParentDashboard from '@/components/dashboard/StudentParentDashboard';
 
 const Dashboard = () => {
   const { userRole, loading } = useAuth();
@@ -15,18 +17,27 @@ const Dashboard = () => {
     );
   }
 
-  // Redirect students and parents to progress page
-  if (userRole === 'student' || userRole === 'parent') {
-    return <Navigate to="/progress" replace />;
-  }
-
   // Redirect learning hub users to learning hub
   if (userRole === 'learning_hub_only') {
     return <Navigate to="/learning-hub" replace />;
   }
 
-  // Show admin dashboard for other roles
-  return <Index />;
+  // Show role-specific dashboards
+  switch (userRole) {
+    case 'admin':
+    case 'owner':
+      return <AdminDashboard />;
+    
+    case 'tutor':
+      return <TutorDashboard />;
+    
+    case 'student':
+    case 'parent':
+      return <StudentParentDashboard />;
+    
+    default:
+      return <AdminDashboard />;
+  }
 };
 
 export default Dashboard;
