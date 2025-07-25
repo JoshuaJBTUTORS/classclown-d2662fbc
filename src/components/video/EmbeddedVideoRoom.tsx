@@ -122,7 +122,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   return (
     <div className={`${className} fixed inset-0 z-50 bg-black`}>
       {/* Header Controls */}
-      <div className="flex items-center justify-between p-2 md:p-4 bg-[hsl(var(--deep-purple-blue))] border-b border-border/20 shadow-lg">
+      <div className="flex items-center justify-between p-2 md:p-4 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))] to-[hsl(var(--medium-blue))] border-b border-border/20 shadow-lg">
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <Button 
             onClick={onExit} 
@@ -137,7 +137,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
         
         <div className="flex-1 flex flex-col items-center justify-center min-w-0">
           <div className="flex items-center gap-2 md:gap-3 justify-center">
-            <h2 className="font-bold text-white font-bubble text-lg md:text-2xl text-center">{lessonTitle}</h2>
+            <h2 className="font-bold text-white font-bubble text-sm md:text-lg text-center">{lessonTitle}</h2>
             {!isMobile && (
               <>
                 {isTeacherRole ? (
