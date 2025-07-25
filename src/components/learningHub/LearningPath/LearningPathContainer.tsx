@@ -210,28 +210,29 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
             <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
               {/* Main path background */}
               <path
-                d={`M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550`}
-                stroke="hsl(var(--muted-foreground) / 0.3)"
+                d="M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550"
+                stroke="#e2e8f0"
                 strokeWidth="16"
                 fill="none"
                 className="drop-shadow-sm"
               />
               {/* Path center line */}
               <path
-                d={`M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550`}
-                stroke="hsl(var(--primary) / 0.8)"
+                d="M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550"
+                stroke="#3b82f6"
                 strokeWidth="6"
                 fill="none"
               />
-              {/* Animated progress line */}
-              <path
-                d={`M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550`}
-                stroke="hsl(var(--primary))"
-                strokeWidth="3"
-                fill="none"
-                strokeDasharray="8,8"
-                className="animate-pulse"
-              />
+              {/* Progress dots along path */}
+              <circle cx="40" cy="50" r="3" fill="#1d4ed8" />
+              <circle cx="50" cy="75" r="2" fill="#3b82f6" opacity="0.7" />
+              <circle cx="40" cy="150" r="3" fill="#1d4ed8" />
+              <circle cx="30" cy="175" r="2" fill="#3b82f6" opacity="0.7" />
+              <circle cx="40" cy="250" r="3" fill="#1d4ed8" />
+              <circle cx="50" cy="275" r="2" fill="#3b82f6" opacity="0.7" />
+              <circle cx="40" cy="350" r="3" fill="#1d4ed8" />
+              <circle cx="30" cy="375" r="2" fill="#3b82f6" opacity="0.7" />
+              <circle cx="40" cy="450" r="3" fill="#1d4ed8" />
             </svg>
             
             <div className="relative" style={{ zIndex: 2 }}>
@@ -270,7 +271,7 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
               {/* Main Quest Path Background */}
               <path
                 d="M100,150 Q200,100 300,120 Q400,140 500,100 Q600,60 700,80 Q800,100 900,80"
-                stroke="hsl(var(--muted-foreground) / 0.3)"
+                stroke="#e2e8f0"
                 strokeWidth="24"
                 fill="none"
                 className="drop-shadow-lg"
@@ -279,45 +280,50 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
               {/* Path centerline */}
               <path
                 d="M100,150 Q200,100 300,120 Q400,140 500,100 Q600,60 700,80 Q800,100 900,80"
-                stroke="hsl(var(--primary) / 0.8)"
+                stroke="#3b82f6"
                 strokeWidth="8"
                 fill="none"
               />
               
-              {/* Animated progress indicator */}
-              <path
-                d="M100,150 Q200,100 300,120 Q400,140 500,100 Q600,60 700,80 Q800,100 900,80"
-                stroke="hsl(var(--primary))"
-                strokeWidth="4"
-                fill="none"
-                strokeDasharray="12,12"
-                className="animate-pulse"
-              />
+              {/* Path markers */}
+              <circle cx="100" cy="150" r="4" fill="#1d4ed8" />
+              <circle cx="150" cy="125" r="3" fill="#3b82f6" opacity="0.7" />
+              <circle cx="250" cy="110" r="3" fill="#3b82f6" opacity="0.7" />
+              <circle cx="300" cy="120" r="4" fill="#1d4ed8" />
+              <circle cx="400" cy="140" r="4" fill="#1d4ed8" />
+              <circle cx="450" cy="120" r="3" fill="#3b82f6" opacity="0.7" />
+              <circle cx="500" cy="100" r="4" fill="#1d4ed8" />
+              <circle cx="600" cy="60" r="4" fill="#1d4ed8" />
+              <circle cx="650" cy="70" r="3" fill="#3b82f6" opacity="0.7" />
+              <circle cx="700" cy="80" r="4" fill="#1d4ed8" />
+              <circle cx="800" cy="100" r="3" fill="#3b82f6" opacity="0.7" />
+              <circle cx="900" cy="80" r="4" fill="#1d4ed8" />
               
               {/* Branch paths for second row */}
               {learningStops.length > 5 && (
                 <>
                   <path
-                    d="M700,80 Q650,200 600,280 Q550,360 600,400 Q650,440 700,420 Q750,400 800,420"
-                    stroke="hsl(var(--muted-foreground) / 0.3)"
+                    d="M700,80 Q650,180 600,280 Q550,380 600,400 Q650,420 700,420 Q750,420 800,420"
+                    stroke="#e2e8f0"
                     strokeWidth="20"
                     fill="none"
                     className="drop-shadow-lg"
                   />
                   <path
-                    d="M700,80 Q650,200 600,280 Q550,360 600,400 Q650,440 700,420 Q750,400 800,420"
-                    stroke="hsl(var(--primary) / 0.8)"
+                    d="M700,80 Q650,180 600,280 Q550,380 600,400 Q650,420 700,420 Q750,420 800,420"
+                    stroke="#3b82f6"
                     strokeWidth="6"
                     fill="none"
                   />
-                  <path
-                    d="M700,80 Q650,200 600,280 Q550,360 600,400 Q650,440 700,420 Q750,400 800,420"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="3"
-                    fill="none"
-                    strokeDasharray="8,8"
-                    className="animate-pulse"
-                  />
+                  <circle cx="675" cy="130" r="3" fill="#3b82f6" opacity="0.7" />
+                  <circle cx="625" cy="230" r="3" fill="#3b82f6" opacity="0.7" />
+                  <circle cx="600" cy="280" r="4" fill="#1d4ed8" />
+                  <circle cx="575" cy="340" r="3" fill="#3b82f6" opacity="0.7" />
+                  <circle cx="600" cy="400" r="4" fill="#1d4ed8" />
+                  <circle cx="650" cy="420" r="3" fill="#3b82f6" opacity="0.7" />
+                  <circle cx="700" cy="420" r="4" fill="#1d4ed8" />
+                  <circle cx="750" cy="420" r="3" fill="#3b82f6" opacity="0.7" />
+                  <circle cx="800" cy="420" r="4" fill="#1d4ed8" />
                 </>
               )}
             </svg>
