@@ -242,46 +242,51 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         </button>
                       </CollapsibleTrigger>
                       
-                      <CollapsibleContent className="space-y-1">
-                        <SidebarGroupContent>
-                          <SidebarMenu>
-                            {group.items.map((item) => {
-                              const isActive = location.pathname === item.href;
-                              return (
-                                <SidebarMenuItem key={item.href}>
-                                  <SidebarMenuButton asChild isActive={isActive}>
-                                    {item.href === '#' ? (
-                                      <button
-                                        onClick={() => {
-                                          item.onClick?.();
-                                          onClose();
-                                        }}
-                                        className="w-full flex items-center gap-3 text-left"
-                                      >
-                                        <item.icon className="h-4 w-4" />
-                                        <span>{item.label}</span>
-                                      </button>
-                                    ) : (
-                                      <Link
-                                        to={item.href}
-                                        onClick={onClose}
-                                        className="flex items-center gap-3"
-                                      >
-                                        <item.icon className="h-4 w-4" />
-                                        <span>{item.label}</span>
-                                      </Link>
-                                    )}
-                                  </SidebarMenuButton>
-                                </SidebarMenuItem>
-                              );
-                            })}
-                          </SidebarMenu>
-                        </SidebarGroupContent>
+                      <CollapsibleContent className="overflow-hidden transition-all duration-200 ease-out data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                        <div className="space-y-1 pb-2">
+                          <SidebarGroupContent>
+                            <SidebarMenu>
+                              {group.items.map((item) => {
+                                const isActive = location.pathname === item.href;
+                                return (
+                                  <SidebarMenuItem key={item.href}>
+                                    <SidebarMenuButton asChild isActive={isActive}>
+                                      {item.href === '#' ? (
+                                        <button
+                                          onClick={() => {
+                                            item.onClick?.();
+                                            onClose();
+                                          }}
+                                          className="w-full flex items-center gap-3 text-left"
+                                        >
+                                          <item.icon className="h-4 w-4" />
+                                          <span>{item.label}</span>
+                                        </button>
+                                      ) : (
+                                        <Link
+                                          to={item.href}
+                                          onClick={onClose}
+                                          className="flex items-center gap-3"
+                                        >
+                                          <item.icon className="h-4 w-4" />
+                                          <span>{item.label}</span>
+                                        </Link>
+                                      )}
+                                    </SidebarMenuButton>
+                                  </SidebarMenuItem>
+                                );
+                              })}
+                            </SidebarMenu>
+                          </SidebarGroupContent>
+                        </div>
                       </CollapsibleContent>
                     </SidebarGroup>
                   </Collapsible>
                   
-                  {groupIndex < filteredMenuGroups.length - 1 && (
+                  {groupIndex < filteredMenuGroups.length - 1 && isExpanded && 
+                    filteredMenuGroups.slice(groupIndex + 1).some((nextGroup) => 
+                      expandedGroups[nextGroup.label] ?? getGroupHasActiveRoute(nextGroup)
+                    ) && (
                     <SidebarSeparator className="mx-3 my-4" />
                   )}
                 </div>
