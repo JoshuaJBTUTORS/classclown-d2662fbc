@@ -31,6 +31,7 @@ import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
 import LearningHub from './pages/LearningHub';
 import LearningHubLayout from './components/learningHub/LearningHubLayout';
+import MainLayout from './components/layout/MainLayout';
 import LearningHubDashboard from './pages/LearningHubDashboard';
 import LearningHubMyCourses from './pages/LearningHubMyCourses';
 import LearningHubSettings from './pages/LearningHubSettings';
@@ -66,95 +67,80 @@ function App() {
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
                 
-                {/* Protected routes */}
+                {/* Main App Layout - all main application routes */}
                 <Route
-                  path="/calendar"
+                  path="/*"
                   element={
                     <ProtectedRoute>
-                      <Calendar />
+                      <MainLayout />
                     </ProtectedRoute>
                   }
-                />
-                <Route
-                  path="/students"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner', 'parent']}>
-                      <Students />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/tutors"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                      <Tutors />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/lessons"
-                  element={
-                    <ProtectedRoute>
-                      <Lessons />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/lesson-plans"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
-                      <LessonPlans />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/homework"
-                  element={
-                    <ProtectedRoute>
-                      <Homework />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/progress"
-                  element={
-                    <ProtectedRoute>
-                      <Progress />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/reports"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
-                      <Reports />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/time-off"
-                  element={
-                    <ProtectedRoute allowedRoles={['tutor']}>
-                      <TimeOff />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/time-off-requests"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                      <TimeOffRequests />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/trial-bookings"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                      <TrialBookings />
-                    </ProtectedRoute>
-                  }
-                />
+                >
+                  <Route path="calendar" element={<Calendar />} />
+                  <Route 
+                    path="students" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner', 'parent']}>
+                        <Students />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="tutors" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <Tutors />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="lessons" element={<Lessons />} />
+                  <Route 
+                    path="lesson-plans" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
+                        <LessonPlans />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="homework" element={<Homework />} />
+                  <Route path="progress" element={<Progress />} />
+                  <Route 
+                    path="reports" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
+                        <Reports />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="time-off" 
+                    element={
+                      <ProtectedRoute allowedRoles={['tutor']}>
+                        <TimeOff />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="time-off-requests" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <TimeOffRequests />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="trial-bookings" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <TrialBookings />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="settings" 
+                    element={<Settings />} 
+                  />
+                </Route>
                 <Route
                   path="/join-lesson/:lessonId"
                   element={
@@ -236,15 +222,6 @@ function App() {
                   }
                 />
 
-                {/* Settings route */}
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  }
-                />
 
                 {/* Learning Hub routes */}
                 <Route
