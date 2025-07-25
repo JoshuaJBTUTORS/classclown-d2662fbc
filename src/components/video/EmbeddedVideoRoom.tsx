@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   ArrowLeft, 
   Maximize2, 
@@ -36,6 +37,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
+  const isMobile = useIsMobile();
 
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
@@ -101,53 +103,57 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   return (
     <div className={`${className} ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'w-full h-full'}`}>
       {/* Header Controls */}
-      <div className={`flex items-center justify-between p-4 bg-white border-b ${isFullscreen ? 'shadow-lg' : ''}`}>
-        <div className="flex items-center gap-4">
+      <div className={`flex items-center justify-between p-2 md:p-4 bg-gradient-to-r from-background to-background/95 border-b border-border/20 ${isFullscreen ? 'shadow-lg' : ''}`}>
+        <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
           <Button 
             onClick={onExit} 
             variant="outline" 
-            size="sm"
-            className="flex items-center gap-2"
+            size={isMobile ? "sm" : "sm"}
+            className="flex items-center gap-1 md:gap-2 shrink-0"
           >
-            <ArrowLeft className="h-4 w-4" />
-            {isFullscreen ? 'Exit Room' : 'Back'}
+            <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
+            {!isMobile ? (isFullscreen ? 'Exit Room' : 'Back') : ''}
           </Button>
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-gray-900">{lessonTitle}</h2>
-            {isTeacherRole ? (
-              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                <Shield className="h-3 w-3" />
-                Host
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                <Users className="h-3 w-3" />
-                Student
-              </div>
+          <div className="flex items-center gap-1 md:gap-2 min-w-0 flex-1">
+            <h2 className="font-semibold text-foreground text-sm md:text-base truncate">{lessonTitle}</h2>
+            {!isMobile && (
+              <>
+                {isTeacherRole ? (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs shrink-0">
+                    <Shield className="h-3 w-3" />
+                    Host
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-secondary/10 text-secondary-foreground rounded-full text-xs shrink-0">
+                    <Users className="h-3 w-3" />
+                    Student
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2 shrink-0">
           {hasError && (
-            <Button onClick={handleRetry} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
+            <Button onClick={handleRetry} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
+              <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
+              {!isMobile && <span className="ml-2">Retry</span>}
             </Button>
           )}
           
-          <Button onClick={openInNewTab} variant="outline" size="sm">
-            <ExternalLink className="h-4 w-4 mr-2" />
-            New Tab
+          <Button onClick={openInNewTab} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
+            <ExternalLink className="h-3 w-3 md:h-4 md:w-4" />
+            {!isMobile && <span className="ml-2">New Tab</span>}
           </Button>
           
-          <Button onClick={toggleFullscreen} variant="outline" size="sm">
+          <Button onClick={toggleFullscreen} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
             {isFullscreen ? (
-              <Minimize2 className="h-4 w-4 mr-2" />
+              <Minimize2 className="h-3 w-3 md:h-4 md:w-4" />
             ) : (
-              <Maximize2 className="h-4 w-4 mr-2" />
+              <Maximize2 className="h-3 w-3 md:h-4 md:w-4" />
             )}
-            {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            {!isMobile && <span className="ml-2">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>}
           </Button>
         </div>
       </div>

@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share, Circle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VideoRoomHeaderProps {
   lessonTitle: string;
@@ -21,51 +22,56 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
   isRecording = false,
   onLeave
 }) => {
+  const isMobile = useIsMobile();
   const participantText = expectedParticipantCount 
     ? `${participantCount}/${expectedParticipantCount} participants`
     : `${participantCount} participants`;
 
   return (
-    <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-4">
+    <div className="bg-gradient-to-r from-primary to-primary-glow border-b border-border/20 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-elegant backdrop-blur-sm">
+      <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
         <Button
           variant="ghost"
-          size="sm"
+          size={isMobile ? "sm" : "sm"}
           onClick={onLeave}
-          className="text-white hover:text-gray-300 hover:bg-gray-700"
+          className="text-white hover:text-white/80 hover:bg-white/10 shrink-0"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Leave
+          <ArrowLeft className="h-4 w-4 mr-1 md:mr-2" />
+          {!isMobile && "Leave"}
         </Button>
-        <div className="h-6 w-px bg-gray-600" />
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-white font-playfair">
+        
+        {!isMobile && <div className="h-6 w-px bg-white/20" />}
+        
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 md:gap-3">
+            <h1 className="text-sm md:text-lg font-semibold text-white font-playfair truncate">
               {lessonTitle}
             </h1>
             {isRecording && (
-              <Badge variant="destructive" className="flex items-center gap-1">
-                <Circle className="h-3 w-3" />
-                Recording
+              <Badge variant="destructive" className="flex items-center gap-1 shrink-0">
+                <Circle className="h-2 w-2 md:h-3 md:w-3 fill-current" />
+                {!isMobile && "Recording"}
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-300">
-            <Users className="h-4 w-4" />
-            <span>{participantText}</span>
-            <span>•</span>
-            <span className="capitalize">{userRole}</span>
-          </div>
+          {!isMobile && (
+            <div className="flex items-center gap-2 text-xs md:text-sm text-white/70">
+              <Users className="h-3 w-3 md:h-4 md:w-4" />
+              <span>{participantText}</span>
+              <span>•</span>
+              <span className="capitalize">{userRole}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {userRole === 'tutor' && (
+      <div className="flex items-center gap-1 md:gap-2 shrink-0">
+        {userRole === 'tutor' && !isMobile && (
           <>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+              className="text-white hover:text-white/80 hover:bg-white/10"
             >
               <Share className="h-4 w-4 mr-2" />
               Share
@@ -73,27 +79,27 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+              className="text-white hover:text-white/80 hover:bg-white/10"
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Invite
             </Button>
-            <div className="h-6 w-px bg-gray-600 mx-1" />
+            <div className="h-6 w-px bg-white/20 mx-1" />
           </>
         )}
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+          className="text-white hover:text-white/80 hover:bg-white/10"
         >
-          <Settings className="h-4 w-4" />
+          <Settings className="h-3 w-3 md:h-4 md:w-4" />
         </Button>
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-white hover:text-gray-300 hover:bg-gray-700 bg-transparent border-0"
+          className="text-white hover:text-white/80 hover:bg-white/10"
         >
-          <MoreVertical className="h-4 w-4" />
+          <MoreVertical className="h-3 w-3 md:h-4 md:w-4" />
         </Button>
       </div>
     </div>
