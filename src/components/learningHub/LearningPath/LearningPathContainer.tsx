@@ -177,21 +177,53 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
         
         {/* Learning Path Steps */}
         <div className="relative z-10">
-          {/* Mobile: Vertical Layout */}
+          {/* Mobile: Vertical Centered Layout */}
           <div className="md:hidden">
-            <div className="space-y-8">
+            <div className="flex flex-col items-center space-y-6 relative">
               {learningStops.map((stop, index) => (
-                  <div key={stop.id} className="flex items-center space-x-4">
-                   <SimplePathStop
-                     stopNumber={stop.stopNumber}
-                     title={stop.title}
-                     status={stop.status}
-                     progress={stop.progress}
-                     onClick={() => handleStopClick(stop.id)}
-                     isPersonalized={stop.isPersonalized}
-                   />
+                <div key={stop.id} className="flex flex-col items-center relative">
+                  <SimplePathStop
+                    stopNumber={stop.stopNumber}
+                    title={stop.title}
+                    status={stop.status}
+                    progress={stop.progress}
+                    onClick={() => handleStopClick(stop.id)}
+                    isPersonalized={stop.isPersonalized}
+                  />
+                  {/* Vertical connection line */}
                   {index < learningStops.length - 1 && (
-                    <div className="flex-1 h-px bg-gradient-to-r from-muted to-transparent" />
+                    <div className="w-px h-8 bg-gradient-to-b from-primary/50 to-muted mt-4 mb-2" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Tablet: 2-3 Column Grid Layout */}
+          <div className="hidden md:block lg:hidden">
+            <div className="grid grid-cols-3 gap-8 relative">
+              {learningStops.map((stop, index) => (
+                <div key={stop.id} className="flex flex-col items-center relative">
+                  <SimplePathStop
+                    stopNumber={stop.stopNumber}
+                    title={stop.title}
+                    status={stop.status}
+                    progress={stop.progress}
+                    onClick={() => handleStopClick(stop.id)}
+                    isPersonalized={stop.isPersonalized}
+                  />
+                  {/* Grid connection lines for tablet */}
+                  {index < learningStops.length - 1 && (
+                    <>
+                      {/* Horizontal line to next in row */}
+                      {(index + 1) % 3 !== 0 && (
+                        <div className="absolute top-8 left-full w-8 h-px bg-gradient-to-r from-primary/50 to-muted z-0" />
+                      )}
+                      {/* Vertical line to next row */}
+                      {(index + 1) % 3 === 0 && index < learningStops.length - 1 && (
+                        <div className="absolute top-full left-1/2 w-px h-8 bg-gradient-to-b from-primary/50 to-muted mt-4 -translate-x-1/2 z-0" />
+                      )}
+                    </>
                   )}
                 </div>
               ))}
@@ -199,33 +231,15 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
           </div>
           
           {/* Desktop: Horizontal Layout */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <div className="relative">
               {/* Connection Line */}
               <div className="absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-muted via-primary/30 to-muted" />
               
               {/* Steps Grid */}
-              <div className="grid grid-cols-5 gap-8 lg:gap-12">
+              <div className="grid grid-cols-5 gap-8 xl:gap-12">
                 {learningStops.slice(0, 5).map((stop) => (
                   <div key={stop.id} className="relative z-10">
-                      <SimplePathStop
-                        stopNumber={stop.stopNumber}
-                        title={stop.title}
-                        status={stop.status}
-                        progress={stop.progress}
-                        onClick={() => handleStopClick(stop.id)}
-                        isPersonalized={stop.isPersonalized}
-                      />
-                  </div>
-                ))}
-              </div>
-              
-              {/* Second Row */}
-              <div className="mt-16 relative">
-                <div className="absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-muted via-primary/30 to-muted" />
-                <div className="grid grid-cols-5 gap-8 lg:gap-12">
-                  {learningStops.slice(5, 10).map((stop) => (
-                    <div key={stop.id} className="relative z-10">
                     <SimplePathStop
                       stopNumber={stop.stopNumber}
                       title={stop.title}
@@ -234,10 +248,30 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
                       onClick={() => handleStopClick(stop.id)}
                       isPersonalized={stop.isPersonalized}
                     />
-                    </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
+              
+              {/* Second Row */}
+              {learningStops.length > 5 && (
+                <div className="mt-16 relative">
+                  <div className="absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-muted via-primary/30 to-muted" />
+                  <div className="grid grid-cols-5 gap-8 xl:gap-12">
+                    {learningStops.slice(5, 10).map((stop) => (
+                      <div key={stop.id} className="relative z-10">
+                        <SimplePathStop
+                          stopNumber={stop.stopNumber}
+                          title={stop.title}
+                          status={stop.status}
+                          progress={stop.progress}
+                          onClick={() => handleStopClick(stop.id)}
+                          isPersonalized={stop.isPersonalized}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
