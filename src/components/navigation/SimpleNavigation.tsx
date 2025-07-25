@@ -8,6 +8,11 @@ import {
   Building2,
   Users,
   X,
+  BookOpen,
+  GraduationCap,
+  Settings,
+  BarChart3,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -29,8 +34,43 @@ const SimpleNavigation: React.FC<SimpleNavigationProps> = ({ isOpen, onClose }) 
   const location = useLocation();
   const { isParent, isStudent } = useAuth();
 
+  // Check if we're in learning hub routes
+  const isLearningHubRoute = location.pathname.startsWith('/learning-hub');
+
   // Simple navigation items for parents and students
   const getNavigationItems = () => {
+    if (isLearningHubRoute) {
+      // Learning Hub specific navigation
+      return [
+        {
+          icon: BookOpen,
+          label: 'Library',
+          href: '/learning-hub',
+        },
+        {
+          icon: GraduationCap,
+          label: 'My Courses',
+          href: '/learning-hub/my-courses',
+        },
+        {
+          icon: FileText,
+          label: 'Assessments',
+          href: '/learning-hub/assessments',
+        },
+        {
+          icon: Clock,
+          label: 'Revision',
+          href: '/learning-hub/revision',
+        },
+        {
+          icon: Settings,
+          label: 'Settings',
+          href: '/learning-hub/settings',
+        },
+      ];
+    }
+
+    // Main app navigation
     const commonItems = [
       {
         icon: Calendar,
@@ -115,7 +155,8 @@ const SimpleNavigation: React.FC<SimpleNavigationProps> = ({ isOpen, onClose }) 
               <SidebarGroupContent>
                 <SidebarMenu>
                   {navigationItems.map((item) => {
-                    const isActive = location.pathname === item.href;
+                    const isActive = location.pathname === item.href || 
+                      (item.href === '/learning-hub' && location.pathname.startsWith('/learning-hub'));
                     return (
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton asChild isActive={isActive}>
@@ -132,6 +173,23 @@ const SimpleNavigation: React.FC<SimpleNavigationProps> = ({ isOpen, onClose }) 
                     );
                   })}
                 </SidebarMenu>
+                {isLearningHubRoute && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <SidebarMenu>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild>
+                          <Link
+                            to="/calendar"
+                            onClick={onClose}
+                            className="flex items-center gap-3 px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                          >
+                            <span className="text-sm">← Back to Main App</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </SidebarMenu>
+                  </div>
+                )}
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>

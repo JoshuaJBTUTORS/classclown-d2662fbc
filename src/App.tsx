@@ -223,23 +223,13 @@ function App() {
                 />
 
 
-                {/* Learning Hub routes */}
-                <Route
-                  path="/learning-hub"
-                  element={
-                    <ProtectedRoute>
-                      <LearningHubLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<LearningHub />} />
-                  <Route path="dashboard" element={<LearningHubDashboard />} />
-                  <Route path="library" element={<LearningHub />} />
-                  <Route path="my-courses" element={<LearningHubMyCourses />} />
-                  <Route path="assessments" element={<LearningHubAssessments />} />
-                  <Route path="revision" element={<LearningHubRevision />} />
-                  <Route path="settings" element={<LearningHubSettings />} />
-                </Route>
+                  <Route path="learning-hub" element={<LearningHub />} />
+                  <Route path="learning-hub/dashboard" element={<LearningHubDashboard />} />
+                  <Route path="learning-hub/library" element={<LearningHub />} />
+                  <Route path="learning-hub/my-courses" element={<LearningHubMyCourses />} />
+                  <Route path="learning-hub/assessments" element={<LearningHubAssessments />} />
+                  <Route path="learning-hub/revision" element={<LearningHubRevision />} />
+                  <Route path="learning-hub/settings" element={<LearningHubSettings />} />
               </Routes>
               <Toaster />
             </LearningHubProvider>
