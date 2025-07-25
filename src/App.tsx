@@ -10,7 +10,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
+
 import InteractiveSignup from './pages/InteractiveSignup';
 import Index from './pages/Index';
 import Calendar from './pages/Calendar';
@@ -67,14 +67,6 @@ function App() {
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
                 
                 {/* Protected routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor', 'student', 'parent']}>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
                 <Route
                   path="/calendar"
                   element={

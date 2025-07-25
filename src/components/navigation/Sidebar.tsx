@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  LayoutDashboard,
   Calendar,
   Users,
   UserCheck,
@@ -28,12 +27,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly } = useAuth();
 
   const menuItems = [
-    {
-      icon: LayoutDashboard,
-      label: 'Dashboard',
-      href: '/dashboard',
-      roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
-    },
     {
       icon: Calendar,
       label: 'Calendar',

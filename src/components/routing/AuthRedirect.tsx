@@ -20,8 +20,21 @@ const AuthRedirect = () => {
     if (userRole === 'learning_hub_only') {
       return <Navigate to="/learning-hub" replace />;
     }
-    // All other users go to dashboard
-    return <Navigate to="/dashboard" replace />;
+    
+    // Redirect based on user role to most relevant page
+    switch (userRole) {
+      case 'admin':
+      case 'owner':
+        return <Navigate to="/calendar" replace />;
+      case 'tutor':
+        return <Navigate to="/calendar" replace />;
+      case 'parent':
+        return <Navigate to="/students" replace />;
+      case 'student':
+        return <Navigate to="/progress" replace />;
+      default:
+        return <Navigate to="/calendar" replace />;
+    }
   }
 
   // If user is not authenticated, show landing page
