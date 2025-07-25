@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -14,8 +14,10 @@ import {
   Video,
   X,
   Building2,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ChatModal from '@/components/chat/ChatModal';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly } = useAuth();
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   const menuItems = [
     {
@@ -93,6 +96,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       href: '/learning-hub',
       roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
     },
+    {
+      icon: MessageSquare,
+      label: 'Team Chat',
+      href: '#',
+      roles: ['admin', 'owner', 'tutor'],
+      onClick: () => setIsChatModalOpen(true),
+    },
   ];
 
   const getCurrentUserRole = () => {
@@ -149,19 +159,35 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 const isActive = location.pathname === item.href;
                 return (
                   <li key={item.href}>
-                    <Link
-                      to={item.href}
-                      onClick={onClose}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.label}
-                    </Link>
+                    {item.href === '#' ? (
+                      <button
+                        onClick={() => {
+                          item.onClick?.();
+                          onClose();
+                        }}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left',
+                          'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                      </button>
+                    ) : (
+                      <Link
+                        to={item.href}
+                        onClick={onClose}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 );
               })}
@@ -169,6 +195,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </nav>
         </div>
       </aside>
+
+      <ChatModal
+        isOpen={isChatModalOpen}
+        onClose={() => setIsChatModalOpen(false)}
+      />
     </>
   );
 };
