@@ -104,21 +104,13 @@ const CourseDetail = () => {
 
   const handleModuleSelect = async (moduleId: string) => {
     try {
-      const hasAccess = await learningHubService.checkModuleAccess(moduleId);
-      if (hasAccess) {
-        navigate(`/course/${course.id}/module/${moduleId}`);
-      } else {
-        toast({
-          title: "Module Locked",
-          description: "Complete the previous module's assessment to unlock this module.",
-          variant: "destructive",
-        });
-      }
+      // Note: Access control is now handled in LearningPathContainer
+      // This function should only be called for accessible modules
+      navigate(`/course/${course.id}/module/${moduleId}`);
     } catch (error) {
-      console.error('Error checking module access:', error);
       toast({
-        title: "Error",
-        description: "Unable to check module access. Please try again.",
+        title: "Navigation Error",
+        description: "Unable to access module. Please try again.",
         variant: "destructive",
       });
     }

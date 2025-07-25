@@ -653,6 +653,74 @@ export const learningHubService = {
     }
   },
 
+  // Enhanced module access control for personalized learning paths
+  checkModuleAccessWithPersonalizedPath: async (moduleId: string, personalizedModules: any[]): Promise<boolean> => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return false;
+      }
+
+      // Find the module's position in the personalized order
+      const moduleIndex = personalizedModules.findIndex(m => m.id === moduleId);
+      if (moduleIndex === -1) {
+        return false; // Module not found in personalized path
+      }
+
+      // First module in personalized path is always accessible
+      if (moduleIndex === 0) {
+        return true;
+      }
+
+      // Get the previous module in the personalized order
+      const previousModule = personalizedModules[moduleIndex - 1];
+      if (!previousModule) {
+        return false;
+      }
+
+      // Check if the previous module has any AI assessment lessons
+      const { data: aiAssessmentLessons, error: assessmentError } = await supabase
+        .from('course_lessons')
+        .select('id, content_url')
+        .eq('module_id', previousModule.id)
+        .eq('content_type', 'ai-assessment');
+
+      if (assessmentError) {
+        return false;
+      }
+
+      // If no AI assessment lessons in the previous module, allow access
+      if (!aiAssessmentLessons || aiAssessmentLessons.length === 0) {
+        return true;
+      }
+
+      // Check if any assessment in the previous module has been completed
+      for (const lesson of aiAssessmentLessons) {
+        if (!lesson.content_url) continue;
+        
+        const { data: completedSessions, error: sessionError } = await supabase
+          .from('assessment_sessions')
+          .select('id, status, completed_at')
+          .eq('assessment_id', lesson.content_url)
+          .eq('user_id', user.id)
+          .eq('status', 'completed');
+
+        if (sessionError) {
+          continue;
+        }
+
+        if (completedSessions && completedSessions.length > 0) {
+          return true; // User has completed at least one assessment in the previous module
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking personalized module access:', error);
+      return false;
+    }
+  },
+
   /**
    * Mark assessment as completed
    */

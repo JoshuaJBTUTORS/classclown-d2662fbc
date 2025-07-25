@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Target } from 'lucide-react';
 import { usePersonalizedLearningPath } from '@/hooks/usePersonalizedLearningPath';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 interface LearningPathContainerProps {
   modules: CourseModule[];
@@ -17,6 +18,8 @@ interface LearningPathContainerProps {
 }
 
 const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, courseId, onModuleClick }) => {
+  const { toast } = useToast();
+  
   // Get personalized module order
   const { data: personalizedOrder } = usePersonalizedLearningPath({
     courseId,
@@ -32,13 +35,16 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
     enabled: orderedModules.length > 0,
   });
   
-  // Add assessment status query
+  // Add assessment status query with personalized path support
   const { data: moduleAccessList } = useQuery({
-    queryKey: ['module-access-list', orderedModules.map(m => m.id)],
+    queryKey: ['module-access-list', orderedModules.map(m => m.id), personalizedOrder?.isPersonalized],
     queryFn: async () => {
       if (!orderedModules.length) return {};
       const accessPromises = orderedModules.map(async (module) => {
-        const hasAccess = await learningHubService.checkModuleAccess(module.id);
+        // Use personalized path access control if available
+        const hasAccess = personalizedOrder?.isPersonalized 
+          ? await learningHubService.checkModuleAccessWithPersonalizedPath(module.id, orderedModules)
+          : await learningHubService.checkModuleAccess(module.id);
         return [module.id, hasAccess];
       });
       const results = await Promise.all(accessPromises);
@@ -101,6 +107,12 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
     const stop = learningStops.find(s => s.id === stopId);
     if (stop && stop.status !== 'locked') {
       onModuleClick(stopId);
+    } else if (stop && stop.status === 'locked') {
+      toast({
+        title: "Module Locked",
+        description: "Complete the previous module's assessment to unlock this module.",
+        variant: "destructive",
+      });
     }
   };
   
