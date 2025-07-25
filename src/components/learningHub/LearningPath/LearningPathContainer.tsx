@@ -208,25 +208,28 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
           {/* Mobile: Winding Vertical Path */}
           <div className="md:hidden relative px-8 py-12">
             <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
-              <defs>
-                <pattern id="roadTexture" patternUnits="userSpaceOnUse" width="20" height="20">
-                  <rect width="20" height="20" fill="hsl(var(--muted))" />
-                  <circle cx="10" cy="10" r="1" fill="hsl(var(--primary) / 0.3)" />
-                </pattern>
-              </defs>
+              {/* Main path background */}
               <path
                 d={`M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550`}
-                stroke="url(#roadTexture)"
-                strokeWidth="12"
+                stroke="hsl(var(--muted-foreground) / 0.3)"
+                strokeWidth="16"
                 fill="none"
                 className="drop-shadow-sm"
               />
+              {/* Path center line */}
               <path
                 d={`M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550`}
-                stroke="hsl(var(--primary) / 0.6)"
-                strokeWidth="4"
+                stroke="hsl(var(--primary) / 0.8)"
+                strokeWidth="6"
                 fill="none"
-                strokeDasharray="10,10"
+              />
+              {/* Animated progress line */}
+              <path
+                d={`M40,50 Q60,100 40,150 Q20,200 40,250 Q60,300 40,350 Q20,400 40,450 Q60,500 40,550`}
+                stroke="hsl(var(--primary))"
+                strokeWidth="3"
+                fill="none"
+                strokeDasharray="8,8"
                 className="animate-pulse"
               />
             </svg>
@@ -264,51 +267,31 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
           <div className="hidden md:block relative px-12 py-16">
             {/* Winding Path SVG */}
             <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
-              <defs>
-                <pattern id="questRoad" patternUnits="userSpaceOnUse" width="30" height="30">
-                  <rect width="30" height="30" fill="hsl(var(--muted) / 0.8)" />
-                  <circle cx="15" cy="15" r="2" fill="hsl(var(--primary) / 0.4)" />
-                  <circle cx="5" cy="25" r="1" fill="hsl(var(--primary) / 0.3)" />
-                  <circle cx="25" cy="5" r="1" fill="hsl(var(--primary) / 0.3)" />
-                </pattern>
-                <filter id="pathGlow">
-                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                  <feMerge> 
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-              
-              {/* Main Quest Path */}
+              {/* Main Quest Path Background */}
               <path
                 d="M100,150 Q200,100 300,120 Q400,140 500,100 Q600,60 700,80 Q800,100 900,80"
-                stroke="url(#questRoad)"
-                strokeWidth="20"
+                stroke="hsl(var(--muted-foreground) / 0.3)"
+                strokeWidth="24"
                 fill="none"
                 className="drop-shadow-lg"
               />
               
-              {/* Path centerline with glow */}
+              {/* Path centerline */}
               <path
                 d="M100,150 Q200,100 300,120 Q400,140 500,100 Q600,60 700,80 Q800,100 900,80"
-                stroke="hsl(var(--primary) / 0.7)"
-                strokeWidth="6"
+                stroke="hsl(var(--primary) / 0.8)"
+                strokeWidth="8"
                 fill="none"
-                filter="url(#pathGlow)"
               />
               
               {/* Animated progress indicator */}
               <path
                 d="M100,150 Q200,100 300,120 Q400,140 500,100 Q600,60 700,80 Q800,100 900,80"
                 stroke="hsl(var(--primary))"
-                strokeWidth="3"
+                strokeWidth="4"
                 fill="none"
-                strokeDasharray="15,15"
+                strokeDasharray="12,12"
                 className="animate-pulse"
-                style={{
-                  strokeDashoffset: `${100 - (learningStops.filter(s => s.status === 'completed').length / learningStops.length) * 100}%`
-                }}
               />
               
               {/* Branch paths for second row */}
@@ -316,17 +299,23 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
                 <>
                   <path
                     d="M700,80 Q650,200 600,280 Q550,360 600,400 Q650,440 700,420 Q750,400 800,420"
-                    stroke="url(#questRoad)"
-                    strokeWidth="16"
+                    stroke="hsl(var(--muted-foreground) / 0.3)"
+                    strokeWidth="20"
                     fill="none"
                     className="drop-shadow-lg"
                   />
                   <path
                     d="M700,80 Q650,200 600,280 Q550,360 600,400 Q650,440 700,420 Q750,400 800,420"
-                    stroke="hsl(var(--primary) / 0.6)"
-                    strokeWidth="4"
+                    stroke="hsl(var(--primary) / 0.8)"
+                    strokeWidth="6"
                     fill="none"
-                    strokeDasharray="10,10"
+                  />
+                  <path
+                    d="M700,80 Q650,200 600,280 Q550,360 600,400 Q650,440 700,420 Q750,400 800,420"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeDasharray="8,8"
                     className="animate-pulse"
                   />
                 </>
@@ -410,16 +399,16 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
             <div className="absolute inset-0 pointer-events-none">
               {/* Milestone flags */}
               <div className="absolute" style={{ left: '300px', top: '90px' }}>
-                <div className="w-6 h-8 opacity-30">
-                  <div className="w-1 h-8 bg-primary/50 mx-auto"></div>
-                  <div className="w-4 h-3 bg-primary/60 -mt-6 ml-1 clip-path-triangle"></div>
+                <div className="w-6 h-8 opacity-40">
+                  <div className="w-1 h-8 bg-primary/60 mx-auto rounded-full"></div>
+                  <div className="w-0 h-0 border-l-2 border-r-2 border-b-3 border-l-transparent border-r-transparent border-b-primary/70 -mt-6 ml-1"></div>
                 </div>
               </div>
               
               <div className="absolute" style={{ left: '700px', top: '50px' }}>
-                <div className="w-6 h-8 opacity-30">
-                  <div className="w-1 h-8 bg-primary/50 mx-auto"></div>
-                  <div className="w-4 h-3 bg-primary/60 -mt-6 ml-1 clip-path-triangle"></div>
+                <div className="w-6 h-8 opacity-40">
+                  <div className="w-1 h-8 bg-primary/60 mx-auto rounded-full"></div>
+                  <div className="w-0 h-0 border-l-2 border-r-2 border-b-3 border-l-transparent border-r-transparent border-b-primary/70 -mt-6 ml-1"></div>
                 </div>
               </div>
               
