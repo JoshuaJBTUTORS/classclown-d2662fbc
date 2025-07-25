@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,35 +35,29 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isTabVisible, setIsTabVisible] = useState(true);
-  const [showTabMessage, setShowTabMessage] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
   const isMobile = useIsMobile();
 
-  // Determine if user has teacher/host privileges
-  const isTeacherRole = isTutor || isAdmin || isOwner;
+  // Determine if user has teacher/host privileges - memoized to prevent re-renders
+  const isTeacherRole = useMemo(() => isTutor || isAdmin || isOwner, [isTutor, isAdmin, isOwner]);
 
-  // Use the roomUrl directly since it's already the appropriate URL based on role
-  const displayUrl = roomUrl;
+  // Memoize the display URL to prevent unnecessary re-renders
+  const displayUrl = useMemo(() => roomUrl, [roomUrl]);
 
+  // Initialize iframe state only once when roomUrl first becomes available
   useEffect(() => {
-    // Reset states when roomUrl changes
-    setIsLoading(true);
-    setHasError(false);
-  }, [displayUrl]);
+    if (displayUrl && isLoading) {
+      setIsLoading(true);
+      setHasError(false);
+    }
+  }, [displayUrl]); // Only depend on displayUrl, not isLoading
 
-  // Handle tab visibility changes to provide better UX
+  // Simplified tab visibility handling - no forced re-renders
   useEffect(() => {
     const handleVisibilityChange = () => {
       const isVisible = !document.hidden;
       setIsTabVisible(isVisible);
-      
-      if (!isVisible) {
-        // Tab is hidden - video will freeze naturally (LessonSpace behavior)
-        setShowTabMessage(true);
-      } else if (showTabMessage) {
-        // Tab is visible again - clear message after a delay
-        setTimeout(() => setShowTabMessage(false), 3000);
-      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -71,7 +65,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [showTabMessage]);
+  }, []); // No dependencies to prevent re-renders
 
   const handleIframeLoad = () => {
     setIsLoading(false);
@@ -84,15 +78,14 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
     toast.error('Failed to load video room');
   };
 
-  const handleSoftRefresh = () => {
+  const handleSoftRefresh = useCallback(() => {
     setIsLoading(true);
     setHasError(false);
-    // Soft refresh without destroying iframe
-    const iframe = document.querySelector('iframe[title="LessonSpace Video Room"]') as HTMLIFrameElement;
-    if (iframe) {
-      iframe.src = iframe.src; // Refresh without destroying
+    // Use ref for stable iframe reference
+    if (iframeRef.current) {
+      iframeRef.current.src = iframeRef.current.src; // Refresh without destroying
     }
-  };
+  }, []);
 
   const handleHardRefresh = () => {
     // Force page reload as last resort
@@ -183,12 +176,6 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
 
       {/* Video Room Content */}
       <div className="relative h-[calc(100vh-80px)] bg-gray-100">
-        {/* Tab Switch Message */}
-        {showTabMessage && !isTabVisible && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg z-20 text-sm">
-            Video paused due to tab switch - click here when you return
-          </div>
-        )}
 
         {/* Loading State */}
         {isLoading && (
@@ -237,6 +224,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
 
         {/* LessonSpace Iframe - Aligned with LessonSpace best practices */}
         <iframe
+          ref={iframeRef}
           id="lessonspace-video-room"
           src={displayUrl}
           className="w-full h-full border-0"
