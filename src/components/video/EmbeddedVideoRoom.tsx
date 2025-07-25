@@ -122,28 +122,31 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   return (
     <div className={`${className} fixed inset-0 z-50 bg-black`}>
       {/* Header Controls */}
-      <div className="flex items-center justify-between p-2 md:p-4 bg-gradient-to-r from-background to-background/95 border-b border-border/20 shadow-lg">
-        <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+      <div className="flex items-center justify-between p-2 md:p-4 bg-[hsl(var(--deep-purple-blue))] border-b border-border/20 shadow-lg">
+        <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <Button 
             onClick={onExit} 
-            variant="outline" 
+            variant="ghost" 
             size={isMobile ? "sm" : "sm"}
-            className="flex items-center gap-1 md:gap-2 shrink-0"
+            className="flex items-center gap-1 md:gap-2 text-white hover:text-white/80 hover:bg-white/10"
           >
             <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
             {!isMobile ? 'Exit Room' : ''}
           </Button>
-          <div className="flex items-center gap-1 md:gap-2 min-w-0 flex-1">
-            <h2 className="font-semibold text-foreground text-sm md:text-base truncate">{lessonTitle}</h2>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+          <div className="flex items-center gap-2 md:gap-3 justify-center">
+            <h2 className="font-bold text-white font-bubble text-lg md:text-2xl text-center">{lessonTitle}</h2>
             {!isMobile && (
               <>
                 {isTeacherRole ? (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs shrink-0">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-white/20 text-white rounded-full text-xs shrink-0">
                     <Shield className="h-3 w-3" />
                     Host
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-secondary/10 text-secondary-foreground rounded-full text-xs shrink-0">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-white/20 text-white rounded-full text-xs shrink-0">
                     <Users className="h-3 w-3" />
                     Student
                   </div>
@@ -156,21 +159,16 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
         <div className="flex items-center gap-1 md:gap-2 shrink-0">
           {hasError && (
             <>
-              <Button onClick={handleSoftRefresh} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
+              <Button onClick={handleSoftRefresh} variant="ghost" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2 text-white hover:text-white/80 hover:bg-white/10">
                 <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
                 {!isMobile && <span className="ml-2">Refresh</span>}
               </Button>
-              <Button onClick={handleHardRefresh} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2 text-destructive">
+              <Button onClick={handleHardRefresh} variant="ghost" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2 text-red-300 hover:text-red-200 hover:bg-white/10">
                 <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
                 {!isMobile && <span className="ml-2">Hard Reset</span>}
               </Button>
             </>
           )}
-          
-          <Button onClick={openInNewTab} variant="outline" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2">
-            <ExternalLink className="h-3 w-3 md:h-4 md:w-4" />
-            {!isMobile && <span className="ml-2">New Tab</span>}
-          </Button>
         </div>
       </div>
 
