@@ -36,16 +36,35 @@ const SimplePathStop: React.FC<SimplePathStopProps> = ({
     }
   };
 
+  // Pastel color rotation based on module number
+  const getPastelColor = (number: number) => {
+    const pastelColors = [
+      'from-rose-200 to-rose-300 border-rose-300',      // Soft pink
+      'from-blue-200 to-blue-300 border-blue-300',      // Soft blue  
+      'from-green-200 to-green-300 border-green-300',   // Soft green
+      'from-purple-200 to-purple-300 border-purple-300', // Soft purple
+      'from-yellow-200 to-yellow-300 border-yellow-300', // Soft yellow
+      'from-indigo-200 to-indigo-300 border-indigo-300', // Soft indigo
+      'from-pink-200 to-pink-300 border-pink-300',       // Soft pink
+      'from-teal-200 to-teal-300 border-teal-300',       // Soft teal
+      'from-orange-200 to-orange-300 border-orange-300', // Soft orange
+      'from-cyan-200 to-cyan-300 border-cyan-300'        // Soft cyan
+    ];
+    return pastelColors[(number - 1) % pastelColors.length];
+  };
+
   const getStopStyles = () => {
+    const pastelColor = getPastelColor(stopNumber);
+    
     switch (status) {
       case 'locked':
-        return 'bg-muted border-muted-foreground/20 cursor-not-allowed';
+        return 'bg-gray-100 border-gray-200 cursor-not-allowed';
       case 'completed':
-        return 'bg-gradient-to-br from-emerald-500 to-emerald-600 border-emerald-400 cursor-pointer hover:from-emerald-600 hover:to-emerald-700';
+        return 'bg-gradient-to-br from-emerald-200 to-emerald-300 border-emerald-300 cursor-pointer hover:from-emerald-300 hover:to-emerald-400';
       case 'in_progress':
-        return 'bg-gradient-to-br from-primary to-primary/80 border-primary cursor-pointer hover:from-primary/90 hover:to-primary';
+        return `bg-gradient-to-br ${pastelColor} cursor-pointer hover:shadow-lg transform hover:scale-105`;
       default:
-        return 'bg-gradient-to-br from-blue-500 to-blue-600 border-blue-400 cursor-pointer hover:from-blue-600 hover:to-blue-700';
+        return `bg-gradient-to-br ${pastelColor} cursor-pointer hover:shadow-lg transform hover:scale-105`;
     }
   };
 
@@ -156,7 +175,7 @@ const SimplePathStop: React.FC<SimplePathStopProps> = ({
                 transition: { duration: 2, repeat: Infinity, ease: "easeInOut" }
               }}
             >
-              {getStatusIcon()}
+              <Lock className="w-6 h-6 text-gray-500" />
             </motion.div>
           ) : status === 'completed' ? (
             <motion.div
@@ -165,7 +184,7 @@ const SimplePathStop: React.FC<SimplePathStopProps> = ({
                 transition: { duration: 0.3 }
               }}
             >
-              {getStatusIcon()}
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
             </motion.div>
           ) : status === 'in_progress' ? (
             <motion.div
@@ -178,11 +197,11 @@ const SimplePathStop: React.FC<SimplePathStopProps> = ({
                 transition: { duration: 0.6, ease: "easeInOut" }
               }}
             >
-              {getStatusIcon()}
+              <Play className="w-6 h-6 text-gray-700" />
             </motion.div>
           ) : (
             <motion.span 
-              className="text-white font-bold text-lg"
+              className="text-gray-700 font-bold text-lg"
               whileHover={{
                 scale: [1, 1.3, 1],
                 transition: { duration: 0.3 }

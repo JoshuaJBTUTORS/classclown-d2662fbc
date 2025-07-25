@@ -5,7 +5,7 @@ import { learningHubService } from '@/services/learningHubService';
 import { WaypointStatus } from '@/types/learningPath';
 import { CourseModule } from '@/types/course';
 import SimplePathStop from './SimplePathStop';
-import EnhancedPathBackground from './EnhancedPathBackground';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Target } from 'lucide-react';
 import { usePersonalizedLearningPath } from '@/hooks/usePersonalizedLearningPath';
@@ -138,9 +138,8 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
   return (
     <div className="w-full">
       {/* Learning Path Grid */}
-      <div className="relative rounded-2xl p-8 overflow-hidden border border-border/50 backdrop-blur-sm">
-        {/* Enhanced Background */}
-        <EnhancedPathBackground />
+      <div className="relative rounded-2xl p-8 overflow-hidden border border-border/50 bg-white">
+        {/* Clean white background */}
         
         {/* Progress Header */}
         <div className="relative z-10 mb-8 text-center">
