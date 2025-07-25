@@ -15,6 +15,8 @@ import {
   X,
   Building2,
   MessageSquare,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -29,6 +31,11 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -39,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly } = useAuth();
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const menuGroups = [
     {
@@ -155,6 +163,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     )
   })).filter(group => group.items.length > 0);
 
+  // Check if current route is in a group to keep it expanded
+  const getGroupHasActiveRoute = (group: typeof filteredMenuGroups[0]) => {
+    return group.items.some(item => location.pathname === item.href);
+  };
+
+  // Initialize expanded state for groups with active routes
+  React.useEffect(() => {
+    const initialExpanded: Record<string, boolean> = {};
+    filteredMenuGroups.forEach(group => {
+      const hasActiveRoute = getGroupHasActiveRoute(group);
+      if (hasActiveRoute && expandedGroups[group.label] === undefined) {
+        initialExpanded[group.label] = true;
+      }
+    });
+    
+    if (Object.keys(initialExpanded).length > 0) {
+      setExpandedGroups(prev => ({ ...prev, ...initialExpanded }));
+    }
+  }, [location.pathname, filteredMenuGroups]);
+
+  const toggleGroup = (groupLabel: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupLabel]: !prev[groupLabel]
+    }));
+  };
+
   return (
     <>
       {isOpen && (
@@ -189,52 +224,69 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           <SidebarContent className="flex-1 overflow-y-auto py-4">
-            {filteredMenuGroups.map((group, groupIndex) => (
-              <div key={group.label}>
-                <SidebarGroup>
-                  <SidebarGroupLabel className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                    {group.label}
-                  </SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {group.items.map((item) => {
-                        const isActive = location.pathname === item.href;
-                        return (
-                          <SidebarMenuItem key={item.href}>
-                            <SidebarMenuButton asChild isActive={isActive}>
-                              {item.href === '#' ? (
-                                <button
-                                  onClick={() => {
-                                    item.onClick?.();
-                                    onClose();
-                                  }}
-                                  className="w-full flex items-center gap-3 text-left"
-                                >
-                                  <item.icon className="h-4 w-4" />
-                                  <span>{item.label}</span>
-                                </button>
-                              ) : (
-                                <Link
-                                  to={item.href}
-                                  onClick={onClose}
-                                  className="flex items-center gap-3"
-                                >
-                                  <item.icon className="h-4 w-4" />
-                                  <span>{item.label}</span>
-                                </Link>
-                              )}
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        );
-                      })}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-                {groupIndex < filteredMenuGroups.length - 1 && (
-                  <SidebarSeparator className="mx-3 my-4" />
-                )}
-              </div>
-            ))}
+            {filteredMenuGroups.map((group, groupIndex) => {
+              const isExpanded = expandedGroups[group.label] ?? getGroupHasActiveRoute(group);
+              
+              return (
+                <div key={group.label}>
+                  <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(group.label)}>
+                    <SidebarGroup>
+                      <CollapsibleTrigger asChild>
+                        <button className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-muted/50 rounded-md transition-colors">
+                          <span>{group.label}</span>
+                          {isExpanded ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
+                        </button>
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent className="space-y-1">
+                        <SidebarGroupContent>
+                          <SidebarMenu>
+                            {group.items.map((item) => {
+                              const isActive = location.pathname === item.href;
+                              return (
+                                <SidebarMenuItem key={item.href}>
+                                  <SidebarMenuButton asChild isActive={isActive}>
+                                    {item.href === '#' ? (
+                                      <button
+                                        onClick={() => {
+                                          item.onClick?.();
+                                          onClose();
+                                        }}
+                                        className="w-full flex items-center gap-3 text-left"
+                                      >
+                                        <item.icon className="h-4 w-4" />
+                                        <span>{item.label}</span>
+                                      </button>
+                                    ) : (
+                                      <Link
+                                        to={item.href}
+                                        onClick={onClose}
+                                        className="flex items-center gap-3"
+                                      >
+                                        <item.icon className="h-4 w-4" />
+                                        <span>{item.label}</span>
+                                      </Link>
+                                    )}
+                                  </SidebarMenuButton>
+                                </SidebarMenuItem>
+                              );
+                            })}
+                          </SidebarMenu>
+                        </SidebarGroupContent>
+                      </CollapsibleContent>
+                    </SidebarGroup>
+                  </Collapsible>
+                  
+                  {groupIndex < filteredMenuGroups.length - 1 && (
+                    <SidebarSeparator className="mx-3 my-4" />
+                  )}
+                </div>
+              );
+            })}
           </SidebarContent>
         </div>
       </aside>
