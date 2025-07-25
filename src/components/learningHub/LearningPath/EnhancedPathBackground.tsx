@@ -112,12 +112,15 @@ const EnhancedPathBackground: React.FC<EnhancedPathBackgroundProps> = ({ classNa
 
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
-      {/* Main Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5" />
+      {/* Main Gradient Background with Blue Theme */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--deep-purple-blue)_/_0.15)] via-[hsl(var(--medium-blue)_/_0.1)] to-[hsl(var(--cyan-blue)_/_0.2)]" />
+      
+      {/* Secondary Gradient Layer */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-[hsl(var(--light-green)_/_0.1)] via-transparent to-[hsl(var(--primary)_/_0.15)]" />
       
       {/* Animated Mesh Gradient */}
       <motion.div
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-60"
         initial={{ scale: 1, rotate: 0 }}
         animate={{ 
           scale: [1, 1.1, 1],
@@ -130,38 +133,65 @@ const EnhancedPathBackground: React.FC<EnhancedPathBackgroundProps> = ({ classNa
         }}
         style={{
           background: `
-            radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
-            radial-gradient(circle at 40% 80%, hsl(var(--primary) / 0.06) 0%, transparent 50%)
+            radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.2) 0%, transparent 60%),
+            radial-gradient(circle at 80% 70%, hsl(var(--medium-blue) / 0.15) 0%, transparent 60%),
+            radial-gradient(circle at 40% 80%, hsl(var(--cyan-blue) / 0.18) 0%, transparent 60%)
           `
         }}
       />
       
-      {/* Subtle Grid Pattern */}
+      {/* Visible Grid Pattern */}
       <div 
-        className="absolute inset-0 opacity-[0.02]"
+        className="absolute inset-0 opacity-[0.08]"
         style={{
           backgroundImage: `
-            linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)
+            linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px)
           `,
-          backgroundSize: '32px 32px'
+          backgroundSize: '40px 40px'
         }}
       />
       
-      {/* Floating Particles */}
+      {/* Enhanced Floating Particles */}
       <div className="absolute inset-0">
         {generateParticles()}
       </div>
       
-      {/* Geometric Decorations */}
+      {/* More Visible Geometric Decorations */}
       <div className="absolute inset-0">
         {generateDecorations()}
       </div>
       
+      {/* Glowing Orbs */}
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-32 h-32 bg-[hsl(var(--primary)_/_0.1)] rounded-full blur-xl"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.1, 0.2, 0.1],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      <motion.div
+        className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-[hsl(var(--cyan-blue)_/_0.15)] rounded-full blur-lg"
+        animate={{
+          scale: [1.2, 1, 1.2],
+          opacity: [0.15, 0.25, 0.15],
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2
+        }}
+      />
+      
       {/* Subtle Noise Texture */}
       <motion.div
-        className="absolute inset-0 opacity-[0.015]"
+        className="absolute inset-0 opacity-[0.04]"
         initial={{ x: 0, y: 0 }}
         animate={{ 
           x: [0, 10, 0],
@@ -173,13 +203,13 @@ const EnhancedPathBackground: React.FC<EnhancedPathBackgroundProps> = ({ classNa
           ease: "easeInOut"
         }}
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='0.1'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='27' cy='7' r='1'/%3E%3Ccircle cx='47' cy='7' r='1'/%3E%3Ccircle cx='7' cy='27' r='1'/%3E%3Ccircle cx='27' cy='27' r='1'/%3E%3Ccircle cx='47' cy='27' r='1'/%3E%3Ccircle cx='7' cy='47' r='1'/%3E%3Ccircle cx='27' cy='47' r='1'/%3E%3Ccircle cx='47' cy='47' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='0.3'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='27' cy='7' r='1'/%3E%3Ccircle cx='47' cy='7' r='1'/%3E%3Ccircle cx='7' cy='27' r='1'/%3E%3Ccircle cx='27' cy='27' r='1'/%3E%3Ccircle cx='47' cy='27' r='1'/%3E%3Ccircle cx='7' cy='47' r='1'/%3E%3Ccircle cx='27' cy='47' r='1'/%3E%3Ccircle cx='47' cy='47' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       />
       
-      {/* Edge Fade */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-background/20" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/20 via-transparent to-background/20" />
+      {/* Soft Edge Vignette */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background/10 via-transparent to-background/5" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background/10 via-transparent to-background/10" />
     </div>
   );
 };
