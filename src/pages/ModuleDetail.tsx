@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
@@ -6,6 +6,7 @@ import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { usePersonalizedLearningPath } from '@/hooks/usePersonalizedLearningPath';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
 import ContentViewer from '@/components/learningHub/ContentViewer';
 import NotesSection from '@/components/learningHub/NotesSection';
@@ -46,6 +47,16 @@ const ModuleDetail = () => {
     enabled: !!courseId,
   });
 
+  // Get personalized module order for navigation
+  const { data: personalizedOrder } = usePersonalizedLearningPath({
+    courseId: courseId!,
+    modules: modules || [],
+    enabled: !!courseId && !!modules
+  });
+
+  // Use personalized modules for navigation or fallback to original
+  const orderedModules = personalizedOrder?.modules || modules;
+
   const { data: hasPurchased } = useQuery({
     queryKey: ['course-purchase', courseId],
     queryFn: () => paymentService.checkCoursePurchase(courseId!),
@@ -65,15 +76,19 @@ const ModuleDetail = () => {
   });
 
   const { data: canProgressToNext } = useQuery({
-    queryKey: ['can-progress', moduleId],
+    queryKey: ['can-progress', moduleId, personalizedOrder?.isPersonalized],
     queryFn: async () => {
-      if (!modules || !moduleId) return true;
-      const currentModuleIndex = modules.findIndex(m => m.id === moduleId);
-      const nextModule = modules[currentModuleIndex + 1];
+      if (!orderedModules || !moduleId) return true;
+      const currentModuleIndex = orderedModules.findIndex(m => m.id === moduleId);
+      const nextModule = orderedModules[currentModuleIndex + 1];
       if (!nextModule) return true; // No next module, can always progress
-      return await learningHubService.canProgressToModule(nextModule.id);
+      
+      // Use personalized path access control if available
+      return personalizedOrder?.isPersonalized 
+        ? await learningHubService.checkModuleAccessWithPersonalizedPath(nextModule.id, orderedModules)
+        : await learningHubService.canProgressToModule(nextModule.id);
     },
-    enabled: !!modules && !!moduleId,
+    enabled: !!orderedModules && !!moduleId,
   });
 
   const { data: isAssessmentCompleted } = useQuery({
@@ -83,15 +98,25 @@ const ModuleDetail = () => {
   });
 
   const { data: hasModuleAccess, isLoading: accessLoading } = useQuery({
-    queryKey: ['module-access', moduleId],
-    queryFn: () => learningHubService.checkModuleAccess(moduleId!),
-    enabled: !!moduleId,
+    queryKey: ['module-access', moduleId, personalizedOrder?.isPersonalized],
+    queryFn: () => {
+      // Use personalized path access control if available
+      return personalizedOrder?.isPersonalized 
+        ? learningHubService.checkModuleAccessWithPersonalizedPath(moduleId!, orderedModules || [])
+        : learningHubService.checkModuleAccess(moduleId!);
+    },
+    enabled: !!moduleId && !!orderedModules,
   });
 
-  const currentModule = modules?.find(m => m.id === moduleId);
+  const currentModule = orderedModules?.find(m => m.id === moduleId);
   const lessons = currentModule?.lessons || [];
   const currentLesson = lessons[currentLessonIndex];
   const hasAccess = isOwner || hasPurchased;
+
+  // Reset lesson index when module changes
+  useEffect(() => {
+    setCurrentLessonIndex(0);
+  }, [moduleId]);
 
   const handleBackToCourse = () => {
     navigate(`/course/${courseId}`);
@@ -107,9 +132,9 @@ const ModuleDetail = () => {
     if (currentLessonIndex < lessons.length - 1) {
       setCurrentLessonIndex(currentLessonIndex + 1);
     } else {
-      // If this is the last lesson, check if there's a next module
-      const currentModuleIndex = modules?.findIndex(m => m.id === moduleId) || 0;
-      const nextModule = modules?.[currentModuleIndex + 1];
+      // If this is the last lesson, check if there's a next module using personalized order
+      const currentModuleIndex = orderedModules?.findIndex(m => m.id === moduleId) || 0;
+      const nextModule = orderedModules?.[currentModuleIndex + 1];
       if (nextModule) {
         // Check if current module has required assessment
         if (hasRequiredAssessment && !isAssessmentCompleted) {
@@ -121,7 +146,7 @@ const ModuleDetail = () => {
           setShowAssessmentDialog(true);
           return;
         }
-        // Navigate to next module
+        // Navigate to next module in personalized order
         navigate(`/course/${courseId}/module/${nextModule.id}`);
       }
     }
@@ -138,15 +163,15 @@ const ModuleDetail = () => {
       const passingScore = moduleAssessments[0].passing_score || 70;
       
       if (score >= passingScore) {
-        await learningHubService.markAssessmentCompleted(currentLesson.id, score);
+        await learningHubService.markAssessmentCompleted(moduleId!, score);
         
         toast({
           title: "Assessment Completed!",
           description: `You scored ${score}% and passed the assessment. Next module unlocked!`,
         });
         
-        const currentModuleIndex = modules?.findIndex(m => m.id === moduleId) || 0;
-        const nextModule = modules?.[currentModuleIndex + 1];
+        const currentModuleIndex = orderedModules?.findIndex(m => m.id === moduleId) || 0;
+        const nextModule = orderedModules?.[currentModuleIndex + 1];
         if (nextModule) {
           navigate(`/course/${courseId}/module/${nextModule.id}`);
         }
@@ -264,7 +289,7 @@ const ModuleDetail = () => {
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="outline">{course.subject}</Badge>
-                  <Badge variant="secondary">Module {modules?.findIndex(m => m.id === moduleId)! + 1}</Badge>
+                  <Badge variant="secondary">Module {orderedModules?.findIndex(m => m.id === moduleId)! + 1}</Badge>
                 </div>
                 <CardTitle className="text-2xl md:text-3xl">{currentModule.title}</CardTitle>
                 {currentModule.description && (
