@@ -58,7 +58,7 @@ const SimplePathStop: React.FC<SimplePathStopProps> = ({
     
     switch (status) {
       case 'locked':
-        return 'bg-gray-100 border-gray-200 cursor-not-allowed';
+        return `bg-gradient-to-br ${pastelColor} opacity-60 cursor-not-allowed`;
       case 'completed':
         return 'bg-gradient-to-br from-emerald-200 to-emerald-300 border-emerald-300 cursor-pointer hover:from-emerald-300 hover:to-emerald-400';
       case 'in_progress':
