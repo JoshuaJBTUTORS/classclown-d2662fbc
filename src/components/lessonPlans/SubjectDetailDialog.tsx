@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import MaterialUpload from './MaterialUpload';
 import MaterialList from './MaterialList';
+import WeeklyMaterials from './WeeklyMaterials';
 
 interface LessonPlan {
   id: string;
@@ -42,6 +43,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const [editForm, setEditForm] = useState({ topic_title: '', description: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('plans');
+  const [materialCounts, setMaterialCounts] = useState<Record<number, number>>({});
 
   // Group plans by term
   const plansByTerm = lessonPlans.reduce((acc, plan) => {
@@ -55,6 +57,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   useEffect(() => {
     if (isOpen && subject) {
       fetchSubjectPlans();
+      fetchMaterialCounts();
     }
   }, [isOpen, subject]);
 
@@ -75,6 +78,27 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
       toast.error('Failed to load lesson plans');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchMaterialCounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teaching_materials')
+        .select('week_number')
+        .eq('subject', subject);
+
+      if (error) throw error;
+
+      const counts: Record<number, number> = {};
+      data?.forEach(material => {
+        if (material.week_number) {
+          counts[material.week_number] = (counts[material.week_number] || 0) + 1;
+        }
+      });
+      setMaterialCounts(counts);
+    } catch (error) {
+      console.error('Error fetching material counts:', error);
     }
   };
 
@@ -102,6 +126,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
       toast.success('Lesson plan updated successfully');
       setEditingPlan(null);
       fetchSubjectPlans();
+      fetchMaterialCounts();
       onUpdate();
     } catch (error) {
       console.error('Error updating lesson plan:', error);
@@ -152,12 +177,17 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                         {plansByTerm[term]
                           .sort((a, b) => a.week_number - b.week_number)
                           .map(plan => (
-                            <div key={plan.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Badge variant="secondary">Week {plan.week_number}</Badge>
-                                  </div>
+                             <div key={plan.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                               <div className="flex items-start justify-between">
+                                 <div className="flex-1">
+                                   <div className="flex items-center gap-2 mb-2">
+                                     <Badge variant="secondary">Week {plan.week_number}</Badge>
+                                     {materialCounts[plan.week_number] > 0 && (
+                                       <Badge variant="outline" className="text-xs">
+                                         {materialCounts[plan.week_number]} material{materialCounts[plan.week_number] !== 1 ? 's' : ''}
+                                       </Badge>
+                                     )}
+                                   </div>
                                   
                                   {editingPlan === plan.id ? (
                                     <div className="space-y-3">
@@ -206,21 +236,32 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                                           {plan.description}
                                         </p>
                                       )}
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                {editingPlan !== plan.id && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleEdit(plan)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
+                                     </div>
+                                   )}
+                                 </div>
+                                 
+                                 {editingPlan !== plan.id && (
+                                   <Button
+                                     size="sm"
+                                     variant="ghost"
+                                     onClick={() => handleEdit(plan)}
+                                   >
+                                     <Edit className="h-4 w-4" />
+                                   </Button>
+                                 )}
+                               </div>
+                               
+                               {editingPlan !== plan.id && (
+                                 <WeeklyMaterials
+                                   subject={subject}
+                                   weekNumber={plan.week_number}
+                                   onUpdate={() => {
+                                     fetchMaterialCounts();
+                                     onUpdate();
+                                   }}
+                                 />
+                               )}
+                             </div>
                           ))}
                       </div>
                     </CardContent>
