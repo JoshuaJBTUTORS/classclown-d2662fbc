@@ -116,44 +116,67 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const spaceId = generateSpaceId(lesson);
     console.log("Generated space ID:", spaceId);
 
+    // Create request body for LessonSpace API
+    const requestBody = {
+      id: spaceId,
+      transcribe: true,
+      record_av: true,
+      user: {
+        id: `tutor_${lesson.tutor.id}`,
+        name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
+        role: "teacher",
+        leader: true, // TUTOR IS LEADER
+        custom_jwt_parameters: {
+          meta: {
+            displayName: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`
+          }
+        }
+      },
+      features: {
+        invite: true
+      },
+      invite_url: `https://www.thelessonspace.com/space/${spaceId}`
+    };
+
+    console.log("=== LESSONSPACE API REQUEST ===");
+    console.log("URL: https://api.thelessonspace.com/v2/spaces/launch/");
+    console.log("API Key:", lessonSpaceApiKey);
+    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
+    console.log("================================");
+
     // Create space with teacher as leader using the Launch endpoint
-    console.log("Creating teacher space with API key:", lessonSpaceApiKey);
     const spaceResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
       method: "POST",
       headers: {
         "Authorization": `Organisation ${lessonSpaceApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        id: spaceId,
-        transcribe: true,
-        record_av: true,
-        user: {
-          id: `tutor_${lesson.tutor.id}`,
-          name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
-          role: "teacher",
-          leader: true, // TUTOR IS LEADER
-          custom_jwt_parameters: {
-            meta: {
-              displayName: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`
-            }
-          }
-        },
-        features: {
-          invite: true
-        },
-        invite_url: `https://www.thelessonspace.com/space/${spaceId}`
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    console.log("=== LESSONSPACE API RESPONSE ===");
+    console.log("Response Status:", spaceResponse.status);
+    console.log("Response Status Text:", spaceResponse.statusText);
+    console.log("Response Headers:", Object.fromEntries(spaceResponse.headers));
+    console.log("==================================");
 
     if (!spaceResponse.ok) {
       const errorText = await spaceResponse.text();
-      console.error("Lesson Space API error for teacher:", spaceResponse.status, errorText);
+      console.error("=== API ERROR RESPONSE ===");
+      console.error("Status:", spaceResponse.status);
+      console.error("Error Text:", errorText);
+      console.error("========================");
       throw new Error(`Failed to create space for teacher: ${spaceResponse.status} ${errorText}`);
     }
 
     const spaceData = await spaceResponse.json();
-    console.log("Created/Retrieved Lesson Space for teacher:", spaceData);
+    console.log("=== SUCCESSFUL API RESPONSE DATA ===");
+    console.log("Full Response:", JSON.stringify(spaceData, null, 2));
+    console.log("Room Settings:", spaceData.room_settings ? JSON.stringify(spaceData.room_settings, null, 2) : "Not present");
+    console.log("Transcribe Setting:", spaceData.room_settings?.transcribe || "Not found");
+    console.log("Record AV Setting:", spaceData.room_settings?.record_av || "Not found");
+    console.log("Client URL Features:", spaceData.client_url ? "URL contains features" : "No client URL");
+    console.log("===================================");
 
     // Update the lesson with room details including session_id
     const { error: updateError } = await supabase
