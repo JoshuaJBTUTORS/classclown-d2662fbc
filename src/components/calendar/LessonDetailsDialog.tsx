@@ -123,7 +123,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .from('lesson_student_summaries')
         .select(`
           *,
-          student:students(first_name, last_name)
+          students!lesson_student_summaries_student_id_fkey(first_name, last_name)
         `)
         .eq('lesson_id', lessonId);
 
@@ -133,7 +133,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         transcription: transcriptionData || undefined,
         student_summaries: summariesData?.map(summary => ({
           ...summary,
-          student_name: `${summary.student.first_name} ${summary.student.last_name}`
+          student_name: `${summary.students?.first_name || ''} ${summary.students?.last_name || ''}`.trim()
         })) || []
       };
 
