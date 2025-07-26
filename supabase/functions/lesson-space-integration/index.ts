@@ -124,6 +124,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       },
       body: JSON.stringify({
         id: spaceId,
+        transcribe: true,
+        record_av: true,
         user: {
           id: `tutor_${lesson.tutor.id}`,
           name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
