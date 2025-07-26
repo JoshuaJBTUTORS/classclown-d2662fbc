@@ -725,6 +725,47 @@ export type Database = {
           },
         ]
       }
+      lesson_participant_urls: {
+        Row: {
+          created_at: string
+          id: string
+          launch_url: string
+          lesson_id: string
+          participant_id: string
+          participant_name: string
+          participant_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          launch_url: string
+          lesson_id: string
+          participant_id: string
+          participant_name: string
+          participant_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          launch_url?: string
+          lesson_id?: string
+          participant_id?: string
+          participant_name?: string
+          participant_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_participant_urls_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_plan_assignments: {
         Row: {
           assigned_week_date: string
