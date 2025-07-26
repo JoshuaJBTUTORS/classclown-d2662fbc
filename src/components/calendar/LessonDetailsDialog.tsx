@@ -133,7 +133,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         transcription: transcriptionData || undefined,
         student_summaries: summariesData?.map(summary => ({
           ...summary,
-          student_name: `${summary.students?.first_name || ''} ${summary.students?.last_name || ''}`.trim()
+          student_name: `${(summary as any).students?.first_name || ''} ${(summary as any).students?.last_name || ''}`.trim()
         })) || []
       };
 
