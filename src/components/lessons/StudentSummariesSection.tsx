@@ -193,40 +193,9 @@ export const StudentSummariesSection: React.FC<StudentSummariesSectionProps> = (
                       </div>
                     )}
 
-                    {summary.student_contributions && (
-                      <div>
-                        <h4 className="font-medium text-sm mb-1">Contributions</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {summary.student_contributions}
-                        </p>
-                      </div>
-                    )}
-
-                    {summary.what_went_well && (
-                      <div>
-                        <h4 className="font-medium text-sm mb-1 text-green-700">
-                          What Went Well
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          {summary.what_went_well}
-                        </p>
-                      </div>
-                    )}
-
-                    {summary.areas_for_improvement && (
-                      <div>
-                        <h4 className="font-medium text-sm mb-1 text-orange-700">
-                          Areas for Improvement
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          {summary.areas_for_improvement}
-                        </p>
-                      </div>
-                    )}
-
                     {summary.ai_summary && (
                       <div>
-                        <h4 className="font-medium text-sm mb-1">Overall Summary</h4>
+                        <h4 className="font-medium text-sm mb-1">Summary</h4>
                         <p className="text-sm text-muted-foreground">
                           {summary.ai_summary}
                         </p>
