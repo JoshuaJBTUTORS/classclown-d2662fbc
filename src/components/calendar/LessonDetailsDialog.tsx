@@ -130,7 +130,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       // Combine all data
       const enhancedLesson = {
         ...data,
-        transcription: transcriptionData || undefined,
+        transcription: transcriptionData ? {
+          ...transcriptionData,
+          status: transcriptionData.transcription_status
+        } : undefined,
         student_summaries: summariesData?.map(summary => ({
           ...summary,
           student_name: `${(summary as any).students?.first_name || ''} ${(summary as any).students?.last_name || ''}`.trim()
