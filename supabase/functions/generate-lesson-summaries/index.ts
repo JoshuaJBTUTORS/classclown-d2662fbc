@@ -402,7 +402,9 @@ Format your response as a JSON object with the following structure:
           cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
         }
         
+        console.log(`Attempting to parse JSON for student ${studentName}:`, cleanContent);
         analysisData = JSON.parse(cleanContent);
+        console.log(`Successfully parsed JSON for student ${studentName}:`, analysisData);
       } catch (parseError) {
         console.error(`Failed to parse AI response for student ${studentName}:`, parseError);
         console.error('Raw AI content:', aiContent);
@@ -417,20 +419,24 @@ Format your response as a JSON object with the following structure:
         };
       }
 
-      // Save the summary to the database
+      // Save the summary to the database with proper field mapping
+      const summaryData = {
+        lesson_id: lessonId,
+        student_id: student.id,
+        transcription_id: transcriptionId,
+        topics_covered: analysisData.topics_covered || [],
+        student_contributions: analysisData.student_contributions || '',
+        what_went_well: analysisData.what_went_well || '',
+        areas_for_improvement: analysisData.areas_for_improvement || '',
+        engagement_level: analysisData.engagement_level || 'Unknown',
+        ai_summary: analysisData.overall_summary || aiContent,
+      };
+
+      console.log(`Saving summary for student ${studentName}:`, summaryData);
+
       const { data: summary, error: summaryError } = await supabase
         .from('lesson_student_summaries')
-        .upsert({
-          lesson_id: lessonId,
-          student_id: student.id,
-          transcription_id: transcriptionId,
-          topics_covered: analysisData.topics_covered || [],
-          student_contributions: analysisData.student_contributions || '',
-          what_went_well: analysisData.what_went_well || '',
-          areas_for_improvement: analysisData.areas_for_improvement || '',
-          engagement_level: analysisData.engagement_level || 'Unknown',
-          ai_summary: analysisData.overall_summary || aiContent,
-        }, {
+        .upsert(summaryData, {
           onConflict: 'lesson_id,student_id,transcription_id',
           ignoreDuplicates: false
         })
