@@ -394,9 +394,18 @@ Format your response as a JSON object with the following structure:
 
       let analysisData;
       try {
-        analysisData = JSON.parse(aiContent);
+        // Strip markdown code blocks if present
+        let cleanContent = aiContent.trim();
+        if (cleanContent.startsWith('```json')) {
+          cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanContent.startsWith('```')) {
+          cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        analysisData = JSON.parse(cleanContent);
       } catch (parseError) {
         console.error(`Failed to parse AI response for student ${studentName}:`, parseError);
+        console.error('Raw AI content:', aiContent);
         // Fallback to storing the raw response
         analysisData = {
           topics_covered: [],
