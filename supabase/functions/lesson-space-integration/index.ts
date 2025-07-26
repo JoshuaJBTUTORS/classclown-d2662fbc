@@ -220,13 +220,22 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 }
 
 async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
+  const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY') || "832a4e97-e402-4757-8ba3-a8afb14941b2";
+  
   try {
-    console.log("Student joining lesson space:", data);
+    console.log("Student joining lesson space with Launch API:", data);
     
-    // Get lesson details including the space ID
+    // Get lesson details including the space ID and student info
     const { data: lesson, error: lessonError } = await supabase
       .from("lessons")
-      .select("lesson_space_space_id, title")
+      .select(`
+        lesson_space_space_id, 
+        title,
+        lesson_students(
+          student_id,
+          student:students(id, first_name, last_name, email)
+        )
+      `)
       .eq("id", data.lessonId)
       .single();
 
@@ -238,20 +247,84 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       throw new Error("No lesson space found for this lesson");
     }
 
-    // Return the simple invite URL for students
-    const studentUrl = `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`;
-    console.log(`Generated simple invite URL for student ${data.studentId}:`, studentUrl);
+    // Find the specific student
+    const studentData = lesson.lesson_students.find(
+      ls => ls.student_id === data.studentId
+    )?.student;
+
+    if (!studentData) {
+      throw new Error(`Student ${data.studentId} not found in lesson`);
+    }
+
+    // Create Launch API request for student with transcription enabled
+    const requestBody = {
+      id: lesson.lesson_space_space_id,
+      transcribe: true,  // Enable transcription for student
+      record_av: true,   // Enable recording
+      user: {
+        id: `student_${studentData.id}`,
+        name: `${studentData.first_name} ${studentData.last_name}`,
+        role: "student",
+        leader: false, // Students are not leaders
+        custom_jwt_parameters: {
+          meta: {
+            displayName: `${studentData.first_name} ${studentData.last_name}`
+          }
+        }
+      },
+      features: {
+        invite: true
+      }
+    };
+
+    console.log("=== STUDENT LAUNCH API REQUEST ===");
+    console.log("URL: https://api.thelessonspace.com/v2/spaces/launch/");
+    console.log("Student ID:", data.studentId);
+    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
+    console.log("==================================");
+
+    // Make Launch API call for student
+    const spaceResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
+      method: "POST",
+      headers: {
+        "Authorization": `Organisation ${lessonSpaceApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log("=== STUDENT LAUNCH API RESPONSE ===");
+    console.log("Response Status:", spaceResponse.status);
+    console.log("Response Status Text:", spaceResponse.statusText);
+    console.log("====================================");
+
+    if (!spaceResponse.ok) {
+      const errorText = await spaceResponse.text();
+      console.error("=== STUDENT API ERROR RESPONSE ===");
+      console.error("Status:", spaceResponse.status);
+      console.error("Error Text:", errorText);
+      console.error("=================================");
+      throw new Error(`Failed to create student Launch API call: ${spaceResponse.status} ${errorText}`);
+    }
+
+    const spaceData = await spaceResponse.json();
+    console.log("=== STUDENT LAUNCH SUCCESS ===");
+    console.log("Student URL:", spaceData.client_url);
+    console.log("Transcribe enabled:", spaceData.room_settings?.transcribe);
+    console.log("=============================");
 
     return new Response(
       JSON.stringify({
         success: true,
-        studentUrl: studentUrl,
-        spaceId: lesson.lesson_space_space_id
+        studentUrl: spaceData.client_url, // Authenticated student URL with transcription
+        spaceId: lesson.lesson_space_space_id,
+        transcriptionEnabled: true,
+        message: "Student Launch API call successful with transcription enabled"
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error joining lesson space:", error);
+    console.error("Error in student Launch API call:", error);
     return new Response(
       JSON.stringify({ 
         success: false,
