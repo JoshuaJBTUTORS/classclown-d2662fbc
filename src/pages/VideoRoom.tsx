@@ -1,97 +1,48 @@
 
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useVideoRoom } from '@/hooks/useVideoRoom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Video, AlertCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useParticipantUrl } from '@/hooks/useParticipantUrl';
+import { useVideoRoom } from '@/hooks/useVideoRoom';
 import EmbeddedVideoRoom from '@/components/video/EmbeddedVideoRoom';
-import { useStudentJoin } from '@/hooks/useStudentJoin';
-import { toast } from 'sonner';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, AlertCircle, Video } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const VideoRoom: React.FC = () => {
-  const { lessonId } = useParams<{ lessonId: string }>();
+export default function VideoRoom() {
+  const { lessonId } = useParams();
   const navigate = useNavigate();
-  const { userRole, isAdmin, isOwner, isTutor, user } = useAuth();
-  const { joinLessonSpace, isJoining } = useStudentJoin();
-  const [studentRoomUrl, setStudentRoomUrl] = useState<string | null>(null);
-  
+  const { user, userRole } = useAuth();
+
   const {
     lesson,
-    isLoading,
-    error,
-    handleLeaveRoom
+    expectedStudents,
+    isLoading: lessonLoading,
+    error: lessonError,
+    videoRoomRole,
+    handleRetry,
+    handleLeaveRoom,
+    getDisplayName,
   } = useVideoRoom(lessonId || '');
 
-  // Determine if user has teacher/host privileges
-  const isTeacherRole = isTutor || isAdmin || isOwner;
+  // Get pre-generated participant URL
+  const {
+    participantUrl,
+    isLoading: urlLoading,
+    error: urlError
+  } = useParticipantUrl(lessonId || '');
 
-  // Handle student joining via Launch API
-  useEffect(() => {
-    const handleStudentJoin = async () => {
-      if (!lesson || !user || isTeacherRole || studentRoomUrl) return;
-      
-      try {
-        let studentId: number;
-        let studentName: string;
+  const isLoading = lessonLoading || urlLoading;
+  const error = lessonError || urlError;
 
-        if (userRole === 'student') {
-          const { data: student } = await supabase.from('students')
-            .select('id, first_name, last_name')
-            .eq('email', user.email)
-            .single();
-          
-          if (!student) return;
-          studentId = student.id;
-          studentName = `${student.first_name} ${student.last_name}`;
-        } else if (userRole === 'parent') {
-          // For parents, use the first child in the lesson
-          const firstStudent = lesson.lesson_students?.[0]?.student;
-          if (!firstStudent) return;
-          
-          studentId = firstStudent.id;
-          studentName = `${firstStudent.first_name} ${firstStudent.last_name}`;
-        } else {
-          return;
-        }
-
-        const url = await joinLessonSpace(lessonId!, studentId, studentName);
-        if (url) {
-          setStudentRoomUrl(url);
-        }
-      } catch (error) {
-        console.error('Error getting student Launch API URL:', error);
-        toast.error('Failed to join lesson space');
-      }
-    };
-
-    handleStudentJoin();
-  }, [lesson, user, userRole, isTeacherRole, lessonId, joinLessonSpace, studentRoomUrl]);
-
-  // Get the appropriate room URL based on role
-  const getRoomUrl = () => {
-    if (!lesson) return null;
-    
-    if (isTeacherRole) {
-      // Teachers get the authenticated room URL
-      return lesson.lesson_space_room_url;
-    } else {
-      // Students and parents get the Launch API URL
-      return studentRoomUrl;
-    }
-  };
-
-  const roomUrl = getRoomUrl();
-
-  if (isLoading || isJoining) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="text-gray-600">
-            {isJoining ? 'Joining lesson space...' : 'Loading lesson details...'}
+            Loading lesson details...
           </p>
         </div>
       </div>
@@ -122,7 +73,7 @@ const VideoRoom: React.FC = () => {
     );
   }
 
-  if (!roomUrl) {
+  if (!participantUrl) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -133,7 +84,7 @@ const VideoRoom: React.FC = () => {
                 No Video Room Available
               </h2>
               <p className="text-sm text-gray-600 mb-4">
-                {isTeacherRole 
+                {videoRoomRole === 'tutor' 
                   ? "This lesson doesn't have a video room set up yet. Please create one first."
                   : "This lesson doesn't have a video room set up yet. Please contact your teacher to create one."
                 }
@@ -152,7 +103,7 @@ const VideoRoom: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <EmbeddedVideoRoom
-        roomUrl={roomUrl}
+        roomUrl={participantUrl}
         spaceId={lesson?.lesson_space_space_id}
         lessonTitle={lesson?.title}
         onExit={handleLeaveRoom}
@@ -161,5 +112,3 @@ const VideoRoom: React.FC = () => {
     </div>
   );
 };
-
-export default VideoRoom;
