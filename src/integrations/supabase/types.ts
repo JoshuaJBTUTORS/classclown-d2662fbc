@@ -797,6 +797,73 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_student_summaries: {
+        Row: {
+          ai_summary: string | null
+          areas_for_improvement: string | null
+          created_at: string
+          engagement_level: string | null
+          id: string
+          lesson_id: string
+          student_contributions: string | null
+          student_id: number
+          topics_covered: string[] | null
+          transcription_id: string
+          updated_at: string
+          what_went_well: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          areas_for_improvement?: string | null
+          created_at?: string
+          engagement_level?: string | null
+          id?: string
+          lesson_id: string
+          student_contributions?: string | null
+          student_id: number
+          topics_covered?: string[] | null
+          transcription_id: string
+          updated_at?: string
+          what_went_well?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          areas_for_improvement?: string | null
+          created_at?: string
+          engagement_level?: string | null
+          id?: string
+          lesson_id?: string
+          student_contributions?: string | null
+          student_id?: number
+          topics_covered?: string[] | null
+          transcription_id?: string
+          updated_at?: string
+          what_went_well?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_lesson_student_summaries_lesson_id"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lesson_student_summaries_student_id"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lesson_student_summaries_transcription_id"
+            columns: ["transcription_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_transcriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_students: {
         Row: {
           created_at: string | null
@@ -833,6 +900,50 @@ export type Database = {
           },
         ]
       }
+      lesson_transcriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          lesson_id: string
+          session_id: string
+          transcription_status: string
+          transcription_text: string | null
+          transcription_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          lesson_id: string
+          session_id: string
+          transcription_status?: string
+          transcription_text?: string | null
+          transcription_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          lesson_id?: string
+          session_id?: string
+          transcription_status?: string
+          transcription_text?: string | null
+          transcription_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_lesson_transcriptions_lesson_id"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           attendance_completed: boolean | null
@@ -849,6 +960,7 @@ export type Database = {
           is_recurring_instance: boolean | null
           lesson_space_room_id: string | null
           lesson_space_room_url: string | null
+          lesson_space_session_id: string | null
           lesson_space_space_id: string | null
           lesson_type: string | null
           parent_lesson_id: string | null
@@ -878,6 +990,7 @@ export type Database = {
           is_recurring_instance?: boolean | null
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
+          lesson_space_session_id?: string | null
           lesson_space_space_id?: string | null
           lesson_type?: string | null
           parent_lesson_id?: string | null
@@ -907,6 +1020,7 @@ export type Database = {
           is_recurring_instance?: boolean | null
           lesson_space_room_id?: string | null
           lesson_space_room_url?: string | null
+          lesson_space_session_id?: string | null
           lesson_space_space_id?: string | null
           lesson_type?: string | null
           parent_lesson_id?: string | null

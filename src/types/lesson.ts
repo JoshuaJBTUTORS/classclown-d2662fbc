@@ -20,6 +20,7 @@ export interface Lesson {
   lesson_space_room_id?: string | null;
   lesson_space_room_url?: string | null;
   lesson_space_space_id?: string | null;
+  lesson_space_session_id?: string | null;
   // Trial lesson fields
   lesson_type?: 'regular' | 'trial' | 'makeup';
   trial_booking_id?: string | null;
@@ -64,6 +65,24 @@ export interface Lesson {
       parent_last_name?: string;
       email?: string;
     };
+  }[];
+  // Transcription fields
+  transcription?: {
+    id: string;
+    status: 'processing' | 'available' | 'error';
+    transcription_url?: string;
+    expires_at?: string;
+  };
+  student_summaries?: {
+    id: string;
+    student_id: number;
+    student_name: string;
+    topics_covered: string[];
+    student_contributions: string;
+    what_went_well: string;
+    areas_for_improvement: string;
+    engagement_level: string;
+    ai_summary: string;
   }[];
 }
 

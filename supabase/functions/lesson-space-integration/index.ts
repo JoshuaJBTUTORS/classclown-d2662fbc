@@ -50,6 +50,8 @@ serve(async (req) => {
         return await updateLessonWithRoom(requestData as UpdateLessonRequest, supabase);
       case "delete-room":
         return await deleteLessonSpaceRoom(requestData.roomId, supabase);
+      case "get-transcription":
+        return await getTranscription(requestData.lessonId, supabase);
       default:
         return new Response(
           JSON.stringify({ error: "Invalid action" }),
@@ -83,7 +85,7 @@ function generateSpaceId(lesson: any): string {
 }
 
 async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
-  const lessonSpaceApiKey = "832a4e97-e402-4757-8ba3-a8afb14941b2";
+  const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY') || "832a4e97-e402-4757-8ba3-a8afb14941b2";
   
   try {
     console.log("Creating Lesson Space room for lesson:", data.lessonId);
@@ -153,13 +155,14 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const spaceData = await spaceResponse.json();
     console.log("Created/Retrieved Lesson Space for teacher:", spaceData);
 
-    // Update the lesson with room details
+    // Update the lesson with room details including session_id
     const { error: updateError } = await supabase
       .from("lessons")
       .update({
         lesson_space_room_id: spaceData.room_id,
         lesson_space_room_url: spaceData.client_url, // Teacher's authenticated URL
         lesson_space_space_id: spaceId, // Store the space ID for student joins
+        lesson_space_session_id: spaceData.session_id, // Store session ID for transcription
       })
       .eq("id", data.lessonId);
 
@@ -298,6 +301,36 @@ async function deleteLessonSpaceRoom(roomId: string, supabase: any) {
     );
   } catch (error) {
     console.error("Error deleting room:", error);
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+}
+
+async function getTranscription(lessonId: string, supabase: any) {
+  try {
+    // Redirect to the dedicated transcription function
+    const response = await supabase.functions.invoke('generate-lesson-summaries', {
+      body: {
+        action: 'get-transcription',
+        lessonId: lessonId
+      }
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    return new Response(
+      JSON.stringify(response.data),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error getting transcription:", error);
     return new Response(
       JSON.stringify({ 
         success: false,
