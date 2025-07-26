@@ -862,6 +862,13 @@ export type Database = {
             referencedRelation: "lesson_transcriptions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lesson_student_summaries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lesson_students: {

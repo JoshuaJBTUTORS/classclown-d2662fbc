@@ -487,18 +487,14 @@ async function pollPendingTranscriptions() {
   
   for (const transcription of pendingTranscriptions || []) {
     try {
-      // Check transcription status
-      const response = await supabase.functions.invoke('generate-lesson-summaries', {
-        body: {
-          action: 'get-transcription',
-          lessonId: transcription.lesson_id
-        }
-      });
+      // FIXED: Use direct getTranscription call instead of recursive function invoke
+      // to prevent infinite recursion
+      const transcriptionResult = await getTranscription(transcription.lesson_id);
 
       results.push({
         transcriptionId: transcription.id,
         lessonId: transcription.lesson_id,
-        result: response.data
+        result: transcriptionResult
       });
     } catch (error) {
       console.error(`Error polling transcription ${transcription.id}:`, error);
