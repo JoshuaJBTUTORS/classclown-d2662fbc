@@ -118,6 +118,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .eq('lesson_id', lessonId)
         .maybeSingle();
 
+      console.log('Transcription data fetched:', transcriptionData);
+
       // Fetch student summaries
       const { data: summariesData } = await supabase
         .from('lesson_student_summaries')
@@ -139,6 +141,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           student_name: `${(summary as any).students?.first_name || ''} ${(summary as any).students?.last_name || ''}`.trim()
         })) || []
       };
+
+      console.log('Enhanced lesson with transcription:', enhancedLesson.transcription);
 
       setLesson(enhancedLesson);
       
@@ -183,7 +187,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .from('homework')
         .select('*')
         .eq('lesson_id', lessonId)
-        .single();
+        .maybeSingle();
 
       setHomeworkStatus({ 
         exists: !!homework, 
