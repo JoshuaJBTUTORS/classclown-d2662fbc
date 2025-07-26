@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import LessonConsentDialog from './LessonConsentDialog';
+import { useStudentJoin } from '@/hooks/useStudentJoin';
 import { 
   Video,
   Users,
@@ -40,6 +41,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   const [studentName, setStudentName] = useState('');
   const navigate = useNavigate();
   const { userRole, isAdmin, isOwner, isTutor, user } = useAuth();
+  const { joinLessonSpace, isJoining } = useStudentJoin();
 
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
@@ -147,10 +149,18 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     setShowConsentDialog(true);
   };
 
-  const handleConsentAccept = () => {
+  const handleConsentAccept = async () => {
     setShowConsentDialog(false);
-    navigate(`/video-room/${lessonId}`);
-    toast.success('Joining lesson...');
+    
+    if (isTeacherRole) {
+      // Teachers navigate to video room directly
+      navigate(`/video-room/${lessonId}`);
+      toast.success('Joining lesson...');
+    } else {
+      // Students/parents use Launch API - let VideoRoom component handle the Launch API call
+      navigate(`/video-room/${lessonId}`);
+      toast.success('Joining lesson...');
+    }
   };
 
   const handleConsentClose = () => {
@@ -221,14 +231,14 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
           
           <Button
             onClick={handleJoinRoom}
-            disabled={isLoading}
+            disabled={isLoading || isJoining}
             className={`flex items-center gap-2 ${
               isTeacherRole 
                 ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
                 : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
             } text-white`}
           >
-            {isLoading ? (
+            {(isLoading || isJoining) ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
