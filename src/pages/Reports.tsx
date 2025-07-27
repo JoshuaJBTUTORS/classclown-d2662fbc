@@ -22,7 +22,7 @@ interface ReportFilters {
 }
 
 const Reports: React.FC = () => {
-  const { open: sidebarOpen, toggleSidebar } = useSidebar();
+  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
   
   const [filters, setFilters] = useState<ReportFilters>({
     dateRange: { from: null, to: null },
@@ -33,9 +33,7 @@ const Reports: React.FC = () => {
   const { userRole } = useAuth();
 
   const closeSidebar = () => {
-    if (sidebarOpen) {
-      toggleSidebar();
-    }
+    setOpen(false);
   };
 
   const handleFiltersChange = (newFilters: Partial<ReportFilters>) => {

@@ -27,7 +27,7 @@ interface LessonPlan {
 }
 
 const LessonPlans: React.FC = () => {
-  const { open: sidebarOpen, toggleSidebar } = useSidebar();
+  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
   const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<LessonPlan[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,9 +36,7 @@ const LessonPlans: React.FC = () => {
   const { isAdmin, isOwner, isTutor } = useAuth();
 
   const closeSidebar = () => {
-    if (sidebarOpen) {
-      toggleSidebar();
-    }
+    setOpen(false);
   };
 
   // Get unique subjects from lesson plans

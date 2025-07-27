@@ -21,7 +21,7 @@ interface ProgressFilters {
 }
 
 const Progress: React.FC = () => {
-  const { open: sidebarOpen, toggleSidebar } = useSidebar();
+  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
   
   const [filters, setFilters] = useState<ProgressFilters>({
     dateRange: { from: null, to: null },
@@ -32,9 +32,7 @@ const Progress: React.FC = () => {
   const { userRole, user } = useAuth();
 
   const closeSidebar = () => {
-    if (sidebarOpen) {
-      toggleSidebar();
-    }
+    setOpen(false);
   };
 
   const handleFiltersChange = (newFilters: Partial<ProgressFilters>) => {

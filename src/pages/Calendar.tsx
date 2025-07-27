@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
   const { openBookingModal } = useTrialBooking();
-  const { open: sidebarOpen, toggleSidebar } = useSidebar();
+  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
   
   // Filter state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -42,9 +42,7 @@ const Calendar = () => {
   });
 
   const closeSidebar = () => {
-    if (sidebarOpen) {
-      toggleSidebar();
-    }
+    setOpen(false);
   };
 
   const toggleFilters = () => {

@@ -58,14 +58,12 @@ const Students = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditParentDialogOpen, setIsEditParentDialogOpen] = useState(false);
   
-  const { open: sidebarOpen, toggleSidebar } = useSidebar();
+  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
   
   const { isParent, isAdmin, isOwner, user, userRole, parentProfile } = useAuth();
 
   const closeSidebar = () => {
-    if (sidebarOpen) {
-      toggleSidebar();
-    }
+    setOpen(false);
   };
 
   const fetchStudents = async () => {
