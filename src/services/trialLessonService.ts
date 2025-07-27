@@ -115,8 +115,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       } else {
         console.log('LessonSpace room created successfully:', roomData);
         // Extract space_id from room creation response
-        lessonSpaceId = roomData?.lesson_space_space_id;
+        lessonSpaceId = roomData?.spaceId;
         console.log('Extracted lesson space ID:', lessonSpaceId);
+        console.log('Full room response:', JSON.stringify(roomData, null, 2));
       }
     } catch (roomError) {
       console.error('Room creation error:', roomError);
