@@ -49,9 +49,9 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
         {isLoading ? <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
             <div className="text-sm text-muted-foreground">Loading...</div>
           </div> : <FullCalendar key={refreshKey} plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} headerToolbar={{
-          left: 'prev,next today',
+          left: 'prev,next today dayGridMonth,timeGridWeek,timeGridDay',
           center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+          right: ''
         }} initialView="timeGridWeek" events={events} eventContent={renderEventContent} eventClick={handleEventClick} height="100%" slotMinTime="06:00:00" slotMaxTime="22:00:00" allDaySlot={false} nowIndicator={true} eventTimeFormat={{
           hour: 'numeric',
           minute: '2-digit',
