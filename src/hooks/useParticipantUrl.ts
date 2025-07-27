@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,10 +13,22 @@ export const useParticipantUrl = (lessonId: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, userRole } = useAuth();
+  
+  // Cache URL to prevent unnecessary re-fetches
+  const urlCacheRef = useRef<{ [key: string]: string }>({});
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     const fetchParticipantUrl = async () => {
-      if (!user || !lessonId) return;
+      if (!user?.id || !lessonId) return;
+
+      // Check cache first
+      const cacheKey = `${lessonId}_${user.id}_${userRole}`;
+      if (urlCacheRef.current[cacheKey] && hasLoadedRef.current) {
+        setParticipantUrl(urlCacheRef.current[cacheKey]);
+        setIsLoading(false);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
@@ -98,7 +110,11 @@ export const useParticipantUrl = (lessonId: string) => {
           throw new Error('No pre-generated URL found for this participant');
         }
 
+        // Cache the URL for future use
+        const cacheKey = `${lessonId}_${user.id}_${userRole}`;
+        urlCacheRef.current[cacheKey] = urlData.launch_url;
         setParticipantUrl(urlData.launch_url);
+        hasLoadedRef.current = true;
       } catch (err) {
         console.error('Error fetching participant URL:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch participant URL');
@@ -107,8 +123,10 @@ export const useParticipantUrl = (lessonId: string) => {
       }
     };
 
-    fetchParticipantUrl();
-  }, [lessonId, user, userRole]);
+    if (!hasLoadedRef.current) {
+      fetchParticipantUrl();
+    }
+  }, [lessonId, user?.id, userRole]); // Watch user.id instead of user object
 
   return { participantUrl, isLoading, error };
 };

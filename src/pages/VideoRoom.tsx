@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParticipantUrl } from '@/hooks/useParticipantUrl';
@@ -33,8 +33,12 @@ export default function VideoRoom() {
     error: urlError
   } = useParticipantUrl(lessonId || '');
 
-  const isLoading = lessonLoading || urlLoading;
-  const error = lessonError || urlError;
+  // Memoize the final states to prevent unnecessary re-renders
+  const isLoading = useMemo(() => lessonLoading || urlLoading, [lessonLoading, urlLoading]);
+  const error = useMemo(() => lessonError || urlError, [lessonError, urlError]);
+  
+  // Memoize the participant URL to prevent iframe refresh on re-renders
+  const stableParticipantUrl = useMemo(() => participantUrl, [participantUrl]);
 
   if (isLoading) {
     return (
@@ -73,7 +77,7 @@ export default function VideoRoom() {
     );
   }
 
-  if (!participantUrl) {
+  if (!stableParticipantUrl) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -103,7 +107,7 @@ export default function VideoRoom() {
   return (
     <div className="min-h-screen bg-gray-50">
       <EmbeddedVideoRoom
-        roomUrl={participantUrl}
+        roomUrl={stableParticipantUrl}
         spaceId={lesson?.lesson_space_space_id}
         lessonTitle={lesson?.title}
         onExit={handleLeaveRoom}
