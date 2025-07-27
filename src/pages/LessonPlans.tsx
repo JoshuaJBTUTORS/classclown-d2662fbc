@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +26,7 @@ interface LessonPlan {
 }
 
 const LessonPlans: React.FC = () => {
-  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<LessonPlan[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,8 +34,12 @@ const LessonPlans: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { isAdmin, isOwner, isTutor } = useAuth();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
-    setOpen(false);
+    setSidebarOpen(false);
   };
 
   // Get unique subjects from lesson plans

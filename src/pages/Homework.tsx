@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
@@ -32,7 +31,7 @@ const Homework: React.FC = () => {
     );
   }
 
-  const { open: sidebarOpen, toggleSidebar } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [studentId, setStudentId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,10 +39,12 @@ const Homework: React.FC = () => {
   
   const { userRole, user, profile, parentProfile } = useAuth();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
-    if (sidebarOpen) {
-      toggleSidebar();
-    }
+    setSidebarOpen(false);
   };
 
   useEffect(() => {
