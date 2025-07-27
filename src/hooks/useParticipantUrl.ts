@@ -37,8 +37,8 @@ export const useParticipantUrl = (lessonId: string) => {
         let participantId: string | null = null;
         let participantType: 'tutor' | 'student' = 'student';
 
-        if (userRole === 'tutor') {
-          // Get tutor ID
+        if (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') {
+          // Get tutor ID - admin/owner roles are treated as tutors for video room access
           const { data: tutorData, error: tutorError } = await supabase
             .from('tutors')
             .select('id')
