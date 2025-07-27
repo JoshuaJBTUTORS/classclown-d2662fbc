@@ -52,7 +52,7 @@ export class WhatsAppService {
 
       const responseData = await response.json();
 
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         console.log("WhatsApp message sent successfully:", responseData);
         return { 
           success: true, 

@@ -145,7 +145,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     // Fetch trial booking details for parent email
     const { data: bookingData } = await supabase
       .from('trial_bookings')
-      .select('parent_name, child_name, email')
+      .select('parent_name, child_name, email, phone')
       .eq('id', data.bookingId)
       .single();
 
@@ -163,6 +163,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
             parentName: bookingData.parent_name,
             childName: bookingData.child_name,
             email: bookingData.email,
+            phone: bookingData.phone,
             subject: subjectName,
             lessonDate: formattedDate,
             lessonTime: formattedTime,

@@ -63,6 +63,7 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
           parentName: data.parent_name,
           childName: data.child_name,
           email: data.email,
+          phone: data.phone,
           subject: subjectName,
           preferredDate: formattedDate,
           preferredTime: data.preferred_time,
