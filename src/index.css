@@ -229,6 +229,33 @@
   margin-top: 8px !important;
 }
 
+/* Mobile scroll optimization */
+.calendar-container {
+  touch-action: pan-y;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .fc {
+    touch-action: pan-y !important;
+  }
+  
+  .fc-view-harness {
+    overflow-x: hidden !important;
+    touch-action: pan-y !important;
+  }
+  
+  .fc-scroller {
+    overflow-x: hidden !important;
+    touch-action: pan-y !important;
+  }
+  
+  .fc-scrollgrid {
+    touch-action: pan-y !important;
+  }
+}
+
 .fc-theme-standard .fc-col-header-cell {
   background: white !important;
   border-color: hsl(var(--gray-200));
