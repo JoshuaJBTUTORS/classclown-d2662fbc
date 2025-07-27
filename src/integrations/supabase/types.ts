@@ -1159,6 +1159,8 @@ export type Database = {
           phone: string | null
           updated_at: string
           user_id: string
+          whatsapp_enabled: boolean | null
+          whatsapp_number: string | null
         }
         Insert: {
           account_type?: string | null
@@ -1173,6 +1175,8 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id: string
+          whatsapp_enabled?: boolean | null
+          whatsapp_number?: string | null
         }
         Update: {
           account_type?: string | null
@@ -1187,6 +1191,8 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+          whatsapp_enabled?: boolean | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
@@ -1574,6 +1580,8 @@ export type Database = {
           subjects: string | null
           trial_status: string | null
           user_id: string | null
+          whatsapp_enabled: boolean | null
+          whatsapp_number: string | null
         }
         Insert: {
           account_type?: string | null
@@ -1590,6 +1598,8 @@ export type Database = {
           subjects?: string | null
           trial_status?: string | null
           user_id?: string | null
+          whatsapp_enabled?: boolean | null
+          whatsapp_number?: string | null
         }
         Update: {
           account_type?: string | null
@@ -1606,6 +1616,8 @@ export type Database = {
           subjects?: string | null
           trial_status?: string | null
           user_id?: string | null
+          whatsapp_enabled?: boolean | null
+          whatsapp_number?: string | null
         }
         Relationships: [
           {
