@@ -96,7 +96,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     console.log('Student linked to lesson successfully');
 
     // Create LessonSpace room using same function as regular lessons
-    let lessonSpaceId = null;
+    let lessonSpaceRoomId = null;
     try {
       console.log('Creating LessonSpace room for trial lesson');
       const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
@@ -114,9 +114,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         // Don't fail lesson creation if room creation fails
       } else {
         console.log('LessonSpace room created successfully:', roomData);
-        // Extract space_id from room creation response
-        lessonSpaceId = roomData?.spaceId;
-        console.log('Extracted lesson space ID:', lessonSpaceId);
+        // Extract room_id from room creation response
+        lessonSpaceRoomId = roomData?.roomId;
+        console.log('Extracted lesson space room ID:', lessonSpaceRoomId);
         console.log('Full room response:', JSON.stringify(roomData, null, 2));
       }
     } catch (roomError) {
@@ -150,9 +150,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       .single();
 
     // Send trial lesson approval email to parent (don't fail if email fails)
-    if (bookingData && lessonSpaceId) {
+    if (bookingData && lessonSpaceRoomId) {
       try {
-        const studentLessonLink = `https://www.thelessonspace.com/space/${lessonSpaceId}`;
+        const studentLessonLink = `https://www.thelessonspace.com/space/${lessonSpaceRoomId}`;
         const formattedDate = format(startDateTime, 'EEEE, MMMM do, yyyy');
         const formattedTime = format(startDateTime, 'h:mm a');
 
@@ -175,9 +175,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         // Don't fail the lesson creation if email fails
       }
     } else {
-      console.warn('Trial lesson approval email not sent - missing booking data or lesson space ID:', {
+      console.warn('Trial lesson approval email not sent - missing booking data or lesson space room ID:', {
         hasBookingData: !!bookingData,
-        lessonSpaceId: lessonSpaceId
+        lessonSpaceRoomId: lessonSpaceRoomId
       });
     }
 
