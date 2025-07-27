@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -58,12 +57,16 @@ const Students = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditParentDialogOpen, setIsEditParentDialogOpen] = useState(false);
   
-  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const { isParent, isAdmin, isOwner, user, userRole, parentProfile } = useAuth();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
-    setOpen(false);
+    setSidebarOpen(false);
   };
 
   const fetchStudents = async () => {

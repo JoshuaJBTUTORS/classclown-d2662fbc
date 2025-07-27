@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -22,7 +21,7 @@ interface ReportFilters {
 }
 
 const Reports: React.FC = () => {
-  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [filters, setFilters] = useState<ReportFilters>({
     dateRange: { from: null, to: null },
@@ -32,8 +31,12 @@ const Reports: React.FC = () => {
 
   const { userRole } = useAuth();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
-    setOpen(false);
+    setSidebarOpen(false);
   };
 
   const handleFiltersChange = (newFilters: Partial<ReportFilters>) => {

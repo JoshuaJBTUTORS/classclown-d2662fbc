@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -21,7 +20,7 @@ interface ProgressFilters {
 }
 
 const Progress: React.FC = () => {
-  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [filters, setFilters] = useState<ProgressFilters>({
     dateRange: { from: null, to: null },
@@ -31,8 +30,12 @@ const Progress: React.FC = () => {
 
   const { userRole, user } = useAuth();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
-    setOpen(false);
+    setSidebarOpen(false);
   };
 
   const handleFiltersChange = (newFilters: Partial<ProgressFilters>) => {

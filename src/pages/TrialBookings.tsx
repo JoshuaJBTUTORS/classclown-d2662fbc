@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
 import { format, parseISO } from 'date-fns';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -70,7 +69,7 @@ interface TrialBooking {
 }
 
 const TrialBookings = () => {
-  const { open: sidebarOpen, toggleSidebar } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [bookings, setBookings] = useState<TrialBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<TrialBooking[]>([]);
@@ -81,10 +80,12 @@ const TrialBookings = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isApprovalOpen, setIsApprovalOpen] = useState(false);
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
-    if (sidebarOpen) {
-      toggleSidebar();
-    }
+    setSidebarOpen(false);
   };
 
   useEffect(() => {
