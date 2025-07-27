@@ -96,6 +96,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     console.log('Student linked to lesson successfully');
 
     // Create LessonSpace room using same function as regular lessons
+    let lessonSpaceId = null;
     try {
       console.log('Creating LessonSpace room for trial lesson');
       const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
@@ -113,6 +114,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         // Don't fail lesson creation if room creation fails
       } else {
         console.log('LessonSpace room created successfully:', roomData);
+        // Extract space_id from room creation response
+        lessonSpaceId = roomData?.lesson_space_space_id;
+        console.log('Extracted lesson space ID:', lessonSpaceId);
       }
     } catch (roomError) {
       console.error('Room creation error:', roomError);
@@ -145,11 +149,13 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       .single();
 
     // Send trial lesson approval email to parent (don't fail if email fails)
-    if (bookingData && lessonData.lesson_space_space_id) {
+    if (bookingData && lessonSpaceId) {
       try {
-        const studentLessonLink = `https://www.thelessonspace.com/space/${lessonData.lesson_space_space_id}`;
+        const studentLessonLink = `https://www.thelessonspace.com/space/${lessonSpaceId}`;
         const formattedDate = format(startDateTime, 'EEEE, MMMM do, yyyy');
         const formattedTime = format(startDateTime, 'h:mm a');
+
+        console.log('Sending trial lesson approval email with link:', studentLessonLink);
 
         await supabase.functions.invoke('send-trial-lesson-approval', {
           body: {
@@ -162,11 +168,16 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
             studentLessonLink: studentLessonLink,
           }
         });
-        console.log('Trial lesson approval email sent');
+        console.log('Trial lesson approval email sent successfully');
       } catch (emailError) {
         console.error('Failed to send trial lesson approval email:', emailError);
         // Don't fail the lesson creation if email fails
       }
+    } else {
+      console.warn('Trial lesson approval email not sent - missing booking data or lesson space ID:', {
+        hasBookingData: !!bookingData,
+        lessonSpaceId: lessonSpaceId
+      });
     }
 
     console.log('Trial lesson creation completed successfully');
