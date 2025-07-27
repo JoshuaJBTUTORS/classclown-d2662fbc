@@ -5,15 +5,13 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
-
 interface CalendarDisplayProps {
   isLoading: boolean;
   events: any[];
 }
-
-const CalendarDisplay: React.FC<CalendarDisplayProps> = ({ 
-  isLoading, 
-  events 
+const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
+  isLoading,
+  events
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isLessonDialogOpen, setIsLessonDialogOpen] = useState(false);
@@ -23,17 +21,14 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     end?: string;
   }>({});
   const [refreshKey, setRefreshKey] = useState(0);
-
   const handleLessonUpdated = () => {
     setRefreshKey(prev => prev + 1);
     // Force a refresh of the calendar data
     window.location.reload();
   };
-
   const handleEventClick = (eventInfo: any) => {
     const lesson = eventInfo.event.extendedProps;
     setSelectedLessonId(eventInfo.event.id);
-    
     if (lesson.isRecurringInstance) {
       setInstanceDetails({
         date: lesson.instanceDate,
@@ -43,69 +38,33 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     } else {
       setInstanceDetails({});
     }
-    
     setIsLessonDialogOpen(true);
   };
-
   const renderEventContent = (eventInfo: any) => {
-    return (
-      <div className="calendar-event-content">
+    return <div className="calendar-event-content">
         <p className="event-title">{eventInfo.event.title}</p>
-      </div>
-    );
+      </div>;
   };
-
-  return (
-    <div className="h-full flex flex-col">
+  return <div className="h-full flex flex-col">
       <Card className="flex-1">
-        <CardHeader>
-          <CardTitle>Calendar</CardTitle>
-        </CardHeader>
+        
         <CardContent className="relative h-full">
-          {isLoading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 opacity-50">
+          {isLoading ? <div className="absolute inset-0 flex items-center justify-center bg-gray-100 opacity-50">
               Loading...
-            </div>
-          ) : (
-            <FullCalendar
-              key={refreshKey}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-              }}
-              initialView="timeGridWeek"
-              events={events}
-              eventContent={renderEventContent}
-              eventClick={handleEventClick}
-              height="100%"
-              slotMinTime="06:00:00"
-              slotMaxTime="22:00:00"
-              allDaySlot={false}
-              nowIndicator={true}
-              eventTimeFormat={{
-                hour: 'numeric',
-                minute: '2-digit',
-                meridiem: 'short'
-              }}
-            />
-          )}
+            </div> : <FullCalendar key={refreshKey} plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} headerToolbar={{
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        }} initialView="timeGridWeek" events={events} eventContent={renderEventContent} eventClick={handleEventClick} height="100%" slotMinTime="06:00:00" slotMaxTime="22:00:00" allDaySlot={false} nowIndicator={true} eventTimeFormat={{
+          hour: 'numeric',
+          minute: '2-digit',
+          meridiem: 'short'
+        }} />}
         </CardContent>
       </Card>
       
       {/* Lesson Details Dialog */}
-      <LessonDetailsDialog
-        lessonId={selectedLessonId}
-        isOpen={isLessonDialogOpen}
-        onClose={() => setIsLessonDialogOpen(false)}
-        onLessonUpdated={handleLessonUpdated}
-        instanceDate={instanceDetails.date}
-        instanceStart={instanceDetails.start}
-        instanceEnd={instanceDetails.end}
-      />
-    </div>
-  );
+      <LessonDetailsDialog lessonId={selectedLessonId} isOpen={isLessonDialogOpen} onClose={() => setIsLessonDialogOpen(false)} onLessonUpdated={handleLessonUpdated} instanceDate={instanceDetails.date} instanceStart={instanceDetails.start} instanceEnd={instanceDetails.end} />
+    </div>;
 };
-
 export default CalendarDisplay;
