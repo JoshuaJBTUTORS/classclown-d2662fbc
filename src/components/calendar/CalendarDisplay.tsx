@@ -3,7 +3,6 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
 interface CalendarDisplayProps {
   isLoading: boolean;
@@ -46,12 +45,10 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
       </div>;
   };
   return <div className="h-full flex flex-col">
-      <Card className="flex-1">
-        
-        <CardContent className="relative h-full">
-          {isLoading ? <div className="absolute inset-0 flex items-center justify-center bg-gray-100 opacity-50">
-              Loading...
-            </div> : <FullCalendar key={refreshKey} plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} headerToolbar={{
+      <div className="flex-1 relative">
+        {isLoading ? <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+            <div className="text-sm text-muted-foreground">Loading...</div>
+          </div> : <FullCalendar key={refreshKey} plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} headerToolbar={{
           left: 'prev,next today',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,timeGridDay'
@@ -60,8 +57,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           minute: '2-digit',
           meridiem: 'short'
         }} />}
-        </CardContent>
-      </Card>
+      </div>
       
       {/* Lesson Details Dialog */}
       <LessonDetailsDialog lessonId={selectedLessonId} isOpen={isLessonDialogOpen} onClose={() => setIsLessonDialogOpen(false)} onLessonUpdated={handleLessonUpdated} instanceDate={instanceDetails.date} instanceStart={instanceDetails.start} instanceEnd={instanceDetails.end} />

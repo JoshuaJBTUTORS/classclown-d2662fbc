@@ -150,25 +150,29 @@ const Calendar = () => {
                 </TooltipProvider>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {/* Filter button */}
                 <Button 
                   onClick={toggleFilters}
                   variant={filtersOpen ? "default" : "outline"}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                  size="sm"
                 >
-                  <Filter className="h-4 w-4" />
-                  {filtersOpen ? 'Hide Filters' : 'Show Filters'}
+                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{filtersOpen ? 'Hide Filters' : 'Show Filters'}</span>
+                  <span className="sm:hidden">Filter</span>
                 </Button>
 
                 {/* Schedule lesson button for admins and owners */}
                 {canScheduleLessons && (
                   <Button 
                     onClick={openAddLessonDialog}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                    size="sm"
                   >
-                    <CalendarPlus className="h-4 w-4" />
-                    Schedule Lesson
+                    <CalendarPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Schedule Lesson</span>
+                    <span className="sm:hidden">Schedule</span>
                   </Button>
                 )}
               </div>
@@ -176,7 +180,7 @@ const Calendar = () => {
           </div>
           
           {/* Calendar Display - Full height */}
-          <div className="flex-1 overflow-hidden p-4">
+          <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4">
             <CalendarDisplay
               isLoading={isLoading}
               events={events}
