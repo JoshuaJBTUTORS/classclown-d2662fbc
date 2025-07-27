@@ -215,6 +215,18 @@ export const lessonDeletionService = {
         .delete()
         .in('lesson_id', lessonIds);
 
+      // Handle trial bookings - set lesson_id to null to preserve booking history
+      console.log('Cleaning up trial bookings for lessons:', lessonIds);
+      const { error: trialBookingError } = await supabase
+        .from('trial_bookings')
+        .update({ lesson_id: null })
+        .in('lesson_id', lessonIds);
+
+      if (trialBookingError) {
+        console.error('Error updating trial bookings:', trialBookingError);
+        throw trialBookingError;
+      }
+
     } catch (error) {
       console.error('Error cleaning up related data:', error);
       throw error;
