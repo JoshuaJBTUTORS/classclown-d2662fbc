@@ -9,8 +9,10 @@ import { cn } from '@/lib/utils';
 interface CollapsibleFiltersProps {
   selectedStudents: string[];
   selectedTutors: string[];
+  selectedSubjects: string[];
   onStudentFilterChange: (studentIds: string[]) => void;
   onTutorFilterChange: (tutorIds: string[]) => void;
+  onSubjectFilterChange: (subjects: string[]) => void;
   onClearFilters: () => void;
   canUseFilters: boolean;
   isOpen: boolean;
@@ -21,8 +23,10 @@ interface CollapsibleFiltersProps {
 const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
   selectedStudents,
   selectedTutors,
+  selectedSubjects,
   onStudentFilterChange,
   onTutorFilterChange,
+  onSubjectFilterChange,
   onClearFilters,
   canUseFilters,
   isOpen,
@@ -62,8 +66,10 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                 <CalendarFilters
                   selectedStudents={selectedStudents}
                   selectedTutors={selectedTutors}
+                  selectedSubjects={selectedSubjects}
                   onStudentFilterChange={onStudentFilterChange}
                   onTutorFilterChange={onTutorFilterChange}
+                  onSubjectFilterChange={onSubjectFilterChange}
                   onClearFilters={onClearFilters}
                 />
               </div>
@@ -83,8 +89,10 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
               <CalendarFilters
                 selectedStudents={selectedStudents}
                 selectedTutors={selectedTutors}
+                selectedSubjects={selectedSubjects}
                 onStudentFilterChange={onStudentFilterChange}
                 onTutorFilterChange={onTutorFilterChange}
+                onSubjectFilterChange={onSubjectFilterChange}
                 onClearFilters={onClearFilters}
               />
             </div>

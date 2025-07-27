@@ -15,6 +15,7 @@ interface UseCalendarDataProps {
   filters?: {
     selectedStudents: string[];
     selectedTutors: string[];
+    selectedSubjects: string[];
   };
 }
 
@@ -307,6 +308,8 @@ export const useCalendarData = ({
           console.log(`Lessons fetched for ${userRole}:`, data);
           
           let filteredData = data || [];
+          
+          // Apply student filter
           if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
             filteredData = filteredData.filter(lesson => {
               if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
@@ -314,6 +317,13 @@ export const useCalendarData = ({
                 filters.selectedStudents.includes(ls.student_id.toString())
               );
             });
+          }
+
+          // Apply subject filter
+          if (filters?.selectedSubjects && filters.selectedSubjects.length > 0) {
+            filteredData = filteredData.filter(lesson => 
+              filters.selectedSubjects.includes(lesson.subject)
+            );
           }
 
           setRawLessons(filteredData);

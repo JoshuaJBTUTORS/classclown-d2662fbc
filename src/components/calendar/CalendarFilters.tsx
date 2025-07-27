@@ -2,24 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter, Users, GraduationCap } from 'lucide-react';
+import { X, Filter, Users, GraduationCap, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/student';
 import { Tutor } from '@/types/tutor';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 interface CalendarFiltersProps {
   selectedStudents: string[];
   selectedTutors: string[];
+  selectedSubjects: string[];
   onStudentFilterChange: (studentIds: string[]) => void;
   onTutorFilterChange: (tutorIds: string[]) => void;
+  onSubjectFilterChange: (subjects: string[]) => void;
   onClearFilters: () => void;
 }
 
 const CalendarFilters: React.FC<CalendarFiltersProps> = ({
   selectedStudents,
   selectedTutors,
+  selectedSubjects,
   onStudentFilterChange,
   onTutorFilterChange,
+  onSubjectFilterChange,
   onClearFilters
 }) => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -90,6 +95,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     }
   };
 
+  const handleSubjectSelect = (subject: string) => {
+    if (selectedSubjects.includes(subject)) {
+      onSubjectFilterChange(selectedSubjects.filter(s => s !== subject));
+    } else {
+      onSubjectFilterChange([...selectedSubjects, subject]);
+    }
+  };
+
   const removeStudentFilter = (studentId: string) => {
     onStudentFilterChange(selectedStudents.filter(id => id !== studentId));
   };
@@ -98,7 +111,11 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     onTutorFilterChange(selectedTutors.filter(id => id !== tutorId));
   };
 
-  const totalFiltersActive = selectedStudents.length + selectedTutors.length;
+  const removeSubjectFilter = (subject: string) => {
+    onSubjectFilterChange(selectedSubjects.filter(s => s !== subject));
+  };
+
+  const totalFiltersActive = selectedStudents.length + selectedTutors.length + selectedSubjects.length;
 
   if (isLoading) {
     return (
@@ -135,7 +152,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Student Filter */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -226,6 +243,49 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                   </Badge>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        {/* Subject Filter */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <label className="text-sm font-medium">Subjects</label>
+          </div>
+          <Select onValueChange={handleSubjectSelect}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select subjects..." />
+            </SelectTrigger>
+            <SelectContent>
+              {LESSON_SUBJECTS.map((subject) => (
+                <SelectItem
+                  key={subject}
+                  value={subject}
+                  className={selectedSubjects.includes(subject) ? 'bg-accent' : ''}
+                >
+                  {subject}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Selected Subjects */}
+          {selectedSubjects.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {selectedSubjects.map((subject) => (
+                <Badge
+                  key={subject}
+                  variant="secondary"
+                  className="text-xs flex items-center gap-1"
+                >
+                  {subject}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => removeSubjectFilter(subject)}
+                  />
+                </Badge>
+              ))}
             </div>
           )}
         </div>
