@@ -10,13 +10,13 @@ import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
-import { useSidebar } from '@/components/ui/sidebar';
+
 import { cn } from '@/lib/utils';
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
   const { openBookingModal } = useTrialBooking();
-  const { open: sidebarOpen, toggleSidebar, setOpen } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Filter state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -41,8 +41,12 @@ const Calendar = () => {
     filters
   });
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
-    setOpen(false);
+    setSidebarOpen(false);
   };
 
   const toggleFilters = () => {
