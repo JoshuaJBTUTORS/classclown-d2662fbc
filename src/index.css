@@ -219,6 +219,14 @@
   padding: 16px !important;
   border-bottom: 1px solid hsl(var(--gray-200)) !important;
   border-radius: 12px 12px 0 0 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+}
+
+.fc-toolbar-chunk:last-child {
+  width: 100% !important;
+  justify-content: flex-start !important;
+  margin-top: 8px !important;
 }
 
 .fc-theme-standard .fc-col-header-cell {
