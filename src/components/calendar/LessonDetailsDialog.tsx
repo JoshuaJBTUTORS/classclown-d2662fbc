@@ -30,8 +30,6 @@ import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
-import { TranscriptionSection } from '@/components/lessons/TranscriptionSection';
-import { StudentSummariesSection } from '@/components/lessons/StudentSummariesSection';
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
 
 interface LessonDetailsDialogProps {
@@ -111,40 +109,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         }
       }
       
-      // Fetch transcription data
-      const { data: transcriptionData } = await supabase
-        .from('lesson_transcriptions')
-        .select('*')
-        .eq('lesson_id', lessonId)
-        .maybeSingle();
-
-      console.log('Transcription data fetched:', transcriptionData);
-
-      // Fetch student summaries
-      const { data: summariesData } = await supabase
-        .from('lesson_student_summaries')
-        .select(`
-          *,
-          students!lesson_student_summaries_student_id_fkey(first_name, last_name)
-        `)
-        .eq('lesson_id', lessonId);
-
-      // Combine all data
-      const enhancedLesson = {
-        ...data,
-        transcription: transcriptionData ? {
-          ...transcriptionData,
-          status: transcriptionData.transcription_status
-        } : undefined,
-        student_summaries: summariesData?.map(summary => ({
-          ...summary,
-          student_name: `${(summary as any).students?.first_name || ''} ${(summary as any).students?.last_name || ''}`.trim()
-        })) || []
-      };
-
-      console.log('Enhanced lesson with transcription:', enhancedLesson.transcription);
-
-      setLesson(enhancedLesson);
+      setLesson(data);
       
       // Check attendance and homework status
       await Promise.all([
@@ -569,17 +534,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </Card>
               )}
 
-              {/* Transcription Section */}
-              <TranscriptionSection 
-                lesson={lesson}
-                onTranscriptionUpdate={fetchLesson}
-              />
-
-              {/* Student Summaries Section */}
-              <StudentSummariesSection 
-                lesson={lesson}
-                onSummariesUpdate={fetchLesson}
-              />
 
               {/* Status and Actions */}
               <div className="flex items-center justify-between">
