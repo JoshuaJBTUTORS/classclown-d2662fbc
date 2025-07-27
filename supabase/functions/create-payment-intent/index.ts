@@ -85,6 +85,33 @@ serve(async (req) => {
       );
     }
 
+    // CRITICAL: Check for ANY previous trial usage to prevent trial abuse
+    const { data: trialHistory } = await supabaseClient
+      .from('course_purchases')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('has_used_trial', true);
+
+    console.log("Trial eligibility check for user:", user.email, "Trial history count:", trialHistory?.length || 0);
+
+    if (trialHistory && trialHistory.length > 0) {
+      console.log("TRIAL BLOCKED: User has already used a trial - denying new trial request");
+      return new Response(
+        JSON.stringify({ 
+          error: "Trial already used", 
+          message: "You have already used your free trial. Please choose a paid subscription.",
+          requires_payment_method: false,
+          trial_already_used: true 
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }, 
+          status: 400 
+        }
+      );
+    }
+
+    console.log("TRIAL APPROVED: User eligible for free trial");
+
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",

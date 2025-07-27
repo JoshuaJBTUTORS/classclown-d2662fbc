@@ -106,6 +106,8 @@ serve(async (req) => {
         trial_end: trialEndDate,
         amount_paid: course.price || 1299,
         currency: 'gbp',
+        has_used_trial: true, // Mark that user has used their trial
+        trial_used_date: new Date().toISOString(),
       });
 
     if (purchaseError) {

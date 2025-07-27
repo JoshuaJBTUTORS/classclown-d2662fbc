@@ -23,6 +23,10 @@ const CourseCheckout = () => {
   } | null>(null);
   const [isLoadingPayment, setIsLoadingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [trialEligible, setTrialEligible] = useState(true);
+  
+  // Check if this is a paid-only checkout
+  const isTrialDisabled = searchParams.get('trial') === 'false';
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -208,17 +212,19 @@ const CourseCheckout = () => {
           </div>
 
           {/* Trial Information */}
-          <div className="border border-primary/20 bg-primary/10 rounded-lg p-6 mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-1.5 bg-primary/20 rounded-full">
-                <Shield className="h-4 w-4 text-primary" />
+          {!isTrialDisabled && (
+            <div className="border border-primary/20 bg-primary/10 rounded-lg p-6 mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-1.5 bg-primary/20 rounded-full">
+                  <Shield className="h-4 w-4 text-primary" />
+                </div>
+                <span className="font-semibold text-primary">3-Day Free Trial</span>
               </div>
-              <span className="font-semibold text-primary">3-Day Free Trial</span>
+              <p className="text-sm text-primary/80">
+                Start learning immediately with full access. Complete your payment details to begin your trial.
+              </p>
             </div>
-            <p className="text-sm text-primary/80">
-              Start learning immediately with full access. Complete your payment details to begin your trial.
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Footer Info */}
@@ -244,8 +250,15 @@ const CourseCheckout = () => {
       <div className="lg:w-3/5 bg-white p-8 lg:p-12">
         <div className="max-w-lg">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete your free trial</h2>
-            <p className="text-gray-600">3 days free, then {course.price ? formatPrice(course.price) : '£12.99'}/month</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {isTrialDisabled ? 'Complete your subscription' : 'Complete your free trial'}
+            </h2>
+            <p className="text-gray-600">
+              {isTrialDisabled 
+                ? `${course.price ? formatPrice(course.price) : '£12.99'}/month`
+                : `3 days free, then ${course.price ? formatPrice(course.price) : '£12.99'}/month`
+              }
+            </p>
           </div>
 
           {isLoadingPayment ? (

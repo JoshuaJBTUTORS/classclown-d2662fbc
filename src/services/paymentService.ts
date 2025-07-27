@@ -3,6 +3,40 @@ import { supabase } from '@/integrations/supabase/client';
 import { CoursePurchase } from '@/types/course';
 
 export const paymentService = {
+  // Check if user is eligible for a free trial
+  checkTrialEligibility: async (): Promise<{ eligible: boolean; reason?: string }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { eligible: false, reason: "User not authenticated" };
+    }
+
+    console.log('Checking trial eligibility for user:', user.email);
+
+    const { data: trialHistory, error } = await supabase
+      .from('course_purchases')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('has_used_trial', true);
+
+    if (error) {
+      console.error('Error checking trial eligibility:', error);
+      return { eligible: false, reason: "Error checking trial status" };
+    }
+
+    console.log('Trial history found:', trialHistory?.length || 0, 'purchases');
+
+    if (trialHistory && trialHistory.length > 0) {
+      console.log('TRIAL INELIGIBLE: User has already used trial');
+      return { 
+        eligible: false, 
+        reason: "You have already used your free trial. Please choose a paid subscription." 
+      };
+    }
+
+    console.log('TRIAL ELIGIBLE: User can use free trial');
+    return { eligible: true };
+  },
+
   // Create a payment intent for embedded checkout
   createPaymentIntent: async (courseId: string): Promise<{ 
     client_secret: string; 
