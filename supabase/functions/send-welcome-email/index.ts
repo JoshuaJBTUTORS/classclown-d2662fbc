@@ -5,6 +5,8 @@ import { Resend } from "npm:resend@4.0.0";
 import { renderAsync } from "npm:@react-email/components@0.0.22";
 import React from "npm:react@18.3.1";
 import { WelcomeEmail } from "./_templates/welcome-email.tsx";
+import { whatsappService } from '../_shared/whatsapp-service.ts';
+import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,6 +115,40 @@ serve(async (req) => {
     }
 
     console.log(`Welcome email sent successfully to ${email} for ${role} role`);
+
+    // Send WhatsApp welcome message if user has phone number
+    // First, try to get phone number from parents or students table based on role
+    let phoneNumber = null;
+    
+    if (role === 'parent') {
+      const { data: parentData } = await supabase
+        .from('parents')
+        .select('phone, whatsapp_number')
+        .eq('user_id', userId)
+        .single();
+      
+      phoneNumber = parentData?.whatsapp_number || parentData?.phone;
+    } else if (role === 'student') {
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('phone, whatsapp_number')
+        .eq('email', email)
+        .single();
+      
+      phoneNumber = studentData?.whatsapp_number || studentData?.phone;
+    }
+
+    if (phoneNumber) {
+      const whatsappText = WhatsAppTemplates.welcomeMessage(firstName, lastName);
+      const whatsappNumber = whatsappService.formatPhoneNumber(phoneNumber);
+      
+      const whatsappResponse = await whatsappService.sendMessage({
+        phoneNumber: whatsappNumber,
+        text: whatsappText
+      });
+
+      console.log(`WhatsApp welcome message to ${whatsappNumber}:`, whatsappResponse);
+    }
 
     return new Response(
       JSON.stringify({ 

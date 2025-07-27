@@ -5,6 +5,8 @@ import { Resend } from "npm:resend@4.0.0";
 import { renderAsync } from "npm:@react-email/components@0.0.22";
 import React from "npm:react@18.3.1";
 import { HomeworkNotificationEmail } from "./_templates/homework-notification-email.tsx";
+import { whatsappService } from '../_shared/whatsapp-service.ts';
+import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -182,6 +184,51 @@ serve(async (req) => {
 
     let successCount = 0;
     let failureCount = 0;
+
+    // Send WhatsApp messages after emails are processed
+    const whatsappPromises = [];
+    
+    for (const student of homeworkData.lessons.lesson_students) {
+      // Send WhatsApp to student if they have a phone number
+      if (student.students.phone || student.students.whatsapp_number) {
+        const phoneNumber = student.students.whatsapp_number || student.students.phone;
+        const whatsappText = WhatsAppTemplates.homeworkNotification(
+          student.students.first_name,
+          student.students.first_name,
+          homeworkData.title,
+          dueDate
+        );
+
+        const whatsappPromise = whatsappService.sendMessage({
+          phoneNumber: whatsappService.formatPhoneNumber(phoneNumber),
+          text: whatsappText
+        });
+        whatsappPromises.push(whatsappPromise);
+      }
+
+      // Send WhatsApp to parent if they have a phone number
+      if (student.students.parent && (student.students.parent.phone || student.students.parent.whatsapp_number)) {
+        const phoneNumber = student.students.parent.whatsapp_number || student.students.parent.phone;
+        const whatsappText = WhatsAppTemplates.homeworkNotification(
+          `${student.students.parent.first_name} ${student.students.parent.last_name}`,
+          student.students.first_name,
+          homeworkData.title,
+          dueDate
+        );
+
+        const whatsappPromise = whatsappService.sendMessage({
+          phoneNumber: whatsappService.formatPhoneNumber(phoneNumber),
+          text: whatsappText
+        });
+        whatsappPromises.push(whatsappPromise);
+      }
+    }
+
+    // Send all WhatsApp messages
+    if (whatsappPromises.length > 0) {
+      const whatsappResults = await Promise.allSettled(whatsappPromises);
+      console.log(`WhatsApp messages sent: ${whatsappResults.filter(r => r.status === 'fulfilled').length}/${whatsappResults.length}`);
+    }
 
     // Process email results
     if (emailResults.status === 'fulfilled') {

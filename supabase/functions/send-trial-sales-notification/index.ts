@@ -3,6 +3,8 @@ import { Resend } from "npm:resend@2.0.0";
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import React from 'npm:react@18.3.1'
 import { TrialSalesNotificationEmail } from './_templates/trial-sales-notification-email.tsx'
+import { whatsappService } from '../_shared/whatsapp-service.ts';
+import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -67,6 +69,30 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log("Trial sales notification email sent successfully:", emailResponse);
+
+    // Send WhatsApp notification to sales team
+    const salesWhatsappNumbers = ["+447413069120"]; // Add your sales team numbers here
+    
+    for (const salesNumber of salesWhatsappNumbers) {
+      const whatsappText = WhatsAppTemplates.trialSalesNotification(
+        parentName,
+        childName,
+        email,
+        phone || "Not provided",
+        subject,
+        preferredDate,
+        preferredTime,
+        message || "No additional message",
+        bookingId
+      );
+
+      const whatsappResponse = await whatsappService.sendMessage({
+        phoneNumber: salesNumber,
+        text: whatsappText
+      });
+
+      console.log(`WhatsApp sales notification to ${salesNumber}:`, whatsappResponse);
+    }
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,

@@ -4,6 +4,8 @@ import { Resend } from "npm:resend@2.0.0";
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import React from 'npm:react@18.3.1'
 import { TrialLessonReminderEmail } from './_templates/trial-lesson-reminder-email.tsx'
+import { whatsappService } from '../_shared/whatsapp-service.ts';
+import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -138,6 +140,27 @@ const handler = async (req: Request): Promise<Response> => {
         } else {
           console.log(`Trial email sent successfully to ${trialBooking.email} for lesson ${lesson.id}`);
           emailsSent++;
+
+          // Send WhatsApp message if phone number is available
+          if (trialBooking.phone) {
+            const whatsappText = WhatsAppTemplates.trialLessonReminder(
+              trialBooking.parent_name || 'Parent',
+              childName,
+              lesson.title,
+              lessonDate,
+              lessonTime,
+              lessonUrl,
+              isToday
+            );
+
+            const whatsappNumber = whatsappService.formatPhoneNumber(trialBooking.phone);
+            const whatsappResponse = await whatsappService.sendMessage({
+              phoneNumber: whatsappNumber,
+              text: whatsappText
+            });
+
+            console.log(`WhatsApp trial reminder to ${whatsappNumber}:`, whatsappResponse);
+          }
         }
 
       } catch (lessonError) {

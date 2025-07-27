@@ -5,6 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.5';
 import React from 'npm:react@18.3.1';
 import { renderAsync } from 'npm:@react-email/components@0.0.22';
 import { LateNotificationEmail } from './_templates/late-notification-email.tsx';
+import { whatsappService } from '../_shared/whatsapp-service.ts';
+import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -138,6 +140,29 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Late notification email sent successfully:", emailResponse);
+
+    // Send WhatsApp message if phone number is available
+    const phoneField = isParentNotification ? 'phone' : 'phone';
+    const whatsappField = isParentNotification ? 'whatsapp_number' : 'whatsapp_number';
+    const phoneNumber = studentData[whatsappField] || studentData[phoneField] || 
+                       (isParentNotification && studentData.parentData ? 
+                        studentData.parentData.whatsapp_number || studentData.parentData.phone : null);
+
+    if (phoneNumber) {
+      const whatsappText = WhatsAppTemplates.lateNotification(
+        recipientName,
+        studentName,
+        lessonTitle
+      );
+
+      const whatsappNumber = whatsappService.formatPhoneNumber(phoneNumber);
+      const whatsappResponse = await whatsappService.sendMessage({
+        phoneNumber: whatsappNumber,
+        text: whatsappText
+      });
+
+      console.log(`WhatsApp late notification to ${whatsappNumber}:`, whatsappResponse);
+    }
 
     // Log the notification in the database with recipient type
     const notificationType = isParentNotification ? 'late_notification_parent' : 'late_notification_student';

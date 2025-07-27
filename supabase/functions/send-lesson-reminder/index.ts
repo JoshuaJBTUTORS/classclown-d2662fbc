@@ -4,6 +4,8 @@ import { Resend } from "npm:resend@2.0.0";
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import React from 'npm:react@18.3.1'
 import { RegularLessonReminderEmail } from './_templates/regular-lesson-reminder-email.tsx'
+import { whatsappService } from '../_shared/whatsapp-service.ts';
+import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -145,6 +147,27 @@ const handler = async (req: Request): Promise<Response> => {
           } else {
             console.log(`Email sent successfully to ${parent.email} for lesson ${lesson.id}`);
             emailsSent++;
+
+            // Send WhatsApp message if phone number is available
+            if (parent.phone || parent.whatsapp_number) {
+              const whatsappText = WhatsAppTemplates.regularLessonReminder(
+                `${parent.first_name} ${parent.last_name}`,
+                `${student.first_name} ${student.last_name}`,
+                lesson.title,
+                lessonDate,
+                lessonTime,
+                isToday
+              );
+
+              const phoneNumber = parent.whatsapp_number || parent.phone;
+              const whatsappNumber = whatsappService.formatPhoneNumber(phoneNumber);
+              const whatsappResponse = await whatsappService.sendMessage({
+                phoneNumber: whatsappNumber,
+                text: whatsappText
+              });
+
+              console.log(`WhatsApp lesson reminder to ${whatsappNumber}:`, whatsappResponse);
+            }
           }
         }
       } catch (lessonError) {
