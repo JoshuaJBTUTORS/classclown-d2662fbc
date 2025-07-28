@@ -40,6 +40,7 @@ export interface ImportResult {
   studentsCreated: number;
   errors: ImportValidationError[];
   duplicatesFound: string[];
+  authAccountsCreated?: number;
 }
 
 export interface ImportPreviewData {

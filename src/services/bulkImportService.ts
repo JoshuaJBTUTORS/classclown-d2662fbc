@@ -199,18 +199,59 @@ export class BulkImportService {
     const errors: ImportValidationError[] = [];
     let parentsCreated = 0;
     let studentsCreated = 0;
+    const createdAuthAccounts: string[] = []; // Track created auth accounts for cleanup if needed
     
     try {
-      // Create parents first
+      // Create parents first with auth accounts
       onProgress?.(10);
       
       const createdParents = new Map<string, string>(); // email -> id mapping
+      const defaultPassword = 'jbtutors123!';
       
       for (let i = 0; i < data.parents.length; i++) {
         const parent = data.parents[i];
         
         try {
-          const { data: createdParent, error } = await supabase
+          // First, create auth account
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: parent.email,
+            password: defaultPassword,
+            options: {
+              emailRedirectTo: `${window.location.origin}/`,
+              data: {
+                first_name: parent.first_name,
+                last_name: parent.last_name,
+                role: 'parent'
+              }
+            }
+          });
+
+          if (authError) {
+            errors.push({
+              row: i + 2,
+              field: 'email',
+              value: parent.email,
+              message: `Failed to create auth account: ${authError.message}`,
+              type: 'error'
+            });
+            continue;
+          }
+
+          if (!authData.user?.id) {
+            errors.push({
+              row: i + 2,
+              field: 'email',
+              value: parent.email,
+              message: 'Failed to create auth account: No user ID returned',
+              type: 'error'
+            });
+            continue;
+          }
+
+          createdAuthAccounts.push(authData.user.id);
+
+          // Now create parent record with real user_id
+          const { data: createdParent, error: dbError } = await supabase
             .from('parents')
             .insert({
               first_name: parent.first_name,
@@ -222,17 +263,17 @@ export class BulkImportService {
               emergency_contact_phone: parent.emergency_contact_phone || null,
               whatsapp_number: parent.whatsapp_number || null,
               whatsapp_enabled: parent.whatsapp_enabled ?? true,
-              user_id: crypto.randomUUID() // Temporary user_id
+              user_id: authData.user.id
             })
             .select('id, email')
             .single();
           
-          if (error) {
+          if (dbError) {
             errors.push({
               row: i + 2,
               field: 'general',
               value: '',
-              message: `Failed to create parent: ${error.message}`,
+              message: `Failed to create parent record: ${dbError.message}`,
               type: 'error'
             });
           } else if (createdParent) {
@@ -271,6 +312,37 @@ export class BulkImportService {
         }
         
         try {
+          let studentUserId: string | null = null;
+
+          // Create auth account for student if they have an email
+          if (student.email) {
+            const { data: studentAuthData, error: studentAuthError } = await supabase.auth.signUp({
+              email: student.email,
+              password: defaultPassword,
+              options: {
+                emailRedirectTo: `${window.location.origin}/`,
+                data: {
+                  first_name: student.first_name,
+                  last_name: student.last_name,
+                  role: 'student'
+                }
+              }
+            });
+
+            if (studentAuthError) {
+              errors.push({
+                row: i + 2,
+                field: 'email',
+                value: student.email,
+                message: `Failed to create student auth account: ${studentAuthError.message}`,
+                type: 'warning' // Warning since student can exist without auth account
+              });
+            } else if (studentAuthData.user?.id) {
+              studentUserId = studentAuthData.user.id;
+              createdAuthAccounts.push(studentAuthData.user.id);
+            }
+          }
+
           const { error } = await supabase
             .from('students')
             .insert({
@@ -282,7 +354,8 @@ export class BulkImportService {
               subjects: student.subjects || null,
               notes: student.notes || null,
               parent_id: parentId,
-              status: 'active'
+              status: 'active',
+              user_id: studentUserId // Will be null if no auth account created
             });
           
           if (error) {
@@ -312,14 +385,16 @@ export class BulkImportService {
       onProgress?.(100);
       
       return {
-        success: errors.length === 0,
+        success: errors.filter(e => e.type === 'error').length === 0, // Only count errors, not warnings
         parentsCreated,
         studentsCreated,
         errors,
-        duplicatesFound: []
+        duplicatesFound: [],
+        authAccountsCreated: createdAuthAccounts.length
       };
       
     } catch (error) {
+      console.error('Bulk import failed:', error);
       return {
         success: false,
         parentsCreated,
@@ -331,7 +406,8 @@ export class BulkImportService {
           message: `Import failed: ${error}`,
           type: 'error'
         }],
-        duplicatesFound: []
+        duplicatesFound: [],
+        authAccountsCreated: createdAuthAccounts.length
       };
     }
   }

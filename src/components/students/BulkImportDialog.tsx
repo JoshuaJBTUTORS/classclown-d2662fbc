@@ -236,7 +236,7 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
               <h3 className="text-lg font-medium">Import Complete</h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">
                   {importResult.parentsCreated}
@@ -249,7 +249,24 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
                 </div>
                 <div className="text-sm text-blue-600">Students Created</div>
               </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">
+                  {importResult.authAccountsCreated || 0}
+                </div>
+                <div className="text-sm text-purple-600">Login Accounts</div>
+              </div>
             </div>
+
+            {(importResult.authAccountsCreated || 0) > 0 && (
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Login accounts created successfully!</strong> 
+                  <br />Default password: <code className="bg-gray-100 px-1 rounded">jbtutors123!</code>
+                  <br />Users should change their passwords after first login.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {importResult.errors.length > 0 && (
               <Alert>
