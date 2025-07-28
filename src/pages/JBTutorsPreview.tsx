@@ -113,46 +113,47 @@ const JBTutorsPreview = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 text-white overflow-hidden">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="relative z-10 p-6">
         <nav className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-violet-400 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Brain className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-violet-200 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-white">
                 ClassClown
               </h1>
-              <p className="text-sm text-violet-300">Powered by JB Tutors</p>
+              <p className="text-sm text-gray-400">Powered by JB Tutors</p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-violet-600/20 text-violet-200 border-violet-400/30">
+          <Badge variant="secondary" className="bg-gray-800 text-violet-400 border-gray-700">
             Coming Soon
           </Badge>
         </nav>
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
+            className="bg-gray-900/80 border border-gray-800 rounded-2xl p-12 text-center shadow-2xl"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-violet-200 to-purple-300 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
               The Future of Online Learning
             </h1>
-            <p className="text-xl md:text-2xl text-violet-200 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto">
               Revolutionary AI-powered platform that transforms how families experience education. 
               Personalized learning, real-time progress tracking, and seamless communication.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white px-8 py-6 text-lg"
+                className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-lg rounded-xl"
               >
                 Get Early Access
                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -160,7 +161,7 @@ const JBTutorsPreview = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-violet-400/30 text-violet-200 hover:bg-violet-600/20 px-8 py-6 text-lg"
+                className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-6 text-lg rounded-xl"
               >
                 <Play className="mr-2 w-5 h-5" />
                 Watch Demo
@@ -168,32 +169,25 @@ const JBTutorsPreview = () => {
             </div>
           </motion.div>
         </div>
-
-        {/* Floating Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-20 h-20 bg-violet-500/10 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute top-40 right-20 w-32 h-32 bg-purple-500/10 rounded-full blur-xl animate-pulse delay-1000"></div>
-          <div className="absolute bottom-20 left-1/4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl animate-pulse delay-2000"></div>
-        </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 px-6 bg-black/20 backdrop-blur-sm">
+      <section className="py-16 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((stat, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="text-center"
+                className="bg-gray-900/80 border border-gray-800 rounded-xl p-6 text-center hover:border-violet-600/50 transition-all duration-300"
               >
-                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                <div className="text-3xl md:text-4xl font-bold text-violet-400 mb-2">
                   {stat.number}
                 </div>
                 <div className="text-lg font-semibold text-white mb-1">{stat.label}</div>
-                <div className="text-sm text-violet-300">{stat.subtitle}</div>
+                <div className="text-sm text-gray-400">{stat.subtitle}</div>
               </motion.div>
             ))}
           </div>
@@ -204,27 +198,27 @@ const JBTutorsPreview = () => {
       <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-violet-200 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
               Everything Your Family Needs
             </h2>
-            <p className="text-xl text-violet-200 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               From AI-powered personalization to seamless communication, ClassClown brings together 
               all the tools families need for educational success.
             </p>
           </div>
 
-          <div className="space-y-20">
+          <div className="space-y-16">
             {features.map((category, categoryIndex) => (
               <motion.div
                 key={categoryIndex}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: categoryIndex * 0.2 }}
-                className="space-y-8"
+                className="bg-gray-900/80 border border-gray-800 rounded-2xl p-8"
               >
-                <div className="flex items-center justify-center mb-12">
+                <div className="flex items-center justify-center mb-8">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center">
                       <category.icon className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold text-white">{category.category}</h3>
@@ -233,19 +227,17 @@ const JBTutorsPreview = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {category.items.map((item, itemIndex) => (
-                    <Card key={itemIndex} className="bg-white/5 border-violet-400/20 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
-                      <CardContent className="p-6">
-                        <div className="flex items-start space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-violet-500/20 to-purple-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <item.icon className="w-6 h-6 text-violet-400" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="text-lg font-semibold text-white mb-2">{item.title}</h4>
-                            <p className="text-violet-200">{item.description}</p>
-                          </div>
+                    <div key={itemIndex} className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 hover:border-violet-600/50 transition-all duration-300 group">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-violet-600 transition-colors">
+                          <item.icon className="w-6 h-6 text-violet-400 group-hover:text-white" />
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div className="flex-1">
+                          <h4 className="text-lg font-semibold text-white mb-2">{item.title}</h4>
+                          <p className="text-gray-300">{item.description}</p>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </motion.div>
@@ -255,13 +247,13 @@ const JBTutorsPreview = () => {
       </section>
 
       {/* Additional Features Grid */}
-      <section className="py-20 px-6 bg-black/20 backdrop-blur-sm">
+      <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-white to-violet-200 bg-clip-text text-transparent">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-white">
             Complete Learning Ecosystem
           </h2>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               { icon: Video, title: "HD Video Conferencing", desc: "Crystal clear lessons with interactive whiteboards" },
               { icon: Calendar, title: "Smart Scheduling", desc: "Automated booking and calendar management" },
@@ -275,13 +267,13 @@ const JBTutorsPreview = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="text-center p-6 rounded-xl bg-gradient-to-br from-violet-600/10 to-purple-600/10 border border-violet-400/20 hover:border-violet-400/40 transition-all"
+                className="bg-gray-900/80 border border-gray-800 rounded-xl p-6 text-center hover:border-violet-600/50 transition-all duration-300 group"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <feature.icon className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-violet-600 transition-colors">
+                  <feature.icon className="w-8 h-8 text-violet-400 group-hover:text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-violet-200">{feature.desc}</p>
+                <p className="text-gray-300">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -290,24 +282,24 @@ const JBTutorsPreview = () => {
 
       {/* CTA Section */}
       <section className="py-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-8"
+            className="bg-gray-900/80 border border-gray-800 rounded-2xl p-12 text-center"
           >
-            <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-violet-200 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
               Ready to Transform Your Learning Experience?
             </h2>
-            <p className="text-xl text-violet-200 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
               Join the waitlist to be among the first families to experience the future of online education.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white px-8 py-6 text-lg"
+                className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-lg rounded-xl"
               >
                 Get Early Access
                 <Star className="ml-2 w-5 h-5" />
@@ -315,23 +307,23 @@ const JBTutorsPreview = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-violet-400/30 text-violet-200 hover:bg-violet-600/20 px-8 py-6 text-lg"
+                className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-6 text-lg rounded-xl"
               >
                 Book Free Trial Lesson
               </Button>
             </div>
 
-            <div className="flex items-center justify-center space-x-8 text-sm text-violet-300 pt-8">
+            <div className="flex items-center justify-center space-x-8 text-sm text-gray-400">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-4 h-4 text-violet-400" />
                 <span>No setup fees</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-4 h-4 text-violet-400" />
                 <span>Cancel anytime</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-4 h-4 text-violet-400" />
                 <span>Free trial included</span>
               </div>
             </div>
@@ -340,18 +332,18 @@ const JBTutorsPreview = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 bg-black/30 backdrop-blur-sm border-t border-violet-400/20">
+      <footer className="py-12 px-6 border-t border-gray-800">
         <div className="max-w-6xl mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-400 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
               <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
               <div className="text-lg font-bold text-white">ClassClown</div>
-              <div className="text-sm text-violet-300">Powered by JB Tutors</div>
+              <div className="text-sm text-gray-400">Powered by JB Tutors</div>
             </div>
           </div>
-          <p className="text-violet-300">
+          <p className="text-gray-400">
             Revolutionizing education with AI-powered personalization and seamless family communication.
           </p>
         </div>
