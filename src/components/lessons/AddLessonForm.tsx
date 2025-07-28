@@ -153,7 +153,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       const { data, error } = await supabase
         .from('students')
         .select('*')
-        .or('status.eq.active,status.is.null')
+        .or('status.eq.active,status.is.null,status.eq.')
         .order('last_name', { ascending: true });
 
       if (error) throw error;
