@@ -23,6 +23,14 @@ import {
   Play
 } from 'lucide-react';
 
+// Import generated images
+import dashboardPreview from '@/assets/dashboard-preview.jpg';
+import mobileAppMockup from '@/assets/mobile-app-mockup.jpg';
+import aiFeaturesImage from '@/assets/ai-features.jpg';
+import videoLessonImage from '@/assets/video-lesson.jpg';
+import whatsappIntegration from '@/assets/whatsapp-integration.jpg';
+import gcseMaterials from '@/assets/gcse-materials.jpg';
+
 const JBTutorsPreview = () => {
   const features = [
     {
@@ -134,40 +142,69 @@ const JBTutorsPreview = () => {
         </nav>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section with Video Preview */}
       <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="bg-gray-900/80 border border-gray-800 rounded-2xl p-12 text-center shadow-2xl"
-          >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
-              The Future of Online Learning
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto">
-              Revolutionary AI-powered platform that transforms how families experience education. 
-              Personalized learning, real-time progress tracking, and seamless communication.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-lg rounded-xl"
-              >
-                Get Early Access
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-6 text-lg rounded-xl"
-              >
-                <Play className="mr-2 w-5 h-5" />
-                Watch Demo
-              </Button>
-            </div>
-          </motion.div>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Text Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white">
+                The Future of Online Learning
+              </h1>
+              <p className="text-xl text-gray-300 mb-8">
+                Revolutionary AI-powered platform that transforms how families experience education. 
+                Personalized learning, real-time progress tracking, and seamless communication.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  size="lg" 
+                  className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-lg rounded-xl"
+                >
+                  Get Early Access
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-6 text-lg rounded-xl"
+                >
+                  <Play className="mr-2 w-5 h-5" />
+                  Watch Demo
+                </Button>
+              </div>
+            </motion.div>
+
+            {/* Video Preview Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300 group">
+                <div className="relative aspect-video rounded-xl overflow-hidden">
+                  <img 
+                    src={dashboardPreview} 
+                    alt="ClassClown Platform Dashboard" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-16 h-16 bg-violet-600 rounded-full flex items-center justify-center">
+                      <Play className="w-8 h-8 text-white ml-1" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold text-white mb-2">Interactive Platform Demo</h3>
+                  <p className="text-gray-400">See how ClassClown transforms the learning experience</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -246,36 +283,118 @@ const JBTutorsPreview = () => {
         </div>
       </section>
 
-      {/* Additional Features Grid */}
+      {/* Visual Features Showcase */}
       <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-white">
-            Complete Learning Ecosystem
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-white">
+            Education at Your Fingertips
           </h2>
+          <p className="text-xl text-gray-300 text-center mb-16 max-w-3xl mx-auto">
+            Explore our comprehensive learning ecosystem designed for the modern family
+          </p>
           
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: Video, title: "HD Video Conferencing", desc: "Crystal clear lessons with interactive whiteboards" },
-              { icon: Calendar, title: "Smart Scheduling", desc: "Automated booking and calendar management" },
-              { icon: Smartphone, title: "Mobile Optimized", desc: "Learn anywhere, anytime on any device" },
-              { icon: FileText, title: "Multi-Modal Content", desc: "Videos, PDFs, quizzes, and interactive materials" },
-              { icon: Clock, title: "Revision Tools", desc: "Spaced repetition and personalized study schedules" },
-              { icon: CheckCircle, title: "UK Curriculum Aligned", desc: "Designed for KS2, KS3, GCSE, and 11+ success" }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-gray-900/80 border border-gray-800 rounded-xl p-6 text-center hover:border-violet-600/50 transition-all duration-300 group"
-              >
-                <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-violet-600 transition-colors">
-                  <feature.icon className="w-8 h-8 text-violet-400 group-hover:text-white" />
+          <div className="grid lg:grid-cols-2 gap-8 mb-16">
+            {/* AI Features Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300 group"
+            >
+              <div className="aspect-video rounded-xl overflow-hidden mb-4">
+                <img 
+                  src={aiFeaturesImage} 
+                  alt="AI-Powered Features" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">AI-Powered Assessment Creation</h3>
+              <p className="text-gray-300 mb-4">Transform any document into interactive assessments with our advanced AI technology. Get instant feedback and personalized recommendations.</p>
+              <div className="flex items-center text-violet-400 font-medium">
+                <span>Explore AI Features</span>
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </div>
+            </motion.div>
+
+            {/* Mobile App Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.1 }}
+              className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300 group"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="w-48 h-80 relative">
+                  <img 
+                    src={mobileAppMockup} 
+                    alt="Mobile Learning App" 
+                    className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-gray-300">{feature.desc}</p>
-              </motion.div>
-            ))}
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">Learn Anywhere, Anytime</h3>
+              <p className="text-gray-300 mb-4">Full mobile experience with offline capabilities. Access lessons, complete assignments, and track progress on any device.</p>
+              <div className="flex items-center text-violet-400 font-medium">
+                <span>Download App</span>
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Video Lessons */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 hover:border-violet-600/50 transition-all duration-300 group"
+            >
+              <div className="aspect-video rounded-lg overflow-hidden mb-3">
+                <img 
+                  src={videoLessonImage} 
+                  alt="Interactive Video Lessons" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <h4 className="text-lg font-semibold text-white mb-2">Interactive Video Lessons</h4>
+              <p className="text-gray-400 text-sm">HD video conferencing with digital whiteboards and real-time collaboration</p>
+            </motion.div>
+
+            {/* WhatsApp Integration */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 hover:border-violet-600/50 transition-all duration-300 group"
+            >
+              <div className="aspect-video rounded-lg overflow-hidden mb-3">
+                <img 
+                  src={whatsappIntegration} 
+                  alt="WhatsApp Integration" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <h4 className="text-lg font-semibold text-white mb-2">Instant Parent Updates</h4>
+              <p className="text-gray-400 text-sm">Automated WhatsApp notifications for homework, progress, and lesson reminders</p>
+            </motion.div>
+
+            {/* GCSE Materials */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 hover:border-violet-600/50 transition-all duration-300 group"
+            >
+              <div className="aspect-video rounded-lg overflow-hidden mb-3">
+                <img 
+                  src={gcseMaterials} 
+                  alt="GCSE Study Materials" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <h4 className="text-lg font-semibold text-white mb-2">GCSE & 11+ Preparation</h4>
+              <p className="text-gray-400 text-sm">Comprehensive exam preparation with practice tests and revision schedules</p>
+            </motion.div>
           </div>
         </div>
       </section>
