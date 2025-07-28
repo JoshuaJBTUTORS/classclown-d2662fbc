@@ -45,6 +45,7 @@ import CourseCreate from './pages/CourseCreate';
 import AssessmentEdit from './pages/AssessmentEdit';
 import AssessmentPreview from './pages/AssessmentPreview';
 import Settings from './pages/Settings';
+import JBTutorsPreview from './pages/JBTutorsPreview';
 
 function App() {
   const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
+                <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
                 
                 {/* Main App Layout - all main application routes */}
                 <Route
