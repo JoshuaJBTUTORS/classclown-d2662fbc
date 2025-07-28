@@ -45,13 +45,13 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
         {isOpen && (
           <div 
             className={cn(
-              "fixed top-16 h-[calc(100vh-4rem)] bg-card border-r border-border shadow-lg z-40 transition-all duration-300 ease-in-out w-80",
+              "fixed top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 shadow-lg z-40 transition-all duration-300 ease-in-out w-80",
               leftPosition
             )}
           >
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-3 border-b border-border">
-                <span className="text-sm font-medium text-foreground">Filters</span>
+              <div className="flex items-center justify-between p-3 border-b border-gray-200">
+                <span className="text-sm font-medium text-gray-700">Filters</span>
                 <Button
                   variant="ghost"
                   size="icon"

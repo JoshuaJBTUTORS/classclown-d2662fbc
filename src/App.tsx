@@ -3,7 +3,6 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { LearningHubProvider } from '@/contexts/LearningHubContext';
@@ -54,10 +53,9 @@ function App() {
   return (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <OrganizationProvider>
-              <LearningHubProvider>
+        <AuthProvider>
+          <OrganizationProvider>
+            <LearningHubProvider>
               <Routes>
                 {/* Root route with auth redirect */}
                 <Route path="/" element={<AuthRedirect />} />
@@ -246,10 +244,9 @@ function App() {
                 </Route>
               </Routes>
               <Toaster />
-              </LearningHubProvider>
-            </OrganizationProvider>
-          </AuthProvider>
-        </ThemeProvider>
+            </LearningHubProvider>
+          </OrganizationProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </BrowserRouter>
   );

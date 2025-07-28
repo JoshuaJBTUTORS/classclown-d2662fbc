@@ -7,7 +7,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 const LearningHubLayout: React.FC = () => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background flex w-full relative">
+      <div className="min-h-screen bg-gray-50 flex w-full relative">
         <LearningHubSidebar />
         <main className="flex-1 overflow-auto relative z-0">
           {/* Hamburger menu trigger for mobile */}
