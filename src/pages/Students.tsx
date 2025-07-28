@@ -3,7 +3,7 @@ import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -38,6 +38,7 @@ import AddParentStudentForm from '@/components/students/AddParentStudentForm';
 import AddStudentToParentForm from '@/components/students/AddStudentToParentForm';
 import EditParentForm from '@/components/parents/EditParentForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
+import { BulkImportDialog } from '@/components/students/BulkImportDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentDataService } from '@/services/studentDataService';
 import { cn } from '@/lib/utils';
@@ -56,6 +57,7 @@ const Students = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditParentDialogOpen, setIsEditParentDialogOpen] = useState(false);
+  const [isBulkImportDialogOpen, setIsBulkImportDialogOpen] = useState(false);
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
@@ -315,6 +317,14 @@ const Students = () => {
               {(isAdmin || isOwner) && (
                 <>
                   <Button 
+                    onClick={() => setIsBulkImportDialogOpen(true)} 
+                    className="flex items-center gap-2"
+                    variant="secondary"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Bulk Import
+                  </Button>
+                  <Button 
                     onClick={() => setIsAddFamilyDialogOpen(true)} 
                     className="flex items-center gap-2"
                     variant="default"
@@ -517,6 +527,15 @@ const Students = () => {
                 isOpen={isDeleteDialogOpen}
                 onClose={() => setIsDeleteDialogOpen(false)}
                 onDeleted={fetchStudents}
+              />
+
+              <BulkImportDialog
+                isOpen={isBulkImportDialogOpen}
+                onClose={() => setIsBulkImportDialogOpen(false)}
+                onSuccess={() => {
+                  setIsBulkImportDialogOpen(false);
+                  fetchStudents();
+                }}
               />
             </>
           )}
