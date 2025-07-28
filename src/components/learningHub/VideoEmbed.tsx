@@ -5,12 +5,18 @@ interface VideoEmbedProps {
   src: string;
   title?: string;
   className?: string;
+  autoplay?: boolean;
+  muted?: boolean;
+  loop?: boolean;
 }
 
 const VideoEmbed: React.FC<VideoEmbedProps> = ({ 
   src, 
   title = 'Video content', 
-  className = ''
+  className = '',
+  autoplay = false,
+  muted = false,
+  loop = false
 }) => {
   // Extract Vimeo ID from URL if full URL is provided
   const getVimeoId = (url: string) => {
@@ -36,7 +42,21 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({
   };
   
   const vimeoId = getVimeoId(src);
-  const embedUrl = vimeoId ? `https://player.vimeo.com/video/${vimeoId}` : src;
+  
+  // Build query parameters for autoplay, muted, loop
+  const getEmbedUrl = () => {
+    if (!vimeoId) return src;
+    
+    const params = new URLSearchParams();
+    if (autoplay) params.set('autoplay', '1');
+    if (muted) params.set('muted', '1');
+    if (loop) params.set('loop', '1');
+    
+    const baseUrl = `https://player.vimeo.com/video/${vimeoId}`;
+    return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+  };
+  
+  const embedUrl = getEmbedUrl();
 
   return (
     <div className={`aspect-video w-full ${className}`}>

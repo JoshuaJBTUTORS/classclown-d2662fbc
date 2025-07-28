@@ -19,9 +19,9 @@ import {
   Shield,
   Star,
   CheckCircle,
-  ArrowRight,
-  Play
+  ArrowRight
 } from 'lucide-react';
+import VideoEmbed from '@/components/learningHub/VideoEmbed';
 
 // Import generated images
 import dashboardPreview from '@/assets/dashboard-preview.jpg';
@@ -172,7 +172,6 @@ const JBTutorsPreview = () => {
                   variant="outline" 
                   className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-6 text-lg rounded-xl"
                 >
-                  <Play className="mr-2 w-5 h-5" />
                   Watch Demo
                 </Button>
               </div>
@@ -185,19 +184,15 @@ const JBTutorsPreview = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300 group">
-                <div className="relative aspect-video rounded-xl overflow-hidden">
-                  <img 
-                    src={dashboardPreview} 
-                    alt="ClassClown Platform Dashboard" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-16 h-16 bg-violet-600 rounded-full flex items-center justify-center">
-                      <Play className="w-8 h-8 text-white ml-1" />
-                    </div>
-                  </div>
-                </div>
+              <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300">
+                <VideoEmbed
+                  src="https://vimeo.com/1105177164"
+                  title="ClassClown Platform Demo"
+                  autoplay={true}
+                  muted={true}
+                  loop={true}
+                  className="rounded-xl"
+                />
                 <div className="mt-4">
                   <h3 className="text-lg font-semibold text-white mb-2">Interactive Platform Demo</h3>
                   <p className="text-gray-400">See how ClassClown transforms the learning experience</p>
