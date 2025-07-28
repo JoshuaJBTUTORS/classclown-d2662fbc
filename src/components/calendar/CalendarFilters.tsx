@@ -129,7 +129,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
   }
 
   return (
-    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+    <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4" />

@@ -45,7 +45,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
       </div>;
   };
   return <div className="h-full flex flex-col">
-      <div className="flex-1 relative calendar-container">
+      <div className="flex-1 relative calendar-container bg-card">
         {isLoading ? <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
             <div className="text-sm text-muted-foreground">Loading...</div>
           </div> : <FullCalendar key={refreshKey} plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} headerToolbar={{
