@@ -36,7 +36,11 @@ const LandingPage = () => {
         >
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <GraduationCap className="h-16 w-16 text-purple-600" />
+              <img 
+                src="/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png" 
+                alt="JB Tutors Logo" 
+                className="h-16 w-16 object-contain"
+              />
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
