@@ -121,22 +121,22 @@ const JBTutorsPreview = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="relative z-10 p-6">
         <nav className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Brain className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+              <Brain className="w-7 h-7 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold text-foreground">
                 ClassClown
               </h1>
-              <p className="text-sm text-gray-400">Powered by JB Tutors</p>
+              <p className="text-sm text-muted-foreground">Powered by JB Tutors</p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-gray-800 text-violet-400 border-gray-700">
+          <Badge variant="secondary" className="border-border">
             Coming Soon
           </Badge>
         </nav>
@@ -152,17 +152,17 @@ const JBTutorsPreview = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white">
+              <h1 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">
                 The Future of Online Learning
               </h1>
-              <p className="text-xl text-gray-300 mb-8">
+              <p className="text-xl text-muted-foreground mb-8">
                 Revolutionary AI-powered platform that transforms how families experience education. 
                 Personalized learning, real-time progress tracking, and seamless communication.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
                   size="lg" 
-                  className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-lg rounded-xl"
+                  className="px-8 py-6 text-lg rounded-xl"
                 >
                   Get Early Access
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -170,7 +170,7 @@ const JBTutorsPreview = () => {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-6 text-lg rounded-xl"
+                  className="px-8 py-6 text-lg rounded-xl"
                 >
                   <Play className="mr-2 w-5 h-5" />
                   Watch Demo
@@ -185,7 +185,7 @@ const JBTutorsPreview = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300 group">
+              <div className="bg-card border border-border rounded-2xl p-6 hover:border-primary/50 transition-all duration-300 group">
                 <div className="relative aspect-video rounded-xl overflow-hidden">
                   <img 
                     src={dashboardPreview} 
@@ -193,14 +193,14 @@ const JBTutorsPreview = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-16 h-16 bg-violet-600 rounded-full flex items-center justify-center">
-                      <Play className="w-8 h-8 text-white ml-1" />
+                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                      <Play className="w-8 h-8 text-primary-foreground ml-1" />
                     </div>
                   </div>
                 </div>
                 <div className="mt-4">
-                  <h3 className="text-lg font-semibold text-white mb-2">Interactive Platform Demo</h3>
-                  <p className="text-gray-400">See how ClassClown transforms the learning experience</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Interactive Platform Demo</h3>
+                  <p className="text-muted-foreground">See how ClassClown transforms the learning experience</p>
                 </div>
               </div>
             </motion.div>
@@ -218,13 +218,13 @@ const JBTutorsPreview = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-gray-900/80 border border-gray-800 rounded-xl p-6 text-center hover:border-violet-600/50 transition-all duration-300"
+                className="bg-card border border-border rounded-xl p-6 text-center hover:border-primary/50 transition-all duration-300"
               >
-                <div className="text-3xl md:text-4xl font-bold text-violet-400 mb-2">
+                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
                   {stat.number}
                 </div>
-                <div className="text-lg font-semibold text-white mb-1">{stat.label}</div>
-                <div className="text-sm text-gray-400">{stat.subtitle}</div>
+                <div className="text-lg font-semibold text-foreground mb-1">{stat.label}</div>
+                <div className="text-sm text-muted-foreground">{stat.subtitle}</div>
               </motion.div>
             ))}
           </div>
@@ -235,10 +235,10 @@ const JBTutorsPreview = () => {
       <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
               Everything Your Family Needs
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               From AI-powered personalization to seamless communication, ClassClown brings together 
               all the tools families need for educational success.
             </p>
@@ -251,27 +251,27 @@ const JBTutorsPreview = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: categoryIndex * 0.2 }}
-                className="bg-gray-900/80 border border-gray-800 rounded-2xl p-8"
+                className="bg-card border border-border rounded-2xl p-8"
               >
                 <div className="flex items-center justify-center mb-8">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center">
-                      <category.icon className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+                      <category.icon className="w-6 h-6 text-primary-foreground" />
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white">{category.category}</h3>
+                    <h3 className="text-2xl md:text-3xl font-bold text-foreground">{category.category}</h3>
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {category.items.map((item, itemIndex) => (
-                    <div key={itemIndex} className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 hover:border-violet-600/50 transition-all duration-300 group">
+                    <div key={itemIndex} className="bg-muted/30 border border-border rounded-xl p-6 hover:border-primary/50 transition-all duration-300 group">
                       <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-violet-600 transition-colors">
-                          <item.icon className="w-6 h-6 text-violet-400 group-hover:text-white" />
+                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center group-hover:bg-primary transition-colors">
+                          <item.icon className="w-6 h-6 text-primary group-hover:text-primary-foreground" />
                         </div>
                         <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-white mb-2">{item.title}</h4>
-                          <p className="text-gray-300">{item.description}</p>
+                          <h4 className="text-lg font-semibold text-foreground mb-2">{item.title}</h4>
+                          <p className="text-muted-foreground">{item.description}</p>
                         </div>
                       </div>
                     </div>
@@ -286,10 +286,10 @@ const JBTutorsPreview = () => {
       {/* Visual Features Showcase */}
       <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-white">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-foreground">
             Education at Your Fingertips
           </h2>
-          <p className="text-xl text-gray-300 text-center mb-16 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground text-center mb-16 max-w-3xl mx-auto">
             Explore our comprehensive learning ecosystem designed for the modern family
           </p>
           
@@ -299,7 +299,7 @@ const JBTutorsPreview = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300 group"
+              className="bg-card border border-border rounded-2xl p-6 hover:border-primary/50 transition-all duration-300 group"
             >
               <div className="aspect-video rounded-xl overflow-hidden mb-4">
                 <img 
@@ -308,9 +308,9 @@ const JBTutorsPreview = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">AI-Powered Assessment Creation</h3>
-              <p className="text-gray-300 mb-4">Transform any document into interactive assessments with our advanced AI technology. Get instant feedback and personalized recommendations.</p>
-              <div className="flex items-center text-violet-400 font-medium">
+              <h3 className="text-2xl font-bold text-foreground mb-3">AI-Powered Assessment Creation</h3>
+              <p className="text-muted-foreground mb-4">Transform any document into interactive assessments with our advanced AI technology. Get instant feedback and personalized recommendations.</p>
+              <div className="flex items-center text-primary font-medium">
                 <span>Explore AI Features</span>
                 <ArrowRight className="ml-2 w-4 h-4" />
               </div>
@@ -321,7 +321,7 @@ const JBTutorsPreview = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-violet-600/50 transition-all duration-300 group"
+              className="bg-card border border-border rounded-2xl p-6 hover:border-primary/50 transition-all duration-300 group"
             >
               <div className="flex justify-center mb-4">
                 <div className="w-48 h-80 relative">
@@ -332,9 +332,9 @@ const JBTutorsPreview = () => {
                   />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Learn Anywhere, Anytime</h3>
-              <p className="text-gray-300 mb-4">Full mobile experience with offline capabilities. Access lessons, complete assignments, and track progress on any device.</p>
-              <div className="flex items-center text-violet-400 font-medium">
+              <h3 className="text-2xl font-bold text-foreground mb-3">Learn Anywhere, Anytime</h3>
+              <p className="text-muted-foreground mb-4">Full mobile experience with offline capabilities. Access lessons, complete assignments, and track progress on any device.</p>
+              <div className="flex items-center text-primary font-medium">
                 <span>Download App</span>
                 <ArrowRight className="ml-2 w-4 h-4" />
               </div>
@@ -347,7 +347,7 @@ const JBTutorsPreview = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 hover:border-violet-600/50 transition-all duration-300 group"
+              className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-all duration-300 group"
             >
               <div className="aspect-video rounded-lg overflow-hidden mb-3">
                 <img 
@@ -356,8 +356,8 @@ const JBTutorsPreview = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <h4 className="text-lg font-semibold text-white mb-2">Interactive Video Lessons</h4>
-              <p className="text-gray-400 text-sm">HD video conferencing with digital whiteboards and real-time collaboration</p>
+              <h4 className="text-lg font-semibold text-foreground mb-2">Interactive Video Lessons</h4>
+              <p className="text-muted-foreground text-sm">HD video conferencing with digital whiteboards and real-time collaboration</p>
             </motion.div>
 
             {/* WhatsApp Integration */}
@@ -365,7 +365,7 @@ const JBTutorsPreview = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 hover:border-violet-600/50 transition-all duration-300 group"
+              className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-all duration-300 group"
             >
               <div className="aspect-video rounded-lg overflow-hidden mb-3">
                 <img 
@@ -374,8 +374,8 @@ const JBTutorsPreview = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <h4 className="text-lg font-semibold text-white mb-2">Instant Parent Updates</h4>
-              <p className="text-gray-400 text-sm">Automated WhatsApp notifications for homework, progress, and lesson reminders</p>
+              <h4 className="text-lg font-semibold text-foreground mb-2">Instant Parent Updates</h4>
+              <p className="text-muted-foreground text-sm">Automated WhatsApp notifications for homework, progress, and lesson reminders</p>
             </motion.div>
 
             {/* GCSE Materials */}
@@ -383,7 +383,7 @@ const JBTutorsPreview = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 hover:border-violet-600/50 transition-all duration-300 group"
+              className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-all duration-300 group"
             >
               <div className="aspect-video rounded-lg overflow-hidden mb-3">
                 <img 
@@ -392,8 +392,8 @@ const JBTutorsPreview = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <h4 className="text-lg font-semibold text-white mb-2">GCSE & 11+ Preparation</h4>
-              <p className="text-gray-400 text-sm">Comprehensive exam preparation with practice tests and revision schedules</p>
+              <h4 className="text-lg font-semibold text-foreground mb-2">GCSE & 11+ Preparation</h4>
+              <p className="text-muted-foreground text-sm">Comprehensive exam preparation with practice tests and revision schedules</p>
             </motion.div>
           </div>
         </div>
@@ -406,19 +406,19 @@ const JBTutorsPreview = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="bg-gray-900/80 border border-gray-800 rounded-2xl p-12 text-center"
+            className="bg-card border border-border rounded-2xl p-12 text-center"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
               Ready to Transform Your Learning Experience?
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
               Join the waitlist to be among the first families to experience the future of online education.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button 
                 size="lg" 
-                className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-lg rounded-xl"
+                className="px-8 py-6 text-lg rounded-xl"
               >
                 Get Early Access
                 <Star className="ml-2 w-5 h-5" />
@@ -426,23 +426,23 @@ const JBTutorsPreview = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-6 text-lg rounded-xl"
+                className="px-8 py-6 text-lg rounded-xl"
               >
                 Book Free Trial Lesson
               </Button>
             </div>
 
-            <div className="flex items-center justify-center space-x-8 text-sm text-gray-400">
+            <div className="flex items-center justify-center space-x-8 text-sm text-muted-foreground">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-violet-400" />
+                <CheckCircle className="w-4 h-4 text-primary" />
                 <span>No setup fees</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-violet-400" />
+                <CheckCircle className="w-4 h-4 text-primary" />
                 <span>Cancel anytime</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-violet-400" />
+                <CheckCircle className="w-4 h-4 text-primary" />
                 <span>Free trial included</span>
               </div>
             </div>
@@ -451,18 +451,18 @@ const JBTutorsPreview = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-gray-800">
+      <footer className="py-12 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <Brain className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <div className="text-lg font-bold text-white">ClassClown</div>
-              <div className="text-sm text-gray-400">Powered by JB Tutors</div>
+              <div className="text-lg font-bold text-foreground">ClassClown</div>
+              <div className="text-sm text-muted-foreground">Powered by JB Tutors</div>
             </div>
           </div>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground">
             Revolutionizing education with AI-powered personalization and seamless family communication.
           </p>
         </div>

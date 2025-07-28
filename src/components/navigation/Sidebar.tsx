@@ -220,13 +220,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-50',
+          'fixed top-0 left-0 h-full w-64 bg-background border-r border-border transform transition-transform duration-300 ease-in-out z-50',
           'lg:translate-x-0 lg:static lg:z-auto',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-2">
               <img 
                 src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
@@ -234,13 +234,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 className="h-8 w-8 object-contain"
               />
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-gray-900">Classclown</span>
-                <span className="text-xs text-gray-500">powered by JB Tutors</span>
+                <span className="text-xl font-bold text-foreground">Classclown</span>
+                <span className="text-xs text-muted-foreground">powered by JB Tutors</span>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+              className="lg:hidden p-2 rounded-md hover:bg-accent"
             >
               <X className="h-5 w-5" />
             </button>
