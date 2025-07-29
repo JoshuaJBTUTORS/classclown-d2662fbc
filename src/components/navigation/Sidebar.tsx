@@ -17,6 +17,7 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronRight,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -132,6 +133,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: TrendingUp,
           label: 'Progress',
           href: '/progress',
+          roles: ['admin', 'owner', 'parent', 'student'],
+        },
+        {
+          icon: BookOpen,
+          label: 'School Progress',
+          href: '/school-progress',
           roles: ['admin', 'owner', 'parent', 'student'],
         },
         {
