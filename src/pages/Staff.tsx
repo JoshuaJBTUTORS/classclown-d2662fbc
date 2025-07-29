@@ -12,12 +12,12 @@ const Staff: React.FC = () => {
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar toggleSidebar={() => setIsSidebarOpen(true)} />
+    <div className="flex h-screen bg-background">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      <div className="lg:ml-64 transition-all duration-300">
-        <div className="p-6">
+      <div className="flex-1 flex flex-col lg:ml-64">
+        <Navbar toggleSidebar={() => setIsSidebarOpen(true)} />
+        <div className="flex-1 p-6">
           <PageTitle 
             title="Staff Management" 
             subtitle="Manage administrative staff and permissions"
