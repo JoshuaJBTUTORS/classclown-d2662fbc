@@ -48,6 +48,7 @@ import Settings from './pages/Settings';
 import JBTutorsPreview from './pages/JBTutorsPreview';
 import SchoolProgress from './pages/SchoolProgress';
 import CreateAdmin from './pages/CreateAdmin';
+import Staff from './pages/Staff';
 
 function App() {
   const queryClient = new QueryClient();
@@ -153,10 +154,10 @@ function App() {
                     } 
                   />
                   <Route 
-                    path="create-admin" 
+                    path="staff" 
                     element={
                       <ProtectedRoute allowedRoles={['owner']}>
-                        <CreateAdmin />
+                        <Staff />
                       </ProtectedRoute>
                     } 
                   />

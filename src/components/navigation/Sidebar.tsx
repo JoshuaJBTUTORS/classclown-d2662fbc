@@ -97,8 +97,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         },
         {
           icon: UserPlus,
-          label: 'Create Admin',
-          href: '/create-admin',
+          label: 'Staff',
+          href: '/staff',
           roles: ['owner'],
         },
         {
