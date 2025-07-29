@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 import CreateAdminDialog from '@/components/staff/CreateAdminDialog';
+import AdminList from '@/components/staff/AdminList';
 
 const Staff: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -24,6 +25,8 @@ const Staff: React.FC = () => {
           />
           
           <div className="grid gap-6">
+            <AdminList />
+            
             <Card>
               <CardHeader>
                 <CardTitle>Administrative Accounts</CardTitle>
