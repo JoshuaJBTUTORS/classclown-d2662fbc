@@ -106,20 +106,40 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .from('user_roles')
         .select(`
           user_id,
-          profiles!inner(first_name, last_name)
+          profiles!user_roles_user_id_fkey(first_name, last_name)
         `)
         .eq('user_id', demoData.admin_id)
         .eq('role', 'admin')
         .single();
 
       if (adminError) {
-        console.warn('Could not fetch admin details:', adminError);
+        console.error('Error fetching admin details:', adminError);
+        // Try alternative approach
+        const { data: altAdminData, error: altError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', demoData.admin_id)
+          .single();
+        
+        if (!altError && altAdminData) {
+          setDemoSession({
+            ...demoData,
+            admin: altAdminData
+          });
+        } else {
+          console.warn('Could not fetch admin details with fallback:', altError);
+          setDemoSession({
+            ...demoData,
+            admin: null
+          });
+        }
+      } else {
+        setDemoSession({
+          ...demoData,
+          admin: adminData?.profiles || null
+        });
       }
-
-      setDemoSession({
-        ...demoData,
-        admin: adminData?.profiles || null
-      });
+      
       setLesson(demoData.lessons);
 
       // Check attendance and homework status for the lesson
