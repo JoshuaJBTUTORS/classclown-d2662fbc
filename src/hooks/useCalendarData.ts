@@ -27,6 +27,7 @@ export const useCalendarData = ({
   filters 
 }: UseCalendarDataProps) => {
   const [rawLessons, setRawLessons] = useState<any[]>([]);
+  const [rawDemoSessions, setRawDemoSessions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Add ref to track current fetch to prevent overlapping calls
@@ -103,8 +104,47 @@ export const useCalendarData = ({
       calendarEvents.push(...lessonEvents);
     }
 
+    // Process demo sessions
+    if (rawDemoSessions && rawDemoSessions.length > 0) {
+      const demoEvents = rawDemoSessions.map(demoSession => {
+        if (!demoSession || !demoSession.id) return null;
+        
+        const lesson = demoSession.lessons;
+        const admin = demoSession.admin;
+        
+        return {
+          id: `demo-${demoSession.id}`,
+          title: `Demo: ${lesson?.title || 'Trial Lesson'}`,
+          start: demoSession.start_time,
+          end: demoSession.end_time,
+          className: 'calendar-event demo-session bg-orange-100 border-orange-300 text-orange-800',
+          extendedProps: {
+            eventType: 'demo_session',
+            demoSessionId: demoSession.id,
+            lessonId: demoSession.lesson_id,
+            adminId: demoSession.admin_id,
+            status: demoSession.status,
+            lesson: lesson,
+            admin: admin ? {
+              id: admin.id,
+              first_name: admin.first_name,
+              last_name: admin.last_name,
+              email: admin.email
+            } : null,
+            students: lesson?.lesson_students?.map((ls: any) => ({
+              id: ls.student_id,
+              name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Trial Student'
+            })) || [],
+            userRole: userRole
+          }
+        };
+      }).filter(event => event !== null);
+
+      calendarEvents.push(...demoEvents);
+    }
+
     return calendarEvents;
-  }, [rawLessons, userRole, completionData]);
+  }, [rawLessons, rawDemoSessions, userRole, completionData]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -116,12 +156,13 @@ export const useCalendarData = ({
 
       if (!isAuthenticated || !userRole || !userEmail) {
         setRawLessons([]);
+        setRawDemoSessions([]);
         setIsLoading(false);
         return;
       }
 
       try {
-        console.log("Fetching lessons from Supabase for role:", userRole);
+        console.log("Fetching lessons and demo sessions from Supabase for role:", userRole);
         
         const fetchPromise = (async () => {
           let query;
@@ -327,6 +368,40 @@ export const useCalendarData = ({
           }
 
           setRawLessons(filteredData);
+
+          // Fetch demo sessions for admin and owner roles
+          if (userRole === 'admin' || userRole === 'owner') {
+            console.log("Fetching demo sessions for admin/owner");
+            
+            const { data: demoData, error: demoError } = await supabase
+              .from('demo_sessions')
+              .select(`
+                *,
+                lessons(
+                  id,
+                  title,
+                  subject,
+                  lesson_students(
+                    student_id,
+                    student:students(id, first_name, last_name)
+                  )
+                ),
+                admin:profiles!demo_sessions_admin_id_fkey(
+                  id,
+                  first_name,
+                  last_name
+                )
+              `);
+
+            if (demoError) {
+              console.error('Error fetching demo sessions:', demoError);
+            } else {
+              console.log('Demo sessions fetched:', demoData);
+              setRawDemoSessions(demoData || []);
+            }
+          } else {
+            setRawDemoSessions([]);
+          }
         })();
 
         currentFetchRef.current = fetchPromise;
