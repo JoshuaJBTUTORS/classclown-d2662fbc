@@ -93,6 +93,25 @@ const CourseEdit: React.FC = () => {
     },
   });
 
+  // Delete course mutation
+  const deleteCourseMutation = useMutation({
+    mutationFn: () => learningHubService.deleteCourse(courseId!),
+    onSuccess: () => {
+      toast({
+        title: "Course deleted",
+        description: "The course has been successfully deleted",
+      });
+      navigate('/learning-hub');
+    },
+    onError: (error) => {
+      toast({
+        title: "Error deleting course",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleInputChange = (field: keyof CourseEditFormData, value: string) => {
     setCourseData(prev => ({ ...prev, [field]: value }));
   };
@@ -353,17 +372,14 @@ const CourseEdit: React.FC = () => {
                       <p className="mb-4">Permanently delete this course and all its contents. This action cannot be undone.</p>
                       <Button 
                         variant="destructive"
+                        disabled={deleteCourseMutation.isPending}
                         onClick={() => {
                           if (window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-                            // Implement delete functionality
-                            toast({
-                              title: "Coming Soon",
-                              description: "Course deletion will be implemented soon",
-                            });
+                            deleteCourseMutation.mutate();
                           }
                         }}
                       >
-                        Delete Course
+                        {deleteCourseMutation.isPending ? 'Deleting...' : 'Delete Course'}
                       </Button>
                     </CardContent>
                   </Card>
