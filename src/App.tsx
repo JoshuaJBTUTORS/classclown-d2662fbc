@@ -47,6 +47,7 @@ import AssessmentPreview from './pages/AssessmentPreview';
 import Settings from './pages/Settings';
 import JBTutorsPreview from './pages/JBTutorsPreview';
 import SchoolProgress from './pages/SchoolProgress';
+import CreateAdmin from './pages/CreateAdmin';
 
 function App() {
   const queryClient = new QueryClient();
@@ -148,6 +149,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner', 'student', 'parent']}>
                         <SchoolProgress />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="create-admin" 
+                    element={
+                      <ProtectedRoute allowedRoles={['owner']}>
+                        <CreateAdmin />
                       </ProtectedRoute>
                     } 
                   />

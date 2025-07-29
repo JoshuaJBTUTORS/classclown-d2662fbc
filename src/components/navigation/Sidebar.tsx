@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
+  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -93,6 +94,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           label: 'Tutors',
           href: '/tutors',
           roles: ['admin', 'owner'],
+        },
+        {
+          icon: UserPlus,
+          label: 'Create Admin',
+          href: '/create-admin',
+          roles: ['owner'],
         },
         {
           icon: ClipboardList,
