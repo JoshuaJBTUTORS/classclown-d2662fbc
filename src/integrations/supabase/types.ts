@@ -1490,6 +1490,81 @@ export type Database = {
           },
         ]
       }
+      school_progress_cycles: {
+        Row: {
+          created_at: string
+          cycle_end_date: string
+          cycle_start_date: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_end_date: string
+          cycle_start_date: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cycle_end_date?: string
+          cycle_start_date?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      school_progress_notifications: {
+        Row: {
+          created_at: string
+          cycle_id: string
+          email_status: string
+          error_message: string | null
+          id: string
+          notification_type: string
+          parent_id: string
+          sent_at: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_id: string
+          email_status?: string
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          parent_id: string
+          sent_at?: string
+        }
+        Update: {
+          created_at?: string
+          cycle_id?: string
+          email_status?: string
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          parent_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_progress_notifications_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "school_progress_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_progress_notifications_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_progress: {
         Row: {
           assessment_completed: boolean | null
@@ -2188,6 +2263,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_current_school_progress_cycle: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_tutor_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2238,6 +2317,10 @@ export type Database = {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      parent_notified_in_cycle: {
+        Args: { parent_id_param: string; cycle_id_param: string }
         Returns: boolean
       }
       user_can_edit_assessment: {
