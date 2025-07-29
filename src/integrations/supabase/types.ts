@@ -1966,6 +1966,7 @@ export type Database = {
           email: string
           id: string
           lesson_id: string | null
+          lesson_time: string | null
           message: string | null
           parent_name: string
           phone: string | null
@@ -1988,6 +1989,7 @@ export type Database = {
           email: string
           id?: string
           lesson_id?: string | null
+          lesson_time?: string | null
           message?: string | null
           parent_name: string
           phone?: string | null
@@ -2010,6 +2012,7 @@ export type Database = {
           email?: string
           id?: string
           lesson_id?: string | null
+          lesson_time?: string | null
           message?: string | null
           parent_name?: string
           phone?: string | null

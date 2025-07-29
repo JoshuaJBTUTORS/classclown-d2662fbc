@@ -44,8 +44,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     const demoStartDateTime = new Date(`${trialBooking.preferred_date}T${trialBooking.preferred_time}`);
     const demoEndDateTime = addMinutes(demoStartDateTime, 15); // 15-minute demo
     
-    // For now, lesson starts immediately after demo (fallback until lesson_time column is added)
-    const lessonStartDateTime = demoEndDateTime;
+    // Lesson time (lesson_time is the actual tutor availability time, fallback to demo end time)
+    const lessonTime = trialBooking.lesson_time || format(demoEndDateTime, 'HH:mm');
+    const lessonStartDateTime = new Date(`${trialBooking.preferred_date}T${lessonTime}`);
     const lessonEndDateTime = addMinutes(lessonStartDateTime, 60); // 1 hour lesson
 
     console.log('Demo times:', { demoStartDateTime, demoEndDateTime });
