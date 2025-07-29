@@ -431,3 +431,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-green)) 100%);
 }
+
+/* Increase height of calendar time slots */
+.fc-timegrid-slot {
+  height: 60px !important;
+  min-height: 60px !important;
+}
+
+.fc-timegrid-slot-lane {
+  height: 60px !important;
+}
+
+.fc-timegrid-axis-cushion {
+  min-height: 60px !important;
+}
