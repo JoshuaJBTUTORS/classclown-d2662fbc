@@ -40,16 +40,53 @@ const BIOLOGY_QUESTION_MODULE_MAPPING: QuestionModuleMapping = {
   14: 'ecology', // Ecology Module 9
 };
 
+// Chemistry question-to-module mapping based on module order
+const CHEMISTRY_QUESTION_MODULE_MAPPING: QuestionModuleMapping = {
+  1: 'atomic-structure-periodic-table', // Questions 1-2: Atomic Structure and the Periodic Table
+  2: 'atomic-structure-periodic-table',
+  3: 'bonding-structure-properties', // Questions 3-4: Bonding, Structure, and The Properties of Matter
+  4: 'bonding-structure-properties',
+  5: 'quantitative-chemistry', // Questions 5-6: Quantitative Chemistry
+  6: 'quantitative-chemistry',
+  7: 'chemical-changes', // Questions 7-8: Chemical Changes
+  8: 'chemical-changes',
+  9: 'energy-changes', // Questions 9-10: Energy Changes
+  10: 'energy-changes',
+  11: 'rate-extent-chemical-change', // Questions 11-12: The Rate and Extent of Chemical Change
+  12: 'rate-extent-chemical-change',
+  13: 'organic-chemistry', // Questions 13-14: Organic Chemistry
+  14: 'organic-chemistry',
+  15: 'chemical-analysis', // Questions 15-16: Chemical Analysis
+  16: 'chemical-analysis',
+  17: 'chemistry-atmosphere', // Question 17: Chemistry of the Atmosphere
+  18: 'using-resources', // Question 18: Using Resources
+};
+
 // Map module names to topic keywords for matching
 const MODULE_TOPIC_MAPPING: { [key: string]: string[] } = {
+  // Common
   'getting-started': ['getting', 'started', 'introduction', 'intro', 'welcome', 'beginning'],
+  
+  // Biology modules
   'cell-biology': ['cell', 'biology', 'cellular', 'organelle', 'membrane', 'cytoplasm', 'nucleus'],
   'organisation': ['organisation', 'organization', 'tissue', 'organ', 'system', 'structure'],
   'infection-response': ['infection', 'response', 'immune', 'disease', 'pathogen', 'antibody'],
   'bioenergetics': ['bioenergetics', 'energy', 'respiration', 'photosynthesis', 'metabolism'],
   'homeostasis-response': ['homeostasis', 'response', 'nervous', 'hormonal', 'regulation'],
   'inheritance-variation-evolution': ['inheritance', 'variation', 'evolution', 'genetics', 'dna', 'genes'],
-  'ecology': ['ecology', 'environment', 'ecosystem', 'food chain', 'biodiversity']
+  'ecology': ['ecology', 'environment', 'ecosystem', 'food chain', 'biodiversity'],
+  
+  // Chemistry modules
+  'atomic-structure-periodic-table': ['atomic', 'structure', 'periodic', 'table', 'atom', 'electron', 'element'],
+  'bonding-structure-properties': ['bonding', 'structure', 'properties', 'bond', 'ionic', 'covalent', 'metallic'],
+  'quantitative-chemistry': ['quantitative', 'chemistry', 'moles', 'calculations', 'stoichiometry', 'equations'],
+  'chemical-changes': ['chemical', 'changes', 'reactions', 'acids', 'bases', 'metals', 'displacement'],
+  'energy-changes': ['energy', 'changes', 'exothermic', 'endothermic', 'activation', 'enthalpy'],
+  'rate-extent-chemical-change': ['rate', 'extent', 'chemical', 'change', 'equilibrium', 'catalyst', 'concentration'],
+  'organic-chemistry': ['organic', 'chemistry', 'carbon', 'hydrocarbons', 'alcohols', 'polymers'],
+  'chemical-analysis': ['chemical', 'analysis', 'tests', 'chromatography', 'identification', 'flame'],
+  'chemistry-atmosphere': ['chemistry', 'atmosphere', 'pollutants', 'greenhouse', 'carbon', 'climate'],
+  'using-resources': ['using', 'resources', 'sustainable', 'earth', 'extraction', 'recycling']
 };
 
 export const personalizedLearningPathService = {
@@ -169,6 +206,10 @@ export const personalizedLearningPathService = {
         return [];
       }
 
+      // Determine course subject from modules to select correct mapping
+      const courseSubject = personalizedLearningPathService.determineCourseSubject(modules);
+      const questionModuleMapping = personalizedLearningPathService.getQuestionMappingForSubject(courseSubject);
+
       // Group responses by module based on question number mapping
       const modulePerformance: { [moduleKey: string]: {
         responses: any[];
@@ -209,12 +250,12 @@ export const personalizedLearningPathService = {
         });
       }
 
-      // Categorize responses by module
+      // Categorize responses by module using the appropriate mapping
       responses.forEach(response => {
         const question = questionMap.get(response.question_id);
         const questionNumber = question?.question_number;
-        if (questionNumber && BIOLOGY_QUESTION_MODULE_MAPPING[questionNumber]) {
-          const moduleKey = BIOLOGY_QUESTION_MODULE_MAPPING[questionNumber];
+        if (questionNumber && questionModuleMapping[questionNumber]) {
+          const moduleKey = questionModuleMapping[questionNumber];
           if (modulePerformance[moduleKey]) {
             modulePerformance[moduleKey].responses.push({
               ...response,
@@ -424,6 +465,67 @@ export const personalizedLearningPathService = {
       console.log(`Cleared ${userCacheKeys.length} cached personalized paths for user ${userId}`);
     } catch (error) {
       console.error('Error clearing all user cache:', error);
+    }
+  },
+
+  /**
+   * Determine course subject from modules to select appropriate question mapping
+   */
+  determineCourseSubject: (modules: CourseModule[]): 'biology' | 'chemistry' | 'unknown' => {
+    // Look for chemistry-specific module keywords
+    const hasChemistryModules = modules.some(module => {
+      const moduleKey = personalizedLearningPathService.getModuleKeyFromModule(module);
+      return moduleKey && [
+        'atomic-structure-periodic-table',
+        'bonding-structure-properties', 
+        'quantitative-chemistry',
+        'chemical-changes',
+        'energy-changes',
+        'rate-extent-chemical-change',
+        'organic-chemistry',
+        'chemical-analysis',
+        'chemistry-atmosphere',
+        'using-resources'
+      ].includes(moduleKey);
+    });
+
+    if (hasChemistryModules) {
+      return 'chemistry';
+    }
+
+    // Look for biology-specific module keywords
+    const hasBiologyModules = modules.some(module => {
+      const moduleKey = personalizedLearningPathService.getModuleKeyFromModule(module);
+      return moduleKey && [
+        'cell-biology',
+        'organisation',
+        'infection-response',
+        'bioenergetics',
+        'homeostasis-response',
+        'inheritance-variation-evolution',
+        'ecology'
+      ].includes(moduleKey);
+    });
+
+    if (hasBiologyModules) {
+      return 'biology';
+    }
+
+    return 'unknown';
+  },
+
+  /**
+   * Get the appropriate question-module mapping based on course subject
+   */
+  getQuestionMappingForSubject: (subject: 'biology' | 'chemistry' | 'unknown'): QuestionModuleMapping => {
+    switch (subject) {
+      case 'chemistry':
+        return CHEMISTRY_QUESTION_MODULE_MAPPING;
+      case 'biology':
+        return BIOLOGY_QUESTION_MODULE_MAPPING;
+      default:
+        // Default to biology mapping for backward compatibility
+        return BIOLOGY_QUESTION_MODULE_MAPPING;
     }
   }
 };
