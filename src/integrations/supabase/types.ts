@@ -1428,6 +1428,68 @@ export type Database = {
           },
         ]
       }
+      school_progress: {
+        Row: {
+          academic_year: string | null
+          created_at: string
+          description: string | null
+          file_format: Database["public"]["Enums"]["progress_file_format"]
+          file_name: string
+          file_type: Database["public"]["Enums"]["progress_file_type"]
+          file_url: string
+          grade_achieved: string | null
+          id: string
+          student_id: number
+          subject: string | null
+          term: string | null
+          updated_at: string
+          upload_date: string
+          uploaded_by: string
+        }
+        Insert: {
+          academic_year?: string | null
+          created_at?: string
+          description?: string | null
+          file_format: Database["public"]["Enums"]["progress_file_format"]
+          file_name: string
+          file_type?: Database["public"]["Enums"]["progress_file_type"]
+          file_url: string
+          grade_achieved?: string | null
+          id?: string
+          student_id: number
+          subject?: string | null
+          term?: string | null
+          updated_at?: string
+          upload_date?: string
+          uploaded_by: string
+        }
+        Update: {
+          academic_year?: string | null
+          created_at?: string
+          description?: string | null
+          file_format?: Database["public"]["Enums"]["progress_file_format"]
+          file_name?: string
+          file_type?: Database["public"]["Enums"]["progress_file_type"]
+          file_url?: string
+          grade_achieved?: string | null
+          id?: string
+          student_id?: number
+          subject?: string | null
+          term?: string | null
+          updated_at?: string
+          upload_date?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_school_progress_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_progress: {
         Row: {
           assessment_completed: boolean | null
@@ -2199,6 +2261,8 @@ export type Database = {
         | "student"
         | "parent"
         | "learning_hub_only"
+      progress_file_format: "pdf" | "image"
+      progress_file_type: "report_card" | "mock_exam" | "other"
       study_technique_enum:
         | "pomodoro"
         | "subject_rotation"
@@ -2339,6 +2403,8 @@ export const Constants = {
         "parent",
         "learning_hub_only",
       ],
+      progress_file_format: ["pdf", "image"],
+      progress_file_type: ["report_card", "mock_exam", "other"],
       study_technique_enum: [
         "pomodoro",
         "subject_rotation",

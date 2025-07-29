@@ -46,6 +46,7 @@ import AssessmentEdit from './pages/AssessmentEdit';
 import AssessmentPreview from './pages/AssessmentPreview';
 import Settings from './pages/Settings';
 import JBTutorsPreview from './pages/JBTutorsPreview';
+import SchoolProgress from './pages/SchoolProgress';
 
 function App() {
   const queryClient = new QueryClient();
@@ -141,6 +142,14 @@ function App() {
                   <Route 
                     path="settings" 
                     element={<Settings />} 
+                  />
+                  <Route 
+                    path="school-progress" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner', 'student', 'parent']}>
+                        <SchoolProgress />
+                      </ProtectedRoute>
+                    } 
                   />
                 </Route>
                 <Route
