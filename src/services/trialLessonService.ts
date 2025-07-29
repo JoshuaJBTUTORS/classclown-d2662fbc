@@ -40,6 +40,41 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       throw new Error('Failed to fetch trial booking details');
     }
 
+    // Create student record if studentId is not provided
+    let studentId = data.studentId;
+    if (!studentId) {
+      console.log('Creating student record from trial booking data');
+      
+      // Split child name into first and last name
+      const childNameParts = trialBooking.child_name.trim().split(' ');
+      const childFirstName = childNameParts[0] || trialBooking.child_name;
+      const childLastName = childNameParts.slice(1).join(' ') || '';
+      
+      // Create standalone trial student
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .insert({
+          first_name: childFirstName,
+          last_name: childLastName,
+          email: trialBooking.email,
+          phone: trialBooking.phone || null,
+          parent_id: null, // Standalone student - no parent
+          account_type: 'trial',
+          trial_status: 'pending',
+          status: 'trial'
+        })
+        .select()
+        .single();
+
+      if (studentError) {
+        console.error('Student creation error:', studentError);
+        throw new Error(`Failed to create student: ${studentError.message}`);
+      }
+
+      studentId = studentData.id;
+      console.log('Student created successfully:', studentData);
+    }
+
     // Demo session time (preferred_time is the displayed time)
     const demoStartDateTime = new Date(`${trialBooking.preferred_date}T${trialBooking.preferred_time}`);
     const demoEndDateTime = addMinutes(demoStartDateTime, 15); // 15-minute demo
@@ -68,10 +103,10 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     const { data: studentData } = await supabase
       .from('students')
       .select('first_name, last_name')
-      .eq('id', data.studentId)
+      .eq('id', studentId)
       .single();
 
-    const studentName = studentData ? `${studentData.first_name} ${studentData.last_name}` : 'Unknown Student';
+    const studentName = studentData ? `${studentData.first_name} ${studentData.last_name}` : trialBooking.child_name;
     const title = `Trial ${subjectName} for ${studentName}`;
 
     console.log('Creating lesson with title:', title);
@@ -106,7 +141,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       .from('lesson_students')
       .insert({
         lesson_id: lessonData.id,
-        student_id: data.studentId
+        student_id: studentId
       });
 
     if (linkError) {
