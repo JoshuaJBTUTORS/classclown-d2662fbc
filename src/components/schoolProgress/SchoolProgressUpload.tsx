@@ -160,57 +160,11 @@ export function SchoolProgressUpload({
 
             <FormField control={form.control} name="description" render={({
             field
-          }) => <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Add a description for this document..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>} />
+          }) => {}} />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="academic_year" render={({
-              field
-            }) => <FormItem>
-                    <FormLabel>Academic Year (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., 2023-2024" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>} />
+            
 
-              <FormField control={form.control} name="term" render={({
-              field
-            }) => <FormItem>
-                    <FormLabel>Term (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Autumn Term" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="subject" render={({
-              field
-            }) => <FormItem>
-                    <FormLabel>Subject (Optional)</FormLabel>
-                    <FormControl>
-                      
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>} />
-
-              <FormField control={form.control} name="grade_achieved" render={({
-              field
-            }) => <FormItem>
-                    <FormLabel>Grade (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., A*, B+, 85%" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>} />
-            </div>
+            
 
             <div className="flex justify-end gap-3 pt-4">
               {onCancel && <Button type="button" variant="outline" onClick={onCancel}>
