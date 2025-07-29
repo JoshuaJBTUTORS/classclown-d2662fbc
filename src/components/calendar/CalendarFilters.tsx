@@ -80,16 +80,35 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         .from('user_roles')
         .select(`
           user_id,
-          profiles!inner(first_name, last_name)
+          profiles!user_roles_user_id_fkey(first_name, last_name)
         `)
-        .eq('role', 'admin')
-        .order('profiles.first_name');
+        .eq('role', 'admin');
 
-      if (adminsError) throw adminsError;
+      if (adminsError) {
+        console.error('Error fetching admins:', adminsError);
+        // Try alternative approach without foreign key
+        const { data: alternativeAdminsData, error: altError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', 
+            (await supabase.from('user_roles').select('user_id').eq('role', 'admin')).data?.map(r => r.user_id) || []
+          );
+        
+        if (!altError && alternativeAdminsData) {
+          const formattedAltAdmins = alternativeAdminsData.map(profile => ({
+            user_id: profile.id,
+            profiles: profile
+          }));
+          setAdmins(formattedAltAdmins);
+        } else {
+          setAdmins([]);
+        }
+      } else {
+        setAdmins(adminsData || []);
+      }
 
       setStudents(formattedStudents);
       setTutors(tutorsData || []);
-      setAdmins(adminsData || []);
     } catch (error) {
       console.error('Error fetching filter data:', error);
     } finally {
