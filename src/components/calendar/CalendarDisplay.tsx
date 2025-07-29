@@ -13,6 +13,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   events
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [selectedDemoSessionId, setSelectedDemoSessionId] = useState<string | null>(null);
   const [isLessonDialogOpen, setIsLessonDialogOpen] = useState(false);
   const [instanceDetails, setInstanceDetails] = useState<{
     date?: string;
@@ -30,11 +31,13 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     
     // Check if this is a demo session
     if (extendedProps.eventType === 'demo_session') {
-      // For demo sessions, use the associated lesson ID
+      // For demo sessions, use the demo session ID and the associated lesson ID
+      setSelectedDemoSessionId(eventInfo.event.id);
       setSelectedLessonId(extendedProps.lessonId);
     } else {
       // For regular lessons, use the event ID
       setSelectedLessonId(eventInfo.event.id);
+      setSelectedDemoSessionId(null);
     }
     
     if (extendedProps.isRecurringInstance) {
@@ -69,7 +72,19 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
       </div>
       
       {/* Lesson Details Dialog */}
-      <LessonDetailsDialog lessonId={selectedLessonId} isOpen={isLessonDialogOpen} onClose={() => setIsLessonDialogOpen(false)} onLessonUpdated={handleLessonUpdated} instanceDate={instanceDetails.date} instanceStart={instanceDetails.start} instanceEnd={instanceDetails.end} />
+      <LessonDetailsDialog 
+        lessonId={selectedLessonId} 
+        demoSessionId={selectedDemoSessionId}
+        isOpen={isLessonDialogOpen} 
+        onClose={() => {
+          setIsLessonDialogOpen(false);
+          setSelectedDemoSessionId(null);
+        }} 
+        onLessonUpdated={handleLessonUpdated} 
+        instanceDate={instanceDetails.date} 
+        instanceStart={instanceDetails.start} 
+        instanceEnd={instanceDetails.end} 
+      />
     </div>;
 };
 export default CalendarDisplay;
