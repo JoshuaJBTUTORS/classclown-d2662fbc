@@ -10,9 +10,11 @@ interface CollapsibleFiltersProps {
   selectedStudents: string[];
   selectedTutors: string[];
   selectedSubjects: string[];
+  selectedAdminDemos: string[];
   onStudentFilterChange: (studentIds: string[]) => void;
   onTutorFilterChange: (tutorIds: string[]) => void;
   onSubjectFilterChange: (subjects: string[]) => void;
+  onAdminDemoFilterChange: (adminIds: string[]) => void;
   onClearFilters: () => void;
   canUseFilters: boolean;
   isOpen: boolean;
@@ -24,9 +26,11 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
   selectedStudents,
   selectedTutors,
   selectedSubjects,
+  selectedAdminDemos,
   onStudentFilterChange,
   onTutorFilterChange,
   onSubjectFilterChange,
+  onAdminDemoFilterChange,
   onClearFilters,
   canUseFilters,
   isOpen,
@@ -67,9 +71,11 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                   selectedStudents={selectedStudents}
                   selectedTutors={selectedTutors}
                   selectedSubjects={selectedSubjects}
+                  selectedAdminDemos={selectedAdminDemos}
                   onStudentFilterChange={onStudentFilterChange}
                   onTutorFilterChange={onTutorFilterChange}
                   onSubjectFilterChange={onSubjectFilterChange}
+                  onAdminDemoFilterChange={onAdminDemoFilterChange}
                   onClearFilters={onClearFilters}
                 />
               </div>
@@ -90,9 +96,11 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                 selectedStudents={selectedStudents}
                 selectedTutors={selectedTutors}
                 selectedSubjects={selectedSubjects}
+                selectedAdminDemos={selectedAdminDemos}
                 onStudentFilterChange={onStudentFilterChange}
                 onTutorFilterChange={onTutorFilterChange}
                 onSubjectFilterChange={onSubjectFilterChange}
+                onAdminDemoFilterChange={onAdminDemoFilterChange}
                 onClearFilters={onClearFilters}
               />
             </div>

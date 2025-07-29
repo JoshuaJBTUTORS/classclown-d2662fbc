@@ -30,14 +30,16 @@ const Calendar = () => {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedAdminDemos, setSelectedAdminDemos] = useState<string[]>([]);
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
   // Memoize filters to prevent infinite loop - only recreate when dependencies change
   const filters = useMemo(() => ({
     selectedStudents,
     selectedTutors,
-    selectedSubjects
-  }), [selectedStudents, selectedTutors, selectedSubjects]);
+    selectedSubjects,
+    selectedAdminDemos
+  }), [selectedStudents, selectedTutors, selectedSubjects, selectedAdminDemos]);
 
   // Fetch calendar data using the hook (always call hooks)
   const { events, isLoading } = useCalendarData({
@@ -73,10 +75,15 @@ const Calendar = () => {
     setSelectedSubjects(subjects);
   };
 
+  const handleAdminDemoFilterChange = (adminIds: string[]) => {
+    setSelectedAdminDemos(adminIds);
+  };
+
   const handleClearFilters = () => {
     setSelectedStudents([]);
     setSelectedTutors([]);
     setSelectedSubjects([]);
+    setSelectedAdminDemos([]);
   };
 
   const handleRefresh = () => {
@@ -201,9 +208,11 @@ const Calendar = () => {
         selectedStudents={selectedStudents}
         selectedTutors={selectedTutors}
         selectedSubjects={selectedSubjects}
+        selectedAdminDemos={selectedAdminDemos}
         onStudentFilterChange={handleStudentFilterChange}
         onTutorFilterChange={handleTutorFilterChange}
         onSubjectFilterChange={handleSubjectFilterChange}
+        onAdminDemoFilterChange={handleAdminDemoFilterChange}
         onClearFilters={handleClearFilters}
         canUseFilters={canUseFilters}
         isOpen={filtersOpen}

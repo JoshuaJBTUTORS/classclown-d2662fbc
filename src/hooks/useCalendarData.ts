@@ -16,6 +16,7 @@ interface UseCalendarDataProps {
     selectedStudents: string[];
     selectedTutors: string[];
     selectedSubjects: string[];
+    selectedAdminDemos: string[];
   };
 }
 
@@ -397,7 +398,16 @@ export const useCalendarData = ({
               console.error('Error fetching demo sessions:', demoError);
             } else {
               console.log('Demo sessions fetched:', demoData);
-              setRawDemoSessions(demoData || []);
+              let filteredDemoData = demoData || [];
+              
+              // Apply admin demos filter
+              if (filters?.selectedAdminDemos && filters.selectedAdminDemos.length > 0) {
+                filteredDemoData = filteredDemoData.filter(demo => 
+                  filters.selectedAdminDemos.includes(demo.admin_id)
+                );
+              }
+              
+              setRawDemoSessions(filteredDemoData);
             }
           } else {
             setRawDemoSessions([]);
