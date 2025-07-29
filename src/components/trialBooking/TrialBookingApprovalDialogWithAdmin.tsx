@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { createTrialLesson } from '@/services/trialLessonService';
+import { useSubjects } from '@/hooks/useSubjects';
 import { Loader2 } from 'lucide-react';
 
 interface TrialBookingApprovalDialogWithAdminProps {
@@ -28,6 +29,10 @@ const TrialBookingApprovalDialogWithAdmin: React.FC<TrialBookingApprovalDialogWi
   const [selectedAdmin, setSelectedAdmin] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
+  const { subjects } = useSubjects();
+
+  // Get subject name from subject_id
+  const subjectName = subjects.find(s => s.id === booking.subject_id)?.name || 'Unknown Subject';
 
   const handleApprove = async () => {
     if (!selectedTutor || !selectedAdmin) {
@@ -47,7 +52,7 @@ const TrialBookingApprovalDialogWithAdmin: React.FC<TrialBookingApprovalDialogWi
         adminId: selectedAdmin,
         preferredDate: booking.preferred_date,
         preferredTime: booking.preferred_time,
-        subject: booking.subject,
+        subjectId: booking.subject_id,
         studentName: booking.child_name,
         parentEmail: booking.email,
         parentName: booking.parent_name,
@@ -92,7 +97,7 @@ const TrialBookingApprovalDialogWithAdmin: React.FC<TrialBookingApprovalDialogWi
                 <strong>Parent:</strong> {booking.parent_name}
               </div>
               <div>
-                <strong>Subject:</strong> {booking.subject}
+                <strong>Subject:</strong> {subjectName}
               </div>
               <div>
                 <strong>Email:</strong> {booking.email}
