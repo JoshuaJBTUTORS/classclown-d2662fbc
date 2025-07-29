@@ -383,13 +383,8 @@ export const useCalendarData = ({
                   subject,
                   lesson_students(
                     student_id,
-                    student:students(id, first_name, last_name)
+                    students(id, first_name, last_name)
                   )
-                ),
-                admin:profiles!demo_sessions_admin_id_fkey(
-                  id,
-                  first_name,
-                  last_name
                 )
               `);
 
