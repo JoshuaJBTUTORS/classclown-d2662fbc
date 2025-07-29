@@ -49,8 +49,11 @@ export const useCalendarData = ({
   const events = useMemo(() => {
     const calendarEvents = [];
 
-    // Process all lessons (both original lessons and pre-generated instances)
-    if (rawLessons && rawLessons.length > 0) {
+    // Check if admin demo filter is active
+    const isAdminDemoFilterActive = filters?.selectedAdminDemos && filters.selectedAdminDemos.length > 0;
+
+    // Only process regular lessons if admin demo filter is NOT active
+    if (rawLessons && rawLessons.length > 0 && !isAdminDemoFilterActive) {
       const lessonEvents = rawLessons.map(lesson => {
         if (!lesson || !lesson.id) return null;
         
