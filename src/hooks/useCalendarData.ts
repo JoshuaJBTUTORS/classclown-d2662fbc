@@ -117,7 +117,7 @@ export const useCalendarData = ({
           title: `Demo: ${lesson?.title || 'Trial Lesson'}`,
           start: demoSession.start_time,
           end: demoSession.end_time,
-          className: 'calendar-event demo-session bg-orange-100 border-orange-300 text-orange-800',
+          className: 'calendar-event demo-session bg-gray-900 border-gray-700 text-white',
           extendedProps: {
             eventType: 'demo_session',
             demoSessionId: demoSession.id,
