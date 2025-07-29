@@ -2227,6 +2227,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_school_progress_cycle: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       calculate_course_completion: {
         Args:
           | { course_id_param: string; student_id_param: number }
@@ -2260,6 +2264,10 @@ export type Database = {
         Returns: number
       }
       extend_recurring_lessons: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      generate_future_school_progress_cycles: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
