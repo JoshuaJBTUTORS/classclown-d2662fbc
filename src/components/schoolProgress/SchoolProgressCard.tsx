@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FileText, Image, MoreVertical, Download, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { SchoolProgress } from "@/services/schoolProgressService";
@@ -54,22 +55,30 @@ export function SchoolProgressCard({
   };
 
   return (
-    <Card className="group transition-all duration-200 hover:shadow-lg border-border/50 hover:border-border">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            {getFileIcon()}
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-base font-semibold truncate text-foreground">
-                {progress.file_name}
-              </CardTitle>
-              {showStudentName && studentName && (
-                <CardDescription className="text-sm text-muted-foreground">
-                  {studentName}
-                </CardDescription>
-              )}
+    <TooltipProvider>
+      <Card className="group transition-all duration-200 hover:shadow-lg border-border/50 hover:border-border">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              {getFileIcon()}
+              <div className="flex-1 min-w-0">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <CardTitle className="text-base font-semibold truncate text-foreground cursor-default">
+                      {progress.file_name}
+                    </CardTitle>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="break-all">{progress.file_name}</p>
+                  </TooltipContent>
+                </Tooltip>
+                {showStudentName && studentName && (
+                  <CardDescription className="text-sm text-muted-foreground">
+                    {studentName}
+                  </CardDescription>
+                )}
+              </div>
             </div>
-          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -146,5 +155,6 @@ export function SchoolProgressCard({
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 }
