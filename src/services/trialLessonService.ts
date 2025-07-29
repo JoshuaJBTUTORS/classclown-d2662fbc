@@ -1,16 +1,22 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { addMinutes } from 'date-fns';
+import { addMinutes, subMinutes } from 'date-fns';
+import { createDemoSession } from './demoSessionService';
 
 interface CreateTrialLessonData {
   bookingId: string;
   tutorId: string;
-  studentId: number;
+  adminId?: string;
+  studentId?: number;
+  studentName?: string;
+  parentName?: string;
+  parentEmail?: string;
   preferredDate: string;
   preferredTime: string;
+  subject?: string;
   subjectId?: string;
-  approvedBy: string;
+  approvedBy?: string;
 }
 
 interface TrialLessonResult {
@@ -23,11 +29,17 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
   try {
     console.log('Creating trial lesson with data:', data);
     
-    // Combine date and time
-    const startDateTime = new Date(`${data.preferredDate}T${data.preferredTime}`);
-    const endDateTime = addMinutes(startDateTime, 60); // Default 1 hour duration
+    // Combine date and time - for demo session, this is the actual lesson time
+    // The displayed time was already 15 minutes earlier, so this is correct
+    const lessonStartDateTime = new Date(`${data.preferredDate}T${data.preferredTime}`);
+    const lessonEndDateTime = addMinutes(lessonStartDateTime, 60); // Default 1 hour duration
+    
+    // Demo session starts 15 minutes before the lesson
+    const demoStartDateTime = subMinutes(lessonStartDateTime, 15);
+    const demoEndDateTime = lessonStartDateTime; // Demo ends when lesson starts
 
-    console.log('Lesson times:', { startDateTime, endDateTime });
+    console.log('Demo times:', { demoStartDateTime, demoEndDateTime });
+    console.log('Lesson times:', { lessonStartDateTime, lessonEndDateTime });
 
     // Fetch subject name from subject_id
     let subjectName = 'Unknown Subject';
@@ -60,8 +72,8 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         title: title,
         description: `Trial lesson for ${studentName}`,
         tutor_id: data.tutorId,
-        start_time: startDateTime.toISOString(),
-        end_time: endDateTime.toISOString(),
+        start_time: lessonStartDateTime.toISOString(),
+        end_time: lessonEndDateTime.toISOString(),
         is_group: false,
         status: 'scheduled',
         lesson_type: 'trial',
@@ -95,6 +107,22 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
 
     console.log('Student linked to lesson successfully');
 
+    // Create demo session if admin is provided
+    if (data.adminId) {
+      try {
+        await createDemoSession({
+          lessonId: lessonData.id,
+          adminId: data.adminId,
+          startTime: demoStartDateTime,
+          endTime: demoEndDateTime
+        });
+        console.log('Demo session created successfully');
+      } catch (demoError) {
+        console.error('Demo session creation failed:', demoError);
+        // Don't fail lesson creation if demo session creation fails
+      }
+    }
+
     // Create LessonSpace room using same function as regular lessons
     let lessonSpaceRoomId = null;
     try {
@@ -104,7 +132,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
           action: 'create-room',
           lessonId: lessonData.id,
           title: title,
-          startTime: startDateTime.toISOString(),
+          startTime: lessonStartDateTime.toISOString(),
           duration: 60
         }
       });
@@ -130,6 +158,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       .update({
         lesson_id: lessonData.id,
         assigned_tutor_id: data.tutorId,
+        admin_id: data.adminId,
         approved_by: data.approvedBy,
         approved_at: new Date().toISOString(),
         status: 'approved'
@@ -153,8 +182,8 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     if (bookingData && lessonSpaceRoomId) {
       try {
         const studentLessonLink = `https://www.thelessonspace.com/space/${lessonSpaceRoomId}`;
-        const formattedDate = format(startDateTime, 'EEEE, MMMM do, yyyy');
-        const formattedTime = format(startDateTime, 'h:mm a');
+        const formattedDate = format(lessonStartDateTime, 'EEEE, MMMM do, yyyy');
+        const formattedTime = format(lessonStartDateTime, 'h:mm a');
 
         console.log('Sending trial lesson approval email with link:', studentLessonLink);
 

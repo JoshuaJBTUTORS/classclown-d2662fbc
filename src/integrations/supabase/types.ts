@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_availability: {
+        Row: {
+          admin_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_assessments: {
         Row: {
           ai_confidence_score: number | null
@@ -507,6 +537,39 @@ export type Database = {
           title?: string
           unlock_requirements?: Json | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      demo_sessions: {
+        Row: {
+          admin_id: string
+          created_at: string
+          end_time: string
+          id: string
+          lesson_id: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          end_time: string
+          id?: string
+          lesson_id: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          end_time?: string
+          id?: string
+          lesson_id?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1893,6 +1956,7 @@ export type Database = {
       }
       trial_bookings: {
         Row: {
+          admin_id: string | null
           admin_notes: string | null
           approved_at: string | null
           approved_by: string | null
@@ -1914,6 +1978,7 @@ export type Database = {
           year_group_id: string | null
         }
         Insert: {
+          admin_id?: string | null
           admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
@@ -1935,6 +2000,7 @@ export type Database = {
           year_group_id?: string | null
         }
         Update: {
+          admin_id?: string | null
           admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
