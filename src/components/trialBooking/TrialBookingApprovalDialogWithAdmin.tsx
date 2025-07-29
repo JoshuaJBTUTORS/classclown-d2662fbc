@@ -25,6 +25,9 @@ const TrialBookingApprovalDialogWithAdmin: React.FC<TrialBookingApprovalDialogWi
   tutors,
   admins
 }) => {
+  // Early return if booking is null
+  if (!booking) return null;
+
   const [selectedTutor, setSelectedTutor] = useState<string>('');
   const [selectedAdmin, setSelectedAdmin] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
@@ -77,7 +80,6 @@ const TrialBookingApprovalDialogWithAdmin: React.FC<TrialBookingApprovalDialogWi
     }
   };
 
-  if (!booking) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
