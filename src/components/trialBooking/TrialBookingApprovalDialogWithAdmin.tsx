@@ -32,7 +32,7 @@ const TrialBookingApprovalDialogWithAdmin: React.FC<TrialBookingApprovalDialogWi
   const { subjects } = useSubjects();
 
   // Get subject name from subject_id
-  const subjectName = subjects.find(s => s.id === booking.subject_id)?.name || 'Unknown Subject';
+  const subjectName = subjects.find(s => s && s.id === booking.subject_id)?.name || 'Unknown Subject';
 
   const handleApprove = async () => {
     if (!selectedTutor || !selectedAdmin) {
