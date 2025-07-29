@@ -26,11 +26,20 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     window.location.reload();
   };
   const handleEventClick = (eventInfo: any) => {
-    const lesson = eventInfo.event.extendedProps;
-    setSelectedLessonId(eventInfo.event.id);
-    if (lesson.isRecurringInstance) {
+    const extendedProps = eventInfo.event.extendedProps;
+    
+    // Check if this is a demo session
+    if (extendedProps.eventType === 'demo_session') {
+      // For demo sessions, use the associated lesson ID
+      setSelectedLessonId(extendedProps.lessonId);
+    } else {
+      // For regular lessons, use the event ID
+      setSelectedLessonId(eventInfo.event.id);
+    }
+    
+    if (extendedProps.isRecurringInstance) {
       setInstanceDetails({
-        date: lesson.instanceDate,
+        date: extendedProps.instanceDate,
         start: eventInfo.event.start,
         end: eventInfo.event.end
       });

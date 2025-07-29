@@ -113,7 +113,7 @@ export const useCalendarData = ({
         const admin = demoSession.admin;
         
         return {
-          id: `demo-${demoSession.id}`,
+          id: demoSession.id, // Use actual demo session ID instead of prefixed
           title: `Demo: ${lesson?.title || 'Trial Lesson'}`,
           start: demoSession.start_time,
           end: demoSession.end_time,
