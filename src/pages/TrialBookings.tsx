@@ -47,7 +47,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import TrialBookingApprovalDialog from '@/components/trialBooking/TrialBookingApprovalDialog';
+import TrialBookingApprovalDialogWithAdmin from '@/components/trialBooking/TrialBookingApprovalDialogWithAdmin';
 import { cn } from '@/lib/utils';
 
 interface TrialBooking {
@@ -58,6 +58,7 @@ interface TrialBooking {
   phone?: string;
   preferred_date?: string;
   preferred_time?: string;
+  lesson_time?: string;
   message?: string;
   status: string;
   created_at: string;
@@ -79,6 +80,8 @@ const TrialBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState<TrialBooking | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isApprovalOpen, setIsApprovalOpen] = useState(false);
+  const [tutors, setTutors] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<any[]>([]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -90,6 +93,8 @@ const TrialBookings = () => {
 
   useEffect(() => {
     fetchBookings();
+    fetchTutors();
+    fetchAdmins();
   }, []);
 
   useEffect(() => {
@@ -111,6 +116,60 @@ const TrialBookings = () => {
       toast.error('Failed to load trial bookings');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTutors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name, email')
+        .eq('status', 'active')
+        .order('first_name');
+
+      if (error) throw error;
+      setTutors(data || []);
+    } catch (error) {
+      console.error('Error fetching tutors:', error);
+      toast.error('Failed to load tutors');
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      // First get admin user IDs
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['admin', 'owner']);
+
+      if (rolesError) throw rolesError;
+      
+      if (!adminRoles || adminRoles.length === 0) {
+        setAdmins([]);
+        return;
+      }
+
+      const adminIds = adminRoles.map(role => role.user_id);
+
+      // Then get their profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', adminIds);
+
+      if (profilesError) throw profilesError;
+      
+      const adminData = profiles?.map(profile => ({
+        id: profile.id,
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || ''
+      })) || [];
+      
+      setAdmins(adminData);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+      toast.error('Failed to load admins');
     }
   };
 
@@ -382,10 +441,22 @@ const TrialBookings = () => {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Preferred Time</label>
+                  <label className="text-sm font-medium">Demo Session Time</label>
                   <p className="text-sm text-muted-foreground">{selectedBooking.preferred_time || 'Not specified'}</p>
                 </div>
               </div>
+              {selectedBooking.lesson_time && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Lesson Time</label>
+                    <p className="text-sm text-muted-foreground">{selectedBooking.lesson_time}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Time Difference</label>
+                    <p className="text-sm text-muted-foreground">15 minutes demo + lesson</p>
+                  </div>
+                </div>
+              )}
               {selectedBooking.message && (
                 <div>
                   <label className="text-sm font-medium">Message</label>
@@ -432,11 +503,13 @@ const TrialBookings = () => {
       </Dialog>
 
       {/* Approval Dialog */}
-      <TrialBookingApprovalDialog
+      <TrialBookingApprovalDialogWithAdmin
         booking={selectedBooking}
         isOpen={isApprovalOpen}
         onClose={() => setIsApprovalOpen(false)}
         onApprovalComplete={handleApprovalComplete}
+        tutors={tutors}
+        admins={admins}
       />
     </>
   );
