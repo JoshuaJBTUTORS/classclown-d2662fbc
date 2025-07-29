@@ -4,8 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { format, addMinutes, isBefore, parseISO } from 'date-fns';
 
 interface AggregatedTimeSlot {
-  time: string;
-  datetime: Date;
+  time: string; // Display time (15 minutes earlier)
+  datetime: Date; // Display datetime (15 minutes earlier)
+  lessonTime: string; // Actual lesson time
+  lessonDatetime: Date; // Actual lesson datetime
   available: boolean;
   tutorCount: number;
   availableTutorIds: string[];
@@ -145,15 +147,23 @@ export const useAggregatedAvailability = (subjectId?: string, selectedDate?: str
           });
         });
 
-        // Convert map to array of aggregated slots
+        // Convert map to array of aggregated slots with 15-minute offset
         const aggregatedSlots: AggregatedTimeSlot[] = Array.from(timeSlotMap.entries())
-          .map(([time, { tutorIds, datetime }]) => ({
-            time,
-            datetime,
-            available: tutorIds.length > 0,
-            tutorCount: tutorIds.length,
-            availableTutorIds: tutorIds
-          }))
+          .map(([time, { tutorIds, datetime }]) => {
+            // Display time is 15 minutes earlier than actual lesson time
+            const displayDatetime = addMinutes(datetime, -15);
+            const displayTime = format(displayDatetime, 'HH:mm');
+            
+            return {
+              time: displayTime, // Display time (15 minutes earlier)
+              datetime: displayDatetime, // Display datetime (15 minutes earlier)
+              lessonTime: time, // Actual lesson time
+              lessonDatetime: datetime, // Actual lesson datetime
+              available: tutorIds.length > 0,
+              tutorCount: tutorIds.length,
+              availableTutorIds: tutorIds
+            };
+          })
           .sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
 
         console.log('Final aggregated slots:', aggregatedSlots);

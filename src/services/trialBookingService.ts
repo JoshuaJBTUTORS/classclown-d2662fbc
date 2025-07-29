@@ -8,7 +8,8 @@ interface CreateTrialBookingData {
   email: string;
   phone?: string;
   preferred_date: string;
-  preferred_time: string;
+  preferred_time: string; // Display time (demo session time)
+  lesson_time?: string; // Actual lesson time
   subject_id: string;
   message?: string;
 }
@@ -31,7 +32,8 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
         email: data.email,
         phone: data.phone,
         preferred_date: data.preferred_date,
-        preferred_time: data.preferred_time,
+        preferred_time: data.preferred_time, // Demo session time (displayed)
+        lesson_time: data.lesson_time, // Actual lesson time
         subject_id: data.subject_id,
         message: data.message,
         status: 'pending'

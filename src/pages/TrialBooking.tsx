@@ -17,7 +17,8 @@ interface FormData {
   phone: string;
   subject: { id: string; name: string } | null;
   date: string;
-  time: string;
+  time: string; // Display time (demo session time)
+  lessonTime: string; // Actual lesson time
   selectedTutorId: string;
 }
 
@@ -31,6 +32,7 @@ const TrialBookingPage: React.FC = () => {
     subject: null,
     date: '',
     time: '',
+    lessonTime: '',
     selectedTutorId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -55,14 +57,21 @@ const TrialBookingPage: React.FC = () => {
     }
   };
 
-  // Enhanced time selection handler to store tutor ID
+  // Enhanced time selection handler to store tutor ID and lesson time
   const handleTimeSelect = (time: string) => {
     const selectedSlot = slots.find(slot => slot.time === time);
     const tutorId = selectedSlot?.availableTutorIds[0] || '';
+    const lessonTime = selectedSlot?.lessonTime || '';
     
-    console.log('Selected time slot:', { time, selectedSlot, tutorId });
+    console.log('Selected time slot:', { 
+      displayTime: time, 
+      lessonTime, 
+      selectedSlot, 
+      tutorId 
+    });
     
-    updateFormData('time', time);
+    updateFormData('time', time); // Display time (demo session time)
+    updateFormData('lessonTime', lessonTime); // Actual lesson time
     updateFormData('selectedTutorId', tutorId);
   };
 
@@ -113,7 +122,8 @@ const TrialBookingPage: React.FC = () => {
         email: formData.email,
         phone: formData.phone,
         preferred_date: formData.date,
-        preferred_time: formData.time,
+        preferred_time: formData.time, // Demo session time (displayed time)
+        lesson_time: formData.lessonTime, // Actual lesson time
         subject_id: formData.subject?.id || '',
         message: `Trial lesson request for ${formData.childName}`
       });

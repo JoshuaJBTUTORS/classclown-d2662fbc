@@ -11,8 +11,10 @@ import { cn } from '@/lib/utils';
 import { useNextAvailableDates } from '@/hooks/useNextAvailableDates';
 
 interface AggregatedTimeSlot {
-  time: string;
-  datetime: Date;
+  time: string; // Display time (15 minutes earlier)
+  datetime: Date; // Display datetime (15 minutes earlier)
+  lessonTime: string; // Actual lesson time
+  lessonDatetime: Date; // Actual lesson datetime
   available: boolean;
   tutorCount: number;
   availableTutorIds: string[];

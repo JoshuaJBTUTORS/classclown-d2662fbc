@@ -29,14 +29,24 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
   try {
     console.log('Creating trial lesson with data:', data);
     
-    // Combine date and time - for demo session, this is the actual lesson time
-    // The displayed time was already 15 minutes earlier, so this is correct
-    const lessonStartDateTime = new Date(`${data.preferredDate}T${data.preferredTime}`);
-    const lessonEndDateTime = addMinutes(lessonStartDateTime, 60); // Default 1 hour duration
+    // Get trial booking details to access both demo and lesson times
+    const { data: trialBooking, error: bookingError } = await supabase
+      .from('trial_bookings')
+      .select('*')
+      .eq('id', data.bookingId)
+      .single();
+
+    if (bookingError || !trialBooking) {
+      throw new Error('Failed to fetch trial booking details');
+    }
+
+    // Demo session time (preferred_time is the displayed time)
+    const demoStartDateTime = new Date(`${trialBooking.preferred_date}T${trialBooking.preferred_time}`);
+    const demoEndDateTime = addMinutes(demoStartDateTime, 15); // 15-minute demo
     
-    // Demo session starts 15 minutes before the lesson
-    const demoStartDateTime = subMinutes(lessonStartDateTime, 15);
-    const demoEndDateTime = lessonStartDateTime; // Demo ends when lesson starts
+    // For now, lesson starts immediately after demo (fallback until lesson_time column is added)
+    const lessonStartDateTime = demoEndDateTime;
+    const lessonEndDateTime = addMinutes(lessonStartDateTime, 60); // 1 hour lesson
 
     console.log('Demo times:', { demoStartDateTime, demoEndDateTime });
     console.log('Lesson times:', { lessonStartDateTime, lessonEndDateTime });
@@ -171,15 +181,8 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       console.warn('Lesson created but booking status update failed:', updateError.message);
     }
 
-    // Fetch trial booking details for parent email
-    const { data: bookingData } = await supabase
-      .from('trial_bookings')
-      .select('parent_name, child_name, email, phone')
-      .eq('id', data.bookingId)
-      .single();
-
     // Send trial lesson approval email to parent (don't fail if email fails)
-    if (bookingData && lessonSpaceRoomId) {
+    if (trialBooking && lessonSpaceRoomId) {
       try {
         const studentLessonLink = `https://www.thelessonspace.com/space/${lessonSpaceRoomId}`;
         const formattedDate = format(lessonStartDateTime, 'EEEE, MMMM do, yyyy');
@@ -189,10 +192,10 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
 
         await supabase.functions.invoke('send-trial-lesson-approval', {
           body: {
-            parentName: bookingData.parent_name,
-            childName: bookingData.child_name,
-            email: bookingData.email,
-            phone: bookingData.phone,
+            parentName: trialBooking.parent_name,
+            childName: trialBooking.child_name,
+            email: trialBooking.email,
+            phone: trialBooking.phone,
             subject: subjectName,
             lessonDate: formattedDate,
             lessonTime: formattedTime,
@@ -206,7 +209,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       }
     } else {
       console.warn('Trial lesson approval email not sent - missing booking data or lesson space room ID:', {
-        hasBookingData: !!bookingData,
+        hasBookingData: !!trialBooking,
         lessonSpaceRoomId: lessonSpaceRoomId
       });
     }
