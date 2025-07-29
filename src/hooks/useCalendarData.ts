@@ -385,6 +385,11 @@ export const useCalendarData = ({
                     student_id,
                     students(id, first_name, last_name)
                   )
+                ),
+                admin:profiles!demo_sessions_admin_id_fkey(
+                  id,
+                  first_name,
+                  last_name
                 )
               `);
 
