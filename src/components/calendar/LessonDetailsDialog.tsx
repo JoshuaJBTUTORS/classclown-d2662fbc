@@ -311,8 +311,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           {isLoading ? <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div> : lesson ? <div className="space-y-6">
-              {/* Lesson Progress Tracking - Only for teachers */}
-              {isTeacherRole && <Card className="border-blue-200 bg-blue-50/50">
+              {/* Lesson Progress Tracking - Only for teachers and not demo sessions */}
+              {isTeacherRole && !isDemoSession && <Card className="border-blue-200 bg-blue-50/50">
                   <CardContent className="p-4">
                     <h3 className="font-medium mb-3 flex items-center gap-2 text-blue-800">
                       <CheckCircle className="h-4 w-4" />
@@ -516,7 +516,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                  {isTeacherRole && <Button variant="outline" onClick={() => setIsHomeworkDialogOpen(true)} className="flex items-center gap-2">
+                   {isTeacherRole && !isDemoSession && <Button variant="outline" onClick={() => setIsHomeworkDialogOpen(true)} className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4" />
                       {homeworkStatus.exists ? 'Edit Homework' : 'Set Homework'}
                     </Button>}
