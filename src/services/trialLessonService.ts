@@ -82,7 +82,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     // Lesson time (lesson_time is the actual tutor availability time, fallback to demo end time)
     const lessonTime = trialBooking.lesson_time || format(demoEndDateTime, 'HH:mm');
     const lessonStartDateTime = new Date(`${trialBooking.preferred_date}T${lessonTime}`);
-    const lessonEndDateTime = addMinutes(lessonStartDateTime, 60); // 1 hour lesson
+    const lessonEndDateTime = addMinutes(lessonStartDateTime, 30); // 30-minute lesson
 
     console.log('Demo times:', { demoStartDateTime, demoEndDateTime });
     console.log('Lesson times:', { lessonStartDateTime, lessonEndDateTime });
@@ -179,7 +179,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
           lessonId: lessonData.id,
           title: title,
           startTime: lessonStartDateTime.toISOString(),
-          duration: 60
+          duration: 45
         }
       });
 

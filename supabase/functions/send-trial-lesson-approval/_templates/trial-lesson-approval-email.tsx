@@ -50,7 +50,7 @@ export const TrialLessonApprovalEmail = ({
             <strong>Subject:</strong> {subject}<br />
             <strong>Date:</strong> {lessonDate}<br />
             <strong>Start Time:</strong> {lessonTime}<br />
-            <strong>Total Duration:</strong> 75 minutes (15 min parent consultation + 60 min lesson)
+            <strong>Total Duration:</strong> 45 minutes (15 min parent consultation + 30 min lesson)
           </Text>
         </div>
 
@@ -62,7 +62,7 @@ export const TrialLessonApprovalEmail = ({
         </Text>
         <ul style={listStyle}>
           <li><strong>Parent Consultation (First 15 minutes):</strong> You'll discuss {childName}'s learning goals, challenges, and what you'd like to achieve from tutoring</li>
-          <li><strong>Trial Lesson (Next 60 minutes):</strong> {childName} will join the same call for their trial lesson with the tutor</li>
+          <li><strong>Trial Lesson (Next 30 minutes):</strong> {childName} will join the same call for their trial lesson with the tutor</li>
         </ul>
 
         <Text style={text}>
