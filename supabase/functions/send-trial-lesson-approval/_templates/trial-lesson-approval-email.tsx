@@ -43,27 +43,38 @@ export const TrialLessonApprovalEmail = ({
         
         <div style={lessonBox}>
           <Text style={lessonTitle}>
-            <strong>Lesson Details</strong>
+            <strong>Session Details</strong>
           </Text>
           <Text style={detailsText}>
             <strong>Student:</strong> {childName}<br />
             <strong>Subject:</strong> {subject}<br />
             <strong>Date:</strong> {lessonDate}<br />
-            <strong>Time:</strong> {lessonTime}<br />
-            <strong>Duration:</strong> 60 minutes
+            <strong>Start Time:</strong> {lessonTime}<br />
+            <strong>Total Duration:</strong> 75 minutes (15 min parent consultation + 60 min lesson)
           </Text>
         </div>
 
         <Text style={text}>
-          <strong>How to join the lesson:</strong>
+          <strong>Session Structure:</strong>
         </Text>
         <Text style={text}>
-          {childName} can join the online classroom by clicking the link below at the scheduled time:
+          Your session will have two parts in one continuous call:
+        </Text>
+        <ul style={listStyle}>
+          <li><strong>Parent Consultation (First 15 minutes):</strong> You'll discuss {childName}'s learning goals, challenges, and what you'd like to achieve from tutoring</li>
+          <li><strong>Trial Lesson (Next 60 minutes):</strong> {childName} will join the same call for their trial lesson with the tutor</li>
+        </ul>
+
+        <Text style={text}>
+          <strong>How to join:</strong>
+        </Text>
+        <Text style={text}>
+          You (the parent) will join at the scheduled start time for the consultation. {childName} will join the same call after the initial 15-minute discussion.
         </Text>
 
         <div style={buttonContainer}>
           <Button href={studentLessonLink} style={joinButton}>
-            Join Lesson
+            Join Session
           </Button>
         </div>
 
@@ -75,13 +86,25 @@ export const TrialLessonApprovalEmail = ({
         </Text>
 
         <Text style={text}>
-          <strong>Before the lesson:</strong>
+          <strong>Preparation:</strong>
+        </Text>
+        <Text style={text}>
+          <strong>For the parent consultation:</strong>
         </Text>
         <ul style={listStyle}>
-          <li>Test your internet connection and audio/video</li>
-          <li>Have a pen and paper ready</li>
-          <li>Prepare any specific questions or topics you'd like to cover</li>
-          <li>Join the lesson 2-3 minutes early to test everything works</li>
+          <li>Test your internet connection and audio/video beforehand</li>
+          <li>Prepare questions about {childName}'s learning goals and challenges</li>
+          <li>Think about specific areas where {childName} needs support</li>
+          <li>Have any relevant schoolwork or reports available to discuss</li>
+        </ul>
+        
+        <Text style={text}>
+          <strong>For {childName}'s lesson:</strong>
+        </Text>
+        <ul style={listStyle}>
+          <li>Have a pen, paper, and any relevant textbooks ready</li>
+          <li>Ensure {childName} is available to join after the parent consultation</li>
+          <li>Create a quiet, distraction-free environment for learning</li>
         </ul>
 
         <Text style={text}>
