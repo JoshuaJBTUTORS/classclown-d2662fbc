@@ -18,7 +18,7 @@ interface ChatModalProps {
 const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isOpening, setIsOpening] = useState(false);
 
-  const CHAT_URL = 'https://mail.google.com/chat/u/0/#chat/space/AAAAbvw8Bfs';
+  const CHAT_URL = 'https://app.slack.com/client/T0980AX9NH0/C097VG3P27M';
 
   const detectPopupBlocker = (popup: Window | null): boolean => {
     if (!popup) return true;
@@ -106,7 +106,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Connect with your team through Google Chat. Choose how you'd like to open the chat.
+            Connect with your team through Slack. Choose how you'd like to open the chat.
           </p>
           
           <div className="space-y-3">
