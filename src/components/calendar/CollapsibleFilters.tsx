@@ -11,10 +11,12 @@ interface CollapsibleFiltersProps {
   selectedTutors: string[];
   selectedSubjects: string[];
   selectedAdminDemos: string[];
+  selectedLessonType: string;
   onStudentFilterChange: (studentIds: string[]) => void;
   onTutorFilterChange: (tutorIds: string[]) => void;
   onSubjectFilterChange: (subjects: string[]) => void;
   onAdminDemoFilterChange: (adminIds: string[]) => void;
+  onLessonTypeFilterChange: (lessonType: string) => void;
   onClearFilters: () => void;
   canUseFilters: boolean;
   isOpen: boolean;
@@ -27,10 +29,12 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
   selectedTutors,
   selectedSubjects,
   selectedAdminDemos,
+  selectedLessonType,
   onStudentFilterChange,
   onTutorFilterChange,
   onSubjectFilterChange,
   onAdminDemoFilterChange,
+  onLessonTypeFilterChange,
   onClearFilters,
   canUseFilters,
   isOpen,
@@ -72,10 +76,12 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                   selectedTutors={selectedTutors}
                   selectedSubjects={selectedSubjects}
                   selectedAdminDemos={selectedAdminDemos}
+                  selectedLessonType={selectedLessonType}
                   onStudentFilterChange={onStudentFilterChange}
                   onTutorFilterChange={onTutorFilterChange}
                   onSubjectFilterChange={onSubjectFilterChange}
                   onAdminDemoFilterChange={onAdminDemoFilterChange}
+                  onLessonTypeFilterChange={onLessonTypeFilterChange}
                   onClearFilters={onClearFilters}
                 />
               </div>
@@ -97,10 +103,12 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                 selectedTutors={selectedTutors}
                 selectedSubjects={selectedSubjects}
                 selectedAdminDemos={selectedAdminDemos}
+                selectedLessonType={selectedLessonType}
                 onStudentFilterChange={onStudentFilterChange}
                 onTutorFilterChange={onTutorFilterChange}
                 onSubjectFilterChange={onSubjectFilterChange}
                 onAdminDemoFilterChange={onAdminDemoFilterChange}
+                onLessonTypeFilterChange={onLessonTypeFilterChange}
                 onClearFilters={onClearFilters}
               />
             </div>

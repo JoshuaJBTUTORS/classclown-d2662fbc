@@ -13,10 +13,12 @@ interface CalendarFiltersProps {
   selectedTutors: string[];
   selectedSubjects: string[];
   selectedAdminDemos: string[];
+  selectedLessonType: string;
   onStudentFilterChange: (studentIds: string[]) => void;
   onTutorFilterChange: (tutorIds: string[]) => void;
   onSubjectFilterChange: (subjects: string[]) => void;
   onAdminDemoFilterChange: (adminIds: string[]) => void;
+  onLessonTypeFilterChange: (lessonType: string) => void;
   onClearFilters: () => void;
 }
 
@@ -25,10 +27,12 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
   selectedTutors,
   selectedSubjects,
   selectedAdminDemos,
+  selectedLessonType,
   onStudentFilterChange,
   onTutorFilterChange,
   onSubjectFilterChange,
   onAdminDemoFilterChange,
+  onLessonTypeFilterChange,
   onClearFilters
 }) => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -164,7 +168,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     onAdminDemoFilterChange(selectedAdminDemos.filter(id => id !== adminId));
   };
 
-  const totalFiltersActive = selectedStudents.length + selectedTutors.length + selectedSubjects.length + selectedAdminDemos.length;
+  const totalFiltersActive = selectedStudents.length + selectedTutors.length + selectedSubjects.length + selectedAdminDemos.length + (selectedLessonType !== 'All Lessons' ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -337,6 +341,24 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               ))}
             </div>
           )}
+        </div>
+
+        {/* Lesson Type Filter */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            <label className="text-sm font-medium">Lesson Type</label>
+          </div>
+          <Select value={selectedLessonType} onValueChange={onLessonTypeFilterChange}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select lesson type..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All Lessons">All Lessons</SelectItem>
+              <SelectItem value="Full Lessons">Full Lessons</SelectItem>
+              <SelectItem value="Trial Lessons">Trial Lessons</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Admin Demos Filter */}

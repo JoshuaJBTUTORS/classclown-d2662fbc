@@ -17,6 +17,7 @@ interface UseCalendarDataProps {
     selectedTutors: string[];
     selectedSubjects: string[];
     selectedAdminDemos: string[];
+    selectedLessonType: string;
   };
 }
 
@@ -369,6 +370,15 @@ export const useCalendarData = ({
             filteredData = filteredData.filter(lesson => 
               filters.selectedSubjects.includes(lesson.subject)
             );
+          }
+
+          // Apply lesson type filter
+          if (filters?.selectedLessonType && filters.selectedLessonType !== 'All Lessons') {
+            if (filters.selectedLessonType === 'Trial Lessons') {
+              filteredData = filteredData.filter(lesson => lesson.lesson_type === 'trial');
+            } else if (filters.selectedLessonType === 'Full Lessons') {
+              filteredData = filteredData.filter(lesson => lesson.lesson_type !== 'trial' || lesson.lesson_type == null);
+            }
           }
 
           setRawLessons(filteredData);

@@ -31,6 +31,7 @@ const Calendar = () => {
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedAdminDemos, setSelectedAdminDemos] = useState<string[]>([]);
+  const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
   // Memoize filters to prevent infinite loop - only recreate when dependencies change
@@ -38,8 +39,9 @@ const Calendar = () => {
     selectedStudents,
     selectedTutors,
     selectedSubjects,
-    selectedAdminDemos
-  }), [selectedStudents, selectedTutors, selectedSubjects, selectedAdminDemos]);
+    selectedAdminDemos,
+    selectedLessonType
+  }), [selectedStudents, selectedTutors, selectedSubjects, selectedAdminDemos, selectedLessonType]);
 
   // Fetch calendar data using the hook (always call hooks)
   const { events, isLoading } = useCalendarData({
@@ -79,11 +81,16 @@ const Calendar = () => {
     setSelectedAdminDemos(adminIds);
   };
 
+  const handleLessonTypeFilterChange = (lessonType: string) => {
+    setSelectedLessonType(lessonType);
+  };
+
   const handleClearFilters = () => {
     setSelectedStudents([]);
     setSelectedTutors([]);
     setSelectedSubjects([]);
     setSelectedAdminDemos([]);
+    setSelectedLessonType('All Lessons');
   };
 
   const handleRefresh = () => {
@@ -209,10 +216,12 @@ const Calendar = () => {
         selectedTutors={selectedTutors}
         selectedSubjects={selectedSubjects}
         selectedAdminDemos={selectedAdminDemos}
+        selectedLessonType={selectedLessonType}
         onStudentFilterChange={handleStudentFilterChange}
         onTutorFilterChange={handleTutorFilterChange}
         onSubjectFilterChange={handleSubjectFilterChange}
         onAdminDemoFilterChange={handleAdminDemoFilterChange}
+        onLessonTypeFilterChange={handleLessonTypeFilterChange}
         onClearFilters={handleClearFilters}
         canUseFilters={canUseFilters}
         isOpen={filtersOpen}
