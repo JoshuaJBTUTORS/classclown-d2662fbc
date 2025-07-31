@@ -3,7 +3,7 @@ import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Upload } from 'lucide-react';
+import { Plus, Search, Upload, ChevronDown, Users, UserPlus, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -427,40 +427,46 @@ const Students = () => {
             />
             <div className="flex gap-2">
               {(isAdmin || isOwner) && (
-                <>
-                  <Button 
-                    onClick={() => setIsBulkImportDialogOpen(true)} 
-                    className="flex items-center gap-2"
-                    variant="secondary"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Bulk Import
-                  </Button>
-                  <Button 
-                    onClick={() => setIsAddFamilyDialogOpen(true)} 
-                    className="flex items-center gap-2"
-                    variant="default"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Family
-                  </Button>
-                  <Button 
-                    onClick={() => setIsAddToParentDialogOpen(true)} 
-                    className="flex items-center gap-2"
-                    variant="outline"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add to Parent
-                  </Button>
-                  <Button 
-                    onClick={() => setIsAddDialogOpen(true)} 
-                    className="flex items-center gap-2"
-                    variant="outline"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Client Only
-                  </Button>
-                </>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add New
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem 
+                      onClick={() => setIsAddFamilyDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Users className="h-4 w-4" />
+                      Add Family
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setIsAddToParentDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Add to Parent
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setIsAddDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <User className="h-4 w-4" />
+                      Add Client Only
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setIsBulkImportDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Bulk Import
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>
