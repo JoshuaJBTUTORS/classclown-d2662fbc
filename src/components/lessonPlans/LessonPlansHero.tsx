@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { BookOpen, Search, GraduationCap, Calendar, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CurrentWeekBanner } from './CurrentWeekBanner';
 
 interface LessonPlansHeroProps {
   searchTerm: string;
@@ -21,6 +22,11 @@ export const LessonPlansHero: React.FC<LessonPlansHeroProps> = ({
 }) => {
   return (
     <div className="relative overflow-hidden">
+      {/* Current Week Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <CurrentWeekBanner />
+      </div>
+      
       {/* Background with animated gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/10 via-[hsl(var(--medium-blue))]/5 to-[hsl(var(--light-green))]/10" />
       
