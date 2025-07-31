@@ -1,17 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { BookOpen, Search, Calendar, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import SubjectDetailDialog from '@/components/lessonPlans/SubjectDetailDialog';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
-import PageTitle from '@/components/ui/PageTitle';
+import { LessonPlansHero } from '@/components/lessonPlans/LessonPlansHero';
+import { SubjectCard } from '@/components/lessonPlans/SubjectCard';
+import { LessonPlansLoadingSkeleton } from '@/components/lessonPlans/LoadingSkeleton';
+import { EmptyState } from '@/components/lessonPlans/EmptyState';
 import { cn } from '@/lib/utils';
 
 interface LessonPlan {
@@ -62,6 +60,9 @@ const LessonPlans: React.FC = () => {
       )
     };
   });
+
+  // Calculate total weeks across all subjects
+  const totalWeeks = Array.from(new Set(lessonPlans.map(plan => plan.week_number))).length;
 
   useEffect(() => {
     if (isAdmin || isOwner || isTutor) {
@@ -129,10 +130,8 @@ const LessonPlans: React.FC = () => {
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 w-full">
           <Navbar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 p-4 md:p-6">
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+          <main className="flex-1">
+            <LessonPlansLoadingSkeleton />
           </main>
         </div>
       </>
@@ -142,99 +141,54 @@ const LessonPlans: React.FC = () => {
   return (
     <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex flex-col flex-1 w-full">
+      <div className="flex flex-col flex-1 w-full min-h-screen bg-gradient-to-br from-[hsl(var(--light-blue))]/5 via-white to-[hsl(var(--light-green))]/5">
         <Navbar toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="flex items-center justify-between mb-6">
-            <PageTitle 
-              title="Lesson Plans" 
-              subtitle="Manage teaching materials and curriculum planning"
-              className="mb-4 md:mb-0"
-            />
-          </div>
+        
+        <main className="flex-1">
+          {/* Hero Section */}
+          <LessonPlansHero
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            totalSubjects={subjects.length}
+            totalPlans={lessonPlans.length}
+            totalWeeks={totalWeeks}
+          />
 
-          {/* Search and Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search subjects, topics, or terms..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+          {/* Content Section */}
+          <div className="px-4 md:px-6 pb-8">
+            {subjects.length === 0 ? (
+              <div className="max-w-4xl mx-auto">
+                <EmptyState 
+                  searchTerm={searchTerm}
+                  onClearSearch={() => setSearchTerm('')}
                 />
               </div>
-            </div>
-
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{subjects.length}</div>
-                <div className="text-sm text-gray-600">Subjects</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{lessonPlans.length}</div>
-                <div className="text-sm text-gray-600">Total Plans</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Subject Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subjectStats.map((stats) => (
-              <Card key={stats.subject} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{stats.subject}</span>
-                    <Badge variant="secondary">{stats.totalPlans} plans</Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    {stats.terms} term{stats.terms !== 1 ? 's' : ''} • {stats.weeks} week{stats.weeks !== 1 ? 's' : ''}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Last updated:</span>
-                      <span>{new Date(stats.lastUpdated).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <Button
-                      onClick={() => setSelectedSubject(stats.subject)}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      View Weekly Plans
-                    </Button>
+            ) : (
+              <>
+                {/* Subject Cards Grid */}
+                <div className="max-w-7xl mx-auto">
+                  <h2 className="text-2xl font-playfair font-bold text-[hsl(var(--deep-purple-blue))] mb-6">
+                    Learning Subjects
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {subjectStats.map((stats, index) => (
+                      <SubjectCard
+                        key={stats.subject}
+                        subject={stats.subject}
+                        totalPlans={stats.totalPlans}
+                        terms={stats.terms}
+                        weeks={stats.weeks}
+                        lastUpdated={stats.lastUpdated}
+                        onClick={() => setSelectedSubject(stats.subject)}
+                        index={index}
+                      />
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              </>
+            )}
           </div>
-
-          {subjects.length === 0 && (
-            <Card className="text-center p-8">
-              <CardContent>
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Lesson Plans Found</h3>
-                <p className="text-gray-600 mb-4">
-                  {searchTerm 
-                    ? `No lesson plans match your search for "${searchTerm}"`
-                    : "Get started by creating your first lesson plan"
-                  }
-                </p>
-                {searchTerm && (
-                  <Button onClick={() => setSearchTerm('')} variant="outline">
-                    Clear Search
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Subject Detail Dialog */}
           {selectedSubject && (
