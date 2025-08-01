@@ -205,7 +205,7 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     console.log(`Searching sessions for space ${lesson.lesson_space_space_id} between ${searchStart.toISOString()} and ${searchEnd.toISOString()}`);
 
     // Call LessonSpace Sessions API with filters using the organization endpoint
-    const response = await fetch(`https://api.thelessonspace.com/v2/organisations/sessions/?space=${lesson.lesson_space_space_id}&start_after=${searchStart.toISOString()}&start_before=${searchEnd.toISOString()}&limit=10`, {
+    const response = await fetch(`https://api.thelessonspace.com/v2/organisations/20704/sessions/?space=${lesson.lesson_space_space_id}&start_after=${searchStart.toISOString()}&start_before=${searchEnd.toISOString()}&limit=10`, {
       method: 'GET',
       headers: {
         'Authorization': `Organisation ${lessonSpaceApiKey}`,
