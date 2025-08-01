@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Daily Processing</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Debug Daily Processing</h1>
+    <button onclick="testProcessing()">Test Processing</button>
+    <div id="output"></div>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://sjxbxkpegcnnfjbsxazo.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqeGJ4a3BlZ2NubmZqYnN4YXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MTE2NzIsImV4cCI6MjA2MzI4NzY3Mn0.QFNyi5omwRMPiL_nJlUOHo5ATwXd14PdQHfoG7oTnwA'
+        )
+
+        async function testProcessing() {
+            const output = document.getElementById('output')
+            output.innerHTML = 'Processing...'
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('daily-lesson-processing', {
+                    body: { action: 'process_daily_lessons' }
+                })
+                
+                if (error) {
+                    output.innerHTML = '<pre>' + JSON.stringify(error, null, 2) + '</pre>'
+                } else {
+                    output.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>'
+                }
+            } catch (err) {
+                output.innerHTML = '<pre>Error: ' + err.message + '</pre>'
+            }
+        }
+    </script>
+</body>
+</html>
