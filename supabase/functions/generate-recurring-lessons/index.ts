@@ -122,7 +122,7 @@ serve(async (req) => {
               // Always inherit room details from original lesson
               lesson_space_room_id: originalLesson.lesson_space_room_id,
               lesson_space_room_url: originalLesson.lesson_space_room_url,
-              lesson_space_space_id: originalLesson.lesson_space_space_id,
+              lesson_space_space_id: null, // Reset to NULL for new instances
             });
 
             instanceCount++;

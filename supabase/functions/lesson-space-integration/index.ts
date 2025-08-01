@@ -265,7 +265,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         lesson_space_room_id: tutorSpaceData.room_id,
         lesson_space_room_url: tutorSpaceData.client_url, // Teacher's authenticated URL
         lesson_space_space_id: spaceId, // Store the space ID for reference
-        lesson_space_session_id: tutorSpaceData.session_id, // Store session ID for transcription
+        // lesson_space_session_id: Do NOT set this here - it's created when users join
       })
       .eq("id", data.lessonId);
 
