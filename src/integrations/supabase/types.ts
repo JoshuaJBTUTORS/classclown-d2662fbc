@@ -540,6 +540,45 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_processing_logs: {
+        Row: {
+          created_at: string
+          error_details: Json | null
+          id: string
+          lessons_found: number | null
+          processing_date: string
+          sessions_discovered: number | null
+          status: string
+          summaries_generated: number | null
+          transcriptions_retrieved: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_details?: Json | null
+          id?: string
+          lessons_found?: number | null
+          processing_date: string
+          sessions_discovered?: number | null
+          status?: string
+          summaries_generated?: number | null
+          transcriptions_retrieved?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_details?: Json | null
+          id?: string
+          lessons_found?: number | null
+          processing_date?: string
+          sessions_discovered?: number | null
+          status?: string
+          summaries_generated?: number | null
+          transcriptions_retrieved?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       demo_sessions: {
         Row: {
           admin_id: string
