@@ -14,6 +14,7 @@ import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
+import StudentLessonSummary from './StudentLessonSummary';
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
 interface LessonDetailsDialogProps {
   lessonId: string | null;
@@ -518,6 +519,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                     </div>
                   </CardContent>
                 </Card>}
+
+              {/* AI Lesson Summaries Section - Only show if students exist and not a demo session */}
+              {validStudents.length > 0 && !isDemoSession && (
+                <StudentLessonSummary 
+                  lessonId={lesson.id} 
+                  students={validStudents} 
+                />
+              )}
 
 
               {/* Status and Actions */}
