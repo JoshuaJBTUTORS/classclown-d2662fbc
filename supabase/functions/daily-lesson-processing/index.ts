@@ -213,21 +213,21 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
   }
 
   try {
-    // Convert stored UTC times to UK timezone first, then search
-    // The times are stored as UTC but represent UK times (the bug we're fixing)
-    const storedStartTime = new Date(lesson.start_time);
-    const storedEndTime = new Date(lesson.end_time);
+    // The stored times are now properly in UTC after the migration
+    // Use them directly with a search buffer window
+    const startTime = new Date(lesson.start_time);
+    const endTime = new Date(lesson.end_time);
     
-    // Convert the stored UTC times to UK timezone to get the actual lesson times
-    const ukStartTime = toZonedTime(storedStartTime, UK_TIMEZONE);
-    const ukEndTime = toZonedTime(storedEndTime, UK_TIMEZONE);
-    
-    // Convert back to UTC for API search (LessonSpace expects UTC)
-    const searchStart = fromZonedTime(ukStartTime, UK_TIMEZONE);
-    const searchEnd = new Date(fromZonedTime(ukEndTime, UK_TIMEZONE).getTime() + 15 * 60 * 1000); // 15 minutes after end
+    // Add 15-minute buffer before and after for search window
+    const searchStart = new Date(startTime.getTime() - 15 * 60 * 1000); // 15 minutes before
+    const searchEnd = new Date(endTime.getTime() + 15 * 60 * 1000); // 15 minutes after
 
-    console.log(`Lesson stored times: ${lesson.start_time} - ${lesson.end_time}`);
-    console.log(`UK timezone conversion: ${ukStartTime.toISOString()} - ${ukEndTime.toISOString()}`);
+    // Convert to UK time for logging
+    const ukStartTime = toZonedTime(startTime, UK_TIMEZONE);
+    const ukEndTime = toZonedTime(endTime, UK_TIMEZONE);
+
+    console.log(`Lesson stored UTC times: ${lesson.start_time} - ${lesson.end_time}`);
+    console.log(`UK time equivalent: ${ukStartTime.toISOString()} - ${ukEndTime.toISOString()}`);
     console.log(`Searching sessions for space ${lesson.lesson_space_space_id} between ${searchStart.toISOString()} and ${searchEnd.toISOString()}`);
 
     // Call LessonSpace Sessions API with filters
