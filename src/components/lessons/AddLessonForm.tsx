@@ -3,6 +3,7 @@ import { format, addDays } from 'date-fns';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { createUKDateTime, convertUKToUTC } from '@/utils/timezone';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -202,14 +203,12 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       setIsLoading(true);
       setLoadingStep('Creating lesson...');
 
-      // Format the date and times into ISO strings
-      const startTime = new Date(values.date);
-      const [startHours, startMinutes] = values.startTime.split(':');
-      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
-
-      const endTime = new Date(values.date);
-      const [endHours, endMinutes] = values.endTime.split(':');
-      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
+      // Create UK local time and convert to UTC for storage
+      const ukStartTime = createUKDateTime(values.date, values.startTime);
+      const ukEndTime = createUKDateTime(values.date, values.endTime);
+      
+      const startTime = convertUKToUTC(ukStartTime);
+      const endTime = convertUKToUTC(ukEndTime);
 
       // Get the day name for recurring lessons
       const dayName = values.date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();

@@ -6,6 +6,7 @@ import { addDays, format, parseISO, startOfDay } from 'date-fns';
 import { AppRole } from '@/contexts/AuthContext';
 import { useLessonCompletion } from './useLessonCompletion';
 import { getSubjectClass } from '@/utils/calendarColors';
+import { convertUTCToUK } from '@/utils/timezone';
 
 interface UseCalendarDataProps {
   userRole: AppRole | null;
@@ -76,8 +77,8 @@ export const useCalendarData = ({
         return {
           id: lesson.id,
           title: lesson.title || 'Untitled Lesson',
-          start: lesson.start_time,
-          end: lesson.end_time,
+          start: convertUTCToUK(lesson.start_time).toISOString(),
+          end: convertUTCToUK(lesson.end_time).toISOString(),
           className,
           extendedProps: {
             isRecurring: lesson.is_recurring,
@@ -120,8 +121,8 @@ export const useCalendarData = ({
         return {
           id: demoSession.id, // Use actual demo session ID instead of prefixed
           title: `Demo: ${lesson?.title || 'Trial Lesson'}`,
-          start: demoSession.start_time,
-          end: demoSession.end_time,
+          start: convertUTCToUK(demoSession.start_time).toISOString(),
+          end: convertUTCToUK(demoSession.end_time).toISOString(),
           className: 'calendar-event demo-session bg-gray-900 border-gray-700 text-white',
           extendedProps: {
             eventType: 'demo_session',

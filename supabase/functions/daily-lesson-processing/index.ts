@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.5";
+import { toZonedTime, fromZonedTime } from 'https://esm.sh/date-fns-tz@3.2.0';
+
+const UK_TIMEZONE = 'Europe/London';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -210,14 +213,21 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
   }
 
   try {
-    // Create time window from lesson start to 15 minutes after lesson end
-    const startTime = new Date(lesson.start_time);
-    const endTime = new Date(lesson.end_time);
+    // Convert stored UTC times to UK timezone first, then search
+    // The times are stored as UTC but represent UK times (the bug we're fixing)
+    const storedStartTime = new Date(lesson.start_time);
+    const storedEndTime = new Date(lesson.end_time);
     
-    // Search from lesson start time to 15 minutes after lesson end
-    const searchStart = new Date(startTime.getTime());
-    const searchEnd = new Date(endTime.getTime() + 15 * 60 * 1000); // 15 minutes after end
+    // Convert the stored UTC times to UK timezone to get the actual lesson times
+    const ukStartTime = toZonedTime(storedStartTime, UK_TIMEZONE);
+    const ukEndTime = toZonedTime(storedEndTime, UK_TIMEZONE);
+    
+    // Convert back to UTC for API search (LessonSpace expects UTC)
+    const searchStart = fromZonedTime(ukStartTime, UK_TIMEZONE);
+    const searchEnd = new Date(fromZonedTime(ukEndTime, UK_TIMEZONE).getTime() + 15 * 60 * 1000); // 15 minutes after end
 
+    console.log(`Lesson stored times: ${lesson.start_time} - ${lesson.end_time}`);
+    console.log(`UK timezone conversion: ${ukStartTime.toISOString()} - ${ukEndTime.toISOString()}`);
     console.log(`Searching sessions for space ${lesson.lesson_space_space_id} between ${searchStart.toISOString()} and ${searchEnd.toISOString()}`);
 
     // Call LessonSpace Sessions API with filters
