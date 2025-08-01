@@ -210,16 +210,13 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
   }
 
   try {
-    // Create precise time window (lesson_time ± buffer)
+    // Create time window from lesson start to 15 minutes after lesson end
     const startTime = new Date(lesson.start_time);
     const endTime = new Date(lesson.end_time);
     
-    // 10 minutes before start, 1 hour after start (or actual end time if longer)
-    const searchStart = new Date(startTime.getTime() - 10 * 60 * 1000);
-    const searchEnd = new Date(Math.max(
-      startTime.getTime() + 60 * 60 * 1000, // 1 hour after start
-      endTime.getTime() + 10 * 60 * 1000    // 10 minutes after actual end
-    ));
+    // Search from lesson start time to 15 minutes after lesson end
+    const searchStart = new Date(startTime.getTime());
+    const searchEnd = new Date(endTime.getTime() + 15 * 60 * 1000); // 15 minutes after end
 
     console.log(`Searching sessions for space ${lesson.lesson_space_space_id} between ${searchStart.toISOString()} and ${searchEnd.toISOString()}`);
 
