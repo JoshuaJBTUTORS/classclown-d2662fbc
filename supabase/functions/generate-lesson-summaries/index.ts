@@ -298,15 +298,36 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
   // If we don't have the text but have a URL, fetch it
   if (!transcriptionText && transcription.transcription_url) {
     try {
+      console.log(`Fetching transcription from URL: ${transcription.transcription_url}`);
       const textResponse = await fetch(transcription.transcription_url);
       if (textResponse.ok) {
-        transcriptionText = await textResponse.text();
+        const transcriptionData = await textResponse.json();
+        console.log('LessonSpace transcription JSON structure:', JSON.stringify(transcriptionData, null, 2));
+        
+        // Extract transcript text from the JSON structure
+        // LessonSpace typically stores transcripts in a 'transcript' or 'text' field
+        if (transcriptionData.transcript) {
+          transcriptionText = transcriptionData.transcript;
+        } else if (transcriptionData.text) {
+          transcriptionText = transcriptionData.text;
+        } else if (transcriptionData.transcription) {
+          transcriptionText = transcriptionData.transcription;
+        } else if (typeof transcriptionData === 'string') {
+          transcriptionText = transcriptionData;
+        } else {
+          console.error('Unknown transcription JSON structure:', transcriptionData);
+          transcriptionText = JSON.stringify(transcriptionData);
+        }
+        
+        console.log(`Extracted transcription text (first 200 chars): ${transcriptionText?.substring(0, 200)}...`);
         
         // Save the text to our database
         await supabase
           .from('lesson_transcriptions')
           .update({ transcription_text: transcriptionText })
           .eq('id', transcriptionId);
+      } else {
+        console.error(`Failed to fetch transcription URL. Status: ${textResponse.status}`);
       }
     } catch (error) {
       console.error('Error fetching transcription text:', error);
