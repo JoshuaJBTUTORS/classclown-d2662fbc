@@ -166,7 +166,7 @@ const LessonSummaries: React.FC = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-auto">
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2 md:p-4">
               <LessonSummariesHero
                 searchTerm=""
                 onSearchChange={() => {}}
@@ -222,7 +222,7 @@ const LessonSummaries: React.FC = () => {
               filteredCount={filteredLessons.length}
             />
 
-            <div className="px-6 pb-12">
+            <div className="px-2 md:px-4 pb-12">
               {/* Results Section */}
               {filteredLessons.length === 0 ? (
                 <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-elegant)]">
