@@ -90,7 +90,7 @@ serve(async (req) => {
           title,
           start_time,
           end_time,
-          lesson_space_space_id,
+          lesson_space_room_id,
           lesson_space_session_id,
           lesson_type,
           tutor_id,
@@ -105,7 +105,7 @@ serve(async (req) => {
         `)
         .gte('start_time', `${processingDate}T00:00:00.000Z`)
         .lt('start_time', `${processingDate}T23:59:59.999Z`)
-        .not('lesson_space_space_id', 'is', null);
+        .not('lesson_space_room_id', 'is', null);
 
       if (lessonsError) {
         throw new Error(`Failed to fetch lessons: ${lessonsError.message}`);
@@ -208,30 +208,15 @@ serve(async (req) => {
 });
 
 async function findLessonSpaceSession(lesson: any): Promise<string | null> {
-  if (!lesson.lesson_space_space_id) {
+  if (!lesson.lesson_space_room_id) {
     return null;
   }
 
   try {
-    // The stored times are now properly in UTC after the migration
-    // Use them directly with a search buffer window
-    const startTime = new Date(lesson.start_time);
-    const endTime = new Date(lesson.end_time);
-    
-    // Add 15-minute buffer before and after for search window
-    const searchStart = new Date(startTime.getTime() - 15 * 60 * 1000); // 15 minutes before
-    const searchEnd = new Date(endTime.getTime() + 15 * 60 * 1000); // 15 minutes after
+    console.log(`Searching all sessions for room: ${lesson.lesson_space_room_id}`);
 
-    // Convert to UK time for logging
-    const ukStartTime = toZonedTime(startTime, UK_TIMEZONE);
-    const ukEndTime = toZonedTime(endTime, UK_TIMEZONE);
-
-    console.log(`Lesson stored UTC times: ${lesson.start_time} - ${lesson.end_time}`);
-    console.log(`UK time equivalent: ${ukStartTime.toISOString()} - ${ukEndTime.toISOString()}`);
-    console.log(`Searching sessions for space ${lesson.lesson_space_space_id} between ${searchStart.toISOString()} and ${searchEnd.toISOString()}`);
-
-    // Call LessonSpace Organization Sessions API with filters using correct parameter names
-    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space=${lesson.lesson_space_space_id}&start_time_after=${searchStart.toISOString()}&start_time_before=${searchEnd.toISOString()}`;
+    // Call LessonSpace Organization Sessions API - get all sessions for this space
+    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_room_id}`;
     console.log(`Calling LessonSpace API: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -244,15 +229,19 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
 
     if (!response.ok) {
       console.error(`LessonSpace API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Error response body:', errorText);
       return null;
     }
 
     const data = await response.json();
-    console.log(`Found ${data.sessions?.length || 0} sessions in time window`);
+    console.log(`LessonSpace API response status: ${response.status}`);
+    console.log(`Found ${data.results?.length || 0} sessions in response`);
 
     // Return the first session ID found (should be the most relevant)
-    if (data.sessions && data.sessions.length > 0) {
-      return data.sessions[0].id;
+    if (data.results && data.results.length > 0) {
+      console.log('First session details:', JSON.stringify(data.results[0], null, 2));
+      return data.results[0].id;
     }
 
     return null;

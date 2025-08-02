@@ -48,11 +48,11 @@ serve(async (req) => {
           title,
           start_time,
           end_time,
-          lesson_space_space_id,
+          lesson_space_room_id,
           lesson_space_session_id
         `)
         .in('id', lesson_ids)
-        .not('lesson_space_space_id', 'is', null);
+        .not('lesson_space_room_id', 'is', null);
 
       if (lessonsError) {
         throw new Error(`Failed to fetch lessons: ${lessonsError.message}`);
@@ -67,12 +67,12 @@ serve(async (req) => {
           title,
           start_time,
           end_time,
-          lesson_space_space_id,
+          lesson_space_room_id,
           lesson_space_session_id
         `)
         .gte('start_time', `${processing_date}T00:00:00.000Z`)
         .lt('start_time', `${processing_date}T23:59:59.999Z`)
-        .not('lesson_space_space_id', 'is', null);
+        .not('lesson_space_room_id', 'is', null);
 
       if (lessonsError) {
         throw new Error(`Failed to fetch lessons: ${lessonsError.message}`);
@@ -182,15 +182,15 @@ serve(async (req) => {
 });
 
 async function findLessonSpaceSession(lesson: any): Promise<string | null> {
-  if (!lesson.lesson_space_space_id) {
+  if (!lesson.lesson_space_room_id) {
     return null;
   }
 
   try {
-    console.log(`Searching all sessions for space: ${lesson.lesson_space_space_id}`);
+    console.log(`Searching all sessions for room: ${lesson.lesson_space_room_id}`);
 
     // Call LessonSpace Organization Sessions API - get all sessions for this space
-    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_space_id}`;
+    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_room_id}`;
     console.log(`Calling LessonSpace API: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -211,12 +211,12 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     const data = await response.json();
     console.log(`LessonSpace API response status: ${response.status}`);
     console.log(`Response data:`, JSON.stringify(data, null, 2));
-    console.log(`Found ${data.sessions?.length || 0} sessions in response`);
+    console.log(`Found ${data.results?.length || 0} sessions in response`);
 
     // Return the first session ID found (should be the most relevant)
-    if (data.sessions && data.sessions.length > 0) {
-      console.log('First session details:', JSON.stringify(data.sessions[0], null, 2));
-      return data.sessions[0].id;
+    if (data.results && data.results.length > 0) {
+      console.log('First session details:', JSON.stringify(data.results[0], null, 2));
+      return data.results[0].id;
     }
 
     return null;
