@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.5";
-import { toZonedTime, formatInTimeZone } from 'https://esm.sh/date-fns-tz@3.2.0';
+import { toZonedTime } from 'https://esm.sh/date-fns-tz@3.2.0';
 
 const UK_TIMEZONE = 'Europe/London';
 
@@ -196,15 +196,19 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     const searchStart = new Date(startTime.getTime() - 15 * 60 * 1000); // 15 minutes before
     const searchEnd = new Date(endTime.getTime() + 15 * 60 * 1000); // 15 minutes after
 
+    // Convert to UK time for logging
+    const ukStartTime = toZonedTime(startTime, UK_TIMEZONE);
+    const ukEndTime = toZonedTime(endTime, UK_TIMEZONE);
+
     console.log(`Lesson stored UTC times: ${lesson.start_time} - ${lesson.end_time}`);
-    console.log(`UK time equivalent: ${formatInTimeZone(startTime, UK_TIMEZONE, 'yyyy-MM-dd HH:mm:ss zzz')} - ${formatInTimeZone(endTime, UK_TIMEZONE, 'yyyy-MM-dd HH:mm:ss zzz')}`);
+    console.log(`UK time equivalent: ${ukStartTime.toISOString()} - ${ukEndTime.toISOString()}`);
     console.log(`Searching sessions for space ${lesson.lesson_space_space_id} between ${searchStart.toISOString()} and ${searchEnd.toISOString()}`);
 
-    // Call LessonSpace Sessions API with filters using the organization endpoint
-    const response = await fetch(`https://api.thelessonspace.com/v2/organisations/20704/sessions/?space=${lesson.lesson_space_space_id}&start_after=${searchStart.toISOString()}&start_before=${searchEnd.toISOString()}&limit=10`, {
+    // Call LessonSpace Sessions API with filters
+    const response = await fetch(`https://api.thelessonspace.com/v2/sessions?space=${lesson.lesson_space_space_id}&start_after=${searchStart.toISOString()}&start_before=${searchEnd.toISOString()}&limit=10`, {
       method: 'GET',
       headers: {
-        'Authorization': `Organisation ${lessonSpaceApiKey}`,
+        'Authorization': `Bearer ${lessonSpaceApiKey}`,
         'Content-Type': 'application/json',
       },
     });
