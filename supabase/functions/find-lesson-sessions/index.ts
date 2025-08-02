@@ -189,15 +189,7 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
   try {
     console.log(`Searching sessions for room: ${lesson.lesson_space_room_id} at time: ${lesson.start_time}`);
     
-    // Format lesson times for API query
-    const lessonStart = new Date(lesson.start_time);
-    const lessonEnd = new Date(lesson.end_time);
-    
-    // Add some buffer time (20 minutes before and after) to account for slight timing differences
-    const sessionStartedBefore = new Date(lessonEnd.getTime() + 20 * 60 * 1000); // Sessions that started before lesson end + buffer
-    const sessionEndedAfter = new Date(lessonStart.getTime() - 20 * 60 * 1000); // Sessions that ended after lesson start - buffer
-    
-    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_room_id}&start_time_before=${sessionStartedBefore.toISOString()}&end_time_after=${sessionEndedAfter.toISOString()}`;
+    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_room_id}`;
     console.log(`Calling LessonSpace API: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
