@@ -99,6 +99,8 @@ serve(async (req) => {
       };
 
       try {
+        console.log(`Using session_id: ${lesson.lesson_space_session_id} for lesson ${lesson.id}`);
+        
         // Check if transcription already exists
         const { data: existingTranscription } = await supabase
           .from('lesson_transcriptions')
@@ -110,18 +112,22 @@ serve(async (req) => {
         let transcriptionId = null;
 
         if (existingTranscription) {
-          console.log(`Transcription already exists for lesson ${lesson.id}: ${existingTranscription.id}`);
+          console.log(`Transcription already exists for lesson ${lesson.id}: ${existingTranscription.id} (status: ${existingTranscription.transcription_status})`);
           transcriptionId = existingTranscription.id;
           result.transcription_retrieved = existingTranscription.transcription_status === 'completed';
         } else {
           // Get transcription for this session
+          console.log(`Calling getTranscription for lesson ${lesson.id} with session_id ${lesson.lesson_space_session_id}`);
           const transcriptionResult = await getTranscription(lesson.id);
+          
+          console.log(`Transcription result for lesson ${lesson.id}:`, JSON.stringify(transcriptionResult, null, 2));
+          
           if (transcriptionResult && transcriptionResult.id) {
-            console.log(`Retrieved transcription for lesson ${lesson.id}: ${transcriptionResult.id}`);
+            console.log(`Successfully retrieved transcription for lesson ${lesson.id}: ${transcriptionResult.id}`);
             transcriptionId = transcriptionResult.id;
             result.transcription_retrieved = true;
           } else {
-            console.log(`No transcription available for lesson ${lesson.id}`);
+            console.log(`No transcription available for lesson ${lesson.id}. Response was:`, transcriptionResult);
           }
         }
 
