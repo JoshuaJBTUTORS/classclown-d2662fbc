@@ -121,8 +121,10 @@ async function getTranscription(lessonId: string) {
       throw new Error('LessonSpace API key not configured');
     }
 
+    console.log(`Fetching transcription from LessonSpace for session: ${sessionId}`);
+    
     const transcriptionResponse = await fetch(
-      `https://api.thelessonspace.com/v2/sessions/${sessionId}/transcript`,
+      `https://api.thelessonspace.com/v2/organisations/20704/sessions/${sessionId}/transcript/`,
       {
         method: 'GET',
         headers: {
@@ -131,6 +133,8 @@ async function getTranscription(lessonId: string) {
         },
       }
     );
+
+    console.log(`LessonSpace API response status: ${transcriptionResponse.status} for session: ${sessionId}`);
 
     if (!transcriptionResponse.ok) {
       if (transcriptionResponse.status === 404) {
