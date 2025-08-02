@@ -204,16 +204,18 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     if (!response.ok) {
       console.error(`LessonSpace API error: ${response.status} ${response.statusText}`);
       const errorText = await response.text();
-      console.error('Error response:', errorText);
+      console.error('Error response body:', errorText);
       return null;
     }
 
     const data = await response.json();
-    console.log(`Found ${data.sessions?.length || 0} sessions in time window`);
+    console.log(`LessonSpace API response status: ${response.status}`);
+    console.log(`Response data:`, JSON.stringify(data, null, 2));
+    console.log(`Found ${data.sessions?.length || 0} sessions in response`);
 
     // Return the first session ID found (should be the most relevant)
     if (data.sessions && data.sessions.length > 0) {
-      console.log('Session details:', data.sessions[0]);
+      console.log('First session details:', JSON.stringify(data.sessions[0], null, 2));
       return data.sessions[0].id;
     }
 
