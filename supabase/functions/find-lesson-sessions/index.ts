@@ -220,21 +220,10 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     console.log(`Found ${data.results?.length || 0} sessions in time range`);
     
     if (data.results && data.results.length > 0) {
-      // Find the session with the closest start time to the lesson
-      let closestSession = data.results[0];
-      let closestTimeDiff = Math.abs(new Date(closestSession.start_time).getTime() - lessonStart.getTime());
-      
-      for (const session of data.results) {
-        const sessionStart = new Date(session.start_time);
-        const timeDiff = Math.abs(sessionStart.getTime() - lessonStart.getTime());
-        if (timeDiff < closestTimeDiff) {
-          closestTimeDiff = timeDiff;
-          closestSession = session;
-        }
-      }
-      
-      console.log(`Best match session - ID: ${closestSession.id}, UUID: ${closestSession.uuid}, time diff: ${Math.round(closestTimeDiff / 60000)} minutes`);
-      return closestSession.uuid;
+      // Just return the first session found
+      const session = data.results[0];
+      console.log(`Found session - ID: ${session.id}, UUID: ${session.uuid}`);
+      return session.uuid;
     }
     
     console.log('No sessions found in the specified time range');
