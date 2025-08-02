@@ -179,7 +179,7 @@ const LessonSummaries: React.FC = () => {
                 totalLessons={0}
                 filteredCount={0}
               />
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <Card key={i} className="h-96">
                     <CardContent className="p-6">
@@ -245,7 +245,7 @@ const LessonSummaries: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                  <div className="grid gap-6">
                     {filteredLessons.map((lesson) => (
                       <LessonSummaryCard key={lesson.id} lesson={lesson} />
                     ))}
