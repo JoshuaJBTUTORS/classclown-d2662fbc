@@ -190,7 +190,7 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     console.log(`Searching all sessions for space: ${lesson.lesson_space_space_id}`);
 
     // Call LessonSpace Organization Sessions API - get all sessions for this space
-    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space=${lesson.lesson_space_space_id}`;
+    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_space_id}`;
     console.log(`Calling LessonSpace API: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
