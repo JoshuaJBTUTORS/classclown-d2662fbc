@@ -46,7 +46,7 @@ serve(async (req) => {
     const lessonSpaceResponse = await fetch(`https://api.thelessonspace.com/v2/sessions/${sessionId}/recording`, {
       method: 'GET',
       headers: {
-        'Authorization': `Token ${lessonSpaceApiKey}`,
+        'Authorization': `Organisation ${lessonSpaceApiKey}`,
         'Content-Type': 'application/json',
       },
     });
