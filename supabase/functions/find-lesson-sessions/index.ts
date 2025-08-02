@@ -187,10 +187,17 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
   }
 
   try {
-    console.log(`Searching all sessions for room: ${lesson.lesson_space_room_id}`);
-
-    // Call LessonSpace Organization Sessions API - get all sessions for this space
-    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_room_id}`;
+    console.log(`Searching sessions for room: ${lesson.lesson_space_room_id} at time: ${lesson.start_time}`);
+    
+    // Format lesson times for API query
+    const lessonStart = new Date(lesson.start_time);
+    const lessonEnd = new Date(lesson.end_time);
+    
+    // Add some buffer time (30 minutes before and after) to account for slight timing differences
+    const searchStart = new Date(lessonStart.getTime() - 30 * 60 * 1000);
+    const searchEnd = new Date(lessonEnd.getTime() + 30 * 60 * 1000);
+    
+    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space_uuid=${lesson.lesson_space_room_id}&start_time_gte=${searchStart.toISOString()}&start_time_lte=${searchEnd.toISOString()}`;
     console.log(`Calling LessonSpace API: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -210,15 +217,27 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
 
     const data = await response.json();
     console.log(`LessonSpace API response status: ${response.status}`);
-    console.log(`Response data:`, JSON.stringify(data, null, 2));
-    console.log(`Found ${data.results?.length || 0} sessions in response`);
-
-    // Return the first session ID found (should be the most relevant)
+    console.log(`Found ${data.results?.length || 0} sessions in time range`);
+    
     if (data.results && data.results.length > 0) {
-      console.log('First session details:', JSON.stringify(data.results[0], null, 2));
-      return data.results[0].id;
+      // Find the session with the closest start time to the lesson
+      let closestSession = data.results[0];
+      let closestTimeDiff = Math.abs(new Date(closestSession.start_time).getTime() - lessonStart.getTime());
+      
+      for (const session of data.results) {
+        const sessionStart = new Date(session.start_time);
+        const timeDiff = Math.abs(sessionStart.getTime() - lessonStart.getTime());
+        if (timeDiff < closestTimeDiff) {
+          closestTimeDiff = timeDiff;
+          closestSession = session;
+        }
+      }
+      
+      console.log(`Best match session: ${closestSession.id}, time diff: ${Math.round(closestTimeDiff / 60000)} minutes`);
+      return closestSession.id;
     }
-
+    
+    console.log('No sessions found in the specified time range');
     return null;
   } catch (error) {
     console.error('Error finding LessonSpace session:', error);
