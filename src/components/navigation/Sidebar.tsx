@@ -73,6 +73,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
         {
+          icon: Video,
+          label: 'Lesson Summaries',
+          href: '/lesson-summaries',
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+        },
+        {
           icon: Building2,
           label: 'Learning Hub',
           href: '/learning-hub',

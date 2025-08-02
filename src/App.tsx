@@ -49,6 +49,7 @@ import JBTutorsPreview from './pages/JBTutorsPreview';
 import SchoolProgress from './pages/SchoolProgress';
 import CreateAdmin from './pages/CreateAdmin';
 import Staff from './pages/Staff';
+import LessonSummaries from './pages/LessonSummaries';
 
 function App() {
   const queryClient = new QueryClient();
@@ -108,6 +109,14 @@ function App() {
                     } 
                   />
                   <Route path="homework" element={<Homework />} />
+                  <Route 
+                    path="lesson-summaries" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor', 'parent', 'student']}>
+                        <LessonSummaries />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route path="progress" element={<Progress />} />
                   <Route 
                     path="reports" 
