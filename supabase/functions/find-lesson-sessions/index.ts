@@ -204,8 +204,8 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     console.log(`UK time equivalent: ${ukStartTime.toISOString()} - ${ukEndTime.toISOString()}`);
     console.log(`Searching sessions for space ${lesson.lesson_space_space_id} between ${searchStart.toISOString()} and ${searchEnd.toISOString()}`);
 
-    // Call LessonSpace Organization Sessions API with filters
-    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space=${lesson.lesson_space_space_id}&start_after=${searchStart.toISOString()}&start_before=${searchEnd.toISOString()}&limit=10`;
+    // Call LessonSpace Organization Sessions API with filters using correct parameter names
+    const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space=${lesson.lesson_space_space_id}&start_time_after=${searchStart.toISOString()}&start_time_before=${searchEnd.toISOString()}`;
     console.log(`Calling LessonSpace API: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
