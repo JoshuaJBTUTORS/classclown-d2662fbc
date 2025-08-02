@@ -2457,6 +2457,10 @@ export type Database = {
         Args: { parent_id_param: string; cycle_id_param: string }
         Returns: boolean
       }
+      trigger_hourly_lesson_processing: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       user_can_edit_assessment: {
         Args: { assessment_id_param: string }
         Returns: boolean
