@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
-import { Clock, Users, Video, FileText, User } from 'lucide-react';
+import { Clock, Users, Video, FileText, User, Play, BookOpen, Calendar } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import StudentLessonSummary from '@/components/calendar/StudentLessonSummary';
 
 interface LessonSummaryCardProps {
@@ -38,55 +39,142 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
 
   const hasRecording = lesson.lesson_space_recording_url || lesson.lesson_space_session_id;
 
+  // Generate a subtle pastel gradient based on subject
+  const getSubjectGradient = (subject: string) => {
+    const gradients = [
+      'from-purple-50 via-blue-50 to-indigo-50',
+      'from-blue-50 via-cyan-50 to-teal-50',
+      'from-green-50 via-emerald-50 to-lime-50',
+      'from-pink-50 via-rose-50 to-red-50',
+      'from-orange-50 via-amber-50 to-yellow-50',
+      'from-violet-50 via-purple-50 to-fuchsia-50',
+    ];
+    const index = subject.length % gradients.length;
+    return gradients[index];
+  };
+
+  const getSubjectColor = (subject: string) => {
+    const colors = [
+      'text-purple-700 bg-purple-100',
+      'text-blue-700 bg-blue-100',
+      'text-green-700 bg-green-100',
+      'text-pink-700 bg-pink-100',
+      'text-orange-700 bg-orange-100',
+      'text-violet-700 bg-violet-100',
+    ];
+    const index = subject.length % colors.length;
+    return colors[index];
+  };
+
   return (
     <>
-      <Card className="h-full flex flex-col">
-        <CardHeader className="pb-4">
-          <div className="flex justify-between items-start mb-2">
-            <CardTitle className="text-lg leading-tight">{lesson.title}</CardTitle>
-            <Badge variant="outline" className="ml-2 shrink-0">
+      <Card className={cn(
+        "group relative h-full flex flex-col overflow-hidden",
+        "bg-gradient-to-br", getSubjectGradient(lesson.subject),
+        "border-0 shadow-lg hover:shadow-2xl transition-all duration-500",
+        "hover:scale-[1.02] hover:-translate-y-1"
+      )}>
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.03]">
+          <BookOpen className="w-full h-full transform rotate-12" />
+        </div>
+        <div className="absolute -bottom-6 -left-6 w-24 h-24 opacity-[0.03]">
+          <Play className="w-full h-full" />
+        </div>
+
+        <CardHeader className="relative z-10 pb-6">
+          {/* Subject Badge */}
+          <div className="flex justify-end mb-3">
+            <Badge className={cn(
+              "font-medium px-3 py-1 rounded-full border-0 shadow-sm",
+              getSubjectColor(lesson.subject)
+            )}>
               {lesson.subject}
             </Badge>
           </div>
+
+          {/* Title */}
+          <CardTitle className="text-xl font-bold text-gray-800 mb-4 leading-tight group-hover:text-gray-900 transition-colors">
+            {lesson.title}
+          </CardTitle>
           
-          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>{format(lessonDate, 'MMM d, yyyy • h:mm a')}</span>
+          {/* Meta Information */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-600">
+              <div className="p-1.5 rounded-lg bg-white/60 backdrop-blur-sm">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <span className="text-sm font-medium">
+                {format(lessonDate, 'MMM d, yyyy • h:mm a')}
+              </span>
             </div>
-            <div className="flex items-center gap-1">
-              <User className="h-4 w-4" />
-              <span>{lesson.tutor.first_name} {lesson.tutor.last_name}</span>
+            
+            <div className="flex items-center gap-2 text-gray-600">
+              <div className="p-1.5 rounded-lg bg-white/60 backdrop-blur-sm">
+                <User className="h-4 w-4" />
+              </div>
+              <span className="text-sm font-medium">
+                {lesson.tutor.first_name} {lesson.tutor.last_name}
+              </span>
             </div>
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span>{lesson.lesson_students.length} student{lesson.lesson_students.length !== 1 ? 's' : ''}</span>
+            
+            <div className="flex items-center gap-2 text-gray-600">
+              <div className="p-1.5 rounded-lg bg-white/60 backdrop-blur-sm">
+                <Users className="h-4 w-4" />
+              </div>
+              <span className="text-sm font-medium">
+                {lesson.lesson_students.length} student{lesson.lesson_students.length !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col justify-end">
+        <CardContent className="relative z-10 flex-1 flex flex-col justify-end pt-0">
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
-              className="w-full"
+              size="lg"
+              className={cn(
+                "group/btn relative overflow-hidden bg-white/80 backdrop-blur-sm border-0",
+                "shadow-md hover:shadow-lg transition-all duration-300",
+                "hover:bg-white/90 hover:scale-105",
+                !hasRecording && "opacity-50 cursor-not-allowed"
+              )}
               onClick={() => setShowRecording(true)}
               disabled={!hasRecording}
             >
-              <Video className="h-4 w-4 mr-2" />
-              View Recording
+              <div className="flex items-center gap-2 relative z-10">
+                <div className="p-1 rounded-full bg-red-100 group-hover/btn:bg-red-200 transition-colors">
+                  <Play className="h-4 w-4 text-red-600" />
+                </div>
+                <span className="font-medium text-gray-700">Recording</span>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-red-50 to-pink-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
             </Button>
             
             <Button
               variant="outline"
-              className="w-full"
+              size="lg"
+              className={cn(
+                "group/btn relative overflow-hidden bg-white/80 backdrop-blur-sm border-0",
+                "shadow-md hover:shadow-lg transition-all duration-300",
+                "hover:bg-white/90 hover:scale-105"
+              )}
               onClick={() => setShowSummary(true)}
             >
-              <FileText className="h-4 w-4 mr-2" />
-              View Summary
+              <div className="flex items-center gap-2 relative z-10">
+                <div className="p-1 rounded-full bg-blue-100 group-hover/btn:bg-blue-200 transition-colors">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="font-medium text-gray-700">Summary</span>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-cyan-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
             </Button>
           </div>
         </CardContent>
+
+        {/* Subtle glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
       </Card>
 
       {/* Recording Modal */}
