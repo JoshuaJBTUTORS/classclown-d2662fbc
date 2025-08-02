@@ -211,7 +211,7 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${lessonSpaceApiKey}`,
+        'Authorization': `Organisation ${lessonSpaceApiKey}`,
         'Content-Type': 'application/json',
       },
     });

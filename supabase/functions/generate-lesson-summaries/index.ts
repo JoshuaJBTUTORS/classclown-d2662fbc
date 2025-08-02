@@ -126,7 +126,7 @@ async function getTranscription(lessonId: string) {
       {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${lessonSpaceApiKey}`,
+          'Authorization': `Organisation ${lessonSpaceApiKey}`,
           'Content-Type': 'application/json',
         },
       }
