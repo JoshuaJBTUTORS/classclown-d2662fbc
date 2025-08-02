@@ -9,6 +9,8 @@ import { BookOpen } from 'lucide-react';
 import LessonSummaryCard from '@/components/learningHub/LessonSummaryCard';
 import { LessonSummariesHero } from '@/components/lessonPlans/LessonSummariesHero';
 import { format, parseISO, subDays } from 'date-fns';
+import Sidebar from '@/components/navigation/Sidebar';
+import Navbar from '@/components/navigation/Navbar';
 
 interface Lesson {
   id: string;
@@ -40,6 +42,7 @@ const LessonSummaries: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('last-30-days');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
@@ -153,88 +156,105 @@ const LessonSummaries: React.FC = () => {
     return subjects;
   };
 
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const closeSidebar = () => setSidebarOpen(false);
+
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <LessonSummariesHero
-          searchTerm=""
-          onSearchChange={() => {}}
-          subjectFilter="all"
-          onSubjectFilterChange={() => {}}
-          dateFilter="last-30-days"
-          onDateFilterChange={() => {}}
-          onRefresh={() => {}}
-          uniqueSubjects={[]}
-          totalLessons={0}
-          filteredCount={0}
-        />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="h-96">
-                <CardContent className="p-6">
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="aspect-video bg-muted rounded"></div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-muted rounded"></div>
-                      <div className="h-3 bg-muted rounded w-2/3"></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Navbar toggleSidebar={toggleSidebar} />
+          <main className="flex-1 overflow-auto">
+            <div className="space-y-6 p-6">
+              <LessonSummariesHero
+                searchTerm=""
+                onSearchChange={() => {}}
+                subjectFilter="all"
+                onSubjectFilterChange={() => {}}
+                dateFilter="last-30-days"
+                onDateFilterChange={() => {}}
+                onRefresh={() => {}}
+                uniqueSubjects={[]}
+                totalLessons={0}
+                filteredCount={0}
+              />
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="h-96">
+                    <CardContent className="p-6">
+                      <div className="animate-pulse space-y-4">
+                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                        <div className="aspect-video bg-muted rounded"></div>
+                        <div className="space-y-2">
+                          <div className="h-3 bg-muted rounded"></div>
+                          <div className="h-3 bg-muted rounded w-2/3"></div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--background))] to-[hsl(var(--muted))]/20">
-      <LessonSummariesHero
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        subjectFilter={subjectFilter}
-        onSubjectFilterChange={setSubjectFilter}
-        dateFilter={dateFilter}
-        onDateFilterChange={setDateFilter}
-        onRefresh={fetchLessons}
-        uniqueSubjects={getUniqueSubjects()}
-        totalLessons={lessons.length}
-        filteredCount={filteredLessons.length}
-      />
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar toggleSidebar={toggleSidebar} />
+        <main className="flex-1 overflow-auto">
+          <div className="min-h-full bg-gradient-to-br from-[hsl(var(--background))] to-[hsl(var(--muted))]/20">
+            <LessonSummariesHero
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              subjectFilter={subjectFilter}
+              onSubjectFilterChange={setSubjectFilter}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              onRefresh={fetchLessons}
+              uniqueSubjects={getUniqueSubjects()}
+              totalLessons={lessons.length}
+              filteredCount={filteredLessons.length}
+            />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        {/* Results Section */}
-        {filteredLessons.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-elegant)]">
-            <CardContent className="p-12 text-center">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 text-[hsl(var(--medium-blue))]/60" />
-              <h3 className="text-lg font-semibold mb-2 text-[hsl(var(--deep-purple-blue))]">No lesson summaries found</h3>
-              <p className="text-[hsl(var(--medium-blue))]/70">
-                {lessons.length === 0 
-                  ? "No lessons with recordings are available yet."
-                  : "Try adjusting your filters to see more results."
-                }
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">
-                Showing {filteredLessons.length} of {lessons.length} lessons
-              </p>
-            </div>
+            <div className="px-6 pb-12">
+              {/* Results Section */}
+              {filteredLessons.length === 0 ? (
+                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-elegant)]">
+                  <CardContent className="p-12 text-center">
+                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-[hsl(var(--medium-blue))]/60" />
+                    <h3 className="text-lg font-semibold mb-2 text-[hsl(var(--deep-purple-blue))]">No lesson summaries found</h3>
+                    <p className="text-[hsl(var(--medium-blue))]/70">
+                      {lessons.length === 0 
+                        ? "No lessons with recordings are available yet."
+                        : "Try adjusting your filters to see more results."
+                      }
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <p className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">
+                      Showing {filteredLessons.length} of {lessons.length} lessons
+                    </p>
+                  </div>
 
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {filteredLessons.map((lesson) => (
-                <LessonSummaryCard key={lesson.id} lesson={lesson} />
-              ))}
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                    {filteredLessons.map((lesson) => (
+                      <LessonSummaryCard key={lesson.id} lesson={lesson} />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-          </>
-        )}
+          </div>
+        </main>
       </div>
     </div>
   );

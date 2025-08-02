@@ -109,14 +109,7 @@ function App() {
                     } 
                   />
                   <Route path="homework" element={<Homework />} />
-                  <Route 
-                    path="lesson-summaries" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor', 'parent', 'student']}>
-                        <LessonSummaries />
-                      </ProtectedRoute>
-                    } 
-                  />
+                  <Route path="lesson-summaries" element={<LessonSummaries />} />
                   <Route path="progress" element={<Progress />} />
                   <Route 
                     path="reports" 
