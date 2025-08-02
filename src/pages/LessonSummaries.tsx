@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Filter, Video, RefreshCw, BookOpen } from 'lucide-react';
-import PageTitle from '@/components/ui/PageTitle';
+import { BookOpen } from 'lucide-react';
 import LessonSummaryCard from '@/components/learningHub/LessonSummaryCard';
+import { LessonSummariesHero } from '@/components/lessonPlans/LessonSummariesHero';
 import { format, parseISO, subDays } from 'date-fns';
 
 interface Lesson {
@@ -156,118 +156,86 @@ const LessonSummaries: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageTitle 
-          title="Lesson Summaries"
-          subtitle="View lesson recordings and AI-generated student summaries"
+        <LessonSummariesHero
+          searchTerm=""
+          onSearchChange={() => {}}
+          subjectFilter="all"
+          onSubjectFilterChange={() => {}}
+          dateFilter="last-30-days"
+          onDateFilterChange={() => {}}
+          onRefresh={() => {}}
+          uniqueSubjects={[]}
+          totalLessons={0}
+          filteredCount={0}
         />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="h-96">
-              <CardContent className="p-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="aspect-video bg-muted rounded"></div>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-muted rounded"></div>
-                    <div className="h-3 bg-muted rounded w-2/3"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="h-96">
+                <CardContent className="p-6">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="aspect-video bg-muted rounded"></div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-muted rounded"></div>
+                      <div className="h-3 bg-muted rounded w-2/3"></div>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <PageTitle 
-        title="Lesson Summaries"
-        subtitle="View lesson recordings and AI-generated student summaries"
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--background))] to-[hsl(var(--muted))]/20">
+      <LessonSummariesHero
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        subjectFilter={subjectFilter}
+        onSubjectFilterChange={setSubjectFilter}
+        dateFilter={dateFilter}
+        onDateFilterChange={setDateFilter}
+        onRefresh={fetchLessons}
+        uniqueSubjects={getUniqueSubjects()}
+        totalLessons={lessons.length}
+        filteredCount={filteredLessons.length}
       />
 
-      {/* Filters Section */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search lessons, subjects, or tutors..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        {/* Results Section */}
+        {filteredLessons.length === 0 ? (
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-elegant)]">
+            <CardContent className="p-12 text-center">
+              <BookOpen className="h-12 w-12 mx-auto mb-4 text-[hsl(var(--medium-blue))]/60" />
+              <h3 className="text-lg font-semibold mb-2 text-[hsl(var(--deep-purple-blue))]">No lesson summaries found</h3>
+              <p className="text-[hsl(var(--medium-blue))]/70">
+                {lessons.length === 0 
+                  ? "No lessons with recordings are available yet."
+                  : "Try adjusting your filters to see more results."
+                }
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">
+                Showing {filteredLessons.length} of {lessons.length} lessons
+              </p>
             </div>
-            
-            <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by subject" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {getUniqueSubjects().map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by date" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="last-7-days">Last 7 Days</SelectItem>
-                <SelectItem value="last-30-days">Last 30 Days</SelectItem>
-                <SelectItem value="last-90-days">Last 90 Days</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button 
-              variant="outline" 
-              onClick={fetchLessons}
-              className="w-full md:w-auto"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Results Section */}
-      {filteredLessons.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No lesson summaries found</h3>
-            <p className="text-muted-foreground">
-              {lessons.length === 0 
-                ? "No lessons with recordings are available yet."
-                : "Try adjusting your filters to see more results."
-              }
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredLessons.length} of {lessons.length} lessons
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {filteredLessons.map((lesson) => (
-              <LessonSummaryCard key={lesson.id} lesson={lesson} />
-            ))}
-          </div>
-        </>
-      )}
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {filteredLessons.map((lesson) => (
+                <LessonSummaryCard key={lesson.id} lesson={lesson} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
