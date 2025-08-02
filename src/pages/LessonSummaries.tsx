@@ -17,6 +17,7 @@ interface Lesson {
   start_time: string;
   end_time: string;
   lesson_space_session_id?: string;
+  lesson_space_recording_url?: string;
   tutor: {
     first_name: string;
     last_name: string;
@@ -62,6 +63,7 @@ const LessonSummaries: React.FC = () => {
           start_time,
           end_time,
           lesson_space_session_id,
+          lesson_space_recording_url,
           tutor:tutors!inner(first_name, last_name),
           lesson_students(
             student:students(id, first_name, last_name, email)

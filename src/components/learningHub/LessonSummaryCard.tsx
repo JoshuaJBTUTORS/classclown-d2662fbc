@@ -14,6 +14,7 @@ interface LessonSummaryCardProps {
     start_time: string;
     end_time: string;
     lesson_space_session_id?: string;
+    lesson_space_recording_url?: string;
     tutor: {
       first_name: string;
       last_name: string;
@@ -68,7 +69,16 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
             <BookOpen className="h-4 w-4" />
             Lesson Recording
           </h3>
-          {lesson.lesson_space_session_id ? (
+          {lesson.lesson_space_recording_url ? (
+            <div className="aspect-video">
+              <iframe
+                src={lesson.lesson_space_recording_url}
+                className="w-full h-full rounded-lg border"
+                allow="camera; microphone; fullscreen; display-capture; autoplay"
+                title={`Recording: ${lesson.title} - ${format(lessonDate, 'MMM d, yyyy')}`}
+              />
+            </div>
+          ) : lesson.lesson_space_session_id ? (
             <LessonSpacePlayer
               sessionId={lesson.lesson_space_session_id}
               title={`${lesson.title} - ${format(lessonDate, 'MMM d, yyyy')}`}

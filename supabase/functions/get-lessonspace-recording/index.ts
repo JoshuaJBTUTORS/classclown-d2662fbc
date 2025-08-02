@@ -64,9 +64,25 @@ serve(async (req) => {
     const recordingData = await lessonSpaceResponse.json();
     console.log('LessonSpace recording response:', recordingData);
 
+    const recordingUrl = recordingData.url || recordingData.recording_url;
+
+    // Store the recording URL in the lessons table
+    if (recordingUrl) {
+      const { error: updateError } = await supabaseClient
+        .from('lessons')
+        .update({ lesson_space_recording_url: recordingUrl })
+        .eq('lesson_space_session_id', sessionId);
+
+      if (updateError) {
+        console.error('Error updating lesson with recording URL:', updateError);
+      } else {
+        console.log('Successfully stored recording URL for session:', sessionId);
+      }
+    }
+
     return new Response(
       JSON.stringify({
-        recording_url: recordingData.url || recordingData.recording_url,
+        recording_url: recordingUrl,
         recording_available: true,
         expires_at: recordingData.expires_at,
         metadata: recordingData
