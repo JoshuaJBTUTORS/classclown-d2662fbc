@@ -91,15 +91,15 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
 
       {/* Recording Modal */}
       <Dialog open={showRecording} onOpenChange={setShowRecording}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
+        <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col">
+          <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle>{lesson.title} - Recording</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 p-6">
             {lesson.lesson_space_recording_url ? (
               <iframe
                 src={lesson.lesson_space_recording_url}
-                className="w-full h-full rounded-lg border"
+                className="w-full h-full rounded-lg border-0"
                 allow="camera; microphone; fullscreen; display-capture; autoplay"
                 title={`Recording: ${lesson.title} - ${format(lessonDate, 'MMM d, yyyy')}`}
               />
