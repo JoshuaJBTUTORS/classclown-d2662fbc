@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { LESSON_SUBJECTS } from '@/constants/subjects';
 
 interface CreateAIAssessmentDialogProps {
   isOpen: boolean;
@@ -236,11 +237,11 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="GCSE Maths">GCSE Maths</SelectItem>
-                          <SelectItem value="GCSE English">GCSE English</SelectItem>
-                          <SelectItem value="GCSE Biology">GCSE Biology</SelectItem>
-                          <SelectItem value="GCSE Chemistry">GCSE Chemistry</SelectItem>
-                          <SelectItem value="GCSE Physics">GCSE Physics</SelectItem>
+                          {LESSON_SUBJECTS.map((subject) => (
+                            <SelectItem key={subject} value={subject}>
+                              {subject}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </FormControl>
