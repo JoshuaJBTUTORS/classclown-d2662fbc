@@ -59,8 +59,7 @@ serve(async (req) => {
         )
       `)
       .gte('start_time', `${todayStr}T00:00:00.000Z`)
-      .lt('start_time', `${new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}T00:00:00.000Z`)
-      .eq('status', 'completed');
+      .lt('start_time', `${new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}T00:00:00.000Z`);
 
     if (lessonsError) {
       throw new Error(`Failed to fetch lessons: ${lessonsError.message}`);
