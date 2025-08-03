@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { assessmentId } = await req.json();
+    const { assessmentId, numberOfQuestions, topic, prompt } = await req.json();
     
     if (!assessmentId) {
       throw new Error("Assessment ID is required");
@@ -52,12 +52,13 @@ serve(async (req) => {
       .eq('id', assessmentId);
 
     console.log("Processing assessment:", assessment.title);
-    console.log("Questions text length:", assessment.questions_text?.length || 0);
-    console.log("Answers text length:", assessment.answers_text?.length || 0);
+    console.log("Topic:", topic);
+    console.log("Number of questions:", numberOfQuestions);
+    console.log("Prompt:", prompt);
 
-    // Check if we have actual content to process
-    if (!assessment.questions_text || assessment.questions_text.trim().length === 0) {
-      throw new Error("No questions text provided for AI processing");
+    // Check if we have the required AI generation parameters
+    if (!topic || !prompt || !numberOfQuestions) {
+      throw new Error("Missing required parameters: topic, prompt, or numberOfQuestions");
     }
 
     // Use OpenAI to extract questions from the provided text
@@ -66,35 +67,44 @@ serve(async (req) => {
       throw new Error("OpenAI API key not configured");
     }
 
-    const extractionPrompt = `
-    You are an assessment extraction AI. Extract structured questions from the following text content.
+    const generationPrompt = `
+    You are an expert assessment creator. Generate ${numberOfQuestions} exam questions for the topic: "${topic}".
     
-    Questions Text:
-    ${assessment.questions_text}
+    Assessment Details:
+    - Subject: ${assessment.subject || 'Not specified'}
+    - Exam Board: ${assessment.exam_board || 'Not specified'}
+    - Year: ${assessment.year || 'Not specified'}
+    - Paper Type: ${assessment.paper_type || 'Not specified'}
+    - Time Limit: ${assessment.time_limit_minutes || 'Not specified'} minutes
     
-    ${assessment.answers_text ? `Answers Text:\n${assessment.answers_text}` : ''}
+    Generation Instructions:
+    ${prompt}
     
-    Please extract and format as JSON with this structure:
+    Please generate and format as JSON with this exact structure:
     {
       "questions": [
         {
           "question_number": 1,
-          "question_text": "The actual question text",
+          "question_text": "The complete question text with clear instructions",
           "question_type": "multiple_choice|short_answer|extended_writing|calculation",
           "marks_available": 5,
-          "correct_answer": "The correct answer or marking scheme",
-          "keywords": ["keyword1", "keyword2"]
+          "correct_answer": "The correct answer or detailed marking scheme",
+          "keywords": ["keyword1", "keyword2", "keyword3"]
         }
       ],
-      "total_marks": 25,
+      "total_marks": 50,
       "confidence_score": 0.95
     }
     
-    Ensure:
-    - Question types are one of: multiple_choice, short_answer, extended_writing, calculation
-    - Marks are realistic integers
-    - Extract actual questions, don't create sample content
-    - Include keywords that would help in marking
+    Requirements:
+    - Generate exactly ${numberOfQuestions} unique, high-quality questions
+    - Question types must be one of: multiple_choice, short_answer, extended_writing, calculation
+    - Assign realistic mark allocations (1-20 marks per question)
+    - Include detailed correct answers or marking schemes
+    - Add relevant keywords for each question to aid in marking
+    - Ensure questions are appropriate for the specified level and exam board
+    - Questions should vary in difficulty and style
+    - Total marks should be the sum of all individual question marks
     `;
 
     console.log("Sending request to OpenAI...");
@@ -106,19 +116,19 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert at extracting structured questions from assessment text. Always return valid JSON.'
+            content: 'You are an expert assessment creator specializing in generating high-quality exam questions. Always return valid JSON.'
           },
           {
             role: 'user',
-            content: extractionPrompt
+            content: generationPrompt
           }
         ],
-        temperature: 0.3,
-        max_tokens: 4000,
+        temperature: 0.4,
+        max_tokens: 8000,
       }),
     });
 
@@ -149,7 +159,7 @@ serve(async (req) => {
       throw new Error("Invalid AI response: missing questions array");
     }
 
-    console.log(`Extracted ${extractedData.questions.length} questions`);
+    console.log(`Generated ${extractedData.questions.length} questions`);
 
     // Store the questions in the database
     for (let i = 0; i < extractedData.questions.length; i++) {
@@ -196,8 +206,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Assessment processed successfully",
-        questionsExtracted: extractedData.questions.length,
+        message: "Assessment generated successfully",
+        questionsGenerated: extractedData.questions.length,
         totalMarks: extractedData.total_marks
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -209,7 +219,8 @@ serve(async (req) => {
     // Update the assessment status to failed
     if (req.method === "POST") {
       try {
-        const { assessmentId } = await req.json();
+        const requestBody = await req.json();
+        const assessmentId = requestBody.assessmentId;
         if (assessmentId) {
           const supabase = createClient(
             Deno.env.get("SUPABASE_URL") || "",
