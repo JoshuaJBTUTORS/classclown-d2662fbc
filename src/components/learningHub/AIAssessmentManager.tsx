@@ -82,6 +82,18 @@ const AIAssessmentManager: React.FC = () => {
     return matchesSearch && assessment.status === activeTab;
   });
 
+  // Group assessments by subject
+  const groupedAssessments = filteredAssessments.reduce((groups, assessment) => {
+    const subject = assessment.subject || 'No Subject';
+    if (!groups[subject]) {
+      groups[subject] = [];
+    }
+    groups[subject].push(assessment);
+    return groups;
+  }, {} as Record<string, typeof filteredAssessments>);
+
+  const sortedSubjects = Object.keys(groupedAssessments).sort();
+
   const assessmentCounts = {
     all: assessments.length,
     draft: assessments.filter(a => a.status === 'draft').length,
@@ -229,13 +241,25 @@ const AIAssessmentManager: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAssessments.map((assessment) => (
-                <AssessmentCard
-                  key={assessment.id}
-                  assessment={assessment}
-                  onUpdate={refetch}
-                />
+            <div className="space-y-8">
+              {sortedSubjects.map((subject) => (
+                <div key={subject} className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-foreground">{subject}</h3>
+                    <span className="text-sm text-muted-foreground">
+                      ({groupedAssessments[subject].length} assessment{groupedAssessments[subject].length !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {groupedAssessments[subject].map((assessment) => (
+                      <AssessmentCard
+                        key={assessment.id}
+                        assessment={assessment}
+                        onUpdate={refetch}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
