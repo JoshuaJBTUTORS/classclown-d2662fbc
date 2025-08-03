@@ -39,24 +39,30 @@ JB Tutors Team 🎓
   `.trim(),
 
   trialLessonReminder: (parentName: string, childName: string, lessonTitle: string, lessonDate: string, lessonTime: string, lessonUrl: string, isToday: boolean) => `
-⏰ ${isToday ? 'Today\'s' : 'Tomorrow\'s'} Trial Lesson Reminder!
+🌟 ${isToday ? 'Today\'s' : 'Tomorrow\'s'} Trial Session Reminder!
 
 Hi ${parentName}!
 
-This is a friendly reminder about ${childName}'s trial lesson:
+Excited reminder about ${childName}'s trial session:
 
 📚 ${lessonTitle}
 📅 ${lessonDate}
 ⏰ ${lessonTime}
 
+⏱️ How it works:
+• First 15 mins: Platform demo & introduction
+• Next 30 mins: Personalized trial lesson with ${childName}
+
+Parents join with one link and stay for the entire session!
+
 🔗 Join here: ${lessonUrl}
 
-Please ensure:
-- Camera is on during the lesson
-- ${childName} is ready 5 minutes early
-- You're available to observe if needed
+Important:
+📹 Camera must be on throughout
+🕐 Ready 5 minutes early
+👥 Parents welcome to observe everything
 
-We're excited to meet ${childName}!
+We're so excited to meet you both!
 
 Best regards,
 JB Tutors Team 🚀
