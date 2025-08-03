@@ -87,16 +87,26 @@ serve(async (req) => {
       // Step 1: Find LessonSpace session if not exists
       if (!lesson.lesson_space_session_id && lesson.lesson_space_room_id) {
         console.log(`Finding session for lesson ${lesson.id}`);
-        const sessionId = await findLessonSpaceSession(lesson);
-        if (sessionId) {
-          await supabaseClient
-            .from('lessons')
-            .update({ lesson_space_session_id: sessionId })
-            .eq('id', lesson.id);
-          
-          lesson.lesson_space_session_id = sessionId;
-          stats.sessions_discovered++;
-          console.log(`Found and stored session ID: ${sessionId}`);
+        
+        // Use the dedicated find-lesson-sessions edge function
+        const { data: sessionResult, error: sessionError } = await supabaseClient.functions.invoke('find-lesson-sessions', {
+          body: {
+            action: 'find_session_ids',
+            lesson_ids: [lesson.id]
+          }
+        });
+        
+        if (sessionError) {
+          console.error(`Error calling find-lesson-sessions for lesson ${lesson.id}:`, sessionError);
+        } else if (sessionResult?.results && sessionResult.results.length > 0) {
+          const result = sessionResult.results[0];
+          if (result.session_id) {
+            lesson.lesson_space_session_id = result.session_id;
+            stats.sessions_discovered++;
+            console.log(`Found and stored session ID: ${result.session_id}`);
+          } else if (result.error) {
+            console.log(`No session found for lesson ${lesson.id}: ${result.error}`);
+          }
         }
         
         // Add delay to avoid rate limiting
@@ -165,60 +175,6 @@ serve(async (req) => {
   }
 });
 
-async function findLessonSpaceSession(lesson: any): Promise<string | null> {
-  try {
-    const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY');
-    if (!lessonSpaceApiKey) {
-      console.error('LessonSpace API key not configured');
-      return null;
-    }
-
-    const startTime = new Date(lesson.start_time);
-    const endTime = new Date(lesson.end_time);
-    
-    // Search for sessions in a wider time window (30 minutes before to 30 minutes after)
-    const searchStart = new Date(startTime.getTime() - 30 * 60 * 1000);
-    const searchEnd = new Date(endTime.getTime() + 30 * 60 * 1000);
-
-    const response = await fetch(`https://api.thelessonspace.com/v2/spaces/${lesson.lesson_space_room_id}/sessions`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Organisation ${lessonSpaceApiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`LessonSpace API error: ${response.status}`);
-      return null;
-    }
-
-    const sessions = await response.json();
-    
-    if (!sessions || sessions.length === 0) {
-      return null;
-    }
-
-    // Find the session that best matches our lesson time
-    let bestMatch = null;
-    let smallestTimeDiff = Infinity;
-
-    for (const session of sessions) {
-      const sessionStart = new Date(session.started_at || session.created_at);
-      const timeDiff = Math.abs(sessionStart.getTime() - startTime.getTime());
-      
-      if (timeDiff < smallestTimeDiff && sessionStart >= searchStart && sessionStart <= searchEnd) {
-        smallestTimeDiff = timeDiff;
-        bestMatch = session;
-      }
-    }
-
-    return bestMatch ? bestMatch.uuid : null;
-  } catch (error) {
-    console.error('Error finding LessonSpace session:', error);
-    return null;
-  }
-}
 
 async function getRecordingUrl(sessionId: string): Promise<string | null> {
   try {
