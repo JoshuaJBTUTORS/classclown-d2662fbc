@@ -252,31 +252,104 @@ async function getRecordingUrl(sessionId: string): Promise<string | null> {
 
 async function ensureTranscription(supabaseClient: any, lessonId: string, sessionId: string): Promise<boolean> {
   try {
-    // Check if transcription already exists
+    // Check if transcription already exists and has text
     const { data: existingTranscription } = await supabaseClient
       .from('lesson_transcriptions')
-      .select('id, transcription_status')
+      .select('id, transcription_status, transcription_text, transcription_url')
       .eq('lesson_id', lessonId)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
-    if (existingTranscription && existingTranscription.transcription_status === 'completed') {
+    // If we have a completed transcription with text, we're done
+    if (existingTranscription && existingTranscription.transcription_status === 'completed' && existingTranscription.transcription_text) {
       return false; // Already exists
     }
 
-    // Call the generate-lesson-summaries function to get transcription
-    const { data, error } = await supabaseClient.functions.invoke('generate-lesson-summaries', {
-      body: {
-        action: 'get-transcription',
-        lessonId: lessonId
+    // If we have an available transcription with URL but no text, fetch the text
+    if (existingTranscription && existingTranscription.transcription_status === 'available' && existingTranscription.transcription_url && !existingTranscription.transcription_text) {
+      console.log(`Fetching transcription text from URL for lesson ${lessonId}`);
+      
+      try {
+        const textResponse = await fetch(existingTranscription.transcription_url);
+        if (textResponse.ok) {
+          const transcriptionText = await textResponse.text();
+          
+          // Update the transcription with the text and mark as completed
+          await supabaseClient
+            .from('lesson_transcriptions')
+            .update({ 
+              transcription_text: transcriptionText,
+              transcription_status: 'completed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingTranscription.id);
+          
+          console.log(`Successfully fetched and stored transcription text for lesson ${lessonId}`);
+          return true;
+        } else {
+          console.error(`Failed to fetch transcription text: ${textResponse.status}`);
+        }
+      } catch (fetchError) {
+        console.error('Error fetching transcription text:', fetchError);
       }
-    });
-
-    if (error) {
-      console.error('Error getting transcription:', error);
-      return false;
     }
 
-    return data?.success || false;
+    // If no transcription exists or it's in processing state, call get-transcription
+    if (!existingTranscription || existingTranscription.transcription_status === 'processing') {
+      console.log(`Getting transcription for lesson ${lessonId}`);
+      
+      const { data, error } = await supabaseClient.functions.invoke('generate-lesson-summaries', {
+        body: {
+          action: 'get-transcription',
+          lessonId: lessonId
+        }
+      });
+
+      if (error) {
+        console.error('Error getting transcription:', error);
+        return false;
+      }
+
+      // Check if the result indicates success and transcription is now available
+      if (data?.success || data?.transcription_status === 'available') {
+        // Try to fetch the text if we got a URL
+        const { data: updatedTranscription } = await supabaseClient
+          .from('lesson_transcriptions')
+          .select('id, transcription_url, transcription_text')
+          .eq('lesson_id', lessonId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (updatedTranscription?.transcription_url && !updatedTranscription.transcription_text) {
+          try {
+            const textResponse = await fetch(updatedTranscription.transcription_url);
+            if (textResponse.ok) {
+              const transcriptionText = await textResponse.text();
+              
+              await supabaseClient
+                .from('lesson_transcriptions')
+                .update({ 
+                  transcription_text: transcriptionText,
+                  transcription_status: 'completed',
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', updatedTranscription.id);
+              
+              console.log(`Successfully fetched and stored transcription text for lesson ${lessonId}`);
+              return true;
+            }
+          } catch (fetchError) {
+            console.error('Error fetching transcription text:', fetchError);
+          }
+        }
+        
+        return true;
+      }
+    }
+
+    return false;
   } catch (error) {
     console.error('Error ensuring transcription:', error);
     return false;
