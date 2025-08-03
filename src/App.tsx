@@ -103,7 +103,7 @@ function App() {
                   <Route 
                     path="lesson-plans" 
                     element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor']}>
+                      <ProtectedRoute allowedRoles={['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only']}>
                         <LessonPlans />
                       </ProtectedRoute>
                     } 
