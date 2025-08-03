@@ -7,7 +7,8 @@ Hi ${parentName}!
 Thank you for booking a trial lesson for ${childName} in ${subject}.
 
 📅 Preferred Date: ${preferredDate}
-⏰ Preferred Time: ${preferredTime}
+⏰ Session Start Time: ${preferredTime}
+⏱️ Session Structure: 15 mins platform demo + 30 mins trial lesson
 
 We'll contact you within 24 hours to confirm the lesson details and send you the joining link.
 

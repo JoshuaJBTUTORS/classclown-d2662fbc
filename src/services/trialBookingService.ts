@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, subMinutes } from 'date-fns';
 
 interface CreateTrialBookingData {
   parent_name: string;
@@ -57,6 +57,11 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
 
     const subjectName = subjectData?.name || 'Unknown Subject';
     const formattedDate = format(new Date(data.preferred_date), 'EEEE, MMMM do, yyyy');
+    
+    // Calculate demo start time (15 minutes before preferred_time)
+    const preferredDateTime = new Date(`${data.preferred_date}T${data.preferred_time}`);
+    const demoStartTime = subMinutes(preferredDateTime, 15);
+    const formattedDemoTime = format(demoStartTime, 'HH:mm');
 
     // Send confirmation email to parent (don't fail if email fails)
     try {
@@ -68,7 +73,7 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
           phone: data.phone,
           subject: subjectName,
           preferredDate: formattedDate,
-          preferredTime: data.preferred_time,
+          preferredTime: formattedDemoTime, // Send demo start time
           message: data.message,
         }
       });
@@ -88,7 +93,7 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
           phone: data.phone,
           subject: subjectName,
           preferredDate: formattedDate,
-          preferredTime: data.preferred_time,
+          preferredTime: formattedDemoTime, // Send demo start time
           message: data.message,
           bookingId: bookingData.id,
         }
