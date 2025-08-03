@@ -31,11 +31,11 @@ const LessonPlans: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAdmin, isOwner, isTutor, isStudent, isParent } = useAuth();
+  const { isAdmin, isOwner, isTutor, isStudent, isParent, isLearningHubOnly } = useAuth();
   
   // Get current academic week info
   const academicWeekInfo = getAcademicWeekInfo();
-  const isStudentOrParent = isStudent || isParent;
+  const isStudentOrParent = isStudent || isParent || isLearningHubOnly;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

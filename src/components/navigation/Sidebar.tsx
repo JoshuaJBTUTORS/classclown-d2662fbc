@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: GraduationCap,
           label: 'Lesson Plans',
           href: '/lesson-plans',
-          roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
         },
         {
           icon: FileText,
