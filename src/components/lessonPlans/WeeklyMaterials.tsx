@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import MaterialUpload from './MaterialUpload';
 import { useMaterialPermissions } from '@/hooks/useMaterialPermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TeachingMaterial {
   id: string;
@@ -26,14 +27,20 @@ interface WeeklyMaterialsProps {
   subject: string;
   weekNumber: number;
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
-const WeeklyMaterials: React.FC<WeeklyMaterialsProps> = ({ subject, weekNumber, onUpdate }) => {
+const WeeklyMaterials: React.FC<WeeklyMaterialsProps> = ({ subject, weekNumber, onUpdate, readOnly = false }) => {
   const [materials, setMaterials] = useState<TeachingMaterial[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const permissions = useMaterialPermissions();
+  const { isStudent, isParent } = useAuth();
+  
+  const isStudentOrParent = isStudent || isParent;
+  const canUpload = permissions.canUpload && !readOnly && !isStudentOrParent;
+  const canDelete = permissions.canDelete && !readOnly && !isStudentOrParent;
 
   useEffect(() => {
     if (isOpen) {
@@ -169,7 +176,7 @@ const WeeklyMaterials: React.FC<WeeklyMaterialsProps> = ({ subject, weekNumber, 
                 <span className="text-xs text-muted-foreground">
                   Week {weekNumber} Materials
                 </span>
-                {permissions.canUpload && (
+                {canUpload && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -233,7 +240,7 @@ const WeeklyMaterials: React.FC<WeeklyMaterialsProps> = ({ subject, weekNumber, 
                         >
                           <Download className="h-3 w-3" />
                         </Button>
-                        {permissions.canDelete && (
+                        {canDelete && (
                           <Button
                             size="sm"
                             variant="ghost"

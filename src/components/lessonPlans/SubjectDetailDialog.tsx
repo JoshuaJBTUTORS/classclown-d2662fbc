@@ -15,6 +15,7 @@ import { SubjectIcon } from './SubjectIcon';
 import MaterialUpload from './MaterialUpload';
 import MaterialList from './MaterialList';
 import WeeklyMaterials from './WeeklyMaterials';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 interface LessonPlan {
@@ -33,13 +34,21 @@ interface SubjectDetailDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  isStudentOrParent?: boolean;
+  currentWeek?: number;
+  currentTerm?: string;
+  weekRange?: string;
 }
 
 const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   subject,
   isOpen,
   onClose,
-  onUpdate
+  onUpdate,
+  isStudentOrParent = false,
+  currentWeek = 1,
+  currentTerm = '',
+  weekRange = ''
 }) => {
   const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
@@ -47,15 +56,22 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('plans');
   const [materialCounts, setMaterialCounts] = useState<Record<number, number>>({});
+  const { isAdmin, isOwner, isTutor } = useAuth();
+
+  // Filter plans for student/parent view (current week only)
+  const filteredPlans = isStudentOrParent 
+    ? lessonPlans.filter(plan => plan.week_number === currentWeek)
+    : lessonPlans;
 
   // Group plans by term
-  const plansByTerm = lessonPlans.reduce((acc, plan) => {
+  const plansByTerm = filteredPlans.reduce((acc, plan) => {
     if (!acc[plan.term]) acc[plan.term] = [];
     acc[plan.term].push(plan);
     return acc;
   }, {} as Record<string, LessonPlan[]>);
 
   const terms = Object.keys(plansByTerm).sort();
+  const canEdit = (isAdmin || isOwner || isTutor) && !isStudentOrParent;
 
   useEffect(() => {
     if (isOpen && subject) {
@@ -164,8 +180,21 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                   {subject}
                 </h2>
                 <p className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">
-                  Comprehensive Lesson Planning
+                  {isStudentOrParent 
+                    ? `Current Week Plans • ${weekRange}`
+                    : 'Comprehensive Lesson Planning'
+                  }
                 </p>
+                {isStudentOrParent && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
+                    >
+                      Week {currentWeek} • {currentTerm}
+                    </Badge>
+                  </div>
+                )}
               </div>
             </DialogTitle>
             
@@ -336,27 +365,28 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                                    )}
                                  </div>
                                  
-                                 {editingPlan !== plan.id && (
-                                   <Button
-                                     size="sm"
-                                     variant="ghost"
-                                     onClick={() => handleEdit(plan)}
-                                   >
-                                     <Edit className="h-4 w-4" />
-                                   </Button>
-                                 )}
+                                  {editingPlan !== plan.id && canEdit && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleEdit(plan)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                </div>
                                
-                               {editingPlan !== plan.id && (
-                                 <WeeklyMaterials
-                                   subject={subject}
-                                   weekNumber={plan.week_number}
-                                   onUpdate={() => {
-                                     fetchMaterialCounts();
-                                     onUpdate();
-                                   }}
-                                 />
-                               )}
+                                {editingPlan !== plan.id && (
+                                  <WeeklyMaterials
+                                    subject={subject}
+                                    weekNumber={plan.week_number}
+                                    readOnly={isStudentOrParent}
+                                    onUpdate={() => {
+                                      fetchMaterialCounts();
+                                      onUpdate();
+                                    }}
+                                  />
+                                )}
                              </div>
                   ))}
                        </div>
@@ -385,16 +415,31 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
           </TabsContent>
 
           <TabsContent value="materials" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <MaterialUpload 
-                subject={subject} 
-                onUploadSuccess={fetchSubjectPlans}
-              />
-              <MaterialList 
-                subject={subject}
-                onUpdate={fetchSubjectPlans}
-              />
-            </div>
+            {isStudentOrParent ? (
+              <div className="space-y-4">
+                {/* Current week materials only for students/parents */}
+                <WeeklyMaterials
+                  subject={subject}
+                  weekNumber={currentWeek}
+                  readOnly={true}
+                  onUpdate={() => {
+                    fetchMaterialCounts();
+                    onUpdate();
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <MaterialUpload 
+                  subject={subject} 
+                  onUploadSuccess={fetchSubjectPlans}
+                />
+                <MaterialList 
+                  subject={subject}
+                  onUpdate={fetchSubjectPlans}
+                />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

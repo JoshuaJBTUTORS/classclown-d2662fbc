@@ -10,6 +10,7 @@ import { LessonPlansHero } from '@/components/lessonPlans/LessonPlansHero';
 import { SubjectCard } from '@/components/lessonPlans/SubjectCard';
 import { LessonPlansLoadingSkeleton } from '@/components/lessonPlans/LoadingSkeleton';
 import { EmptyState } from '@/components/lessonPlans/EmptyState';
+import { getAcademicWeekInfo } from '@/utils/academicWeekUtils';
 import { cn } from '@/lib/utils';
 
 interface LessonPlan {
@@ -30,7 +31,11 @@ const LessonPlans: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAdmin, isOwner, isTutor } = useAuth();
+  const { isAdmin, isOwner, isTutor, isStudent, isParent } = useAuth();
+  
+  // Get current academic week info
+  const academicWeekInfo = getAcademicWeekInfo();
+  const isStudentOrParent = isStudent || isParent;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -65,10 +70,10 @@ const LessonPlans: React.FC = () => {
   const totalWeeks = Array.from(new Set(lessonPlans.map(plan => plan.week_number))).length;
 
   useEffect(() => {
-    if (isAdmin || isOwner || isTutor) {
+    if (isAdmin || isOwner || isTutor || isStudentOrParent) {
       fetchLessonPlans();
     }
-  }, [isAdmin, isOwner, isTutor]);
+  }, [isAdmin, isOwner, isTutor, isStudentOrParent]);
 
   useEffect(() => {
     filterPlans();
@@ -107,7 +112,7 @@ const LessonPlans: React.FC = () => {
     setFilteredPlans(filtered);
   };
 
-  if (!isAdmin && !isOwner && !isTutor) {
+  if (!isAdmin && !isOwner && !isTutor && !isStudentOrParent) {
     return (
       <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
@@ -197,6 +202,10 @@ const LessonPlans: React.FC = () => {
               isOpen={!!selectedSubject}
               onClose={() => setSelectedSubject(null)}
               onUpdate={fetchLessonPlans}
+              isStudentOrParent={isStudentOrParent}
+              currentWeek={academicWeekInfo.currentWeek}
+              currentTerm={academicWeekInfo.currentTerm}
+              weekRange={academicWeekInfo.weekRange}
             />
           )}
         </main>
