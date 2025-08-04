@@ -138,22 +138,22 @@ const ModuleDetail = () => {
     if (currentLessonIndex < lessons.length - 1) {
       setCurrentLessonIndex(currentLessonIndex + 1);
     } else {
-      // If this is the last lesson, check if there's a next module using personalized order
+      // At the end of regular lessons - check for assessments first
+      const hasAIAssessments = allLessons.filter(lesson => lesson.content_type === 'ai-assessment').length > 0;
+      
+      if (hasAIAssessments || (hasRequiredAssessment && !isAssessmentCompleted)) {
+        // Show assessment time screen instead of navigating
+        setCurrentLessonIndex(lessons.length);
+        return;
+      }
+      
+      // No assessments, proceed to next module
       const currentModuleIndex = orderedModules?.findIndex(m => m.id === moduleId) || 0;
       const nextModule = orderedModules?.[currentModuleIndex + 1];
       if (nextModule) {
-        // Check if current module has required assessment
-        if (hasRequiredAssessment && !isAssessmentCompleted) {
-          toast({
-            title: "Assessment Required",
-            description: "You must complete the module assessment before proceeding to the next module.",
-            variant: "destructive",
-          });
-          setShowAssessmentDialog(true);
-          return;
-        }
-        // Navigate to next module in personalized order
         navigate(`/course/${courseId}/module/${nextModule.id}`);
+      } else {
+        navigate(`/course/${courseId}`);
       }
     }
   };
@@ -165,29 +165,23 @@ const ModuleDetail = () => {
   const handleAssessmentComplete = async (score: number) => {
     setShowAssessmentDialog(false);
     
-    if (currentLesson && moduleAssessments && moduleAssessments.length > 0) {
-      const passingScore = moduleAssessments[0].passing_score || 70;
-      
-      if (score >= passingScore) {
-        await learningHubService.markAssessmentCompleted(moduleId!, score);
-        
-        toast({
-          title: "Assessment Completed!",
-          description: `You scored ${score}% and passed the assessment. Next module unlocked!`,
-        });
-        
-        const currentModuleIndex = orderedModules?.findIndex(m => m.id === moduleId) || 0;
-        const nextModule = orderedModules?.[currentModuleIndex + 1];
-        if (nextModule) {
-          navigate(`/course/${courseId}/module/${nextModule.id}`);
-        }
-      } else {
-        toast({
-          title: "Assessment Not Passed",
-          description: `You scored ${score}%. You need at least ${passingScore}% to unlock the next module.`,
-          variant: "destructive",
-        });
-      }
+    toast({
+      title: "Assessment Completed!",
+      description: `You scored ${score}%! Great work!`,
+    });
+    
+    // Mark assessment as completed and navigate appropriately
+    await learningHubService.markAssessmentCompleted(moduleId!, score);
+    
+    // Check if there's a next module
+    const currentModuleIndex = orderedModules?.findIndex(m => m.id === moduleId) || 0;
+    const nextModule = orderedModules?.[currentModuleIndex + 1];
+    
+    if (nextModule && canProgressToNext) {
+      navigate(`/course/${courseId}/module/${nextModule.id}`);
+    } else {
+      // No next module or can't progress - go back to course overview
+      navigate(`/course/${courseId}`);
     }
   };
 
@@ -236,14 +230,17 @@ const ModuleDetail = () => {
         if (currentLessonIndex < lessons.length - 1) {
           setCurrentLessonIndex(currentLessonIndex + 1);
         } else {
-          // All regular lessons completed - show assessment time if needed
-          if (aiAssessmentLessons.length > 0 || needsAssessment) {
-            setCurrentLessonIndex(lessons.length); // This will trigger assessment time screen
+          // Last regular lesson completed - check for assessments using original module data
+          const hasAIAssessments = allLessons.filter(lesson => lesson.content_type === 'ai-assessment').length > 0;
+          
+          if (hasAIAssessments || (hasRequiredAssessment && !isAssessmentCompleted)) {
+            // Show assessment time screen
+            setCurrentLessonIndex(lessons.length);
           } else {
-            // Navigate to next module if available
+            // No assessments required - navigate to next module or course
             const currentModuleIndex = orderedModules?.findIndex(m => m.id === moduleId) || 0;
             const nextModule = orderedModules?.[currentModuleIndex + 1];
-            if (nextModule) {
+            if (nextModule && canProgressToNext) {
               navigate(`/course/${courseId}/module/${nextModule.id}`);
             } else {
               navigate(`/course/${courseId}`);
