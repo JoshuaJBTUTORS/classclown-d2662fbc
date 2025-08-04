@@ -86,11 +86,11 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     return colorMap[key as keyof typeof colorMap] || 'bg-primary';
   };
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4 w-full px-2">
       {Object.entries(options).map(([key, value]) => (
         <div 
           key={key} 
-          className={`${getOptionClass(key)} cursor-pointer transition-all duration-300 hover:scale-[1.02] w-full ml-6 group flex items-start space-x-3 sm:space-x-4`} 
+          className={`${getOptionClass(key)} cursor-pointer transition-all duration-300 hover:scale-[1.02] w-full group flex items-start space-x-3 sm:space-x-4`} 
           onClick={() => onAnswerChange(question.id, key)}
         >
           <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-all duration-300 ${getOptionBadgeClass(key)}`}>
