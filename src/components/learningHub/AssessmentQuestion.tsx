@@ -129,7 +129,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
         <div className="space-y-6 w-full">
           {question.question_type === 'multiple_choice' ? (
             <div className="w-full">
-              <p className="text-base font-semibold text-gray-800 mb-4 text-left">Select your answer:</p>
+              <p className="text-base font-semibold text-gray-800 mb-4 text-left pl-6">Select your answer:</p>
               <div className="w-full">
                 <MultipleChoiceQuestion
                   question={question}
