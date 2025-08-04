@@ -449,7 +449,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
               <>
                 {/* Enhanced Progress Section */}
                 <div className="mb-8">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 pl-6">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center">
                         <span className="text-white text-sm font-bold">{currentQuestionIndex + 1}</span>
