@@ -44,6 +44,33 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
     checkDemoMode();
   }, []);
 
+  // Auto-detect demo mode based on current user
+  useEffect(() => {
+    const autoDetectDemoMode = async () => {
+      // Get current user from Supabase
+      const { data: { user } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
+      
+      if (user?.email) {
+        const isDemo = await demoAccountService.isDemoUser(user.email);
+        if (isDemo && !isDemoMode) {
+          console.log('🎭 Auto-detected demo user, enabling demo mode');
+          setIsDemoMode(true);
+          setDemoSessionId(crypto.randomUUID());
+          localStorage.setItem('demo_session_id', demoSessionId || crypto.randomUUID());
+          localStorage.setItem('demo_user_email', user.email);
+        } else if (!isDemo && isDemoMode) {
+          console.log('🎭 Non-demo user detected, disabling demo mode');
+          setIsDemoMode(false);
+          setDemoSessionId(null);
+          localStorage.removeItem('demo_session_id');
+          localStorage.removeItem('demo_user_email');
+        }
+      }
+    };
+
+    autoDetectDemoMode();
+  }, [isDemoMode]);
+
   const setDemoMode = (isDemo: boolean, sessionId?: string) => {
     setIsDemoMode(isDemo);
     if (isDemo && sessionId) {

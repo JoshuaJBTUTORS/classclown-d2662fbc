@@ -72,14 +72,19 @@ Deno.serve(async (req) => {
 
     console.log('Creating demo users...');
 
+    // Store created user IDs
+    const createdUserIds = new Map();
+
     for (const user of demoUsers) {
       try {
         // Check if user already exists by email first
         const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
         const userExists = existingUsers.users.find(u => u.email === user.email);
         
+        let actualUserId = userExists?.id;
+
         if (userExists) {
-          console.log(`Demo user ${user.email} already exists, skipping auth creation...`);
+          console.log(`Demo user ${user.email} already exists, using ID: ${actualUserId}`);
         } else {
           // Create auth user
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -98,13 +103,18 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          console.log(`✅ Created auth user: ${user.email} (${user.role})`);
+          actualUserId = authData.user.id;
+          console.log(`✅ Created auth user: ${user.email} (${user.role}) - ID: ${actualUserId}`);
         }
+
+        // Store the actual user ID
+        createdUserIds.set(user.email, actualUserId);
 
         // Always try to insert into demo_users table (upsert)
         const { error: demoError } = await supabaseAdmin
           .from('demo_users')
           .upsert({
+            id: actualUserId,
             email: user.email,
             role: user.role,
             first_name: user.first_name,
@@ -121,26 +131,21 @@ Deno.serve(async (req) => {
         }
 
         // Create user role entry
-        if (!userExists) {
-          const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-          const newUser = authUsers.users.find(u => u.email === user.email);
-          
-          if (newUser) {
-            const { error: roleError } = await supabaseAdmin
-              .from('user_roles')
-              .upsert({
-                user_id: newUser.id,
-                role: user.role,
-                is_primary: true
-              }, {
-                onConflict: 'user_id'
-              });
+        if (actualUserId) {
+          const { error: roleError } = await supabaseAdmin
+            .from('user_roles')
+            .upsert({
+              user_id: actualUserId,
+              role: user.role,
+              is_primary: true
+            }, {
+              onConflict: 'user_id'
+            });
 
-            if (roleError) {
-              console.error(`Failed to create user role for ${user.email}:`, roleError);
-            } else {
-              console.log(`✅ Created user role: ${user.email} -> ${user.role}`);
-            }
+          if (roleError) {
+            console.error(`Failed to create user role for ${user.email}:`, roleError);
+          } else {
+            console.log(`✅ Created user role: ${user.email} -> ${user.role}`);
           }
         }
 
@@ -149,8 +154,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Now populate demo data
-    await populateDemoData(supabaseAdmin);
+    // Now populate demo data with actual user IDs
+    await populateDemoData(supabaseAdmin, createdUserIds);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Demo users and data created successfully' }),
@@ -172,25 +177,36 @@ Deno.serve(async (req) => {
   }
 });
 
-async function populateDemoData(supabase: any) {
+async function populateDemoData(supabase: any, userIds: Map<string, string>) {
   console.log('Starting demo data population...');
 
   try {
+    const tutorUserId = userIds.get('demo.tutor1@jb-tutors.com');
+    const parentUserId = userIds.get('demo.parent1@email.com');
+    
+    if (!tutorUserId || !parentUserId) {
+      console.error('Missing required user IDs for demo data creation');
+      return;
+    }
+
     // Create demo tutors
     const { error: tutorError } = await supabase
       .from('tutors')
-      .insert([
+      .upsert([
         {
-          id: '00000000-0000-0000-0000-000000000001',
+          id: tutorUserId,
           email: 'demo.tutor1@jb-tutors.com',
-          first_name: 'Demo',
-          last_name: 'Tutor',
-          subjects: ['Mathematics', 'Physics'],
-          hourly_rate: 25.00,
+          first_name: 'Emma',
+          last_name: 'Thompson',
+          phone: '+44 7700 900001',
+          specialities: ['Mathematics', 'Physics'],
+          normal_hourly_rate: 45,
+          absence_hourly_rate: 50,
+          status: 'active',
           bio: 'Demo tutor for Mathematics and Physics',
           is_demo_data: true
         }
-      ]);
+      ], { onConflict: 'id' });
 
     if (tutorError) console.error('Tutor creation error:', tutorError);
     else console.log('Demo tutors created');
@@ -198,94 +214,145 @@ async function populateDemoData(supabase: any) {
     // Create demo parents
     const { error: parentError } = await supabase
       .from('parents')
-      .insert([
+      .upsert([
         {
-          id: '00000000-0000-0000-0000-000000000001',
-          user_id: '00000000-0000-0000-0000-000000000004',
+          id: crypto.randomUUID(),
+          user_id: parentUserId,
           email: 'demo.parent1@email.com',
-          first_name: 'Demo',
-          last_name: 'Parent',
+          first_name: 'David',
+          last_name: 'Brown',
           phone: '+44 7123 456789',
           is_demo_data: true
         }
-      ]);
+      ], { onConflict: 'user_id' });
 
     if (parentError) console.error('Parent creation error:', parentError);
     else console.log('Demo parents created');
 
+    // Get the created parent record to get the correct parent ID
+    const { data: parentData, error: parentFetchError } = await supabase
+      .from('parents')
+      .select('id')
+      .eq('user_id', parentUserId)
+      .eq('is_demo_data', true)
+      .single();
+
+    if (parentFetchError) {
+      console.error('Error fetching parent ID:', parentFetchError);
+      return;
+    }
+
     // Create demo students
-    const { error: studentError } = await supabase
+    const { data: studentData, error: studentError } = await supabase
       .from('students')
-      .insert([
+      .upsert([
         {
-          id: 1,
           email: 'demo.student1@email.com',
-          first_name: 'Demo',
-          last_name: 'Student',
-          parent_id: '00000000-0000-0000-0000-000000000001',
-          subjects: ['Mathematics'],
-          year_group: 'Year 10',
+          first_name: 'Oliver',
+          last_name: 'Brown',
+          parent_id: parentData.id,
+          subjects: 'Mathematics, Physics',
+          grade: 'Year 10',
+          status: 'active',
+          is_demo_data: true
+        },
+        {
+          email: 'demo.student2@email.com',
+          first_name: 'Emma',
+          last_name: 'Brown',
+          parent_id: parentData.id,
+          subjects: 'English, History',
+          grade: 'Year 8',
+          status: 'active',
           is_demo_data: true
         }
-      ]);
+      ], { onConflict: 'email' })
+      .select();
 
     if (studentError) console.error('Student creation error:', studentError);
     else console.log('Demo students created');
 
     // Create demo lessons
-    const startTime = new Date();
+    const currentDate = new Date();
+    const startTime = new Date(currentDate);
     startTime.setHours(14, 0, 0, 0); // 2 PM today
     const endTime = new Date(startTime);
     endTime.setHours(15, 0, 0, 0); // 3 PM today
 
+    const pastTime = new Date(currentDate);
+    pastTime.setDate(pastTime.getDate() - 7);
+    pastTime.setHours(14, 0, 0, 0);
+    const pastEndTime = new Date(pastTime);
+    pastEndTime.setHours(15, 0, 0, 0);
+
+    const futureTime = new Date(currentDate);
+    futureTime.setDate(futureTime.getDate() + 7);
+    futureTime.setHours(14, 0, 0, 0);
+    const futureEndTime = new Date(futureTime);
+    futureEndTime.setHours(15, 0, 0, 0);
+
     const { data: lessonData, error: lessonError } = await supabase
       .from('lessons')
-      .insert([
+      .upsert([
         {
-          id: '00000000-0000-0000-0000-000000000001',
-          title: 'Demo Mathematics Lesson',
-          description: 'Demo lesson for algebra basics',
-          tutor_id: '00000000-0000-0000-0000-000000000001',
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
+          id: crypto.randomUUID(),
+          title: 'Mathematics - Quadratic Equations',
+          description: 'Demo lesson covering quadratic equations and factoring',
+          tutor_id: tutorUserId,
+          start_time: pastTime.toISOString(),
+          end_time: pastEndTime.toISOString(),
           subject: 'Mathematics',
           status: 'completed',
           is_demo_data: true
+        },
+        {
+          id: crypto.randomUUID(),
+          title: 'Physics - Newton\'s Laws',
+          description: 'Demo lesson on Newton\'s three laws of motion',
+          tutor_id: tutorUserId,
+          start_time: futureTime.toISOString(),
+          end_time: futureEndTime.toISOString(),
+          subject: 'Physics',
+          status: 'scheduled',
+          is_demo_data: true
         }
-      ])
+      ], { onConflict: 'id' })
       .select();
 
     if (lessonError) console.error('Lesson creation error:', lessonError);
     else console.log('Demo lessons created');
 
-    // Link student to lesson
-    if (lessonData && lessonData.length > 0) {
+    // Link students to lessons
+    if (lessonData && lessonData.length > 0 && studentData && studentData.length > 0) {
+      const lessonStudentLinks = [];
+      for (const lesson of lessonData) {
+        for (const student of studentData) {
+          lessonStudentLinks.push({
+            lesson_id: lesson.id,
+            student_id: student.id
+          });
+        }
+      }
+
       const { error: linkError } = await supabase
         .from('lesson_students')
-        .insert([
-          {
-            lesson_id: lessonData[0].id,
-            student_id: 1
-          }
-        ]);
+        .upsert(lessonStudentLinks, { onConflict: 'lesson_id,student_id' });
 
       if (linkError) console.error('Lesson-student link error:', linkError);
       else console.log('Demo lesson-student links created');
-    }
 
-    // Create demo homework
-    if (lessonData && lessonData.length > 0) {
+      // Create demo homework
+      const homeworkData = lessonData.map(lesson => ({
+        title: `${lesson.subject} Practice Assignment`,
+        description: `Practice exercises for ${lesson.title}`,
+        lesson_id: lesson.id,
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        is_demo_data: true
+      }));
+
       const { error: homeworkError } = await supabase
         .from('homework')
-        .insert([
-          {
-            title: 'Demo Algebra Practice',
-            description: 'Complete the quadratic equations worksheet',
-            lesson_id: lessonData[0].id,
-            due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            is_demo_data: true
-          }
-        ]);
+        .upsert(homeworkData, { onConflict: 'lesson_id,title' });
 
       if (homeworkError) console.error('Homework creation error:', homeworkError);
       else console.log('Demo homework created');
