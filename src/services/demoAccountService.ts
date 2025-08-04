@@ -136,17 +136,29 @@ class DemoAccountService {
   }
 
   async populateDemoData(): Promise<void> {
+    console.log('Starting demo data population...');
     try {
-      // This will be called to populate all demo data
       await this.createDemoTutors();
+      console.log('✓ Demo tutors created');
+      
       await this.createDemoParents();
+      console.log('✓ Demo parents created');
+      
       await this.createDemoStudents();
+      console.log('✓ Demo students created');
+      
       await this.createDemoLessons();
+      console.log('✓ Demo lessons created');
+      
       await this.createDemoHomework();
-      await this.createDemoAssessments();
+      console.log('✓ Demo homework created');
+      
       await this.createDemoProgress();
+      console.log('✓ Demo progress data created');
+      
+      console.log('🎉 Demo data population completed successfully!');
     } catch (error) {
-      console.error('Error populating demo data:', error);
+      console.error('❌ Error populating demo data:', error);
       throw error;
     }
   }
