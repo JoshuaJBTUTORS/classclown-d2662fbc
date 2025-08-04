@@ -138,6 +138,11 @@ class DemoAccountService {
   async populateDemoData(): Promise<void> {
     console.log('Starting demo data population...');
     try {
+      // First create demo users in auth system
+      await this.createDemoAuthUsers();
+      console.log('✓ Demo auth users created');
+      
+      // Then create demo data in tables
       await this.createDemoTutors();
       console.log('✓ Demo tutors created');
       
@@ -160,6 +165,49 @@ class DemoAccountService {
     } catch (error) {
       console.error('❌ Error populating demo data:', error);
       throw error;
+    }
+  }
+
+  private async createDemoAuthUsers(): Promise<void> {
+    console.log('Creating demo auth users...');
+    
+    for (const demoUser of this.demoUsers) {
+      try {
+        // Create the auth user directly (admin API will handle duplicates)
+        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+          email: demoUser.email,
+          password: 'demo123!', // Simple demo password
+          email_confirm: true,
+          user_metadata: {
+            first_name: demoUser.firstName,
+            last_name: demoUser.lastName,
+            role: demoUser.role
+          }
+        });
+
+        if (authError && !authError.message.includes('already registered')) {
+          console.error(`Failed to create auth user for ${demoUser.email}:`, authError);
+          continue;
+        }
+
+        console.log(`✓ Created/verified auth user: ${demoUser.email} (${demoUser.role})`);
+
+        // Also insert into demo_users table for tracking
+        const { error: demoUserError } = await supabase
+          .from('demo_users')
+          .upsert({
+            email: demoUser.email,
+            role: demoUser.role,
+            first_name: demoUser.firstName,
+            last_name: demoUser.lastName
+          });
+
+        if (demoUserError) {
+          console.error(`Failed to insert demo user ${demoUser.email}:`, demoUserError);
+        }
+      } catch (error) {
+        console.error(`Error creating demo user ${demoUser.email}:`, error);
+      }
     }
   }
 
