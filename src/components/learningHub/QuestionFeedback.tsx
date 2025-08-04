@@ -24,7 +24,7 @@ const QuestionFeedback: React.FC<QuestionFeedbackProps> = ({
     return (
       <div className="mt-4 flex flex-col items-center justify-center py-8 animate-fade-in">
         <img 
-          src="/lovable-uploads/2bf5a4ae-12dc-41d1-ab88-34bf93d9798d.png" 
+          src="/lovable-uploads/adc5109e-6ce1-43c5-ac5a-041da62fd7a3.png" 
           alt="Pawfessor is thinking" 
           className="w-48 h-auto animate-bounce"
         />
