@@ -27,13 +27,34 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
   studentAnswer,
   onAnswerChange
 }) => {
-  // Get options from marking scheme or fallback to default
-  const options: Record<string, string> = question.marking_scheme?.options || {
-    A: 'Option A',
-    B: 'Option B',
-    C: 'Option C',
-    D: 'Option D'
-  };
+  // Transform options to ensure letter keys (A, B, C, D)
+  const rawOptions = question.marking_scheme?.options;
+  const options: Record<string, string> = {};
+  
+  if (Array.isArray(rawOptions)) {
+    // Convert array indices to letter keys
+    const letters = ['A', 'B', 'C', 'D'];
+    rawOptions.forEach((option, index) => {
+      if (index < letters.length) {
+        options[letters[index]] = String(option);
+      }
+    });
+  } else if (rawOptions && typeof rawOptions === 'object') {
+    // Handle object format - convert numeric keys to letter keys if needed
+    const entries = Object.entries(rawOptions);
+    const letters = ['A', 'B', 'C', 'D'];
+    entries.forEach(([key, value], index) => {
+      if (index < letters.length) {
+        options[letters[index]] = String(value);
+      }
+    });
+  } else {
+    // Fallback to default options
+    options.A = 'Option A';
+    options.B = 'Option B';
+    options.C = 'Option C';
+    options.D = 'Option D';
+  }
 
   // Get pastel class for each option
   const getOptionClass = (key: string) => {
