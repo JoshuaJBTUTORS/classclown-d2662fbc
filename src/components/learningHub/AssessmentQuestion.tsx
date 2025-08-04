@@ -140,14 +140,16 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
             </div>
           ) : (
             <div className="w-full">
-              <p className="text-base font-semibold text-gray-800 mb-4 text-left">Your answer:</p>
-              <Textarea
-                placeholder="Enter your answer here..."
-                value={studentAnswer}
-                onChange={(e) => onAnswerChange(question.id, e.target.value)}
-                disabled={isMarking}
-                className="min-h-[150px] break-words text-base bg-white border-2 border-gray-200 focus:border-primary rounded-xl p-4 w-full"
-              />
+              <p className="text-base font-semibold text-gray-800 mb-4 text-left pl-6">Your answer:</p>
+              <div className="pl-6">
+                <Textarea
+                  placeholder="Enter your answer here..."
+                  value={studentAnswer}
+                  onChange={(e) => onAnswerChange(question.id, e.target.value)}
+                  disabled={isMarking}
+                  className="min-h-[150px] break-words text-base bg-white border-2 border-gray-200 focus:border-primary rounded-xl p-4 w-full"
+                />
+              </div>
             </div>
           )}
         </div>
