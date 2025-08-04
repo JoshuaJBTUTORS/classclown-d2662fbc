@@ -43,20 +43,20 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     <RadioGroup
       value={studentAnswer}
       onValueChange={(value) => onAnswerChange(question.id, value)}
-      className="space-y-4"
+      className="space-y-4 w-full"
     >
       {Object.entries(options).map(([key, value]) => (
         <div 
           key={key}
-          className={`relative cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+          className={`relative cursor-pointer transition-all duration-200 hover:scale-[1.01] w-full ${
             studentAnswer === key 
               ? 'bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary shadow-lg' 
               : 'bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'
-          } rounded-xl p-5 group`}
+          } rounded-xl p-4 sm:p-5 group`}
           onClick={() => onAnswerChange(question.id, key)}
         >
-          <div className="flex items-start space-x-4">
-            <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-colors ${
+          <div className="flex items-start space-x-3 sm:space-x-4 w-full">
+            <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-colors ${
               studentAnswer === key
                 ? 'bg-primary text-white border-primary'
                 : 'border-gray-300 text-gray-500 group-hover:border-gray-400'
@@ -64,12 +64,15 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
               {key}
             </div>
             <RadioGroupItem value={key} id={`choice-${key}`} className="sr-only" />
-            <Label htmlFor={`choice-${key}`} className="flex-1 cursor-pointer text-gray-800 leading-relaxed text-base">
+            <Label 
+              htmlFor={`choice-${key}`} 
+              className="flex-1 cursor-pointer text-gray-800 leading-relaxed text-sm sm:text-base w-full break-words"
+            >
               {String(value)}
             </Label>
             {studentAnswer === key && (
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary flex items-center justify-center">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -123,25 +126,27 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
           </div>
         )}
         
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
           {question.question_type === 'multiple_choice' ? (
-            <div>
-              <p className="text-base font-semibold text-gray-800 mb-4 text-center sm:text-left">Select your answer:</p>
-              <MultipleChoiceQuestion
-                question={question}
-                studentAnswer={studentAnswer}
-                onAnswerChange={onAnswerChange}
-              />
+            <div className="w-full">
+              <p className="text-base font-semibold text-gray-800 mb-4 text-left">Select your answer:</p>
+              <div className="w-full max-w-4xl mx-auto">
+                <MultipleChoiceQuestion
+                  question={question}
+                  studentAnswer={studentAnswer}
+                  onAnswerChange={onAnswerChange}
+                />
+              </div>
             </div>
           ) : (
-            <div>
-              <p className="text-base font-semibold text-gray-800 mb-4 text-center sm:text-left">Your answer:</p>
+            <div className="w-full">
+              <p className="text-base font-semibold text-gray-800 mb-4 text-left">Your answer:</p>
               <Textarea
                 placeholder="Enter your answer here..."
                 value={studentAnswer}
                 onChange={(e) => onAnswerChange(question.id, e.target.value)}
                 disabled={isMarking}
-                className="min-h-[150px] break-words text-base bg-white border-2 border-gray-200 focus:border-primary rounded-xl p-4"
+                className="min-h-[150px] break-words text-base bg-white border-2 border-gray-200 focus:border-primary rounded-xl p-4 w-full"
               />
             </div>
           )}
