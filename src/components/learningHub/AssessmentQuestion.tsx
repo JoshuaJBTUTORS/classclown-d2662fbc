@@ -43,15 +43,38 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     <RadioGroup
       value={studentAnswer}
       onValueChange={(value) => onAnswerChange(question.id, value)}
-      className="space-y-3"
+      className="space-y-4"
     >
       {Object.entries(options).map(([key, value]) => (
-        <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50" key={key}>
-          <RadioGroupItem value={key} id={`choice-${key}`} className="mt-1" />
-          <Label htmlFor={`choice-${key}`} className="flex-1 cursor-pointer break-words">
-            <span className="font-medium mr-2">{key}.</span>
-            {String(value)}
-          </Label>
+        <div 
+          key={key}
+          className={`relative cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+            studentAnswer === key 
+              ? 'bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary shadow-lg' 
+              : 'bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'
+          } rounded-xl p-5 group`}
+          onClick={() => onAnswerChange(question.id, key)}
+        >
+          <div className="flex items-start space-x-4">
+            <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-colors ${
+              studentAnswer === key
+                ? 'bg-primary text-white border-primary'
+                : 'border-gray-300 text-gray-500 group-hover:border-gray-400'
+            }`}>
+              {key}
+            </div>
+            <RadioGroupItem value={key} id={`choice-${key}`} className="sr-only" />
+            <Label htmlFor={`choice-${key}`} className="flex-1 cursor-pointer text-gray-800 leading-relaxed text-base">
+              {String(value)}
+            </Label>
+            {studentAnswer === key && (
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
       ))}
     </RadioGroup>
@@ -69,17 +92,24 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
   isMarked = false,
 }) => {
   return (
-    <Card className={embedded ? "border-0 shadow-none rounded-none" : ""}>
-      <CardHeader className={embedded ? "px-0 py-2" : ""}>
-        <CardTitle className={embedded ? "text-base sm:text-lg text-center sm:text-left" : ""}>
+    <Card className={embedded ? "border-0 shadow-none rounded-none" : "shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50"}>
+      <CardHeader className={embedded ? "px-0 py-2" : "pb-6"}>
+        <CardTitle className={embedded ? "text-base sm:text-lg text-center sm:text-left" : "text-xl font-bold"}>
           <div className="flex items-center justify-center sm:justify-start">
-            <FileText className="mr-2 h-4 w-4" />
-            Question {question.question_number} ({question.marks_available} marks)
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center mr-3">
+              <FileText className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-gray-900">
+              Question {question.question_number} 
+              <span className="text-primary font-normal ml-2">({question.marks_available} marks)</span>
+            </span>
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className={embedded ? "px-0 pb-2 space-y-4" : "space-y-4"}>
-        <p className="text-gray-800 leading-relaxed text-left break-words">{question.question_text}</p>
+      <CardContent className={embedded ? "px-0 pb-2 space-y-6" : "space-y-6 pt-0"}>
+        <div className="bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border border-gray-100">
+          <p className="text-gray-900 leading-relaxed text-lg font-medium break-words">{question.question_text}</p>
+        </div>
         
         {/* Display question image if it exists */}
         {question.image_url && (
@@ -93,10 +123,10 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
           </div>
         )}
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           {question.question_type === 'multiple_choice' ? (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-3 text-center sm:text-left">Select your answer:</p>
+              <p className="text-base font-semibold text-gray-800 mb-4 text-center sm:text-left">Select your answer:</p>
               <MultipleChoiceQuestion
                 question={question}
                 studentAnswer={studentAnswer}
@@ -105,26 +135,44 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
             </div>
           ) : (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2 text-center sm:text-left">Your answer:</p>
+              <p className="text-base font-semibold text-gray-800 mb-4 text-center sm:text-left">Your answer:</p>
               <Textarea
                 placeholder="Enter your answer here..."
                 value={studentAnswer}
                 onChange={(e) => onAnswerChange(question.id, e.target.value)}
                 disabled={isMarking}
-                className="min-h-[120px] break-words"
+                className="min-h-[150px] break-words text-base bg-white border-2 border-gray-200 focus:border-primary rounded-xl p-4"
               />
             </div>
           )}
         </div>
         
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-6">
           <Button 
             onClick={onMark} 
             disabled={isMarking || !studentAnswer.trim() || isMarked}
-            className={`w-full max-w-xs ${isMarked ? 'bg-green-600 hover:bg-green-600' : ''}`}
-            variant={isMarked ? 'default' : 'default'}
+            className={`px-8 py-3 text-base font-semibold rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg ${
+              isMarked 
+                ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg' 
+                : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg'
+            }`}
+            variant="default"
           >
-            {isMarking ? 'Marking Answer...' : isMarked ? 'Already Marked' : 'Mark Answer'}
+            {isMarking ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Marking Answer...</span>
+              </div>
+            ) : isMarked ? (
+              <div className="flex items-center space-x-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>Already Marked</span>
+              </div>
+            ) : (
+              'Mark Answer'
+            )}
           </Button>
         </div>
         

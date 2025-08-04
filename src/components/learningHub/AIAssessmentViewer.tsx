@@ -447,31 +447,57 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
           <CardContent className={embedded ? "px-2 sm:px-0 pb-0" : ""}>
             {session ? (
               <>
-                {/* Timer Section - Only show for timed assessments */}
-                {assessment.time_limit_minutes && (
-                  <div className="flex items-center justify-between mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <AssessmentTimer 
-                      timeRemaining={timeRemaining}
-                      hasTimeLimit={!!assessment.time_limit_minutes}
+                {/* Enhanced Progress Section */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">{currentQuestionIndex + 1}</span>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Question {currentQuestionIndex + 1} of {questions?.length || 0}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {Math.round(((currentQuestionIndex + 1) / (questions?.length || 1)) * 100)}% Complete
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Timer Section - Only show for timed assessments */}
+                    {assessment.time_limit_minutes && (
+                      <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-3">
+                        <AssessmentTimer 
+                          timeRemaining={timeRemaining}
+                          hasTimeLimit={!!assessment.time_limit_minutes}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${((currentQuestionIndex + 1) / (questions?.length || 1)) * 100}%` }}
                     />
                   </div>
-                )}
+                </div>
 
                 {questionsLoading ? (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-32 w-full" />
+                      <div key={i} className="animate-pulse">
+                        <div className="h-8 bg-gray-200 rounded-lg w-3/4 mb-4"></div>
+                        <div className="space-y-3">
+                          <div className="h-6 bg-gray-200 rounded w-full"></div>
+                          <div className="h-6 bg-gray-200 rounded w-5/6"></div>
+                          <div className="h-6 bg-gray-200 rounded w-4/6"></div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : questions && questions.length > 0 ? (
-                  <>
-                    <div className="mb-4 text-center sm:text-left">
-                      <div className="text-sm text-gray-600 mb-2">
-                        Question {currentQuestionIndex + 1} of {questions.length}
-                      </div>
-                      <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
-                    </div>
-
+                  <div className="animate-fade-in">
                     <AssessmentQuestionCard
                       question={questions[currentQuestionIndex]}
                       studentAnswer={studentAnswers[questions[currentQuestionIndex].id] || ''}
@@ -491,24 +517,35 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
                     />
 
                     {/* Single Complete Assessment Button - Always shown at bottom */}
-                    <div className="mt-8 pt-6 border-t">
-                      <AssessmentCompletion 
-                        onComplete={completeAssessment}
-                        isLoading={isCompletingAssessment}
-                        hasAnsweredQuestions={hasAnsweredQuestions}
-                      />
-                      {isCompletingAssessment && (
-                        <div className="mt-4 text-center">
-                          <p className="text-sm text-muted-foreground">
-                            Processing your answers and updating your learning path...
-                          </p>
-                        </div>
-                      )}
+                    <div className="mt-12 pt-8 border-t border-gray-200">
+                      <div className="bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border border-gray-100">
+                        <AssessmentCompletion 
+                          onComplete={completeAssessment}
+                          isLoading={isCompletingAssessment}
+                          hasAnsweredQuestions={hasAnsweredQuestions}
+                        />
+                        {isCompletingAssessment && (
+                          <div className="mt-4 text-center">
+                            <div className="flex items-center justify-center space-x-2 text-primary">
+                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                              <p className="text-sm font-medium">
+                                Processing your answers and updating your learning path...
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No questions found for this assessment.</p>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-lg">No questions found for this assessment.</p>
+                    <p className="text-gray-400 text-sm mt-2">Please check back later or contact support.</p>
                   </div>
                 )}
               </>
