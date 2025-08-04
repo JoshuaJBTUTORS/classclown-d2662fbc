@@ -96,9 +96,9 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
 }) => {
   return (
     <Card className={embedded ? "border-0 shadow-none rounded-none" : "shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50"}>
-      <CardHeader className={embedded ? "px-0 py-2" : "pb-6"}>
+      <CardHeader className={embedded ? "px-0 py-2" : "pb-6 px-6 sm:px-8 lg:px-10"}>
         <CardTitle className={embedded ? "text-base sm:text-lg text-center sm:text-left" : "text-xl font-bold"}>
-          <div className="flex items-center justify-center sm:justify-start">
+          <div className="flex items-center justify-start w-full">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center mr-3">
               <FileText className="h-5 w-5 text-white" />
             </div>
@@ -109,9 +109,9 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className={embedded ? "px-0 pb-2 space-y-6" : "space-y-6 pt-0"}>
-        <div className="bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border border-gray-100">
-          <p className="text-gray-900 leading-relaxed text-lg font-medium break-words">{question.question_text}</p>
+      <CardContent className={embedded ? "px-0 pb-2 space-y-6" : "space-y-6 pt-0 px-6 sm:px-8 lg:px-10"}>
+        <div className="bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border border-gray-100 w-full">
+          <p className="text-gray-900 leading-relaxed text-lg font-medium break-words text-left">{question.question_text}</p>
         </div>
         
         {/* Display question image if it exists */}
@@ -130,7 +130,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
           {question.question_type === 'multiple_choice' ? (
             <div className="w-full">
               <p className="text-base font-semibold text-gray-800 mb-4 text-left">Select your answer:</p>
-              <div className="w-full max-w-4xl mx-auto">
+              <div className="w-full">
                 <MultipleChoiceQuestion
                   question={question}
                   studentAnswer={studentAnswer}
@@ -152,7 +152,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
           )}
         </div>
         
-        <div className="flex justify-center pt-6">
+        <div className="flex justify-center pt-6 w-full">
           <Button 
             onClick={onMark} 
             disabled={isMarking || !studentAnswer.trim() || isMarked}
