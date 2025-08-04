@@ -455,7 +455,11 @@ const ModuleDetail = () => {
           <ModuleAssessmentDialog
             isOpen={showAssessmentDialog}
             onClose={() => setShowAssessmentDialog(false)}
-            assessmentId={moduleAssessments[0].ai_assessments.id}
+            assessmentId={
+              aiAssessmentLessons.length > 0 && aiAssessmentLessons[0]?.id
+                ? aiAssessmentLessons[0].id
+                : moduleAssessments?.[0]?.id || ''
+            }
             onAssessmentComplete={handleAssessmentComplete}
           />
         )}
