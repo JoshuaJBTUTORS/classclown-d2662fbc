@@ -26,7 +26,11 @@ export const LESSON_SUBJECTS = [
   'GCSE Biology',
   'Year 11 Physics',
   'Year 11 Biology',
-  'Year 11 Chemistry'
+  'Year 11 Chemistry',
+  'A-level Maths',
+  'A-level Biology',
+  'A-level Chemistry',
+  'A-level Physics'
 ] as const;
 
 export type LessonSubject = typeof LESSON_SUBJECTS[number];
