@@ -43,7 +43,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
   const getOptionClass = (key: string) => {
     const baseClass = `option-${key.toLowerCase()}`;
     const isSelected = studentAnswer === key;
-    return `${baseClass} ${isSelected ? 'selected pastel-glow-animation' : ''}`;
+    return `${baseClass} ${isSelected ? 'selected' : ''}`;
   };
 
   // Get option badge colors
