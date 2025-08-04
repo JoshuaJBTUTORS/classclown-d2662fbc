@@ -12,6 +12,7 @@ import ContentViewer from '@/components/learningHub/ContentViewer';
 import NotesSection from '@/components/learningHub/NotesSection';
 import AssessmentNavigation from '@/components/learningHub/AssessmentNavigation';
 import ModuleAssessmentDialog from '@/components/learningHub/ModuleAssessmentDialog';
+import AssessmentTimeScreen from '@/components/learningHub/AssessmentTimeScreen';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,7 +110,12 @@ const ModuleDetail = () => {
   });
 
   const currentModule = orderedModules?.find(m => m.id === moduleId);
-  const lessons = currentModule?.lessons || [];
+  const allLessons = currentModule?.lessons || [];
+  
+  // Filter out AI assessment lessons from regular lesson flow
+  const lessons = allLessons.filter(lesson => lesson.content_type !== 'ai-assessment');
+  const aiAssessmentLessons = allLessons.filter(lesson => lesson.content_type === 'ai-assessment');
+  
   const currentLesson = lessons[currentLessonIndex];
   const hasAccess = isOwner || hasPurchased;
 
@@ -205,15 +211,39 @@ const ModuleDetail = () => {
 
   const allLessonsCompleted = lessons.every(lesson => isLessonCompleted(lesson.id));
   const needsAssessment = isLastLessonInModule && hasRequiredAssessment && allLessonsCompleted && !isAssessmentCompleted;
+  
+  // Check if we should show assessment time screen
+  const showAssessmentTimeScreen = currentLessonIndex >= lessons.length && (aiAssessmentLessons.length > 0 || needsAssessment);
+  
+  // Handle beginning assessment from the assessment time screen
+  const handleBeginAssessment = () => {
+    setShowAssessmentDialog(true);
+  };
 
   const handleCompleteLesson = async () => {
     if (currentLesson) {
       try {
         const userEmail = await learningHubService.getCurrentUserEmail();
         await learningHubService.toggleLessonCompletion(userEmail, currentLesson.id);
-        // Refresh progress data
-        // queryClient.invalidateQueries(['user-progress']);
-        handleNextLesson();
+        
+        // Move to next lesson if available
+        if (currentLessonIndex < lessons.length - 1) {
+          setCurrentLessonIndex(currentLessonIndex + 1);
+        } else {
+          // All regular lessons completed - show assessment time if needed
+          if (aiAssessmentLessons.length > 0 || needsAssessment) {
+            setCurrentLessonIndex(lessons.length); // This will trigger assessment time screen
+          } else {
+            // Navigate to next module if available
+            const currentModuleIndex = orderedModules?.findIndex(m => m.id === moduleId) || 0;
+            const nextModule = orderedModules?.[currentModuleIndex + 1];
+            if (nextModule) {
+              navigate(`/course/${courseId}/module/${nextModule.id}`);
+            } else {
+              navigate(`/course/${courseId}`);
+            }
+          }
+        }
       } catch (error) {
         console.error('Error completing lesson:', error);
       }
@@ -308,123 +338,107 @@ const ModuleDetail = () => {
               </CardHeader>
             </Card>
 
-            {lessons.length > 0 && currentLesson ? (
+            {lessons.length > 0 && (currentLesson || showAssessmentTimeScreen) ? (
               <div className="space-y-6">
-                {/* Lesson Navigation */}
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          Lesson {currentLessonIndex + 1}: {currentLesson.title}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {currentLessonIndex + 1} of {lessons.length} lessons
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isLessonCompleted(currentLesson.id) && (
-                          <Badge variant="default" className="bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Completed
-                          </Badge>
-                        )}
-                        {currentLesson.duration_minutes && (
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Clock className="h-4 w-4" />
-                            <span>{currentLesson.duration_minutes} min</span>
+                {showAssessmentTimeScreen ? (
+                  <AssessmentTimeScreen 
+                    onBeginAssessment={handleBeginAssessment}
+                    moduleTitle={currentModule.title}
+                  />
+                ) : (
+                  <>
+                    {/* Lesson Navigation */}
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="font-semibold text-lg">
+                              Lesson {currentLessonIndex + 1}: {currentLesson?.title}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {currentLessonIndex + 1} of {lessons.length} lessons
+                            </p>
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${((currentLessonIndex + 1) / lessons.length) * 100}%` }}
-                      />
-                    </div>
-
-                    {/* Assessment requirement notification */}
-                    {needsAssessment && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Trophy className="h-5 w-5 text-yellow-600" />
-                          <h4 className="font-medium text-yellow-800">Assessment Required</h4>
+                          <div className="flex items-center gap-2">
+                            {currentLesson && isLessonCompleted(currentLesson.id) && (
+                              <Badge variant="default" className="bg-green-100 text-green-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Completed
+                              </Badge>
+                            )}
+                            {currentLesson?.duration_minutes && (
+                              <div className="flex items-center gap-1 text-sm text-gray-500">
+                                <Clock className="h-4 w-4" />
+                                <span>{currentLesson.duration_minutes} min</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-yellow-700 mb-3">
-                          Complete the module assessment to unlock the next module.
-                        </p>
-                        <Button
-                          onClick={handleTakeAssessment}
-                          className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                        >
-                          Take Assessment
-                        </Button>
-                      </div>
+
+                        {/* Progress bar */}
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${((currentLessonIndex + 1) / lessons.length) * 100}%` }}
+                          />
+                        </div>
+
+                        {/* Navigation buttons */}
+                        <div className="flex justify-between">
+                          <Button
+                            variant="outline"
+                            onClick={handlePreviousLesson}
+                            disabled={currentLessonIndex === 0}
+                            className="flex items-center gap-2"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+                          
+                          <Button
+                            onClick={currentLesson && isLessonCompleted(currentLesson.id) ? handleNextLesson : handleCompleteLesson}
+                            className="flex items-center gap-2"
+                          >
+                            {currentLesson && isLessonCompleted(currentLesson.id) ? (
+                              <>
+                                Next
+                                <ChevronRight className="h-4 w-4" />
+                              </>
+                            ) : (
+                              <>
+                                Complete & Continue
+                                <CheckCircle className="h-4 w-4" />
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Lesson Content */}
+                    {currentLesson && (
+                      <Card>
+                        <CardContent className="p-0">
+                          <ContentViewer lesson={currentLesson} />
+                        </CardContent>
+                      </Card>
                     )}
 
-                    {/* Navigation buttons */}
-                    <div className="flex justify-between">
-                      <Button
-                        variant="outline"
-                        onClick={handlePreviousLesson}
-                        disabled={currentLessonIndex === 0}
-                        className="flex items-center gap-2"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
-                      </Button>
-                      
-                      {needsAssessment ? (
-                        <Button
-                          onClick={handleTakeAssessment}
-                          className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700"
-                        >
-                          Take Assessment
-                          <Trophy className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={isLessonCompleted(currentLesson.id) ? handleNextLesson : handleCompleteLesson}
-                          className="flex items-center gap-2"
-                        >
-                          {isLessonCompleted(currentLesson.id) ? (
-                            <>
-                              Next
-                              <ChevronRight className="h-4 w-4" />
-                            </>
-                          ) : (
-                            <>
-                              Complete & Continue
-                              <CheckCircle className="h-4 w-4" />
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Lesson Content */}
-                <Card>
-                  <CardContent className="p-0">
-                    <ContentViewer lesson={currentLesson} />
-                  </CardContent>
-                </Card>
-
-                {/* Notes Section */}
-                <Card>
-                  <CardContent className="p-6">
-                    <NotesSection 
-                      courseId={courseId!}
-                      lessonId={currentLesson.id}
-                      lessonTitle={currentLesson.title}
-                      contentType={currentLesson.content_type}
-                    />
-                  </CardContent>
-                </Card>
+                    {/* Notes Section */}
+                    {currentLesson && (
+                      <Card>
+                        <CardContent className="p-6">
+                          <NotesSection 
+                            courseId={courseId!}
+                            lessonId={currentLesson.id}
+                            lessonTitle={currentLesson.title}
+                            contentType={currentLesson.content_type}
+                          />
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
+                )}
               </div>
             ) : (
               <Card>
@@ -437,7 +451,7 @@ const ModuleDetail = () => {
         </div>
 
         {/* Assessment Dialog */}
-        {moduleAssessments && moduleAssessments.length > 0 && (
+        {(moduleAssessments?.length > 0 || aiAssessmentLessons.length > 0) && (
           <ModuleAssessmentDialog
             isOpen={showAssessmentDialog}
             onClose={() => setShowAssessmentDialog(false)}
