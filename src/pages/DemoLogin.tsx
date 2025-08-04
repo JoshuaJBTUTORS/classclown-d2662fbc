@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDemoMode } from '@/contexts/DemoContext';
 import { demoAccountService } from '@/services/demoAccountService';
 import { useToast } from '@/hooks/use-toast';
+import { initializeDemoData } from '@/utils/initializeDemoData';
 
 const DemoLogin: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -79,17 +80,37 @@ const DemoLogin: React.FC = () => {
       // Sign in with demo credentials
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: roleData.email,
-        password: 'DemoPassword2024!', // Standard demo password
+        password: 'demo123!', // Standard demo password that matches edge function
       });
 
       if (authError) {
-        console.log('Demo user not found, this is expected in development');
+        console.log('Demo user not found, attempting to create demo users...');
         
-        // Set demo mode anyway for demonstration
-        const demoUser = await demoAccountService.getDemoUserByEmail(roleData.email);
-        if (demoUser) {
-          localStorage.setItem('demo_user_email', roleData.email);
-          setDemoMode(true, 'demo-session-' + Date.now());
+        // Try to create demo users first
+        toast({
+          title: "Setting up demo...",
+          description: "Creating demo accounts and data. This may take a moment.",
+        });
+
+        const demoInitialized = await initializeDemoData();
+        
+        if (demoInitialized) {
+          // Retry login after creating demo users
+          const { data: retryAuthData, error: retryAuthError } = await supabase.auth.signInWithPassword({
+            email: roleData.email,
+            password: 'demo123!',
+          });
+
+          if (retryAuthError) {
+            // If still fails, fall back to local demo mode
+            console.log('Demo auth still failed, using local demo mode');
+            localStorage.setItem('demo_user_email', roleData.email);
+            setDemoMode(true, 'demo-session-' + Date.now());
+          } else {
+            console.log('Demo auth successful after initialization!');
+            localStorage.setItem('demo_user_email', roleData.email);
+            setDemoMode(true, 'demo-session-' + Date.now());
+          }
           
           toast({
             title: "Demo Mode Activated",
@@ -114,6 +135,8 @@ const DemoLogin: React.FC = () => {
             default:
               navigate('/');
           }
+        } else {
+          throw new Error('Failed to initialize demo data');
         }
       } else {
         // Successfully authenticated

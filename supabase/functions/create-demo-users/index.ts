@@ -33,32 +33,40 @@ Deno.serve(async (req) => {
         email: 'demo.owner@jb-tutors.com',
         password: 'demo123!',
         role: 'owner',
-        first_name: 'Demo',
-        last_name: 'Owner'
+        first_name: 'Sarah',
+        last_name: 'Williams'
       },
       {
         id: '00000000-0000-0000-0000-000000000002', 
         email: 'demo.admin@jb-tutors.com',
         password: 'demo123!',
         role: 'admin',
-        first_name: 'Demo',
-        last_name: 'Admin'
+        first_name: 'Michael',
+        last_name: 'Johnson'
       },
       {
         id: '00000000-0000-0000-0000-000000000003',
         email: 'demo.tutor1@jb-tutors.com', 
         password: 'demo123!',
         role: 'tutor',
-        first_name: 'Demo',
-        last_name: 'Tutor'
+        first_name: 'Emma',
+        last_name: 'Thompson'
       },
       {
         id: '00000000-0000-0000-0000-000000000004',
         email: 'demo.parent1@email.com',
         password: 'demo123!', 
         role: 'parent',
-        first_name: 'Demo',
-        last_name: 'Parent'
+        first_name: 'David',
+        last_name: 'Brown'
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000005',
+        email: 'oliver.brown@student.com',
+        password: 'demo123!', 
+        role: 'student',
+        first_name: 'Oliver',
+        last_name: 'Brown'
       }
     ];
 
@@ -66,50 +74,74 @@ Deno.serve(async (req) => {
 
     for (const user of demoUsers) {
       try {
-        // Check if user already exists
-        const { data: existingUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
+        // Check if user already exists by email first
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const userExists = existingUsers.users.find(u => u.email === user.email);
         
-        if (existingUser.user) {
-          console.log(`Demo user ${user.email} already exists, skipping...`);
-          continue;
-        }
+        if (userExists) {
+          console.log(`Demo user ${user.email} already exists, skipping auth creation...`);
+        } else {
+          // Create auth user
+          const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: user.email,
+            password: user.password,
+            email_confirm: true,
+            user_metadata: {
+              first_name: user.first_name,
+              last_name: user.last_name,
+              role: user.role
+            }
+          });
 
-        // Create auth user
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          id: user.id,
-          email: user.email,
-          password: user.password,
-          email_confirm: true,
-          user_metadata: {
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role: user.role
+          if (authError) {
+            console.error(`Failed to create auth user ${user.email}:`, authError);
+            continue;
           }
-        });
 
-        if (authError) {
-          console.error(`Failed to create auth user ${user.email}:`, authError);
-          continue;
+          console.log(`✅ Created auth user: ${user.email} (${user.role})`);
         }
 
-        console.log(`Created auth user: ${user.email}`);
-
-        // Insert into demo_users table
+        // Always try to insert into demo_users table (upsert)
         const { error: demoError } = await supabaseAdmin
           .from('demo_users')
-          .insert({
-            id: user.id,
+          .upsert({
             email: user.email,
             role: user.role,
             first_name: user.first_name,
             last_name: user.last_name,
             demo_config_id: null
+          }, {
+            onConflict: 'email'
           });
 
         if (demoError) {
-          console.error(`Failed to insert demo user ${user.email}:`, demoError);
+          console.error(`Failed to upsert demo user ${user.email}:`, demoError);
         } else {
-          console.log(`Inserted demo user record: ${user.email}`);
+          console.log(`✅ Upserted demo user record: ${user.email}`);
+        }
+
+        // Create user role entry
+        if (!userExists) {
+          const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+          const newUser = authUsers.users.find(u => u.email === user.email);
+          
+          if (newUser) {
+            const { error: roleError } = await supabaseAdmin
+              .from('user_roles')
+              .upsert({
+                user_id: newUser.id,
+                role: user.role,
+                is_primary: true
+              }, {
+                onConflict: 'user_id'
+              });
+
+            if (roleError) {
+              console.error(`Failed to create user role for ${user.email}:`, roleError);
+            } else {
+              console.log(`✅ Created user role: ${user.email} -> ${user.role}`);
+            }
+          }
         }
 
       } catch (error) {

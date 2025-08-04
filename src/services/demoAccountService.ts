@@ -140,7 +140,12 @@ class DemoAccountService {
     
     try {
       // Call the edge function to create demo users and populate data
-      const { data, error } = await supabase.functions.invoke('create-demo-users');
+      const { data, error } = await supabase.functions.invoke('create-demo-users', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'create_demo_data' })
+      });
       
       if (error) {
         console.error('❌ Error calling create-demo-users function:', error);
