@@ -217,6 +217,12 @@ const ModuleDetail = () => {
   
   // Handle beginning assessment from the assessment time screen
   const handleBeginAssessment = () => {
+    console.log('Beginning assessment:', {
+      aiAssessmentLessons,
+      moduleAssessments,
+      aiAssessmentId: aiAssessmentLessons.length > 0 ? aiAssessmentLessons[0]?.content_url : null,
+      moduleAssessmentId: moduleAssessments?.[0]?.id
+    });
     setShowAssessmentDialog(true);
   };
 
@@ -456,8 +462,8 @@ const ModuleDetail = () => {
             isOpen={showAssessmentDialog}
             onClose={() => setShowAssessmentDialog(false)}
             assessmentId={
-              aiAssessmentLessons.length > 0 && aiAssessmentLessons[0]?.id
-                ? aiAssessmentLessons[0].id
+              aiAssessmentLessons.length > 0 && aiAssessmentLessons[0]?.content_url
+                ? aiAssessmentLessons[0].content_url
                 : moduleAssessments?.[0]?.id || ''
             }
             onAssessmentComplete={handleAssessmentComplete}
