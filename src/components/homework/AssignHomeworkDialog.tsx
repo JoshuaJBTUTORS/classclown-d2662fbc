@@ -15,6 +15,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Form,
   FormControl,
@@ -91,6 +93,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   const [preSelectedLesson, setPreSelectedLesson] = useState<Lesson | null>(null);
   
   const isEditing = Boolean(editingHomework);
+  const isMobile = useIsMobile();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -323,171 +326,177 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent className="sm:max-w-[550px]">
-        <DialogHeader>
+      <DialogContent className={`sm:max-w-[550px] ${isMobile ? 'max-h-[90vh] h-[90vh]' : ''} flex flex-col`}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{isEditing ? 'Edit Homework' : 'Assign New Homework'}</DialogTitle>
           <DialogDescription>
             Create an assignment for students to complete after their lesson
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Algebra Equations Homework" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="lesson_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Related Lesson</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                    disabled={!!preSelectedLessonId}
-                  >
+        
+        <ScrollArea className={`flex-1 ${isMobile ? 'pr-4' : ''}`}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={
-                          preSelectedLesson 
-                            ? `${preSelectedLesson.title} (${preSelectedLesson.tutor_first_name} ${preSelectedLesson.tutor_last_name})`
-                            : "Select a lesson"
-                        } />
-                      </SelectTrigger>
+                      <Input placeholder="Algebra Equations Homework" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {lessons.map((lesson) => (
-                        <SelectItem key={lesson.id} value={lesson.id}>
-                          {lesson.title} ({lesson.tutor_first_name} {lesson.tutor_last_name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {preSelectedLessonId ? "Lesson is pre-selected based on your current session" : "Choose the lesson this homework is related to"}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Instructions</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter detailed instructions for the homework..."
-                      className="min-h-[120px]"
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="due_date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Due Date (Optional)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
+              <FormField
+                control={form.control}
+                name="lesson_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Related Lesson</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      disabled={!!preSelectedLessonId}
+                    >
                       <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className="pl-3 text-left font-normal"
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a due date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
+                        <SelectTrigger>
+                          <SelectValue placeholder={
+                            preSelectedLesson 
+                              ? `${preSelectedLesson.title} (${preSelectedLesson.tutor_first_name} ${preSelectedLesson.tutor_last_name})`
+                              : "Select a lesson"
+                          } />
+                        </SelectTrigger>
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormDescription>
-                    When should the homework be submitted by
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      <SelectContent>
+                        {lessons.map((lesson) => (
+                          <SelectItem key={lesson.id} value={lesson.id}>
+                            {lesson.title} ({lesson.tutor_first_name} {lesson.tutor_last_name})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {preSelectedLessonId ? "Lesson is pre-selected based on your current session" : "Choose the lesson this homework is related to"}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="attachment"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Attachment (Optional)</FormLabel>
-                  <FormControl>
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                      <Input
-                        id="attachment"
-                        type="file"
-                        onChange={handleFileChange}
-                        className="cursor-pointer"
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Instructions</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter detailed instructions for the homework..."
+                        className={`${isMobile ? 'min-h-[100px]' : 'min-h-[120px]'}`}
+                        {...field}
+                        value={field.value || ''}
                       />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Upload a PDF, document, or worksheet
-                  </FormDescription>
-                  {existingAttachmentUrl && !selectedFile && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        type="button"
-                        onClick={() => window.open(existingAttachmentUrl!, '_blank')}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        View current file
-                      </Button>
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (isEditing ? "Updating..." : "Assigning...") : (isEditing ? "Update Homework" : "Assign Homework")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              <FormField
+                control={form.control}
+                name="due_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Due Date (Optional)</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className="pl-3 text-left font-normal"
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a due date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      When should the homework be submitted by
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="attachment"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Attachment (Optional)</FormLabel>
+                    <FormControl>
+                      <div className="grid w-full max-w-sm items-center gap-1.5">
+                        <Input
+                          id="attachment"
+                          type="file"
+                          onChange={handleFileChange}
+                          className="cursor-pointer"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Upload a PDF, document, or worksheet
+                    </FormDescription>
+                    {existingAttachmentUrl && !selectedFile && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          type="button"
+                          onClick={() => window.open(existingAttachmentUrl!, '_blank')}
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          View current file
+                        </Button>
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Add some bottom padding for mobile to ensure last field is scrollable */}
+              <div className={`${isMobile ? 'h-6' : ''}`} />
+            </form>
+          </Form>
+        </ScrollArea>
+
+        <DialogFooter className="flex-shrink-0 pt-4">
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button type="submit" form="homework-form" disabled={loading} onClick={form.handleSubmit(onSubmit)}>
+            {loading ? (isEditing ? "Updating..." : "Assigning...") : (isEditing ? "Update Homework" : "Assign Homework")}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
