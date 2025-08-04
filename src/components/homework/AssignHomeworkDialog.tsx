@@ -326,18 +326,19 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent className={`sm:max-w-[550px] ${isMobile ? 'max-h-[90vh] h-[90vh]' : ''} flex flex-col`}>
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="sm:max-w-[550px] max-h-[95vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0 pb-4">
           <DialogTitle>{isEditing ? 'Edit Homework' : 'Assign New Homework'}</DialogTitle>
           <DialogDescription>
             Create an assignment for students to complete after their lesson
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className={`flex-1 ${isMobile ? 'pr-4' : ''}`}>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1">
-              <FormField
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full pr-4">
+            <Form {...form}>
+              <form id="homework-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-4">
+                <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
@@ -482,12 +483,13 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                   </FormItem>
                 )}
               />
-
+              
               {/* Add some bottom padding for mobile to ensure last field is scrollable */}
               <div className={`${isMobile ? 'h-6' : ''}`} />
             </form>
           </Form>
         </ScrollArea>
+        </div>
 
         <DialogFooter className="flex-shrink-0 pt-4">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
