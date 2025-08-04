@@ -99,13 +99,13 @@ const Students = () => {
         .from('students')
         .select('*');
 
-      // Filter by demo mode
+      // Apply demo mode filtering
       if (isDemoMode) {
-        console.log('🎭 Demo mode: filtering for demo data only');
         studentsQuery = studentsQuery.eq('is_demo_data', true);
+        console.log('🎭 Demo mode: filtering for demo students only');
       } else {
-        console.log('🏠 Regular mode: filtering out demo data');
         studentsQuery = studentsQuery.or('is_demo_data.is.null,is_demo_data.eq.false');
+        console.log('🏢 Production mode: excluding demo students');
       }
 
       // If user is a parent, only show their own children

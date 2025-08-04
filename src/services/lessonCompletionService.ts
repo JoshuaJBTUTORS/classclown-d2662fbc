@@ -63,6 +63,7 @@ export const getCompletedLessons = async (filters: {
   dateRange: { from: Date | null; to: Date | null };
   selectedTutors: string[];
   selectedSubjects: string[];
+  isDemoMode?: boolean;
 }): Promise<CompletedLessonData[]> => {
   try {
     let query = supabase
@@ -79,6 +80,13 @@ export const getCompletedLessons = async (filters: {
           last_name
         )
       `);
+
+    // Apply demo mode filtering
+    if (filters.isDemoMode) {
+      query = query.eq('is_demo_data', true);
+    } else {
+      query = query.or('is_demo_data.is.null,is_demo_data.eq.false');
+    }
 
     // Apply filters
     if (filters.dateRange.from) {

@@ -251,8 +251,8 @@ async function populateDemoData(supabase: any, userIds: Map<string, string>) {
           first_name: 'Oliver',
           last_name: 'Brown',
           parent_id: parentData.id,
-          subjects: 'Mathematics, Physics',
-          grade: 'Year 10',
+          subjects: ['Mathematics', 'Physics'],
+          year_group: 'Year 10',
           status: 'active',
           is_demo_data: true
         },
@@ -261,8 +261,8 @@ async function populateDemoData(supabase: any, userIds: Map<string, string>) {
           first_name: 'Emma',
           last_name: 'Brown',
           parent_id: parentData.id,
-          subjects: 'English, History',
-          grade: 'Year 8',
+          subjects: ['English', 'History'],
+          year_group: 'Year 8',
           status: 'active',
           is_demo_data: true
         }

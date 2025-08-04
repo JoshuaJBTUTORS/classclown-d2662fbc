@@ -11,6 +11,7 @@ import { CalendarIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useDemoMode } from '@/contexts/DemoContext';
 
 interface ReportFiltersProps {
   filters: {
@@ -24,20 +25,28 @@ interface ReportFiltersProps {
 const ReportFilters: React.FC<ReportFiltersProps> = ({ filters, onFiltersChange }) => {
   const [tutors, setTutors] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
     fetchTutors();
     fetchSubjects();
-  }, []);
+  }, [isDemoMode]);
 
   const fetchTutors = async () => {
     try {
-      const { data, error } = await supabase
+      let tutorQuery = supabase
         .from('tutors')
         .select('id, first_name, last_name')
         .eq('status', 'active')
         .order('first_name');
 
+      if (isDemoMode) {
+        tutorQuery = tutorQuery.eq('is_demo_data', true);
+      } else {
+        tutorQuery = tutorQuery.or('is_demo_data.is.null,is_demo_data.eq.false');
+      }
+
+      const { data, error } = await tutorQuery;
       if (error) throw error;
       setTutors(data || []);
     } catch (error) {
@@ -47,11 +56,18 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ filters, onFiltersChange 
 
   const fetchSubjects = async () => {
     try {
-      const { data, error } = await supabase
+      let subjectQuery = supabase
         .from('lessons')
         .select('subject')
         .not('subject', 'is', null);
 
+      if (isDemoMode) {
+        subjectQuery = subjectQuery.eq('is_demo_data', true);
+      } else {
+        subjectQuery = subjectQuery.or('is_demo_data.is.null,is_demo_data.eq.false');
+      }
+
+      const { data, error } = await subjectQuery;
       if (error) throw error;
       
       const uniqueSubjects = [...new Set(data?.map(item => item.subject).filter(Boolean))];
