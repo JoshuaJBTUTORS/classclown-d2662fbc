@@ -26,7 +26,7 @@ const QuestionFeedback: React.FC<QuestionFeedbackProps> = ({
         <img 
           src="/lovable-uploads/adc5109e-6ce1-43c5-ac5a-041da62fd7a3.png" 
           alt="Pawfessor is thinking" 
-          className="w-48 h-auto animate-bounce"
+          className="w-48 h-auto animate-bounce rounded-2xl"
         />
         <p className="mt-4 text-muted-foreground text-sm font-medium">
           Pawfessor is thinking...
