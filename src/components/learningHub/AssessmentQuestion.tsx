@@ -48,7 +48,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
       {Object.entries(options).map(([key, value]) => (
         <div 
           key={key}
-          className={`relative cursor-pointer transition-all duration-200 hover:scale-[1.01] w-full ${
+          className={`relative cursor-pointer transition-all duration-200 hover:scale-[1.01] w-full ml-6 ${
             studentAnswer === key 
               ? 'bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary shadow-lg' 
               : 'bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'
