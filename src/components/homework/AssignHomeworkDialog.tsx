@@ -326,7 +326,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent className="sm:max-w-[550px] max-h-[95vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-4">
           <DialogTitle>{isEditing ? 'Edit Homework' : 'Assign New Homework'}</DialogTitle>
           <DialogDescription>
@@ -334,10 +334,9 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full pr-4">
-            <Form {...form}>
-              <form id="homework-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-4">
+        <div className="flex-1 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <Form {...form}>
+            <form id="homework-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
                 <FormField
                 control={form.control}
                 name="title"
@@ -488,7 +487,6 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
               <div className={`${isMobile ? 'h-6' : ''}`} />
             </form>
           </Form>
-        </ScrollArea>
         </div>
 
         <DialogFooter className="flex-shrink-0 pt-4">
