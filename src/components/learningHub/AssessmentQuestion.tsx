@@ -101,7 +101,10 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
       </CardHeader>
       <CardContent className={embedded ? "px-0 pb-2 space-y-6" : "space-y-6 pt-0 px-6 sm:px-8 lg:px-10"}>
         <div className="bg-gradient-to-r from-purple-50/50 to-emerald-50/50 p-6 rounded-xl border border-purple-100/60 w-full">
-          <p className="text-gray-900 leading-relaxed text-lg font-medium break-words text-left">{question.question_text}</p>
+          <p className="text-gray-900 leading-relaxed text-lg font-medium break-words text-left">
+            {question.question_text}
+            <span className="text-gray-500 ml-2">({question.marking_scheme?.marks || 1} marks)</span>
+          </p>
         </div>
         
         {/* Display question image if it exists */}
