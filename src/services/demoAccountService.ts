@@ -136,34 +136,20 @@ class DemoAccountService {
   }
 
   async populateDemoData(): Promise<void> {
-    console.log('Starting demo data population...');
+    console.log('🚀 Starting demo data population...');
+    
     try {
-      // First create demo users in auth system
-      await this.createDemoAuthUsers();
-      console.log('✓ Demo auth users created');
+      // Call the edge function to create demo users and populate data
+      const { data, error } = await supabase.functions.invoke('create-demo-users');
       
-      // Then create demo data in tables
-      await this.createDemoTutors();
-      console.log('✓ Demo tutors created');
+      if (error) {
+        console.error('❌ Error calling create-demo-users function:', error);
+        throw error;
+      }
       
-      await this.createDemoParents();
-      console.log('✓ Demo parents created');
-      
-      await this.createDemoStudents();
-      console.log('✓ Demo students created');
-      
-      await this.createDemoLessons();
-      console.log('✓ Demo lessons created');
-      
-      await this.createDemoHomework();
-      console.log('✓ Demo homework created');
-      
-      await this.createDemoProgress();
-      console.log('✓ Demo progress data created');
-      
-      console.log('🎉 Demo data population completed successfully!');
+      console.log('✅ Demo data population completed successfully!', data);
     } catch (error) {
-      console.error('❌ Error populating demo data:', error);
+      console.error('❌ Error during demo data population:', error);
       throw error;
     }
   }
