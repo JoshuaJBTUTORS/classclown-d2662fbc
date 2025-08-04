@@ -78,7 +78,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
       {Object.entries(options).map(([key, value]) => (
         <div 
           key={key}
-          className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.02] w-full ml-6 ${getOptionClass(key)} rounded-xl p-4 sm:p-5 group border-2`}
+          className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.02] w-full ml-6 ${getOptionClass(key)} group`}
           onClick={() => onAnswerChange(question.id, key)}
         >
           <div className="flex items-start space-x-3 sm:space-x-4 w-full">
