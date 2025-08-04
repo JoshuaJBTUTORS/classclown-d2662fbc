@@ -39,6 +39,36 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     D: 'Option D'
   };
 
+  // Get pastel class for each option
+  const getOptionClass = (key: string) => {
+    const baseClass = `option-${key.toLowerCase()}`;
+    const isSelected = studentAnswer === key;
+    return `${baseClass} ${isSelected ? 'selected pastel-glow-animation' : ''}`;
+  };
+
+  // Get option badge colors
+  const getOptionBadgeClass = (key: string) => {
+    const isSelected = studentAnswer === key;
+    const colorMap = {
+      'A': isSelected ? 'bg-purple-500 text-white border-purple-500' : 'border-purple-300 text-purple-600 group-hover:border-purple-400 group-hover:text-purple-700',
+      'B': isSelected ? 'bg-green-500 text-white border-green-500' : 'border-green-300 text-green-600 group-hover:border-green-400 group-hover:text-green-700',
+      'C': isSelected ? 'bg-orange-500 text-white border-orange-500' : 'border-orange-300 text-orange-600 group-hover:border-orange-400 group-hover:text-orange-700',
+      'D': isSelected ? 'bg-blue-500 text-white border-blue-500' : 'border-blue-300 text-blue-600 group-hover:border-blue-400 group-hover:text-blue-700',
+    };
+    return colorMap[key as keyof typeof colorMap] || 'border-gray-300 text-gray-500';
+  };
+
+  // Get check mark colors
+  const getCheckMarkClass = (key: string) => {
+    const colorMap = {
+      'A': 'bg-purple-500',
+      'B': 'bg-green-500', 
+      'C': 'bg-orange-500',
+      'D': 'bg-blue-500',
+    };
+    return colorMap[key as keyof typeof colorMap] || 'bg-primary';
+  };
+
   return (
     <RadioGroup
       value={studentAnswer}
@@ -48,30 +78,22 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
       {Object.entries(options).map(([key, value]) => (
         <div 
           key={key}
-          className={`relative cursor-pointer transition-all duration-200 hover:scale-[1.01] w-full ml-6 ${
-            studentAnswer === key 
-              ? 'bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary shadow-lg' 
-              : 'bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'
-          } rounded-xl p-4 sm:p-5 group`}
+          className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.02] w-full ml-6 ${getOptionClass(key)} rounded-xl p-4 sm:p-5 group border-2`}
           onClick={() => onAnswerChange(question.id, key)}
         >
           <div className="flex items-start space-x-3 sm:space-x-4 w-full">
-            <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-colors ${
-              studentAnswer === key
-                ? 'bg-primary text-white border-primary'
-                : 'border-gray-300 text-gray-500 group-hover:border-gray-400'
-            }`}>
+            <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-all duration-300 ${getOptionBadgeClass(key)}`}>
               {key}
             </div>
             <RadioGroupItem value={key} id={`choice-${key}`} className="sr-only" />
             <Label 
               htmlFor={`choice-${key}`} 
-              className="flex-1 cursor-pointer text-gray-800 leading-relaxed text-sm sm:text-base w-full break-words"
+              className="flex-1 cursor-pointer text-gray-800 leading-relaxed text-sm sm:text-base w-full break-words font-medium"
             >
               {String(value)}
             </Label>
             {studentAnswer === key && (
-              <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary flex items-center justify-center">
+              <div className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full ${getCheckMarkClass(key)} flex items-center justify-center shadow-lg`}>
                 <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
@@ -99,7 +121,12 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
       <CardHeader className={embedded ? "px-0 py-2" : "pb-6 px-6 sm:px-8 lg:px-10"}>
         <CardTitle className={embedded ? "text-base sm:text-lg text-center sm:text-left" : "text-xl font-bold"}>
           <div className="flex items-center justify-start w-full">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center mr-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+              question.question_number % 4 === 1 ? 'bg-gradient-to-r from-purple-500 to-purple-400' :
+              question.question_number % 4 === 2 ? 'bg-gradient-to-r from-green-500 to-green-400' :
+              question.question_number % 4 === 3 ? 'bg-gradient-to-r from-orange-500 to-orange-400' :
+              'bg-gradient-to-r from-blue-500 to-blue-400'
+            }`}>
               <FileText className="h-5 w-5 text-white" />
             </div>
             <span className="text-gray-900">
@@ -110,7 +137,7 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className={embedded ? "px-0 pb-2 space-y-6" : "space-y-6 pt-0 px-6 sm:px-8 lg:px-10"}>
-        <div className="bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border border-gray-100 w-full">
+        <div className="bg-gradient-to-r from-purple-50/50 to-emerald-50/50 p-6 rounded-xl border border-purple-100/60 w-full">
           <p className="text-gray-900 leading-relaxed text-lg font-medium break-words text-left">{question.question_text}</p>
         </div>
         
@@ -147,7 +174,11 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
                   value={studentAnswer}
                   onChange={(e) => onAnswerChange(question.id, e.target.value)}
                   disabled={isMarking}
-                  className="min-h-[150px] break-words text-base bg-white border-2 border-gray-200 focus:border-primary rounded-xl p-4 w-full"
+                  className={`min-h-[150px] break-words text-base border-2 rounded-xl p-4 w-full transition-all duration-300 ${
+                    question.question_type === 'short_answer' 
+                      ? 'textarea-short focus:textarea-glow-animation' 
+                      : 'textarea-long focus:textarea-glow-animation'
+                  }`}
                 />
               </div>
             </div>

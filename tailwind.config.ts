@@ -75,6 +75,35 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				// Vibrant pastel colors for assessment questions
+				'pastel-lavender': {
+					'50': 'hsl(270, 100%, 99%)',
+					'100': 'hsl(269, 100%, 95%)',
+					'200': 'hsl(269, 100%, 88%)',
+				},
+				'pastel-mint': {
+					'50': 'hsl(151, 81%, 96%)',
+					'100': 'hsl(149, 80%, 90%)',
+					'200': 'hsl(148, 80%, 73%)',
+				},
+				'pastel-peach': {
+					'50': 'hsl(47, 100%, 96%)',
+					'100': 'hsl(45, 93%, 89%)',
+					'200': 'hsl(43, 96%, 77%)',
+				},
+				'pastel-sky': {
+					'50': 'hsl(204, 100%, 97%)',
+					'100': 'hsl(204, 94%, 94%)',
+					'200': 'hsl(204, 94%, 86%)',
+				},
+				'pastel-cream': {
+					'50': 'hsl(54, 100%, 97%)',
+					'100': 'hsl(52, 88%, 95%)',
+				},
+				'pastel-sage': {
+					'50': 'hsl(145, 63%, 96%)',
+					'100': 'hsl(146, 64%, 90%)',
+				},
 				'performance-low': 'hsl(var(--performance-low))',
         'performance-medium': 'hsl(var(--performance-medium))',
         'performance-high': 'hsl(var(--performance-high))',
