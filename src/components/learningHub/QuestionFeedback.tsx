@@ -22,14 +22,16 @@ const QuestionFeedback: React.FC<QuestionFeedbackProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <Card className="mt-4 border-blue-200 bg-blue-50">
-        <CardContent className="pt-4">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-blue-600 animate-spin" />
-            <span className="text-blue-800">Marking your answer...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mt-4 flex flex-col items-center justify-center py-8 animate-fade-in">
+        <img 
+          src="/lovable-uploads/cd84343d-3e45-480a-88d1-b76f50578e2f.png" 
+          alt="Pawfessor is thinking" 
+          className="w-48 h-auto animate-bounce"
+        />
+        <p className="mt-4 text-muted-foreground text-sm font-medium">
+          Pawfessor is thinking...
+        </p>
+      </div>
     );
   }
 
