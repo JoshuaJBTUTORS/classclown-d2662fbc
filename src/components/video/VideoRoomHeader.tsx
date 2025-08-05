@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share, Circle } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, Settings, MoreVertical, Share, Circle, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
+import QuickHomeworkSubmissionsModal from './QuickHomeworkSubmissionsModal';
 
 interface VideoRoomHeaderProps {
   lessonTitle: string;
@@ -12,6 +13,8 @@ interface VideoRoomHeaderProps {
   userRole: 'tutor' | 'student';
   isRecording?: boolean;
   onLeave: () => void;
+  lessonId?: string;
+  isRecurring?: boolean;
 }
 
 const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
@@ -20,9 +23,12 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
   expectedParticipantCount,
   userRole,
   isRecording = false,
-  onLeave
+  onLeave,
+  lessonId,
+  isRecurring = false
 }) => {
   const isMobile = useIsMobile();
+  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
   const participantText = expectedParticipantCount 
     ? `${participantCount}/${expectedParticipantCount} participants`
     : `${participantCount} participants`;
@@ -64,24 +70,39 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1 md:gap-2 shrink-0">
-        {userRole === 'tutor' && !isMobile && (
+        {userRole === 'tutor' && (
           <>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white hover:text-white/80 hover:bg-white/10"
-            >
-              <Share className="h-4 w-4 mr-2" />
-              Share
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white hover:text-white/80 hover:bg-white/10"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Invite
-            </Button>
+            {isRecurring && lessonId && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowSubmissionsModal(true)}
+                className="text-white hover:text-white/80 hover:bg-white/10"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                {!isMobile && "View Submissions"}
+              </Button>
+            )}
+            {!isMobile && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white hover:text-white/80 hover:bg-white/10"
+                >
+                  <Share className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white hover:text-white/80 hover:bg-white/10"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invite
+                </Button>
+              </>
+            )}
             <div className="h-6 w-px bg-white/20 mx-1" />
           </>
         )}
@@ -100,6 +121,16 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
           <MoreVertical className="h-3 w-3 md:h-4 md:w-4" />
         </Button>
       </div>
+      
+      {/* Homework Submissions Modal */}
+      {lessonId && (
+        <QuickHomeworkSubmissionsModal
+          isOpen={showSubmissionsModal}
+          onClose={() => setShowSubmissionsModal(false)}
+          currentLessonId={lessonId}
+          lessonTitle={lessonTitle}
+        />
+      )}
     </div>
   );
 };

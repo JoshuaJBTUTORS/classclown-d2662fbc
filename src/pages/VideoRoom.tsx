@@ -112,6 +112,9 @@ export default function VideoRoom() {
         lessonTitle={lesson?.title}
         onExit={handleLeaveRoom}
         className="h-screen"
+        lessonId={lessonId}
+        isRecurring={lesson?.is_recurring || lesson?.is_recurring_instance || false}
+        expectedStudents={expectedStudents?.length || 0}
       />
     </div>
   );

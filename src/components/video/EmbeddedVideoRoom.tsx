@@ -4,16 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import VideoRoomHeader from './VideoRoomHeader';
 import { 
-  ArrowLeft, 
-  Maximize2, 
-  Minimize2, 
-  ExternalLink,
+  ArrowLeft,
   Loader2,
   AlertCircle,
   RefreshCw,
-  Shield,
-  Users
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,6 +20,9 @@ interface EmbeddedVideoRoomProps {
   lessonTitle?: string;
   onExit: () => void;
   className?: string;
+  lessonId?: string;
+  isRecurring?: boolean;
+  expectedStudents?: number;
 }
 
 const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
@@ -30,7 +30,10 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   spaceId,
   lessonTitle = "Video Room",
   onExit,
-  className = ""
+  className = "",
+  lessonId,
+  isRecurring = false,
+  expectedStudents = 0
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -122,55 +125,30 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   return (
     <div className={`${className} fixed inset-0 z-50 bg-black`}>
       {/* Header Controls */}
-      <div className="flex items-center justify-between p-2 md:p-4 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))] to-[hsl(var(--medium-blue))] border-b border-border/20 shadow-lg">
-        <div className="flex items-center gap-2 md:gap-4 shrink-0">
-          <Button 
-            onClick={onExit} 
-            variant="ghost" 
-            size={isMobile ? "sm" : "sm"}
-            className="flex items-center gap-1 md:gap-2 text-white hover:text-white/80 hover:bg-white/10"
-          >
-            <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
-            {!isMobile ? 'Exit Room' : ''}
+      <VideoRoomHeader
+        lessonTitle={lessonTitle}
+        participantCount={1} // Could be dynamic if we track actual participants
+        expectedParticipantCount={expectedStudents}
+        userRole={isTeacherRole ? 'tutor' : 'student'}
+        isRecording={false} // Could be dynamic if we track recording status
+        onLeave={onExit}
+        lessonId={lessonId}
+        isRecurring={isRecurring}
+      />
+      
+      {/* Error controls for refresh */}
+      {hasError && (
+        <div className="flex items-center justify-center gap-2 p-2 bg-red-50 border-b border-red-200">
+          <Button onClick={handleSoftRefresh} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={handleHardRefresh} variant="destructive" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Hard Reset
           </Button>
         </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center min-w-0">
-          <div className="flex items-center gap-2 md:gap-3 justify-center">
-            <h2 className="font-bold text-white font-bubble text-sm md:text-lg text-center">{lessonTitle}</h2>
-            {!isMobile && (
-              <>
-                {isTeacherRole ? (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-white/20 text-white rounded-full text-xs shrink-0">
-                    <Shield className="h-3 w-3" />
-                    Host
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-white/20 text-white rounded-full text-xs shrink-0">
-                    <Users className="h-3 w-3" />
-                    Student
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-1 md:gap-2 shrink-0">
-          {hasError && (
-            <>
-              <Button onClick={handleSoftRefresh} variant="ghost" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2 text-white hover:text-white/80 hover:bg-white/10">
-                <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
-                {!isMobile && <span className="ml-2">Refresh</span>}
-              </Button>
-              <Button onClick={handleHardRefresh} variant="ghost" size="sm" className="h-8 w-8 md:w-auto md:h-auto p-0 md:p-2 text-red-300 hover:text-red-200 hover:bg-white/10">
-                <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
-                {!isMobile && <span className="ml-2">Hard Reset</span>}
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Video Room Content */}
       <div className="relative h-[calc(100vh-80px)] bg-gray-100">
