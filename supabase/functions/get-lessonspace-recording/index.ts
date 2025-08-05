@@ -38,7 +38,7 @@ serve(async (req) => {
     console.log(`Fetching recording URL for session: ${sessionId}`);
 
     // Call LessonSpace API to get session recording URL
-    const lessonSpaceResponse = await fetch(`https://api.thelessonspace.com/v2/sessions/${sessionId}/recording`, {
+    const lessonSpaceResponse = await fetch(`https://api.thelessonspace.com/v2/sessions/${sessionId}/playback`, {
       method: 'GET',
       headers: {
         'Authorization': `Organisation ${lessonSpaceApiKey}`,
