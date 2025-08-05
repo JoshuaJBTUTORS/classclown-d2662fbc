@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -152,7 +151,7 @@ const EditAssessmentDetails: React.FC<EditAssessmentDetailsProps> = ({
                         </SelectTrigger>
                         <SelectContent className="max-h-60 overflow-y-auto">
                           {subjectsLoading ? (
-                            <SelectItem value="" disabled>Loading subjects...</SelectItem>
+                            <SelectItem value="loading" disabled>Loading subjects...</SelectItem>
                           ) : (
                             Object.entries(subjectsByCategory).map(([category, categorySubjects]) => (
                               <div key={category}>
