@@ -73,10 +73,10 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   // Check if this is a recurring instance
   const isRecurringInstance = Boolean(instanceDate && instanceStart && instanceEnd);
   
-  // Check if this is the specific GCSE Maths lesson for demo button
+  // Check if this is the specific GCSE lesson for demo button
   const isTargetGCSELesson = lesson?.id === '1c3a8bed-ac82-45f9-8ce9-9fc336abcdf8' && 
     lesson?.subject === 'Year 11 Maths Highier' && 
-    lesson?.title === 'GCSE Maths ';
+    lesson?.title === 'GCSE Biology';
   
   // Handle process lesson button click
   const handleProcessLesson = () => {
