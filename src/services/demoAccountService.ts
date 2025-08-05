@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { DemoControlService } from './demoControlService';
 
 export interface DemoUser {
   id: string;
@@ -136,6 +137,12 @@ class DemoAccountService {
   }
 
   async populateDemoData(): Promise<void> {
+    // Check if demo data is disabled
+    if (DemoControlService.shouldBlockDemoData()) {
+      console.log('Demo data is disabled. Skipping population.');
+      return;
+    }
+    
     console.log('🚀 Starting demo data population...');
     
     try {

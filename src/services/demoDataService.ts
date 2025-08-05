@@ -12,8 +12,8 @@ export class DemoDataService {
     if (isDemoMode) {
       return queryBuilder.eq('is_demo_data', true);
     } else {
-      // In production mode, exclude demo data
-      return queryBuilder.or('is_demo_data.is.null,is_demo_data.eq.false');
+      // In production mode, ALWAYS exclude demo data
+      return queryBuilder.neq('is_demo_data', true);
     }
   }
 

@@ -356,6 +356,9 @@ export const useCalendarData = ({
           
           let filteredData = data || [];
           
+          // CRITICAL: Filter out demo data in production mode
+          filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
+          
           // Apply student filter
           if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
             filteredData = filteredData.filter(lesson => {

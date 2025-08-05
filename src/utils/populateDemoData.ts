@@ -1,6 +1,15 @@
 import { demoAccountService } from '@/services/demoAccountService';
 
 export const populateDemoDataNow = async () => {
+  // Import demo control service to check if demo data should be created
+  const { DemoControlService } = await import('@/services/demoControlService');
+  
+  // Check if demo data is disabled
+  if (DemoControlService.shouldBlockDemoData()) {
+    console.log('Demo data is disabled. Skipping population.');
+    return false;
+  }
+
   try {
     console.log('🚀 Starting demo data population...');
     

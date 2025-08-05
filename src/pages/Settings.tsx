@@ -9,9 +9,10 @@ import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
+import { DemoDataControl } from '@/components/demo/DemoDataControl';
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -111,6 +112,18 @@ const Settings = () => {
                 </CardContent>
               </Card>
             </motion.div>
+
+            {/* Demo Data Control for Admins */}
+            {(userRole === 'admin' || userRole === 'owner') && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="mt-8"
+              >
+                <DemoDataControl userRole={userRole || ''} />
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
