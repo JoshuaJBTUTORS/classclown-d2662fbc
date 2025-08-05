@@ -81,7 +81,7 @@ serve(async (req) => {
 
     console.log('Homework data fetched successfully');
 
-    const platformUrl = "https://sjxbxkpegcnnfjbsxazo.supabase.co/auth";
+    const platformUrl = "https://classclowncrm.com/";
     const dueDate = homeworkData.due_date ? new Date(homeworkData.due_date).toLocaleDateString() : undefined;
 
     const emailPromises = [];
