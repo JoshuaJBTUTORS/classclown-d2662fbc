@@ -116,15 +116,17 @@ serve(async (req) => {
       // Step 2: Get and store recording URL if session exists but no recording URL
       if (lesson.lesson_space_session_id && !lesson.lesson_space_recording_url) {
         console.log(`Getting recording for lesson ${lesson.id}`);
-        const recordingUrl = await getRecordingUrl(lesson.lesson_space_session_id);
-        if (recordingUrl) {
-          await supabaseClient
-            .from('lessons')
-            .update({ lesson_space_recording_url: recordingUrl })
-            .eq('id', lesson.id);
-          
+        
+        // Use the existing get-lessonspace-recording edge function
+        const { data: recordingResult, error: recordingError } = await supabaseClient.functions.invoke('get-lessonspace-recording', {
+          body: { sessionId: lesson.lesson_space_session_id }
+        });
+        
+        if (recordingError) {
+          console.error(`Error calling get-lessonspace-recording for lesson ${lesson.id}:`, recordingError);
+        } else if (recordingResult?.url) {
           stats.recordings_stored++;
-          console.log(`Stored recording URL for lesson ${lesson.id}`);
+          console.log(`Recording URL stored for lesson ${lesson.id}`);
         }
         
         // Add delay to avoid rate limiting
@@ -176,34 +178,6 @@ serve(async (req) => {
 });
 
 
-async function getRecordingUrl(sessionId: string): Promise<string | null> {
-  try {
-    const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY');
-    if (!lessonSpaceApiKey) {
-      console.error('LessonSpace API key not configured');
-      return null;
-    }
-
-    const response = await fetch(`https://api.thelessonspace.com/v2/sessions/${sessionId}/recording`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Organisation ${lessonSpaceApiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`LessonSpace recording API error: ${response.status}`);
-      return null;
-    }
-
-    const recordingData = await response.json();
-    return recordingData.url || recordingData.recording_url || null;
-  } catch (error) {
-    console.error('Error getting recording URL:', error);
-    return null;
-  }
-}
 
 async function ensureTranscription(supabaseClient: any, lessonId: string, sessionId: string): Promise<boolean> {
   try {
