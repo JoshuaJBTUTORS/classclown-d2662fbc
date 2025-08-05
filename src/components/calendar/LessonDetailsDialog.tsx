@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2 } from 'lucide-react';
+import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -53,6 +53,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     exists: false,
     homework: null
   });
+  const [isProcessed, setIsProcessed] = useState(false);
   const {
     userRole,
     isAdmin,
@@ -71,6 +72,24 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   // Check if this is a recurring instance
   const isRecurringInstance = Boolean(instanceDate && instanceStart && instanceEnd);
+  
+  // Check if this is the specific GCSE Maths lesson for demo button
+  const isTargetGCSELesson = lesson?.id === '1c3a8bed-ac82-45f9-8ce9-9fc336abcdf8' && 
+    lesson?.subject === 'Year 11 Maths Higher' && 
+    lesson?.title === 'GCSE Maths';
+  
+  // Handle process lesson button click
+  const handleProcessLesson = () => {
+    setIsProcessed(true);
+    toast.success('Lesson processed successfully!');
+  };
+  
+  // Reset processed state when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsProcessed(false);
+    }
+  }, [isOpen]);
   useEffect(() => {
     if (lessonId && isOpen) {
       if (demoSessionId) {
@@ -549,6 +568,18 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <BookOpen className="h-4 w-4" />
                       {homeworkStatus.exists ? 'Edit Homework' : 'Set Homework'}
                     </Button>}
+                    
+                    {/* Process Lesson Button - Only for specific GCSE Maths lesson */}
+                    {isTargetGCSELesson && (
+                      <Button 
+                        variant={isProcessed ? "default" : "outline"}
+                        onClick={handleProcessLesson}
+                        className={`flex items-center gap-2 ${isProcessed ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                      >
+                        <Play className="h-4 w-4" />
+                        Process Lesson
+                      </Button>
+                    )}
                   
                 </div>
               </div>
