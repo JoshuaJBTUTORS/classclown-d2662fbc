@@ -128,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
               lessonDate,
               lessonTime,
               studentEmail: student.email || '',
-              dashboardUrl: `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/dashboard`,
+              dashboardUrl: 'https://classclowncrm.com/',
               isToday,
             })
           );

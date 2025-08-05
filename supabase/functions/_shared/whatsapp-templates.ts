@@ -80,6 +80,8 @@ Reminder for ${childName}'s lesson:
 📅 ${lessonDate}
 ⏰ ${lessonTime}
 
+🔗 Join your lesson: https://classclowncrm.com/
+
 Please ensure ${childName} is ready 5 minutes before the lesson starts.
 
 Have a great lesson!
