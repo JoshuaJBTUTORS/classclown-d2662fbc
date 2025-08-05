@@ -75,8 +75,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   // Check if this is the specific GCSE Maths lesson for demo button
   const isTargetGCSELesson = lesson?.id === '1c3a8bed-ac82-45f9-8ce9-9fc336abcdf8' && 
-    lesson?.subject === 'Year 11 Maths Higher' && 
-    lesson?.title === 'GCSE Maths';
+    lesson?.subject === 'Year 11 Maths Highier' && 
+    lesson?.title === 'GCSE Maths ';
   
   // Handle process lesson button click
   const handleProcessLesson = () => {
