@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -12,42 +11,37 @@ import { Loader2, Mail, Lock, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
-
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn, user } = useAuth();
+  const {
+    signIn,
+    user
+  } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
   useEffect(() => {
     if (user) {
       navigate('/');
     }
   }, [user, navigate]);
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     const sanitizedEmail = sanitizeInput(email);
     const sanitizedPassword = sanitizeInput(password);
-    
     if (!sanitizedEmail || !sanitizedPassword) {
       setError('Please fill in all fields');
       return;
     }
-
     if (!validateEmail(sanitizedEmail)) {
       setError('Please enter a valid email address');
       return;
     }
-
     setLoading(true);
     setError('');
-    
     try {
       await signIn(sanitizedEmail, sanitizedPassword);
       toast.success('Welcome back!');
@@ -59,33 +53,27 @@ const Auth = () => {
     }
   };
 
-
   // Handle showing forgot password form
   if (showForgotPassword) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+    return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
         <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Left Side - Branding */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center lg:text-left space-y-6"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          x: -50
+        }} animate={{
+          opacity: 1,
+          x: 0
+        }} transition={{
+          duration: 0.6
+        }} className="text-center lg:text-left space-y-6">
             <div className="flex justify-center lg:justify-start">
-              <img 
-                src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" 
-                alt="JB Tutors Logo" 
-                className="h-24 w-auto" 
-              />
+              <img src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" alt="JB Tutors Logo" className="h-24 w-auto" />
             </div>
             
             <div>
@@ -122,14 +110,19 @@ const Auth = () => {
           </motion.div>
 
           {/* Right Side - Auth Form */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
+          <motion.div initial={{
+          opacity: 0,
+          x: 50
+        }} animate={{
+          opacity: 1,
+          x: 0
+        }} transition={{
+          duration: 0.6,
+          delay: 0.2
+        }}>
             <Card className="shadow-xl">
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Staff Login</CardTitle>
+                <CardTitle className="text-2xl"> Login</CardTitle>
                 <CardDescription>
                   Sign in to access the internal system
                 </CardDescription>
@@ -140,15 +133,7 @@ const Auth = () => {
                     <Label htmlFor="signin-email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
+                      <Input id="signin-email" type="email" placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
                     </div>
                   </div>
                   
@@ -156,47 +141,23 @@ const Auth = () => {
                     <Label htmlFor="signin-password">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
+                      <Input id="signin-password" type="password" placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required />
                     </div>
                   </div>
 
-                  {error && (
-                    <Alert variant="destructive">
+                  {error && <Alert variant="destructive">
                       <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
+                    </Alert>}
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Signing in...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
+                      </> : 'Sign In'}
                   </Button>
 
                   <div className="text-center">
-                    <Button
-                      type="button"
-                      variant="link"
-                      onClick={() => setShowForgotPassword(true)}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                      disabled={loading}
-                    >
+                    <Button type="button" variant="link" onClick={() => setShowForgotPassword(true)} className="text-sm text-blue-600 hover:text-blue-800" disabled={loading}>
                       Forgot your password?
                     </Button>
                   </div>
@@ -206,8 +167,6 @@ const Auth = () => {
           </motion.div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Auth;
