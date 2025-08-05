@@ -1,28 +1,20 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GraduationCap, Users, Star, BookOpen, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import LoginForm from '@/components/auth/LoginForm';
 
 const LandingPage = () => {
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
 
   const handleExistingMember = () => {
-    setShowLoginModal(true);
+    navigate('/auth');
   };
 
   const handleNewMember = () => {
     navigate('/interactive-signup');
-  };
-
-  const handleLoginSuccess = () => {
-    setShowLoginModal(false);
-    navigate('/');
   };
 
   return (
@@ -150,18 +142,6 @@ const LandingPage = () => {
           </Card>
         </motion.div>
       </div>
-
-      {/* Login Modal */}
-      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center">
-              Welcome Back! 👋
-            </DialogTitle>
-          </DialogHeader>
-          <LoginForm onLoginSuccess={handleLoginSuccess} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
