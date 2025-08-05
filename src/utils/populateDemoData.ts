@@ -23,9 +23,5 @@ console.log('Tutor 1: demo.tutor1@jb-tutors.com / demo123!');
 console.log('Parent 1: demo.parent1@email.com / demo123!');
 console.log('Visit /demo to try demo mode after creating these users');
 
-// Auto-populate demo data tables
-populateDemoDataNow().then((success) => {
-  if (success) {
-    console.log('Demo system tables ready! Create demo auth users manually.');
-  }
-});
+// Demo data population is now manual only
+// Use /demo page or call populateDemoDataNow() manually when needed
