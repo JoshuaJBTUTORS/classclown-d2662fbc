@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import { useSubjects } from '@/hooks/useSubjects';
 import { aiAssessmentService, AIAssessment } from '@/services/aiAssessmentService';
 
 interface EditAssessmentDetailsProps {
@@ -43,6 +44,7 @@ const EditAssessmentDetails: React.FC<EditAssessmentDetailsProps> = ({
   onUpdate 
 }) => {
   const { toast } = useToast();
+  const { subjects, isLoading: subjectsLoading } = useSubjects();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -80,6 +82,24 @@ const EditAssessmentDetails: React.FC<EditAssessmentDetailsProps> = ({
 
   const onSubmit = (values: FormValues) => {
     updateAssessmentMutation.mutate(values);
+  };
+
+  // Group subjects by category for better organization
+  const subjectsByCategory = subjects.reduce((acc, subject) => {
+    const category = subject.category || 'other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(subject);
+    return acc;
+  }, {} as Record<string, typeof subjects>);
+
+  const categoryLabels: Record<string, string> = {
+    'entrance': '11 Plus / Entrance Exams',
+    'primary': 'Primary Education (KS1 & KS2)',
+    'secondary': 'Secondary Education (KS3)',
+    'gcse': 'GCSE & Year 11',
+    'other': 'Other Subjects'
   };
 
   return (
@@ -128,14 +148,25 @@ const EditAssessmentDetails: React.FC<EditAssessmentDetailsProps> = ({
                     <FormControl>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select subject" />
+                          <SelectValue placeholder={subjectsLoading ? "Loading subjects..." : "Select subject"} />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="GCSE Maths">GCSE Maths</SelectItem>
-                          <SelectItem value="GCSE English">GCSE English</SelectItem>
-                          <SelectItem value="GCSE Biology">GCSE Biology</SelectItem>
-                          <SelectItem value="GCSE Chemistry">GCSE Chemistry</SelectItem>
-                          <SelectItem value="GCSE Physics">GCSE Physics</SelectItem>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {subjectsLoading ? (
+                            <SelectItem value="" disabled>Loading subjects...</SelectItem>
+                          ) : (
+                            Object.entries(subjectsByCategory).map(([category, categorySubjects]) => (
+                              <div key={category}>
+                                <div className="px-2 py-1 text-sm font-semibold text-muted-foreground">
+                                  {categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1)}
+                                </div>
+                                {categorySubjects.map((subject) => (
+                                  <SelectItem key={subject.id} value={subject.name}>
+                                    {subject.name}
+                                  </SelectItem>
+                                ))}
+                              </div>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </FormControl>
