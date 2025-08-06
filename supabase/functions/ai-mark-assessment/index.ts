@@ -33,10 +33,18 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     );
 
-    // Get question details
+    // Get question details with assessment context
     const { data: question, error: questionError } = await supabase
       .from('assessment_questions')
-      .select('*')
+      .select(`
+        *,
+        ai_assessments!inner(
+          subject,
+          year,
+          exam_board,
+          title
+        )
+      `)
       .eq('id', questionId)
       .single();
 
@@ -54,24 +62,93 @@ serve(async (req) => {
       );
     }
 
-    // Prepare the marking prompt with topic analysis
-    const markingPrompt = `
-You are an expert teacher marking a student's answer. Please analyze the following:
+    // Get age-appropriate feedback guidelines
+    const assessment = question.ai_assessments;
+    const getAgeAppropriateGuidelines = (year, subject) => {
+      const yearNum = parseInt(year) || 7;
+      
+      if (yearNum <= 6) {
+        // Primary/KS2 (Years 3-6)
+        return {
+          tone: "encouraging and supportive",
+          language: "simple, clear language that a child can understand",
+          structure: "Start with praise, explain gently what needs work, end with encouragement",
+          examples: "Use everyday examples and analogies that young children relate to"
+        };
+      } else if (yearNum <= 9) {
+        // Secondary/KS3 (Years 7-9)  
+        return {
+          tone: "supportive but more detailed",
+          language: "introduce subject terminology gradually with explanations",
+          structure: "Balance praise with constructive guidance, explain reasoning",
+          examples: "Use relatable examples while building academic vocabulary"
+        };
+      } else if (yearNum <= 11) {
+        // GCSE/KS4 (Years 10-11)
+        return {
+          tone: "exam-focused but encouraging",
+          language: "use proper subject terminology with clear explanations",
+          structure: "Focus on exam technique, mark schemes, and improvement strategies",
+          examples: "Reference exam criteria and provide specific next steps"
+        };
+      } else {
+        // A-Level/KS5 (Years 12-13)
+        return {
+          tone: "analytical and university-preparation focused",
+          language: "sophisticated subject terminology with detailed analysis",
+          structure: "Encourage critical thinking, evaluation, and independent analysis",
+          examples: "Connect to broader concepts and encourage deeper exploration"
+        };
+      }
+    };
 
-QUESTION: ${question.question_text}
-QUESTION TYPE: ${question.question_type}
-MARKS AVAILABLE: ${question.marks_available}
-CORRECT ANSWER: ${question.correct_answer}
-MARKING SCHEME: ${JSON.stringify(question.marking_scheme)}
-KEYWORDS: ${JSON.stringify(question.keywords)}
+    const subjectGuidelines = (subject) => {
+      const subjectLower = subject?.toLowerCase() || '';
+      if (subjectLower.includes('math') || subjectLower.includes('maths')) {
+        return "Focus on mathematical reasoning, method, and accuracy. Praise correct methods even if final answer is wrong.";
+      } else if (subjectLower.includes('english')) {
+        return "Emphasize creativity, expression, and communication. Encourage personal voice while noting technical improvements.";
+      } else if (subjectLower.includes('science') || subjectLower.includes('biology') || subjectLower.includes('chemistry') || subjectLower.includes('physics')) {
+        return "Balance conceptual understanding with practical application. Encourage scientific thinking and observation.";
+      } else {
+        return "Focus on understanding, analysis, and clear communication of ideas.";
+      }
+    };
+
+    const guidelines = getAgeAppropriateGuidelines(assessment?.year, assessment?.subject);
+    const subjectFocus = subjectGuidelines(assessment?.subject);
+
+    // Prepare the age-appropriate marking prompt
+    const markingPrompt = `
+You are an expert teacher marking a student's answer. Please analyze the following with AGE-APPROPRIATE feedback:
+
+ASSESSMENT CONTEXT:
+- Subject: ${assessment?.subject || 'General'}
+- Year Group: ${assessment?.year || 'Not specified'}
+- Exam Board: ${assessment?.exam_board || 'Not specified'}
+
+QUESTION DETAILS:
+- Question: ${question.question_text}
+- Question Type: ${question.question_type}
+- Marks Available: ${question.marks_available}
+- Correct Answer: ${question.correct_answer}
+- Marking Scheme: ${JSON.stringify(question.marking_scheme)}
+- Keywords: ${JSON.stringify(question.keywords)}
 
 STUDENT ANSWER: ${studentAnswer}
+
+FEEDBACK GUIDELINES FOR THIS AGE GROUP:
+- Tone: ${guidelines.tone}
+- Language Level: ${guidelines.language}
+- Structure: ${guidelines.structure}
+- Examples: ${guidelines.examples}
+- Subject Focus: ${subjectFocus}
 
 Please provide your assessment in the following JSON format:
 {
   "marks": [number between 0 and ${question.marks_available}],
   "maxMarks": ${question.marks_available},
-  "feedback": "[detailed feedback explaining the marking]",
+  "feedback": "[Age-appropriate feedback following the guidelines above]",
   "confidence": [number between 0 and 1],
   "topicAnalysis": {
     "topics": ["topic1", "topic2", ...],
@@ -81,15 +158,17 @@ Please provide your assessment in the following JSON format:
   }
 }
 
-Focus on:
-1. Accuracy of the answer
-2. Understanding of key concepts
-3. Application of methods/formulas
-4. Clarity of explanation
-5. Identifying specific topics the student struggles with
-6. Recommending which concepts need review
+IMPORTANT FEEDBACK REQUIREMENTS:
+1. ALWAYS start with something positive the student did well
+2. Use age-appropriate language and tone as specified above
+3. Explain corrections in a way suitable for the year group
+4. Provide encouraging, actionable next steps
+5. For younger students: be very encouraging and use simple explanations
+6. For older students: be more analytical and detailed
+7. Match the subject-specific focus guidelines
+8. End feedback on an encouraging note that motivates further learning
 
-Be fair but constructive in your feedback.`;
+Focus on understanding, effort, and providing constructive guidance that builds confidence.`;
 
     // Call OpenAI API
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
