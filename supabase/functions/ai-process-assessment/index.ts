@@ -130,7 +130,6 @@ serve(async (req) => {
             content: generationPrompt
           }
         ],
-        temperature: 0.4,
         max_completion_tokens: 8000,
       }),
     });
