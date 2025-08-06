@@ -76,10 +76,10 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
   }, [lesson.id]);
 
   const handleAssessmentClick = () => {
-    if (canGenerateAssessment) {
-      setShowGenerateAssessment(true);
-    } else if (hasPublishedAssessments) {
+    if (hasPublishedAssessments) {
       setShowAssessmentViewer(true);
+    } else if (canGenerateAssessment) {
+      setShowGenerateAssessment(true);
     }
   };
 
