@@ -391,7 +391,7 @@ Format your response as a JSON object with the following structure:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'o3-2025-04-16',
           messages: [
             { 
               role: 'system', 
