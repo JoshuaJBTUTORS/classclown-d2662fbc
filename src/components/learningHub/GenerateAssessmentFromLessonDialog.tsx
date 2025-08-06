@@ -266,203 +266,231 @@ Create an assessment suitable for this lesson's content and student performance 
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-blue-600" />
-            Generate Assessment from Lesson
+      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] overflow-y-auto bg-white/95 backdrop-blur-md shadow-2xl rounded-xl border-0">
+        <DialogHeader className="pb-6">
+          <DialogTitle className="text-2xl font-semibold text-[hsl(var(--deep-purple-blue))] flex items-center gap-3 font-playfair">
+            <BookOpen className="h-6 w-6 text-[hsl(var(--medium-blue))]" />
+            Create Assessment from Lesson
           </DialogTitle>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Creating an assessment based on: <strong>{lesson.title}</strong>
+          <div className="space-y-3 mt-4">
+            <p className="text-[hsl(var(--medium-blue))]/80 leading-relaxed">
+              Let's create a personalized assessment based on <strong className="text-[hsl(var(--deep-purple-blue))]">{lesson.title}</strong>
             </p>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{lesson.subject}</Badge>
-              <Badge variant="outline">{lesson.lesson_students.length} students</Badge>
-              <Badge variant="outline">{new Date(lesson.start_time).toLocaleDateString()}</Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="bg-gradient-to-r from-[hsl(var(--medium-blue))]/10 to-[hsl(var(--light-green))]/10 text-[hsl(var(--deep-purple-blue))] border-0">{lesson.subject}</Badge>
+              <Badge variant="outline" className="border-[hsl(var(--medium-blue))]/20 text-[hsl(var(--medium-blue))]">{lesson.lesson_students.length} students</Badge>
+              <Badge variant="outline" className="border-[hsl(var(--medium-blue))]/20 text-[hsl(var(--medium-blue))]">{new Date(lesson.start_time).toLocaleDateString()}</Badge>
             </div>
           </div>
         </DialogHeader>
 
         {isLoadingLessonData ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin mr-2" />
-            <span>Loading lesson data...</span>
+          <div className="flex items-center justify-center py-12 bg-gradient-to-r from-[hsl(var(--light-green))]/5 to-[hsl(var(--medium-green))]/5 rounded-xl">
+            <Loader2 className="h-6 w-6 animate-spin mr-3 text-[hsl(var(--medium-blue))]" />
+            <span className="text-[hsl(var(--medium-blue))]">Loading lesson insights...</span>
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((values) => createAssessmentMutation.mutate(values))} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assessment Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit((values) => createAssessmentMutation.mutate(values))} className="space-y-8">
               
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Basic Information Section */}
+              <div className="bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/5 to-[hsl(var(--medium-blue))]/5 p-6 rounded-xl border border-[hsl(var(--medium-blue))]/10">
+                <h3 className="text-lg font-semibold text-[hsl(var(--deep-purple-blue))] mb-4 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Assessment Details
+                </h3>
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(var(--deep-purple-blue))] font-medium">What should we call this assessment?</FormLabel>
+                        <FormControl>
+                          <Input {...field} className="rounded-xl border-[hsl(var(--medium-blue))]/20 focus:border-[hsl(var(--medium-blue))] transition-colors" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(var(--deep-purple-blue))] font-medium">Brief description (optional)</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} className="rounded-xl border-[hsl(var(--medium-blue))]/20 focus:border-[hsl(var(--medium-blue))] transition-colors" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Assessment Configuration Section */}
+              <div className="bg-gradient-to-r from-[hsl(var(--light-green))]/5 to-[hsl(var(--medium-green))]/5 p-6 rounded-xl border border-[hsl(var(--light-green))]/20">
+                <h3 className="text-lg font-semibold text-[hsl(var(--deep-purple-blue))] mb-4">Assessment Settings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="subject"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(var(--deep-purple-blue))] font-medium">Subject</FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="rounded-xl border-[hsl(var(--medium-blue))]/20">
+                              <SelectValue placeholder="Select subject" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LESSON_SUBJECTS.map((subject) => (
+                                <SelectItem key={subject} value={subject}>
+                                  {subject}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="numberOfQuestions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(var(--deep-purple-blue))] font-medium">How many questions?</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="1" max="50" {...field} className="rounded-xl border-[hsl(var(--medium-blue))]/20 focus:border-[hsl(var(--medium-blue))] transition-colors" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                  <FormField
+                    control={form.control}
+                    name="time_limit_minutes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(var(--deep-purple-blue))] font-medium">Time Limit (min)</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} className="rounded-xl border-[hsl(var(--medium-blue))]/20 focus:border-[hsl(var(--medium-blue))] transition-colors" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="total_marks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(var(--deep-purple-blue))] font-medium">Total Marks</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} className="rounded-xl border-[hsl(var(--medium-blue))]/20 focus:border-[hsl(var(--medium-blue))] transition-colors" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="exam_board"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(var(--deep-purple-blue))] font-medium">Exam Board</FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="rounded-xl border-[hsl(var(--medium-blue))]/20">
+                              <SelectValue placeholder="Optional" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="AQA">AQA</SelectItem>
+                              <SelectItem value="Edexcel">Edexcel</SelectItem>
+                              <SelectItem value="OCR">OCR</SelectItem>
+                              <SelectItem value="WJEC">WJEC</SelectItem>
+                              <SelectItem value="Cambridge">Cambridge</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Topic Focus Section */}
+              <div className="bg-gradient-to-r from-[hsl(var(--medium-blue))]/5 to-[hsl(var(--deep-purple-blue))]/5 p-6 rounded-xl border border-[hsl(var(--deep-purple-blue))]/10">
                 <FormField
                   control={form.control}
-                  name="subject"
+                  name="topic"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subject</FormLabel>
+                      <FormLabel className="text-lg font-semibold text-[hsl(var(--deep-purple-blue))] flex items-center gap-2">
+                        What topics should we focus on?
+                      </FormLabel>
                       <FormControl>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select subject" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {LESSON_SUBJECTS.map((subject) => (
-                              <SelectItem key={subject} value={subject}>
-                                {subject}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input {...field} className="mt-2 rounded-xl border-[hsl(var(--medium-blue))]/20 focus:border-[hsl(var(--medium-blue))] transition-colors" />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="numberOfQuestions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Number of Questions</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="1" max="50" {...field} />
-                      </FormControl>
+                      <FormDescription className="text-[hsl(var(--medium-blue))]/70 mt-2">
+                        We'll focus the assessment on these key areas from your lesson
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              {/* Lesson Context Section */}
+              <div className="bg-gradient-to-r from-[hsl(var(--light-green))]/8 to-[hsl(var(--medium-green))]/8 p-6 rounded-xl border border-[hsl(var(--light-green))]/20">
                 <FormField
                   control={form.control}
-                  name="time_limit_minutes"
+                  name="prompt"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Time Limit (min)</FormLabel>
+                      <FormLabel className="text-lg font-semibold text-[hsl(var(--deep-purple-blue))] flex items-center gap-2">
+                        Tell us more about the lesson
+                      </FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Textarea 
+                          className="min-h-[180px] mt-4 rounded-xl border-[hsl(var(--medium-blue))]/20 focus:border-[hsl(var(--medium-blue))] transition-colors bg-white/50 backdrop-blur-sm" 
+                          {...field} 
+                        />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="total_marks"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Marks</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="exam_board"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Exam Board</FormLabel>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Optional" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="AQA">AQA</SelectItem>
-                            <SelectItem value="Edexcel">Edexcel</SelectItem>
-                            <SelectItem value="OCR">OCR</SelectItem>
-                            <SelectItem value="WJEC">WJEC</SelectItem>
-                            <SelectItem value="Cambridge">Cambridge</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
+                      <FormDescription className="text-[hsl(var(--medium-blue))]/70 mt-3 leading-relaxed">
+                        We've gathered insights from your lesson including student engagement, topics covered, and areas for improvement. Feel free to add any additional context that will help create better questions.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="topic"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Topic Focus</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Main topics to focus on in the assessment
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="prompt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>AI Generation Prompt</FormLabel>
-                    <FormControl>
-                      <Textarea className="min-h-[200px] font-mono text-sm" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      This prompt includes lesson data, student engagement, and topics covered
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {/* Processing Status */}
               {processingStatus.processing !== 'idle' && (
-                <Card className="bg-blue-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
+                <Card className="bg-gradient-to-r from-[hsl(var(--medium-blue))]/10 to-[hsl(var(--light-green))]/10 border-[hsl(var(--medium-blue))]/20 rounded-xl shadow-lg">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
                       {getStatusIcon(processingStatus.processing)}
-                      <div>
-                        <p className="font-medium">AI Processing</p>
-                        <p className="text-sm text-gray-600">
+                      <div className="flex-1">
+                        <p className="font-semibold text-[hsl(var(--deep-purple-blue))]">Creating Your Assessment</p>
+                        <p className="text-[hsl(var(--medium-blue))]/80 mt-1">
                           {processingStatus.processing === 'processing' 
-                            ? 'AI is generating questions based on your lesson...'
+                            ? 'Our AI is crafting personalized questions based on your lesson insights...'
                             : processingStatus.processing === 'completed'
-                            ? 'Assessment generated successfully!'
-                            : 'Processing encountered an error.'
+                            ? 'Perfect! Your assessment has been generated successfully.'
+                            : 'Something went wrong during processing. Please try again.'
                           }
                         </p>
                       </div>
@@ -471,18 +499,28 @@ Create an assessment suitable for this lesson's content and student performance 
                 </Card>
               )}
 
-              <DialogFooter className="pt-4">
-                <Button variant="outline" type="button" onClick={handleClose} disabled={isProcessing}>
+              <DialogFooter className="pt-6 border-t border-[hsl(var(--medium-blue))]/10">
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={handleClose} 
+                  disabled={isProcessing}
+                  className="rounded-xl border-[hsl(var(--medium-blue))]/20 text-[hsl(var(--medium-blue))] hover:bg-[hsl(var(--medium-blue))]/5"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isProcessing}>
+                <Button 
+                  type="submit" 
+                  disabled={isProcessing}
+                  className="rounded-xl bg-gradient-to-r from-[hsl(var(--medium-blue))] to-[hsl(var(--deep-purple-blue))] hover:from-[hsl(var(--deep-purple-blue))] hover:to-[hsl(var(--medium-blue))] text-white border-0 shadow-lg transition-all duration-300"
+                >
                   {isProcessing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
+                      Creating Assessment...
                     </>
                   ) : (
-                    'Generate Assessment'
+                    'Create Assessment'
                   )}
                 </Button>
               </DialogFooter>
