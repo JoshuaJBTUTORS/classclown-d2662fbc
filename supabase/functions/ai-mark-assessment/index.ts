@@ -189,7 +189,6 @@ Focus on understanding, effort, and providing constructive guidance that builds 
             content: markingPrompt
           }
         ],
-        temperature: 0.3,
       }),
     });
 
