@@ -17,23 +17,15 @@ import AssessmentQuestionCard from './AssessmentQuestion';
 import AssessmentNavigation from './AssessmentNavigation';
 import AssessmentCompletion from './AssessmentCompletion';
 import AssessmentCompletionDialog from './AssessmentCompletionDialog';
-import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-
 interface AIAssessmentViewerProps {
   assessmentId?: string;
   embedded?: boolean;
-  isOpen?: boolean;
-  onClose?: () => void;
   onAssessmentComplete?: (score: number) => void;
 }
 
 const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({ 
   assessmentId: propAssessmentId, 
   embedded = false, 
-  isOpen, 
-  onClose,
   onAssessmentComplete
 }) => {
   const { id: paramId } = useParams<{ id: string }>();
@@ -43,7 +35,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [studentAnswers, setStudentAnswers] = useState<{ [key: string]: string }>({});
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
@@ -56,9 +47,6 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [bestScore, setBestScore] = useState<UserAssessmentStats | null>(null);
 
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
 
   const { data: assessment, isLoading: assessmentLoading, error: assessmentError } = useQuery({
     queryKey: ['assessment', id],
@@ -383,16 +371,8 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
     } else {
       navigate('/learning-hub', { replace: true });
     }
-    
-    // Close modal if provided
-    if (onClose) {
-      onClose();
-    }
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   const hasAnsweredQuestions = questions ? 
     questions.some(q => studentAnswers[q.id] && studentAnswers[q.id].trim()) : false;
@@ -590,23 +570,12 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
-        <div className="flex h-full">
-          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-          
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-            
-            <main className="flex-1 overflow-x-hidden overflow-y-auto">
-              <div className="container py-8">
-                {renderMainContent()}
-              </div>
-            </main>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <AssessmentAccessControl 
+      assessment={assessment} 
+      requiredAccess="take"
+    >
+      {renderMainContent()}
+    </AssessmentAccessControl>
   );
 };
 

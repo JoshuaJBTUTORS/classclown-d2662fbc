@@ -324,12 +324,15 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
       />
 
       {/* Assessment Viewer Modal */}
-      {hasPublishedAssessments && publishedAssessments.length > 0 && (
-        <AIAssessmentViewer
-          assessmentId={publishedAssessments[0].id}
-          isOpen={showAssessmentViewer}
-          onClose={() => setShowAssessmentViewer(false)}
-        />
+      {hasPublishedAssessments && publishedAssessments.length > 0 && showAssessmentViewer && (
+        <Dialog open={showAssessmentViewer} onOpenChange={() => setShowAssessmentViewer(false)}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <AIAssessmentViewer
+              assessmentId={publishedAssessments[0].id}
+              embedded={true}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

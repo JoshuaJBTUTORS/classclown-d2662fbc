@@ -411,8 +411,6 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
           <AIAssessmentViewer
             assessmentId={selectedAssessmentId}
             embedded={true}
-            isOpen={showAssessmentViewer}
-            onClose={handleCloseAssessmentViewer}
           />
         </DialogContent>
       </Dialog>
