@@ -4,9 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
-import { Clock, Users, Video, FileText, User, Play, BookOpen, Calendar } from 'lucide-react';
+import { Clock, Users, Video, FileText, User, Play, BookOpen, Calendar, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import StudentLessonSummary from '@/components/calendar/StudentLessonSummary';
+import GenerateAssessmentFromLessonDialog from './GenerateAssessmentFromLessonDialog';
 
 interface LessonSummaryCardProps {
   lesson: {
@@ -33,11 +35,14 @@ interface LessonSummaryCardProps {
 }
 
 const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
+  const { isAdmin, isOwner, isTutor } = useAuth();
   const [showRecording, setShowRecording] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [showGenerateAssessment, setShowGenerateAssessment] = useState(false);
   const lessonDate = parseISO(lesson.start_time);
 
   const hasRecording = lesson.lesson_space_recording_url || lesson.lesson_space_session_id;
+  const canGenerateAssessment = isAdmin || isOwner || isTutor;
 
   // Generate a subtle pastel gradient based on subject
   const getSubjectGradient = (subject: string) => {
@@ -132,7 +137,10 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
         <CardContent className="relative z-10 flex-1 flex flex-col pt-0 px-6 pb-6">
           {/* Spacer to ensure minimum distance from header content */}
           <div className="flex-1 min-h-[1rem]" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn(
+            "grid gap-3",
+            canGenerateAssessment ? "grid-cols-3" : "grid-cols-2"
+          )}>
             <Button
               variant="outline"
               size="lg"
@@ -172,6 +180,27 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
               </div>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-cyan-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
             </Button>
+            
+            {canGenerateAssessment && (
+              <Button
+                variant="outline"
+                size="lg"
+                className={cn(
+                  "group/btn relative overflow-hidden bg-white/80 backdrop-blur-sm border-0",
+                  "shadow-md hover:shadow-lg transition-all duration-300",
+                  "hover:bg-white/90 hover:scale-105"
+                )}
+                onClick={() => setShowGenerateAssessment(true)}
+              >
+                <div className="flex items-center gap-2 relative z-10">
+                  <div className="p-1 rounded-full bg-purple-100 group-hover/btn:bg-purple-200 transition-colors">
+                    <Brain className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="font-medium text-gray-700">Assessment</span>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+              </Button>
+            )}
           </div>
         </CardContent>
 
@@ -226,6 +255,16 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Generate Assessment Modal */}
+      <GenerateAssessmentFromLessonDialog
+        isOpen={showGenerateAssessment}
+        onClose={() => setShowGenerateAssessment(false)}
+        onSuccess={() => {
+          // Could add navigation to assessments page or show success message
+        }}
+        lesson={lesson}
+      />
     </>
   );
 };
