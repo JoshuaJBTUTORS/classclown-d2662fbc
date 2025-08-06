@@ -23,6 +23,11 @@ interface SummaryStats {
   averageAssessmentScore: number;
   totalAssessments: number;
   assessmentImprovementTrend: number;
+  averageEngagement: number;
+  averageConfidence: number;
+  engagementTrend: number;
+  confidenceTrend: number;
+  totalLessonSummaries: number;
 }
 
 const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) => {
@@ -33,7 +38,12 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     improvementTrend: 0,
     averageAssessmentScore: 0,
     totalAssessments: 0,
-    assessmentImprovementTrend: 0
+    assessmentImprovementTrend: 0,
+    averageEngagement: 0,
+    averageConfidence: 0,
+    engagementTrend: 0,
+    confidenceTrend: 0,
+    totalLessonSummaries: 0
   });
   const [loading, setLoading] = useState(true);
   const [hasAssessmentAccess, setHasAssessmentAccess] = useState(false);
@@ -157,6 +167,37 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       const { data: attendanceData, error: attendanceError } = await attendanceQuery;
       if (attendanceError) throw attendanceError;
 
+      // Fetch engagement and confidence statistics
+      let engagementData = null;
+      if (hasAssessmentAccess) {
+        let engagementQuery = supabase
+          .from('lesson_student_summaries')
+          .select(`
+            engagement_score,
+            confidence_score,
+            created_at
+          `)
+          .not('engagement_score', 'is', null)
+          .not('confidence_score', 'is', null)
+          .order('created_at', { ascending: true });
+
+        // Filter by student if applicable
+        if (studentIds.length > 0) {
+          engagementQuery = engagementQuery.in('student_id', studentIds);
+        }
+
+        if (filters.dateRange.from) {
+          engagementQuery = engagementQuery.gte('created_at', filters.dateRange.from.toISOString());
+        }
+        if (filters.dateRange.to) {
+          engagementQuery = engagementQuery.lte('created_at', filters.dateRange.to.toISOString());
+        }
+
+        const { data: engagement, error: engagementError } = await engagementQuery;
+        if (engagementError) throw engagementError;
+        engagementData = engagement;
+      }
+
       // Calculate homework statistics
       const totalHomework = homeworkData?.length || 0;
       const averageScore = totalHomework > 0 
@@ -212,6 +253,32 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         assessmentImprovementTrend = Math.round(secondHalfAvg - firstHalfAvg);
       }
 
+      // Calculate engagement and confidence statistics
+      const totalLessonSummaries = engagementData?.length || 0;
+      const averageEngagement = totalLessonSummaries > 0
+        ? Math.round(engagementData!.reduce((sum, item) => sum + item.engagement_score, 0) / totalLessonSummaries)
+        : 0;
+      const averageConfidence = totalLessonSummaries > 0
+        ? Math.round(engagementData!.reduce((sum, item) => sum + item.confidence_score, 0) / totalLessonSummaries)
+        : 0;
+
+      // Calculate engagement and confidence trends
+      let engagementTrend = 0;
+      let confidenceTrend = 0;
+      if (engagementData && engagementData.length >= 4) {
+        const midpoint = Math.floor(engagementData.length / 2);
+        const firstHalf = engagementData.slice(0, midpoint);
+        const secondHalf = engagementData.slice(midpoint);
+        
+        const firstHalfEngagementAvg = firstHalf.reduce((sum, item) => sum + item.engagement_score, 0) / firstHalf.length;
+        const secondHalfEngagementAvg = secondHalf.reduce((sum, item) => sum + item.engagement_score, 0) / secondHalf.length;
+        engagementTrend = Math.round(secondHalfEngagementAvg - firstHalfEngagementAvg);
+
+        const firstHalfConfidenceAvg = firstHalf.reduce((sum, item) => sum + item.confidence_score, 0) / firstHalf.length;
+        const secondHalfConfidenceAvg = secondHalf.reduce((sum, item) => sum + item.confidence_score, 0) / secondHalf.length;
+        confidenceTrend = Math.round(secondHalfConfidenceAvg - firstHalfConfidenceAvg);
+      }
+
       setStats({
         averageScore,
         attendanceRate,
@@ -219,7 +286,12 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         improvementTrend,
         averageAssessmentScore,
         totalAssessments,
-        assessmentImprovementTrend
+        assessmentImprovementTrend,
+        averageEngagement,
+        averageConfidence,
+        engagementTrend,
+        confidenceTrend,
+        totalLessonSummaries
       });
     } catch (error) {
       console.error('Error fetching summary stats:', error);
@@ -231,8 +303,8 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-8 gap-6">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <Card key={i} className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
             <CardContent className="p-6">
               <div className="animate-pulse">
@@ -269,6 +341,20 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       bgColor: "bg-green-50"
     },
     {
+      title: "Average Engagement",
+      value: hasAssessmentAccess ? `${stats.averageEngagement}/10` : "Locked",
+      icon: hasAssessmentAccess ? TrendingUp : Lock,
+      color: hasAssessmentAccess ? "text-emerald-600" : "text-gray-400",
+      bgColor: hasAssessmentAccess ? "bg-emerald-50" : "bg-gray-50"
+    },
+    {
+      title: "Average Confidence",
+      value: hasAssessmentAccess ? `${stats.averageConfidence}/10` : "Locked",
+      icon: hasAssessmentAccess ? Brain : Lock,
+      color: hasAssessmentAccess ? "text-violet-600" : "text-gray-400",
+      bgColor: hasAssessmentAccess ? "bg-violet-50" : "bg-gray-50"
+    },
+    {
       title: "Total Homework",
       value: stats.totalHomework.toString(),
       icon: BookOpen,
@@ -283,24 +369,24 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       bgColor: hasAssessmentAccess ? "bg-indigo-50" : "bg-gray-50"
     },
     {
-      title: "Overall Improvement",
+      title: "Overall Progress",
       value: hasAssessmentAccess 
-        ? `${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) > 0 ? '+' : ''}${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2)}%`
+        ? `${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) > 0 ? '+' : ''}${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4)}%`
         : `${stats.improvementTrend > 0 ? '+' : ''}${stats.improvementTrend}%`,
       icon: hasAssessmentAccess 
-        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? TrendingUp : TrendingDown)
+        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) >= 0 ? TrendingUp : TrendingDown)
         : (stats.improvementTrend >= 0 ? TrendingUp : TrendingDown),
       color: hasAssessmentAccess 
-        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "text-green-600" : "text-red-600")
+        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) >= 0 ? "text-green-600" : "text-red-600")
         : (stats.improvementTrend >= 0 ? "text-green-600" : "text-red-600"),
       bgColor: hasAssessmentAccess 
-        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend) / 2) >= 0 ? "bg-green-50" : "bg-red-50")
+        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) >= 0 ? "bg-green-50" : "bg-red-50")
         : (stats.improvementTrend >= 0 ? "bg-green-50" : "bg-red-50")
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8 gap-6">
       {statCards.map((card, index) => (
         <Card key={index} className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200 group">
           <CardContent className="p-6">

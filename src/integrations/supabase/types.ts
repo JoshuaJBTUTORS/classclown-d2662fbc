@@ -1041,10 +1041,14 @@ export type Database = {
         Row: {
           ai_summary: string | null
           areas_for_improvement: string | null
+          confidence_indicators: Json | null
+          confidence_score: number | null
           created_at: string
           engagement_level: string | null
+          engagement_score: number | null
           id: string
           lesson_id: string
+          participation_time_percentage: number | null
           student_contributions: string | null
           student_id: number
           topics_covered: string[] | null
@@ -1055,10 +1059,14 @@ export type Database = {
         Insert: {
           ai_summary?: string | null
           areas_for_improvement?: string | null
+          confidence_indicators?: Json | null
+          confidence_score?: number | null
           created_at?: string
           engagement_level?: string | null
+          engagement_score?: number | null
           id?: string
           lesson_id: string
+          participation_time_percentage?: number | null
           student_contributions?: string | null
           student_id: number
           topics_covered?: string[] | null
@@ -1069,10 +1077,14 @@ export type Database = {
         Update: {
           ai_summary?: string | null
           areas_for_improvement?: string | null
+          confidence_indicators?: Json | null
+          confidence_score?: number | null
           created_at?: string
           engagement_level?: string | null
+          engagement_score?: number | null
           id?: string
           lesson_id?: string
+          participation_time_percentage?: number | null
           student_contributions?: string | null
           student_id?: number
           topics_covered?: string[] | null
@@ -1774,11 +1786,17 @@ export type Database = {
           assessment_score: number | null
           completed_at: string | null
           completion_percentage: number | null
+          confidence_increase: number | null
           created_at: string | null
+          engagement_score: number | null
           id: string
           last_accessed_at: string | null
           lesson_id: string | null
+          participation_metrics: Json | null
           path_status: string | null
+          questions_asked: number | null
+          responses_given: number | null
+          speaking_time_minutes: number | null
           status: string
           student_id: number | null
           unlocked_at: string | null
@@ -1791,11 +1809,17 @@ export type Database = {
           assessment_score?: number | null
           completed_at?: string | null
           completion_percentage?: number | null
+          confidence_increase?: number | null
           created_at?: string | null
+          engagement_score?: number | null
           id?: string
           last_accessed_at?: string | null
           lesson_id?: string | null
+          participation_metrics?: Json | null
           path_status?: string | null
+          questions_asked?: number | null
+          responses_given?: number | null
+          speaking_time_minutes?: number | null
           status?: string
           student_id?: number | null
           unlocked_at?: string | null
@@ -1808,11 +1832,17 @@ export type Database = {
           assessment_score?: number | null
           completed_at?: string | null
           completion_percentage?: number | null
+          confidence_increase?: number | null
           created_at?: string | null
+          engagement_score?: number | null
           id?: string
           last_accessed_at?: string | null
           lesson_id?: string | null
+          participation_metrics?: Json | null
           path_status?: string | null
+          questions_asked?: number | null
+          responses_given?: number | null
+          speaking_time_minutes?: number | null
           status?: string
           student_id?: number | null
           unlocked_at?: string | null

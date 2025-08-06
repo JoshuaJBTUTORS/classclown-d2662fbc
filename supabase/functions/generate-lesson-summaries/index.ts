@@ -369,7 +369,11 @@ Please provide a comprehensive analysis focusing on:
 3. **What Went Well**: Highlight ${studentName}'s strengths, good understanding, correct answers, and positive engagement
 4. **Areas for Improvement**: Identify concepts ${studentName} struggled with, incorrect answers, or areas needing more attention
 5. **Engagement Level**: Rate and describe ${studentName}'s overall engagement (Low/Medium/High) with specific examples
-6. **Overall Summary**: Provide a comprehensive overview of ${studentName}'s performance and learning in this lesson
+6. **Engagement Score**: Rate ${studentName}'s engagement on a scale of 0-10 based on participation frequency, question asking, response quality
+7. **Confidence Score**: Rate ${studentName}'s confidence level on a scale of 0-10 based on certainty in responses, willingness to participate, tone of voice
+8. **Speaking Metrics**: Estimate ${studentName}'s participation time percentage (0-100%) and count of questions asked and responses given
+9. **Confidence Indicators**: Identify specific signs of confidence or hesitation (e.g., "I think...", "I'm not sure...", confident statements, clear explanations)
+10. **Overall Summary**: Provide a comprehensive overview of ${studentName}'s performance and learning in this lesson
 
 Please be specific and provide examples from the transcription. If ${studentName} is not mentioned in the transcription, note their absence or lack of participation.
 
@@ -380,6 +384,16 @@ Format your response as a JSON object with the following structure:
   "what_went_well": "positive aspects",
   "areas_for_improvement": "areas needing attention",
   "engagement_level": "Low|Medium|High",
+  "engagement_score": 7,
+  "confidence_score": 6,
+  "participation_time_percentage": 15.5,
+  "questions_asked": 3,
+  "responses_given": 8,
+  "confidence_indicators": {
+    "confident_statements": ["example1", "example2"],
+    "hesitation_patterns": ["example1", "example2"],
+    "improvement_signs": ["example1", "example2"]
+  },
   "overall_summary": "comprehensive summary"
 }
 `;
@@ -440,6 +454,12 @@ Format your response as a JSON object with the following structure:
           what_went_well: "Unable to analyze",
           areas_for_improvement: "Unable to analyze", 
           engagement_level: "Unknown",
+          engagement_score: null,
+          confidence_score: null,
+          participation_time_percentage: null,
+          questions_asked: 0,
+          responses_given: 0,
+          confidence_indicators: {},
           overall_summary: aiContent
         };
       }
@@ -454,6 +474,10 @@ Format your response as a JSON object with the following structure:
         what_went_well: analysisData.what_went_well || '',
         areas_for_improvement: analysisData.areas_for_improvement || '',
         engagement_level: analysisData.engagement_level || 'Unknown',
+        engagement_score: analysisData.engagement_score || null,
+        confidence_score: analysisData.confidence_score || null,
+        participation_time_percentage: analysisData.participation_time_percentage || null,
+        confidence_indicators: analysisData.confidence_indicators || {},
         ai_summary: analysisData.overall_summary || aiContent,
       };
 
