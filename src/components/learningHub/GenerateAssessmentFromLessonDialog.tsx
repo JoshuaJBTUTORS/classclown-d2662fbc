@@ -193,7 +193,7 @@ Create an assessment suitable for this lesson's content and student performance 
           processing_status: 'pending',
           is_ai_generated: true,
           created_by: user.user?.id,
-          status: 'draft',
+          status: 'published',
           lesson_id: lesson.id,
           ai_extraction_data: {
             numberOfQuestions: values.numberOfQuestions,
