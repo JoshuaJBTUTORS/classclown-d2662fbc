@@ -86,11 +86,10 @@ serve(async (req) => {
         {
           "question_number": 1,
           "question_text": "The complete question text with clear instructions",
-          "question_type": "multiple_choice|short_answer|extended_writing",
+          "question_type": "short_answer|extended_writing",
           "marks_available": 5,
           "correct_answer": "The correct answer or detailed marking scheme",
-          "keywords": ["keyword1", "keyword2", "keyword3"],
-          "options": ["Option A", "Option B", "Option C", "Option D"]
+          "keywords": ["keyword1", "keyword2", "keyword3"]
         }
       ],
       "total_marks": 50,
@@ -99,29 +98,16 @@ serve(async (req) => {
     
     Requirements:
     - Generate exactly ${numberOfQuestions} unique, high-quality questions
-    - Question types must be ONLY one of: multiple_choice, short_answer, extended_writing
-    - DO NOT generate calculation, draw, or any other question types - they are not supported
+    - Question types must be ONLY one of: short_answer, extended_writing
+    - DO NOT generate multiple choice, calculation, draw, or any other question types - they are not supported
+    - Use short_answer for questions requiring brief written responses (1-3 sentences)
+    - Use extended_writing for questions requiring detailed explanations, essays, or analysis (paragraphs)
     - Assign realistic mark allocations (1-20 marks per question)
     - Include detailed correct answers or marking schemes
     - Add relevant keywords for each question to aid in marking
     - Ensure questions are appropriate for the specified level and exam board
     - Questions should vary in difficulty and style
     - Total marks should be the sum of all individual question marks
-    
-    MULTIPLE CHOICE QUESTIONS SPECIFIC REQUIREMENTS:
-    - For multiple_choice questions, MUST include "options" array with exactly 4 options
-    - Options should be clear, distinct choices labeled as "Option A", "Option B", "Option C", "Option D"
-    - The "correct_answer" for multiple choice should be the letter only: "A", "B", "C", or "D"
-    - Example multiple choice question:
-    {
-      "question_number": 1,
-      "question_text": "What is the capital of France?",
-      "question_type": "multiple_choice",
-      "marks_available": 1,
-      "correct_answer": "A",
-      "keywords": ["geography", "capital", "France"],
-      "options": ["Paris", "London", "Berlin", "Madrid"]
-    }
     `;
 
     console.log("Sending request to OpenAI...");
@@ -183,19 +169,10 @@ serve(async (req) => {
       const question = extractedData.questions[i];
       
       // Validate question type is supported
-      const supportedTypes = ['short_answer', 'extended_writing', 'multiple_choice'];
+      const supportedTypes = ['short_answer', 'extended_writing'];
       if (!supportedTypes.includes(question.question_type)) {
         console.warn(`Unsupported question type ${question.question_type}, defaulting to short_answer`);
         question.question_type = 'short_answer';
-      }
-      
-      // Prepare marking scheme based on question type
-      let markingScheme = {};
-      if (question.question_type === 'multiple_choice' && question.options) {
-        markingScheme = {
-          options: question.options,
-          correct_answer: question.correct_answer
-        };
       }
       
       const { error: questionError } = await supabase
@@ -207,7 +184,7 @@ serve(async (req) => {
           question_type: question.question_type,
           marks_available: question.marks_available || 1,
           correct_answer: question.correct_answer || '',
-          marking_scheme: markingScheme,
+          marking_scheme: {},
           keywords: question.keywords || [],
           position: i + 1,
         });
