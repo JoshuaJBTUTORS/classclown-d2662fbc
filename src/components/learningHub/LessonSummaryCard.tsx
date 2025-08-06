@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,10 @@ import { format, parseISO } from 'date-fns';
 import { Clock, Users, Video, FileText, User, Play, BookOpen, Calendar, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import StudentLessonSummary from '@/components/calendar/StudentLessonSummary';
 import GenerateAssessmentFromLessonDialog from './GenerateAssessmentFromLessonDialog';
+import AIAssessmentViewer from './AIAssessmentViewer';
 
 interface LessonSummaryCardProps {
   lesson: {
@@ -39,10 +41,54 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
   const [showRecording, setShowRecording] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [showGenerateAssessment, setShowGenerateAssessment] = useState(false);
+  const [showAssessmentViewer, setShowAssessmentViewer] = useState(false);
+  const [publishedAssessments, setPublishedAssessments] = useState<any[]>([]);
+  const [hasPublishedAssessments, setHasPublishedAssessments] = useState(false);
   const lessonDate = parseISO(lesson.start_time);
 
   const hasRecording = lesson.lesson_space_recording_url || lesson.lesson_space_session_id;
   const canGenerateAssessment = isAdmin || isOwner || isTutor;
+  const canSeeAssessmentButton = canGenerateAssessment || hasPublishedAssessments;
+
+  // Fetch published assessments for this lesson
+  useEffect(() => {
+    const fetchPublishedAssessments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ai_assessments')
+          .select('*')
+          .eq('lesson_id', lesson.id)
+          .eq('status', 'published');
+
+        if (error) {
+          console.error('Error fetching assessments:', error);
+          return;
+        }
+
+        setPublishedAssessments(data || []);
+        setHasPublishedAssessments((data || []).length > 0);
+      } catch (error) {
+        console.error('Error fetching assessments:', error);
+      }
+    };
+
+    fetchPublishedAssessments();
+  }, [lesson.id]);
+
+  const handleAssessmentClick = () => {
+    if (canGenerateAssessment) {
+      setShowGenerateAssessment(true);
+    } else if (hasPublishedAssessments) {
+      setShowAssessmentViewer(true);
+    }
+  };
+
+  const getAssessmentButtonText = () => {
+    if (canGenerateAssessment) {
+      return 'Assessment';
+    }
+    return 'Take Assessment';
+  };
 
   // Generate a subtle pastel gradient based on subject
   const getSubjectGradient = (subject: string) => {
@@ -139,7 +185,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
           <div className="flex-1 min-h-[1rem]" />
           <div className={cn(
             "grid gap-3",
-            canGenerateAssessment ? "grid-cols-3" : "grid-cols-2"
+            canSeeAssessmentButton ? "grid-cols-3" : "grid-cols-2"
           )}>
             <Button
               variant="outline"
@@ -181,7 +227,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
               <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-cyan-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
             </Button>
             
-            {canGenerateAssessment && (
+            {canSeeAssessmentButton && (
               <Button
                 variant="outline"
                 size="lg"
@@ -190,13 +236,13 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
                   "shadow-md hover:shadow-lg transition-all duration-300",
                   "hover:bg-white/90 hover:scale-105"
                 )}
-                onClick={() => setShowGenerateAssessment(true)}
+                onClick={handleAssessmentClick}
               >
                 <div className="flex items-center gap-2 relative z-10">
                   <div className="p-1 rounded-full bg-purple-100 group-hover/btn:bg-purple-200 transition-colors">
                     <Brain className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="font-medium text-gray-700">Assessment</span>
+                  <span className="font-medium text-gray-700">{getAssessmentButtonText()}</span>
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
               </Button>
@@ -262,10 +308,29 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
         isOpen={showGenerateAssessment}
         onClose={() => setShowGenerateAssessment(false)}
         onSuccess={() => {
-          // Could add navigation to assessments page or show success message
+          // Refresh assessments after generation
+          const fetchPublishedAssessments = async () => {
+            const { data } = await supabase
+              .from('ai_assessments')
+              .select('*')
+              .eq('lesson_id', lesson.id)
+              .eq('status', 'published');
+            setPublishedAssessments(data || []);
+            setHasPublishedAssessments((data || []).length > 0);
+          };
+          fetchPublishedAssessments();
         }}
         lesson={lesson}
       />
+
+      {/* Assessment Viewer Modal */}
+      {hasPublishedAssessments && publishedAssessments.length > 0 && (
+        <AIAssessmentViewer
+          assessmentId={publishedAssessments[0].id}
+          isOpen={showAssessmentViewer}
+          onClose={() => setShowAssessmentViewer(false)}
+        />
+      )}
     </>
   );
 };
