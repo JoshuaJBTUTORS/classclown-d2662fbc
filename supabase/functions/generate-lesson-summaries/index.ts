@@ -400,7 +400,7 @@ Format your response as a JSON object with the following structure:
             { role: 'user', content: prompt }
           ],
           temperature: 0.3,
-          max_tokens: 2000,
+          max_completion_tokens: 2000,
         }),
       });
 
