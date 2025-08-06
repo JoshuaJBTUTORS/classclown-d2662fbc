@@ -22,22 +22,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
-import {
-  Sidebar as ShadcnSidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator,
-} from '@/components/ui/sidebar';
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from '@/components/ui/collapsible';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -266,85 +250,92 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
 
-          <SidebarContent className="flex-1 overflow-y-auto py-4">
+          <div className="flex-1 overflow-y-auto py-4">
             {filteredMenuGroups.map((group, groupIndex) => {
               const isExpanded = expandedGroups[group.label] ?? getGroupHasActiveRoute(group);
               
               return (
                 <div key={group.label}>
-                  <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(group.label)}>
-                    <SidebarGroup>
-                      <CollapsibleTrigger asChild>
-                        <button className={cn(
-                          "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-all duration-200 ease-in-out group",
-                          "hover:bg-primary/10 hover:text-primary hover:scale-[1.02] hover:shadow-sm",
-                          "active:scale-[0.98] active:bg-primary/20",
-                          isExpanded 
-                            ? "bg-primary/10 text-primary shadow-sm" 
-                            : "text-muted-foreground"
-                        )}>
-                           <span className="transition-all duration-200 group-hover:tracking-wide">
-                             {getGroupLabelByRole(group.label, currentUserRole)}
-                           </span>
-                          {isExpanded ? (
-                            <ChevronDown className="h-3 w-3 transition-transform duration-200 group-hover:scale-110" />
-                          ) : (
-                            <ChevronRight className="h-3 w-3 transition-transform duration-200 group-hover:scale-110" />
-                          )}
-                        </button>
-                      </CollapsibleTrigger>
-                      
-                      <CollapsibleContent className="overflow-hidden transition-all duration-200 ease-out data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                        <div className="space-y-1 pb-2">
-                          <SidebarGroupContent>
-                            <SidebarMenu>
-                              {group.items.map((item) => {
-                                const isActive = location.pathname === item.href;
-                                return (
-                                  <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuButton asChild isActive={isActive}>
-                                      {item.href === '#' ? (
-                                        <button
-                                          onClick={() => {
-                                            item.onClick?.();
-                                            onClose();
-                                          }}
-                                          className="w-full flex items-center gap-3 text-left"
-                                        >
-                                          <item.icon className="h-4 w-4" />
-                                          <span>{item.label}</span>
-                                        </button>
-                                      ) : (
-                                        <Link
-                                          to={item.href}
-                                          onClick={onClose}
-                                          className="flex items-center gap-3"
-                                        >
-                                          <item.icon className="h-4 w-4" />
-                                          <span>{item.label}</span>
-                                        </Link>
+                  <div className="mb-2">
+                    <button 
+                      onClick={() => toggleGroup(group.label)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-all duration-200 ease-in-out group",
+                        "hover:bg-primary/10 hover:text-primary hover:scale-[1.02] hover:shadow-sm",
+                        "active:scale-[0.98] active:bg-primary/20",
+                        isExpanded 
+                          ? "bg-primary/10 text-primary shadow-sm" 
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      <span className="transition-all duration-200 group-hover:tracking-wide">
+                        {getGroupLabelByRole(group.label, currentUserRole)}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronDown className="h-3 w-3 transition-transform duration-200 group-hover:scale-110" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3 transition-transform duration-200 group-hover:scale-110" />
+                      )}
+                    </button>
+                    
+                    {isExpanded && (
+                      <div className="space-y-1 pb-2 mt-2">
+                        <div className="px-3">
+                          <div className="space-y-1">
+                            {group.items.map((item) => {
+                              const isActive = location.pathname === item.href;
+                              return (
+                                <div key={item.href}>
+                                  {item.href === '#' ? (
+                                    <button
+                                      onClick={() => {
+                                        item.onClick?.();
+                                        onClose();
+                                      }}
+                                      className={cn(
+                                        "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
+                                        "hover:bg-accent hover:text-accent-foreground",
+                                        "focus:outline-none focus:bg-accent focus:text-accent-foreground"
                                       )}
-                                    </SidebarMenuButton>
-                                  </SidebarMenuItem>
-                                );
-                              })}
-                            </SidebarMenu>
-                          </SidebarGroupContent>
+                                    >
+                                      <item.icon className="h-4 w-4" />
+                                      <span>{item.label}</span>
+                                    </button>
+                                  ) : (
+                                    <Link
+                                      to={item.href}
+                                      onClick={onClose}
+                                      className={cn(
+                                        "flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
+                                        isActive
+                                          ? "bg-accent text-accent-foreground font-medium"
+                                          : "hover:bg-accent hover:text-accent-foreground",
+                                        "focus:outline-none focus:bg-accent focus:text-accent-foreground"
+                                      )}
+                                    >
+                                      <item.icon className="h-4 w-4" />
+                                      <span>{item.label}</span>
+                                    </Link>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </CollapsibleContent>
-                    </SidebarGroup>
-                  </Collapsible>
+                      </div>
+                    )}
+                  </div>
                   
                   {groupIndex < filteredMenuGroups.length - 1 && isExpanded && 
                     filteredMenuGroups.slice(groupIndex + 1).some((nextGroup) => 
                       expandedGroups[nextGroup.label] ?? getGroupHasActiveRoute(nextGroup)
                     ) && (
-                    <SidebarSeparator className="mx-3 my-4" />
+                    <div className="mx-3 my-4 border-t border-gray-200" />
                   )}
                 </div>
               );
             })}
-          </SidebarContent>
+          </div>
         </div>
       </aside>
 
