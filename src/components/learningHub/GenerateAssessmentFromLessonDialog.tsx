@@ -194,11 +194,11 @@ Create an assessment suitable for this lesson's content and student performance 
           is_ai_generated: true,
           created_by: user.user?.id,
           status: 'draft',
+          lesson_id: lesson.id,
           ai_extraction_data: {
             numberOfQuestions: values.numberOfQuestions,
             topic: values.topic,
             prompt: values.prompt,
-            lesson_id: lesson.id,
             based_on_lesson: true
           },
         })

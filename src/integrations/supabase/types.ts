@@ -56,6 +56,7 @@ export type Database = {
           exam_board: string | null
           id: string
           is_ai_generated: boolean | null
+          lesson_id: string | null
           paper_type: string | null
           processing_error: string | null
           processing_status: string | null
@@ -80,6 +81,7 @@ export type Database = {
           exam_board?: string | null
           id?: string
           is_ai_generated?: boolean | null
+          lesson_id?: string | null
           paper_type?: string | null
           processing_error?: string | null
           processing_status?: string | null
@@ -104,6 +106,7 @@ export type Database = {
           exam_board?: string | null
           id?: string
           is_ai_generated?: boolean | null
+          lesson_id?: string | null
           paper_type?: string | null
           processing_error?: string | null
           processing_status?: string | null
@@ -117,7 +120,15 @@ export type Database = {
           updated_at?: string
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_assessments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assessment_improvements: {
         Row: {

@@ -251,6 +251,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
             <StudentLessonSummary
               lessonId={lesson.id}
               students={lesson.lesson_students}
+              lesson={lesson}
             />
           </div>
         </DialogContent>
