@@ -53,7 +53,32 @@ const isTimeWithinSlot = (
   const [endHours, endMinutes] = availabilityEnd.split(':').map(Number);
   const endTotalMinutes = endHours * 60 + endMinutes;
 
-  return checkTotalMinutes >= startTotalMinutes && checkTotalMinutes < endTotalMinutes;
+  return checkTotalMinutes >= startTotalMinutes && checkTotalMinutes <= endTotalMinutes;
+};
+
+// Helper function to check if a lesson time range fits within availability slot
+const isLessonWithinAvailability = (
+  lessonStart: Date,
+  lessonEnd: Date,
+  availabilityStart: string,
+  availabilityEnd: string
+): boolean => {
+  const startHours = lessonStart.getHours();
+  const startMinutes = lessonStart.getMinutes();
+  const startTotalMinutes = startHours * 60 + startMinutes;
+  
+  const endHours = lessonEnd.getHours();
+  const endMinutes = lessonEnd.getMinutes();
+  const endTotalMinutes = endHours * 60 + endMinutes;
+
+  const [availStartHours, availStartMinutes] = availabilityStart.split(':').map(Number);
+  const availStartTotalMinutes = availStartHours * 60 + availStartMinutes;
+
+  const [availEndHours, availEndMinutes] = availabilityEnd.split(':').map(Number);
+  const availEndTotalMinutes = availEndHours * 60 + availEndMinutes;
+
+  // Lesson start must be >= availability start AND lesson end must be <= availability end
+  return startTotalMinutes >= availStartTotalMinutes && endTotalMinutes <= availEndTotalMinutes;
 };
 
 export const findAlternativeTutors = async (
@@ -101,9 +126,7 @@ export const findAlternativeTutors = async (
         // Check if the requested time falls within any availability slot
         const availableSlots = availability
           .filter(slot => {
-            const startWithinSlot = isTimeWithinSlot(startDate, slot.start_time, slot.end_time);
-            const endWithinSlot = isTimeWithinSlot(endDate, slot.start_time, slot.end_time);
-            return startWithinSlot && endWithinSlot;
+            return isLessonWithinAvailability(startDate, endDate, slot.start_time, slot.end_time);
           })
           .map(slot => `${slot.start_time} - ${slot.end_time}`);
 
@@ -184,10 +207,9 @@ export const checkTutorAvailability = async (
 
     // Check if the requested time falls within any availability slot
     const isWithinAvailability = availability.some(slot => {
-      const startWithinSlot = isTimeWithinSlot(startDate, slot.start_time, slot.end_time);
-      const endWithinSlot = isTimeWithinSlot(endDate, slot.start_time, slot.end_time);
-      console.log('Checking slot:', { slot, startWithinSlot, endWithinSlot });
-      return startWithinSlot && endWithinSlot;
+      const lessonFitsSlot = isLessonWithinAvailability(startDate, endDate, slot.start_time, slot.end_time);
+      console.log('Checking slot:', { slot, lessonFitsSlot, startTime, endTime });
+      return lessonFitsSlot;
     });
 
     if (!isWithinAvailability) {
