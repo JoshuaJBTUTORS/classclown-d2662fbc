@@ -252,8 +252,12 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
     return transcriptStatus.status === 'completed' && lessonAssessments.length > 0;
   };
 
+  const canGenerateAssessment = () => {
+    return transcriptStatus.status === 'completed';
+  };
+
   const shouldShowWaitingMessage = () => {
-    return !canShowAssessments() && (transcriptStatus.status === 'processing' || !transcriptStatus.exists);
+    return transcriptStatus.status === 'processing' || !transcriptStatus.exists;
   };
 
   return (
@@ -271,7 +275,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
             
             {/* Assessment Actions */}
             <div className="flex items-center gap-2">
-              {isTeacherRole && (
+              {isTeacherRole && canGenerateAssessment() && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -301,7 +305,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                 </div>
               )}
               
-              {!isTeacherRole && shouldShowWaitingMessage() && (
+              {shouldShowWaitingMessage() && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {getTranscriptStatusMessage()}
