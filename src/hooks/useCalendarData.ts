@@ -129,7 +129,6 @@ export const useCalendarData = ({
     const fetchEvents = async () => {
       // Prevent overlapping fetch calls
       if (currentFetchRef.current) {
-        console.log('Fetch already in progress, skipping...');
         return;
       }
 
@@ -140,13 +139,11 @@ export const useCalendarData = ({
       }
 
       try {
-        console.log("Fetching lessons and demo sessions from Supabase for role:", userRole);
         
         const fetchPromise = (async () => {
           let query;
 
           if (userRole === 'student') {
-            console.log('Fetching student data for email:', userEmail);
             
             // Enhanced student lookup with better error handling
             const { data: studentData, error: studentError } = await supabase
@@ -163,19 +160,14 @@ export const useCalendarData = ({
             }
 
             if (!studentData) {
-              console.log('No student record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
 
-            console.log('Found student data:', studentData);
-
             // Check if student record needs user_id update
             const currentUser = await supabase.auth.getUser();
             if (currentUser.data.user && !studentData.user_id) {
-              console.log('Student record missing user_id, updating...');
-              
               // Update student record to link user_id
               const { error: updateError } = await supabase
                 .from('students')
@@ -184,8 +176,6 @@ export const useCalendarData = ({
 
               if (updateError) {
                 console.error('Failed to update student user_id:', updateError);
-              } else {
-                console.log('Successfully updated student user_id');
               }
             }
 
@@ -216,7 +206,6 @@ export const useCalendarData = ({
             }
 
             if (!parentData) {
-              console.log('No parent record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
@@ -236,7 +225,6 @@ export const useCalendarData = ({
             }
 
             if (!studentData || studentData.length === 0) {
-              console.log('No students found for parent:', parentData.id);
               setRawLessons([]);
               setIsLoading(false);
               return;
@@ -271,7 +259,6 @@ export const useCalendarData = ({
             }
 
             if (!tutorData) {
-              console.log('No tutor record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
@@ -290,17 +277,25 @@ export const useCalendarData = ({
               .eq('tutor_id', tutorData.id);
 
           } else if (userRole === 'admin' || userRole === 'owner') {
-            // Fetch all lessons (original lessons and instances) for admin/owner
+            // Optimized: Only fetch lessons within reasonable date range for admin/owner
+            const now = new Date();
+            const startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+            const endDate = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60 days from now
+            
             query = supabase
               .from('lessons')
               .select(`
-                *,
+                id, title, description, start_time, end_time, subject, lesson_type, 
+                status, is_recurring, is_recurring_instance, parent_lesson_id, 
+                instance_date, recurrence_interval, recurrence_end_date, tutor_id,
                 tutor:tutors!inner(id, first_name, last_name, email),
                 lesson_students(
                   student_id,
                   student:students(id, first_name, last_name)
                 )
-              `);
+              `)
+              .gte('start_time', startDate.toISOString())
+              .lte('start_time', endDate.toISOString());
 
             if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
               query = query.in('tutor_id', filters.selectedTutors);
@@ -311,7 +306,6 @@ export const useCalendarData = ({
             }
 
           } else {
-            console.log('Unknown user role:', userRole);
             setRawLessons([]);
             setIsLoading(false);
             return;
@@ -324,8 +318,6 @@ export const useCalendarData = ({
             throw error;
           }
 
-          console.log(`Lessons fetched for ${userRole}:`, data);
-          
           let filteredData = data || [];
           
           // CRITICAL: Filter out demo data in production mode
