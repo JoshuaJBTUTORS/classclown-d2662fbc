@@ -41,7 +41,9 @@ export const useCalendarData = ({
     if (!rawLessons || rawLessons.length === 0) {
       return [];
     }
-    return rawLessons.map(lesson => lesson?.id).filter(id => id != null);
+    const validIds = rawLessons.map(lesson => lesson?.id).filter(id => id != null);
+    console.log(`📊 Lesson ID Processing: ${validIds.length} valid lesson IDs extracted from ${rawLessons.length} raw lessons`);
+    return validIds;
   }, [rawLessons]);
 
   // Wrap lesson completion hook in error boundary
@@ -117,24 +119,25 @@ export const useCalendarData = ({
     const fetchEvents = async () => {
       // Prevent overlapping fetch calls
       if (currentFetchRef.current) {
-        console.log('Fetch already in progress, skipping...');
+        console.log('🔄 Fetch already in progress, skipping...');
         return;
       }
 
       if (!isAuthenticated || !userRole || !userEmail) {
+        console.log('❌ Missing authentication data:', { isAuthenticated, userRole, userEmail });
         setRawLessons([]);
         setIsLoading(false);
         return;
       }
 
       try {
-        console.log("Fetching lessons and demo sessions from Supabase for role:", userRole);
+        console.log("🔍 Starting lesson fetch process for role:", userRole);
         
         const fetchPromise = (async () => {
           let query;
 
           if (userRole === 'student') {
-            console.log('Fetching student data for email:', userEmail);
+            console.log('👨‍🎓 Processing student data for email:', userEmail);
             
             // Enhanced student lookup with better error handling
             const { data: studentData, error: studentError } = await supabase
@@ -144,25 +147,25 @@ export const useCalendarData = ({
               .maybeSingle();
 
             if (studentError) {
-              console.error('Error fetching student data:', studentError);
+              console.error('❌ Error fetching student data:', studentError);
               toast.error('Failed to load student data');
               setIsLoading(false);
               return;
             }
 
             if (!studentData) {
-              console.log('No student record found for email:', userEmail);
+              console.log('❌ No student record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
 
-            console.log('Found student data:', studentData);
+            console.log('✅ Found student data:', studentData);
 
             // Check if student record needs user_id update
             const currentUser = await supabase.auth.getUser();
             if (currentUser.data.user && !studentData.user_id) {
-              console.log('Student record missing user_id, updating...');
+              console.log('🔄 Student record missing user_id, updating...');
               
               // Update student record to link user_id
               const { error: updateError } = await supabase
@@ -171,9 +174,9 @@ export const useCalendarData = ({
                 .eq('id', studentData.id);
 
               if (updateError) {
-                console.error('Failed to update student user_id:', updateError);
+                console.error('❌ Failed to update student user_id:', updateError);
               } else {
-                console.log('Successfully updated student user_id');
+                console.log('✅ Successfully updated student user_id');
               }
             }
 
@@ -189,6 +192,8 @@ export const useCalendarData = ({
               .eq('lesson_students.student_id', studentData.id);
 
           } else if (userRole === 'parent') {
+            console.log('👨‍👩‍👧‍👦 Processing parent data for email:', userEmail);
+            
             // For parents, first get the parent record
             const { data: parentData, error: parentError } = await supabase
               .from('parents')
@@ -197,14 +202,14 @@ export const useCalendarData = ({
               .maybeSingle();
 
             if (parentError) {
-              console.error('Error fetching parent data:', parentError);
+              console.error('❌ Error fetching parent data:', parentError);
               toast.error('Failed to load parent data');
               setIsLoading(false);
               return;
             }
 
             if (!parentData) {
-              console.log('No parent record found for email:', userEmail);
+              console.log('❌ No parent record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
@@ -217,20 +222,21 @@ export const useCalendarData = ({
               .eq('parent_id', parentData.id);
 
             if (studentError) {
-              console.error('Error fetching parent\'s students:', studentError);
+              console.error('❌ Error fetching parent\'s students:', studentError);
               toast.error('Failed to load student data');
               setIsLoading(false);
               return;
             }
 
             if (!studentData || studentData.length === 0) {
-              console.log('No students found for parent:', parentData.id);
+              console.log('❌ No students found for parent:', parentData.id);
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
 
             const studentIds = studentData.map(s => s.id);
+            console.log('✅ Found students for parent:', studentIds);
 
             // Fetch both original lessons and instances for this parent's students
             query = supabase
@@ -245,6 +251,8 @@ export const useCalendarData = ({
               .in('lesson_students.student_id', studentIds);
 
           } else if (userRole === 'tutor') {
+            console.log('👨‍🏫 Processing tutor data for email:', userEmail);
+            
             const { data: tutorData, error: tutorError } = await supabase
               .from('tutors')
               .select('id')
@@ -252,18 +260,20 @@ export const useCalendarData = ({
               .maybeSingle();
 
             if (tutorError) {
-              console.error('Error fetching tutor data:', tutorError);
+              console.error('❌ Error fetching tutor data:', tutorError);
               toast.error('Failed to load tutor data');
               setIsLoading(false);
               return;
             }
 
             if (!tutorData) {
-              console.log('No tutor record found for email:', userEmail);
+              console.log('❌ No tutor record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
+
+            console.log('✅ Found tutor data:', tutorData);
 
             // Fetch both original lessons and instances for this tutor
             query = supabase
@@ -278,12 +288,14 @@ export const useCalendarData = ({
               .eq('tutor_id', tutorData.id);
 
           } else if (userRole === 'admin' || userRole === 'owner') {
+            console.log('👑 Processing admin/owner data - fetching ALL lessons');
+            
             // Fetch all lessons (original lessons and instances) for admin/owner
             query = supabase
               .from('lessons')
               .select(`
                 *,
-                tutor:tutors!inner(id, first_name, last_name, email),
+                tutor:tutors(id, first_name, last_name, email),
                 lesson_students(
                   student_id,
                   student:students(id, first_name, last_name)
@@ -291,60 +303,76 @@ export const useCalendarData = ({
               `);
 
             if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
+              console.log('🔍 Applying tutor filter:', filters.selectedTutors);
               query = query.in('tutor_id', filters.selectedTutors);
             }
 
             if (filters?.selectedStudents && filters.selectedStudents.length > 0) {
+              console.log('🔍 Applying student filter:', filters.selectedStudents);
               query = query.in('lesson_students.student_id', filters.selectedStudents.map(id => parseInt(id)));
             }
 
           } else {
-            console.log('Unknown user role:', userRole);
+            console.log('❓ Unknown user role:', userRole);
             setRawLessons([]);
             setIsLoading(false);
             return;
           }
 
+          console.log('🚀 Executing database query...');
           const { data, error } = await query;
 
           if (error) {
-            console.error('Error fetching lessons:', error);
+            console.error('❌ Database query error:', error);
             throw error;
           }
 
-          console.log(`Lessons fetched for ${userRole}:`, data);
+          console.log(`✅ Database query completed. Raw results: ${data?.length || 0} lessons`);
           
           let filteredData = data || [];
           
-          // CRITICAL: Filter out demo data in production mode
+          // Log before demo data filtering
+          const beforeDemoFilter = filteredData.length;
           filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
+          const afterDemoFilter = filteredData.length;
+          console.log(`🧹 Demo data filter: ${beforeDemoFilter} → ${afterDemoFilter} (removed ${beforeDemoFilter - afterDemoFilter} demo lessons)`);
           
-          // Apply student filter
+          // Apply student filter for admin/owner
           if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
+            const beforeStudentFilter = filteredData.length;
             filteredData = filteredData.filter(lesson => {
               if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
               return lesson.lesson_students.some(ls => 
                 filters.selectedStudents.includes(ls.student_id.toString())
               );
             });
+            const afterStudentFilter = filteredData.length;
+            console.log(`👥 Student filter: ${beforeStudentFilter} → ${afterStudentFilter} (removed ${beforeStudentFilter - afterStudentFilter} lessons)`);
           }
 
           // Apply subject filter
           if (filters?.selectedSubjects && filters.selectedSubjects.length > 0) {
+            const beforeSubjectFilter = filteredData.length;
             filteredData = filteredData.filter(lesson => 
               filters.selectedSubjects.includes(lesson.subject)
             );
+            const afterSubjectFilter = filteredData.length;
+            console.log(`📚 Subject filter: ${beforeSubjectFilter} → ${afterSubjectFilter} (removed ${beforeSubjectFilter - afterSubjectFilter} lessons)`);
           }
 
           // Apply lesson type filter
           if (filters?.selectedLessonType && filters.selectedLessonType !== 'All Lessons') {
+            const beforeTypeFilter = filteredData.length;
             if (filters.selectedLessonType === 'Trial Lessons') {
               filteredData = filteredData.filter(lesson => lesson.lesson_type === 'trial');
             } else if (filters.selectedLessonType === 'Full Lessons') {
               filteredData = filteredData.filter(lesson => lesson.lesson_type !== 'trial' || lesson.lesson_type == null);
             }
+            const afterTypeFilter = filteredData.length;
+            console.log(`🎯 Lesson type filter (${filters.selectedLessonType}): ${beforeTypeFilter} → ${afterTypeFilter} (removed ${beforeTypeFilter - afterTypeFilter} lessons)`);
           }
 
+          console.log(`🎯 FINAL RESULT: ${filteredData.length} lessons will be processed for completion data`);
           setRawLessons(filteredData);
 
         })();
@@ -353,7 +381,7 @@ export const useCalendarData = ({
         await fetchPromise;
 
       } catch (error) {
-        console.error('Error fetching lessons:', error);
+        console.error('💥 Critical error in fetchEvents:', error);
         toast.error('Failed to load lessons');
       } finally {
         setIsLoading(false);
