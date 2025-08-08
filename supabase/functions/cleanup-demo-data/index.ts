@@ -21,131 +21,107 @@ Deno.serve(async (req) => {
 
     // Step 1: Delete lesson-related demo data
     console.log('📚 Cleaning up lesson-related demo data...');
-    
-    // Delete lesson attendance for demo lessons
-    const { error: attendanceError } = await supabaseClient
-      .from('lesson_attendance')
-      .delete()
-      .in('lesson_id', 
-        supabaseClient
-          .from('lessons')
-          .select('id')
-          .eq('is_demo_data', true)
-      );
 
-    if (attendanceError) {
-      console.error('Error deleting demo lesson attendance:', attendanceError);
+    // Fetch demo lesson IDs first (to use with .in([...]) correctly)
+    const { data: lessonIdRows, error: lessonIdsFetchError } = await supabaseClient
+      .from('lessons')
+      .select('id')
+      .eq('is_demo_data', true);
+
+    if (lessonIdsFetchError) {
+      console.error('Error fetching demo lesson IDs:', lessonIdsFetchError);
     }
 
-    // Delete lesson student associations for demo lessons
-    const { error: lessonStudentsError } = await supabaseClient
-      .from('lesson_students')
-      .delete()
-      .in('lesson_id', 
-        supabaseClient
-          .from('lessons')
-          .select('id')
-          .eq('is_demo_data', true)
-      );
+    const lessonIds = (lessonIdRows ?? []).map((r: any) => r.id);
+    console.log(`🔎 Found ${lessonIds.length} demo lessons to clean up`);
 
-    if (lessonStudentsError) {
-      console.error('Error deleting demo lesson students:', lessonStudentsError);
+    // Delete homework submissions and homework marked as demo
+    const { data: homeworkRows, error: homeworkIdsFetchError } = await supabaseClient
+      .from('homework')
+      .select('id')
+      .eq('is_demo_data', true);
+
+    if (homeworkIdsFetchError) {
+      console.error('Error fetching demo homework IDs:', homeworkIdsFetchError);
     }
 
-    // Delete homework submissions for demo homework
-    const { error: submissionsError } = await supabaseClient
-      .from('homework_submissions')
-      .delete()
-      .in('homework_id', 
-        supabaseClient
-          .from('homework')
-          .select('id')
-          .eq('is_demo_data', true)
-      );
+    const homeworkIds = (homeworkRows ?? []).map((r: any) => r.id);
 
-    if (submissionsError) {
-      console.error('Error deleting demo homework submissions:', submissionsError);
+    if (homeworkIds.length > 0) {
+      const { error: submissionsError } = await supabaseClient
+        .from('homework_submissions')
+        .delete()
+        .in('homework_id', homeworkIds);
+      if (submissionsError) {
+        console.error('Error deleting demo homework submissions:', submissionsError);
+      }
     }
 
     // Delete demo homework
-    const { error: homeworkError } = await supabaseClient
-      .from('homework')
-      .delete()
-      .eq('is_demo_data', true);
-
-    if (homeworkError) {
-      console.error('Error deleting demo homework:', homeworkError);
+    if (homeworkIds.length > 0) {
+      const { error: homeworkError } = await supabaseClient
+        .from('homework')
+        .delete()
+        .in('id', homeworkIds);
+      if (homeworkError) {
+        console.error('Error deleting demo homework:', homeworkError);
+      }
+    } else {
+      // Fallback: ensure any stray demo homework is removed
+      const { error: homeworkError } = await supabaseClient
+        .from('homework')
+        .delete()
+        .eq('is_demo_data', true);
+      if (homeworkError) {
+        console.error('Error deleting demo homework:', homeworkError);
+      }
     }
 
-    // Delete lesson transcriptions for demo lessons
-    const { error: transcriptionsError } = await supabaseClient
-      .from('lesson_transcriptions')
-      .delete()
-      .in('lesson_id', 
-        supabaseClient
-          .from('lessons')
-          .select('id')
-          .eq('is_demo_data', true)
+    // Delete other child records linked to demo lessons
+    if (lessonIds.length > 0) {
+      const deletes = [] as Promise<any>[];
+
+      deletes.push(
+        supabaseClient.from('lesson_transcriptions').delete().in('lesson_id', lessonIds)
+      );
+      deletes.push(
+        supabaseClient.from('lesson_student_summaries').delete().in('lesson_id', lessonIds)
+      );
+      deletes.push(
+        supabaseClient.from('lesson_participant_urls').delete().in('lesson_id', lessonIds)
+      );
+      deletes.push(
+        supabaseClient.from('lesson_plan_assignments').delete().in('lesson_id', lessonIds)
+      );
+      deletes.push(
+        supabaseClient.from('lesson_attendance').delete().in('lesson_id', lessonIds)
+      );
+      deletes.push(
+        supabaseClient.from('lesson_students').delete().in('lesson_id', lessonIds)
       );
 
-    if (transcriptionsError) {
-      console.error('Error deleting demo lesson transcriptions:', transcriptionsError);
+      const results = await Promise.all(deletes);
+      results.forEach((res, idx) => {
+        if (res.error) {
+          console.error(`Error deleting child table index ${idx}:`, res.error);
+        }
+      });
+    } else {
+      console.log('ℹ️ No demo lessons found; skipping deletion of lesson-linked child tables.');
     }
 
-    // Delete lesson summaries for demo lessons
-    const { error: summariesError } = await supabaseClient
-      .from('lesson_student_summaries')
-      .delete()
-      .in('lesson_id', 
-        supabaseClient
-          .from('lessons')
-          .select('id')
-          .eq('is_demo_data', true)
-      );
-
-    if (summariesError) {
-      console.error('Error deleting demo lesson summaries:', summariesError);
-    }
-
-    // Delete lesson participant URLs for demo lessons
-    const { error: participantUrlsError } = await supabaseClient
-      .from('lesson_participant_urls')
-      .delete()
-      .in('lesson_id', 
-        supabaseClient
-          .from('lessons')
-          .select('id')
-          .eq('is_demo_data', true)
-      );
-
-    if (participantUrlsError) {
-      console.error('Error deleting demo lesson participant URLs:', participantUrlsError);
-    }
-
-    // Delete lesson plan assignments for demo lessons
-    const { error: planAssignmentsError } = await supabaseClient
-      .from('lesson_plan_assignments')
-      .delete()
-      .in('lesson_id', 
-        supabaseClient
-          .from('lessons')
-          .select('id')
-          .eq('is_demo_data', true)
-      );
-
-    if (planAssignmentsError) {
-      console.error('Error deleting demo lesson plan assignments:', planAssignmentsError);
-    }
-
-    // Step 2: Delete demo sessions
+    // Step 2: Delete demo sessions linked to demo lessons
     console.log('🎭 Cleaning up demo sessions...');
-    const { error: demoSessionsError } = await supabaseClient
-      .from('demo_sessions')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-
-    if (demoSessionsError) {
-      console.error('Error deleting demo sessions:', demoSessionsError);
+    if (lessonIds.length > 0) {
+      const { error: demoSessionsError } = await supabaseClient
+        .from('demo_sessions')
+        .delete()
+        .in('lesson_id', lessonIds);
+      if (demoSessionsError) {
+        console.error('Error deleting demo sessions:', demoSessionsError);
+      }
+    } else {
+      console.log('ℹ️ No demo sessions to delete (no demo lessons found).');
     }
 
     // Step 3: Delete demo lessons (this will cascade to related data if foreign keys are set up)
