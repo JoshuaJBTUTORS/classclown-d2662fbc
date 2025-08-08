@@ -323,8 +323,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       {displayStartTime && typeof displayStartTime === 'string' && format(parseISO(displayStartTime), 'MMM d, yyyy h:mm a')}
                       {displayEndTime && typeof displayEndTime === 'string' && ` - ${format(parseISO(displayEndTime), 'h:mm a')}`}
                     </span>
-                    {isRecurringInstance && instanceDate && typeof instanceDate === 'string' && <Badge variant="secondary" className="ml-2 text-xs">
-                        Instance on {format(parseISO(instanceDate), 'MMM d, yyyy')}
+                    {isRecurringInstance && <Badge variant="secondary" className="ml-2 text-xs">
+                        Recurring Instance
                       </Badge>}
                   </div>
 
