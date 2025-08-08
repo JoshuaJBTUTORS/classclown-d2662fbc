@@ -249,7 +249,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   // Filter out null student records to prevent crashes
   const validStudents = lesson?.lesson_students?.filter(enrollment => enrollment && enrollment.student && enrollment.student.id) || [];
 
-  // Use demo session times if this is a demo session, otherwise use instance-specific or lesson dates
+  // Use instance-specific times for recurring instances, otherwise use lesson dates
   const displayStartTime = instanceStart || lesson?.start_time;
   const displayEndTime = instanceEnd || lesson?.end_time;
   

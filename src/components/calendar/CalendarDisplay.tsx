@@ -32,8 +32,8 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     if (extendedProps.isRecurringInstance) {
       setInstanceDetails({
         date: extendedProps.instanceDate,
-        start: eventInfo.event.start,
-        end: eventInfo.event.end
+        start: eventInfo.event.start?.toISOString(),
+        end: eventInfo.event.end?.toISOString()
       });
     } else {
       setInstanceDetails({});
