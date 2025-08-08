@@ -165,6 +165,8 @@ const Students = () => {
 
       // Transform the data to match the Student interface
       const formattedStudents: Student[] = studentsData.map((student: any) => {
+        console.log('Processing student:', student);
+        
         const parentData = student.parent_id ? parentsMap.get(student.parent_id) : null;
         
         // Handle the date formatting with proper null checks
@@ -205,6 +207,7 @@ const Students = () => {
           parentPhone: parentData?.phone || ''
         };
         
+        console.log('Formatted student:', formattedStudent);
         return formattedStudent;
       });
       
