@@ -58,6 +58,52 @@ const createNewLessonSpaceRoom = async (lessonId: string) => {
   }
 };
 
+// Generate URLs for newly added students
+const generateUrlsForNewStudents = async (lessonId: string, newStudentIds: number[]) => {
+  if (newStudentIds.length === 0) return;
+
+  try {
+    console.log(`Generating LessonSpace URLs for ${newStudentIds.length} new students in lesson ${lessonId}`);
+    
+    // Get student details for the edge function
+    const { data: students, error: studentsError } = await supabase
+      .from('students')
+      .select('id, first_name, last_name')
+      .in('id', newStudentIds);
+
+    if (studentsError) {
+      console.error('Error fetching student details:', studentsError);
+      return;
+    }
+
+    if (students && students.length > 0) {
+      const { data: result, error } = await supabase.functions.invoke('lesson-space-integration', {
+        body: {
+          action: 'add-students',
+          lessonId: lessonId,
+          students: students.map(student => ({
+            studentId: student.id,
+            studentName: `${student.first_name} ${student.last_name}`
+          }))
+        }
+      });
+
+      if (error) {
+        console.error('Error generating URLs for new students:', error);
+        return;
+      }
+
+      if (result?.success) {
+        console.log(`Successfully generated URLs for ${students.length} new students`);
+      } else {
+        console.warn('URL generation completed but with warnings:', result?.error);
+      }
+    }
+  } catch (error) {
+    console.error('Error in generateUrlsForNewStudents:', error);
+  }
+};
+
 // Update only a single recurring instance
 export const updateSingleRecurringInstance = async (
   lessonId: string, 
@@ -69,6 +115,17 @@ export const updateSingleRecurringInstance = async (
   
   // Check if tutor is changing
   const tutorChanged = updates.tutor_id !== undefined;
+  
+  // Get existing students to identify newly added ones
+  let existingStudentIds: number[] = [];
+  if (selectedStudents) {
+    const { data: existingStudents } = await supabase
+      .from('lesson_students')
+      .select('student_id')
+      .eq('lesson_id', lessonId);
+    
+    existingStudentIds = existingStudents?.map(ls => ls.student_id) || [];
+  }
   
   // Update the lesson
   const { error: lessonError } = await supabase
@@ -89,6 +146,9 @@ export const updateSingleRecurringInstance = async (
   
   // Update students if provided
   if (selectedStudents) {
+    // Identify newly added students
+    const newStudentIds = selectedStudents.filter(id => !existingStudentIds.includes(id));
+    
     // Delete existing lesson_students entries
     const { error: deleteError } = await supabase
       .from('lesson_students')
@@ -109,6 +169,9 @@ export const updateSingleRecurringInstance = async (
         .insert(lessonStudentsData);
       
       if (studentsError) throw studentsError;
+      
+      // Generate URLs for newly added students
+      await generateUrlsForNewStudents(lessonId, newStudentIds);
     }
   }
   
@@ -308,6 +371,21 @@ export const updateAllFutureLessons = async (
   
   let updatedCount = 1; // Parent lesson
   
+  // Get existing students for all affected lessons to identify newly added ones
+  let existingStudentsByLesson: { [lessonId: string]: number[] } = {};
+  if (selectedStudents && futureInstances) {
+    const allLessonIds = [parentLessonId, ...futureInstances.map(i => i.id)];
+    
+    for (const lessonId of allLessonIds) {
+      const { data: existingStudents } = await supabase
+        .from('lesson_students')
+        .select('student_id')
+        .eq('lesson_id', lessonId);
+      
+      existingStudentsByLesson[lessonId] = existingStudents?.map(ls => ls.student_id) || [];
+    }
+  }
+
   if (futureInstances && futureInstances.length > 0) {
     // Update each instance individually with calculated changes
     for (const instance of futureInstances) {
@@ -359,10 +437,19 @@ export const updateAllFutureLessons = async (
           .insert(lessonStudentsData);
         
         if (studentsError) throw studentsError;
+        
+        // Generate URLs for newly added students in each lesson
+        for (const lessonId of allLessonIds) {
+          const existingStudentIds = existingStudentsByLesson[lessonId] || [];
+          const newStudentIds = selectedStudents.filter(id => !existingStudentIds.includes(id));
+          await generateUrlsForNewStudents(lessonId, newStudentIds);
+        }
       }
     }
   } else if (selectedStudents) {
     // Update students for parent lesson only
+    const existingStudentIds = existingStudentsByLesson[parentLessonId] || [];
+    
     const { error: deleteError } = await supabase
       .from('lesson_students')
       .delete()
@@ -381,6 +468,10 @@ export const updateAllFutureLessons = async (
         .insert(lessonStudentsData);
       
       if (studentsError) throw studentsError;
+      
+      // Generate URLs for newly added students
+      const newStudentIds = selectedStudents.filter(id => !existingStudentIds.includes(id));
+      await generateUrlsForNewStudents(parentLessonId, newStudentIds);
     }
   }
   
