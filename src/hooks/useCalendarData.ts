@@ -189,7 +189,8 @@ export const useCalendarData = ({
                   student_id
                 )
               `)
-              .eq('lesson_students.student_id', studentData.id);
+              .eq('lesson_students.student_id', studentData.id)
+              .limit(10000);
 
           } else if (userRole === 'parent') {
             console.log('👨‍👩‍👧‍👦 Processing parent data for email:', userEmail);
@@ -248,7 +249,8 @@ export const useCalendarData = ({
                   student:students(id, first_name, last_name)
                 )
               `)
-              .in('lesson_students.student_id', studentIds);
+              .in('lesson_students.student_id', studentIds)
+              .limit(10000);
 
           } else if (userRole === 'tutor') {
             console.log('👨‍🏫 Processing tutor data for email:', userEmail);
@@ -285,7 +287,8 @@ export const useCalendarData = ({
                   student:students(id, first_name, last_name)
                 )
               `)
-              .eq('tutor_id', tutorData.id);
+              .eq('tutor_id', tutorData.id)
+              .limit(10000);
 
           } else if (userRole === 'admin' || userRole === 'owner') {
             console.log('👑 Processing admin/owner data - fetching ALL lessons');
@@ -300,7 +303,8 @@ export const useCalendarData = ({
                   student_id,
                   student:students(id, first_name, last_name)
                 )
-              `);
+              `)
+              .limit(10000);
 
             if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
               console.log('🔍 Applying tutor filter:', filters.selectedTutors);
