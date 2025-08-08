@@ -30,6 +30,11 @@ export const getSubjectClass = (subject: string, lessonType?: string): string =>
     return 'ks2-event';
   }
 
+  // KS3 subjects (Key Stage 3 - typically years 7-9)
+  if (subjectLower.includes('ks3')) {
+    return 'ks3-event';
+  }
+
   // GCSE subjects (typically secondary school level)
   if (subjectLower.includes('gcse') ||
       subjectLower.includes('year 7') ||
