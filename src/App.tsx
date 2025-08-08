@@ -1,24 +1,25 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from '@/pages/Home';
+import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import LearningHub from '@/pages/LearningHub';
 import LearningHubLibrary from '@/pages/LearningHubLibrary';
 import LearningHubMyCourses from '@/pages/LearningHubMyCourses';
 import LearningHubSettings from '@/pages/LearningHubSettings';
-import CourseDetails from '@/pages/CourseDetails';
+import CourseDetail from '@/pages/CourseDetail';
 import LessonDetails from '@/pages/LessonDetails';
-import ProtectedRoute from '@/components/navigation/ProtectedRoute';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminRoute from '@/components/navigation/AdminRoute';
-import Checkout from '@/pages/Checkout';
+import CourseCheckout from '@/pages/CourseCheckout';
 import PlatformCheckout from '@/pages/PlatformCheckout';
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
 
         <Route path="/learning-hub" element={
@@ -43,7 +44,7 @@ function App() {
         } />
         <Route path="/course/:courseId" element={
           <ProtectedRoute>
-            <CourseDetails />
+            <CourseDetail />
           </ProtectedRoute>
         } />
         <Route path="/lesson/:lessonId" element={
@@ -53,7 +54,7 @@ function App() {
         } />
         <Route path="/checkout/:courseId" element={
           <ProtectedRoute>
-            <Checkout />
+            <CourseCheckout />
           </ProtectedRoute>
         } />
 

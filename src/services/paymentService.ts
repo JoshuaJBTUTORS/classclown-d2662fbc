@@ -97,6 +97,19 @@ export const paymentService = {
     return data;
   },
 
+  // Legacy method for backward compatibility
+  async verifyCoursePayment(sessionId: string) {
+    const { data, error } = await supabase.functions.invoke('verify-course-payment', {
+      body: { sessionId }
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  },
+
   async checkTrialEligibility(): Promise<{ eligible: boolean; reason?: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -155,9 +168,27 @@ export const paymentService = {
           }
         : null;
 
+      // Convert platform subscription to CoursePurchase format for backward compatibility
+      const platformAsCoursePurchase: CoursePurchase = {
+        id: platformSub.id,
+        course_id: 'platform-access',
+        user_id: platformSub.user_id,
+        status: platformSub.status,
+        purchase_date: platformSub.created_at,
+        amount_paid: 2855, // £28.55 in pence
+        currency: 'gbp',
+        stripe_subscription_id: platformSub.stripe_subscription_id,
+        trial_end: platformSub.trial_end,
+        has_used_trial: platformSub.has_used_trial,
+        trial_used_date: platformSub.trial_used_date,
+        grace_period_start: platformSub.grace_period_start,
+        grace_period_end: platformSub.grace_period_end,
+        previous_status: platformSub.previous_status
+      };
+
       return {
         hasActiveSubscription: ['active', 'trialing'].includes(platformSub.status),
-        subscriptions: [platformSub],
+        subscriptions: [platformAsCoursePurchase],
         subscriptionType: 'platform',
         needsPaymentUpdate: ['past_due', 'incomplete'].includes(platformSub.status),
         gracePeriodInfo
