@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import LearningHub from '@/pages/LearningHub';
@@ -10,51 +10,63 @@ import CourseDetail from '@/pages/CourseDetail';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import CourseCheckout from '@/pages/CourseCheckout';
 import PlatformCheckout from '@/pages/PlatformCheckout';
+import Unauthorized from '@/pages/Unauthorized';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
+    <Routes>
+      <Route path="/" element={<Index />} />
+      
+      <Route 
+        path="/auth" 
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <Auth />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route path="/unauthorized" element={<Unauthorized />} />
 
-        <Route path="/learning-hub" element={
+      <Route path="/learning-hub" element={
+        <ProtectedRoute>
+          <LearningHub />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/learning-hub/my-courses" element={
+        <ProtectedRoute>
+          <LearningHubMyCourses />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/learning-hub/settings" element={
+        <ProtectedRoute>
+          <LearningHubSettings />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/course/:courseId" element={
+        <ProtectedRoute>
+          <CourseDetail />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/checkout/:courseId" element={
+        <ProtectedRoute>
+          <CourseCheckout />
+        </ProtectedRoute>
+      } />
+      
+      <Route 
+        path="/checkout/platform" 
+        element={
           <ProtectedRoute>
-            <LearningHub />
+            <PlatformCheckout />
           </ProtectedRoute>
-        } />
-        <Route path="/learning-hub/my-courses" element={
-          <ProtectedRoute>
-            <LearningHubMyCourses />
-          </ProtectedRoute>
-        } />
-        <Route path="/learning-hub/settings" element={
-          <ProtectedRoute>
-            <LearningHubSettings />
-          </ProtectedRoute>
-        } />
-        <Route path="/course/:courseId" element={
-          <ProtectedRoute>
-            <CourseDetail />
-          </ProtectedRoute>
-        } />
-        <Route path="/checkout/:courseId" element={
-          <ProtectedRoute>
-            <CourseCheckout />
-          </ProtectedRoute>
-        } />
-        
-        <Route 
-          path="/checkout/platform" 
-          element={
-            <ProtectedRoute>
-              <PlatformCheckout />
-            </ProtectedRoute>
-          } 
-        />
-        
-      </Routes>
-    </Router>
+        } 
+      />
+    </Routes>
   );
 }
 
