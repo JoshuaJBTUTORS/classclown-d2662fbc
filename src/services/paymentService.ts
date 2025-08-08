@@ -1,23 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-
-export interface CoursePurchase {
-  id: string;
-  course_id: string;
-  user_id: string;
-  status: string;
-  purchase_date: string;
-  amount_paid: number;
-  currency: string;
-  stripe_session_id?: string;
-  stripe_subscription_id?: string;
-  trial_end?: string;
-  has_used_trial?: boolean;
-  trial_used_date?: string;
-  grace_period_start?: string;
-  grace_period_end?: string;
-  previous_status?: string;
-}
+import { CoursePurchase } from '@/types/course';
 
 export interface PlatformSubscription {
   id: string;
@@ -179,11 +162,11 @@ export const paymentService = {
         currency: 'gbp',
         stripe_subscription_id: platformSub.stripe_subscription_id,
         trial_end: platformSub.trial_end,
-        has_used_trial: platformSub.has_used_trial,
-        trial_used_date: platformSub.trial_used_date,
         grace_period_start: platformSub.grace_period_start,
         grace_period_end: platformSub.grace_period_end,
-        previous_status: platformSub.previous_status
+        previous_status: platformSub.previous_status,
+        created_at: platformSub.created_at,
+        updated_at: platformSub.updated_at
       };
 
       return {
@@ -278,11 +261,11 @@ export const paymentService = {
         currency: 'gbp',
         stripe_subscription_id: platformSub.stripe_subscription_id,
         trial_end: platformSub.trial_end,
-        has_used_trial: platformSub.has_used_trial,
-        trial_used_date: platformSub.trial_used_date,
         grace_period_start: platformSub.grace_period_start,
         grace_period_end: platformSub.grace_period_end,
-        previous_status: platformSub.previous_status
+        previous_status: platformSub.previous_status,
+        created_at: platformSub.created_at,
+        updated_at: platformSub.updated_at
       }));
     }
 
