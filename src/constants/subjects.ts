@@ -17,6 +17,7 @@ export const LESSON_SUBJECTS = [
   'GCSE Maths Foundation',
   'GCSE English',
   'GCSE Combined Science',
+  'GCSE Computer Science',
   'Year 11 Maths Highier',
   'Year 11 Maths Foundation',
   'Year 11 English',
@@ -58,7 +59,7 @@ export const EDUCATIONAL_STAGES = {
   'gcse': {
     label: 'GCSE & Year 11',
     description: 'Ages 14-16 GCSE preparation',
-    subjects: ['GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'],
+    subjects: ['GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'GCSE Computer Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'],
     icon: 'Award'
   }
 } as const;
