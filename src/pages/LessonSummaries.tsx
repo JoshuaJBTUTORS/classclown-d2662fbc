@@ -11,6 +11,7 @@ import { LessonSummariesHero } from '@/components/lessonPlans/LessonSummariesHer
 import { format, parseISO, subDays } from 'date-fns';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { toast } from 'sonner';
 
 interface Lesson {
   id: string;
@@ -61,6 +62,26 @@ const LessonSummaries: React.FC = () => {
       
       if (isTeacherRole) {
         // Teachers can see all lessons with recordings
+        const { data: tutorData, error: tutorError } = await supabase
+          .from('tutors')
+          .select('id')
+          .eq('email', user?.email)
+          .maybeSingle();
+
+        if (tutorError) {
+          console.error('Error fetching tutor data:', tutorError);
+          toast.error('Failed to load tutor data');
+          setIsLoading(false);
+          return;
+        }
+
+        if (!tutorData) {
+          console.log('No tutor record found for email:', user?.email);
+          setLessons([]);
+          setIsLoading(false);
+          return;
+        }
+
         query = supabase
           .from('lessons')
           .select(`
@@ -77,9 +98,53 @@ const LessonSummaries: React.FC = () => {
             )
           `)
           .not('lesson_space_session_id', 'is', null)
+          .eq('tutor_id', tutorData.id)
           .order('start_time', { ascending: false });
+
       } else if (isParent) {
-        // Parents can only see lessons their students are enrolled in
+        // For parents, first get the parent record using email (like calendar does)
+        const { data: parentData, error: parentError } = await supabase
+          .from('parents')
+          .select('id')
+          .eq('email', user?.email)
+          .maybeSingle();
+
+        if (parentError) {
+          console.error('Error fetching parent data:', parentError);
+          toast.error('Failed to load parent data');
+          setIsLoading(false);
+          return;
+        }
+
+        if (!parentData) {
+          console.log('No parent record found for email:', user?.email);
+          setLessons([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Get all students linked to this parent
+        const { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .select('id')
+          .eq('parent_id', parentData.id);
+
+        if (studentError) {
+          console.error('Error fetching parent\'s students:', studentError);
+          toast.error('Failed to load student data');
+          setIsLoading(false);
+          return;
+        }
+
+        if (!studentData || studentData.length === 0) {
+          console.log('No students found for parent:', parentData.id);
+          setLessons([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const studentIds = studentData.map(s => s.id);
+
         query = supabase
           .from('lessons')
           .select(`
@@ -92,23 +157,32 @@ const LessonSummaries: React.FC = () => {
             lesson_space_recording_url,
             tutor:tutors!inner(first_name, last_name),
             lesson_students!inner(
-              student:students!inner(id, first_name, last_name, email, parent_id)
+              student:students(id, first_name, last_name, email)
             )
           `)
           .not('lesson_space_session_id', 'is', null)
-          .eq('lesson_students.student.parent_id', user?.id)
+          .in('lesson_students.student_id', studentIds)
           .order('start_time', { ascending: false });
+
       } else if (isStudent) {
         // Students can only see lessons they are enrolled in
-        const { data: studentData } = await supabase
+        const { data: studentData, error: studentError } = await supabase
           .from('students')
           .select('id')
           .eq('email', user?.email)
-          .single();
+          .maybeSingle();
+
+        if (studentError) {
+          console.error('Error fetching student data:', studentError);
+          toast.error('Failed to load student data');
+          setIsLoading(false);
+          return;
+        }
 
         if (!studentData) {
-          console.error('Student data not found');
+          console.log('No student record found for email:', user?.email);
           setLessons([]);
+          setIsLoading(false);
           return;
         }
 
@@ -133,6 +207,7 @@ const LessonSummaries: React.FC = () => {
       } else {
         // No valid role - show no lessons
         setLessons([]);
+        setIsLoading(false);
         return;
       }
 
