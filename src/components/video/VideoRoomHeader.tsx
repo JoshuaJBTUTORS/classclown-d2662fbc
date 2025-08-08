@@ -49,7 +49,7 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
       
       <div className="flex-1 flex flex-col items-center justify-center min-w-0">
         <div className="flex items-center gap-2 md:gap-3 justify-center">
-          <h1 className="text-lg md:text-2xl font-bold text-white font-bubble text-center">
+          <h1 className="text-lg md:text-2xl font-bold text-white font-sans text-center">
             {lessonTitle}
           </h1>
           {isRecording && (
