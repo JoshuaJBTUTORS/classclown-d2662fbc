@@ -57,28 +57,83 @@ const LessonSummaries: React.FC = () => {
   const fetchLessons = async () => {
     setIsLoading(true);
     try {
-      let query = supabase
-        .from('lessons')
-        .select(`
-          id,
-          title,
-          subject,
-          start_time,
-          end_time,
-          lesson_space_session_id,
-          lesson_space_recording_url,
-          tutor:tutors!inner(first_name, last_name),
-          lesson_students(
-            student:students(id, first_name, last_name, email)
-          )
-        `)
-        .not('lesson_space_session_id', 'is', null)
-        .order('start_time', { ascending: false });
+      let query;
+      
+      if (isTeacherRole) {
+        // Teachers can see all lessons with recordings
+        query = supabase
+          .from('lessons')
+          .select(`
+            id,
+            title,
+            subject,
+            start_time,
+            end_time,
+            lesson_space_session_id,
+            lesson_space_recording_url,
+            tutor:tutors!inner(first_name, last_name),
+            lesson_students(
+              student:students(id, first_name, last_name, email)
+            )
+          `)
+          .not('lesson_space_session_id', 'is', null)
+          .order('start_time', { ascending: false });
+      } else if (isParent) {
+        // Parents can only see lessons their students are enrolled in
+        query = supabase
+          .from('lessons')
+          .select(`
+            id,
+            title,
+            subject,
+            start_time,
+            end_time,
+            lesson_space_session_id,
+            lesson_space_recording_url,
+            tutor:tutors!inner(first_name, last_name),
+            lesson_students!inner(
+              student:students!inner(id, first_name, last_name, email, parent_id)
+            )
+          `)
+          .not('lesson_space_session_id', 'is', null)
+          .eq('lesson_students.student.parent_id', user?.id)
+          .order('start_time', { ascending: false });
+      } else if (isStudent) {
+        // Students can only see lessons they are enrolled in
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('id')
+          .eq('email', user?.email)
+          .single();
 
-      // Apply role-based filtering
-      if (!isTeacherRole) {
-        // For parents and students, filter based on their access through RLS policies
-        // The database policies will automatically filter the results
+        if (!studentData) {
+          console.error('Student data not found');
+          setLessons([]);
+          return;
+        }
+
+        query = supabase
+          .from('lessons')
+          .select(`
+            id,
+            title,
+            subject,
+            start_time,
+            end_time,
+            lesson_space_session_id,
+            lesson_space_recording_url,
+            tutor:tutors!inner(first_name, last_name),
+            lesson_students!inner(
+              student:students(id, first_name, last_name, email)
+            )
+          `)
+          .not('lesson_space_session_id', 'is', null)
+          .eq('lesson_students.student_id', studentData.id)
+          .order('start_time', { ascending: false });
+      } else {
+        // No valid role - show no lessons
+        setLessons([]);
+        return;
       }
 
       const { data, error } = await query;
