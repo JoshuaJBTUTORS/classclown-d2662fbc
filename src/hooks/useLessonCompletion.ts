@@ -83,7 +83,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
         // If lesson count is within batch size, process normally
         if (stableLessonIds.length <= BATCH_SIZE) {
           const batchData = await processBatch(stableLessonIds);
-          console.log('Lesson completion data processed (single batch):', batchData);
+          // Single batch processed
           setCompletionData(batchData);
           return;
         }
@@ -96,23 +96,23 @@ export const useLessonCompletion = (lessonIds: string[]) => {
           batches.push(stableLessonIds.slice(i, i + BATCH_SIZE));
         }
 
-        console.log(`Processing ${stableLessonIds.length} lessons in ${batches.length} batches`);
+        // Process batches for large datasets
 
         // Process batches sequentially to avoid overwhelming the API
         for (let i = 0; i < batches.length; i++) {
           const batch = batches[i];
-          console.log(`Processing batch ${i + 1}/${batches.length} with ${batch.length} lessons`);
+          // Processing batch
           
           try {
             const batchData = await processBatch(batch);
             Object.assign(allCompletionData, batchData);
           } catch (batchError) {
-            console.error(`Error processing batch ${i + 1}:`, batchError);
+            console.warn(`Batch ${i + 1} processing failed:`, batchError);
             // Continue with other batches even if one fails
           }
         }
 
-        console.log('All lesson completion data processed with batch processing:', allCompletionData);
+        // Batch processing completed
         setCompletionData(allCompletionData);
       } catch (error) {
         console.error('Error fetching lesson completion data:', error);
