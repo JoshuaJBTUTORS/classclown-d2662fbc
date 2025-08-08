@@ -14,6 +14,12 @@ const supabase = createClient(
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
+// Constants for transcript processing
+const MAX_TRANSCRIPT_SIZE = 100000; // 100KB for single processing
+const CHUNK_SIZE = 80000; // 80KB per chunk for safe processing
+const MAX_PROCESSING_ATTEMPTS = 3;
+const FALLBACK_CHUNK_SIZE = 50000; // Smaller chunks for retry
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -218,13 +224,15 @@ async function upsertTranscriptionRecord(
   status: string, 
   transcriptionUrl?: string,
   transcriptionText?: string,
-  expiresAt?: Date
+  expiresAt?: Date,
+  additionalFields?: any
 ) {
   const updateData: any = {
     lesson_id: lessonId,
     session_id: sessionId,
     transcription_status: status,
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    ...additionalFields
   };
 
   if (transcriptionUrl) updateData.transcription_url = transcriptionUrl;
@@ -243,13 +251,385 @@ async function upsertTranscriptionRecord(
   return { data, error };
 }
 
+function validateTranscriptSize(text: string, lessonTitle: string): { isValid: boolean; size: number; suggestion?: string } {
+  const size = new TextEncoder().encode(text).length;
+  console.log(`Transcript size for lesson "${lessonTitle}": ${size} bytes`);
+  
+  if (size > MAX_TRANSCRIPT_SIZE) {
+    console.warn(`Large transcript detected for lesson "${lessonTitle}": ${size} bytes. Will use chunking strategy.`);
+    return {
+      isValid: false,
+      size,
+      suggestion: 'Transcript too large for single processing, will use chunking strategy'
+    };
+  }
+  
+  return { isValid: true, size };
+}
+
+function chunkTranscript(text: string, chunkSize: number = CHUNK_SIZE): string[] {
+  const chunks = [];
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  
+  let currentChunk = '';
+  
+  for (const sentence of sentences) {
+    const testChunk = currentChunk + sentence + '. ';
+    
+    if (new TextEncoder().encode(testChunk).length > chunkSize && currentChunk.length > 0) {
+      chunks.push(currentChunk.trim());
+      currentChunk = sentence + '. ';
+    } else {
+      currentChunk = testChunk;
+    }
+  }
+  
+  if (currentChunk.trim().length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  console.log(`Split transcript into ${chunks.length} chunks`);
+  return chunks;
+}
+
+async function processTranscriptChunks(
+  chunks: string[], 
+  lessonId: string, 
+  transcriptionId: string, 
+  lesson: any, 
+  students: any[]
+): Promise<any[]> {
+  const allSummaries = [];
+  const chunkProcessingStatus: any = {};
+  
+  try {
+    // Update transcription record with chunk information
+    await upsertTranscriptionRecord(
+      lessonId,
+      lesson.lesson_space_session_id || 'unknown',
+      'processing',
+      undefined,
+      undefined,
+      undefined,
+      {
+        chunk_count: chunks.length,
+        chunk_processing_status: chunkProcessingStatus,
+        processing_notes: `Processing ${chunks.length} chunks for large transcript`
+      }
+    );
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log(`Processing chunk ${i + 1}/${chunks.length} for lesson ${lessonId}`);
+      
+      chunkProcessingStatus[`chunk_${i + 1}`] = 'processing';
+      await updateChunkStatus(lessonId, chunkProcessingStatus);
+      
+      try {
+        // Process this chunk for each student
+        for (const student of students) {
+          const studentName = `${student.first_name} ${student.last_name}`;
+          
+          const chunkPrompt = `
+Analyze the following lesson transcription segment (part ${i + 1} of ${chunks.length}) and provide analysis for student "${studentName}".
+
+Lesson Details:
+- Title: ${lesson.title}
+- Subject: ${lesson.subject || 'Not specified'}
+- Transcript Segment: ${i + 1}/${chunks.length}
+
+Transcription Segment:
+${chunk}
+
+Focus on this specific segment and provide:
+1. **Topics Covered in this segment**: List topics discussed in THIS segment only
+2. **Student Contributions in this segment**: ${studentName}'s specific contributions in THIS segment
+3. **Engagement in this segment**: ${studentName}'s engagement level in THIS segment
+4. **Key Moments**: Notable interactions or responses from ${studentName} in THIS segment
+
+Please provide a JSON response with the structure:
+{
+  "segment_number": ${i + 1},
+  "topics_covered": ["topic1", "topic2"],
+  "student_contributions": "description of contributions in this segment",
+  "engagement_level": "Low|Medium|High",
+  "key_moments": ["moment1", "moment2"],
+  "confidence_indicators": {
+    "confident_statements": ["example1"],
+    "hesitation_patterns": ["example1"]
+  }
+}
+`;
+
+          const response = await callOpenAI(chunkPrompt, studentName, i + 1);
+          if (response) {
+            allSummaries.push({
+              studentId: student.id,
+              studentName,
+              segmentNumber: i + 1,
+              segmentData: response
+            });
+          }
+        }
+        
+        chunkProcessingStatus[`chunk_${i + 1}`] = 'completed';
+        console.log(`Completed processing chunk ${i + 1}/${chunks.length}`);
+        
+      } catch (chunkError) {
+        console.error(`Error processing chunk ${i + 1}:`, chunkError);
+        chunkProcessingStatus[`chunk_${i + 1}`] = 'error';
+        chunkProcessingStatus[`chunk_${i + 1}_error`] = chunkError.message;
+      }
+      
+      await updateChunkStatus(lessonId, chunkProcessingStatus);
+      
+      // Rate limiting delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Combine all segments into final summaries for each student
+    const finalSummaries = await combineChunkSummaries(allSummaries, students, lessonId, transcriptionId);
+    
+    // Mark processing as complete
+    await upsertTranscriptionRecord(
+      lessonId,
+      lesson.lesson_space_session_id || 'unknown',
+      'available',
+      undefined,
+      undefined,
+      undefined,
+      {
+        chunk_processing_status: chunkProcessingStatus,
+        processing_notes: `Successfully processed ${chunks.length} chunks`
+      }
+    );
+    
+    return finalSummaries;
+    
+  } catch (error) {
+    console.error('Error in chunk processing:', error);
+    await upsertTranscriptionRecord(
+      lessonId,
+      lesson.lesson_space_session_id || 'unknown',
+      'error',
+      undefined,
+      undefined,
+      undefined,
+      {
+        chunk_processing_status: chunkProcessingStatus,
+        last_processing_error: error.message,
+        processing_notes: `Failed during chunk processing: ${error.message}`
+      }
+    );
+    throw error;
+  }
+}
+
+async function updateChunkStatus(lessonId: string, chunkStatus: any) {
+  await supabase
+    .from('lesson_transcriptions')
+    .update({ chunk_processing_status: chunkStatus })
+    .eq('lesson_id', lessonId);
+}
+
+async function combineChunkSummaries(allSummaries: any[], students: any[], lessonId: string, transcriptionId: string): Promise<any[]> {
+  const finalSummaries = [];
+  
+  for (const student of students) {
+    const studentSummaries = allSummaries.filter(s => s.studentId === student.id);
+    
+    if (studentSummaries.length === 0) continue;
+    
+    // Combine all segment data for this student
+    const combinedTopics = new Set<string>();
+    const allContributions: string[] = [];
+    const allKeyMoments: string[] = [];
+    const allConfidentStatements: string[] = [];
+    const allHesitationPatterns: string[] = [];
+    
+    let totalEngagement = 0;
+    let engagementCount = 0;
+    
+    for (const summary of studentSummaries) {
+      const data = summary.segmentData;
+      
+      // Combine topics
+      if (data.topics_covered) {
+        data.topics_covered.forEach((topic: string) => combinedTopics.add(topic));
+      }
+      
+      // Combine contributions
+      if (data.student_contributions) {
+        allContributions.push(`Segment ${data.segment_number}: ${data.student_contributions}`);
+      }
+      
+      // Combine key moments
+      if (data.key_moments) {
+        data.key_moments.forEach((moment: string) => 
+          allKeyMoments.push(`Segment ${data.segment_number}: ${moment}`)
+        );
+      }
+      
+      // Track engagement
+      if (data.engagement_level) {
+        const engagementMap = { 'Low': 1, 'Medium': 2, 'High': 3 };
+        totalEngagement += engagementMap[data.engagement_level as keyof typeof engagementMap] || 0;
+        engagementCount++;
+      }
+      
+      // Combine confidence indicators
+      if (data.confidence_indicators?.confident_statements) {
+        allConfidentStatements.push(...data.confidence_indicators.confident_statements);
+      }
+      if (data.confidence_indicators?.hesitation_patterns) {
+        allHesitationPatterns.push(...data.confidence_indicators.hesitation_patterns);
+      }
+    }
+    
+    // Calculate overall engagement
+    const avgEngagement = engagementCount > 0 ? totalEngagement / engagementCount : 0;
+    const overallEngagement = avgEngagement <= 1.5 ? 'Low' : avgEngagement <= 2.5 ? 'Medium' : 'High';
+    
+    // Create final summary
+    const summaryData = {
+      lesson_id: lessonId,
+      student_id: student.id,
+      transcription_id: transcriptionId,
+      topics_covered: Array.from(combinedTopics),
+      student_contributions: allContributions.join('\n\n'),
+      what_went_well: allKeyMoments.filter(m => !m.toLowerCase().includes('struggle')).join('\n'),
+      areas_for_improvement: allKeyMoments.filter(m => m.toLowerCase().includes('struggle')).join('\n') || 'No specific areas identified',
+      engagement_level: overallEngagement,
+      engagement_score: Math.round(avgEngagement * 3.33), // Convert to 0-10 scale
+      confidence_score: allConfidentStatements.length > allHesitationPatterns.length ? 7 : 4,
+      participation_time_percentage: Math.min(100, allContributions.length * 10),
+      confidence_indicators: {
+        confident_statements: allConfidentStatements.slice(0, 5),
+        hesitation_patterns: allHesitationPatterns.slice(0, 5)
+      },
+      ai_summary: `Combined analysis from ${studentSummaries.length} transcript segments. Student showed ${overallEngagement.toLowerCase()} engagement with ${allContributions.length} notable contributions across the lesson.`,
+    };
+    
+    // Save to database
+    const { data: summary, error: summaryError } = await supabase
+      .from('lesson_student_summaries')
+      .upsert(summaryData, {
+        onConflict: 'lesson_id,student_id,transcription_id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+    
+    if (summaryError) {
+      console.error(`Error saving combined summary for student ${student.id}:`, summaryError);
+    } else {
+      finalSummaries.push(summary);
+    }
+  }
+  
+  return finalSummaries;
+}
+
+async function callOpenAI(prompt: string, studentName: string, segmentNumber: number, useRetry: boolean = false): Promise<any> {
+  const model = useRetry ? 'gpt-4o-mini' : 'o3-2025-04-16'; // Use smaller model for retries
+  const maxTokens = useRetry ? 1000 : 2000;
+  
+  try {
+    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are an expert educational analyst. Analyze lesson transcription segments to provide detailed, constructive feedback. Always respond with valid JSON.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.3,
+        max_completion_tokens: maxTokens,
+      }),
+    });
+
+    if (!openAIResponse.ok) {
+      if (openAIResponse.status === 413 || openAIResponse.status === 400) {
+        console.warn(`Request too large for ${studentName} segment ${segmentNumber}, retrying with smaller model`);
+        if (!useRetry) {
+          return await callOpenAI(prompt, studentName, segmentNumber, true);
+        }
+      }
+      throw new Error(`OpenAI API error: ${openAIResponse.status}`);
+    }
+
+    const aiResponse = await openAIResponse.json();
+    const aiContent = aiResponse.choices[0]?.message?.content;
+
+    if (!aiContent) {
+      console.error(`No AI response for ${studentName} segment ${segmentNumber}`);
+      return null;
+    }
+
+    // Parse JSON response
+    let cleanContent = aiContent.trim();
+    if (cleanContent.startsWith('```json')) {
+      cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanContent.startsWith('```')) {
+      cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    return JSON.parse(cleanContent);
+    
+  } catch (error) {
+    console.error(`Error calling OpenAI for ${studentName} segment ${segmentNumber}:`, error);
+    return null;
+  }
+}
+
 async function generateStudentSummaries(lessonId: string, transcriptionId: string) {
   console.log(`Generating student summaries for lesson: ${lessonId}, transcription: ${transcriptionId}`);
+
+  // Track processing attempts
+  const { data: currentTranscription } = await supabase
+    .from('lesson_transcriptions')
+    .select('processing_attempts, last_processing_error')
+    .eq('id', transcriptionId)
+    .single();
+
+  const attempts = (currentTranscription?.processing_attempts || 0) + 1;
+  
+  if (attempts > MAX_PROCESSING_ATTEMPTS) {
+    await upsertTranscriptionRecord(lessonId, '', 'error', undefined, undefined, undefined, {
+      processing_attempts: attempts,
+      last_processing_error: 'Maximum processing attempts exceeded',
+      processing_notes: 'Failed after maximum retry attempts'
+    });
+    
+    return new Response(
+      JSON.stringify({ 
+        error: 'Maximum processing attempts exceeded. Transcript may be too large or complex.',
+        attempts 
+      }),
+      { 
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+
+  // Update attempt counter
+  await supabase
+    .from('lesson_transcriptions')
+    .update({ processing_attempts: attempts })
+    .eq('id', transcriptionId);
 
   // Get transcription details
   const { data: transcription, error: transcriptionError } = await supabase
     .from('lesson_transcriptions')
-    .select('transcription_text, transcription_url')
+    .select('transcription_text, transcription_url, transcript_size_bytes')
     .eq('id', transcriptionId)
     .single();
 
@@ -302,10 +682,9 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
       const textResponse = await fetch(transcription.transcription_url);
       if (textResponse.ok) {
         const transcriptionData = await textResponse.json();
-        console.log('LessonSpace transcription JSON structure:', JSON.stringify(transcriptionData, null, 2));
+        console.log('LessonSpace transcription JSON structure keys:', Object.keys(transcriptionData || {}));
         
         // Extract transcript text from the JSON structure
-        // LessonSpace typically stores transcripts in a 'transcript' or 'text' field
         if (transcriptionData.transcript) {
           transcriptionText = transcriptionData.transcript;
         } else if (transcriptionData.text) {
@@ -319,18 +698,40 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
           transcriptionText = JSON.stringify(transcriptionData);
         }
         
-        console.log(`Extracted transcription text (first 200 chars): ${transcriptionText?.substring(0, 200)}...`);
+        // Calculate and save transcript size
+        const transcriptSize = new TextEncoder().encode(transcriptionText).length;
+        console.log(`Transcript size: ${transcriptSize} bytes`);
         
-        // Save the text to our database
+        // Save the text and size to our database
         await supabase
           .from('lesson_transcriptions')
-          .update({ transcription_text: transcriptionText })
+          .update({ 
+            transcription_text: transcriptionText,
+            transcript_size_bytes: transcriptSize
+          })
           .eq('id', transcriptionId);
+        
       } else {
         console.error(`Failed to fetch transcription URL. Status: ${textResponse.status}`);
+        if (textResponse.status === 404) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Transcription too large (404 from LessonSpace)',
+              suggestion: 'The transcript exceeded size limits and cannot be processed'
+            }),
+            { 
+              status: 413,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
       }
     } catch (error) {
       console.error('Error fetching transcription text:', error);
+      await upsertTranscriptionRecord(lessonId, '', 'error', undefined, undefined, undefined, {
+        last_processing_error: `Failed to fetch transcript: ${error.message}`,
+        processing_notes: 'Error occurred while fetching transcript from URL'
+      });
     }
   }
 
@@ -345,9 +746,76 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
   }
 
   const students = lesson.lesson_students.map((ls: any) => ls.student);
+  
+  // Validate transcript size and determine processing strategy
+  const validation = validateTranscriptSize(transcriptionText, lesson.title);
+  
+  try {
+    let summaries = [];
+    
+    if (validation.isValid) {
+      // Standard processing for smaller transcripts
+      console.log(`Using standard processing for lesson "${lesson.title}"`);
+      summaries = await processStandardTranscript(transcriptionText, lessonId, transcriptionId, lesson, students);
+    } else {
+      // Chunked processing for large transcripts
+      console.log(`Using chunked processing for lesson "${lesson.title}" (${validation.size} bytes)`);
+      const chunkSize = attempts > 1 ? FALLBACK_CHUNK_SIZE : CHUNK_SIZE;
+      const chunks = chunkTranscript(transcriptionText, chunkSize);
+      summaries = await processTranscriptChunks(chunks, lessonId, transcriptionId, lesson, students);
+    }
+
+    console.log(`Generated ${summaries.length} summaries for lesson ${lessonId}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        summaries,
+        processing_info: {
+          strategy: validation.isValid ? 'standard' : 'chunked',
+          transcript_size: validation.size,
+          attempts
+        }
+      }),
+      { 
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+
+  } catch (error) {
+    console.error(`Error generating summaries for lesson ${lessonId}:`, error);
+    
+    await upsertTranscriptionRecord(lessonId, '', 'error', undefined, undefined, undefined, {
+      processing_attempts: attempts,
+      last_processing_error: error.message,
+      processing_notes: `Processing failed on attempt ${attempts}: ${error.message}`
+    });
+
+    return new Response(
+      JSON.stringify({ 
+        error: 'Failed to generate student summaries',
+        details: error.message,
+        attempts
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+async function processStandardTranscript(
+  transcriptionText: string, 
+  lessonId: string, 
+  transcriptionId: string, 
+  lesson: any, 
+  students: any[]
+): Promise<any[]> {
   const summaries = [];
 
-  // Generate AI summary for each student
+  // Generate AI summary for each student using the original logic
   for (const student of students) {
     try {
       const studentName = `${student.first_name} ${student.last_name}`;
@@ -398,70 +866,11 @@ Format your response as a JSON object with the following structure:
 }
 `;
 
-      const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'o3-2025-04-16',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are an expert educational analyst. Analyze lesson transcriptions to provide detailed, constructive feedback for individual students. Always respond with valid JSON.' 
-            },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.3,
-          max_completion_tokens: 2000,
-        }),
-      });
-
-      if (!openAIResponse.ok) {
-        console.error(`OpenAI API error for student ${studentName}:`, openAIResponse.status);
+      const analysisData = await callOpenAI(prompt, studentName, 1);
+      
+      if (!analysisData) {
+        console.error(`Failed to get analysis for student ${studentName}`);
         continue;
-      }
-
-      const aiResponse = await openAIResponse.json();
-      const aiContent = aiResponse.choices[0]?.message?.content;
-
-      if (!aiContent) {
-        console.error(`No AI response for student ${studentName}`);
-        continue;
-      }
-
-      let analysisData;
-      try {
-        // Strip markdown code blocks if present
-        let cleanContent = aiContent.trim();
-        if (cleanContent.startsWith('```json')) {
-          cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        } else if (cleanContent.startsWith('```')) {
-          cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-        }
-        
-        console.log(`Attempting to parse JSON for student ${studentName}:`, cleanContent);
-        analysisData = JSON.parse(cleanContent);
-        console.log(`Successfully parsed JSON for student ${studentName}:`, analysisData);
-      } catch (parseError) {
-        console.error(`Failed to parse AI response for student ${studentName}:`, parseError);
-        console.error('Raw AI content:', aiContent);
-        // Fallback to storing the raw response
-        analysisData = {
-          topics_covered: [],
-          student_contributions: "AI analysis failed to parse",
-          what_went_well: "Unable to analyze",
-          areas_for_improvement: "Unable to analyze", 
-          engagement_level: "Unknown",
-          engagement_score: null,
-          confidence_score: null,
-          participation_time_percentage: null,
-          questions_asked: 0,
-          responses_given: 0,
-          confidence_indicators: {},
-          overall_summary: aiContent
-        };
       }
 
       // Save the summary to the database with proper field mapping
@@ -478,7 +887,7 @@ Format your response as a JSON object with the following structure:
         confidence_score: analysisData.confidence_score || null,
         participation_time_percentage: analysisData.participation_time_percentage || null,
         confidence_indicators: analysisData.confidence_indicators || {},
-        ai_summary: analysisData.overall_summary || aiContent,
+        ai_summary: analysisData.overall_summary || 'Analysis completed',
       };
 
       console.log(`Saving summary for student ${studentName}:`, summaryData);
@@ -495,45 +904,32 @@ Format your response as a JSON object with the following structure:
       if (summaryError) {
         console.error(`Error saving summary for student ${studentName}:`, summaryError);
       } else {
-        summaries.push({
-          student: student,
-          summary: summary
-        });
+        summaries.push(summary);
       }
 
-      // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
     } catch (error) {
-      console.error(`Error generating summary for student ${student.first_name} ${student.last_name}:`, error);
+      console.error(`Error processing student ${student.id}:`, error);
     }
   }
 
-  return new Response(
-    JSON.stringify({
-      success: true,
-      summaries_generated: summaries.length,
-      total_students: students.length,
-      summaries: summaries
-    }),
-    { 
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    }
-  );
+  return summaries;
 }
 
 async function pollPendingTranscriptions() {
   console.log('Polling for pending transcriptions...');
-
-  // Get all processing transcriptions that haven't been updated in the last 5 minutes
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   
   const { data: pendingTranscriptions, error } = await supabase
     .from('lesson_transcriptions')
-    .select('id, lesson_id, session_id, updated_at')
+    .select(`
+      id,
+      lesson_id,
+      session_id,
+      transcription_status,
+      created_at,
+      lessons!inner(title)
+    `)
     .eq('transcription_status', 'processing')
-    .lt('updated_at', fiveMinutesAgo.toISOString())
+    .lt('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // 5 minutes old
     .limit(10);
 
   if (error) {
@@ -548,33 +944,42 @@ async function pollPendingTranscriptions() {
   }
 
   const results = [];
-  
+
   for (const transcription of pendingTranscriptions || []) {
     try {
-      // FIXED: Use direct getTranscription call instead of recursive function invoke
-      // to prevent infinite recursion
-      const transcriptionResult = await getTranscription(transcription.lesson_id);
-
+      console.log(`Checking transcription ${transcription.id} for lesson ${transcription.lesson_id}`);
+      
+      // Try to get the transcription again
+      const result = await getTranscription(transcription.lesson_id);
+      const resultData = await result.json();
+      
       results.push({
-        transcriptionId: transcription.id,
-        lessonId: transcription.lesson_id,
-        result: transcriptionResult
+        transcription_id: transcription.id,
+        lesson_id: transcription.lesson_id,
+        lesson_title: transcription.lessons?.title,
+        status: resultData.success ? 'updated' : 'still_processing',
+        error: resultData.error || null
       });
+      
     } catch (error) {
       console.error(`Error polling transcription ${transcription.id}:`, error);
       results.push({
-        transcriptionId: transcription.id,
-        lessonId: transcription.lesson_id,
+        transcription_id: transcription.id,
+        lesson_id: transcription.lesson_id,
+        status: 'error',
         error: error.message
       });
     }
+
+    // Rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   return new Response(
     JSON.stringify({
       success: true,
-      checked: results.length,
-      results: results
+      polled_count: pendingTranscriptions?.length || 0,
+      results
     }),
     { 
       status: 200,

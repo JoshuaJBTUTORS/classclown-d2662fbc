@@ -1048,33 +1048,54 @@ export type Database = {
       }
       lesson_transcriptions: {
         Row: {
+          chunk_count: number | null
+          chunk_processing_status: Json | null
           created_at: string
           expires_at: string | null
+          fallback_processing_used: boolean | null
           id: string
+          last_processing_error: string | null
           lesson_id: string
+          processing_attempts: number | null
+          processing_notes: string | null
           session_id: string
+          transcript_size_bytes: number | null
           transcription_status: string
           transcription_text: string | null
           transcription_url: string | null
           updated_at: string
         }
         Insert: {
+          chunk_count?: number | null
+          chunk_processing_status?: Json | null
           created_at?: string
           expires_at?: string | null
+          fallback_processing_used?: boolean | null
           id?: string
+          last_processing_error?: string | null
           lesson_id: string
+          processing_attempts?: number | null
+          processing_notes?: string | null
           session_id: string
+          transcript_size_bytes?: number | null
           transcription_status?: string
           transcription_text?: string | null
           transcription_url?: string | null
           updated_at?: string
         }
         Update: {
+          chunk_count?: number | null
+          chunk_processing_status?: Json | null
           created_at?: string
           expires_at?: string | null
+          fallback_processing_used?: boolean | null
           id?: string
+          last_processing_error?: string | null
           lesson_id?: string
+          processing_attempts?: number | null
+          processing_notes?: string | null
           session_id?: string
+          transcript_size_bytes?: number | null
           transcription_status?: string
           transcription_text?: string | null
           transcription_url?: string | null
