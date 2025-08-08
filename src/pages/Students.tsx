@@ -42,7 +42,7 @@ import { BulkImportDialog } from '@/components/students/BulkImportDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemoMode } from '@/contexts/DemoContext';
 import { DemoModeIndicator } from '@/components/demo/DemoModeIndicator';
-import '@/utils/testDemoCreation'; // Temporary - to trigger demo data creation
+
 import { studentDataService } from '@/services/studentDataService';
 import { cn } from '@/lib/utils';
 import { 

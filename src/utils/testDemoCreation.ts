@@ -21,9 +21,5 @@ export const testDemoCreation = async () => {
   }
 };
 
-// Auto-call on import for testing
-testDemoCreation().then(result => {
-  console.log('Demo creation test result:', result);
-}).catch(error => {
-  console.error('Demo creation test failed:', error);
-});
+// Helper exported for manual triggering only. No side effects on import.
+// To use: import { testDemoCreation } from '@/utils/testDemoCreation' and call it explicitly.
