@@ -1,6 +1,7 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { memoryCleanup } from '@/utils/devLogger';
 
 interface LessonCompletionData {
   [lessonId: string]: {
@@ -27,8 +28,8 @@ export const useLessonCompletion = (lessonIds: string[]) => {
     return validIds.slice().sort();
   }, [lessonIds?.length, lessonIds?.filter(id => id != null && id !== '').sort().join('|')]);
 
-  // Helper function to process a batch of lessons
-  const processBatch = async (batchIds: string[]) => {
+  // Memoized helper function to process a batch of lessons
+  const processBatch = useCallback(async (batchIds: string[]) => {
     const [attendanceData, homeworkData, lessonStudentData] = await Promise.all([
       supabase
         .from('lesson_attendance')
@@ -68,7 +69,7 @@ export const useLessonCompletion = (lessonIds: string[]) => {
     });
 
     return batchCompletionData;
-  };
+  }, []);
 
   useEffect(() => {
     if (!stableLessonIds || stableLessonIds.length === 0) {
@@ -96,24 +97,27 @@ export const useLessonCompletion = (lessonIds: string[]) => {
           batches.push(stableLessonIds.slice(i, i + BATCH_SIZE));
         }
 
-        // Process batches for large datasets
-
         // Process batches sequentially to avoid overwhelming the API
         for (let i = 0; i < batches.length; i++) {
           const batch = batches[i];
-          // Processing batch
           
           try {
             const batchData = await processBatch(batch);
             Object.assign(allCompletionData, batchData);
+            
+            // Memory cleanup for large datasets
+            if (i % 10 === 0) {
+              memoryCleanup.clearLargeObjects();
+            }
           } catch (batchError) {
             console.warn(`Batch ${i + 1} processing failed:`, batchError);
             // Continue with other batches even if one fails
           }
         }
-
-        // Batch processing completed
         setCompletionData(allCompletionData);
+        
+        // Memory cleanup after processing large datasets
+        memoryCleanup.garbageCollectionHint();
       } catch (error) {
         console.error('Error fetching lesson completion data:', error);
         // Set empty data on error to prevent infinite loops
