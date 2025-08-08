@@ -15,8 +15,6 @@ import { CalendarPlus, Info, Filter } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-import { cn } from '@/lib/utils';
-
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
   const { openBookingModal } = useTrialBooking();
@@ -34,6 +32,11 @@ const Calendar = () => {
   const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
+  // New state for view-based date range
+  const [currentStartDate, setCurrentStartDate] = useState<Date | undefined>(undefined);
+  const [currentEndDate, setCurrentEndDate] = useState<Date | undefined>(undefined);
+  const [currentViewType, setCurrentViewType] = useState<string>('timeGridWeek');
+
   // Memoize filters to prevent infinite loop - only recreate when dependencies change
   const filters = useMemo(() => ({
     selectedStudents,
@@ -43,12 +46,15 @@ const Calendar = () => {
     selectedLessonType
   }), [selectedStudents, selectedTutors, selectedSubjects, selectedAdminDemos, selectedLessonType]);
 
-  // Fetch calendar data using the hook (always call hooks)
+  // Fetch calendar data using the hook with date range
   const { events, isLoading } = useCalendarData({
     userRole,
     userEmail: user?.email || null,
     isAuthenticated: !!user,
     refreshKey,
+    startDate: currentStartDate,
+    endDate: currentEndDate,
+    viewType: currentViewType,
     filters
   });
 
@@ -95,6 +101,14 @@ const Calendar = () => {
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
+  };
+
+  // Handle view change from calendar
+  const handleViewChange = (viewInfo: { start: Date; end: Date; view: string }) => {
+    console.log('📅 View change received in Calendar:', viewInfo);
+    setCurrentStartDate(viewInfo.start);
+    setCurrentEndDate(viewInfo.end);
+    setCurrentViewType(viewInfo.view);
   };
 
   // Check if user can see filters (admin/owner only for full filters)
@@ -202,11 +216,12 @@ const Calendar = () => {
           
           {/* Calendar Display - Full height */}
           <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4 mobile-scroll-container">
-        <CalendarDisplay 
-          isLoading={isLoading} 
-          events={events} 
-          onLessonsUpdated={handleRefresh}
-        />
+            <CalendarDisplay 
+              isLoading={isLoading} 
+              events={events} 
+              onLessonsUpdated={handleRefresh}
+              onViewChange={handleViewChange}
+            />
           </div>
         </main>
       </div>

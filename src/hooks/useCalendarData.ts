@@ -13,6 +13,9 @@ interface UseCalendarDataProps {
   userEmail: string | null;
   isAuthenticated: boolean;
   refreshKey?: number;
+  startDate?: Date;
+  endDate?: Date;
+  viewType?: string;
   filters?: {
     selectedStudents: string[];
     selectedTutors: string[];
@@ -27,6 +30,9 @@ export const useCalendarData = ({
   userEmail, 
   isAuthenticated, 
   refreshKey,
+  startDate,
+  endDate,
+  viewType,
   filters 
 }: UseCalendarDataProps) => {
   const [rawLessons, setRawLessons] = useState<any[]>([]);
@@ -132,6 +138,7 @@ export const useCalendarData = ({
 
       try {
         console.log("🔍 Starting lesson fetch process for role:", userRole);
+        console.log(`📅 Date range: ${startDate?.toISOString()} to ${endDate?.toISOString()} (${viewType} view)`);
         
         const fetchPromise = (async () => {
           let query;
@@ -189,8 +196,14 @@ export const useCalendarData = ({
                   student_id
                 )
               `)
-              .eq('lesson_students.student_id', studentData.id)
-              .limit(10000);
+              .eq('lesson_students.student_id', studentData.id);
+
+            // Add date range filter if provided
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
 
           } else if (userRole === 'parent') {
             console.log('👨‍👩‍👧‍👦 Processing parent data for email:', userEmail);
@@ -249,8 +262,14 @@ export const useCalendarData = ({
                   student:students(id, first_name, last_name)
                 )
               `)
-              .in('lesson_students.student_id', studentIds)
-              .limit(10000);
+              .in('lesson_students.student_id', studentIds);
+
+            // Add date range filter if provided
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
 
           } else if (userRole === 'tutor') {
             console.log('👨‍🏫 Processing tutor data for email:', userEmail);
@@ -287,11 +306,17 @@ export const useCalendarData = ({
                   student:students(id, first_name, last_name)
                 )
               `)
-              .eq('tutor_id', tutorData.id)
-              .limit(10000);
+              .eq('tutor_id', tutorData.id);
+
+            // Add date range filter if provided
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
 
           } else if (userRole === 'admin' || userRole === 'owner') {
-            console.log('👑 Processing admin/owner data - fetching ALL lessons');
+            console.log('👑 Processing admin/owner data - fetching lessons for date range');
             
             // Fetch all lessons (original lessons and instances) for admin/owner
             query = supabase
@@ -303,8 +328,14 @@ export const useCalendarData = ({
                   student_id,
                   student:students(id, first_name, last_name)
                 )
-              `)
-              .limit(10000);
+              `);
+
+            // Add date range filter if provided (for admin/owner this is crucial for performance)
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
 
             if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
               console.log('🔍 Applying tutor filter:', filters.selectedTutors);
@@ -394,7 +425,7 @@ export const useCalendarData = ({
     };
 
     fetchEvents();
-  }, [userRole, userEmail, isAuthenticated, refreshKey, filters]);
+  }, [userRole, userEmail, isAuthenticated, refreshKey, startDate, endDate, viewType, filters]);
 
   return {
     events,

@@ -1,20 +1,24 @@
+
 import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
+import { DatesSetArg } from '@fullcalendar/core';
 
 interface CalendarDisplayProps {
   isLoading: boolean;
   events: any[];
   onLessonsUpdated: () => void;
+  onViewChange?: (viewInfo: { start: Date; end: Date; view: string }) => void;
 }
 
 const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   isLoading,
   events,
-  onLessonsUpdated
+  onLessonsUpdated,
+  onViewChange
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [instanceDetails, setInstanceDetails] = useState<{
@@ -44,6 +48,22 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     setSelectedLessonId(null);
   };
 
+  const handleDatesSet = (dateInfo: DatesSetArg) => {
+    console.log('📅 Calendar view changed:', {
+      viewType: dateInfo.view.type,
+      start: dateInfo.start,
+      end: dateInfo.end
+    });
+    
+    if (onViewChange) {
+      onViewChange({
+        start: dateInfo.start,
+        end: dateInfo.end,
+        view: dateInfo.view.type
+      });
+    }
+  };
+
   const renderEventContent = (eventInfo: any) => {
     return (
       <div className="calendar-event-content">
@@ -71,6 +91,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
             events={events}
             eventContent={renderEventContent}
             eventClick={handleEventClick}
+            datesSet={handleDatesSet}
             height="100%"
             slotMinTime="06:00:00"
             slotMaxTime="22:00:00"
