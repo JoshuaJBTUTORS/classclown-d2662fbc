@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,20 +16,13 @@ import {
 } from 'lucide-react';
 import { CoursePurchase } from '@/types/course';
 
-interface SubscriptionStatus {
-  hasActiveSubscription: boolean;
-  subscriptions: CoursePurchase[];
-  needsPaymentUpdate: boolean;
-  gracePeriodInfo?: {
-    isInGracePeriod: boolean;
-    gracePeriodEnd: string;
-    daysRemaining: number;
-  };
-}
-
 const SubscriptionManager: React.FC = () => {
   const { toast } = useToast();
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<{
+    hasActiveSubscription: boolean;
+    subscriptions: CoursePurchase[];
+    needsPaymentUpdate: boolean;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -39,12 +33,7 @@ const SubscriptionManager: React.FC = () => {
   const loadSubscriptionStatus = async () => {
     try {
       const status = await paymentService.getSubscriptionStatus();
-      setSubscriptionStatus({
-        hasActiveSubscription: status.hasActiveSubscription,
-        subscriptions: status.subscriptions,
-        needsPaymentUpdate: status.needsPaymentUpdate,
-        gracePeriodInfo: status.gracePeriodInfo
-      });
+      setSubscriptionStatus(status);
     } catch (error) {
       console.error('Error loading subscription status:', error);
       toast({
@@ -95,7 +84,6 @@ const SubscriptionManager: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-      case 'active':
         return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>;
       case 'past_due':
         return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Payment Due</Badge>;

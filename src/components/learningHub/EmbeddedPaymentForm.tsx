@@ -142,15 +142,11 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     return `£${(priceInPence / 100).toFixed(2)}`;
   };
 
-  const isPlatformSubscription = courseTitle === 'Platform Access';
-
   return (
     <div className="space-y-8">
       {/* Trial Summary */}
       <div className="border border-primary/20 rounded-lg p-6 bg-primary/5">
-        <h3 className="font-semibold text-gray-900 mb-4">
-          {isPlatformSubscription ? 'Platform subscription summary' : 'Free trial summary'}
-        </h3>
+        <h3 className="font-semibold text-gray-900 mb-4">Free trial summary</h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Free trial period</span>
@@ -160,12 +156,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             <span className="text-gray-600">After trial</span>
             <span className="text-sm text-gray-500">{formatPrice(amount)}/month</span>
           </div>
-          {isPlatformSubscription && (
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Access includes</span>
-              <span className="text-sm font-medium text-primary">All courses</span>
-            </div>
-          )}
           <div className="border-t border-primary/20 pt-3 mt-3">
             <div className="flex justify-between items-center">
               <span className="font-semibold text-gray-900">Due today</span>
@@ -173,7 +163,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             </div>
             <p className="text-xs text-gray-500 mt-1">
               Your card will be charged {formatPrice(amount)} on {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} unless you cancel.
-              {isPlatformSubscription && ' This gives you unlimited access to all current and future courses.'}
             </p>
           </div>
         </div>
@@ -264,18 +253,14 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           ) : (
             <>
               <Shield className="h-4 w-4 mr-2" />
-              {isPlatformSubscription ? 'Start platform trial' : 'Start free trial'}
+              Start free trial
             </>
           )}
         </Button>
 
         {/* Terms */}
         <p className="text-xs text-gray-500 text-center">
-          By starting your free trial, you agree to our terms. 
-          {isPlatformSubscription 
-            ? ' Your platform subscription will begin after your trial ends, giving you access to all courses.' 
-            : ' Your subscription will begin after your trial ends.'
-          } Cancel anytime.
+          By starting your free trial, you agree to our terms. Your subscription will begin after your trial ends. Cancel anytime.
         </p>
 
         {/* Security Info */}

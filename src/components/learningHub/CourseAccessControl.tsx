@@ -76,12 +76,12 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
             Course Locked
           </CardTitle>
           <CardDescription>
-            Subscribe for £28.55/month to access all courses
+            Subscribe to access this course content
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button className="w-full" onClick={() => window.location.href = `/checkout/platform`}>
-            Subscribe to All Courses
+          <Button className="w-full" onClick={() => window.location.href = `/course/${courseId}`}>
+            View Course Details
           </Button>
         </CardContent>
       </Card>
@@ -138,7 +138,7 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Your payment method needs updating to continue accessing courses.
+            Your payment method needs updating to continue accessing this course.
             <Button 
               variant="link" 
               className="ml-2 p-0 h-auto"

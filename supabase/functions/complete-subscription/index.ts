@@ -15,7 +15,7 @@ serve(async (req) => {
   }
   
   try {
-    console.log("Starting complete-subscription function for platform subscription");
+    console.log("Starting complete-subscription function");
     
     const { setupIntentId } = await req.json();
     
@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error("Setup Intent ID is required");
     }
 
-    console.log("Processing platform subscription completion for setup intent:", setupIntentId);
+    console.log("Processing subscription completion for setup intent:", setupIntentId);
 
     // Create Supabase client using service role key for admin operations
     const supabaseClient = createClient(
@@ -45,70 +45,82 @@ serve(async (req) => {
       throw new Error("Setup Intent not succeeded");
     }
 
-    const { user_id, trial_days, subscription_type } = setupIntent.metadata;
+    const { course_id, user_id, course_title, trial_days } = setupIntent.metadata;
     
-    if (!user_id || subscription_type !== 'platform') {
-      throw new Error("Missing required metadata for platform subscription");
+    if (!course_id || !user_id) {
+      throw new Error("Missing required metadata");
     }
 
-    console.log("Metadata extracted:", { user_id, trial_days, subscription_type });
+    console.log("Metadata extracted:", { course_id, user_id, course_title, trial_days });
 
-    // Create subscription with trial period using fixed platform price ID
+    // Get course details to find the Stripe price ID
+    const { data: course, error: courseError } = await supabaseClient
+      .from('courses')
+      .select('stripe_price_id, price')
+      .eq('id', course_id)
+      .single();
+
+    if (courseError || !course) {
+      console.error("Course fetch error:", courseError);
+      throw new Error("Course not found");
+    }
+
+    console.log("Course details:", { stripe_price_id: course.stripe_price_id, price: course.price });
+
+    // Create subscription with trial period
     const subscription = await stripe.subscriptions.create({
       customer: setupIntent.customer as string,
       items: [{
-        price: 'price_1Rtxy3Jvbqr5stJMhWqXgeC2', // Fixed platform price ID
+        price: course.stripe_price_id,
       }],
       trial_period_days: parseInt(trial_days || '3'),
       default_payment_method: setupIntent.payment_method as string,
       metadata: {
-        subscription_type: 'platform',
+        course_id,
         user_id,
-        platform_access: 'all_courses',
+        course_title,
       },
     });
 
-    console.log("Platform subscription created:", subscription.id, "Status:", subscription.status);
+    console.log("Subscription created:", subscription.id, "Status:", subscription.status);
 
     // Determine the subscription status for our database
     let dbStatus = 'trialing';
     if (subscription.status === 'active' && !subscription.trial_end) {
-      dbStatus = 'active';
+      dbStatus = 'completed';
     } else if (subscription.status === 'trialing' || (subscription.status === 'active' && subscription.trial_end)) {
       dbStatus = 'trialing';
     }
 
     const trialEndDate = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
-    const currentPeriodStart = subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : null;
-    const currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
 
-    // Record the platform subscription in the database
-    const { error: subscriptionError } = await supabaseClient
-      .from('platform_subscriptions')
+    // Record the purchase in the database with the correct subscription ID
+    const { error: purchaseError } = await supabaseClient
+      .from('course_purchases')
       .insert({
+        course_id,
         user_id,
         stripe_subscription_id: subscription.id,
-        stripe_customer_id: setupIntent.customer as string,
         status: dbStatus,
+        purchase_date: new Date().toISOString(),
         trial_end: trialEndDate,
-        current_period_start: currentPeriodStart,
-        current_period_end: currentPeriodEnd,
+        amount_paid: course.price || 1299,
+        currency: 'gbp',
         has_used_trial: true, // Mark that user has used their trial
         trial_used_date: new Date().toISOString(),
       });
 
-    if (subscriptionError) {
-      console.error("Error recording platform subscription:", subscriptionError);
-      throw new Error(`Failed to record platform subscription: ${subscriptionError.message}`);
+    if (purchaseError) {
+      console.error("Error recording purchase:", purchaseError);
+      throw new Error(`Failed to record purchase: ${purchaseError.message}`);
     }
 
-    console.log("Platform subscription recorded successfully with subscription ID:", subscription.id);
+    console.log("Purchase recorded successfully with subscription ID:", subscription.id);
 
     return new Response(JSON.stringify({ 
       success: true,
-      message: "Platform subscription created successfully with trial period",
+      message: "Subscription created successfully with trial period",
       subscription_id: subscription.id,
-      subscription_type: 'platform',
       status: dbStatus,
       trial_end: trialEndDate,
     }), {

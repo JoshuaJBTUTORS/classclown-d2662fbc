@@ -1312,60 +1312,6 @@ export type Database = {
         }
         Relationships: []
       }
-      platform_subscriptions: {
-        Row: {
-          created_at: string
-          current_period_end: string | null
-          current_period_start: string | null
-          grace_period_end: string | null
-          grace_period_start: string | null
-          has_used_trial: boolean | null
-          id: string
-          previous_status: string | null
-          status: string
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
-          trial_end: string | null
-          trial_used_date: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          current_period_end?: string | null
-          current_period_start?: string | null
-          grace_period_end?: string | null
-          grace_period_start?: string | null
-          has_used_trial?: boolean | null
-          id?: string
-          previous_status?: string | null
-          status?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          trial_end?: string | null
-          trial_used_date?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          current_period_end?: string | null
-          current_period_start?: string | null
-          grace_period_end?: string | null
-          grace_period_start?: string | null
-          has_used_trial?: boolean | null
-          id?: string
-          previous_status?: string | null
-          status?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          trial_end?: string | null
-          trial_used_date?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null

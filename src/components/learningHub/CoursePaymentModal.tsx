@@ -57,9 +57,13 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
     }
   };
 
+  const formatPrice = (priceInPence: number) => {
+    return `£${(priceInPence / 100).toFixed(2)}`;
+  };
+
   const handleStartTrial = () => {
     onClose();
-    navigate(`/checkout/platform`);
+    navigate(`/checkout/${course.id}`);
     if (onSuccess) {
       onSuccess();
     }
@@ -68,7 +72,7 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
   const handlePaidSubscription = () => {
     onClose();
     // Navigate to a paid-only checkout (without trial)
-    navigate(`/checkout/platform?trial=false`);
+    navigate(`/checkout/${course.id}?trial=false`);
     if (onSuccess) {
       onSuccess();
     }
@@ -80,11 +84,11 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-primary" />
-            Subscribe to Platform
+            Subscribe to Course
           </DialogTitle>
           <DialogDescription>
             {checkingEligibility ? 'Checking trial eligibility...' : (
-              trialEligible ? `Get access to all courses including ${course.title}` : `Subscribe to access all courses`
+              trialEligible ? `Start your 7-day free trial for ${course.title}` : `Subscribe to ${course.title}`
             )}
           </DialogDescription>
         </DialogHeader>
@@ -110,9 +114,9 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-lg">Platform Access</h3>
+                    <h3 className="font-semibold text-lg">{course.title}</h3>
                     <p className="text-muted-foreground text-sm mt-1">
-                      Access to all courses and premium content
+                      {course.description || "Complete course access"}
                     </p>
                   </div>
                   
@@ -120,10 +124,10 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
                     <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
                       <div className="flex items-center gap-2 mb-2">
                         <Gift className="h-5 w-5 text-green-600" />
-                        <span className="font-semibold text-green-800">3-Day Free Trial</span>
+                        <span className="font-semibold text-green-800">7-Day Free Trial</span>
                       </div>
                       <p className="text-sm text-green-700">
-                        Start learning immediately with full access to all courses. Cancel anytime during your trial period.
+                        Start learning immediately with full access. Cancel anytime during your trial period.
                       </p>
                     </div>
                   ) : (
@@ -143,15 +147,15 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-sm">
                       <Lock className="h-4 w-4 text-primary" />
-                      <span>Access to all current and future courses</span>
+                      <span>Full access to all course lessons</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <Calendar className="h-4 w-4 text-primary" />
-                      <span>Full progress tracking and certificates</span>
+                      <span>{trialEligible ? 'Monthly subscription with trial period' : 'Monthly subscription'}</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <Lock className="h-4 w-4 text-primary" />
-                      <span>Premium learning features and content</span>
+                      <span>Progress tracking and completion certificates</span>
                     </div>
                   </div>
                   
@@ -161,17 +165,17 @@ const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
                     {trialEligible ? (
                       <>
                         <div className="flex justify-between items-center text-sm">
-                          <span>First 3 days</span>
+                          <span>First 7 days</span>
                           <span className="font-semibold text-green-600">FREE</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-lg font-semibold">Then £28.55/month</span>
+                          <span className="text-lg font-semibold">Then {formatPrice(course.price || 899)}/month</span>
                           <span className="text-sm text-muted-foreground">Cancel anytime</span>
                         </div>
                       </>
                     ) : (
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-semibold">£28.55/month</span>
+                        <span className="text-lg font-semibold">{formatPrice(course.price || 899)}/month</span>
                         <span className="text-sm text-muted-foreground">Cancel anytime</span>
                       </div>
                     )}
