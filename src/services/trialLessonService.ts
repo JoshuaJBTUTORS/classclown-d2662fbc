@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { addMinutes, subMinutes } from 'date-fns';
-import { createDemoSession } from './demoSessionService';
+
 
 interface CreateTrialLessonData {
   bookingId: string;
@@ -153,21 +153,6 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
 
     console.log('Student linked to lesson successfully');
 
-    // Create demo session if admin is provided
-    if (data.adminId) {
-      try {
-        await createDemoSession({
-          lessonId: lessonData.id,
-          adminId: data.adminId,
-          startTime: demoStartDateTime,
-          endTime: demoEndDateTime
-        });
-        console.log('Demo session created successfully');
-      } catch (demoError) {
-        console.error('Demo session creation failed:', demoError);
-        // Don't fail lesson creation if demo session creation fails
-      }
-    }
 
     // Create LessonSpace room using same function as regular lessons
     let lessonSpaceRoomId = null;

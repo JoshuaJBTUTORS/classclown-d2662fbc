@@ -18,7 +18,7 @@ import StudentLessonSummary from './StudentLessonSummary';
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
 interface LessonDetailsDialogProps {
   lessonId: string | null;
-  demoSessionId?: string | null;
+  
   isOpen: boolean;
   onClose: () => void;
   onLessonUpdated?: () => void;
@@ -28,7 +28,7 @@ interface LessonDetailsDialogProps {
 }
 const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   lessonId,
-  demoSessionId,
+  
   isOpen,
   onClose,
   onLessonUpdated,
@@ -37,7 +37,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   instanceEnd
 }) => {
   const [lesson, setLesson] = useState<any>(null);
-  const [demoSession, setDemoSession] = useState<any>(null);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isHomeworkDialogOpen, setIsHomeworkDialogOpen] = useState(false);
@@ -92,85 +92,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   }, [isOpen]);
   useEffect(() => {
     if (lessonId && isOpen) {
-      if (demoSessionId) {
-        fetchDemoSession();
-      } else {
-        fetchLesson();
-      }
+      fetchLesson();
     }
-  }, [lessonId, demoSessionId, isOpen]);
-  const fetchDemoSession = async () => {
-    if (!demoSessionId || !lessonId) return;
-    setIsLoading(true);
-    try {
-      // Fetch demo session with admin and lesson data
-      const { data: demoData, error: demoError } = await supabase
-        .from('demo_sessions')
-        .select(`
-          *,
-          lessons!inner(
-            *,
-            tutor:tutors(id, first_name, last_name),
-            lesson_students(
-              student:students(id, first_name, last_name, email)
-            )
-          )
-        `)
-        .eq('id', demoSessionId)
-        .single();
-
-      if (demoError) throw demoError;
-
-      // Fetch admin details
-      const { data: adminData, error: adminError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(first_name, last_name)
-        `)
-        .eq('user_id', demoData.admin_id)
-        .eq('role', 'admin')
-        .single();
-
-      if (adminError) {
-        console.error('Error fetching admin details:', adminError);
-        // Try alternative approach
-        const { data: altAdminData, error: altError } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', demoData.admin_id)
-          .single();
-        
-        if (!altError && altAdminData) {
-          setDemoSession({
-            ...demoData,
-            admin: altAdminData
-          });
-        } else {
-          console.warn('Could not fetch admin details with fallback:', altError);
-          setDemoSession({
-            ...demoData,
-            admin: null
-          });
-        }
-      } else {
-        setDemoSession({
-          ...demoData,
-          admin: adminData?.profiles || null
-        });
-      }
-      
-      setLesson(demoData.lessons);
-
-      // Check attendance and homework status for the lesson
-      await Promise.all([checkAttendanceStatus(lessonId), checkHomeworkStatus(lessonId)]);
-    } catch (error) {
-      console.error('Error fetching demo session:', error);
-      toast.error('Failed to load demo session details');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [lessonId, isOpen]);
 
   const fetchLesson = async () => {
     if (!lessonId) return;
@@ -198,7 +122,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         }
       }
       setLesson(data);
-      setDemoSession(null);
 
       // Check attendance and homework status
       await Promise.all([checkAttendanceStatus(lessonId), checkHomeworkStatus(lessonId)]);
@@ -327,22 +250,19 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const validStudents = lesson?.lesson_students?.filter(enrollment => enrollment && enrollment.student && enrollment.student.id) || [];
 
   // Use demo session times if this is a demo session, otherwise use instance-specific or lesson dates
-  const displayStartTime = demoSession ? demoSession.start_time : (instanceStart || lesson?.start_time);
-  const displayEndTime = demoSession ? demoSession.end_time : (instanceEnd || lesson?.end_time);
+  const displayStartTime = instanceStart || lesson?.start_time;
+  const displayEndTime = instanceEnd || lesson?.end_time;
   
   // Determine if this is a demo session
-  const isDemoSession = Boolean(demoSessionId && demoSession);
+  
   return <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              {isDemoSession ? `Demo Session: ${lesson?.title || 'Loading...'}` : (lesson?.title || 'Loading...')}
-              {isDemoSession && <Badge variant="default" className="ml-2 bg-purple-600">
-                  Demo Session
-                </Badge>}
-              {isRecurringInstance && !isDemoSession && <Badge variant="outline" className="ml-2">
+              {lesson?.title || 'Loading...'}
+              {isRecurringInstance && <Badge variant="outline" className="ml-2">
                   Recurring Instance
                 </Badge>}
             </DialogTitle>
@@ -352,7 +272,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               <Loader2 className="h-8 w-8 animate-spin" />
             </div> : lesson ? <div className="space-y-6">
               {/* Lesson Progress Tracking - Only for teachers and not demo sessions */}
-              {isTeacherRole && !isDemoSession && <Card className="border-blue-200 bg-blue-50/50">
+              {isTeacherRole && <Card className="border-blue-200 bg-blue-50/50">
                   <CardContent className="p-4">
                     <h3 className="font-medium mb-3 flex items-center gap-2 text-blue-800">
                       <CheckCircle className="h-4 w-4" />
@@ -408,15 +328,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       </Badge>}
                   </div>
 
-                  {isDemoSession && demoSession?.admin ? (
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm">
-                        Demo Host: {demoSession.admin.first_name} {demoSession.admin.last_name}
-                      </span>
-                      <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">Admin</Badge>
-                    </div>
-                  ) : lesson.tutor && (
+                  {lesson.tutor && (
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
@@ -428,7 +340,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   {lesson.subject && <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <Badge variant="secondary">{lesson.subject}</Badge>
-                      {isDemoSession && <Badge variant="outline" className="text-purple-600 border-purple-600">Trial Lesson</Badge>}
+                      
                     </div>}
 
                   {lesson.is_group && <div className="flex items-center gap-2">
@@ -540,7 +452,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </Card>}
 
               {/* AI Lesson Summaries Section - Only show if students exist and not a demo session */}
-              {validStudents.length > 0 && !isDemoSession && (
+              {validStudents.length > 0 && (
                 <StudentLessonSummary 
                   lessonId={lesson.id} 
                   students={validStudents} 
@@ -564,7 +476,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                   {isTeacherRole && !isDemoSession && <Button variant="outline" onClick={() => setIsHomeworkDialogOpen(true)} className="flex items-center gap-2">
+                   {isTeacherRole && <Button variant="outline" onClick={() => setIsHomeworkDialogOpen(true)} className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4" />
                       {homeworkStatus.exists ? 'Edit Homework' : 'Set Homework'}
                     </Button>}

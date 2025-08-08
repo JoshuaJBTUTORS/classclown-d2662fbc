@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { LearningHubProvider } from '@/contexts/LearningHubContext';
-import { DemoProvider } from '@/contexts/DemoContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
 import LandingPage from './pages/LandingPage';
@@ -51,7 +50,7 @@ import SchoolProgress from './pages/SchoolProgress';
 import CreateAdmin from './pages/CreateAdmin';
 import Staff from './pages/Staff';
 import LessonSummaries from './pages/LessonSummaries';
-import DemoLogin from './pages/DemoLogin';
+
 
 function App() {
   const queryClient = new QueryClient();
@@ -59,8 +58,7 @@ function App() {
   return (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <DemoProvider>
-          <AuthProvider>
+        <AuthProvider>
             <OrganizationProvider>
               <LearningHubProvider>
               <Routes>
@@ -72,7 +70,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/interactive-signup" element={<InteractiveSignup />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/demo" element={<DemoLogin />} />
+                
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
                 <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
@@ -270,9 +268,8 @@ function App() {
               </Routes>
               <Toaster />
             </LearningHubProvider>
-          </OrganizationProvider>
-        </AuthProvider>
-      </DemoProvider>
+            </OrganizationProvider>
+          </AuthProvider>
     </QueryClientProvider>
   </BrowserRouter>
   );

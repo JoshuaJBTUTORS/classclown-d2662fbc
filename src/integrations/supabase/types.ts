@@ -507,7 +507,6 @@ export type Database = {
           description: string | null
           difficulty_level: string | null
           id: string
-          is_demo_data: boolean | null
           path_position: number | null
           prerequisites: Json | null
           price: number | null
@@ -524,7 +523,6 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
-          is_demo_data?: boolean | null
           path_position?: number | null
           prerequisites?: Json | null
           price?: number | null
@@ -541,7 +539,6 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
-          is_demo_data?: boolean | null
           path_position?: number | null
           prerequisites?: Json | null
           price?: number | null
@@ -593,113 +590,6 @@ export type Database = {
         }
         Relationships: []
       }
-      demo_configurations: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      demo_sessions: {
-        Row: {
-          admin_id: string
-          created_at: string
-          end_time: string
-          id: string
-          lesson_id: string
-          start_time: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          admin_id: string
-          created_at?: string
-          end_time: string
-          id?: string
-          lesson_id: string
-          start_time: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          admin_id?: string
-          created_at?: string
-          end_time?: string
-          id?: string
-          lesson_id?: string
-          start_time?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "demo_sessions_admin_id_fkey"
-            columns: ["admin_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "demo_sessions_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      demo_users: {
-        Row: {
-          created_at: string
-          demo_config_id: string | null
-          email: string
-          first_name: string
-          id: string
-          last_name: string
-          role: string
-        }
-        Insert: {
-          created_at?: string
-          demo_config_id?: string | null
-          email: string
-          first_name: string
-          id?: string
-          last_name: string
-          role: string
-        }
-        Update: {
-          created_at?: string
-          demo_config_id?: string | null
-          email?: string
-          first_name?: string
-          id?: string
-          last_name?: string
-          role?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "demo_users_demo_config_id_fkey"
-            columns: ["demo_config_id"]
-            isOneToOne: false
-            referencedRelation: "demo_configurations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       homework: {
         Row: {
           attachment_type: string | null
@@ -708,7 +598,6 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
-          is_demo_data: boolean | null
           lesson_id: string
           title: string
           updated_at: string | null
@@ -720,7 +609,6 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
-          is_demo_data?: boolean | null
           lesson_id: string
           title: string
           updated_at?: string | null
@@ -732,7 +620,6 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
-          is_demo_data?: boolean | null
           lesson_id?: string
           title?: string
           updated_at?: string | null
@@ -1214,7 +1101,6 @@ export type Database = {
           flexible_classroom_session_data: Json | null
           id: string
           instance_date: string | null
-          is_demo_data: boolean | null
           is_group: boolean
           is_recurring: boolean
           is_recurring_instance: boolean | null
@@ -1246,7 +1132,6 @@ export type Database = {
           flexible_classroom_session_data?: Json | null
           id?: string
           instance_date?: string | null
-          is_demo_data?: boolean | null
           is_group?: boolean
           is_recurring?: boolean
           is_recurring_instance?: boolean | null
@@ -1278,7 +1163,6 @@ export type Database = {
           flexible_classroom_session_data?: Json | null
           id?: string
           instance_date?: string | null
-          is_demo_data?: boolean | null
           is_group?: boolean
           is_recurring?: boolean
           is_recurring_instance?: boolean | null
@@ -1366,7 +1250,6 @@ export type Database = {
           emergency_contact_phone: string | null
           first_name: string
           id: string
-          is_demo_data: boolean | null
           last_name: string
           phone: string | null
           updated_at: string
@@ -1383,7 +1266,6 @@ export type Database = {
           emergency_contact_phone?: string | null
           first_name: string
           id?: string
-          is_demo_data?: boolean | null
           last_name: string
           phone?: string | null
           updated_at?: string
@@ -1400,7 +1282,6 @@ export type Database = {
           emergency_contact_phone?: string | null
           first_name?: string
           id?: string
-          is_demo_data?: boolean | null
           last_name?: string
           phone?: string | null
           updated_at?: string
@@ -1941,7 +1822,6 @@ export type Database = {
           first_name: string | null
           grade: string | null
           id: number
-          is_demo_data: boolean | null
           last_name: string | null
           parent_id: string | null
           phone: string | null
@@ -1960,7 +1840,6 @@ export type Database = {
           first_name?: string | null
           grade?: string | null
           id?: number
-          is_demo_data?: boolean | null
           last_name?: string | null
           parent_id?: string | null
           phone?: string | null
@@ -1979,7 +1858,6 @@ export type Database = {
           first_name?: string | null
           grade?: string | null
           id?: number
-          is_demo_data?: boolean | null
           last_name?: string | null
           parent_id?: string | null
           phone?: string | null
@@ -2317,7 +2195,6 @@ export type Database = {
           email: string
           first_name: string
           id: string
-          is_demo_data: boolean | null
           joined_date: string | null
           last_name: string
           normal_hourly_rate: number | null
@@ -2335,7 +2212,6 @@ export type Database = {
           email: string
           first_name: string
           id?: string
-          is_demo_data?: boolean | null
           joined_date?: string | null
           last_name: string
           normal_hourly_rate?: number | null
@@ -2353,7 +2229,6 @@ export type Database = {
           email?: string
           first_name?: string
           id?: string
-          is_demo_data?: boolean | null
           joined_date?: string | null
           last_name?: string
           normal_hourly_rate?: number | null

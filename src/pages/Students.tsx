@@ -40,8 +40,6 @@ import EditParentForm from '@/components/parents/EditParentForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { BulkImportDialog } from '@/components/students/BulkImportDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useDemoMode } from '@/contexts/DemoContext';
-import { DemoModeIndicator } from '@/components/demo/DemoModeIndicator';
 
 import { studentDataService } from '@/services/studentDataService';
 import { cn } from '@/lib/utils';
@@ -75,7 +73,6 @@ const Students = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const { isParent, isAdmin, isOwner, user, userRole, parentProfile } = useAuth();
-  const { isDemoMode } = useDemoMode();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -99,14 +96,6 @@ const Students = () => {
         .from('students')
         .select('*');
 
-      // Apply demo mode filtering
-      if (isDemoMode) {
-        studentsQuery = studentsQuery.eq('is_demo_data', true);
-        console.log('🎭 Demo mode: filtering for demo students only');
-      } else {
-        studentsQuery = studentsQuery.or('is_demo_data.is.null,is_demo_data.eq.false');
-        console.log('🏢 Production mode: excluding demo students');
-      }
 
       // If user is a parent, only show their own children
       if (isParent && parentProfile?.id) {
@@ -155,12 +144,6 @@ const Students = () => {
           .select('id, first_name, last_name, email, phone')
           .in('id', parentIds);
 
-        // Apply same demo filter to parents
-        if (isDemoMode) {
-          parentsQuery = parentsQuery.eq('is_demo_data', true);
-        } else {
-          parentsQuery = parentsQuery.or('is_demo_data.is.null,is_demo_data.eq.false');
-        }
 
         const { data: fetchedParents, error: parentsError } = await parentsQuery;
 
@@ -249,7 +232,7 @@ const Students = () => {
       console.log('User not authenticated, skipping fetch');
       setIsLoading(false);
     }
-  }, [user, userRole, parentProfile, isDemoMode]);
+  }, [user, userRole, parentProfile]);
 
   // Filter students based on search query
   useEffect(() => {
@@ -448,7 +431,6 @@ const Students = () => {
                 subtitle={isParent ? "Manage your children's profiles" : "Manage client accounts and family relationships"}
                 className="mb-2"
               />
-              {isDemoMode && <DemoModeIndicator variant="prominent" className="max-w-md" />}
             </div>
             <div className="flex gap-2">
               {(isAdmin || isOwner) && (

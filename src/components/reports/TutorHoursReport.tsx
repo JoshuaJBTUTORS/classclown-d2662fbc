@@ -9,7 +9,7 @@ import { Download, FileBarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import { getCompletedLessons } from '@/services/lessonCompletionService';
 import { supabase } from '@/integrations/supabase/client';
-import { useDemoMode } from '@/contexts/DemoContext';
+
 
 interface TutorHoursData {
   tutor_id: string;
@@ -32,31 +32,22 @@ interface TutorHoursReportProps {
 const TutorHoursReport: React.FC<TutorHoursReportProps> = ({ filters }) => {
   const [data, setData] = useState<TutorHoursData[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isDemoMode } = useDemoMode();
+  
 
   useEffect(() => {
     fetchTutorHoursData();
-  }, [filters, isDemoMode]);
+  }, [filters]);
 
   const fetchTutorHoursData = async () => {
     setLoading(true);
     try {
-      // Get completed lessons using the proper completion logic with demo filtering
-      const completedLessons = await getCompletedLessons({
-        ...filters,
-        isDemoMode
-      });
+      // Get completed lessons using the proper completion logic
+      const completedLessons = await getCompletedLessons(filters);
 
-      // Get tutor rates with demo filtering
+      // Get tutor rates
       let tutorQuery = supabase
         .from('tutors')
         .select('id, normal_hourly_rate');
-      
-      if (isDemoMode) {
-        tutorQuery = tutorQuery.eq('is_demo_data', true);
-      } else {
-        tutorQuery = tutorQuery.or('is_demo_data.is.null,is_demo_data.eq.false');
-      }
 
       const { data: tutorRates, error: ratesError } = await tutorQuery;
 

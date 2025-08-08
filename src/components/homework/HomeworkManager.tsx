@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { useDemoMode } from '@/contexts/DemoContext';
+
 import { 
   FileText, 
   Book, 
@@ -91,29 +91,23 @@ const HomeworkManager: React.FC = () => {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const { isDemoMode } = useDemoMode();
+  
   
   useEffect(() => {
     fetchHomeworks();
     fetchSubmissions();
-  }, [isDemoMode]);
+  }, []);
   
   const fetchHomeworks = async () => {
     setIsLoading(true);
     try {
       console.log('Fetching homework assignments with demo filtering...');
       
-      // Apply demo filtering and RLS policies
+      // Apply RLS policies
       let homeworkQuery = supabase
         .from('homework')
         .select('*')
         .order('created_at', { ascending: false });
-
-      if (isDemoMode) {
-        homeworkQuery = homeworkQuery.eq('is_demo_data', true);
-      } else {
-        homeworkQuery = homeworkQuery.or('is_demo_data.is.null,is_demo_data.eq.false');
-      }
 
       const { data: homeworkData, error: homeworkError } = await homeworkQuery;
 

@@ -202,10 +202,11 @@ const Calendar = () => {
           
           {/* Calendar Display - Full height */}
           <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4 mobile-scroll-container">
-            <CalendarDisplay
-              isLoading={isLoading}
-              events={events}
-            />
+        <CalendarDisplay 
+          isLoading={isLoading} 
+          events={events} 
+          onLessonsUpdated={handleRefresh}
+        />
           </div>
         </main>
       </div>
