@@ -15,16 +15,8 @@ serve(async (req) => {
   }
   
   try {
-    console.log("Starting create-payment-intent function for embedded checkout");
+    console.log("Starting create-payment-intent function for platform subscription");
     
-    const { courseId } = await req.json();
-    
-    if (!courseId) {
-      throw new Error("Course ID is required");
-    }
-
-    console.log("Processing payment intent for course:", courseId);
-
     // Create Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -52,34 +44,19 @@ serve(async (req) => {
 
     console.log("User authenticated:", user.email);
 
-    // Get course details including Stripe Price ID
-    const { data: course, error: courseError } = await supabaseClient
-      .from('courses')
+    // Check if user already has an active platform subscription
+    const { data: existingSubscription } = await supabaseClient
+      .from('platform_subscriptions')
       .select('*')
-      .eq('id', courseId)
-      .single();
-
-    if (courseError || !course) {
-      console.error("Course fetch error:", courseError);
-      throw new Error("Course not found");
-    }
-
-    console.log("Course found:", course.title, "Price:", course.price);
-
-    // Check if user already has an active subscription for this course
-    const { data: existingPurchase } = await supabaseClient
-      .from('course_purchases')
-      .select('*')
-      .eq('course_id', courseId)
       .eq('user_id', user.id)
-      .in('status', ['completed', 'trialing'])
+      .in('status', ['active', 'trialing'])
       .maybeSingle();
 
-    if (existingPurchase) {
+    if (existingSubscription) {
       return new Response(
         JSON.stringify({ 
-          error: "Course already purchased",
-          message: "You already have access to this course!"
+          error: "Platform subscription already exists",
+          message: "You already have access to all courses!"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -87,7 +64,7 @@ serve(async (req) => {
 
     // CRITICAL: Check for ANY previous trial usage to prevent trial abuse
     const { data: trialHistory } = await supabaseClient
-      .from('course_purchases')
+      .from('platform_subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .eq('has_used_trial', true);
@@ -137,16 +114,16 @@ serve(async (req) => {
       console.log("New customer created:", customerId);
     }
 
-    // Create Setup Intent for future subscription with trial
-    console.log("Creating Setup Intent for subscription with trial");
+    // Create Setup Intent for platform subscription with trial
+    console.log("Creating Setup Intent for platform subscription with trial");
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
       payment_method_types: ['card'],
       usage: 'off_session',
       metadata: {
-        course_id: courseId,
+        subscription_type: 'platform',
         user_id: user.id,
-        course_title: course.title,
+        platform_access: 'all_courses',
         trial_days: '3',
       },
     });
@@ -156,8 +133,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       client_secret: setupIntent.client_secret,
       customer_id: customerId,
-      course_title: course.title,
-      amount: course.price || 1299,
+      subscription_type: 'platform',
+      amount: 2855, // £28.55 in pence
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
