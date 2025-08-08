@@ -36,12 +36,24 @@ export const useCalendarData = ({
   // Add ref to track current fetch to prevent overlapping calls
   const currentFetchRef = useRef<Promise<void> | null>(null);
 
-  // Fixed: Create stable lessonIds memoization with null safety
+  // Optimized: Filter lesson IDs by date range and create stable memoization
   const lessonIds = useMemo(() => {
     if (!rawLessons || rawLessons.length === 0) {
       return [];
     }
-    return rawLessons.map(lesson => lesson?.id).filter(id => id != null);
+    
+    // Only get completion data for lessons in the current view (past 30 days to future 60 days)
+    const now = new Date();
+    const startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+    const endDate = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60 days from now
+    
+    return rawLessons
+      .filter(lesson => {
+        if (!lesson?.id || !lesson?.start_time) return false;
+        const lessonDate = new Date(lesson.start_time);
+        return lessonDate >= startDate && lessonDate <= endDate;
+      })
+      .map(lesson => lesson.id);
   }, [rawLessons]);
 
   // Wrap lesson completion hook in error boundary

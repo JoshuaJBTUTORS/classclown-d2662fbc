@@ -11,6 +11,8 @@ interface LessonCompletionData {
   };
 }
 
+const BATCH_SIZE = 50; // Maximum lessons per batch to avoid URL length issues
+
 export const useLessonCompletion = (lessonIds: string[]) => {
   const [completionData, setCompletionData] = useState<LessonCompletionData>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +27,49 @@ export const useLessonCompletion = (lessonIds: string[]) => {
     return validIds.slice().sort();
   }, [lessonIds?.length, lessonIds?.filter(id => id != null && id !== '').sort().join('|')]);
 
+  // Helper function to process a batch of lessons
+  const processBatch = async (batchIds: string[]) => {
+    const [attendanceData, homeworkData, lessonStudentData] = await Promise.all([
+      supabase
+        .from('lesson_attendance')
+        .select('lesson_id, student_id')
+        .in('lesson_id', batchIds),
+      supabase
+        .from('homework')
+        .select('lesson_id')
+        .in('lesson_id', batchIds),
+      supabase
+        .from('lesson_students')
+        .select('lesson_id, student_id')
+        .in('lesson_id', batchIds)
+    ]);
+
+    // Check for errors
+    if (attendanceData.error) throw attendanceData.error;
+    if (homeworkData.error) throw homeworkData.error;
+    if (lessonStudentData.error) throw lessonStudentData.error;
+
+    // Process the data for this batch
+    const batchCompletionData: LessonCompletionData = {};
+
+    batchIds.forEach(lessonId => {
+      const studentCount = lessonStudentData.data?.filter(ls => ls.lesson_id === lessonId).length || 0;
+      const attendanceCount = attendanceData.data?.filter(att => att.lesson_id === lessonId).length || 0;
+      const hasHomework = homeworkData.data?.some(hw => hw.lesson_id === lessonId) || false;
+
+      const isCompleted = studentCount > 0 && attendanceCount === studentCount && hasHomework;
+
+      batchCompletionData[lessonId] = {
+        isCompleted,
+        attendanceCount,
+        totalStudents: studentCount,
+        hasHomework
+      };
+    });
+
+    return batchCompletionData;
+  };
+
   useEffect(() => {
     if (!stableLessonIds || stableLessonIds.length === 0) {
       setCompletionData({});
@@ -35,50 +80,40 @@ export const useLessonCompletion = (lessonIds: string[]) => {
     const fetchCompletionData = async () => {
       setIsLoading(true);
       try {
-        // Fetch attendance data for all lessons (RLS will filter automatically)
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from('lesson_attendance')
-          .select('lesson_id, student_id')
-          .in('lesson_id', stableLessonIds);
+        // If lesson count is within batch size, process normally
+        if (stableLessonIds.length <= BATCH_SIZE) {
+          const batchData = await processBatch(stableLessonIds);
+          console.log('Lesson completion data processed (single batch):', batchData);
+          setCompletionData(batchData);
+          return;
+        }
 
-        if (attendanceError) throw attendanceError;
+        // Split into batches for large datasets
+        const allCompletionData: LessonCompletionData = {};
+        const batches = [];
+        
+        for (let i = 0; i < stableLessonIds.length; i += BATCH_SIZE) {
+          batches.push(stableLessonIds.slice(i, i + BATCH_SIZE));
+        }
 
-        // Fetch homework data for all lessons (RLS will filter automatically)
-        const { data: homeworkData, error: homeworkError } = await supabase
-          .from('homework')
-          .select('lesson_id')
-          .in('lesson_id', stableLessonIds);
+        console.log(`Processing ${stableLessonIds.length} lessons in ${batches.length} batches`);
 
-        if (homeworkError) throw homeworkError;
+        // Process batches sequentially to avoid overwhelming the API
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
+          console.log(`Processing batch ${i + 1}/${batches.length} with ${batch.length} lessons`);
+          
+          try {
+            const batchData = await processBatch(batch);
+            Object.assign(allCompletionData, batchData);
+          } catch (batchError) {
+            console.error(`Error processing batch ${i + 1}:`, batchError);
+            // Continue with other batches even if one fails
+          }
+        }
 
-        // Fetch student count for each lesson (RLS will filter automatically)
-        const { data: lessonStudentData, error: lessonStudentError } = await supabase
-          .from('lesson_students')
-          .select('lesson_id, student_id')
-          .in('lesson_id', stableLessonIds);
-
-        if (lessonStudentError) throw lessonStudentError;
-
-        // Process the data
-        const newCompletionData: LessonCompletionData = {};
-
-        stableLessonIds.forEach(lessonId => {
-          const studentCount = lessonStudentData?.filter(ls => ls.lesson_id === lessonId).length || 0;
-          const attendanceCount = attendanceData?.filter(att => att.lesson_id === lessonId).length || 0;
-          const hasHomework = homeworkData?.some(hw => hw.lesson_id === lessonId) || false;
-
-          const isCompleted = studentCount > 0 && attendanceCount === studentCount && hasHomework;
-
-          newCompletionData[lessonId] = {
-            isCompleted,
-            attendanceCount,
-            totalStudents: studentCount,
-            hasHomework
-          };
-        });
-
-        console.log('Lesson completion data processed with RLS filtering:', newCompletionData);
-        setCompletionData(newCompletionData);
+        console.log('All lesson completion data processed with batch processing:', allCompletionData);
+        setCompletionData(allCompletionData);
       } catch (error) {
         console.error('Error fetching lesson completion data:', error);
         // Set empty data on error to prevent infinite loops
