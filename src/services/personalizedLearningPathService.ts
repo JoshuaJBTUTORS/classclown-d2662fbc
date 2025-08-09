@@ -62,6 +62,37 @@ const CHEMISTRY_QUESTION_MODULE_MAPPING: QuestionModuleMapping = {
   18: 'using-resources', // Question 18: Using Resources
 };
 
+// Physics question-to-module mapping based on module order
+const PHYSICS_QUESTION_MODULE_MAPPING: QuestionModuleMapping = {
+  1: 'forces-motion', // Questions 1-3: Forces and Motion
+  2: 'forces-motion',
+  3: 'forces-motion',
+  4: 'forces-matter', // Questions 4-6: Forces and Matter
+  5: 'forces-matter',
+  6: 'forces-matter',
+  7: 'waves', // Questions 7-9: Waves
+  8: 'waves',
+  9: 'waves',
+  10: 'energy-resources', // Questions 10-12: Energy Resources and Energy Transfer
+  11: 'energy-resources',
+  12: 'energy-resources',
+  13: 'electricity', // Questions 13-15: Electricity
+  14: 'electricity',
+  15: 'electricity',
+  16: 'magnetism-electromagnetism', // Questions 16-18: Magnetism and Electromagnetism
+  17: 'magnetism-electromagnetism',
+  18: 'magnetism-electromagnetism',
+  19: 'particle-model-matter', // Questions 19-21: Particle Model of Matter
+  20: 'particle-model-matter',
+  21: 'particle-model-matter',
+  22: 'atomic-structure', // Questions 22-24: Atomic Structure
+  23: 'atomic-structure',
+  24: 'atomic-structure',
+  25: 'space-physics', // Questions 25-27: Space Physics
+  26: 'space-physics',
+  27: 'space-physics'
+};
+
 // Map module names to topic keywords for matching
 const MODULE_TOPIC_MAPPING: { [key: string]: string[] } = {
   // Common
@@ -86,7 +117,18 @@ const MODULE_TOPIC_MAPPING: { [key: string]: string[] } = {
   'organic-chemistry': ['organic', 'chemistry', 'carbon', 'hydrocarbons', 'alcohols', 'polymers'],
   'chemical-analysis': ['chemical', 'analysis', 'tests', 'chromatography', 'identification', 'flame'],
   'chemistry-atmosphere': ['chemistry', 'atmosphere', 'pollutants', 'greenhouse', 'carbon', 'climate'],
-  'using-resources': ['using', 'resources', 'sustainable', 'earth', 'extraction', 'recycling']
+  'using-resources': ['using', 'resources', 'sustainable', 'earth', 'extraction', 'recycling'],
+  
+  // Physics modules
+  'forces-motion': ['forces', 'motion', 'speed', 'velocity', 'acceleration', 'friction', 'momentum'],
+  'forces-matter': ['forces', 'matter', 'pressure', 'density', 'upthrust', 'hooke', 'elasticity'],
+  'waves': ['waves', 'sound', 'light', 'electromagnetic', 'frequency', 'wavelength', 'amplitude'],
+  'energy-resources': ['energy', 'resources', 'renewable', 'power', 'transfer', 'conservation', 'efficiency'],
+  'electricity': ['electricity', 'current', 'voltage', 'resistance', 'ohm', 'circuit', 'power'],
+  'magnetism-electromagnetism': ['magnetism', 'electromagnetism', 'magnetic', 'field', 'solenoid', 'motor', 'generator'],
+  'particle-model-matter': ['particle', 'model', 'matter', 'kinetic', 'theory', 'gas', 'solid', 'liquid'],
+  'atomic-structure': ['atomic', 'structure', 'nucleus', 'proton', 'neutron', 'electron', 'isotope', 'radioactivity'],
+  'space-physics': ['space', 'physics', 'universe', 'solar', 'system', 'planet', 'star', 'galaxy']
 };
 
 export const personalizedLearningPathService = {
@@ -471,7 +513,27 @@ export const personalizedLearningPathService = {
   /**
    * Determine course subject from modules to select appropriate question mapping
    */
-  determineCourseSubject: (modules: CourseModule[]): 'biology' | 'chemistry' | 'unknown' => {
+  determineCourseSubject: (modules: CourseModule[]): 'physics' | 'biology' | 'chemistry' | 'unknown' => {
+    // Look for physics-specific module keywords first
+    const hasPhysicsModules = modules.some(module => {
+      const moduleKey = personalizedLearningPathService.getModuleKeyFromModule(module);
+      return moduleKey && [
+        'forces-motion',
+        'forces-matter',
+        'waves',
+        'energy-resources',
+        'electricity',
+        'magnetism-electromagnetism',
+        'particle-model-matter',
+        'atomic-structure',
+        'space-physics'
+      ].includes(moduleKey);
+    });
+
+    if (hasPhysicsModules) {
+      return 'physics';
+    }
+
     // Look for chemistry-specific module keywords
     const hasChemistryModules = modules.some(module => {
       const moduleKey = personalizedLearningPathService.getModuleKeyFromModule(module);
@@ -517,8 +579,10 @@ export const personalizedLearningPathService = {
   /**
    * Get the appropriate question-module mapping based on course subject
    */
-  getQuestionMappingForSubject: (subject: 'biology' | 'chemistry' | 'unknown'): QuestionModuleMapping => {
+  getQuestionMappingForSubject: (subject: 'physics' | 'biology' | 'chemistry' | 'unknown'): QuestionModuleMapping => {
     switch (subject) {
+      case 'physics':
+        return PHYSICS_QUESTION_MODULE_MAPPING;
       case 'chemistry':
         return CHEMISTRY_QUESTION_MODULE_MAPPING;
       case 'biology':
