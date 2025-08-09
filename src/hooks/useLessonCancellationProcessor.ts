@@ -56,22 +56,12 @@ export const useLessonCancellationProcessor = () => {
 
   const cancelLesson = async (lessonId: string) => {
     try {
-      // Get current lesson data to increment cancelled_count
-      const { data: currentLesson, error: fetchError } = await supabase
-        .from('lessons')
-        .select('cancelled_count')
-        .eq('id', lessonId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
       // Update lesson status to cancelled
       const { error: updateError } = await supabase
         .from('lessons')
         .update({
           status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-          cancelled_count: (currentLesson?.cancelled_count || 0) + 1
+          cancelled_at: new Date().toISOString()
         })
         .eq('id', lessonId);
 

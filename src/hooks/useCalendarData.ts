@@ -26,7 +26,6 @@ interface CalendarEvent {
     isTrial?: boolean;
     status: string;
     cancelled_at?: string;
-    cancelled_count?: number;
   };
 }
 
@@ -57,8 +56,7 @@ export const useCalendarData = () => {
           recurring_lesson_id,
           is_trial,
           status,
-          cancelled_at,
-          cancelled_count
+          cancelled_at
         `)
         .order('start_time', { ascending: true });
 
@@ -81,12 +79,16 @@ export const useCalendarData = () => {
           .single();
 
         if (studentData) {
-          query = query.in('id', 
-            supabase
-              .from('lesson_students')
-              .select('lesson_id')
-              .eq('student_id', studentData.id)
-          );
+          // Get lesson IDs for this student
+          const { data: lessonStudentData } = await supabase
+            .from('lesson_students')
+            .select('lesson_id')
+            .eq('student_id', studentData.id);
+
+          if (lessonStudentData && lessonStudentData.length > 0) {
+            const lessonIds = lessonStudentData.map(ls => ls.lesson_id);
+            query = query.in('id', lessonIds);
+          }
         }
       }
 
@@ -143,8 +145,7 @@ export const useCalendarData = () => {
             originalLessonId: lesson.recurring_lesson_id,
             isTrial: lesson.is_trial || false,
             status: lesson.status || 'scheduled',
-            cancelled_at: lesson.cancelled_at,
-            cancelled_count: lesson.cancelled_count
+            cancelled_at: lesson.cancelled_at
           }
         };
       }) || [];
