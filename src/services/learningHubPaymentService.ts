@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export const learningHubPaymentService = {
@@ -180,9 +179,9 @@ export const learningHubPaymentService = {
       };
 
       return {
-        hasActiveSubscription: accessInfo.hasAccess,
+        hasActiveSubscription: accessInfo.hasAccess || false,
         subscription: accessInfo.subscription,
-        needsPaymentUpdate: accessInfo.isInGracePeriod === true || false,
+        needsPaymentUpdate: (accessInfo.isInGracePeriod === true) || false,
         gracePeriodInfo: gracePeriodInfo
       };
     } catch (error) {
