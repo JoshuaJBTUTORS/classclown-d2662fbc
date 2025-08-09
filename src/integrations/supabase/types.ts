@@ -317,14 +317,58 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_content_blocks: {
+        Row: {
+          block_type: string
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          position: number
+          post_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          block_type: string
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          position: number
+          post_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          block_type?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          position?: number
+          post_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_content_blocks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_generation_requests: {
         Row: {
           category_id: string | null
+          content_blocks: Json | null
           created_at: string | null
           created_by: string | null
           error_message: string | null
           generated_post_id: string | null
           id: string
+          quality_checks: Json | null
+          seo_analysis: Json | null
           status: string
           target_keywords: string[] | null
           topic: string
@@ -332,11 +376,14 @@ export type Database = {
         }
         Insert: {
           category_id?: string | null
+          content_blocks?: Json | null
           created_at?: string | null
           created_by?: string | null
           error_message?: string | null
           generated_post_id?: string | null
           id?: string
+          quality_checks?: Json | null
+          seo_analysis?: Json | null
           status?: string
           target_keywords?: string[] | null
           topic: string
@@ -344,11 +391,14 @@ export type Database = {
         }
         Update: {
           category_id?: string | null
+          content_blocks?: Json | null
           created_at?: string | null
           created_by?: string | null
           error_message?: string | null
           generated_post_id?: string | null
           id?: string
+          quality_checks?: Json | null
+          seo_analysis?: Json | null
           status?: string
           target_keywords?: string[] | null
           topic?: string
@@ -365,6 +415,47 @@ export type Database = {
           {
             foreignKeyName: "blog_generation_requests_generated_post_id_fkey"
             columns: ["generated_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_post_sources: {
+        Row: {
+          created_at: string | null
+          credibility_score: number | null
+          id: string
+          post_id: string | null
+          source_description: string | null
+          source_title: string | null
+          source_type: string
+          source_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credibility_score?: number | null
+          id?: string
+          post_id?: string | null
+          source_description?: string | null
+          source_title?: string | null
+          source_type: string
+          source_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credibility_score?: number | null
+          id?: string
+          post_id?: string | null
+          source_description?: string | null
+          source_title?: string | null
+          source_type?: string
+          source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_sources_post_id_fkey"
+            columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "blog_posts"
             referencedColumns: ["id"]
@@ -414,10 +505,13 @@ export type Database = {
           featured_image_url: string | null
           id: string
           published_at: string | null
+          readability_score: number | null
+          seo_score: number | null
           slug: string
           status: string
           title: string
           updated_at: string | null
+          word_count: number | null
         }
         Insert: {
           category_id?: string | null
@@ -428,10 +522,13 @@ export type Database = {
           featured_image_url?: string | null
           id?: string
           published_at?: string | null
+          readability_score?: number | null
+          seo_score?: number | null
           slug: string
           status?: string
           title: string
           updated_at?: string | null
+          word_count?: number | null
         }
         Update: {
           category_id?: string | null
@@ -442,10 +539,13 @@ export type Database = {
           featured_image_url?: string | null
           id?: string
           published_at?: string | null
+          readability_score?: number | null
+          seo_score?: number | null
           slug?: string
           status?: string
           title?: string
           updated_at?: string | null
+          word_count?: number | null
         }
         Relationships: [
           {
