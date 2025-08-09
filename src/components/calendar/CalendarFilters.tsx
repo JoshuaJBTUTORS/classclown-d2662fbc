@@ -1,12 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Filter, Users, GraduationCap, BookOpen, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Student } from '@/types/student';
 import { Tutor } from '@/types/tutor';
 import { LESSON_SUBJECTS } from '@/constants/subjects';
+import { useStudentData } from '@/hooks/useStudentData';
 
 interface CalendarFiltersProps {
   selectedStudents: string[];
@@ -35,7 +36,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
   onLessonTypeFilterChange,
   onClearFilters
 }) => {
-  const [students, setStudents] = useState<Student[]>([]);
+  const { students, isLoading: studentsLoading } = useStudentData();
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,28 +49,6 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     try {
       setIsLoading(true);
       
-      // Fetch students with required parent_id field
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, email, status, parent_id')
-        .eq('status', 'active')
-        .order('first_name');
-
-      if (studentsError) throw studentsError;
-
-      // Transform data to match Student interface
-      const formattedStudents: Student[] = (studentsData || []).map(student => ({
-        id: student.id,
-        first_name: student.first_name,
-        last_name: student.last_name,
-        email: student.email || '',
-        status: student.status,
-        parent_id: student.parent_id || '', // Ensure parent_id is always present
-        phone: '',
-        subjects: '',
-        name: `${student.first_name} ${student.last_name}`
-      }));
-
       // Fetch tutors with status field included
       const { data: tutorsData, error: tutorsError } = await supabase
         .from('tutors')
@@ -111,7 +90,6 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         setAdmins(adminsData || []);
       }
 
-      setStudents(formattedStudents);
       setTutors(tutorsData || []);
     } catch (error) {
       console.error('Error fetching filter data:', error);
@@ -170,7 +148,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
 
   const totalFiltersActive = selectedStudents.length + selectedTutors.length + selectedSubjects.length + selectedAdminDemos.length + (selectedLessonType !== 'All Lessons' ? 1 : 0);
 
-  if (isLoading) {
+  if (isLoading || studentsLoading) {
     return (
       <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
         <div className="flex items-center gap-2">
