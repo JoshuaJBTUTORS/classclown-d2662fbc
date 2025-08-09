@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ interface BlogGenerationRequest {
 }
 
 const BlogManagement = () => {
+  const navigate = useNavigate();
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [generateForm, setGenerateForm] = useState({
     topic: '',
@@ -328,7 +330,11 @@ const BlogManagement = () => {
                         <Button size="sm" variant="outline">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => navigate(`/blog-management/edit/${post.id}`)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         {post.status === 'draft' && (

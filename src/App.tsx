@@ -34,6 +34,7 @@ import LearningHubLayout from './components/learningHub/LearningHubLayout';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import BlogManagement from './pages/BlogManagement';
+import BlogEdit from './pages/BlogEdit';
 import MainLayout from './components/layout/MainLayout';
 import LearningHubDashboard from './pages/LearningHubDashboard';
 import LearningHubMyCourses from './pages/LearningHubMyCourses';
@@ -175,6 +176,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <BlogManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="blog-management/edit/:id" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <BlogEdit />
                       </ProtectedRoute>
                     } 
                   />
