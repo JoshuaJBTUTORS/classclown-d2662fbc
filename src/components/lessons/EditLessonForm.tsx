@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Check, Loader2, CheckCircle, Repeat, Clock } from 'lucide-react';
+import { CalendarIcon, Loader2, CheckCircle, Repeat, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
@@ -49,6 +49,7 @@ import { useAvailabilityCheck } from '@/hooks/useAvailabilityCheck';
 import { useStudentData } from '@/hooks/useStudentData';
 import AvailabilityStatus from './AvailabilityStatus';
 import RecurringEditConfirmation from './RecurringEditConfirmation';
+import MultiSelectStudents from './MultiSelectStudents';
 import { 
   EditScope, 
   updateSingleRecurringInstance, 
@@ -261,12 +262,20 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
     }
   };
 
+  // Handler functions for MultiSelectStudents
   const handleStudentSelect = (studentId: number) => {
-    console.log('Selecting/deselecting student:', studentId);
+    console.log('Selecting student:', studentId);
     setSelectedStudents(prev => {
-      const newSelection = prev.includes(studentId) 
-        ? prev.filter(id => id !== studentId)
-        : [...prev, studentId];
+      const newSelection = [...prev, studentId];
+      console.log('New student selection:', newSelection);
+      return newSelection;
+    });
+  };
+
+  const handleStudentRemove = (studentId: number) => {
+    console.log('Removing student:', studentId);
+    setSelectedStudents(prev => {
+      const newSelection = prev.filter(id => id !== studentId);
       console.log('New student selection:', newSelection);
       return newSelection;
     });
@@ -550,47 +559,27 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                   />
                 </div>
                 
+                {/* Student Selection using MultiSelectStudents */}
                 <FormField
                   control={form.control}
                   name="isGroup"
                   render={() => (
                     <FormItem>
                       <FormLabel>Students</FormLabel>
-                      <div className="border rounded-md p-2 max-h-48 overflow-y-auto">
-                        {studentsLoading ? (
-                          <p className="text-sm text-muted-foreground py-2 px-1">Loading students...</p>
-                        ) : students.length === 0 ? (
-                          <p className="text-sm text-muted-foreground py-2 px-1">No students available</p>
-                        ) : (
-                          students.map((student) => {
-                            const studentId = typeof student.id === 'string' 
-                              ? parseInt(student.id, 10) 
-                              : student.id;
-                              
-                            const isSelected = selectedStudents.includes(studentId);
-                            
-                            return (
-                              <div
-                                key={student.id}
-                                className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                                onClick={() => handleStudentSelect(studentId)}
-                              >
-                                <div className={`w-4 h-4 border rounded flex items-center justify-center
-                                  ${isSelected ? 'bg-primary border-primary' : 'border-gray-300'}`}
-                                >
-                                  {isSelected && (
-                                    <Check className="h-3 w-3 text-white" />
-                                  )}
-                                </div>
-                                <span>{student.first_name} {student.last_name}</span>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
+                      <FormControl>
+                        <MultiSelectStudents
+                          students={students}
+                          selectedStudents={selectedStudents}
+                          onStudentSelect={handleStudentSelect}
+                          onStudentRemove={handleStudentRemove}
+                          placeholder={studentsLoading ? "Loading students..." : "Select students..."}
+                          disabled={studentsLoading}
+                        />
+                      </FormControl>
                       {selectedStudents.length === 0 && form.getValues('isGroup') && (
                         <p className="text-sm font-medium text-destructive">Select at least one student for group sessions</p>
                       )}
+                      <FormMessage />
                     </FormItem>
                   )}
                 />

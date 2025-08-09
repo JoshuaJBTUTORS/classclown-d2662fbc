@@ -14,7 +14,7 @@ export const useStudentData = () => {
       const { data, error } = await supabase
         .from('students')
         .select('*')
-        .eq('status', 'active')
+        .or('status.eq.active,status.is.null,status.eq.')
         .order('last_name', { ascending: true });
 
       if (error) throw error;
