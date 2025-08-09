@@ -70,7 +70,6 @@ export const useCalendarData = ({
         // Get completion status for this lesson
         const completionInfo = completionData[lesson.id];
         const isCompleted = completionInfo?.isCompleted || false;
-        const isCancelled = lesson.status === 'cancelled';
 
         // Get subject-specific class for proper coloring
         const subjectClass = getSubjectClass(lesson.subject, lesson.lesson_type);
@@ -81,9 +80,6 @@ export const useCalendarData = ({
         }
         if (isCompleted) {
           className += ' completed-event';
-        }
-        if (isCancelled) {
-          className += ' cancelled-event';
         }
         
         return {
@@ -114,9 +110,6 @@ export const useCalendarData = ({
             })) || [],
             isCompleted: isCompleted,
             completionDetails: completionInfo,
-            isCancelled: isCancelled,
-            cancelledAt: lesson.cancelled_at,
-            cancelledCount: lesson.cancelled_count || 0,
             eventType: 'lesson'
           }
         };

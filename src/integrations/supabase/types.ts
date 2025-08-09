@@ -1114,8 +1114,6 @@ export type Database = {
       lessons: {
         Row: {
           attendance_completed: boolean | null
-          cancelled_at: string | null
-          cancelled_count: number | null
           completion_date: string | null
           created_at: string | null
           description: string | null
@@ -1147,8 +1145,6 @@ export type Database = {
         }
         Insert: {
           attendance_completed?: boolean | null
-          cancelled_at?: string | null
-          cancelled_count?: number | null
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
@@ -1180,8 +1176,6 @@ export type Database = {
         }
         Update: {
           attendance_completed?: boolean | null
-          cancelled_at?: string | null
-          cancelled_count?: number | null
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
