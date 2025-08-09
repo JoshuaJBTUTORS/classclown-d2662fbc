@@ -108,9 +108,9 @@ const LearningHub: React.FC = () => {
     return filtered;
   }, [courses, searchTerm, selectedSubject, selectedStage, sortBy]);
 
-  // Get unique subjects for filter
-  const subjects = React.useMemo(() => {
-    const uniqueSubjects = [...new Set(courses.map(course => course.subject).filter(Boolean))];
+  // Get unique subjects for filter - fix TypeScript error by properly typing the array
+  const subjects: string[] = React.useMemo(() => {
+    const uniqueSubjects = [...new Set(courses.map(course => course.subject).filter((subject): subject is string => Boolean(subject)))];
     return uniqueSubjects;
   }, [courses]);
 
@@ -241,7 +241,7 @@ const LearningHub: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Subjects</SelectItem>
                   {subjects.map(subject => (
-                    <SelectItem key={subject} value={subject!}>{subject}</SelectItem>
+                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
