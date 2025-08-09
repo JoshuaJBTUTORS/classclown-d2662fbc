@@ -2,6 +2,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { paymentService } from '@/services/paymentService';
+import { learningHubService } from '@/services/learningHubService';
 import { useAuth } from '@/contexts/AuthContext';
 import { AlertTriangle, Lock, CreditCard, Clock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,6 +19,13 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
   children
 }) => {
   const { user, isOwner } = useAuth();
+
+  // Fetch course details to check status
+  const { data: course } = useQuery({
+    queryKey: ['course', courseId],
+    queryFn: () => learningHubService.getCourseById(courseId),
+    enabled: !!courseId,
+  });
 
   const { data: hasPurchased, isLoading } = useQuery({
     queryKey: ['course-purchase', courseId, user?.id],
@@ -48,6 +56,23 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
           </CardTitle>
           <CardDescription>
             Please sign in to access this course
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  // Check if course is draft - block access for everyone except owners
+  if (course?.status === 'draft' && !isOwner) {
+    return (
+      <Card className="max-w-md mx-auto mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            Course Not Available
+          </CardTitle>
+          <CardDescription>
+            This course is currently in development and not yet available
           </CardDescription>
         </CardHeader>
       </Card>
