@@ -29,7 +29,7 @@ export const learningHubPaymentService = {
     }
   },
 
-  // Create Learning Hub subscription
+  // Create Learning Hub subscription (redirect-based)
   createLearningHubSubscription: async (): Promise<{ url: string }> => {
     console.log('Creating Learning Hub subscription');
     
@@ -45,6 +45,53 @@ export const learningHubPaymentService = {
       return data;
     } catch (error) {
       console.error('Learning Hub subscription service error:', error);
+      throw error;
+    }
+  },
+
+  // Create Learning Hub payment intent for embedded checkout
+  createLearningHubPaymentIntent: async (): Promise<{ 
+    clientSecret: string; 
+    customerId: string; 
+    trialEligible: boolean;
+    amount: number;
+  }> => {
+    console.log('Creating Learning Hub payment intent for embedded checkout');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-learning-hub-payment-intent');
+      
+      if (error) {
+        console.error('Payment intent creation error:', error);
+        throw error;
+      }
+      
+      console.log('Learning Hub payment intent created successfully');
+      return data;
+    } catch (error) {
+      console.error('Learning Hub payment intent service error:', error);
+      throw error;
+    }
+  },
+
+  // Complete Learning Hub subscription setup after payment
+  completeLearningHubSubscription: async (setupIntentId: string): Promise<{ success: boolean; message?: string }> => {
+    console.log('Completing Learning Hub subscription setup');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('complete-learning-hub-subscription', {
+        body: { setupIntentId }
+      });
+      
+      if (error) {
+        console.error('Subscription completion error:', error);
+        throw error;
+      }
+      
+      console.log('Learning Hub subscription completed successfully');
+      return data;
+    } catch (error) {
+      console.error('Learning Hub subscription completion service error:', error);
       throw error;
     }
   },
