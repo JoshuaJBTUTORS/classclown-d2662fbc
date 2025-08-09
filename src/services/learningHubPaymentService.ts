@@ -157,7 +157,7 @@ export const learningHubPaymentService = {
     };
   }> => {
     try {
-      const accessInfo = await this.checkLearningHubAccess();
+      const accessInfo = await learningHubPaymentService.checkLearningHubAccess();
       
       if (!accessInfo) {
         return {
