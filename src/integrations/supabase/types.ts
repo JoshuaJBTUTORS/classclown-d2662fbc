@@ -506,9 +506,12 @@ export type Database = {
           id: string
           published_at: string | null
           readability_score: number | null
+          seo_description: string | null
           seo_score: number | null
+          seo_title: string | null
           slug: string
           status: string
+          tags: string[] | null
           title: string
           updated_at: string | null
           word_count: number | null
@@ -523,9 +526,12 @@ export type Database = {
           id?: string
           published_at?: string | null
           readability_score?: number | null
+          seo_description?: string | null
           seo_score?: number | null
+          seo_title?: string | null
           slug: string
           status?: string
+          tags?: string[] | null
           title: string
           updated_at?: string | null
           word_count?: number | null
@@ -540,9 +546,12 @@ export type Database = {
           id?: string
           published_at?: string | null
           readability_score?: number | null
+          seo_description?: string | null
           seo_score?: number | null
+          seo_title?: string | null
           slug?: string
           status?: string
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
           word_count?: number | null
