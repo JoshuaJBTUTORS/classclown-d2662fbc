@@ -66,6 +66,7 @@ const BlogManagement = () => {
   const { data: blogPosts, isLoading: postsLoading } = useQuery({
     queryKey: ['blog-posts'],
     queryFn: async () => {
+      // Try the enhanced query first
       const { data, error } = await supabase
         .from('blog_posts')
         .select(`
@@ -84,28 +85,26 @@ const BlogManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // Handle case where new columns don't exist yet
-        if (error.message.includes('does not exist')) {
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('blog_posts')
-            .select(`
-              id,
-              title,
-              slug,
-              excerpt,
-              status,
-              published_at,
-              created_at,
-              category:blog_categories(name, slug)
-            `)
-            .order('created_at', { ascending: false });
-          
-          if (fallbackError) throw fallbackError;
-          return fallbackData as BlogPost[];
-        }
-        throw error;
+        // Fallback to basic query if enhanced columns don't exist
+        console.warn('Enhanced columns not available, using fallback query:', error.message);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('blog_posts')
+          .select(`
+            id,
+            title,
+            slug,
+            excerpt,
+            status,
+            published_at,
+            created_at,
+            category:blog_categories(name, slug)
+          `)
+          .order('created_at', { ascending: false });
+        
+        if (fallbackError) throw fallbackError;
+        return (fallbackData || []) as BlogPost[];
       }
-      return data as BlogPost[];
+      return ((data as unknown) || []) as BlogPost[];
     },
   });
 
@@ -127,6 +126,7 @@ const BlogManagement = () => {
   const { data: generationRequests } = useQuery({
     queryKey: ['blog-generation-requests'],
     queryFn: async () => {
+      // Try the enhanced query first
       const { data, error } = await supabase
         .from('blog_generation_requests')
         .select(`
@@ -148,28 +148,26 @@ const BlogManagement = () => {
         .limit(10);
 
       if (error) {
-        // Handle case where new columns don't exist yet
-        if (error.message.includes('does not exist')) {
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('blog_generation_requests')
-            .select(`
-              id,
-              topic,
-              target_keywords,
-              status,
-              created_at,
-              error_message,
-              category:blog_categories(name)
-            `)
-            .order('created_at', { ascending: false })
-            .limit(10);
-          
-          if (fallbackError) throw fallbackError;
-          return fallbackData as BlogGenerationRequest[];
-        }
-        throw error;
+        // Fallback to basic query if enhanced columns don't exist
+        console.warn('Enhanced columns not available, using fallback query:', error.message);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('blog_generation_requests')
+          .select(`
+            id,
+            topic,
+            target_keywords,
+            status,
+            created_at,
+            error_message,
+            category:blog_categories(name)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (fallbackError) throw fallbackError;
+        return (fallbackData || []) as BlogGenerationRequest[];
       }
-      return data as BlogGenerationRequest[];
+      return ((data as unknown) || []) as BlogGenerationRequest[];
     },
   });
 
