@@ -159,6 +159,16 @@ export const learningHubPaymentService = {
     try {
       const accessInfo = await this.checkLearningHubAccess();
       
+      if (!accessInfo) {
+        return {
+          hasActiveSubscription: false,
+          needsPaymentUpdate: false,
+          gracePeriodInfo: {
+            isInGracePeriod: false
+          }
+        };
+      }
+      
       const gracePeriodInfo = accessInfo.isInGracePeriod ? {
         isInGracePeriod: true,
         gracePeriodEnd: accessInfo.gracePeriodEnd,
@@ -179,7 +189,10 @@ export const learningHubPaymentService = {
       console.error('Error getting subscription status:', error);
       return {
         hasActiveSubscription: false,
-        needsPaymentUpdate: false
+        needsPaymentUpdate: false,
+        gracePeriodInfo: {
+          isInGracePeriod: false
+        }
       };
     }
   }
