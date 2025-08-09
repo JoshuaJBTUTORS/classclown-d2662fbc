@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { useAuth } from '@/contexts/AuthContext';
 import CourseCard from '@/components/learningHub/CourseCard';
-import SubscriptionManager from '@/components/learningHub/SubscriptionManager';
+import LearningHubSubscriptionManager from '@/components/learningHub/LearningHubSubscriptionManager';
 import { BookOpen, Brain, Calendar, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -35,8 +35,13 @@ const LearningHubDashboard = () => {
           Welcome to Learning Hub
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Discover courses, track your progress, and accelerate your learning journey
+          Unlimited access to all courses for just £25/month
         </p>
+        <div className="mt-6 flex justify-center">
+          <div className="bg-primary/10 border border-primary/20 rounded-lg px-6 py-3">
+            <p className="text-primary font-semibold">🎉 7-day free trial available</p>
+          </div>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -58,7 +63,7 @@ const LearningHubDashboard = () => {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-sm font-medium text-gray-600">Your Progress</p>
                 <p className="text-2xl font-bold">{userProgress?.completedCourses || 0}</p>
               </div>
             </div>
@@ -91,7 +96,7 @@ const LearningHubDashboard = () => {
       </div>
 
       {/* Subscription Management */}
-      <SubscriptionManager />
+      <LearningHubSubscriptionManager />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -99,16 +104,16 @@ const LearningHubDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
-              My Courses
+              Browse Courses
             </CardTitle>
             <CardDescription>
-              Continue learning with your enrolled courses
+              Explore all available courses in our library
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link to="/learning-hub/my-courses">
-                View My Courses
+              <Link to="/learning-hub/library">
+                View Course Library
               </Link>
             </Button>
           </CardContent>
@@ -118,16 +123,16 @@ const LearningHubDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-purple-600" />
-              Personal Growth
+              Practice & Assess
             </CardTitle>
             <CardDescription>
-              Take assessments and track your knowledge
+              Test your knowledge with interactive assessments
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline" className="w-full">
               <Link to="/learning-hub/assessments">
-                Start Assessment
+                Take Assessment
               </Link>
             </Button>
           </CardContent>
@@ -137,10 +142,10 @@ const LearningHubDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-600" />
-              Revision Calendar
+              Study Schedule
             </CardTitle>
             <CardDescription>
-              Plan and schedule your study sessions
+              Plan your learning journey with our tools
             </CardDescription>
           </CardHeader>
           <CardContent>
