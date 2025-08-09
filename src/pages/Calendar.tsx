@@ -5,7 +5,7 @@ import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import CalendarFilters from '@/components/calendar/CalendarFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
-import { PageTitle } from '@/components/ui/PageTitle';
+import PageTitle from '@/components/ui/PageTitle';
 import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 
 const Calendar = () => {
@@ -16,6 +16,7 @@ const Calendar = () => {
     end: Date;
     view: string;
   } | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -26,7 +27,6 @@ const Calendar = () => {
   const handleViewChange = (newViewInfo: { start: Date; end: Date; view: string }) => {
     console.log('View changed:', newViewInfo);
     setViewInfo(newViewInfo);
-    // Optionally fetch lessons for the new date range
     fetchLessons(newViewInfo.start, newViewInfo.end);
   };
 
@@ -37,27 +37,44 @@ const Calendar = () => {
 
   const handleFiltersChange = (filters: any) => {
     console.log('Filters changed:', filters);
-    // Apply filters to the calendar events
-    // This could involve re-fetching data with filters
     refreshData();
+  };
+
+  const toggleFilters = () => {
+    setFiltersOpen(!filtersOpen);
   };
 
   return (
     <div className="flex flex-col h-screen">
       <PageTitle 
         title="Calendar" 
-        description="View and manage your lessons and schedules"
+        subtitle="View and manage your lessons and schedules"
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <CalendarHeader 
           onRefresh={refreshData}
           userRole={userRole}
+          onToggleFilters={toggleFilters}
+          filtersOpen={filtersOpen}
         />
         
         <CollapsibleFilters 
-          userRole={userRole}
-          onFiltersChange={handleFiltersChange}
+          selectedStudents={[]}
+          selectedTutors={[]}
+          selectedSubjects={[]}
+          selectedAdminDemos={[]}
+          selectedLessonType=""
+          onStudentFilterChange={() => {}}
+          onTutorFilterChange={() => {}}
+          onSubjectFilterChange={() => {}}
+          onAdminDemoFilterChange={() => {}}
+          onLessonTypeFilterChange={() => {}}
+          onClearFilters={() => {}}
+          canUseFilters={true}
+          isOpen={filtersOpen}
+          onToggle={toggleFilters}
+          sidebarOpen={true}
         />
         
         <div className="flex-1 p-6 overflow-hidden">

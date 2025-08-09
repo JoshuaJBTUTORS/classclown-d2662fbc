@@ -1,18 +1,25 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, Info, Filter } from 'lucide-react';
+import { CalendarPlus, Info, Filter, RefreshCw } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
+import { AppRole } from '@/contexts/AuthContext';
 
 interface CalendarHeaderProps {
   onToggleFilters?: () => void;
   filtersOpen?: boolean;
+  onRefresh?: () => void;
+  userRole?: AppRole | null;
 }
 
-const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onToggleFilters, filtersOpen }) => {
-  const { userRole } = useAuth();
+const CalendarHeader: React.FC<CalendarHeaderProps> = ({ 
+  onToggleFilters, 
+  filtersOpen, 
+  onRefresh,
+  userRole 
+}) => {
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
   // Only allow admins and owners to schedule lessons
@@ -28,7 +35,9 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onToggleFilters, filter
 
   const handleLessonAdded = () => {
     // This will trigger a refresh of the calendar data
-    window.location.reload();
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   return (
@@ -61,15 +70,29 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({ onToggleFilters, filter
       </div>
       
       <div className="flex gap-2">
+        {/* Refresh button */}
+        {onRefresh && (
+          <Button 
+            onClick={onRefresh}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        )}
+
         {/* Filter button - show to all users */}
-        <Button 
-          onClick={onToggleFilters}
-          variant={filtersOpen ? "default" : "outline"}
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          {filtersOpen ? 'Hide Filters' : 'Show Filters'}
-        </Button>
+        {onToggleFilters && (
+          <Button 
+            onClick={onToggleFilters}
+            variant={filtersOpen ? "default" : "outline"}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {filtersOpen ? 'Hide Filters' : 'Show Filters'}
+          </Button>
+        )}
 
         {/* Only show schedule lesson button for admins and owners */}
         {canScheduleLessons && (
