@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, addWeeks, differenceInMinutes, getDay, setDay } from 'date-fns';
 
@@ -27,9 +26,9 @@ export interface EditRecurringOptions {
   instanceDate?: string;
 }
 
-const createNewLessonSpaceRoom = async (lessonId: string) => {
+const recreateLessonSpaceRoom = async (lessonId: string) => {
   try {
-    console.log('Creating new LessonSpace room for lesson:', lessonId);
+    console.log('Recreating LessonSpace room for lesson:', lessonId);
     
     const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
       body: {
@@ -42,65 +41,19 @@ const createNewLessonSpaceRoom = async (lessonId: string) => {
     });
 
     if (error) {
-      console.error('Error creating new LessonSpace room:', error);
+      console.error('Error recreating LessonSpace room:', error);
       return null;
     }
 
     if (data && data.success) {
-      console.log('New LessonSpace room created successfully:', data);
+      console.log('LessonSpace room recreated successfully:', data);
       return data;
     }
     
     return null;
   } catch (error) {
-    console.error('Error in createNewLessonSpaceRoom:', error);
+    console.error('Error in recreateLessonSpaceRoom:', error);
     return null;
-  }
-};
-
-// Generate URLs for newly added students
-const generateUrlsForNewStudents = async (lessonId: string, newStudentIds: number[]) => {
-  if (newStudentIds.length === 0) return;
-
-  try {
-    console.log(`Generating LessonSpace URLs for ${newStudentIds.length} new students in lesson ${lessonId}`);
-    
-    // Get student details for the edge function
-    const { data: students, error: studentsError } = await supabase
-      .from('students')
-      .select('id, first_name, last_name')
-      .in('id', newStudentIds);
-
-    if (studentsError) {
-      console.error('Error fetching student details:', studentsError);
-      return;
-    }
-
-    if (students && students.length > 0) {
-      const { data: result, error } = await supabase.functions.invoke('lesson-space-integration', {
-        body: {
-          action: 'add-students',
-          lessonId: lessonId,
-          students: students.map(student => ({
-            studentId: student.id,
-            studentName: `${student.first_name} ${student.last_name}`
-          }))
-        }
-      });
-
-      if (error) {
-        console.error('Error generating URLs for new students:', error);
-        return;
-      }
-
-      if (result?.success) {
-        console.log(`Successfully generated URLs for ${students.length} new students`);
-      } else {
-        console.warn('URL generation completed but with warnings:', result?.error);
-      }
-    }
-  } catch (error) {
-    console.error('Error in generateUrlsForNewStudents:', error);
   }
 };
 
@@ -116,16 +69,8 @@ export const updateSingleRecurringInstance = async (
   // Check if tutor is changing
   const tutorChanged = updates.tutor_id !== undefined;
   
-  // Get existing students to identify newly added ones
-  let existingStudentIds: number[] = [];
-  if (selectedStudents) {
-    const { data: existingStudents } = await supabase
-      .from('lesson_students')
-      .select('student_id')
-      .eq('lesson_id', lessonId);
-    
-    existingStudentIds = existingStudents?.map(ls => ls.student_id) || [];
-  }
+  // Check if students are changing
+  const studentsChanged = selectedStudents !== undefined;
   
   // Update the lesson
   const { error: lessonError } = await supabase
@@ -135,20 +80,8 @@ export const updateSingleRecurringInstance = async (
   
   if (lessonError) throw lessonError;
   
-  // If tutor changed, create a new room
-  if (tutorChanged) {
-    console.log('Tutor changed, creating new LessonSpace room');
-    const roomData = await createNewLessonSpaceRoom(lessonId);
-    if (!roomData) {
-      console.warn('Failed to create new room for lesson after tutor change');
-    }
-  }
-  
   // Update students if provided
-  if (selectedStudents) {
-    // Identify newly added students
-    const newStudentIds = selectedStudents.filter(id => !existingStudentIds.includes(id));
-    
+  if (studentsChanged && selectedStudents) {
     // Delete existing lesson_students entries
     const { error: deleteError } = await supabase
       .from('lesson_students')
@@ -169,9 +102,15 @@ export const updateSingleRecurringInstance = async (
         .insert(lessonStudentsData);
       
       if (studentsError) throw studentsError;
-      
-      // Generate URLs for newly added students
-      await generateUrlsForNewStudents(lessonId, newStudentIds);
+    }
+  }
+  
+  // Recreate LessonSpace room if tutor or students changed
+  if (tutorChanged || studentsChanged) {
+    console.log('Tutor or students changed, recreating LessonSpace room');
+    const roomData = await recreateLessonSpaceRoom(lessonId);
+    if (!roomData) {
+      console.warn('Failed to recreate room for lesson after tutor/student change');
     }
   }
   
@@ -337,20 +276,6 @@ export const updateAllFutureLessons = async (
   
   // Update the parent lesson
   const parentUpdateData = applyChangesToInstance(originalParentLesson, changes);
-  let newRoomData = null;
-  
-  // If tutor changed, create new room for parent lesson
-  if (changes.tutorChanged) {
-    console.log('Tutor changed, creating new LessonSpace room for parent lesson');
-    newRoomData = await createNewLessonSpaceRoom(parentLessonId);
-    if (newRoomData) {
-      parentUpdateData.lesson_space_room_id = newRoomData.roomId;
-      parentUpdateData.lesson_space_room_url = newRoomData.roomUrl;
-      parentUpdateData.lesson_space_space_id = newRoomData.spaceId;
-    } else {
-      console.warn('Failed to create new room for parent lesson after tutor change');
-    }
-  }
   
   const { error: parentError } = await supabase
     .from('lessons')
@@ -371,32 +296,10 @@ export const updateAllFutureLessons = async (
   
   let updatedCount = 1; // Parent lesson
   
-  // Get existing students for all affected lessons to identify newly added ones
-  let existingStudentsByLesson: { [lessonId: string]: number[] } = {};
-  if (selectedStudents && futureInstances) {
-    const allLessonIds = [parentLessonId, ...futureInstances.map(i => i.id)];
-    
-    for (const lessonId of allLessonIds) {
-      const { data: existingStudents } = await supabase
-        .from('lesson_students')
-        .select('student_id')
-        .eq('lesson_id', lessonId);
-      
-      existingStudentsByLesson[lessonId] = existingStudents?.map(ls => ls.student_id) || [];
-    }
-  }
-
   if (futureInstances && futureInstances.length > 0) {
     // Update each instance individually with calculated changes
     for (const instance of futureInstances) {
       const instanceUpdateData = applyChangesToInstance(instance, changes);
-      
-      // If tutor changed and we have new room data, apply it to all instances
-      if (changes.tutorChanged && newRoomData) {
-        instanceUpdateData.lesson_space_room_id = newRoomData.roomId;
-        instanceUpdateData.lesson_space_room_url = newRoomData.roomUrl;
-        instanceUpdateData.lesson_space_space_id = newRoomData.spaceId;
-      }
       
       const { error: updateError } = await supabase
         .from('lessons')
@@ -437,19 +340,10 @@ export const updateAllFutureLessons = async (
           .insert(lessonStudentsData);
         
         if (studentsError) throw studentsError;
-        
-        // Generate URLs for newly added students in each lesson
-        for (const lessonId of allLessonIds) {
-          const existingStudentIds = existingStudentsByLesson[lessonId] || [];
-          const newStudentIds = selectedStudents.filter(id => !existingStudentIds.includes(id));
-          await generateUrlsForNewStudents(lessonId, newStudentIds);
-        }
       }
     }
   } else if (selectedStudents) {
     // Update students for parent lesson only
-    const existingStudentIds = existingStudentsByLesson[parentLessonId] || [];
-    
     const { error: deleteError } = await supabase
       .from('lesson_students')
       .delete()
@@ -468,14 +362,23 @@ export const updateAllFutureLessons = async (
         .insert(lessonStudentsData);
       
       if (studentsError) throw studentsError;
-      
-      // Generate URLs for newly added students
-      const newStudentIds = selectedStudents.filter(id => !existingStudentIds.includes(id));
-      await generateUrlsForNewStudents(parentLessonId, newStudentIds);
     }
   }
   
-  console.log(`Successfully updated ${updatedCount} lessons with room details`);
+  // Recreate LessonSpace room for all affected lessons if tutor or students changed
+  if (changes.tutorChanged || selectedStudents !== undefined) {
+    console.log('Tutor or students changed, recreating LessonSpace rooms for all affected lessons');
+    const allLessonIds = [parentLessonId, ...(futureInstances?.map(i => i.id) || [])];
+    
+    for (const lessonId of allLessonIds) {
+      const roomData = await recreateLessonSpaceRoom(lessonId);
+      if (!roomData) {
+        console.warn(`Failed to recreate room for lesson ${lessonId} after tutor/student change`);
+      }
+    }
+  }
+  
+  console.log(`Successfully updated ${updatedCount} lessons with LessonSpace rooms`);
   return updatedCount;
 };
 

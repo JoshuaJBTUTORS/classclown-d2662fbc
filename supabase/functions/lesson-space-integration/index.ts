@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -244,17 +243,21 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     }
     console.log("===================================");
 
-    // 3. Store all participant URLs in the database
+    // 3. Store all participant URLs in the database using UPSERT
     if (participantUrls.length > 0) {
+      console.log(`🔄 Upserting ${participantUrls.length} participant URLs into database`);
       const { error: urlsError } = await supabase
         .from("lesson_participant_urls")
-        .insert(participantUrls);
+        .upsert(participantUrls, { 
+          onConflict: 'lesson_id,participant_id,participant_type',
+          ignoreDuplicates: false 
+        });
 
       if (urlsError) {
-        console.error("Error storing participant URLs:", urlsError);
+        console.error("Error upserting participant URLs:", urlsError);
         // Don't fail the entire operation for this
       } else {
-        console.log(`✅ Stored ${participantUrls.length} participant URLs in database`);
+        console.log(`✅ Successfully upserted ${participantUrls.length} participant URLs in database`);
       }
     }
 
@@ -286,7 +289,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         sessionId: tutorSpaceData.session_id,
         participantUrlsCreated: participantUrls.length,
         studentUrlsCreated: studentUrlsCount,
-        message: `Lesson space created with pre-generated authenticated URLs for tutor and ${studentUrlsCount} students.`
+        message: `Lesson space created/updated with authenticated URLs for tutor and ${studentUrlsCount} students.`
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -401,15 +404,18 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
     const spaceData = await response.json();
     console.log("✅ Dynamic student URL generated successfully");
 
-    // Store this URL for future use
+    // Store this URL for future use using UPSERT
     const { error: storeError } = await supabase
       .from("lesson_participant_urls")
-      .insert({
+      .upsert({
         lesson_id: data.lessonId,
         participant_id: data.studentId.toString(),
         participant_type: 'student',
         participant_name: data.studentName,
         launch_url: spaceData.client_url
+      }, { 
+        onConflict: 'lesson_id,participant_id,participant_type',
+        ignoreDuplicates: false 
       });
 
     if (storeError) {
@@ -525,16 +531,19 @@ async function addStudentsToRoom(data: any, supabase: any) {
       }
     }
 
-    // Store new participant URLs
+    // Store new participant URLs using UPSERT
     if (newParticipantUrls.length > 0) {
       const { error: urlsError } = await supabase
         .from("lesson_participant_urls")
-        .insert(newParticipantUrls);
+        .upsert(newParticipantUrls, { 
+          onConflict: 'lesson_id,participant_id,participant_type',
+          ignoreDuplicates: false 
+        });
 
       if (urlsError) {
-        console.error("Error storing new participant URLs:", urlsError);
+        console.error("Error upserting new participant URLs:", urlsError);
       } else {
-        console.log(`✅ Stored ${newParticipantUrls.length} new participant URLs`);
+        console.log(`✅ Upserted ${newParticipantUrls.length} new participant URLs`);
       }
     }
 
