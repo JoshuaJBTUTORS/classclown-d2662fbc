@@ -1,4 +1,3 @@
-
 export interface Lesson {
   id: string;
   title: string;
@@ -13,6 +12,9 @@ export interface Lesson {
   recurrence_interval?: string | null;
   recurrence_day?: string | null;
   recurrence_end_date?: string | null;
+  // Cancellation fields
+  cancelled_at?: string | null;
+  cancelled_count?: number;
   // Only Flexible Classroom fields remain
   flexible_classroom_room_id?: string | null;
   flexible_classroom_session_data?: any;
