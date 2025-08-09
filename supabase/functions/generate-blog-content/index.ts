@@ -11,6 +11,210 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+interface KeywordResult {
+  keyword: string;
+  intent: string;
+  difficulty: string;
+  volume: string;
+  rationale: string;
+}
+
+interface ImagePlan {
+  section: string;
+  description: string;
+  altText: string;
+  caption: string;
+  generatePrompt?: string;
+}
+
+interface ContentBlock {
+  type: 'hero' | 'toc' | 'section' | 'tips' | 'cta' | 'author';
+  content: any;
+}
+
+interface QualityCheck {
+  rule: string;
+  status: 'PASS' | 'FAIL';
+  suggestion?: string;
+}
+
+// Multi-stage content generation functions
+async function discoverKeywords(topic: string, existingSlugs: string[] = []): Promise<KeywordResult[]> {
+  const prompt = `Given the seed topic "${topic}", list 5 long-tail keywords with intent, monthly volume (approx), and difficulty. Recommend 1 primary + 2 secondary for fastest ranking opportunity. Avoid overlap with: ${existingSlugs.join(', ')}.
+
+Format as JSON array with objects containing: keyword, intent, difficulty, volume, rationale, isPrimary (boolean)`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4.1-2025-04-14',
+      messages: [
+        { role: 'system', content: 'You are an SEO expert specializing in educational content keywords.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.3,
+    }),
+  });
+
+  const data = await response.json();
+  const rawContent = data.choices[0].message.content;
+  
+  // Extract JSON from response
+  const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]);
+  }
+  throw new Error('Failed to extract keywords');
+}
+
+async function planImages(outline: string): Promise<ImagePlan[]> {
+  const prompt = `From this outline "${outline}", propose 3 images with alt text and captions. Prefer educational diagrams. If no suitable stock idea exists, provide a text-to-image prompt.
+
+Format as JSON array with: section, description, altText, caption, generatePrompt (optional)`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4.1-2025-04-14',
+      messages: [
+        { role: 'system', content: 'You are a content designer specializing in educational blog images.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.3,
+    }),
+  });
+
+  const data = await response.json();
+  const rawContent = data.choices[0].message.content;
+  
+  const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]);
+  }
+  return [];
+}
+
+async function generateValueFirstContent(keywords: KeywordResult[], topic: string): Promise<any> {
+  const primaryKeyword = keywords.find(k => k.isPrimary)?.keyword || keywords[0]?.keyword;
+  
+  const prompt = `Write a blog post about "${topic}" for GCSE students and parents. Be practical and tutorial-led. Use "${primaryKeyword}" naturally in H1 and at least one H2. Include numbered steps, a mini case example, and cite 3 credible sources. Avoid sales language.
+
+Requirements:
+- 1,200-1,800 words
+- H2/H3 structure with clear sections
+- Step-by-step instructions where applicable
+- Real examples and comparisons
+- Grade 8-10 readability
+- Educational, not promotional tone
+
+Format as JSON with: title, excerpt, content (HTML), outline, sources[], readabilityScore`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4.1-2025-04-14',
+      messages: [
+        { role: 'system', content: 'You are an expert educational content writer specializing in GCSE tutoring.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000,
+    }),
+  });
+
+  const data = await response.json();
+  const rawContent = data.choices[0].message.content;
+  
+  const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]);
+  }
+  throw new Error('Failed to generate content');
+}
+
+async function insertStrategicCTAs(content: string): Promise<string> {
+  const prompt = `Insert exactly two CTAs labeled "Book a free trial": one after the first solution section, one in a final callout. Keep each CTA ≤ 25 words. No urgency language. Use helpful, zero-pressure tone.
+
+CTA should be: "Ready to get personalized help with your studies? Book a free trial lesson with our expert tutors."
+
+Return the updated HTML content with CTAs inserted.`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4.1-2025-04-14',
+      messages: [
+        { role: 'system', content: 'You are a conversion optimization expert focused on educational services.' },
+        { role: 'user', content: prompt + '\n\nContent:\n' + content }
+      ],
+      temperature: 0.3,
+    }),
+  });
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+async function performQualityChecks(post: any, keywords: KeywordResult[]): Promise<QualityCheck[]> {
+  const checks: QualityCheck[] = [];
+  
+  // SEO checks
+  checks.push({
+    rule: 'Title length ≤ 60 characters',
+    status: post.title.length <= 60 ? 'PASS' : 'FAIL',
+    suggestion: post.title.length > 60 ? 'Shorten title to under 60 characters' : undefined
+  });
+  
+  checks.push({
+    rule: 'Meta description ≤ 155 characters',
+    status: post.excerpt.length <= 155 ? 'PASS' : 'FAIL',
+    suggestion: post.excerpt.length > 155 ? 'Shorten meta description' : undefined
+  });
+  
+  // Keyword density check
+  const primaryKeyword = keywords.find(k => k.isPrimary)?.keyword || keywords[0]?.keyword;
+  const hasKeywordInTitle = post.title.toLowerCase().includes(primaryKeyword.toLowerCase());
+  checks.push({
+    rule: 'Primary keyword in title',
+    status: hasKeywordInTitle ? 'PASS' : 'FAIL',
+    suggestion: !hasKeywordInTitle ? `Include "${primaryKeyword}" in title` : undefined
+  });
+  
+  // CTA check
+  const ctaCount = (post.content.match(/Book a free trial/g) || []).length;
+  checks.push({
+    rule: 'Exactly 2 CTAs present',
+    status: ctaCount === 2 ? 'PASS' : 'FAIL',
+    suggestion: ctaCount !== 2 ? `Adjust CTA count to exactly 2 (currently ${ctaCount})` : undefined
+  });
+  
+  // Content quality checks
+  const wordCount = post.content.split(' ').length;
+  checks.push({
+    rule: 'Word count 1,200-1,800',
+    status: wordCount >= 1200 && wordCount <= 1800 ? 'PASS' : 'FAIL',
+    suggestion: wordCount < 1200 ? 'Add more content' : wordCount > 1800 ? 'Reduce content length' : undefined
+  });
+  
+  return checks;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -38,88 +242,63 @@ serve(async (req) => {
       .eq('id', categoryId)
       .single();
 
-    // Create SEO-optimized prompt
-    const prompt = `Write a comprehensive, SEO-optimized blog post for JB Tutors about "${topic}" in the ${category?.name || 'GCSE'} subject area.
+    // Get existing slugs to avoid cannibalization
+    const { data: existingPosts } = await supabase
+      .from('blog_posts')
+      .select('slug')
+      .eq('category_id', categoryId);
+    
+    const existingSlugs = existingPosts?.map(p => p.slug) || [];
 
-Target Keywords: ${keywords.join(', ')}
+    console.log('Starting multi-stage content generation...');
 
-Requirements:
-1. Write an engaging, informative article of 1500-2000 words
-2. Include the primary keyword "${keywords[0] || topic}" naturally throughout
-3. Use H2 and H3 subheadings that incorporate keywords
-4. Include practical tips, examples, and actionable advice for GCSE students
-5. Add a compelling meta description (150-160 characters)
-6. Create an engaging excerpt (150-200 words)
-7. Structure with clear introduction, body sections, and conclusion
-8. Focus on helping students improve their grades and understanding
-9. Include references to JB Tutors' expertise and services naturally
-
-Format the response as a JSON object with these fields:
-- title: SEO-optimized title (60 characters max)
-- excerpt: Compelling excerpt (150-200 words)
-- content: Full article content in HTML format
-- metaTitle: SEO meta title (60 characters max)
-- metaDescription: Meta description (150-160 characters)
-- slug: URL-friendly slug
-- focusKeyword: Primary keyword
-- targetKeywords: Array of target keywords used
-
-Make it authoritative, helpful, and specifically targeted at GCSE students and their parents seeking tutoring support.`;
-
-    // Generate content with OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert educational content writer specializing in GCSE tutoring and student success. Create SEO-optimized, engaging blog content that helps students and parents.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-      }),
-    });
-
-    const aiResponse = await response.json();
-
-    if (!aiResponse.choices?.[0]?.message?.content) {
-      throw new Error('Failed to generate content from AI');
+    // Stage 1: Keyword Discovery
+    console.log('Stage 1: Discovering keywords...');
+    const discoveredKeywords = await discoverKeywords(topic, existingSlugs);
+    
+    // Stage 2: Image Planning (using initial topic as outline)
+    console.log('Stage 2: Planning images...');
+    const imagePlans = await planImages(topic);
+    
+    // Stage 3: Value-First Content Generation
+    console.log('Stage 3: Generating content...');
+    const contentResult = await generateValueFirstContent(discoveredKeywords, topic);
+    
+    // Stage 4: Strategic CTA Insertion
+    console.log('Stage 4: Inserting CTAs...');
+    const finalContent = await insertStrategicCTAs(contentResult.content);
+    
+    // Stage 5: Quality Checks
+    console.log('Stage 5: Performing quality checks...');
+    const finalPost = { ...contentResult, content: finalContent };
+    const qualityChecks = await performQualityChecks(finalPost, discoveredKeywords);
+    
+    // Check if all quality checks pass
+    const allChecksPassed = qualityChecks.every(check => check.status === 'PASS');
+    
+    if (!allChecksPassed) {
+      console.log('Quality checks failed:', qualityChecks.filter(c => c.status === 'FAIL'));
+      // You could implement auto-fixes here or flag for manual review
     }
 
-    let generatedContent;
-    try {
-      let rawContent = aiResponse.choices[0].message.content;
-      
-      // Check if response is wrapped in markdown code fences
-      if (rawContent.includes('```json')) {
-        // Extract JSON from markdown code fences
-        const jsonMatch = rawContent.match(/```json\s*\n([\s\S]*?)\n\s*```/);
-        if (jsonMatch) {
-          rawContent = jsonMatch[1].trim();
-        }
-      } else if (rawContent.includes('```')) {
-        // Handle generic code fences
-        const jsonMatch = rawContent.match(/```\s*\n([\s\S]*?)\n\s*```/);
-        if (jsonMatch) {
-          rawContent = jsonMatch[1].trim();
-        }
-      }
-      
-      generatedContent = JSON.parse(rawContent);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', aiResponse.choices[0].message.content);
-      throw new Error('AI response was not in expected JSON format');
-    }
+    // Generate comprehensive content using multi-stage approach
+    const primaryKeyword = discoveredKeywords.find(k => k.isPrimary)?.keyword || discoveredKeywords[0]?.keyword || topic;
+    
+    const generatedContent = {
+      title: finalPost.title,
+      excerpt: finalPost.excerpt,
+      content: finalPost.content,
+      metaTitle: finalPost.title,
+      metaDescription: finalPost.excerpt,
+      slug: finalPost.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      focusKeyword: primaryKeyword,
+      targetKeywords: discoveredKeywords.map(k => k.keyword),
+      qualityChecks: qualityChecks,
+      keywords: discoveredKeywords,
+      imagePlans: imagePlans,
+      sources: finalPost.sources || [],
+      readabilityScore: finalPost.readabilityScore || 'Not calculated'
+    };
 
     // Create unique slug
     let baseSlug = generatedContent.slug || generatedContent.title.toLowerCase()
@@ -143,7 +322,7 @@ Make it authoritative, helpful, and specifically targeted at GCSE students and t
       counter++;
     }
 
-    // Create blog post
+    // Create blog post with enhanced data
     const { data: blogPost, error: postError } = await supabase
       .from('blog_posts')
       .insert({
@@ -152,7 +331,7 @@ Make it authoritative, helpful, and specifically targeted at GCSE students and t
         excerpt: generatedContent.excerpt,
         content: generatedContent.content,
         category_id: categoryId,
-        status: 'draft',
+        status: allChecksPassed ? 'draft' : 'needs_review',
         created_by: (await supabase.auth.getUser()).data.user?.id,
       })
       .select()
@@ -162,20 +341,20 @@ Make it authoritative, helpful, and specifically targeted at GCSE students and t
       throw new Error(`Failed to create blog post: ${postError.message}`);
     }
 
-    // Create SEO data
+    // Create enhanced SEO data
     await supabase
       .from('blog_seo_data')
       .insert({
         post_id: blogPost.id,
         meta_title: generatedContent.metaTitle || generatedContent.title,
         meta_description: generatedContent.metaDescription,
-        focus_keyword: generatedContent.focusKeyword || keywords[0],
-        target_keywords: generatedContent.targetKeywords || keywords,
+        focus_keyword: generatedContent.focusKeyword,
+        target_keywords: generatedContent.targetKeywords,
       });
 
-    // Add tags to the post
-    if (keywords.length > 0) {
-      for (const keyword of keywords) {
+    // Add discovered keywords as tags
+    if (generatedContent.targetKeywords.length > 0) {
+      for (const keyword of generatedContent.targetKeywords) {
         // Find or create tag
         let { data: tag } = await supabase
           .from('blog_tags')
@@ -208,10 +387,12 @@ Make it authoritative, helpful, and specifically targeted at GCSE students and t
     await supabase
       .from('blog_generation_requests')
       .update({
-        status: 'completed',
+        status: allChecksPassed ? 'completed' : 'needs_review',
         generated_post_id: blogPost.id,
       })
       .eq('id', requestId);
+
+    console.log('Content generation completed successfully');
 
     return new Response(
       JSON.stringify({
@@ -221,7 +402,14 @@ Make it authoritative, helpful, and specifically targeted at GCSE students and t
           title: blogPost.title,
           slug: blogPost.slug,
           excerpt: blogPost.excerpt,
+          status: blogPost.status,
         },
+        qualityChecks: generatedContent.qualityChecks,
+        keywords: generatedContent.keywords,
+        imagePlans: generatedContent.imagePlans,
+        sources: generatedContent.sources,
+        readabilityScore: generatedContent.readabilityScore,
+        allChecksPassed,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
