@@ -208,7 +208,7 @@ const BlogPost = () => {
           </header>
 
           {/* Article Content */}
-          <article className="prose prose-lg max-w-none mb-12">
+          <article className="mb-12">
             <div 
               dangerouslySetInnerHTML={{ __html: post.content }}
               className="blog-content"

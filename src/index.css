@@ -461,6 +461,55 @@
   background: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-green)) 100%);
 }
 
+/* Blog content styles */
+.blog-content {
+  @apply prose prose-lg max-w-none;
+}
+
+.blog-content h1 {
+  @apply text-3xl font-bold text-foreground mb-6 mt-8 first:mt-0;
+}
+
+.blog-content h2 {
+  @apply text-2xl font-semibold text-foreground mb-4 mt-6;
+}
+
+.blog-content h3 {
+  @apply text-xl font-medium text-foreground mb-3 mt-5;
+}
+
+.blog-content p {
+  @apply text-foreground leading-relaxed mb-4;
+}
+
+.blog-content ul, .blog-content ol {
+  @apply text-foreground mb-4 pl-6;
+}
+
+.blog-content li {
+  @apply mb-2;
+}
+
+.blog-content a {
+  @apply text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary/60 transition-colors;
+}
+
+.blog-content blockquote {
+  @apply border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-6;
+}
+
+.blog-content code {
+  @apply bg-muted px-2 py-1 rounded text-sm font-mono;
+}
+
+.blog-content pre {
+  @apply bg-muted p-4 rounded-lg overflow-x-auto mb-4;
+}
+
+.blog-content img {
+  @apply rounded-lg shadow-sm my-6;
+}
+
 /* Increase height of calendar time slots */
 .fc-timegrid-slot {
   height: 60px !important;
