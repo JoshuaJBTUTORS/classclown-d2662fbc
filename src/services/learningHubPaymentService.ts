@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const learningHubPaymentService = {
@@ -168,7 +169,7 @@ export const learningHubPaymentService = {
         };
       }
       
-      const gracePeriodInfo = accessInfo.isInGracePeriod === true ? {
+      const gracePeriodInfo = (accessInfo.isInGracePeriod === true) ? {
         isInGracePeriod: true,
         gracePeriodEnd: accessInfo.gracePeriodEnd,
         daysRemaining: accessInfo.gracePeriodEnd 
