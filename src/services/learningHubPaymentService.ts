@@ -165,7 +165,9 @@ export const learningHubPaymentService = {
         daysRemaining: accessInfo.gracePeriodEnd 
           ? Math.ceil((new Date(accessInfo.gracePeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
           : 0
-      } : undefined;
+      } : {
+        isInGracePeriod: false
+      };
 
       return {
         hasActiveSubscription: accessInfo.hasAccess,

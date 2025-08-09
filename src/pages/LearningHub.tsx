@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
@@ -46,7 +45,7 @@ const LearningHub: React.FC = () => {
   // Get user progress for purchased courses
   const { data: userProgress = [] } = useQuery({
     queryKey: ['course-progress', user?.id],
-    queryFn: () => learningHubService.getCourseProgress(),
+    queryFn: () => learningHubService.getCourseProgress(user?.id),
     enabled: !!user && (isOwner || accessInfo?.hasAccess),
   });
 
