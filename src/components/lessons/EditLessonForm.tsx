@@ -43,10 +43,10 @@ import { CalendarIcon, Check, Loader2, CheckCircle, Repeat, Clock } from 'lucide
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tutor } from '@/types/tutor';
-import { Student } from '@/types/student';
 import { Lesson } from '@/types/lesson';
 import { LESSON_SUBJECTS } from '@/constants/subjects';
 import { useAvailabilityCheck } from '@/hooks/useAvailabilityCheck';
+import { useStudentData } from '@/hooks/useStudentData';
 import AvailabilityStatus from './AvailabilityStatus';
 import RecurringEditConfirmation from './RecurringEditConfirmation';
 import { 
@@ -70,7 +70,6 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
   lessonId
 }) => {
   const [tutors, setTutors] = useState<Tutor[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
@@ -80,6 +79,9 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
   const [affectedLessonsCount, setAffectedLessonsCount] = useState<number>(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isRecurringLesson, setIsRecurringLesson] = useState(false);
+  
+  // Use shared student data hook
+  const { students, isLoading: studentsLoading } = useStudentData();
   
   const formSchema = z.object({
     title: z.string().min(1, { message: "Title is required" }),
@@ -119,7 +121,6 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
     if (isOpen && lessonId) {
       fetchLessonDetails();
       fetchTutors();
-      fetchStudents();
     }
   }, [isOpen, lessonId]);
 
@@ -156,6 +157,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
           *,
           tutor:tutors(id, first_name, last_name),
           lesson_students(
+            student_id,
             student:students(id, first_name, last_name)
           )
         `)
@@ -175,7 +177,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
         setEditScope(EditScope.ALL_FUTURE_LESSONS);
       }
       
-      // Process students data
+      // Process students data - ensure consistent ID handling
       const students = data.lesson_students.map((ls: any) => ls.student);
       const processedStudents = students.map(student => ({
         id: student.id,
@@ -208,10 +210,14 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       const endDate = parseISO(data.end_time);
       const endHours = format(endDate, 'HH:mm');
       
-      // Get student IDs from lesson_students
+      // Get student IDs from lesson_students - ensure consistent ID handling
       const studentIds = data.lesson_students.map((ls: any) => {
-        return typeof ls.student.id === 'string' ? parseInt(ls.student.id, 10) : ls.student.id;
+        const studentId = ls.student_id;
+        // Convert to number if it's a string, otherwise use as-is
+        return typeof studentId === 'string' ? parseInt(studentId, 10) : studentId;
       });
+      
+      console.log('Setting selected students from lesson data:', studentIds);
       
       // Set selected students for the multi-select
       setSelectedStudents(studentIds);
@@ -255,32 +261,14 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
     }
   };
 
-  const fetchStudents = async () => {
-    setIsFetchingData(true);
-    try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('status', 'active')
-        .order('last_name', { ascending: true });
-        
-      if (error) throw error;
-      setStudents(data || []);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      toast.error('Failed to load students');
-    } finally {
-      setIsFetchingData(false);
-    }
-  };
-
   const handleStudentSelect = (studentId: number) => {
+    console.log('Selecting/deselecting student:', studentId);
     setSelectedStudents(prev => {
-      if (prev.includes(studentId)) {
-        return prev.filter(id => id !== studentId);
-      } else {
-        return [...prev, studentId];
-      }
+      const newSelection = prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId];
+      console.log('New student selection:', newSelection);
+      return newSelection;
     });
   };
 
@@ -569,7 +557,9 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                     <FormItem>
                       <FormLabel>Students</FormLabel>
                       <div className="border rounded-md p-2 max-h-48 overflow-y-auto">
-                        {students.length === 0 ? (
+                        {studentsLoading ? (
+                          <p className="text-sm text-muted-foreground py-2 px-1">Loading students...</p>
+                        ) : students.length === 0 ? (
                           <p className="text-sm text-muted-foreground py-2 px-1">No students available</p>
                         ) : (
                           students.map((student) => {
@@ -577,6 +567,8 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                               ? parseInt(student.id, 10) 
                               : student.id;
                               
+                            const isSelected = selectedStudents.includes(studentId);
+                            
                             return (
                               <div
                                 key={student.id}
@@ -584,9 +576,9 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
                                 onClick={() => handleStudentSelect(studentId)}
                               >
                                 <div className={`w-4 h-4 border rounded flex items-center justify-center
-                                  ${selectedStudents.includes(studentId) ? 'bg-primary border-primary' : 'border-gray-300'}`}
+                                  ${isSelected ? 'bg-primary border-primary' : 'border-gray-300'}`}
                                 >
-                                  {selectedStudents.includes(studentId) && (
+                                  {isSelected && (
                                     <Check className="h-3 w-3 text-white" />
                                   )}
                                 </div>
