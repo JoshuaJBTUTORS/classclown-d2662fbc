@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Course } from '@/types/course';
@@ -28,6 +27,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const isMobile = useIsMobile();
   const isList = viewMode === 'list';
   
+  // Default to £12.99 if no price is set for the course
+  const displayPricePence = course.price ?? 1299;
+
   const handleCardClick = () => {
     navigate(`/course/${course.id}`);
   };
@@ -213,11 +215,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 </>
               )}
               
-              {course.price ? (
-                <span className="font-semibold text-sm text-gray-900">£{(course.price / 100).toFixed(2)}</span>
-              ) : (
-                <span className="text-sm text-gray-900">Free</span>
-              )}
+              <span className="font-semibold text-sm text-gray-900">
+                £{(displayPricePence / 100).toFixed(2)}
+              </span>
             </div>
             
             {!isList && isAdmin && (
