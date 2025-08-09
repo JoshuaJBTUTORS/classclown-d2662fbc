@@ -13,10 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { BookOpen, Search, Grid3X3, List, Filter, Star, Clock, Users, Award, ArrowRight } from 'lucide-react';
+import { BookOpen, Search, Grid3X3, List, Filter, Star, Clock, Users, Award, ArrowRight, AlertCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'newest' | 'popular' | 'alphabetical' | 'difficulty';
@@ -36,9 +37,6 @@ const LearningHub: React.FC = () => {
     queryKey: ['courses'],
     queryFn: learningHubService.getCourses,
   });
-
-  // Fetch curated subjects
-  const { subjects: curatedSubjects, isLoading: subjectsLoading } = useSubjects();
 
   // Check Learning Hub access for non-owners
   const { data: accessInfo, isLoading: accessLoading } = useQuery({
@@ -67,17 +65,6 @@ const LearningHub: React.FC = () => {
   const handleGetAccess = () => {
     setShowSubscriptionModal(true);
   };
-
-  // Generate subject counts from courses
-  const subjectCounts = React.useMemo(() => {
-    const counts = new Map<string, number>();
-    courses.forEach(course => {
-      if (course.subject) {
-        counts.set(course.subject, (counts.get(course.subject) || 0) + 1);
-      }
-    });
-    return counts;
-  }, [courses]);
 
   // Filter and sort courses
   const filteredAndSortedCourses = React.useMemo(() => {
@@ -141,193 +128,30 @@ const LearningHub: React.FC = () => {
     );
   }
 
-  // Check access for non-owners
-  if (!isOwner && !accessInfo?.hasAccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            {/* Hero Section */}
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-                <BookOpen className="h-8 w-8 text-primary" />
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                Welcome to Learning Hub
-              </h1>
-              <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Unlock unlimited access to all our courses and accelerate your learning journey with expert-curated content.
-              </p>
-            </div>
-
-            {/* Features Grid */}
-            <div className="grid md:grid-cols-3 gap-6 mb-12">
-              <Card className="text-center">
-                <CardContent className="pt-6">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <BookOpen className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <h3 className="font-semibold mb-2">Unlimited Courses</h3>
-                  <p className="text-sm text-gray-600">Access to our complete library of courses across all subjects</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="text-center">
-                <CardContent className="pt-6">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="font-semibold mb-2">Expert Tutors</h3>
-                  <p className="text-sm text-gray-600">Learn from experienced educators and industry professionals</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="text-center">
-                <CardContent className="pt-6">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Award className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <h3 className="font-semibold mb-2">Progress Tracking</h3>
-                  <p className="text-sm text-gray-600">Monitor your learning progress and earn completion certificates</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Pricing Card */}
-            <Card className="max-w-md mx-auto mb-12">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Learning Hub Access</CardTitle>
-                <CardDescription>
-                  {accessInfo?.trialEligible ? 'Start with a 7-day free trial' : 'Monthly subscription'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-primary">£25</div>
-                  <div className="text-sm text-gray-500">per month</div>
-                  {accessInfo?.trialEligible && (
-                    <div className="mt-2">
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        7-day free trial
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-primary rounded-full mr-3" />
-                    Unlimited access to all courses
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-primary rounded-full mr-3" />
-                    New courses added regularly
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-primary rounded-full mr-3" />
-                    Progress tracking and certificates
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-primary rounded-full mr-3" />
-                    Cancel anytime
-                  </li>
-                </ul>
-
-                <Button 
-                  onClick={handleGetAccess}
-                  className="w-full"
-                  size="lg"
-                >
-                  {accessInfo?.trialEligible ? 'Start Free Trial' : 'Get Access'}
-                </Button>
-
-                <p className="text-xs text-gray-500 text-center">
-                  {accessInfo?.trialEligible 
-                    ? 'No commitment. Cancel anytime during your trial.'
-                    : 'Cancel your subscription at any time.'}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Browse by Subject Section */}
-            <div className="mb-12">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Browse by Subject</h2>
-                <p className="text-lg text-gray-600">Explore our subjects to see what's available</p>
-              </div>
-
-              {subjectsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <Card key={i}>
-                      <CardContent className="p-6">
-                        <Skeleton className="h-4 w-3/4 mb-2" />
-                        <Skeleton className="h-3 w-1/2 mb-4" />
-                        <Skeleton className="h-9 w-full" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {curatedSubjects
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((subject) => {
-                      const courseCount = subjectCounts.get(subject.name) || 0;
-                      return (
-                        <Card key={subject.id} className="hover:shadow-lg transition-shadow">
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-lg mb-1">{subject.name}</h3>
-                                <Badge variant="outline" className="text-xs mb-2">
-                                  {subject.category}
-                                </Badge>
-                              </div>
-                            </div>
-                            
-                            {subject.description && (
-                              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                                {subject.description}
-                              </p>
-                            )}
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">
-                                {courseCount} course{courseCount !== 1 ? 's' : ''}
-                              </span>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={handleGetAccess}
-                                className="flex items-center gap-1"
-                              >
-                                Explore
-                                <ArrowRight className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <LearningHubSubscriptionModal
-          isOpen={showSubscriptionModal}
-          onClose={() => setShowSubscriptionModal(false)}
-          onSuccess={handleSubscriptionSuccess}
-        />
-      </div>
-    );
-  }
+  const hasAccess = isOwner || accessInfo?.hasAccess;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
+        {/* Preview Banner for Non-Subscribers */}
+        {!hasAccess && (
+          <Alert className="mb-6 border-amber-200 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-amber-800">
+                You're browsing in preview mode. Subscribe to unlock full access to all courses.
+              </span>
+              <Button 
+                size="sm" 
+                onClick={handleGetAccess}
+                className="ml-4 bg-primary hover:bg-primary/90"
+              >
+                Get Access
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8">
           <div>
@@ -341,7 +165,7 @@ const LearningHub: React.FC = () => {
                 <BookOpen className="w-3 h-3 mr-1" />
                 {courses.length} Courses
               </Badge>
-              {!isOwner && (
+              {hasAccess && (
                 <Badge variant="outline" className="bg-primary/10 text-primary">
                   Premium Access
                 </Badge>
@@ -468,6 +292,12 @@ const LearningHub: React.FC = () => {
           </Card>
         )}
       </div>
+
+      <LearningHubSubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        onSuccess={handleSubscriptionSuccess}
+      />
     </div>
   );
 };
