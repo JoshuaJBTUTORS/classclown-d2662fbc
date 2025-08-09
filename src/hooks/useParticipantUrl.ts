@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,35 +107,6 @@ export const useParticipantUrl = (lessonId: string) => {
           .single();
 
         if (urlError || !urlData) {
-          // If this is a tutor and no URL exists, generate one on demand
-          if (participantType === 'tutor') {
-            console.log('⚠️ No pre-generated tutor URL found, generating on demand...');
-            
-            const { data: generateResult, error: generateError } = await supabase.functions.invoke('lesson-space-integration', {
-              body: {
-                action: 'generate-tutor-url',
-                lessonId,
-                tutorId: participantId
-              }
-            });
-
-            if (generateError) {
-              console.error('Error generating tutor URL:', generateError);
-              throw new Error('Failed to generate tutor URL: ' + generateError.message);
-            }
-
-            if (!generateResult?.success || !generateResult?.tutorUrl) {
-              throw new Error('Failed to generate tutor URL');
-            }
-
-            // Cache and return the newly generated URL
-            const cacheKey = `${lessonId}_${user.id}_${userRole}`;
-            urlCacheRef.current[cacheKey] = generateResult.tutorUrl;
-            setParticipantUrl(generateResult.tutorUrl);
-            hasLoadedRef.current = true;
-            return;
-          }
-          
           throw new Error('No pre-generated URL found for this participant');
         }
 
