@@ -10,9 +10,10 @@ import LearningHubSubscriptionModal from './LearningHubSubscriptionModal';
 
 interface CourseCardProps {
   course: Course;
+  viewMode?: 'grid' | 'list';
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, viewMode = 'grid' }) => {
   const navigate = useNavigate();
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 

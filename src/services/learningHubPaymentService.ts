@@ -171,7 +171,7 @@ export const learningHubPaymentService = {
         hasActiveSubscription: accessInfo.hasAccess,
         subscription: accessInfo.subscription,
         needsPaymentUpdate: accessInfo.isInGracePeriod || false,
-        gracePeriodInfo
+        gracePeriodInfo: gracePeriodInfo
       };
     } catch (error) {
       console.error('Error getting subscription status:', error);

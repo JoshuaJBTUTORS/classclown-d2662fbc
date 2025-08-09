@@ -45,8 +45,8 @@ const LearningHub: React.FC = () => {
 
   // Get user progress for purchased courses
   const { data: userProgress = [] } = useQuery({
-    queryKey: ['user-progress', user?.id],
-    queryFn: () => learningHubService.getUserProgress(),
+    queryKey: ['course-progress', user?.id],
+    queryFn: () => learningHubService.getCourseProgress(),
     enabled: !!user && (isOwner || accessInfo?.hasAccess),
   });
 
@@ -80,8 +80,8 @@ const LearningHub: React.FC = () => {
         filtered.sort((a, b) => a.title.localeCompare(b.title));
         break;
       case 'popular':
-        // For now, sort by path_position as a proxy for popularity
-        filtered.sort((a, b) => (a.path_position || 0) - (b.path_position || 0));
+        // Sort by created date as a proxy for popularity since path_position doesn't exist
+        filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
         break;
       case 'difficulty':
         const difficultyOrder = { 'beginner': 1, 'intermediate': 2, 'advanced': 3 };
@@ -103,10 +103,6 @@ const LearningHub: React.FC = () => {
     const uniqueSubjects = [...new Set(courses.map(course => course.subject).filter(Boolean))];
     return uniqueSubjects;
   }, [courses]);
-
-  const hasProgress = (courseId: string) => {
-    return userProgress.some(progress => progress.course_id === courseId);
-  };
 
   if (!user) {
     return (
@@ -365,7 +361,6 @@ const LearningHub: React.FC = () => {
               <CourseCard
                 key={course.id}
                 course={course}
-                hasProgress={hasProgress(course.id)}
                 viewMode={viewMode}
               />
             ))}
