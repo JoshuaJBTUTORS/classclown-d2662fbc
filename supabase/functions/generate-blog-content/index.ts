@@ -98,7 +98,24 @@ Make it authoritative, helpful, and specifically targeted at GCSE students and t
 
     let generatedContent;
     try {
-      generatedContent = JSON.parse(aiResponse.choices[0].message.content);
+      let rawContent = aiResponse.choices[0].message.content;
+      
+      // Check if response is wrapped in markdown code fences
+      if (rawContent.includes('```json')) {
+        // Extract JSON from markdown code fences
+        const jsonMatch = rawContent.match(/```json\s*\n([\s\S]*?)\n\s*```/);
+        if (jsonMatch) {
+          rawContent = jsonMatch[1].trim();
+        }
+      } else if (rawContent.includes('```')) {
+        // Handle generic code fences
+        const jsonMatch = rawContent.match(/```\s*\n([\s\S]*?)\n\s*```/);
+        if (jsonMatch) {
+          rawContent = jsonMatch[1].trim();
+        }
+      }
+      
+      generatedContent = JSON.parse(rawContent);
     } catch (parseError) {
       console.error('Failed to parse AI response:', aiResponse.choices[0].message.content);
       throw new Error('AI response was not in expected JSON format');
