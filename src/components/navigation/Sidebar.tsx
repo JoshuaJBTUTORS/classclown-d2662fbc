@@ -144,6 +144,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           href: '/reports',
           roles: ['admin', 'owner'],
         },
+        {
+          icon: FileText,
+          label: 'Blog Management',
+          href: '/blog-management',
+          roles: ['admin', 'owner'],
+        },
       ]
     },
   ];

@@ -31,6 +31,9 @@ import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
 import LearningHub from './pages/LearningHub';
 import LearningHubLayout from './components/learningHub/LearningHubLayout';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
+import BlogManagement from './pages/BlogManagement';
 import MainLayout from './components/layout/MainLayout';
 import LearningHubDashboard from './pages/LearningHubDashboard';
 import LearningHubMyCourses from './pages/LearningHubMyCourses';
@@ -74,6 +77,8 @@ function App() {
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
                 <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
                 
                 {/* Main App Layout - all main application routes */}
                 <Route
@@ -162,6 +167,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['owner']}>
                         <Staff />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="blog-management" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <BlogManagement />
                       </ProtectedRoute>
                     } 
                   />

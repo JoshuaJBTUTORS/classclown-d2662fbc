@@ -290,6 +290,256 @@ export type Database = {
           },
         ]
       }
+      blog_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      blog_generation_requests: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          created_by: string | null
+          error_message: string | null
+          generated_post_id: string | null
+          id: string
+          status: string
+          target_keywords: string[] | null
+          topic: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          generated_post_id?: string | null
+          id?: string
+          status?: string
+          target_keywords?: string[] | null
+          topic: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          generated_post_id?: string | null
+          id?: string
+          status?: string
+          target_keywords?: string[] | null
+          topic?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_generation_requests_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_generation_requests_generated_post_id_fkey"
+            columns: ["generated_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_post_tags: {
+        Row: {
+          id: string
+          post_id: string | null
+          tag_id: string | null
+        }
+        Insert: {
+          id?: string
+          post_id?: string | null
+          tag_id?: string | null
+        }
+        Update: {
+          id?: string
+          post_id?: string | null
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "blog_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_posts: {
+        Row: {
+          category_id: string | null
+          content: string
+          created_at: string | null
+          created_by: string | null
+          excerpt: string | null
+          featured_image_url: string | null
+          id: string
+          published_at: string | null
+          slug: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_seo_data: {
+        Row: {
+          canonical_url: string | null
+          created_at: string | null
+          focus_keyword: string | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          post_id: string | null
+          target_keywords: string[] | null
+          twitter_description: string | null
+          twitter_image_url: string | null
+          twitter_title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          created_at?: string | null
+          focus_keyword?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          post_id?: string | null
+          target_keywords?: string[] | null
+          twitter_description?: string | null
+          twitter_image_url?: string | null
+          twitter_title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          canonical_url?: string | null
+          created_at?: string | null
+          focus_keyword?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          post_id?: string | null
+          target_keywords?: string[] | null
+          twitter_description?: string | null
+          twitter_image_url?: string | null
+          twitter_title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_seo_data_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       course_lessons: {
         Row: {
           content_text: string | null
@@ -1114,6 +1364,8 @@ export type Database = {
       lessons: {
         Row: {
           attendance_completed: boolean | null
+          cancelled_at: string | null
+          cancelled_count: number | null
           completion_date: string | null
           created_at: string | null
           description: string | null
@@ -1145,6 +1397,8 @@ export type Database = {
         }
         Insert: {
           attendance_completed?: boolean | null
+          cancelled_at?: string | null
+          cancelled_count?: number | null
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
@@ -1176,6 +1430,8 @@ export type Database = {
         }
         Update: {
           attendance_completed?: boolean | null
+          cancelled_at?: string | null
+          cancelled_count?: number | null
           completion_date?: string | null
           created_at?: string | null
           description?: string | null
