@@ -311,7 +311,7 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
               Learning hub account created for {data.studentFirstName} {data.studentLastName}
             </p>
             <p className="text-xs sm:text-sm text-green-600">
-              {data.yearGroup} • {data.subjects.length} subject{data.subjects.length > 1 ? 's' : ''} selected
+              Ready to start learning journey!
             </p>
           </div>
         </motion.div>

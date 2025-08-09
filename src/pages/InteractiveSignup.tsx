@@ -3,14 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import WelcomePage from '@/components/signup/WelcomePage';
-import YearGroupSubjectStep from '@/components/signup/YearGroupSubjectStep';
 import ParentInfoStep from '@/components/signup/ParentInfoStep';
 import StudentInfoStep from '@/components/signup/StudentInfoStep';
 import AccountCreationStep from '@/components/signup/AccountCreationStep';
 
 export interface SignupData {
-  yearGroup: string;
-  subjects: string[];
   parentFirstName: string;
   parentLastName: string;
   parentEmail: string;
@@ -25,8 +22,6 @@ const InteractiveSignup = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
   const [signupData, setSignupData] = useState<SignupData>({
-    yearGroup: '',
-    subjects: [],
     parentFirstName: '',
     parentLastName: '',
     parentEmail: '',
@@ -38,7 +33,6 @@ const InteractiveSignup = () => {
   });
 
   const steps = [
-    { title: "Student Info", component: YearGroupSubjectStep },
     { title: "Parent Info", component: ParentInfoStep },
     { title: "Student Details", component: StudentInfoStep },
     { title: "Complete", component: AccountCreationStep },

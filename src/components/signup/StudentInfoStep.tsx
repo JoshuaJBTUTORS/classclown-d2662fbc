@@ -255,13 +255,10 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
                   {data.studentFirstName || 'First'} {data.studentLastName || 'Last'}
                 </h5>
                 <p className="text-xs sm:text-sm text-gray-600 mb-2">
-                  {data.yearGroup || 'Year Group'} Student
+                  JB Tutors Student
                 </p>
                 <p className="text-xs text-purple-600">
-                  {data.subjects.length > 0 
-                    ? `Studying ${data.subjects.length} subject${data.subjects.length > 1 ? 's' : ''}`
-                    : 'Ready to learn!'
-                  }
+                  Ready to learn!
                 </p>
               </motion.div>
             </CardContent>
