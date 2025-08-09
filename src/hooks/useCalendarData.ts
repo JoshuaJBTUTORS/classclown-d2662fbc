@@ -29,7 +29,15 @@ interface CalendarEvent {
   };
 }
 
-export const useCalendarData = () => {
+interface CalendarFilters {
+  selectedStudents: string[];
+  selectedTutors: string[];
+  selectedSubjects: string[];
+  selectedAdminDemos: string[];
+  selectedLessonType: string;
+}
+
+export const useCalendarData = (filters?: CalendarFilters) => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +114,49 @@ export const useCalendarData = () => {
         throw error;
       }
 
-      const calendarEvents: CalendarEvent[] = lessons?.map((lesson: any) => {
+      let filteredLessons = lessons || [];
+
+      // Apply filters if provided and user is admin/owner
+      if (filters && (userRole === 'admin' || userRole === 'owner')) {
+        // Filter by tutors
+        if (filters.selectedTutors.length > 0) {
+          filteredLessons = filteredLessons.filter(lesson => 
+            lesson.tutor && filters.selectedTutors.includes(lesson.tutor.id)
+          );
+        }
+
+        // Filter by subjects
+        if (filters.selectedSubjects.length > 0) {
+          filteredLessons = filteredLessons.filter(lesson => 
+            lesson.subject && filters.selectedSubjects.includes(lesson.subject)
+          );
+        }
+
+        // Filter by students
+        if (filters.selectedStudents.length > 0) {
+          filteredLessons = filteredLessons.filter(lesson => {
+            const lessonStudentIds = lesson.lesson_students?.map(ls => ls.student.id.toString()) || [];
+            return filters.selectedStudents.some(studentId => lessonStudentIds.includes(studentId));
+          });
+        }
+
+        // Filter by lesson type
+        if (filters.selectedLessonType && filters.selectedLessonType !== 'All Lessons') {
+          if (filters.selectedLessonType === 'Trial Lessons') {
+            filteredLessons = filteredLessons.filter(lesson => lesson.is_trial);
+          } else if (filters.selectedLessonType === 'Full Lessons') {
+            filteredLessons = filteredLessons.filter(lesson => !lesson.is_trial);
+          }
+        }
+
+        // Filter by admin demos (if this functionality is implemented)
+        if (filters.selectedAdminDemos.length > 0) {
+          // This would require additional logic based on how admin demos are stored
+          // For now, we'll skip this filter
+        }
+      }
+
+      const calendarEvents: CalendarEvent[] = filteredLessons.map((lesson: any) => {
         const tutorName = lesson.tutor 
           ? `${lesson.tutor.first_name} ${lesson.tutor.last_name}`
           : 'Unassigned';
@@ -148,7 +198,7 @@ export const useCalendarData = () => {
             cancelled_at: lesson.cancelled_at
           }
         };
-      }) || [];
+      });
 
       setEvents(calendarEvents);
     } catch (err) {
@@ -157,7 +207,7 @@ export const useCalendarData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, userRole]);
+  }, [user, userRole, filters]);
 
   const refreshData = useCallback(() => {
     fetchLessons();
