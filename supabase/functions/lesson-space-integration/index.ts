@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -27,6 +26,11 @@ interface JoinSpaceRequest {
   studentName: string;
 }
 
+interface GenerateTutorUrlRequest {
+  lessonId: string;
+  tutorId: string;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -48,6 +52,8 @@ serve(async (req) => {
         return await joinLessonSpace(requestData as JoinSpaceRequest, supabase);
       case "add-students-to-room":
         return await addStudentsToRoom(requestData, supabase);
+      case "generate-tutor-url":
+        return await generateTutorUrl(requestData as GenerateTutorUrlRequest, supabase);
       case "update-lesson":
         return await updateLessonWithRoom(requestData as UpdateLessonRequest, supabase);
       case "delete-room":
@@ -173,14 +179,18 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     console.log("Session ID:", tutorSpaceData.session_id);
     console.log("========================");
 
-    // Store tutor URL
-    participantUrls.push({
-      lesson_id: data.lessonId,
-      participant_id: lesson.tutor.id,
-      participant_type: 'tutor',
-      participant_name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
-      launch_url: tutorSpaceData.client_url
-    });
+    // Store tutor URL with UPSERT to handle conflicts
+    await supabase
+      .from("lesson_participant_urls")
+      .upsert({
+        lesson_id: data.lessonId,
+        participant_id: lesson.tutor.id,
+        participant_type: 'tutor',
+        participant_name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
+        launch_url: tutorSpaceData.client_url
+      }, {
+        onConflict: 'lesson_id,participant_id,participant_type'
+      });
 
     // 2. Now create Launch API URLs for all students
     console.log("=== CREATING STUDENT LAUNCH URLS ===");
@@ -224,7 +234,19 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
           const studentSpaceData = await studentResponse.json();
           console.log(`✅ Student ${student.first_name} ${student.last_name} URL created successfully`);
           
-          // Store student URL
+          // Store student URL with UPSERT to handle conflicts
+          await supabase
+            .from("lesson_participant_urls")
+            .upsert({
+              lesson_id: data.lessonId,
+              participant_id: student.id.toString(),
+              participant_type: 'student',
+              participant_name: `${student.first_name} ${student.last_name}`,
+              launch_url: studentSpaceData.client_url
+            }, {
+              onConflict: 'lesson_id,participant_id,participant_type'
+            });
+
           participantUrls.push({
             lesson_id: data.lessonId,
             participant_id: student.id.toString(),
@@ -244,20 +266,6 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     }
     console.log("===================================");
 
-    // 3. Store all participant URLs in the database
-    if (participantUrls.length > 0) {
-      const { error: urlsError } = await supabase
-        .from("lesson_participant_urls")
-        .insert(participantUrls);
-
-      if (urlsError) {
-        console.error("Error storing participant URLs:", urlsError);
-        // Don't fail the entire operation for this
-      } else {
-        console.log(`✅ Stored ${participantUrls.length} participant URLs in database`);
-      }
-    }
-
     // 4. Update the lesson with room details
     const { error: updateError } = await supabase
       .from("lessons")
@@ -274,7 +282,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       throw updateError;
     }
 
-    const studentUrlsCount = participantUrls.filter(p => p.participant_type === 'student').length;
+    const studentUrlsCount = participantUrls.length;
     
     return new Response(
       JSON.stringify({
@@ -284,7 +292,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         teacherUrl: tutorSpaceData.client_url,
         spaceId: spaceId,
         sessionId: tutorSpaceData.session_id,
-        participantUrlsCreated: participantUrls.length,
+        participantUrlsCreated: participantUrls.length + 1, // +1 for tutor
         studentUrlsCreated: studentUrlsCount,
         message: `Lesson space created with pre-generated authenticated URLs for tutor and ${studentUrlsCount} students.`
       }),
@@ -292,6 +300,117 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     );
   } catch (error) {
     console.error("Error creating Lesson Space room:", error);
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+}
+
+// NEW FUNCTION: Generate tutor URL on demand
+async function generateTutorUrl(data: GenerateTutorUrlRequest, supabase: any) {
+  const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY') || "832a4e97-e402-4757-8ba3-a8afb14941b2";
+  
+  try {
+    console.log("Generating tutor URL for lesson:", data.lessonId, "tutor:", data.tutorId);
+
+    // Get lesson and tutor details
+    const { data: lesson, error: lessonError } = await supabase
+      .from("lessons")
+      .select(`
+        *,
+        tutor:tutors!inner(id, first_name, last_name, email)
+      `)
+      .eq("id", data.lessonId)
+      .eq("tutor_id", data.tutorId)
+      .single();
+
+    if (lessonError || !lesson) {
+      throw new Error(`Failed to fetch lesson details: ${lessonError?.message}`);
+    }
+
+    if (!lesson.lesson_space_space_id) {
+      throw new Error("No lesson space found for this lesson");
+    }
+
+    // Create request body for tutor
+    const requestBody = {
+      id: lesson.lesson_space_space_id,
+      transcribe: true,
+      record_av: true,
+      user: {
+        id: `tutor_${lesson.tutor.id}`,
+        name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
+        role: "teacher",
+        leader: true,
+        custom_jwt_parameters: {
+          meta: {
+            displayName: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`
+          }
+        }
+      },
+      features: {
+        invite: true
+      },
+      invite_url: `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`
+    };
+
+    console.log("=== GENERATING TUTOR URL ===");
+    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
+
+    // Get authenticated URL for the tutor
+    const response = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
+      method: "POST",
+      headers: {
+        "Authorization": `Organisation ${lessonSpaceApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("=== TUTOR URL GENERATION ERROR ===");
+      console.error("Status:", response.status);
+      console.error("Error Text:", errorText);
+      throw new Error(`Failed to generate tutor URL: ${response.status} ${errorText}`);
+    }
+
+    const spaceData = await response.json();
+    console.log("✅ Tutor URL generated successfully");
+
+    // Store this URL for future use with UPSERT
+    const { error: storeError } = await supabase
+      .from("lesson_participant_urls")
+      .upsert({
+        lesson_id: data.lessonId,
+        participant_id: data.tutorId,
+        participant_type: 'tutor',
+        participant_name: `${lesson.tutor.first_name} ${lesson.tutor.last_name}`,
+        launch_url: spaceData.client_url
+      }, {
+        onConflict: 'lesson_id,participant_id,participant_type'
+      });
+
+    if (storeError) {
+      console.error("⚠️ Could not store generated tutor URL:", storeError.message);
+    } else {
+      console.log("✅ Stored tutor URL for future use");
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        tutorUrl: spaceData.client_url,
+        message: "Generated new authenticated URL for tutor"
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error generating tutor URL:", error);
     return new Response(
       JSON.stringify({ 
         success: false,
@@ -401,15 +520,17 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
     const spaceData = await response.json();
     console.log("✅ Dynamic student URL generated successfully");
 
-    // Store this URL for future use
+    // Store this URL for future use with UPSERT
     const { error: storeError } = await supabase
       .from("lesson_participant_urls")
-      .insert({
+      .upsert({
         lesson_id: data.lessonId,
         participant_id: data.studentId.toString(),
         participant_type: 'student',
         participant_name: data.studentName,
         launch_url: spaceData.client_url
+      }, {
+        onConflict: 'lesson_id,participant_id,participant_type'
       });
 
     if (storeError) {
@@ -510,6 +631,19 @@ async function addStudentsToRoom(data: any, supabase: any) {
           const studentSpaceData = await studentResponse.json();
           console.log(`✅ New student ${student.first_name} ${student.last_name} URL created`);
           
+          // Store with UPSERT
+          await supabase
+            .from("lesson_participant_urls")
+            .upsert({
+              lesson_id: lessonId,
+              participant_id: student.id.toString(),
+              participant_type: 'student',
+              participant_name: `${student.first_name} ${student.last_name}`,
+              launch_url: studentSpaceData.client_url
+            }, {
+              onConflict: 'lesson_id,participant_id,participant_type'
+            });
+
           newParticipantUrls.push({
             lesson_id: lessonId,
             participant_id: student.id.toString(),
@@ -522,19 +656,6 @@ async function addStudentsToRoom(data: any, supabase: any) {
         }
       } catch (studentError) {
         console.error(`❌ Error creating URL for new student ${student.first_name} ${student.last_name}:`, studentError);
-      }
-    }
-
-    // Store new participant URLs
-    if (newParticipantUrls.length > 0) {
-      const { error: urlsError } = await supabase
-        .from("lesson_participant_urls")
-        .insert(newParticipantUrls);
-
-      if (urlsError) {
-        console.error("Error storing new participant URLs:", urlsError);
-      } else {
-        console.log(`✅ Stored ${newParticipantUrls.length} new participant URLs`);
       }
     }
 
