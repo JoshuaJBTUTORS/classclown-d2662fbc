@@ -1,158 +1,259 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import LockedFeature from '@/components/common/LockedFeature';
+import { useTrialBooking } from '@/hooks/useTrialBooking';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
-import CalendarHeader from '@/components/calendar/CalendarHeader';
+import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
+import Sidebar from '@/components/navigation/Sidebar';
+import Navbar from '@/components/navigation/Navbar';
 import PageTitle from '@/components/ui/PageTitle';
-import CalendarFilters from '@/components/calendar/CalendarFilters';
-
-interface CalendarFilters {
-  selectedStudents: string[];
-  selectedTutors: string[];
-  selectedSubjects: string[];
-  selectedAdminDemos: string[];
-  selectedLessonType: string;
-}
+import { Button } from '@/components/ui/button';
+import { CalendarPlus, Info, Filter } from 'lucide-react';
+import AddLessonForm from '@/components/lessons/AddLessonForm';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Calendar = () => {
-  const { user, userRole } = useAuth();
-  const [viewInfo, setViewInfo] = useState<{
-    start: Date;
-    end: Date;
-    view: string;
-  } | null>(null);
+  const { isLearningHubOnly, userRole, user } = useAuth();
+  const { openBookingModal } = useTrialBooking();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Filter state management
-  const [filters, setFilters] = useState<CalendarFilters>({
-    selectedStudents: [],
-    selectedTutors: [],
-    selectedSubjects: [],
-    selectedAdminDemos: [],
-    selectedLessonType: 'All Lessons'
-  });
-  
+  // Filter state
   const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  // State for calendar functionality
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedAdminDemos, setSelectedAdminDemos] = useState<string[]>([]);
+  const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
+  const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
-  const { events, isLoading, fetchLessons, refreshData } = useCalendarData(filters);
+  // New state for view-based date range
+  const [currentStartDate, setCurrentStartDate] = useState<Date | undefined>(undefined);
+  const [currentEndDate, setCurrentEndDate] = useState<Date | undefined>(undefined);
+  const [currentViewType, setCurrentViewType] = useState<string>('timeGridWeek');
 
-  useEffect(() => {
-    if (user) {
-      fetchLessons();
-    }
-  }, [user, fetchLessons]);
+  // Memoize filters to prevent infinite loop - only recreate when dependencies change
+  const filters = useMemo(() => ({
+    selectedStudents,
+    selectedTutors,
+    selectedSubjects,
+    selectedAdminDemos,
+    selectedLessonType
+  }), [selectedStudents, selectedTutors, selectedSubjects, selectedAdminDemos, selectedLessonType]);
 
-  const handleViewChange = (newViewInfo: { start: Date; end: Date; view: string }) => {
-    console.log('View changed:', newViewInfo);
-    setViewInfo(newViewInfo);
-    fetchLessons(newViewInfo.start, newViewInfo.end);
+  // Fetch calendar data using the hook with date range
+  const { events, isLoading } = useCalendarData({
+    userRole,
+    userEmail: user?.email || null,
+    isAuthenticated: !!user,
+    refreshKey,
+    startDate: currentStartDate,
+    endDate: currentEndDate,
+    viewType: currentViewType,
+    filters
+  });
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
-  const handleLessonsUpdated = () => {
-    console.log('Lessons updated, refreshing calendar data');
-    refreshData();
-  };
-
-  const handleFiltersChange = () => {
-    console.log('Filters changed:', filters);
-    refreshData();
+  const closeSidebar = () => {
+    setSidebarOpen(false);
   };
 
   const toggleFilters = () => {
     setFiltersOpen(!filtersOpen);
   };
 
-  // Filter handler functions
+  // Filter handlers
   const handleStudentFilterChange = (studentIds: string[]) => {
-    setFilters(prev => ({ ...prev, selectedStudents: studentIds }));
+    setSelectedStudents(studentIds);
   };
 
   const handleTutorFilterChange = (tutorIds: string[]) => {
-    setFilters(prev => ({ ...prev, selectedTutors: tutorIds }));
+    setSelectedTutors(tutorIds);
   };
 
   const handleSubjectFilterChange = (subjects: string[]) => {
-    setFilters(prev => ({ ...prev, selectedSubjects: subjects }));
+    setSelectedSubjects(subjects);
   };
 
   const handleAdminDemoFilterChange = (adminIds: string[]) => {
-    setFilters(prev => ({ ...prev, selectedAdminDemos: adminIds }));
+    setSelectedAdminDemos(adminIds);
   };
 
   const handleLessonTypeFilterChange = (lessonType: string) => {
-    setFilters(prev => ({ ...prev, selectedLessonType: lessonType }));
+    setSelectedLessonType(lessonType);
   };
 
   const handleClearFilters = () => {
-    setFilters({
-      selectedStudents: [],
-      selectedTutors: [],
-      selectedSubjects: [],
-      selectedAdminDemos: [],
-      selectedLessonType: 'All Lessons'
-    });
+    setSelectedStudents([]);
+    setSelectedTutors([]);
+    setSelectedSubjects([]);
+    setSelectedAdminDemos([]);
+    setSelectedLessonType('All Lessons');
   };
 
-  // Trigger refresh when filters change
-  useEffect(() => {
-    if (user) {
-      handleFiltersChange();
-    }
-  }, [filters, user]);
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
+  // Handle view change from calendar
+  const handleViewChange = (viewInfo: { start: Date; end: Date; view: string }) => {
+    console.log('📅 View change received in Calendar:', viewInfo);
+    setCurrentStartDate(viewInfo.start);
+    setCurrentEndDate(viewInfo.end);
+    setCurrentViewType(viewInfo.view);
+  };
+
+  // Check if user can see filters (admin/owner only for full filters)
   const canUseFilters = userRole === 'admin' || userRole === 'owner';
 
+  // Only allow admins and owners to schedule lessons
+  const canScheduleLessons = userRole === 'admin' || userRole === 'owner';
+
+  const openAddLessonDialog = () => {
+    setShowAddLessonDialog(true);
+  };
+
+  const closeAddLessonDialog = () => {
+    setShowAddLessonDialog(false);
+  };
+
+  const handleLessonAdded = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  // If user has learning_hub_only role, show locked feature
+  if (isLearningHubOnly) {
+    return (
+      <>
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className="flex flex-col flex-1 w-full">
+          <Navbar toggleSidebar={toggleSidebar} />
+          <main className="flex-1 p-4 md:p-6">
+            <LockedFeature
+              featureName="Calendar & Scheduling"
+              featureIcon={<CalendarIcon className="h-16 w-16 text-gray-300" />}
+              description="Access your lesson calendar, book sessions, and manage your tutoring schedule."
+            />
+          </main>
+        </div>
+      </>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-screen">
-      <PageTitle 
-        title="Calendar" 
-        subtitle="View and manage your lessons and schedules"
-      />
+    <>
+      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       
-      <div className="flex-1 flex overflow-hidden">
-        {/* Filters Sidebar */}
-        {filtersOpen && canUseFilters && (
-          <div className="w-80 border-r border-border bg-background overflow-y-auto">
-            <div className="p-4">
-              <CalendarFilters
-                selectedStudents={filters.selectedStudents}
-                selectedTutors={filters.selectedTutors}
-                selectedSubjects={filters.selectedSubjects}
-                selectedAdminDemos={filters.selectedAdminDemos}
-                selectedLessonType={filters.selectedLessonType}
-                onStudentFilterChange={handleStudentFilterChange}
-                onTutorFilterChange={handleTutorFilterChange}
-                onSubjectFilterChange={handleSubjectFilterChange}
-                onAdminDemoFilterChange={handleAdminDemoFilterChange}
-                onLessonTypeFilterChange={handleLessonTypeFilterChange}
-                onClearFilters={handleClearFilters}
-              />
+      <div className="flex flex-col flex-1 w-full">
+        <Navbar toggleSidebar={toggleSidebar} />
+        <main className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
+          {/* Header with title and controls */}
+          <div className="flex-shrink-0 px-4 md:px-6 py-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center mb-4 md:mb-0">
+                <PageTitle title="Calendar" className="mb-0" />
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="ml-2">
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="p-2 max-w-xs">
+                        <p className="mb-2 text-sm font-medium">Calendar Legend:</p>
+                        <div className="flex items-center mb-1">
+                          <div className="w-3 h-3 bg-blue-500 rounded-sm mr-2"></div>
+                          <span className="text-xs">Regular lessons</span>
+                        </div>
+                        <div className="flex items-center mb-1">
+                          <div className="w-3 h-3 border-l-2 border-purple-600 pl-1 mr-2">🔄</div>
+                          <span className="text-xs">Recurring lessons</span>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                {/* Filter button */}
+                <Button 
+                  onClick={toggleFilters}
+                  variant={filtersOpen ? "default" : "outline"}
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                  size="sm"
+                >
+                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{filtersOpen ? 'Hide Filters' : 'Show Filters'}</span>
+                  <span className="sm:hidden">Filter</span>
+                </Button>
+
+                {/* Schedule lesson button for admins and owners */}
+                {canScheduleLessons && (
+                  <Button 
+                    onClick={openAddLessonDialog}
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                    size="sm"
+                  >
+                    <CalendarPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Schedule Lesson</span>
+                    <span className="sm:hidden">Schedule</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Main Calendar Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <CalendarHeader 
-              onRefresh={refreshData}
-              userRole={userRole}
-              onToggleFilters={canUseFilters ? toggleFilters : undefined}
-              filtersOpen={filtersOpen}
-            />
-          </div>
           
-          <div className="flex-1 p-6 overflow-hidden">
-            <CalendarDisplay
-              isLoading={isLoading}
-              events={events}
-              onLessonsUpdated={handleLessonsUpdated}
+          {/* Calendar Display - Full height */}
+          <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4 mobile-scroll-container">
+            <CalendarDisplay 
+              isLoading={isLoading} 
+              events={events} 
+              onLessonsUpdated={handleRefresh}
               onViewChange={handleViewChange}
             />
           </div>
-        </div>
+        </main>
       </div>
-    </div>
+
+      {/* Fixed Positioned Filters Sidebar */}
+      <CollapsibleFilters
+        selectedStudents={selectedStudents}
+        selectedTutors={selectedTutors}
+        selectedSubjects={selectedSubjects}
+        selectedAdminDemos={selectedAdminDemos}
+        selectedLessonType={selectedLessonType}
+        onStudentFilterChange={handleStudentFilterChange}
+        onTutorFilterChange={handleTutorFilterChange}
+        onSubjectFilterChange={handleSubjectFilterChange}
+        onAdminDemoFilterChange={handleAdminDemoFilterChange}
+        onLessonTypeFilterChange={handleLessonTypeFilterChange}
+        onClearFilters={handleClearFilters}
+        canUseFilters={canUseFilters}
+        isOpen={filtersOpen}
+        onToggle={toggleFilters}
+        sidebarOpen={sidebarOpen}
+      />
+
+      {/* Add Lesson Dialog for admins and owners */}
+      {canScheduleLessons && (
+        <AddLessonForm 
+          isOpen={showAddLessonDialog} 
+          onClose={closeAddLessonDialog}
+          onSuccess={handleLessonAdded}
+        />
+      )}
+    </>
   );
 };
 

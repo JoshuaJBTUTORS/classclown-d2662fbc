@@ -1,223 +1,434 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { format, parseISO } from 'date-fns';
-import { getCalendarColor, getCalendarTextColor } from '@/utils/calendarColors';
+import { toast } from 'sonner';
+import { addDays, format, parseISO, startOfDay } from 'date-fns';
+import { AppRole } from '@/contexts/AuthContext';
+import { useLessonCompletion } from './useLessonCompletion';
+import { getSubjectClass } from '@/utils/calendarColors';
+import { convertUTCToUK } from '@/utils/timezone';
 
-interface CalendarEvent {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  backgroundColor: string;
-  textColor: string;
-  className?: string;
-  extendedProps: {
-    subject: string;
-    tutorName: string;
-    tutorId: string;
-    studentNames: string[];
-    studentIds: number[];
-    isRecurring: boolean;
-    isRecurringInstance?: boolean;
-    originalLessonId?: string;
-    instanceDate?: string;
-    isTrial?: boolean;
-    status: string;
-    cancelled_at?: string;
+interface UseCalendarDataProps {
+  userRole: AppRole | null;
+  userEmail: string | null;
+  isAuthenticated: boolean;
+  refreshKey?: number;
+  startDate?: Date;
+  endDate?: Date;
+  viewType?: string;
+  filters?: {
+    selectedStudents: string[];
+    selectedTutors: string[];
+    selectedSubjects: string[];
+    selectedAdminDemos: string[];
+    selectedLessonType: string;
   };
 }
 
-interface CalendarFilters {
-  selectedStudents: string[];
-  selectedTutors: string[];
-  selectedSubjects: string[];
-  selectedAdminDemos: string[];
-  selectedLessonType: string;
-}
-
-export const useCalendarData = (filters?: CalendarFilters) => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+export const useCalendarData = ({ 
+  userRole, 
+  userEmail, 
+  isAuthenticated, 
+  refreshKey,
+  startDate,
+  endDate,
+  viewType,
+  filters 
+}: UseCalendarDataProps) => {
+  const [rawLessons, setRawLessons] = useState<any[]>([]);
+  
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user, userRole } = useAuth();
+  
+  // Add ref to track current fetch to prevent overlapping calls
+  const currentFetchRef = useRef<Promise<void> | null>(null);
 
-  const fetchLessons = useCallback(async (start?: Date, end?: Date) => {
-    if (!user) return;
+  // Fixed: Create stable lessonIds memoization with null safety
+  const lessonIds = useMemo(() => {
+    if (!rawLessons || rawLessons.length === 0) {
+      return [];
+    }
+    const validIds = rawLessons.map(lesson => lesson?.id).filter(id => id != null);
+    console.log(`📊 Lesson ID Processing: ${validIds.length} valid lesson IDs extracted from ${rawLessons.length} raw lessons`);
+    return validIds;
+  }, [rawLessons]);
 
-    setIsLoading(true);
-    setError(null);
+  // Wrap lesson completion hook in error boundary
+  const { completionData } = useLessonCompletion(lessonIds);
 
-    try {
-      let query = supabase
-        .from('lessons')
-        .select(`
-          id,
-          title,
-          subject,
-          start_time,
-          end_time,
-          tutor:tutors(id, first_name, last_name),
-          lesson_students(student:students(id, first_name, last_name)),
-          is_recurring,
-          recurring_lesson_id,
-          is_trial,
-          status,
-          cancelled_at
-        `)
-        .order('start_time', { ascending: true });
+  // Memoize events to prevent unnecessary recalculations
+  const events = useMemo(() => {
+    const calendarEvents = [];
 
-      // Apply role-based filtering
-      if (userRole === 'tutor') {
-        const { data: tutorData } = await supabase
-          .from('tutors')
-          .select('id')
-          .eq('email', user.email)
-          .single();
+    // Check if admin demo filter is active
+    const isAdminDemoFilterActive = filters?.selectedAdminDemos && filters.selectedAdminDemos.length > 0;
 
-        if (tutorData) {
-          query = query.eq('tutor_id', tutorData.id);
+    // Only process regular lessons if admin demo filter is NOT active
+    if (rawLessons && rawLessons.length > 0 && !isAdminDemoFilterActive) {
+      const lessonEvents = rawLessons.map(lesson => {
+        if (!lesson || !lesson.id) return null;
+        
+        // Get completion status for this lesson
+        const completionInfo = completionData[lesson.id];
+        const isCompleted = completionInfo?.isCompleted || false;
+
+        // Get subject-specific class for proper coloring
+        const subjectClass = getSubjectClass(lesson.subject, lesson.lesson_type);
+        let className = `calendar-event ${subjectClass}`;
+        
+        if (lesson.is_recurring_instance) {
+          className += ' recurring-instance';
         }
-      } else if (userRole === 'student') {
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-
-        if (studentData) {
-          // Get lesson IDs for this student
-          const { data: lessonStudentData } = await supabase
-            .from('lesson_students')
-            .select('lesson_id')
-            .eq('student_id', studentData.id);
-
-          if (lessonStudentData && lessonStudentData.length > 0) {
-            const lessonIds = lessonStudentData.map(ls => ls.lesson_id);
-            query = query.in('id', lessonIds);
-          }
+        if (isCompleted) {
+          className += ' completed-event';
         }
-      }
-
-      // Apply date filters if provided
-      if (start) {
-        query = query.gte('start_time', start.toISOString());
-      }
-      if (end) {
-        query = query.lte('start_time', end.toISOString());
-      }
-
-      const { data: lessons, error } = await query;
-
-      if (error) {
-        throw error;
-      }
-
-      let filteredLessons = lessons || [];
-
-      // Apply filters if provided and user is admin/owner
-      if (filters && (userRole === 'admin' || userRole === 'owner')) {
-        // Filter by tutors
-        if (filters.selectedTutors.length > 0) {
-          filteredLessons = filteredLessons.filter(lesson => 
-            lesson.tutor && filters.selectedTutors.includes(lesson.tutor.id)
-          );
-        }
-
-        // Filter by subjects
-        if (filters.selectedSubjects.length > 0) {
-          filteredLessons = filteredLessons.filter(lesson => 
-            lesson.subject && filters.selectedSubjects.includes(lesson.subject)
-          );
-        }
-
-        // Filter by students
-        if (filters.selectedStudents.length > 0) {
-          filteredLessons = filteredLessons.filter(lesson => {
-            const lessonStudentIds = lesson.lesson_students?.map(ls => ls.student.id.toString()) || [];
-            return filters.selectedStudents.some(studentId => lessonStudentIds.includes(studentId));
-          });
-        }
-
-        // Filter by lesson type
-        if (filters.selectedLessonType && filters.selectedLessonType !== 'All Lessons') {
-          if (filters.selectedLessonType === 'Trial Lessons') {
-            filteredLessons = filteredLessons.filter(lesson => lesson.is_trial);
-          } else if (filters.selectedLessonType === 'Full Lessons') {
-            filteredLessons = filteredLessons.filter(lesson => !lesson.is_trial);
-          }
-        }
-
-        // Filter by admin demos (if this functionality is implemented)
-        if (filters.selectedAdminDemos.length > 0) {
-          // This would require additional logic based on how admin demos are stored
-          // For now, we'll skip this filter
-        }
-      }
-
-      const calendarEvents: CalendarEvent[] = filteredLessons.map((lesson: any) => {
-        const tutorName = lesson.tutor 
-          ? `${lesson.tutor.first_name} ${lesson.tutor.last_name}`
-          : 'Unassigned';
-
-        const studentNames = lesson.lesson_students?.map((ls: any) => 
-          `${ls.student.first_name} ${ls.student.last_name}`
-        ) || [];
-
-        const studentIds = lesson.lesson_students?.map((ls: any) => ls.student.id) || [];
-
-        const backgroundColor = getCalendarColor(lesson.subject);
-        const textColor = getCalendarTextColor(lesson.subject);
-
-        // Determine CSS class based on lesson status
-        const eventClasses = [];
-        if (lesson.status === 'cancelled' || lesson.cancelled_at) {
-          eventClasses.push('cancelled-event');
-        }
-
+        
         return {
           id: lesson.id,
-          title: lesson.title,
-          start: lesson.start_time,
-          end: lesson.end_time,
-          backgroundColor,
-          textColor,
-          className: eventClasses.join(' '),
+          title: lesson.title || 'Untitled Lesson',
+          start: convertUTCToUK(lesson.start_time).toISOString(),
+          end: convertUTCToUK(lesson.end_time).toISOString(),
+          className,
           extendedProps: {
-            subject: lesson.subject || 'General',
-            tutorName,
-            tutorId: lesson.tutor?.id || '',
-            studentNames,
-            studentIds,
-            isRecurring: lesson.is_recurring || false,
-            isRecurringInstance: !!lesson.recurring_lesson_id,
-            originalLessonId: lesson.recurring_lesson_id,
-            isTrial: lesson.is_trial || false,
-            status: lesson.status || 'scheduled',
-            cancelled_at: lesson.cancelled_at
+            isRecurring: lesson.is_recurring,
+            isRecurringInstance: lesson.is_recurring_instance,
+            parentLessonId: lesson.parent_lesson_id,
+            instanceDate: lesson.instance_date,
+            recurrenceInterval: lesson.recurrence_interval,
+            recurrenceEndDate: lesson.recurrence_end_date,
+            description: lesson.description,
+            subject: lesson.subject,
+            userRole: userRole,
+            tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
+              id: lesson.tutor.id,
+              first_name: lesson.tutor.first_name,
+              last_name: lesson.tutor.last_name,
+              email: lesson.tutor.email
+            } : null,
+            students: lesson.lesson_students?.map((ls: any) => ({
+              id: ls.student_id,
+              name: ls.student ? `${ls.student.first_name} ${ls.student.last_name}` : 'Unknown Student'
+            })) || [],
+            isCompleted: isCompleted,
+            completionDetails: completionInfo,
+            eventType: 'lesson'
           }
         };
-      });
+      }).filter(event => event !== null);
 
-      setEvents(calendarEvents);
-    } catch (err) {
-      console.error('Error fetching lessons:', err);
-      setError('Failed to load lessons');
-    } finally {
-      setIsLoading(false);
+      calendarEvents.push(...lessonEvents);
     }
-  }, [user, userRole, filters]);
 
-  const refreshData = useCallback(() => {
-    fetchLessons();
-  }, [fetchLessons]);
+    return calendarEvents;
+  }, [rawLessons, userRole, completionData]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      // Prevent overlapping fetch calls
+      if (currentFetchRef.current) {
+        console.log('🔄 Fetch already in progress, skipping...');
+        return;
+      }
+
+      if (!isAuthenticated || !userRole || !userEmail) {
+        console.log('❌ Missing authentication data:', { isAuthenticated, userRole, userEmail });
+        setRawLessons([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        console.log("🔍 Starting lesson fetch process for role:", userRole);
+        console.log(`📅 Date range: ${startDate?.toISOString()} to ${endDate?.toISOString()} (${viewType} view)`);
+        
+        const fetchPromise = (async () => {
+          let query;
+
+          if (userRole === 'student') {
+            console.log('👨‍🎓 Processing student data for email:', userEmail);
+            
+            // Enhanced student lookup with better error handling
+            const { data: studentData, error: studentError } = await supabase
+              .from('students')
+              .select('id, user_id, first_name, last_name, email')
+              .eq('email', userEmail)
+              .maybeSingle();
+
+            if (studentError) {
+              console.error('❌ Error fetching student data:', studentError);
+              toast.error('Failed to load student data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!studentData) {
+              console.log('❌ No student record found for email:', userEmail);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            console.log('✅ Found student data:', studentData);
+
+            // Check if student record needs user_id update
+            const currentUser = await supabase.auth.getUser();
+            if (currentUser.data.user && !studentData.user_id) {
+              console.log('🔄 Student record missing user_id, updating...');
+              
+              // Update student record to link user_id
+              const { error: updateError } = await supabase
+                .from('students')
+                .update({ user_id: currentUser.data.user.id })
+                .eq('id', studentData.id);
+
+              if (updateError) {
+                console.error('❌ Failed to update student user_id:', updateError);
+              } else {
+                console.log('✅ Successfully updated student user_id');
+              }
+            }
+
+            // Fetch both original lessons and instances for this student
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                lesson_students!inner(
+                  student_id
+                )
+              `)
+              .eq('lesson_students.student_id', studentData.id);
+
+            // Add date range filter if provided
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
+
+          } else if (userRole === 'parent') {
+            console.log('👨‍👩‍👧‍👦 Processing parent data for email:', userEmail);
+            
+            // For parents, first get the parent record
+            const { data: parentData, error: parentError } = await supabase
+              .from('parents')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+
+            if (parentError) {
+              console.error('❌ Error fetching parent data:', parentError);
+              toast.error('Failed to load parent data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!parentData) {
+              console.log('❌ No parent record found for email:', userEmail);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            // Get all students linked to this parent
+            const { data: studentData, error: studentError } = await supabase
+              .from('students')
+              .select('id')
+              .eq('parent_id', parentData.id);
+
+            if (studentError) {
+              console.error('❌ Error fetching parent\'s students:', studentError);
+              toast.error('Failed to load student data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!studentData || studentData.length === 0) {
+              console.log('❌ No students found for parent:', parentData.id);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            const studentIds = studentData.map(s => s.id);
+            console.log('✅ Found students for parent:', studentIds);
+
+            // Fetch both original lessons and instances for this parent's students
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                lesson_students!inner(
+                  student_id,
+                  student:students(id, first_name, last_name)
+                )
+              `)
+              .in('lesson_students.student_id', studentIds);
+
+            // Add date range filter if provided
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
+
+          } else if (userRole === 'tutor') {
+            console.log('👨‍🏫 Processing tutor data for email:', userEmail);
+            
+            const { data: tutorData, error: tutorError } = await supabase
+              .from('tutors')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+
+            if (tutorError) {
+              console.error('❌ Error fetching tutor data:', tutorError);
+              toast.error('Failed to load tutor data');
+              setIsLoading(false);
+              return;
+            }
+
+            if (!tutorData) {
+              console.log('❌ No tutor record found for email:', userEmail);
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+
+            console.log('✅ Found tutor data:', tutorData);
+
+            // Fetch both original lessons and instances for this tutor
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                lesson_students(
+                  student_id,
+                  student:students(id, first_name, last_name)
+                )
+              `)
+              .eq('tutor_id', tutorData.id);
+
+            // Add date range filter if provided
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
+
+          } else if (userRole === 'admin' || userRole === 'owner') {
+            console.log('👑 Processing admin/owner data - fetching lessons for date range');
+            
+            // Fetch all lessons (original lessons and instances) for admin/owner
+            query = supabase
+              .from('lessons')
+              .select(`
+                *,
+                tutor:tutors(id, first_name, last_name, email),
+                lesson_students(
+                  student_id,
+                  student:students(id, first_name, last_name)
+                )
+              `);
+
+            // Add date range filter if provided (for admin/owner this is crucial for performance)
+            if (startDate && endDate) {
+              query = query
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
+
+            if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
+              console.log('🔍 Applying tutor filter:', filters.selectedTutors);
+              query = query.in('tutor_id', filters.selectedTutors);
+            }
+
+            if (filters?.selectedStudents && filters.selectedStudents.length > 0) {
+              console.log('🔍 Applying student filter:', filters.selectedStudents);
+              query = query.in('lesson_students.student_id', filters.selectedStudents.map(id => parseInt(id)));
+            }
+
+          } else {
+            console.log('❓ Unknown user role:', userRole);
+            setRawLessons([]);
+            setIsLoading(false);
+            return;
+          }
+
+          console.log('🚀 Executing database query...');
+          const { data, error } = await query;
+
+          if (error) {
+            console.error('❌ Database query error:', error);
+            throw error;
+          }
+
+          console.log(`✅ Database query completed. Raw results: ${data?.length || 0} lessons`);
+          
+          let filteredData = data || [];
+          
+          // Log before demo data filtering
+          const beforeDemoFilter = filteredData.length;
+          filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
+          const afterDemoFilter = filteredData.length;
+          console.log(`🧹 Demo data filter: ${beforeDemoFilter} → ${afterDemoFilter} (removed ${beforeDemoFilter - afterDemoFilter} demo lessons)`);
+          
+          // Apply student filter for admin/owner
+          if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
+            const beforeStudentFilter = filteredData.length;
+            filteredData = filteredData.filter(lesson => {
+              if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
+              return lesson.lesson_students.some(ls => 
+                filters.selectedStudents.includes(ls.student_id.toString())
+              );
+            });
+            const afterStudentFilter = filteredData.length;
+            console.log(`👥 Student filter: ${beforeStudentFilter} → ${afterStudentFilter} (removed ${beforeStudentFilter - afterStudentFilter} lessons)`);
+          }
+
+          // Apply subject filter
+          if (filters?.selectedSubjects && filters.selectedSubjects.length > 0) {
+            const beforeSubjectFilter = filteredData.length;
+            filteredData = filteredData.filter(lesson => 
+              filters.selectedSubjects.includes(lesson.subject)
+            );
+            const afterSubjectFilter = filteredData.length;
+            console.log(`📚 Subject filter: ${beforeSubjectFilter} → ${afterSubjectFilter} (removed ${beforeSubjectFilter - afterSubjectFilter} lessons)`);
+          }
+
+          // Apply lesson type filter
+          if (filters?.selectedLessonType && filters.selectedLessonType !== 'All Lessons') {
+            const beforeTypeFilter = filteredData.length;
+            if (filters.selectedLessonType === 'Trial Lessons') {
+              filteredData = filteredData.filter(lesson => lesson.lesson_type === 'trial');
+            } else if (filters.selectedLessonType === 'Full Lessons') {
+              filteredData = filteredData.filter(lesson => lesson.lesson_type !== 'trial' || lesson.lesson_type == null);
+            }
+            const afterTypeFilter = filteredData.length;
+            console.log(`🎯 Lesson type filter (${filters.selectedLessonType}): ${beforeTypeFilter} → ${afterTypeFilter} (removed ${beforeTypeFilter - afterTypeFilter} lessons)`);
+          }
+
+          console.log(`🎯 FINAL RESULT: ${filteredData.length} lessons will be processed for completion data`);
+          setRawLessons(filteredData);
+
+        })();
+
+        currentFetchRef.current = fetchPromise;
+        await fetchPromise;
+
+      } catch (error) {
+        console.error('💥 Critical error in fetchEvents:', error);
+        toast.error('Failed to load lessons');
+      } finally {
+        setIsLoading(false);
+        currentFetchRef.current = null;
+      }
+    };
+
+    fetchEvents();
+  }, [userRole, userEmail, isAuthenticated, refreshKey, startDate, endDate, viewType, filters]);
 
   return {
     events,
-    isLoading,
-    error,
-    fetchLessons,
-    refreshData
+    isLoading
   };
 };
