@@ -55,23 +55,47 @@ serve(async (req) => {
           continue;
         }
 
-        console.log(`Using original lesson as template: ${originalLesson.id}`);
+        // Get the most recent lesson instance to use as template (reflects current tutor/student changes)
+        const { data: mostRecentInstance, error: recentInstanceError } = await supabase
+          .from('lessons')
+          .select(`
+            *,
+            lesson_students(student_id)
+          `)
+          .eq('parent_lesson_id', originalLesson.id)
+          .eq('is_recurring_instance', true)
+          .order('instance_date', { ascending: false })
+          .limit(1)
+          .single();
 
-        // Get students for the original lesson (students list doesn't change)
-        const { data: lessonStudents, error: studentsError } = await supabase
-          .from('lesson_students')
-          .select('student_id')
-          .eq('lesson_id', originalLesson.id);
+        let templateLesson;
+        let lessonStudents;
 
-        if (studentsError) {
-          console.error(`Failed to get students for lesson ${originalLesson.id}:`, studentsError);
-          continue;
+        if (mostRecentInstance && !recentInstanceError) {
+          console.log(`Using most recent instance as template: ${mostRecentInstance.id}`);
+          templateLesson = mostRecentInstance;
+          lessonStudents = mostRecentInstance.lesson_students;
+        } else {
+          console.log(`Using original lesson as template: ${originalLesson.id}`);
+          templateLesson = originalLesson;
+          
+          // Get students for the original lesson
+          const { data: originalLessonStudents, error: studentsError } = await supabase
+            .from('lesson_students')
+            .select('student_id')
+            .eq('lesson_id', originalLesson.id);
+
+          if (studentsError) {
+            console.error(`Failed to get students for lesson ${originalLesson.id}:`, studentsError);
+            continue;
+          }
+          lessonStudents = originalLessonStudents;
         }
 
         // Generate next batch of instances (20 at a time)
         const instances = [];
         const lastGeneratedDate = new Date(group.instances_generated_until);
-        const lessonDuration = new Date(originalLesson.end_time).getTime() - new Date(originalLesson.start_time).getTime();
+        const lessonDuration = new Date(templateLesson.end_time).getTime() - new Date(templateLesson.start_time).getTime();
 
         let currentDate = new Date(lastGeneratedDate);
         let instanceCount = 0;
@@ -82,7 +106,7 @@ serve(async (req) => {
 
         while (instanceCount < maxInstances && currentDate <= endDate) {
           // Move to next occurrence based on recurrence interval
-          switch (originalLesson.recurrence_interval) {
+          switch (templateLesson.recurrence_interval) {
             case 'daily':
               currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
               break;
@@ -104,13 +128,13 @@ serve(async (req) => {
             const instanceEndTime = new Date(instanceStartTime.getTime() + lessonDuration);
 
             instances.push({
-              title: originalLesson.title,
-              description: originalLesson.description || '',
-              subject: originalLesson.subject,
-              tutor_id: originalLesson.tutor_id,
+              title: templateLesson.title,
+              description: templateLesson.description || '',
+              subject: templateLesson.subject,
+              tutor_id: templateLesson.tutor_id,
               start_time: instanceStartTime.toISOString(),
               end_time: instanceEndTime.toISOString(),
-              is_group: originalLesson.is_group,
+              is_group: templateLesson.is_group,
               status: 'scheduled',
               is_recurring: false,
               is_recurring_instance: true,
@@ -119,10 +143,10 @@ serve(async (req) => {
               recurrence_interval: null,
               recurrence_end_date: null,
               recurrence_day: null,
-              // Always inherit room details from original lesson
-              lesson_space_room_id: originalLesson.lesson_space_room_id,
-              lesson_space_room_url: originalLesson.lesson_space_room_url,
-              lesson_space_space_id: null, // Reset to NULL for new instances
+              // Don't inherit room details - they will be created fresh by LessonSpace integration
+              lesson_space_room_id: null,
+              lesson_space_room_url: null,
+              lesson_space_space_id: null,
             });
 
             instanceCount++;
@@ -130,7 +154,7 @@ serve(async (req) => {
         }
 
         if (instances.length > 0) {
-          console.log(`Generating ${instances.length} instances for ${group.group_name} with inherited room details`);
+          console.log(`Generating ${instances.length} instances for ${group.group_name}`);
 
           // Insert lesson instances
           const { data: insertedLessons, error: lessonsError } = await supabase
@@ -165,6 +189,42 @@ serve(async (req) => {
             }
           }
 
+          // Create LessonSpace rooms for all new instances
+          console.log(`Creating LessonSpace rooms for ${insertedLessons.length} new instances`);
+          let roomsCreatedCount = 0;
+          
+          for (const lesson of insertedLessons) {
+            try {
+              console.log(`Creating LessonSpace room for lesson: ${lesson.id}`);
+              
+              const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
+                body: {
+                  action: 'create-room',
+                  lessonId: lesson.id,
+                  title: templateLesson.title,
+                  startTime: new Date().toISOString(),
+                  duration: Math.round(lessonDuration / (1000 * 60)) // Convert to minutes
+                }
+              });
+
+              if (roomError) {
+                console.error(`Failed to create LessonSpace room for lesson ${lesson.id}:`, roomError);
+                continue;
+              }
+
+              if (roomData && roomData.success) {
+                console.log(`✅ LessonSpace room created successfully for lesson ${lesson.id}`);
+                roomsCreatedCount++;
+              } else {
+                console.error(`❌ LessonSpace room creation failed for lesson ${lesson.id}:`, roomData);
+              }
+            } catch (roomCreationError) {
+              console.error(`❌ Error creating LessonSpace room for lesson ${lesson.id}:`, roomCreationError);
+            }
+          }
+
+          console.log(`Created LessonSpace rooms for ${roomsCreatedCount}/${insertedLessons.length} lessons`);
+
           // Update the recurring group with new generation info
           const { error: updateError } = await supabase
             .from('recurring_lesson_groups')
@@ -193,7 +253,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Generated ${totalInstancesGenerated} lesson instances with inherited room details`,
+        message: `Generated ${totalInstancesGenerated} lesson instances with LessonSpace rooms`,
         groupsProcessed: recurringGroups?.length || 0,
         totalInstancesGenerated
       }),
