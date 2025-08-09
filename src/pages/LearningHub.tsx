@@ -1,33 +1,35 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { learningHubService } from '@/services/learningHubService';
 import { learningHubPaymentService } from '@/services/learningHubPaymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubjects } from '@/hooks/useSubjects';
 import { Course } from '@/types/course';
 import CourseCard from '@/components/learningHub/CourseCard';
-import LearningHubAccessControl from '@/components/learningHub/LearningHubAccessControl';
 import LearningHubSubscriptionModal from '@/components/learningHub/LearningHubSubscriptionModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { BookOpen, Search, Grid3X3, List, Filter, Star, Clock, Users, Award, ArrowRight, AlertCircle } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { BookOpen, Search, Grid3X3, List } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { EDUCATIONAL_STAGES } from '@/constants/subjects';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'newest' | 'popular' | 'alphabetical' | 'difficulty';
+type EducationalStage = 'all' | '11_plus' | 'ks2' | 'ks3' | 'gcse';
 
 const LearningHub: React.FC = () => {
   const { user, isOwner } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [selectedStage, setSelectedStage] = useState<EducationalStage>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
@@ -72,9 +74,15 @@ const LearningHub: React.FC = () => {
       const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.description?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSubject = selectedSubject === 'all' || course.subject === selectedSubject;
-      const matchesDifficulty = selectedDifficulty === 'all' || course.difficulty_level === selectedDifficulty;
       
-      return matchesSearch && matchesSubject && matchesDifficulty;
+      // Filter by educational stage
+      let matchesStage = true;
+      if (selectedStage !== 'all' && course.subject) {
+        const stageData = EDUCATIONAL_STAGES[selectedStage];
+        matchesStage = stageData?.subjects?.includes(course.subject) || false;
+      }
+      
+      return matchesSearch && matchesSubject && matchesStage;
     });
 
     // Sort courses
@@ -83,7 +91,6 @@ const LearningHub: React.FC = () => {
         filtered.sort((a, b) => a.title.localeCompare(b.title));
         break;
       case 'popular':
-        // Sort by created date as a proxy for popularity since path_position doesn't exist
         filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
         break;
       case 'difficulty':
@@ -99,7 +106,7 @@ const LearningHub: React.FC = () => {
     }
 
     return filtered;
-  }, [courses, searchTerm, selectedSubject, selectedDifficulty, sortBy]);
+  }, [courses, searchTerm, selectedSubject, selectedStage, sortBy]);
 
   // Get unique subjects for filter
   const subjects = React.useMemo(() => {
@@ -109,16 +116,20 @@ const LearningHub: React.FC = () => {
 
   if (!user) {
     return (
-      <LearningHubAccessControl>
-        <div>Please sign in to access Learning Hub</div>
-      </LearningHubAccessControl>
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Please sign in to access Learning Hub</h1>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Show loading state
   if (coursesLoading || (!isOwner && accessLoading)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-white">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -131,55 +142,88 @@ const LearningHub: React.FC = () => {
   const hasAccess = isOwner || accessInfo?.hasAccess;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
-        {/* Preview Banner for Non-Subscribers */}
-        {!hasAccess && (
-          <Alert className="mb-6 border-amber-200 bg-amber-50">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="flex items-center justify-between">
-              <span className="text-amber-800">
-                You're browsing in preview mode. Subscribe to unlock full access to all courses.
-              </span>
-              <Button 
-                size="sm" 
-                onClick={handleGetAccess}
-                className="ml-4 bg-primary hover:bg-primary/90"
-              >
-                Get Access
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Learning Hub</h1>
-            <p className="text-gray-600">Explore our comprehensive course library</p>
-          </div>
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        {/* Top Navigation */}
+        <div className="flex items-center justify-between">
+          <ToggleGroup type="single" value="courses" className="bg-gray-100 p-1 rounded-lg">
+            <ToggleGroupItem 
+              value="courses" 
+              className="data-[state=on]:bg-white data-[state=on]:shadow-sm px-6 py-2"
+            >
+              Courses
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="learning-path" 
+              className="data-[state=on]:bg-white data-[state=on]:shadow-sm px-6 py-2"
+              onClick={() => navigate('/learning-hub/revision')}
+            >
+              Learning Path
+            </ToggleGroupItem>
+          </ToggleGroup>
           
-          <div className="flex items-center gap-4 mt-4 lg:mt-0">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                <BookOpen className="w-3 h-3 mr-1" />
-                {courses.length} Courses
-              </Badge>
-              {hasAccess && (
-                <Badge variant="outline" className="bg-primary/10 text-primary">
-                  Premium Access
-                </Badge>
-              )}
-            </div>
-          </div>
+          {!hasAccess && (
+            <Button onClick={handleGetAccess} className="bg-primary hover:bg-primary/90">
+              Get Access
+            </Button>
+          )}
         </div>
 
-        {/* Filters and Search */}
-        <Card className="mb-8">
+        {/* Educational Stage Selector */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Choose Your Educational Stage</CardTitle>
+            <CardDescription>
+              Filter courses by your educational level to find the most relevant content
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedStage === 'all' ? 'default' : 'outline'}
+                onClick={() => setSelectedStage('all')}
+                className="rounded-full"
+              >
+                All Courses
+              </Button>
+              <Button
+                variant={selectedStage === '11_plus' ? 'default' : 'outline'}
+                onClick={() => setSelectedStage('11_plus')}
+                className="rounded-full"
+              >
+                11 Plus
+              </Button>
+              <Button
+                variant={selectedStage === 'ks2' ? 'default' : 'outline'}
+                onClick={() => setSelectedStage('ks2')}
+                className="rounded-full"
+              >
+                Key Stage 2
+              </Button>
+              <Button
+                variant={selectedStage === 'ks3' ? 'default' : 'outline'}
+                onClick={() => setSelectedStage('ks3')}
+                className="rounded-full"
+              >
+                Key Stage 3
+              </Button>
+              <Button
+                variant={selectedStage === 'gcse' ? 'default' : 'outline'}
+                onClick={() => setSelectedStage('gcse')}
+                className="rounded-full"
+              >
+                GCSE & Year 11
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Filters */}
+        <Card>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+            <div className="flex flex-col lg:flex-row gap-4 items-center">
               {/* Search */}
-              <div className="lg:col-span-2 relative">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search courses..."
@@ -191,7 +235,7 @@ const LearningHub: React.FC = () => {
 
               {/* Subject Filter */}
               <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger>
+                <SelectTrigger className="w-48">
                   <SelectValue placeholder="All Subjects" />
                 </SelectTrigger>
                 <SelectContent>
@@ -202,39 +246,7 @@ const LearningHub: React.FC = () => {
                 </SelectContent>
               </Select>
 
-              {/* Difficulty Filter */}
-              <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Levels" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="beginner">Beginner</SelectItem>
-                  <SelectItem value="intermediate">Intermediate</SelectItem>
-                  <SelectItem value="advanced">Advanced</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="alphabetical">A-Z</SelectItem>
-                  <SelectItem value="popular">Most Popular</SelectItem>
-                  <SelectItem value="difficulty">By Difficulty</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* View Controls */}
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Showing {filteredAndSortedCourses.length} of {courses.length} courses
-              </div>
-              
+              {/* View Controls */}
               <div className="flex items-center gap-2">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
@@ -254,6 +266,14 @@ const LearningHub: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Course Count */}
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+            <BookOpen className="w-3 h-3 mr-1" />
+            {filteredAndSortedCourses.length} courses found
+          </Badge>
+        </div>
 
         {/* Courses Grid/List */}
         {filteredAndSortedCourses.length > 0 ? (
@@ -283,7 +303,7 @@ const LearningHub: React.FC = () => {
                 onClick={() => {
                   setSearchTerm('');
                   setSelectedSubject('all');
-                  setSelectedDifficulty('all');
+                  setSelectedStage('all');
                 }}
               >
                 Clear Filters
