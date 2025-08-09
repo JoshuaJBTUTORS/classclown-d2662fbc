@@ -65,9 +65,17 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   };
 
   const renderEventContent = (eventInfo: any) => {
+    const isCancelled = eventInfo.event.extendedProps.status === 'cancelled' || 
+                       eventInfo.event.extendedProps.cancelled_at;
+
     return (
-      <div className="calendar-event-content">
+      <div className="calendar-event-content relative">
         <p className="event-title">{eventInfo.event.title}</p>
+        {isCancelled && (
+          <div className="cancellation-indicator">
+            ✖
+          </div>
+        )}
       </div>
     );
   };

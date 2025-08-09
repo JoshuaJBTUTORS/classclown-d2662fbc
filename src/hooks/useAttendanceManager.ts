@@ -1,12 +1,13 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
+import { useLessonCancellationProcessor } from './useLessonCancellationProcessor';
 
 export const useAttendanceManager = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const { checkAndProcessCancellation } = useLessonCancellationProcessor();
 
   const markAttendance = async (
     lessonId: string,
@@ -35,6 +36,10 @@ export const useAttendanceManager = () => {
       if (error) throw error;
 
       toast.success(`Attendance marked as ${status}`);
+
+      // Check if lesson should be cancelled after marking attendance
+      await checkAndProcessCancellation(lessonId);
+
       return true;
     } catch (error) {
       console.error('Error marking attendance:', error);
