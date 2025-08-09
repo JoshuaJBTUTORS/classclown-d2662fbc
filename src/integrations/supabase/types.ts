@@ -1312,6 +1312,63 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          grace_period_end: string | null
+          grace_period_start: string | null
+          has_used_trial: boolean | null
+          id: string
+          previous_status: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_tier: string | null
+          trial_end: string | null
+          trial_used_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          grace_period_end?: string | null
+          grace_period_start?: string | null
+          has_used_trial?: boolean | null
+          id?: string
+          previous_status?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_tier?: string | null
+          trial_end?: string | null
+          trial_used_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          grace_period_end?: string | null
+          grace_period_start?: string | null
+          has_used_trial?: boolean | null
+          id?: string
+          previous_status?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_tier?: string | null
+          trial_end?: string | null
+          trial_used_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2399,6 +2456,10 @@ export type Database = {
         Args: { current_module_id: string; user_id_param: string }
         Returns: boolean
       }
+      check_learning_hub_access: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
       cleanup_old_time_off_requests: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -2451,6 +2512,17 @@ export type Database = {
           percentage_score: number
           completed_sessions: number
           last_attempt_date: string
+        }[]
+      }
+      get_user_platform_subscription: {
+        Args: { user_id_param: string }
+        Returns: {
+          id: string
+          status: string
+          trial_end: string
+          current_period_end: string
+          has_used_trial: boolean
+          grace_period_end: string
         }[]
       }
       get_user_purchased_courses: {
