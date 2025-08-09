@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { learningHubPaymentService } from '@/services/learningHubPaymentService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubjects } from '@/hooks/useSubjects';
 import { Course } from '@/types/course';
 import CourseCard from '@/components/learningHub/CourseCard';
 import LearningHubAccessControl from '@/components/learningHub/LearningHubAccessControl';
@@ -11,9 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { BookOpen, Search, Grid3X3, List, Filter, Star, Clock, Users, Award } from 'lucide-react';
+import { BookOpen, Search, Grid3X3, List, Filter, Star, Clock, Users, Award, ArrowRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'newest' | 'popular' | 'alphabetical' | 'difficulty';
@@ -33,6 +36,9 @@ const LearningHub: React.FC = () => {
     queryKey: ['courses'],
     queryFn: learningHubService.getCourses,
   });
+
+  // Fetch curated subjects
+  const { subjects: curatedSubjects, isLoading: subjectsLoading } = useSubjects();
 
   // Check Learning Hub access for non-owners
   const { data: accessInfo, isLoading: accessLoading } = useQuery({
@@ -61,6 +67,17 @@ const LearningHub: React.FC = () => {
   const handleGetAccess = () => {
     setShowSubscriptionModal(true);
   };
+
+  // Generate subject counts from courses
+  const subjectCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    courses.forEach(course => {
+      if (course.subject) {
+        counts.set(course.subject, (counts.get(course.subject) || 0) + 1);
+      }
+    });
+    return counts;
+  }, [courses]);
 
   // Filter and sort courses
   const filteredAndSortedCourses = React.useMemo(() => {
@@ -177,7 +194,7 @@ const LearningHub: React.FC = () => {
             </div>
 
             {/* Pricing Card */}
-            <Card className="max-w-md mx-auto">
+            <Card className="max-w-md mx-auto mb-12">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">Learning Hub Access</CardTitle>
                 <CardDescription>
@@ -231,6 +248,71 @@ const LearningHub: React.FC = () => {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Browse by Subject Section */}
+            <div className="mb-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">Browse by Subject</h2>
+                <p className="text-lg text-gray-600">Explore our subjects to see what's available</p>
+              </div>
+
+              {subjectsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-6">
+                        <Skeleton className="h-4 w-3/4 mb-2" />
+                        <Skeleton className="h-3 w-1/2 mb-4" />
+                        <Skeleton className="h-9 w-full" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {curatedSubjects
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((subject) => {
+                      const courseCount = subjectCounts.get(subject.name) || 0;
+                      return (
+                        <Card key={subject.id} className="hover:shadow-lg transition-shadow">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg mb-1">{subject.name}</h3>
+                                <Badge variant="outline" className="text-xs mb-2">
+                                  {subject.category}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            {subject.description && (
+                              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                                {subject.description}
+                              </p>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">
+                                {courseCount} course{courseCount !== 1 ? 's' : ''}
+                              </span>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleGetAccess}
+                                className="flex items-center gap-1"
+                              >
+                                Explore
+                                <ArrowRight className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
