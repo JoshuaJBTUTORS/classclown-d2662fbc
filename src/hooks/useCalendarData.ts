@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
 import { AppRole } from '@/contexts/AuthContext';
 import { useLessonCompletion } from './useLessonCompletion';
+import { useAttendanceStatus } from './useAttendanceStatus';
 import { getSubjectClass } from '@/utils/calendarColors';
 import { convertUTCToUK } from '@/utils/timezone';
 
@@ -54,6 +54,9 @@ export const useCalendarData = ({
 
   // Wrap lesson completion hook in error boundary
   const { completionData } = useLessonCompletion(lessonIds);
+  
+  // Add attendance status hook
+  const { attendanceStatusData } = useAttendanceStatus(lessonIds);
 
   // Memoize events to prevent unnecessary recalculations
   const events = useMemo(() => {
@@ -70,6 +73,11 @@ export const useCalendarData = ({
         // Get completion status for this lesson
         const completionInfo = completionData[lesson.id];
         const isCompleted = completionInfo?.isCompleted || false;
+        
+        // Get attendance status for this lesson
+        const attendanceInfo = attendanceStatusData[lesson.id];
+        const isCancelled = attendanceInfo?.isCancelled || false;
+        const isAbsent = attendanceInfo?.isAbsent || false;
 
         // Get subject-specific class for proper coloring
         const subjectClass = getSubjectClass(lesson.subject, lesson.lesson_type);
@@ -80,6 +88,12 @@ export const useCalendarData = ({
         }
         if (isCompleted) {
           className += ' completed-event';
+        }
+        if (isCancelled) {
+          className += ' cancelled-event';
+        }
+        if (isAbsent) {
+          className += ' absent-event';
         }
         
         return {
@@ -110,6 +124,9 @@ export const useCalendarData = ({
             })) || [],
             isCompleted: isCompleted,
             completionDetails: completionInfo,
+            isCancelled: isCancelled,
+            isAbsent: isAbsent,
+            attendanceDetails: attendanceInfo,
             eventType: 'lesson'
           }
         };
@@ -119,7 +136,7 @@ export const useCalendarData = ({
     }
 
     return calendarEvents;
-  }, [rawLessons, userRole, completionData]);
+  }, [rawLessons, userRole, completionData, attendanceStatusData]);
 
   useEffect(() => {
     const fetchEvents = async () => {
