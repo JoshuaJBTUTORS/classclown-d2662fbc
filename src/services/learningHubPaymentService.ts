@@ -169,7 +169,7 @@ export const learningHubPaymentService = {
         };
       }
       
-      const gracePeriodInfo = accessInfo.isInGracePeriod ? {
+      const gracePeriodInfo = accessInfo.isInGracePeriod === true ? {
         isInGracePeriod: true,
         gracePeriodEnd: accessInfo.gracePeriodEnd,
         daysRemaining: accessInfo.gracePeriodEnd 
@@ -182,7 +182,7 @@ export const learningHubPaymentService = {
       return {
         hasActiveSubscription: accessInfo.hasAccess,
         subscription: accessInfo.subscription,
-        needsPaymentUpdate: accessInfo.isInGracePeriod || false,
+        needsPaymentUpdate: accessInfo.isInGracePeriod === true || false,
         gracePeriodInfo: gracePeriodInfo
       };
     } catch (error) {
