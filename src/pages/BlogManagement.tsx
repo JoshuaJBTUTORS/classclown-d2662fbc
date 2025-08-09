@@ -20,10 +20,13 @@ interface BlogPost {
   title: string;
   slug: string;
   excerpt: string;
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published' | 'archived' | 'needs_review';
   category: { name: string; slug: string };
   published_at: string;
   created_at: string;
+  readability_score?: string;
+  quality_score?: number;
+  last_quality_check?: string;
 }
 
 interface BlogCategory {
@@ -41,6 +44,12 @@ interface BlogGenerationRequest {
   status: 'pending' | 'generating' | 'completed' | 'failed';
   created_at: string;
   error_message?: string;
+  quality_checks?: any[];
+  discovered_keywords?: any[];
+  image_plans?: any[];
+  sources?: any[];
+  readability_score?: string;
+  all_checks_passed?: boolean;
 }
 
 const BlogManagement = () => {
@@ -67,11 +76,35 @@ const BlogManagement = () => {
           status,
           published_at,
           created_at,
+          readability_score,
+          quality_score,
+          last_quality_check,
           category:blog_categories(name, slug)
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // Handle case where new columns don't exist yet
+        if (error.message.includes('does not exist')) {
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('blog_posts')
+            .select(`
+              id,
+              title,
+              slug,
+              excerpt,
+              status,
+              published_at,
+              created_at,
+              category:blog_categories(name, slug)
+            `)
+            .order('created_at', { ascending: false });
+          
+          if (fallbackError) throw fallbackError;
+          return fallbackData as BlogPost[];
+        }
+        throw error;
+      }
       return data as BlogPost[];
     },
   });
@@ -103,12 +136,39 @@ const BlogManagement = () => {
           status,
           created_at,
           error_message,
+          quality_checks,
+          discovered_keywords,
+          image_plans,
+          sources,
+          readability_score,
+          all_checks_passed,
           category:blog_categories(name)
         `)
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        // Handle case where new columns don't exist yet
+        if (error.message.includes('does not exist')) {
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('blog_generation_requests')
+            .select(`
+              id,
+              topic,
+              target_keywords,
+              status,
+              created_at,
+              error_message,
+              category:blog_categories(name)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          
+          if (fallbackError) throw fallbackError;
+          return fallbackData as BlogGenerationRequest[];
+        }
+        throw error;
+      }
       return data as BlogGenerationRequest[];
     },
   });
@@ -201,6 +261,7 @@ const BlogManagement = () => {
     switch (status) {
       case 'published': return 'bg-green-500';
       case 'draft': return 'bg-yellow-500';
+      case 'needs_review': return 'bg-orange-500';
       case 'archived': return 'bg-gray-500';
       case 'completed': return 'bg-green-500';
       case 'generating': return 'bg-blue-500';
@@ -208,6 +269,13 @@ const BlogManagement = () => {
       case 'failed': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
+  };
+
+  const getQualityScoreColor = (score?: number) => {
+    if (!score) return 'text-muted-foreground';
+    if (score >= 85) return 'text-green-600';
+    if (score >= 70) return 'text-yellow-600';
+    return 'text-red-600';
   };
 
   return (
@@ -321,6 +389,20 @@ const BlogManagement = () => {
                         <p className="text-sm text-muted-foreground mb-2">
                           Category: {post.category?.name} • Slug: /{post.slug}
                         </p>
+                        {(post.quality_score || post.readability_score) && (
+                          <div className="flex items-center gap-4 mb-2">
+                            {post.quality_score && (
+                              <span className={`text-sm font-medium ${getQualityScoreColor(post.quality_score)}`}>
+                                Quality Score: {post.quality_score}/100
+                              </span>
+                            )}
+                            {post.readability_score && (
+                              <span className="text-sm text-muted-foreground">
+                                Readability: {post.readability_score}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {post.excerpt}
                         </p>
@@ -402,9 +484,60 @@ const BlogManagement = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         Keywords: {request.target_keywords?.join(', ')}
                       </p>
+                      
+                      {/* Enhanced Quality Information */}
+                      {request.discovered_keywords && request.discovered_keywords.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Discovered Keywords:</p>
+                          <p className="text-xs text-muted-foreground">
+                            {request.discovered_keywords.map((kw: any) => kw.keyword || kw).join(', ')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {request.readability_score && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Readability: {request.readability_score}
+                        </p>
+                      )}
+                      
+                      {request.quality_checks && request.quality_checks.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Quality Checks:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {request.quality_checks.map((check: any, idx: number) => (
+                              <Badge 
+                                key={idx} 
+                                variant={check.status === 'PASS' ? 'default' : 'destructive'}
+                                className="text-xs"
+                              >
+                                {check.rule}: {check.status}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {request.sources && request.sources.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">
+                            Sources: {request.sources.length} citations
+                          </p>
+                        </div>
+                      )}
+                      
+                      {request.image_plans && request.image_plans.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">
+                            Images: {request.image_plans.length} planned
+                          </p>
+                        </div>
+                      )}
+                      
                       <p className="text-xs text-muted-foreground">
                         Created: {new Date(request.created_at).toLocaleString()}
                       </p>
+                      
                       {request.error_message && (
                         <p className="text-sm text-red-600 mt-2">
                           Error: {request.error_message}
