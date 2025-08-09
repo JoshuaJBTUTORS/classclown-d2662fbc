@@ -67,12 +67,36 @@ serve(async (req) => {
 
     console.log("Course details:", { stripe_price_id: course.stripe_price_id, price: course.price });
 
+    // Prepare subscription items - use stripe_price_id if available, otherwise create price_data
+    let subscriptionItems;
+    
+    if (course.stripe_price_id) {
+      console.log("Using existing Stripe Price ID:", course.stripe_price_id);
+      subscriptionItems = [{
+        price: course.stripe_price_id,
+      }];
+    } else {
+      console.log("Creating price_data fallback with amount:", course.price);
+      // Fallback: create price_data if no stripe_price_id
+      subscriptionItems = [{
+        price_data: {
+          currency: 'gbp',
+          product_data: {
+            name: course_title || `Course: ${course_id}`,
+            description: `Monthly access to course content`,
+          },
+          unit_amount: course.price || 1299, // Default to £12.99 if no price set
+          recurring: {
+            interval: 'month',
+          },
+        },
+      }];
+    }
+
     // Create subscription with trial period
     const subscription = await stripe.subscriptions.create({
       customer: setupIntent.customer as string,
-      items: [{
-        price: course.stripe_price_id,
-      }],
+      items: subscriptionItems,
       trial_period_days: parseInt(trial_days || '3'),
       default_payment_method: setupIntent.payment_method as string,
       metadata: {
