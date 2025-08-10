@@ -18,6 +18,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiting helper function
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Retry helper for rate limited requests
+const sendEmailWithRetry = async (emailData: any, maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await resend.emails.send(emailData);
+      return result;
+    } catch (error: any) {
+      if (error.statusCode === 429 && attempt < maxRetries) {
+        console.log(`Rate limited, retrying in ${attempt * 1000}ms... (attempt ${attempt}/${maxRetries})`);
+        await sleep(attempt * 1000); // Exponential backoff
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
 interface TrialLessonReminderRequest {
   timeframe: 'today' | 'tomorrow';
   scheduled_run?: string;
@@ -71,9 +91,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     let emailsSent = 0;
     const errors: string[] = [];
+    let emailIndex = 0;
+
+    console.log(`Preparing to send ${lessons.length} trial lesson reminder emails with rate limiting...`);
 
     // Process each trial lesson
     for (const lesson of lessons) {
+      emailIndex++;
       try {
         // Fetch the trial booking data separately
         const { data: trialBooking, error: bookingError } = await supabase
@@ -126,13 +150,20 @@ const handler = async (req: Request): Promise<Response> => {
           })
         );
 
-        // Send email
-        const emailResult = await resend.emails.send({
+        console.log(`Sending trial email ${emailIndex}/${lessons.length} to ${trialBooking.email}...`);
+
+        // Send email with retry logic
+        const emailResult = await sendEmailWithRetry({
           from: 'JB Tutors <lessons@jb-tutors.com>',
           to: [trialBooking.email],
           subject: `Exciting Trial Lesson ${isToday ? 'Today' : 'Tomorrow'} - ${lesson.subject || 'Tutoring'}`,
           html: emailHtml,
         });
+
+        // Rate limiting: wait 600ms between emails (allowing ~1.6 emails per second)
+        if (emailIndex < lessons.length) {
+          await sleep(600);
+        }
 
         if (emailResult.error) {
           console.error(`Failed to send trial email to ${trialBooking.email}:`, emailResult.error);
