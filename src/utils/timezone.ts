@@ -42,9 +42,19 @@ export function formatInUKTime(date: Date | string, formatString: string): strin
  */
 export function createUKDateTime(date: Date, timeString: string): Date {
   const [hours, minutes] = timeString.split(':').map(Number);
-  const ukDateTime = new Date(date);
-  ukDateTime.setHours(hours, minutes, 0, 0);
-  return ukDateTime;
+  
+  // Create ISO string in UK timezone format
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hourStr = String(hours).padStart(2, '0');
+  const minuteStr = String(minutes).padStart(2, '0');
+  
+  // Create ISO string and interpret it as UK time
+  const isoString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:00`;
+  
+  // Parse as if it were in UK timezone
+  return toZonedTime(new Date(isoString), UK_TIMEZONE);
 }
 
 /**
