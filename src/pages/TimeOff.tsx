@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Plus } from 'lucide-react';
 import { format } from 'date-fns';
-import { convertUKToUTC, formatInUKTime } from '@/utils/timezone';
+import { convertUKToUTC, formatInUKTime, createUKDateTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 
@@ -66,12 +66,23 @@ const TimeOff = () => {
 
       if (tutorError) throw tutorError;
 
+      // Parse datetime-local strings as UK time and convert to UTC
+      // datetime-local format: "2025-09-05T18:00" - interpret as UK local time
+      const [startDatePart, startTimePart] = startDate.split('T');
+      const [endDatePart, endTimePart] = endDate.split('T');
+      
+      // Create Date objects as UK time using createUKDateTime
+      const startDateObj = new Date(startDatePart);
+      const endDateObj = new Date(endDatePart);
+      const ukStartDate = createUKDateTime(startDateObj, startTimePart);
+      const ukEndDate = createUKDateTime(endDateObj, endTimePart);
+      
       const { data, error } = await supabase
         .from('time_off_requests')
         .insert({
           tutor_id: tutorData.id,
-          start_date: convertUKToUTC(new Date(startDate)).toISOString(),
-          end_date: convertUKToUTC(new Date(endDate)).toISOString(),
+          start_date: convertUKToUTC(ukStartDate).toISOString(),
+          end_date: convertUKToUTC(ukEndDate).toISOString(),
           reason: reason
         })
         .select()
