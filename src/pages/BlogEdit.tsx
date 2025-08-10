@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Save } from 'lucide-react';
 import PageTitle from '@/components/ui/PageTitle';
+import BlogContentEditor from '@/components/blog/BlogContentEditor';
 
 interface BlogPost {
   id: string;
@@ -205,14 +206,11 @@ const BlogEdit = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="content">Content</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => handleInputChange('content', e.target.value)}
-                rows={15}
-                className="font-mono"
+            <div className="space-y-2">
+              <Label>Content & Images</Label>
+              <BlogContentEditor
+                content={formData.content}
+                onContentChange={(content) => handleInputChange('content', content)}
               />
             </div>
 
