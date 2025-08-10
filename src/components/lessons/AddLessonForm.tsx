@@ -479,7 +479,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         students={students}
                         selectedStudents={selectedStudents}
                         onStudentSelect={handleStudentSelect}
-                        
+                        onStudentRemove={handleStudentRemove}
                         placeholder={form.watch('isGroup') ? "Select students for group lesson..." : "Select a student..."}
                         disabled={isFetchingData}
                       />
