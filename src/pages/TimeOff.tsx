@@ -77,14 +77,14 @@ const TimeOff = () => {
       const ukStartDate = createUKDateTime(startDateObj, startTimePart);
       const ukEndDate = createUKDateTime(endDateObj, endTimePart);
       
-      const { data, error } = await supabase
-        .from('time_off_requests')
-        .insert({
-          tutor_id: tutorData.id,
-          start_date: convertUKToUTC(ukStartDate).toISOString(),
-          end_date: convertUKToUTC(ukEndDate).toISOString(),
-          reason: reason
-        })
+       const { data, error } = await supabase
+         .from('time_off_requests')
+         .insert({
+           tutor_id: tutorData.id,
+           start_date: ukStartDate.toISOString(),
+           end_date: ukEndDate.toISOString(),
+           reason: reason
+         })
         .select()
         .single();
 
