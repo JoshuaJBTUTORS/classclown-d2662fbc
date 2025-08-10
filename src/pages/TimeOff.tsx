@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Plus } from 'lucide-react';
 import { format } from 'date-fns';
+import { convertUKToUTC, formatInUKTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 
@@ -69,8 +70,8 @@ const TimeOff = () => {
         .from('time_off_requests')
         .insert({
           tutor_id: tutorData.id,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: convertUKToUTC(new Date(startDate)).toISOString(),
+          end_date: convertUKToUTC(new Date(endDate)).toISOString(),
           reason: reason
         })
         .select()
@@ -230,16 +231,16 @@ const TimeOff = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium">
-                              {format(new Date(request.start_date), 'PPP p')} - {format(new Date(request.end_date), 'PPP p')}
+                              {formatInUKTime(request.start_date, 'PPP p')} - {formatInUKTime(request.end_date, 'PPP p')}
                             </p>
                             <p className="text-gray-600 text-sm mt-1">{request.reason}</p>
                           </div>
                           {getStatusBadge(request.status)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Requested on {format(new Date(request.created_at), 'PPP')}
+                          Requested on {formatInUKTime(request.created_at, 'PPP')}
                           {request.reviewed_at && (
-                            <span> • Reviewed on {format(new Date(request.reviewed_at), 'PPP')}</span>
+                            <span> • Reviewed on {formatInUKTime(request.reviewed_at, 'PPP')}</span>
                           )}
                         </div>
                         {request.admin_notes && (

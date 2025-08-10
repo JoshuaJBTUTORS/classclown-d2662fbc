@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Check, X, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatInUKTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import { TimeOffFilters } from '@/components/timeOff/TimeOffFilters';
@@ -262,14 +263,14 @@ const TimeOffRequests = () => {
                             </p>
                             <p className="text-sm text-gray-600">{request.tutor.email}</p>
                             <p className="font-medium mt-1">
-                              {format(new Date(request.start_date), 'PPP p')} - {format(new Date(request.end_date), 'PPP p')}
+                              {formatInUKTime(request.start_date, 'PPP p')} - {formatInUKTime(request.end_date, 'PPP p')}
                             </p>
                             <p className="text-gray-600 text-sm mt-1">{request.reason}</p>
                           </div>
                           {getStatusBadge(request.status)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Requested on {format(new Date(request.created_at), 'PPP')}
+                          Requested on {formatInUKTime(request.created_at, 'PPP')}
                         </div>
                         <div className="flex space-x-2">
                           <Button
@@ -316,16 +317,16 @@ const TimeOffRequests = () => {
                               {request.tutor.first_name} {request.tutor.last_name}
                             </p>
                             <p className="font-medium text-sm">
-                              {format(new Date(request.start_date), 'PPP p')} - {format(new Date(request.end_date), 'PPP p')}
+                              {formatInUKTime(request.start_date, 'PPP p')} - {formatInUKTime(request.end_date, 'PPP p')}
                             </p>
                             <p className="text-gray-600 text-sm mt-1">{request.reason}</p>
                           </div>
                           {getStatusBadge(request.status)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Requested on {format(new Date(request.created_at), 'PPP')}
+                          Requested on {formatInUKTime(request.created_at, 'PPP')}
                           {request.reviewed_at && (
-                            <span> • Reviewed on {format(new Date(request.reviewed_at), 'PPP')}</span>
+                            <span> • Reviewed on {formatInUKTime(request.reviewed_at, 'PPP')}</span>
                           )}
                         </div>
                         {request.admin_notes && (
@@ -358,7 +359,7 @@ const TimeOffRequests = () => {
                   {selectedRequest.tutor.first_name} {selectedRequest.tutor.last_name}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {format(new Date(selectedRequest.start_date), 'PPP p')} - {format(new Date(selectedRequest.end_date), 'PPP p')}
+                  {formatInUKTime(selectedRequest.start_date, 'PPP p')} - {formatInUKTime(selectedRequest.end_date, 'PPP p')}
                 </p>
                 <p className="text-sm mt-1">{selectedRequest.reason}</p>
               </div>
