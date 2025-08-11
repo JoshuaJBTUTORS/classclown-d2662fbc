@@ -6,6 +6,7 @@ import React from 'npm:react@18.3.1'
 import { TrialLessonReminderEmail } from './_templates/trial-lesson-reminder-email.tsx'
 import { whatsappService } from '../_shared/whatsapp-service.ts';
 import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
+import { convertUTCToUK, formatInUKTime } from '../_shared/timezone-utils.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -111,23 +112,12 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        const startTime = new Date(lesson.start_time);
-        const endTime = new Date(lesson.end_time);
+        // Convert UTC times to UK local time for display
+        const startTimeUK = convertUTCToUK(lesson.start_time);
+        const endTimeUK = convertUTCToUK(lesson.end_time);
         
-        const lessonDate = startTime.toLocaleDateString('en-GB', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        });
-        
-        const lessonTime = `${startTime.toLocaleTimeString('en-GB', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })} - ${endTime.toLocaleTimeString('en-GB', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })}`;
+        const lessonDate = formatInUKTime(startTimeUK, 'EEEE, dd MMMM yyyy');
+        const lessonTime = `${formatInUKTime(startTimeUK, 'HH:mm')} - ${formatInUKTime(endTimeUK, 'HH:mm')}`;
 
         // Use child name from trial booking
         const childName = trialBooking.child_name || 'your child';
