@@ -60,8 +60,28 @@ const LessonSummaries: React.FC = () => {
     try {
       let query;
       
-      if (isTeacherRole) {
-        // Teachers can see all lessons with recordings
+      if (isOwner || isAdmin) {
+        // Owners and admins can see ALL lessons with recordings
+        query = supabase
+          .from('lessons')
+          .select(`
+            id,
+            title,
+            subject,
+            start_time,
+            end_time,
+            lesson_space_session_id,
+            lesson_space_recording_url,
+            tutor:tutors!inner(first_name, last_name),
+            lesson_students(
+              student:students(id, first_name, last_name, email)
+            )
+          `)
+          .not('lesson_space_session_id', 'is', null)
+          .order('start_time', { ascending: false });
+
+      } else if (isTutor) {
+        // Tutors can only see their own lessons with recordings
         const { data: tutorData, error: tutorError } = await supabase
           .from('tutors')
           .select('id')
