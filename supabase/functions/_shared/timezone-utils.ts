@@ -24,8 +24,8 @@ export function convertUTCToUK(utcTime: Date | string): Date {
 }
 
 /**
- * Format a date in UK timezone
- * @param date - Date object or ISO string
+ * Format a date in UK timezone - DIRECT formatting without conversion
+ * @param date - Date object or ISO string in UTC
  * @param formatString - Format string for date-fns
  * @returns Formatted date string in UK timezone
  */

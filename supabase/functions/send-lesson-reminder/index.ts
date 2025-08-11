@@ -129,12 +129,9 @@ const handler = async (req: Request): Promise<Response> => {
             continue;
           }
 
-          // Convert UTC times to UK local time for display
-          const startTimeUK = convertUTCToUK(lesson.start_time);
-          const endTimeUK = convertUTCToUK(lesson.end_time);
-          
-          const lessonDate = formatInUKTime(startTimeUK, 'EEEE, dd MMMM yyyy');
-          const lessonTime = `${formatInUKTime(startTimeUK, 'HH:mm')} - ${formatInUKTime(endTimeUK, 'HH:mm')}`;
+          // Format UTC times directly to UK timezone - no double conversion
+          const lessonDate = formatInUKTime(lesson.start_time, 'EEEE, dd MMMM yyyy');
+          const lessonTime = `${formatInUKTime(lesson.start_time, 'HH:mm')} - ${formatInUKTime(lesson.end_time, 'HH:mm')}`;
 
           // Generate email HTML
           const emailHtml = await renderAsync(
