@@ -42,8 +42,8 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-6 w-6 text-blue-600" />
             Join Lesson - Camera & Microphone Agreement
@@ -53,7 +53,7 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
           {/* Lesson Details */}
           <Card>
             <CardContent className="p-4 space-y-3">
@@ -122,31 +122,31 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
               By clicking "I Accept & Join Lesson" below, you confirm that you understand and agree to follow the camera and microphone requirements.
             </p>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={hasAccepted}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAcceptClick}
-              disabled={hasAccepted}
-              className="min-w-[180px]"
-            >
-              {hasAccepted ? (
-                <span className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Joining...
-                </span>
-              ) : (
-                'I Accept & Join Lesson'
-              )}
-            </Button>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex-shrink-0 flex gap-3 justify-end pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={hasAccepted}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAcceptClick}
+            disabled={hasAccepted}
+            className="min-w-[180px]"
+          >
+            {hasAccepted ? (
+              <span className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Joining...
+              </span>
+            ) : (
+              'I Accept & Join Lesson'
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
