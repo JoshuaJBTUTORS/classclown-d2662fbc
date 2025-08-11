@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParticipantUrl } from '@/hooks/useParticipantUrl';
@@ -39,6 +39,43 @@ export default function VideoRoom() {
   
   // Memoize the participant URL to prevent iframe refresh on re-renders
   const stableParticipantUrl = useMemo(() => participantUrl, [participantUrl]);
+
+  // Hide HubSpot chat widget in video room
+  useEffect(() => {
+    const hideHubSpotChat = () => {
+      // Hide the HubSpot chat widget
+      const chatWidget = document.querySelector('#hubspot-conversations-iframe');
+      if (chatWidget) {
+        (chatWidget as HTMLElement).style.display = 'none';
+      }
+      
+      // Also hide the launcher if it exists
+      const chatLauncher = document.querySelector('[data-test-id="chat-widget-launcher"]');
+      if (chatLauncher) {
+        (chatLauncher as HTMLElement).style.display = 'none';
+      }
+    };
+
+    // Hide immediately
+    hideHubSpotChat();
+    
+    // Also hide after a delay in case it loads later
+    const timeout = setTimeout(hideHubSpotChat, 1000);
+
+    // Show chat widget again when leaving video room
+    return () => {
+      clearTimeout(timeout);
+      const chatWidget = document.querySelector('#hubspot-conversations-iframe');
+      if (chatWidget) {
+        (chatWidget as HTMLElement).style.display = '';
+      }
+      
+      const chatLauncher = document.querySelector('[data-test-id="chat-widget-launcher"]');
+      if (chatLauncher) {
+        (chatLauncher as HTMLElement).style.display = '';
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return (
