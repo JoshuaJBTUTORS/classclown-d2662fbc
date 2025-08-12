@@ -311,13 +311,6 @@
   font-style: italic !important;
 }
 
-.fc-event.completed-event {
-  position: relative !important;
-  min-height: inherit !important;
-  height: auto !important;
-  box-sizing: border-box !important;
-}
-
 .fc-event.completed-event::before {
   content: "✓" !important;
   position: absolute !important;
@@ -327,6 +320,7 @@
   font-weight: bold !important;
   color: white !important;
   text-shadow: 1px 1px 1px rgba(0,0,0,0.5) !important;
+  z-index: 10 !important;
 }
 
 .fc-event.cancelled-event {
