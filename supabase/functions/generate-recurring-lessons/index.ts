@@ -189,21 +189,27 @@ serve(async (req) => {
             }
           }
 
-          // Create LessonSpace rooms for all new instances
-          console.log(`Creating LessonSpace rooms for ${insertedLessons.length} new instances`);
+          // Create LessonSpace rooms and participant URLs for all new instances
+          console.log(`Creating LessonSpace rooms and participant URLs for ${insertedLessons.length} new instances`);
           let roomsCreatedCount = 0;
+          
+          // Get student IDs for the original lesson
+          const { data: originalStudents } = await supabase
+            .from('lesson_students')
+            .select('student_id')
+            .eq('lesson_id', templateLesson.id);
+          
+          const studentIds = originalStudents?.map(s => s.student_id) || [];
           
           for (const lesson of insertedLessons) {
             try {
-              console.log(`Creating LessonSpace room for lesson: ${lesson.id}`);
+              console.log(`Creating LessonSpace room and participant URLs for lesson: ${lesson.id}`);
               
               const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
                 body: {
-                  action: 'create-room',
-                  lessonId: lesson.id,
-                  title: templateLesson.title,
-                  startTime: new Date().toISOString(),
-                  duration: Math.round(lessonDuration / (1000 * 60)) // Convert to minutes
+                  action: 'create_room',
+                  lesson_id: lesson.id,
+                  student_ids: studentIds
                 }
               });
 
@@ -213,7 +219,7 @@ serve(async (req) => {
               }
 
               if (roomData && roomData.success) {
-                console.log(`✅ LessonSpace room created successfully for lesson ${lesson.id}`);
+                console.log(`✅ LessonSpace room and participant URLs created successfully for lesson ${lesson.id}`);
                 roomsCreatedCount++;
               } else {
                 console.error(`❌ LessonSpace room creation failed for lesson ${lesson.id}:`, roomData);
