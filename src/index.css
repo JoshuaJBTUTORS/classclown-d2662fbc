@@ -313,6 +313,9 @@
 
 .fc-event.completed-event {
   position: relative !important;
+  min-height: inherit !important;
+  height: auto !important;
+  box-sizing: border-box !important;
 }
 
 .fc-event.completed-event::before {
