@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -2802,10 +2802,10 @@ export type Database = {
       calculate_session_score: {
         Args: { session_id_param: string }
         Returns: {
-          total_marks_achieved: number
-          total_marks_available: number
           percentage_score: number
           questions_answered: number
+          total_marks_achieved: number
+          total_marks_available: number
           total_questions: number
         }[]
       }
@@ -2873,21 +2873,21 @@ export type Database = {
         Args: { assessment_id_param: string; user_id_param: string }
         Returns: {
           best_score: number
-          total_possible: number
-          percentage_score: number
           completed_sessions: number
           last_attempt_date: string
+          percentage_score: number
+          total_possible: number
         }[]
       }
       get_user_platform_subscription: {
         Args: { user_id_param: string }
         Returns: {
+          current_period_end: string
+          grace_period_end: string
+          has_used_trial: boolean
           id: string
           status: string
           trial_end: string
-          current_period_end: string
-          has_used_trial: boolean
-          grace_period_end: string
         }[]
       }
       get_user_purchased_courses: {
@@ -2899,13 +2899,13 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
       parent_notified_in_cycle: {
-        Args: { parent_id_param: string; cycle_id_param: string }
+        Args: { cycle_id_param: string; parent_id_param: string }
         Returns: boolean
       }
       trigger_hourly_lesson_processing: {
