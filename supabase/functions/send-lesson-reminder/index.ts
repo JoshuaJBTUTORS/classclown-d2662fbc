@@ -77,7 +77,9 @@ const handler = async (req: Request): Promise<Response> => {
               id,
               first_name,
               last_name,
-              email
+              email,
+              phone,
+              whatsapp_number
             )
           )
         )
@@ -108,18 +110,65 @@ const handler = async (req: Request): Promise<Response> => {
     let emailsSent = 0;
     const errors: string[] = [];
     let emailIndex = 0;
+    let cancelledLessons = 0;
+    let excusedStudents = 0;
 
-    // Count total emails to send for progress tracking
-    const totalEmails = lessons.reduce((count, lesson) => 
-      count + lesson.lesson_students.length, 0);
+    // Process each lesson and check for cancellation status
+    const activeLessons = [];
     
+    for (const lesson of lessons) {
+      // Get attendance data for this lesson
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('lesson_attendance')
+        .select('student_id, attendance_status')
+        .eq('lesson_id', lesson.id);
+
+      if (attendanceError) {
+        console.warn(`Could not fetch attendance for lesson ${lesson.id}:`, attendanceError);
+        // If we can't get attendance data, assume lesson is active
+        activeLessons.push(lesson);
+        continue;
+      }
+
+      // Check if all students in this lesson are marked as 'excused'
+      const totalStudents = lesson.lesson_students.length;
+      const excusedCount = attendanceData?.filter(att => att.attendance_status === 'excused').length || 0;
+      
+      if (excusedCount > 0 && excusedCount === totalStudents) {
+        // All students are excused - lesson is cancelled
+        console.log(`Skipping cancelled lesson ${lesson.id} (${lesson.title}) - all ${totalStudents} students excused`);
+        cancelledLessons++;
+        continue;
+      }
+
+      // Filter out excused students from this lesson
+      const attendanceMap = new Map(attendanceData?.map(att => [att.student_id, att.attendance_status]) || []);
+      lesson.activeStudents = lesson.lesson_students.filter(ls => {
+        const isExcused = attendanceMap.get(ls.student.id) === 'excused';
+        if (isExcused) {
+          excusedStudents++;
+          console.log(`Skipping excused student ${ls.student.first_name} ${ls.student.last_name} for lesson ${lesson.id}`);
+        }
+        return !isExcused;
+      });
+
+      if (lesson.activeStudents.length > 0) {
+        activeLessons.push(lesson);
+      }
+    }
+
+    // Count total emails to send for progress tracking (only for active students)
+    const totalEmails = activeLessons.reduce((count, lesson) => 
+      count + lesson.activeStudents.length, 0);
+    
+    console.log(`Found ${lessons.length} lessons, skipped ${cancelledLessons} cancelled lessons, excused ${excusedStudents} individual students`);
     console.log(`Preparing to send ${totalEmails} reminder emails with rate limiting...`);
 
-    // Process each lesson
-    for (const lesson of lessons) {
+    // Process each active lesson
+    for (const lesson of activeLessons) {
       try {
-        // Process each student in the lesson
-        for (const lessonStudent of lesson.lesson_students) {
+        // Process each active student in the lesson
+        for (const lessonStudent of lesson.activeStudents) {
           emailIndex++;
           const student = lessonStudent.student;
           const parent = student.parent;
