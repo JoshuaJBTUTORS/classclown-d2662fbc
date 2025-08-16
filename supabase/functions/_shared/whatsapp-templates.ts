@@ -1,4 +1,34 @@
 export const WhatsAppTemplates = {
+  timeOffNotification: ({
+    tutorName,
+    reason,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    status,
+  }: {
+    tutorName: string;
+    reason: string;
+    startDate: string;
+    endDate: string;
+    startTime?: string | null;
+    endTime?: string | null;
+    status: string;
+  }) => {
+    const timeRange = startTime && endTime ? ` (${startTime} - ${endTime})` : '';
+    const dateRange = startDate === endDate ? startDate : `${startDate} to ${endDate}`;
+    
+    return `🚫 JB Tutors - New Time-Off Request
+
+Tutor: ${tutorName}
+📅 Dates: ${dateRange}${timeRange}
+📝 Reason: ${reason}
+📊 Status: ${status.charAt(0).toUpperCase() + status.slice(1)}
+
+Please review and approve/deny this request in the admin portal.`;
+  },
+
   trialBookingConfirmation: (parentName: string, childName: string, subject: string, preferredDate: string, preferredTime: string) => `
 🌟 Trial Lesson Request Received! 🌟
 
