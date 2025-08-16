@@ -139,27 +139,38 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
   const fetchTranscriptStatus = async () => {
     try {
+      console.log(`Fetching transcript status for lesson: ${lessonId}`);
+      
       const { data, error } = await supabase
         .from('lesson_transcriptions')
-        .select('transcription_status')
+        .select('transcription_status, processing_notes, last_processing_error')
         .eq('lesson_id', lessonId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transcript status:', error);
+        setTranscriptStatus({
+          status: 'error',
+          exists: false
+        });
+        return;
+      }
       
       if (data) {
+        console.log(`Transcript status for lesson ${lessonId}:`, data);
         setTranscriptStatus({
           status: data.transcription_status,
           exists: true
         });
       } else {
+        console.log(`No transcript found for lesson ${lessonId}`);
         setTranscriptStatus({
           status: 'not_found',
           exists: false
         });
       }
     } catch (error) {
-      console.error('Error fetching transcript status:', error);
+      console.error('Error in fetchTranscriptStatus:', error);
       setTranscriptStatus({
         status: 'error',
         exists: false

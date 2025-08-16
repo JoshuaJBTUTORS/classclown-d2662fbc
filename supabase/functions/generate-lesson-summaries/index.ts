@@ -239,10 +239,11 @@ async function upsertTranscriptionRecord(
   if (transcriptionText) updateData.transcription_text = transcriptionText;
   if (expiresAt) updateData.expires_at = expiresAt.toISOString();
 
+  // Use upsert with lesson_id as the unique constraint since we added it
   const { data, error } = await supabase
     .from('lesson_transcriptions')
     .upsert(updateData, { 
-      onConflict: 'lesson_id,session_id',
+      onConflict: 'lesson_id',
       ignoreDuplicates: false 
     })
     .select()
