@@ -57,11 +57,12 @@ Your trial lesson for ${childName} has been approved:
 
 📚 Subject: ${subject}
 📅 Date: ${lessonDate}
-⏰ Time: ${lessonTime}
+⏰ Session Start Time: ${lessonTime}
+⏱️ Duration: 45 minutes (15 min consultation + 30 min lesson)
 
-🔗 Join the lesson here: ${studentLessonLink}
+🔗 Join the session here: ${studentLessonLink}
 
-Please ensure ${childName} is ready 5 minutes before the lesson starts. You're welcome to join and observe the session.
+Please join at the scheduled time for the parent consultation. ${childName} will join the same call after 15 minutes for their lesson.
 
 Looking forward to meeting you both!
 

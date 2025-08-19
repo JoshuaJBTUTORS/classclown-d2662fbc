@@ -75,13 +75,12 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       console.log('Student created successfully:', studentData);
     }
 
-    // Demo session time (preferred_time is the displayed time)
+    // Use preferred_time as the demo start time (displayed to clients)
     const demoStartDateTime = new Date(`${trialBooking.preferred_date}T${trialBooking.preferred_time}`);
     const demoEndDateTime = addMinutes(demoStartDateTime, 15); // 15-minute demo
     
-    // Lesson time (lesson_time is the actual tutor availability time, fallback to demo end time)
-    const lessonTime = trialBooking.lesson_time || format(demoEndDateTime, 'HH:mm');
-    const lessonStartDateTime = new Date(`${trialBooking.preferred_date}T${lessonTime}`);
+    // Lesson starts 15 minutes after demo start (i.e., when demo ends)
+    const lessonStartDateTime = demoEndDateTime;
     const lessonEndDateTime = addMinutes(lessonStartDateTime, 30); // 30-minute lesson
 
     console.log('Demo times:', { demoStartDateTime, demoEndDateTime });
@@ -118,7 +117,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         title: title,
         description: `Trial lesson for ${studentName}`,
         tutor_id: data.tutorId,
-        start_time: lessonStartDateTime.toISOString(),
+        start_time: demoStartDateTime.toISOString(),
         end_time: lessonEndDateTime.toISOString(),
         is_group: false,
         status: 'scheduled',
@@ -163,7 +162,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
           action: 'create-room',
           lessonId: lessonData.id,
           title: title,
-          startTime: lessonStartDateTime.toISOString(),
+          startTime: demoStartDateTime.toISOString(),
           duration: 45
         }
       });
@@ -206,8 +205,8 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     if (trialBooking && lessonSpaceRoomId) {
       try {
         const studentLessonLink = `https://www.thelessonspace.com/space/${lessonSpaceRoomId}`;
-        const formattedDate = format(lessonStartDateTime, 'EEEE, MMMM do, yyyy');
-        const formattedTime = format(lessonStartDateTime, 'h:mm a');
+        const formattedDate = format(demoStartDateTime, 'EEEE, MMMM do, yyyy');
+        const formattedTime = format(demoStartDateTime, 'h:mm a');
 
         console.log('Sending trial lesson approval email with link:', studentLessonLink);
 

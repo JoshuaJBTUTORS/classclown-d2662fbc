@@ -58,10 +58,8 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
     const subjectName = subjectData?.name || 'Unknown Subject';
     const formattedDate = format(new Date(data.preferred_date), 'EEEE, MMMM do, yyyy');
     
-    // Calculate demo start time (15 minutes before preferred_time)
-    const preferredDateTime = new Date(`${data.preferred_date}T${data.preferred_time}`);
-    const demoStartTime = subMinutes(preferredDateTime, 15);
-    const formattedDemoTime = format(demoStartTime, 'HH:mm');
+    // Use preferred_time as the demo start time (time shown to clients)
+    const formattedDemoTime = data.preferred_time;
 
     // Send confirmation email to parent (don't fail if email fails)
     try {
