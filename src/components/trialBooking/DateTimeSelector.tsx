@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Clock, Calendar as CalendarIcon, Users, ArrowRight } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, addDays, isBefore, isAfter } from 'date-fns';
+import { format, addDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNextAvailableDates } from '@/hooks/useNextAvailableDates';
 
@@ -46,7 +46,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   );
   
   // Calculate date restrictions
-  const today = new Date();
+  const today = startOfDay(new Date());
   const minDate = addDays(today, 1); // Tomorrow (no same-day booking)
   const maxDate = addDays(today, 7); // 7 days from today
   
@@ -54,7 +54,8 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   
   // Helper function to check if a date is disabled
   const isDateDisabled = (date: Date) => {
-    return isBefore(date, minDate) || isAfter(date, maxDate);
+    const normalizedDate = startOfDay(date);
+    return isBefore(normalizedDate, minDate) || isAfter(normalizedDate, maxDate);
   };
   
   // Handle date selection from calendar
