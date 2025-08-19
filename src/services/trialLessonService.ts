@@ -155,6 +155,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     // Create LessonSpace room for the full 45-minute session
     let lessonSpaceRoomId = null;
     let lessonSpaceSpaceId = null;
+    let lessonSpaceRoomUrl = null;
     try {
       console.log('Creating LessonSpace room for trial session');
       const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
@@ -174,7 +175,8 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         console.log('LessonSpace room created successfully:', roomData);
         lessonSpaceRoomId = roomData?.roomId;
         lessonSpaceSpaceId = roomData?.spaceId;
-        console.log('LessonSpace details:', { roomId: lessonSpaceRoomId, spaceId: lessonSpaceSpaceId });
+        lessonSpaceRoomUrl = roomData?.roomUrl;
+        console.log('LessonSpace details:', { roomId: lessonSpaceRoomId, spaceId: lessonSpaceSpaceId, roomUrl: lessonSpaceRoomUrl });
       }
     } catch (roomError) {
       console.error('Room creation error:', roomError);
@@ -219,7 +221,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         lesson_type: 'demo',
         trial_booking_id: data.bookingId,
         subject: subjectName,
-        lesson_space_space_id: lessonSpaceSpaceId // Use same LessonSpace room
+        lesson_space_room_id: lessonSpaceRoomId, // Copy room ID for working links
+        lesson_space_room_url: lessonSpaceRoomUrl, // Copy room URL for direct access
+        lesson_space_space_id: lessonSpaceSpaceId // Copy space ID for consistency
       })
       .select()
       .single();
