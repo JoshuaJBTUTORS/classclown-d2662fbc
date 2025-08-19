@@ -65,8 +65,7 @@ export const useCalendarData = ({
     // Check if admin demo filter is active
     const isAdminDemoFilterActive = filters?.selectedAdminDemos && filters.selectedAdminDemos.length > 0;
 
-    // Only process regular lessons if admin demo filter is NOT active
-    if (rawLessons && rawLessons.length > 0 && !isAdminDemoFilterActive) {
+    if (rawLessons && rawLessons.length > 0) {
       const lessonEvents = rawLessons.map(lesson => {
         if (!lesson || !lesson.id) return null;
         
@@ -82,6 +81,11 @@ export const useCalendarData = ({
         // Get subject-specific class for proper coloring
         const subjectClass = getSubjectClass(lesson.subject, lesson.lesson_type);
         let className = `calendar-event ${subjectClass}`;
+        
+        // Add special styling for demo sessions
+        if (lesson.lesson_type === 'demo') {
+          className += ' demo-event';
+        }
         
         if (lesson.is_recurring_instance) {
           className += ' recurring-instance';
@@ -111,6 +115,7 @@ export const useCalendarData = ({
             recurrenceEndDate: lesson.recurrence_end_date,
             description: lesson.description,
             subject: lesson.subject,
+            lessonType: lesson.lesson_type,
             userRole: userRole,
             tutor: (userRole === 'admin' || userRole === 'owner') && lesson.tutor ? {
               id: lesson.tutor.id,
@@ -127,7 +132,7 @@ export const useCalendarData = ({
             isCancelled: isCancelled,
             isAbsent: isAbsent,
             attendanceDetails: attendanceInfo,
-            eventType: 'lesson'
+            eventType: isAdminDemoFilterActive ? 'demo' : 'lesson'
           }
         };
       }).filter(event => event !== null);
@@ -136,7 +141,7 @@ export const useCalendarData = ({
     }
 
     return calendarEvents;
-  }, [rawLessons, userRole, completionData, attendanceStatusData]);
+  }, [rawLessons, userRole, completionData, attendanceStatusData, filters?.selectedAdminDemos]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -158,6 +163,70 @@ export const useCalendarData = ({
         console.log(`📅 Date range: ${startDate?.toISOString()} to ${endDate?.toISOString()} (${viewType} view)`);
         
         const fetchPromise = (async () => {
+          // Check if admin demo filter is active
+          const isAdminDemoFilterActive = filters?.selectedAdminDemos && filters.selectedAdminDemos.length > 0;
+          
+          if (isAdminDemoFilterActive) {
+            console.log('🔍 Admin demo filter active, fetching demo sessions for admins:', filters.selectedAdminDemos);
+            
+            // Get admin emails and find their corresponding tutor IDs
+            const adminTutorIds = [];
+            for (const adminId of filters.selectedAdminDemos) {
+              const { data: adminUser } = await supabase.auth.admin.getUserById(adminId);
+              if (adminUser?.user?.email) {
+                const { data: adminTutor } = await supabase
+                  .from('tutors')
+                  .select('id')
+                  .eq('email', adminUser.user.email)
+                  .single();
+                
+                if (adminTutor) {
+                  adminTutorIds.push(adminTutor.id);
+                }
+              }
+            }
+            
+            if (adminTutorIds.length === 0) {
+              console.log('❌ No tutor profiles found for selected admins');
+              setRawLessons([]);
+              setIsLoading(false);
+              return;
+            }
+            
+            // Fetch demo sessions for the admin tutors
+            let demoQuery = supabase
+              .from('lessons')
+              .select(`
+                *,
+                tutor:tutors(id, first_name, last_name, email),
+                lesson_students(
+                  student_id,
+                  student:students(id, first_name, last_name)
+                )
+              `)
+              .eq('lesson_type', 'demo')
+              .in('tutor_id', adminTutorIds);
+            
+            // Add date range filter if provided
+            if (startDate && endDate) {
+              demoQuery = demoQuery
+                .gte('start_time', startDate.toISOString())
+                .lte('start_time', endDate.toISOString());
+            }
+            
+            console.log('🚀 Executing demo sessions query...');
+            const { data, error } = await demoQuery;
+            
+            if (error) {
+              console.error('❌ Demo sessions query error:', error);
+              throw error;
+            }
+            
+            console.log(`✅ Demo sessions query completed. Found: ${data?.length || 0} demo sessions`);
+            setRawLessons(data || []);
+            return;
+          }
+          
           let query;
 
           if (userRole === 'student') {
