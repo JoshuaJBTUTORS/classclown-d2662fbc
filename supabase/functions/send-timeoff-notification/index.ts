@@ -57,8 +57,10 @@ serve(async (req: Request) => {
     const tutorName = `${timeOffData.tutor.first_name} ${timeOffData.tutor.last_name}`;
     const startDate = formatInUKTime(timeOffData.start_date, 'EEEE, MMMM do, yyyy');
     const endDate = formatInUKTime(timeOffData.end_date, 'EEEE, MMMM do, yyyy');
-    const startTime = timeOffData.start_time ? formatInUKTime(`${timeOffData.start_date}T${timeOffData.start_time}`, 'h:mm a') : null;
-    const endTime = timeOffData.end_time ? formatInUKTime(`${timeOffData.end_date}T${timeOffData.end_time}`, 'h:mm a') : null;
+    
+    // Extract time from the start_date and end_date timestamp fields
+    const startTime = timeOffData.start_date ? formatInUKTime(timeOffData.start_date, 'h:mm a') : null;
+    const endTime = timeOffData.end_date ? formatInUKTime(timeOffData.end_date, 'h:mm a') : null;
 
     // Admin details
     const adminEmail = "britney@jb-tutors.com";
