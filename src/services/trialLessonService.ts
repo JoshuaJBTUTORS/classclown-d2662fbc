@@ -110,14 +110,14 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
 
     console.log('Creating lesson with title:', title);
 
-    // Create the trial lesson
+    // Create the trial lesson first (6:30-7:00)
     const { data: lessonData, error: lessonError } = await supabase
       .from('lessons')
       .insert({
         title: title,
         description: `Trial lesson for ${studentName}`,
         tutor_id: data.tutorId,
-        start_time: demoStartDateTime.toISOString(),
+        start_time: lessonStartDateTime.toISOString(),
         end_time: lessonEndDateTime.toISOString(),
         is_group: false,
         status: 'scheduled',
@@ -133,9 +133,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       throw new Error(`Failed to create lesson: ${lessonError.message}`);
     }
 
-    console.log('Lesson created successfully:', lessonData);
+    console.log('Trial lesson created successfully:', lessonData);
 
-    // Link student to lesson
+    // Link student to trial lesson
     const { error: linkError } = await supabase
       .from('lesson_students')
       .insert({
@@ -150,18 +150,18 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       throw new Error(`Failed to link student to lesson: ${linkError.message}`);
     }
 
-    console.log('Student linked to lesson successfully');
+    console.log('Student linked to trial lesson successfully');
 
-
-    // Create LessonSpace room using same function as regular lessons
+    // Create LessonSpace room for the full 45-minute session
     let lessonSpaceRoomId = null;
+    let lessonSpaceSpaceId = null;
     try {
-      console.log('Creating LessonSpace room for trial lesson');
+      console.log('Creating LessonSpace room for trial session');
       const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
         body: {
           action: 'create-room',
           lessonId: lessonData.id,
-          title: title,
+          title: `Trial Session - ${title}`,
           startTime: demoStartDateTime.toISOString(),
           duration: 45
         }
@@ -172,14 +172,54 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         // Don't fail lesson creation if room creation fails
       } else {
         console.log('LessonSpace room created successfully:', roomData);
-        // Extract room_id from room creation response
         lessonSpaceRoomId = roomData?.roomId;
-        console.log('Extracted lesson space room ID:', lessonSpaceRoomId);
-        console.log('Full room response:', JSON.stringify(roomData, null, 2));
+        lessonSpaceSpaceId = roomData?.spaceId;
+        console.log('LessonSpace details:', { roomId: lessonSpaceRoomId, spaceId: lessonSpaceSpaceId });
       }
     } catch (roomError) {
       console.error('Room creation error:', roomError);
       // Don't fail lesson creation if room creation fails
+    }
+
+    // Create the demo session (6:15-6:30) using the same LessonSpace link
+    const demoTitle = `Demo Session for ${studentName}`;
+    const { data: demoData, error: demoError } = await supabase
+      .from('lessons')
+      .insert({
+        title: demoTitle,
+        description: `15-minute demo session before trial lesson for ${studentName}`,
+        tutor_id: data.adminId || data.tutorId, // Assign to admin if available, otherwise tutor
+        start_time: demoStartDateTime.toISOString(),
+        end_time: demoEndDateTime.toISOString(),
+        is_group: false,
+        status: 'scheduled',
+        lesson_type: 'demo',
+        trial_booking_id: data.bookingId,
+        subject: subjectName,
+        lesson_space_space_id: lessonSpaceSpaceId // Use same LessonSpace room
+      })
+      .select()
+      .single();
+
+    if (demoError) {
+      console.error('Demo session creation error:', demoError);
+      console.warn('Failed to create demo session, but trial lesson was created successfully');
+    } else {
+      console.log('Demo session created successfully:', demoData);
+      
+      // Link student to demo session
+      const { error: demoLinkError } = await supabase
+        .from('lesson_students')
+        .insert({
+          lesson_id: demoData.id,
+          student_id: studentId
+        });
+
+      if (demoLinkError) {
+        console.error('Demo session student linking error:', demoLinkError);
+      } else {
+        console.log('Student linked to demo session successfully');
+      }
     }
 
     // Update trial booking with lesson and approval details
