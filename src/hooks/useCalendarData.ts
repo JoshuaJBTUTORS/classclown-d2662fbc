@@ -454,9 +454,12 @@ export const useCalendarData = ({
           
           // Log before demo data filtering
           const beforeDemoFilter = filteredData.length;
-          filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
+          // Only filter out demo data when not specifically showing demo sessions
+          if (!isAdminDemoFilterActive) {
+            filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
+          }
           const afterDemoFilter = filteredData.length;
-          console.log(`🧹 Demo data filter: ${beforeDemoFilter} → ${afterDemoFilter} (removed ${beforeDemoFilter - afterDemoFilter} demo lessons)`);
+          console.log(`🧹 Demo data filter: ${beforeDemoFilter} → ${afterDemoFilter} (removed ${beforeDemoFilter - afterDemoFilter} demo lessons) - Admin demo filter active: ${isAdminDemoFilterActive}`);
           
           // Apply student filter for admin/owner
           if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
