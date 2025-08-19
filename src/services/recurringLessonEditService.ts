@@ -273,16 +273,24 @@ export const updateAllFutureLessons = async (
   // Calculate what changes need to be applied
   const changes = calculateLessonChanges(originalParentLesson, updates);
   console.log('Calculated changes:', changes);
+  console.log('Editing child instance:', currentLesson.is_recurring_instance);
+  console.log('Update from date:', updateFromDate);
   
-  // Update the parent lesson
-  const parentUpdateData = applyChangesToInstance(originalParentLesson, changes);
-  
-  const { error: parentError } = await supabase
-    .from('lessons')
-    .update(parentUpdateData)
-    .eq('id', parentLessonId);
-  
-  if (parentError) throw parentError;
+  // Only update the parent lesson if we're editing the parent lesson itself
+  // When editing a child instance, we should NOT update the parent lesson
+  if (!currentLesson.is_recurring_instance) {
+    console.log('Updating parent lesson as we are editing the parent');
+    const parentUpdateData = applyChangesToInstance(originalParentLesson, changes);
+    
+    const { error: parentError } = await supabase
+      .from('lessons')
+      .update(parentUpdateData)
+      .eq('id', parentLessonId);
+    
+    if (parentError) throw parentError;
+  } else {
+    console.log('Skipping parent lesson update as we are editing a child instance');
+  }
   
   // Get all future instances to update
   const { data: futureInstances, error: instancesError } = await supabase
@@ -294,7 +302,8 @@ export const updateAllFutureLessons = async (
   
   if (instancesError) throw instancesError;
   
-  let updatedCount = 1; // Parent lesson
+  // Count updated lessons (only count parent if it was actually updated)
+  let updatedCount = currentLesson.is_recurring_instance ? 0 : 1;
   
   if (futureInstances && futureInstances.length > 0) {
     // Update each instance individually with calculated changes
@@ -316,7 +325,10 @@ export const updateAllFutureLessons = async (
     
     // Update students for all affected lessons if provided
     if (selectedStudents) {
-      const allLessonIds = [parentLessonId, ...futureInstances.map(i => i.id)];
+      // Only include parent lesson ID if we actually updated the parent lesson
+      const allLessonIds = currentLesson.is_recurring_instance 
+        ? futureInstances.map(i => i.id)
+        : [parentLessonId, ...futureInstances.map(i => i.id)];
       
       // Delete existing lesson_students entries for all lessons
       const { error: deleteError } = await supabase
@@ -368,7 +380,10 @@ export const updateAllFutureLessons = async (
   // Recreate LessonSpace room for all affected lessons if tutor or students changed
   if (changes.tutorChanged || selectedStudents !== undefined) {
     console.log('Tutor or students changed, recreating LessonSpace rooms for all affected lessons');
-    const allLessonIds = [parentLessonId, ...(futureInstances?.map(i => i.id) || [])];
+    // Only include parent lesson ID if we actually updated the parent lesson
+    const allLessonIds = currentLesson.is_recurring_instance 
+      ? (futureInstances?.map(i => i.id) || [])
+      : [parentLessonId, ...(futureInstances?.map(i => i.id) || [])];
     
     for (const lessonId of allLessonIds) {
       const roomData = await recreateLessonSpaceRoom(lessonId);
@@ -424,5 +439,8 @@ export const getAffectedLessonsCount = async (
     return 0;
   }
   
-  return (count || 0) + 1; // +1 for parent lesson
+  // Only count parent lesson if we're editing the parent lesson itself
+  // When editing a child instance, don't count the parent lesson
+  const parentLessonCount = currentLesson.is_recurring_instance ? 0 : 1;
+  return (count || 0) + parentLessonCount;
 };
