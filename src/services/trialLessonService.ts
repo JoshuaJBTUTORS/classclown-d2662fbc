@@ -183,12 +183,35 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
 
     // Create the demo session (6:15-6:30) using the same LessonSpace link
     const demoTitle = `Demo Session for ${studentName}`;
+    
+    // Get admin's tutor ID if admin is provided
+    let demoTutorId = data.tutorId;
+    if (data.adminId) {
+      console.log('Looking up admin tutor profile for adminId:', data.adminId);
+      const { data: adminUser } = await supabase.auth.admin.getUserById(data.adminId);
+      
+      if (adminUser?.user?.email) {
+        const { data: adminTutor } = await supabase
+          .from('tutors')
+          .select('id')
+          .eq('email', adminUser.user.email)
+          .single();
+        
+        if (adminTutor) {
+          demoTutorId = adminTutor.id;
+          console.log('Found admin tutor ID:', demoTutorId);
+        } else {
+          console.warn('Admin has no tutor profile, using original tutor for demo');
+        }
+      }
+    }
+    
     const { data: demoData, error: demoError } = await supabase
       .from('lessons')
       .insert({
         title: demoTitle,
         description: `15-minute demo session before trial lesson for ${studentName}`,
-        tutor_id: data.adminId || data.tutorId, // Assign to admin if available, otherwise tutor
+        tutor_id: demoTutorId,
         start_time: demoStartDateTime.toISOString(),
         end_time: demoEndDateTime.toISOString(),
         is_group: false,
