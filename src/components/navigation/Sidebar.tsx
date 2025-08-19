@@ -19,6 +19,7 @@ import {
   ChevronRight,
   BookOpen,
   UserPlus,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -126,6 +127,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Analytics & Insights',
       items: [
+        {
+          icon: DollarSign,
+          label: 'Earnings',
+          href: '/earnings',
+          roles: ['tutor'],
+        },
         {
           icon: TrendingUp,
           label: 'Progress',

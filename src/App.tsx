@@ -54,6 +54,7 @@ import SchoolProgress from './pages/SchoolProgress';
 import CreateAdmin from './pages/CreateAdmin';
 import Staff from './pages/Staff';
 import LessonSummaries from './pages/LessonSummaries';
+import Earnings from './pages/Earnings';
 
 
 function App() {
@@ -118,6 +119,14 @@ function App() {
                   />
                   <Route path="homework" element={<Homework />} />
                   <Route path="lesson-summaries" element={<LessonSummaries />} />
+                  <Route 
+                    path="earnings" 
+                    element={
+                      <ProtectedRoute allowedRoles={['tutor']}>
+                        <Earnings />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route path="progress" element={<Progress />} />
                   <Route 
                     path="reports" 

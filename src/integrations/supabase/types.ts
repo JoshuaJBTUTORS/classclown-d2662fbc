@@ -2593,6 +2593,36 @@ export type Database = {
           },
         ]
       }
+      tutor_earning_goals: {
+        Row: {
+          created_at: string
+          goal_amount: number
+          goal_period: string
+          goal_start_date: string
+          id: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          goal_amount: number
+          goal_period: string
+          goal_start_date: string
+          id?: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          goal_amount?: number
+          goal_period?: string
+          goal_start_date?: string
+          id?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_subjects: {
         Row: {
           created_at: string | null
