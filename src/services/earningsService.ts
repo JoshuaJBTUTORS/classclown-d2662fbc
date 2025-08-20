@@ -38,10 +38,11 @@ export const getTutorEarningGoal = async (tutorId: string, period: 'weekly' | 'm
       .lte('goal_start_date', format(startDate, 'yyyy-MM-dd'))
       .order('goal_start_date', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+    if (error) {
+      console.error('Error fetching tutor earning goal:', error);
+      return null;
     }
 
     return data;
@@ -73,9 +74,10 @@ export const setTutorEarningGoal = async (
         onConflict: 'tutor_id,goal_period,goal_start_date'
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Failed to create/update earning goal');
     return data;
   } catch (error) {
     console.error('Error setting tutor earning goal:', error);
@@ -135,11 +137,6 @@ export const getTutorEarningsData = async (
   period: 'weekly' | 'monthly' = 'monthly'
 ): Promise<EarningsData> => {
   try {
-    const [goal, currentEarnings] = await Promise.all([
-      getTutorEarningGoal(tutorId, period),
-      calculateTutorEarnings(tutorId, period)
-    ]);
-
     const now = new Date();
     const periodStart = period === 'weekly' 
       ? startOfWeek(now, { weekStartsOn: 1 })
@@ -148,16 +145,41 @@ export const getTutorEarningsData = async (
       ? endOfWeek(now, { weekStartsOn: 1 })
       : endOfMonth(now);
 
+    // Get all data in parallel - fetch completed lessons only once
+    const [goal, tutorData, completedLessons] = await Promise.all([
+      getTutorEarningGoal(tutorId, period),
+      supabase
+        .from('tutors')
+        .select('normal_hourly_rate')
+        .eq('id', tutorId)
+        .maybeSingle(),
+      getCompletedLessons({
+        dateRange: { from: periodStart, to: periodEnd },
+        selectedTutors: [tutorId],
+        selectedSubjects: []
+      })
+    ]);
+
+    if (tutorData.error) {
+      console.error('Error fetching tutor data:', tutorData.error);
+    }
+
+    const hourlyRate = tutorData.data?.normal_hourly_rate || 0;
+
+    // Calculate earnings from the already-fetched completed lessons
+    let currentEarnings = 0;
+    for (const lesson of completedLessons) {
+      const startTime = new Date(lesson.start_time);
+      const endTime = new Date(lesson.end_time);
+      const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+      currentEarnings += durationHours * hourlyRate;
+    }
+
+    currentEarnings = Math.round(currentEarnings * 100) / 100; // Round to 2 decimal places
+
     const goalAmount = goal?.goal_amount || 0;
     const progressPercentage = goalAmount > 0 ? Math.min((currentEarnings / goalAmount) * 100, 100) : 0;
     const remainingAmount = Math.max(goalAmount - currentEarnings, 0);
-
-    // Get completed lessons count for the period
-    const completedLessons = await getCompletedLessons({
-      dateRange: { from: periodStart, to: periodEnd },
-      selectedTutors: [tutorId],
-      selectedSubjects: []
-    });
 
     return {
       currentEarnings,

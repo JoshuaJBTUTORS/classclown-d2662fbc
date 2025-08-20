@@ -66,6 +66,7 @@ export const getCompletedLessons = async (filters: {
   isDemoMode?: boolean;
 }): Promise<CompletedLessonData[]> => {
   try {
+    // Get lessons with completion criteria in a single query
     let query = supabase
       .from('lessons')
       .select(`
@@ -81,7 +82,6 @@ export const getCompletedLessons = async (filters: {
         )
       `);
 
-
     // Apply filters
     if (filters.dateRange.from) {
       query = query.gte('start_time', filters.dateRange.from.toISOString());
@@ -96,19 +96,83 @@ export const getCompletedLessons = async (filters: {
       query = query.in('subject', filters.selectedSubjects);
     }
 
-    const { data: lessons, error } = await query;
+    const { data: lessons, error: lessonsError } = await query;
+    if (lessonsError) throw lessonsError;
 
-    if (error) throw error;
-
-    // Filter lessons that meet completion criteria
-    const completedLessons: CompletedLessonData[] = [];
-
-    for (const lesson of lessons || []) {
-      const isCompleted = await isLessonCompleted(lesson.id);
-      if (isCompleted) {
-        completedLessons.push(lesson);
-      }
+    if (!lessons || lessons.length === 0) {
+      return [];
     }
+
+    const lessonIds = lessons.map(l => l.id);
+
+    // Get all completion data in parallel
+    const [studentsData, homeworkData, attendanceData] = await Promise.all([
+      supabase
+        .from('lesson_students')
+        .select('lesson_id, student_id')
+        .in('lesson_id', lessonIds),
+      supabase
+        .from('homework')
+        .select('lesson_id')
+        .in('lesson_id', lessonIds),
+      supabase
+        .from('lesson_attendance')
+        .select('lesson_id, student_id')
+        .in('lesson_id', lessonIds)
+    ]);
+
+    if (studentsData.error || homeworkData.error || attendanceData.error) {
+      console.error('Error fetching completion data:', {
+        studentsError: studentsData.error,
+        homeworkError: homeworkData.error,
+        attendanceError: attendanceData.error
+      });
+      return [];
+    }
+
+    // Group data by lesson_id for efficient lookup
+    const lessonStudentsMap = new Map<string, Set<number>>();
+    const homeworkLessons = new Set<string>();
+    const attendanceMap = new Map<string, Set<number>>();
+
+    studentsData.data?.forEach(item => {
+      if (!lessonStudentsMap.has(item.lesson_id)) {
+        lessonStudentsMap.set(item.lesson_id, new Set());
+      }
+      lessonStudentsMap.get(item.lesson_id)!.add(item.student_id);
+    });
+
+    homeworkData.data?.forEach(item => {
+      homeworkLessons.add(item.lesson_id);
+    });
+
+    attendanceData.data?.forEach(item => {
+      if (!attendanceMap.has(item.lesson_id)) {
+        attendanceMap.set(item.lesson_id, new Set());
+      }
+      attendanceMap.get(item.lesson_id)!.add(item.student_id);
+    });
+
+    // Filter completed lessons
+    const completedLessons = lessons.filter(lesson => {
+      const enrolledStudents = lessonStudentsMap.get(lesson.id);
+      const attendanceStudents = attendanceMap.get(lesson.id);
+      const hasHomework = homeworkLessons.has(lesson.id);
+
+      // Check completion criteria
+      if (!enrolledStudents || enrolledStudents.size === 0) return false;
+      if (!hasHomework) return false;
+      if (!attendanceStudents || attendanceStudents.size === 0) return false;
+
+      // Check if all enrolled students have attendance
+      for (const studentId of enrolledStudents) {
+        if (!attendanceStudents.has(studentId)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     return completedLessons;
   } catch (error) {
