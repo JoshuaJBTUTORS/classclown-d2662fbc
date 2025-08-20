@@ -20,7 +20,6 @@ interface UseCalendarDataProps {
     selectedStudents: string[];
     selectedTutors: string[];
     selectedSubjects: string[];
-    selectedAdminDemos: string[];
     selectedLessonType: string;
   };
 }
@@ -61,9 +60,6 @@ export const useCalendarData = ({
   // Memoize events to prevent unnecessary recalculations
   const events = useMemo(() => {
     const calendarEvents = [];
-
-    // Check if admin demo filter is active
-    const isAdminDemoFilterActive = filters?.selectedAdminDemos && filters.selectedAdminDemos.length > 0;
 
     if (rawLessons && rawLessons.length > 0) {
       const lessonEvents = rawLessons.map(lesson => {
@@ -132,7 +128,7 @@ export const useCalendarData = ({
             isCancelled: isCancelled,
             isAbsent: isAbsent,
             attendanceDetails: attendanceInfo,
-            eventType: isAdminDemoFilterActive ? 'demo' : 'lesson'
+            eventType: 'lesson'
           }
         };
       }).filter(event => event !== null);
@@ -141,7 +137,7 @@ export const useCalendarData = ({
     }
 
     return calendarEvents;
-  }, [rawLessons, userRole, completionData, attendanceStatusData, filters?.selectedAdminDemos]);
+  }, [rawLessons, userRole, completionData, attendanceStatusData]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -163,70 +159,6 @@ export const useCalendarData = ({
         console.log(`📅 Date range: ${startDate?.toISOString()} to ${endDate?.toISOString()} (${viewType} view)`);
         
         const fetchPromise = (async () => {
-          // Check if admin demo filter is active
-          const isAdminDemoFilterActive = filters?.selectedAdminDemos && filters.selectedAdminDemos.length > 0;
-          
-          if (isAdminDemoFilterActive) {
-            console.log('🔍 Admin demo filter active, fetching demo sessions for admins:', filters.selectedAdminDemos);
-            
-            // Get admin emails and find their corresponding tutor IDs
-            const adminTutorIds = [];
-            for (const adminId of filters.selectedAdminDemos) {
-              const { data: adminUser } = await supabase.auth.admin.getUserById(adminId);
-              if (adminUser?.user?.email) {
-                const { data: adminTutor } = await supabase
-                  .from('tutors')
-                  .select('id')
-                  .eq('email', adminUser.user.email)
-                  .single();
-                
-                if (adminTutor) {
-                  adminTutorIds.push(adminTutor.id);
-                }
-              }
-            }
-            
-            if (adminTutorIds.length === 0) {
-              console.log('❌ No tutor profiles found for selected admins');
-              setRawLessons([]);
-              setIsLoading(false);
-              return;
-            }
-            
-            // Fetch demo sessions for the admin tutors
-            let demoQuery = supabase
-              .from('lessons')
-              .select(`
-                *,
-                tutor:tutors(id, first_name, last_name, email),
-                lesson_students(
-                  student_id,
-                  student:students(id, first_name, last_name)
-                )
-              `)
-              .eq('lesson_type', 'demo')
-              .in('tutor_id', adminTutorIds);
-            
-            // Add date range filter if provided
-            if (startDate && endDate) {
-              demoQuery = demoQuery
-                .gte('start_time', startDate.toISOString())
-                .lte('start_time', endDate.toISOString());
-            }
-            
-            console.log('🚀 Executing demo sessions query...');
-            const { data, error } = await demoQuery;
-            
-            if (error) {
-              console.error('❌ Demo sessions query error:', error);
-              throw error;
-            }
-            
-            console.log(`✅ Demo sessions query completed. Found: ${data?.length || 0} demo sessions`);
-            setRawLessons(data || []);
-            return;
-          }
-          
           let query;
 
           if (userRole === 'student') {
@@ -454,14 +386,11 @@ export const useCalendarData = ({
           
           let filteredData = data || [];
           
-          // Log before demo data filtering
+          // Filter out demo data if not requested
           const beforeDemoFilter = filteredData.length;
-          // Only filter out demo data when not specifically showing demo sessions
-          if (!isAdminDemoFilterActive) {
-            filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
-          }
+          filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
           const afterDemoFilter = filteredData.length;
-          console.log(`🧹 Demo data filter: ${beforeDemoFilter} → ${afterDemoFilter} (removed ${beforeDemoFilter - afterDemoFilter} demo lessons) - Admin demo filter active: ${isAdminDemoFilterActive}`);
+          console.log(`🧹 Demo data filter: ${beforeDemoFilter} → ${afterDemoFilter} (removed ${beforeDemoFilter - afterDemoFilter} demo lessons)`);
           
           // Apply student filter for admin/owner
           if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
@@ -491,8 +420,10 @@ export const useCalendarData = ({
             const beforeTypeFilter = filteredData.length;
             if (filters.selectedLessonType === 'Trial Lessons') {
               filteredData = filteredData.filter(lesson => lesson.lesson_type === 'trial');
+            } else if (filters.selectedLessonType === 'Demo Lessons') {
+              filteredData = filteredData.filter(lesson => lesson.lesson_type === 'demo');
             } else if (filters.selectedLessonType === 'Full Lessons') {
-              filteredData = filteredData.filter(lesson => lesson.lesson_type !== 'trial' || lesson.lesson_type == null);
+              filteredData = filteredData.filter(lesson => lesson.lesson_type !== 'trial' && lesson.lesson_type !== 'demo' || lesson.lesson_type == null);
             }
             const afterTypeFilter = filteredData.length;
             console.log(`🎯 Lesson type filter (${filters.selectedLessonType}): ${beforeTypeFilter} → ${afterTypeFilter} (removed ${beforeTypeFilter - afterTypeFilter} lessons)`);

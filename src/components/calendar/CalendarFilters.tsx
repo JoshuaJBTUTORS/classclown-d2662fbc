@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter, Users, GraduationCap, BookOpen, Shield } from 'lucide-react';
+import { X, Filter, Users, GraduationCap, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tutor } from '@/types/tutor';
 import { LESSON_SUBJECTS } from '@/constants/subjects';
@@ -13,12 +13,10 @@ interface CalendarFiltersProps {
   selectedStudents: string[];
   selectedTutors: string[];
   selectedSubjects: string[];
-  selectedAdminDemos: string[];
   selectedLessonType: string;
   onStudentFilterChange: (studentIds: string[]) => void;
   onTutorFilterChange: (tutorIds: string[]) => void;
   onSubjectFilterChange: (subjects: string[]) => void;
-  onAdminDemoFilterChange: (adminIds: string[]) => void;
   onLessonTypeFilterChange: (lessonType: string) => void;
   onClearFilters: () => void;
 }
@@ -27,18 +25,15 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
   selectedStudents,
   selectedTutors,
   selectedSubjects,
-  selectedAdminDemos,
   selectedLessonType,
   onStudentFilterChange,
   onTutorFilterChange,
   onSubjectFilterChange,
-  onAdminDemoFilterChange,
   onLessonTypeFilterChange,
   onClearFilters
 }) => {
   const { students, isLoading: studentsLoading } = useStudentData();
   const [tutors, setTutors] = useState<Tutor[]>([]);
-  const [admins, setAdmins] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,38 +52,6 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         .order('first_name');
 
       if (tutorsError) throw tutorsError;
-
-      // Fetch admins
-      const { data: adminsData, error: adminsError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(first_name, last_name)
-        `)
-        .eq('role', 'admin');
-
-      if (adminsError) {
-        console.error('Error fetching admins:', adminsError);
-        // Try alternative approach without foreign key
-        const { data: alternativeAdminsData, error: altError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', 
-            (await supabase.from('user_roles').select('user_id').eq('role', 'admin')).data?.map(r => r.user_id) || []
-          );
-        
-        if (!altError && alternativeAdminsData) {
-          const formattedAltAdmins = alternativeAdminsData.map(profile => ({
-            user_id: profile.id,
-            profiles: profile
-          }));
-          setAdmins(formattedAltAdmins);
-        } else {
-          setAdmins([]);
-        }
-      } else {
-        setAdmins(adminsData || []);
-      }
 
       setTutors(tutorsData || []);
     } catch (error) {
@@ -122,14 +85,6 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     }
   };
 
-  const handleAdminDemoSelect = (adminId: string) => {
-    if (selectedAdminDemos.includes(adminId)) {
-      onAdminDemoFilterChange(selectedAdminDemos.filter(id => id !== adminId));
-    } else {
-      onAdminDemoFilterChange([...selectedAdminDemos, adminId]);
-    }
-  };
-
   const removeStudentFilter = (studentId: string) => {
     onStudentFilterChange(selectedStudents.filter(id => id !== studentId));
   };
@@ -142,11 +97,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
     onSubjectFilterChange(selectedSubjects.filter(s => s !== subject));
   };
 
-  const removeAdminDemoFilter = (adminId: string) => {
-    onAdminDemoFilterChange(selectedAdminDemos.filter(id => id !== adminId));
-  };
-
-  const totalFiltersActive = selectedStudents.length + selectedTutors.length + selectedSubjects.length + selectedAdminDemos.length + (selectedLessonType !== 'All Lessons' ? 1 : 0);
+  const totalFiltersActive = selectedStudents.length + selectedTutors.length + selectedSubjects.length + (selectedLessonType !== 'All Lessons' ? 1 : 0);
 
   if (isLoading || studentsLoading) {
     return (
@@ -335,55 +286,9 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <SelectItem value="All Lessons">All Lessons</SelectItem>
               <SelectItem value="Full Lessons">Full Lessons</SelectItem>
               <SelectItem value="Trial Lessons">Trial Lessons</SelectItem>
+              <SelectItem value="Demo Lessons">Demo Lessons</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Admin Demos Filter */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <label className="text-sm font-medium">Admin Demos</label>
-          </div>
-          <Select onValueChange={handleAdminDemoSelect}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Select admin demos..." />
-            </SelectTrigger>
-            <SelectContent>
-              {admins.map((admin) => (
-                <SelectItem
-                  key={admin.user_id}
-                  value={admin.user_id}
-                  className={selectedAdminDemos.includes(admin.user_id) ? 'bg-accent' : ''}
-                >
-                  {admin.profiles.first_name} {admin.profiles.last_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Selected Admin Demos */}
-          {selectedAdminDemos.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {selectedAdminDemos.map((adminId) => {
-                const admin = admins.find(a => a.user_id === adminId);
-                if (!admin) return null;
-                return (
-                  <Badge
-                    key={adminId}
-                    variant="secondary"
-                    className="text-xs flex items-center gap-1"
-                  >
-                    {admin.profiles.first_name} {admin.profiles.last_name}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => removeAdminDemoFilter(adminId)}
-                    />
-                  </Badge>
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
     </div>

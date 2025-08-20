@@ -28,7 +28,6 @@ const Calendar = () => {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [selectedAdminDemos, setSelectedAdminDemos] = useState<string[]>([]);
   const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
 
@@ -42,9 +41,8 @@ const Calendar = () => {
     selectedStudents,
     selectedTutors,
     selectedSubjects,
-    selectedAdminDemos,
     selectedLessonType
-  }), [selectedStudents, selectedTutors, selectedSubjects, selectedAdminDemos, selectedLessonType]);
+  }), [selectedStudents, selectedTutors, selectedSubjects, selectedLessonType]);
 
   // Fetch calendar data using the hook with date range
   const { events, isLoading } = useCalendarData({
@@ -83,10 +81,6 @@ const Calendar = () => {
     setSelectedSubjects(subjects);
   };
 
-  const handleAdminDemoFilterChange = (adminIds: string[]) => {
-    setSelectedAdminDemos(adminIds);
-  };
-
   const handleLessonTypeFilterChange = (lessonType: string) => {
     setSelectedLessonType(lessonType);
   };
@@ -95,7 +89,6 @@ const Calendar = () => {
     setSelectedStudents([]);
     setSelectedTutors([]);
     setSelectedSubjects([]);
-    setSelectedAdminDemos([]);
     setSelectedLessonType('All Lessons');
   };
 
@@ -231,12 +224,10 @@ const Calendar = () => {
         selectedStudents={selectedStudents}
         selectedTutors={selectedTutors}
         selectedSubjects={selectedSubjects}
-        selectedAdminDemos={selectedAdminDemos}
         selectedLessonType={selectedLessonType}
         onStudentFilterChange={handleStudentFilterChange}
         onTutorFilterChange={handleTutorFilterChange}
         onSubjectFilterChange={handleSubjectFilterChange}
-        onAdminDemoFilterChange={handleAdminDemoFilterChange}
         onLessonTypeFilterChange={handleLessonTypeFilterChange}
         onClearFilters={handleClearFilters}
         canUseFilters={canUseFilters}

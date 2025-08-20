@@ -10,12 +10,10 @@ interface CollapsibleFiltersProps {
   selectedStudents: string[];
   selectedTutors: string[];
   selectedSubjects: string[];
-  selectedAdminDemos: string[];
   selectedLessonType: string;
   onStudentFilterChange: (studentIds: string[]) => void;
   onTutorFilterChange: (tutorIds: string[]) => void;
   onSubjectFilterChange: (subjects: string[]) => void;
-  onAdminDemoFilterChange: (adminIds: string[]) => void;
   onLessonTypeFilterChange: (lessonType: string) => void;
   onClearFilters: () => void;
   canUseFilters: boolean;
@@ -28,12 +26,10 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
   selectedStudents,
   selectedTutors,
   selectedSubjects,
-  selectedAdminDemos,
   selectedLessonType,
   onStudentFilterChange,
   onTutorFilterChange,
   onSubjectFilterChange,
-  onAdminDemoFilterChange,
   onLessonTypeFilterChange,
   onClearFilters,
   canUseFilters,
@@ -75,12 +71,10 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                   selectedStudents={selectedStudents}
                   selectedTutors={selectedTutors}
                   selectedSubjects={selectedSubjects}
-                  selectedAdminDemos={selectedAdminDemos}
                   selectedLessonType={selectedLessonType}
                   onStudentFilterChange={onStudentFilterChange}
                   onTutorFilterChange={onTutorFilterChange}
                   onSubjectFilterChange={onSubjectFilterChange}
-                  onAdminDemoFilterChange={onAdminDemoFilterChange}
                   onLessonTypeFilterChange={onLessonTypeFilterChange}
                   onClearFilters={onClearFilters}
                 />
@@ -102,12 +96,10 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
                 selectedStudents={selectedStudents}
                 selectedTutors={selectedTutors}
                 selectedSubjects={selectedSubjects}
-                selectedAdminDemos={selectedAdminDemos}
                 selectedLessonType={selectedLessonType}
                 onStudentFilterChange={onStudentFilterChange}
                 onTutorFilterChange={onTutorFilterChange}
                 onSubjectFilterChange={onSubjectFilterChange}
-                onAdminDemoFilterChange={onAdminDemoFilterChange}
                 onLessonTypeFilterChange={onLessonTypeFilterChange}
                 onClearFilters={onClearFilters}
               />
