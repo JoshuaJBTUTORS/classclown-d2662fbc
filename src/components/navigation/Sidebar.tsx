@@ -135,6 +135,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         },
         {
           icon: TrendingUp,
+          label: 'Admin Earnings',
+          href: '/admin-earnings',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: TrendingUp,
           label: 'Progress',
           href: '/progress',
           roles: ['admin', 'owner', 'parent', 'student'],
