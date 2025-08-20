@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_earning_goals: {
+        Row: {
+          admin_id: string
+          created_at: string | null
+          goal_amount: number
+          id: string
+          period: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string | null
+          goal_amount: number
+          id?: string
+          period: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string | null
+          goal_amount?: number
+          id?: string
+          period?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_assessments: {
         Row: {
           ai_confidence_score: number | null
@@ -2454,10 +2481,12 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           assigned_tutor_id: string | null
+          booking_source: string | null
           child_name: string
           created_at: string
           email: string
           id: string
+          is_unique_booking: boolean | null
           lesson_id: string | null
           lesson_time: string | null
           message: string | null
@@ -2477,10 +2506,12 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           assigned_tutor_id?: string | null
+          booking_source?: string | null
           child_name: string
           created_at?: string
           email: string
           id?: string
+          is_unique_booking?: boolean | null
           lesson_id?: string | null
           lesson_time?: string | null
           message?: string | null
@@ -2500,10 +2531,12 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           assigned_tutor_id?: string | null
+          booking_source?: string | null
           child_name?: string
           created_at?: string
           email?: string
           id?: string
+          is_unique_booking?: boolean | null
           lesson_id?: string | null
           lesson_time?: string | null
           message?: string | null

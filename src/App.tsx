@@ -55,6 +55,8 @@ import CreateAdmin from './pages/CreateAdmin';
 import Staff from './pages/Staff';
 import LessonSummaries from './pages/LessonSummaries';
 import Earnings from './pages/Earnings';
+import AdminEarnings from './pages/AdminEarnings';
+import TrialBookingMusa from './pages/TrialBookingMusa';
 
 
 function App() {
@@ -77,6 +79,7 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 
                 <Route path="/book-trial" element={<TrialBooking />} />
+                <Route path="/book-trial-musa" element={<TrialBookingMusa />} />
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
                 <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
                 <Route path="/blog" element={<Blog />} />
@@ -124,6 +127,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['tutor']}>
                         <Earnings />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin-earnings" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <AdminEarnings />
                       </ProtectedRoute>
                     } 
                   />

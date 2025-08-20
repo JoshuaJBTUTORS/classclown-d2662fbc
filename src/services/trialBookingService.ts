@@ -12,6 +12,8 @@ interface CreateTrialBookingData {
   lesson_time?: string; // Actual lesson time
   subject_id: string;
   message?: string;
+  booking_source?: string;
+  is_unique_booking?: boolean;
 }
 
 interface TrialBookingResult {
@@ -36,6 +38,8 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
         lesson_time: data.lesson_time, // Actual lesson time
         subject_id: data.subject_id,
         message: data.message,
+        booking_source: data.booking_source || 'general',
+        is_unique_booking: data.is_unique_booking ?? true,
         status: 'pending'
       })
       .select('id')
