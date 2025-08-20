@@ -62,11 +62,11 @@ const handler = async (req: Request): Promise<Response> => {
     const dateStr = targetDate.toISOString().split('T')[0];
     console.log(`Target date: ${dateStr}`);
 
-    // Query trial lessons for the target date
+    // Query both demo and trial lessons for the target date
     const { data: lessons, error: lessonsError } = await supabase
       .from('lessons')
       .select('*')
-      .eq('lesson_type', 'trial')
+      .in('lesson_type', ['trial', 'demo'])
       .gte('start_time', `${dateStr}T00:00:00`)
       .lt('start_time', `${dateStr}T23:59:59`)
       .eq('status', 'scheduled')
@@ -77,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw lessonsError;
     }
 
-    console.log(`Found ${lessons?.length || 0} trial lessons for ${dateStr}`);
+    console.log(`Found ${lessons?.length || 0} demo and trial lessons for ${dateStr}`);
 
     if (!lessons || lessons.length === 0) {
       return new Response(JSON.stringify({ 
@@ -90,46 +90,69 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Group lessons by trial_booking_id to process each trial booking once
+    const lessonsByBooking = new Map();
+    for (const lesson of lessons) {
+      if (!lessonsByBooking.has(lesson.trial_booking_id)) {
+        lessonsByBooking.set(lesson.trial_booking_id, []);
+      }
+      lessonsByBooking.get(lesson.trial_booking_id).push(lesson);
+    }
+
     let emailsSent = 0;
     const errors: string[] = [];
     let emailIndex = 0;
 
-    console.log(`Preparing to send ${lessons.length} trial lesson reminder emails with rate limiting...`);
+    console.log(`Preparing to send ${lessonsByBooking.size} trial lesson reminder emails with rate limiting...`);
 
-    // Process each trial lesson
-    for (const lesson of lessons) {
+    // Process each trial booking
+    for (const [trialBookingId, bookingLessons] of lessonsByBooking) {
       emailIndex++;
       try {
+        // Find demo and trial lessons
+        const demoLesson = bookingLessons.find(l => l.lesson_type === 'demo');
+        const trialLesson = bookingLessons.find(l => l.lesson_type === 'trial');
+        
+        // Skip if we don't have both sessions
+        if (!demoLesson || !trialLesson) {
+          console.warn(`Missing demo or trial lesson for booking ${trialBookingId}`);
+          continue;
+        }
+
         // Fetch the trial booking data separately
         const { data: trialBooking, error: bookingError } = await supabase
           .from('trial_bookings')
           .select('id, parent_name, child_name, email, phone')
-          .eq('id', lesson.trial_booking_id)
+          .eq('id', trialBookingId)
           .single();
 
         if (bookingError || !trialBooking || !trialBooking.email) {
-          console.warn(`No trial booking email found for lesson ${lesson.id}:`, bookingError);
+          console.warn(`No trial booking email found for booking ${trialBookingId}:`, bookingError);
           continue;
         }
 
+        // Use demo start time and trial end time for the complete session
+        const sessionStartTime = demoLesson.start_time;
+        const sessionEndTime = trialLesson.end_time;
+
         // Format UTC times directly to UK timezone - no double conversion
-        const lessonDate = formatInUKTime(lesson.start_time, 'EEEE, dd MMMM yyyy');
-        const lessonTime = `${formatInUKTime(lesson.start_time, 'HH:mm')} - ${formatInUKTime(lesson.end_time, 'HH:mm')}`;
+        const lessonDate = formatInUKTime(sessionStartTime, 'EEEE, dd MMMM yyyy');
+        const lessonTime = `${formatInUKTime(sessionStartTime, 'HH:mm')} - ${formatInUKTime(sessionEndTime, 'HH:mm')}`;
 
         // Use child name from trial booking
         const childName = trialBooking.child_name || 'your child';
 
-        // Generate lesson URL - for trial lessons, this could be the lesson space URL or a direct join link
-        const lessonUrl = lesson.lesson_space_room_url || 
-                          `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/student-join/${lesson.id}`;
+        // Generate lesson URL - use demo lesson URL since that's where they start
+        const lessonUrl = demoLesson.lesson_space_room_url || 
+                          `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/student-join/${demoLesson.id}`;
 
         // Generate email HTML
         const emailHtml = await renderAsync(
           React.createElement(TrialLessonReminderEmail, {
             childName,
             parentName: trialBooking.parent_name || 'Parent',
-            lessonTitle: lesson.title,
-            lessonSubject: lesson.subject || 'Trial Session',
+            lessonTitle: trialLesson.title,
+            lessonSubject: trialLesson.subject || 'Trial Session',
             lessonDate,
             lessonTime,
             lessonUrl,
@@ -137,18 +160,18 @@ const handler = async (req: Request): Promise<Response> => {
           })
         );
 
-        console.log(`Sending trial email ${emailIndex}/${lessons.length} to ${trialBooking.email}...`);
+        console.log(`Sending trial email ${emailIndex}/${lessonsByBooking.size} to ${trialBooking.email}...`);
 
         // Send email with retry logic
         const emailResult = await sendEmailWithRetry({
           from: 'JB Tutors <lessons@jb-tutors.com>',
           to: [trialBooking.email],
-          subject: `Exciting Trial Lesson ${isToday ? 'Today' : 'Tomorrow'} - ${lesson.subject || 'Tutoring'}`,
+          subject: `Exciting Trial Lesson ${isToday ? 'Today' : 'Tomorrow'} - ${trialLesson.subject || 'Tutoring'}`,
           html: emailHtml,
         });
 
         // Rate limiting: wait 600ms between emails (allowing ~1.6 emails per second)
-        if (emailIndex < lessons.length) {
+        if (emailIndex < lessonsByBooking.size) {
           await sleep(600);
         }
 
@@ -156,7 +179,7 @@ const handler = async (req: Request): Promise<Response> => {
           console.error(`Failed to send trial email to ${trialBooking.email}:`, emailResult.error);
           errors.push(`Failed to send to ${trialBooking.email}: ${emailResult.error.message}`);
         } else {
-          console.log(`Trial email sent successfully to ${trialBooking.email} for lesson ${lesson.id}`);
+          console.log(`Trial email sent successfully to ${trialBooking.email} for booking ${trialBookingId}`);
           emailsSent++;
 
           // Send WhatsApp message if phone number is available
@@ -164,7 +187,7 @@ const handler = async (req: Request): Promise<Response> => {
             const whatsappText = WhatsAppTemplates.trialLessonReminder(
               trialBooking.parent_name || 'Parent',
               childName,
-              lesson.title,
+              trialLesson.title,
               lessonDate,
               lessonTime,
               lessonUrl,
@@ -182,8 +205,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
       } catch (lessonError) {
-        console.error(`Error processing trial lesson ${lesson.id}:`, lessonError);
-        errors.push(`Error processing trial lesson ${lesson.id}: ${lessonError.message}`);
+        console.error(`Error processing trial booking ${trialBookingId}:`, lessonError);
+        errors.push(`Error processing trial booking ${trialBookingId}: ${lessonError.message}`);
       }
     }
 
