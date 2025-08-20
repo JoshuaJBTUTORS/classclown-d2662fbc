@@ -33,7 +33,8 @@ const Homework: React.FC = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [studentId, setStudentId] = useState<number | null>(null);
+  const [students, setStudents] = useState<{id: number, first_name: string, last_name: string}[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -93,7 +94,8 @@ const Homework: React.FC = () => {
 
           if (studentData) {
             console.log("Found student ID:", studentData.id);
-            setStudentId(studentData.id);
+            setStudents([{id: studentData.id, first_name: '', last_name: ''}]);
+            setSelectedStudentId(studentData.id);
           } else {
             const errorMsg = "No student record found for your account. Please contact your administrator.";
             console.error(errorMsg);
@@ -101,7 +103,7 @@ const Homework: React.FC = () => {
             toast.error(errorMsg);
           }
         } else if (userRole === 'parent') {
-          // For parents, find their first associated student
+          // For parents, find all their associated students
           if (!parentProfile?.id) {
             const errorMsg = "Parent profile not found. Please contact your administrator.";
             console.error(errorMsg);
@@ -111,21 +113,21 @@ const Homework: React.FC = () => {
           }
 
           console.log("Looking for students associated with parent:", parentProfile.id);
-          const { data: studentData, error: studentError } = await supabase
+          const { data: studentsData, error: studentError } = await supabase
             .from('students')
-            .select('id')
+            .select('id, first_name, last_name')
             .eq('parent_id', parentProfile.id)
-            .limit(1)
-            .maybeSingle();
+            .order('first_name');
 
           if (studentError) {
-            console.error("Error fetching student for parent:", studentError);
+            console.error("Error fetching students for parent:", studentError);
             throw studentError;
           }
 
-          if (studentData) {
-            console.log("Found student ID for parent:", studentData.id);
-            setStudentId(studentData.id);
+          if (studentsData && studentsData.length > 0) {
+            console.log("Found students for parent:", studentsData);
+            setStudents(studentsData);
+            setSelectedStudentId(studentsData[0].id); // Default to first student
           } else {
             const errorMsg = "No students found associated with your parent account. Please contact your administrator.";
             console.error(errorMsg);
@@ -173,8 +175,26 @@ const Homework: React.FC = () => {
             </Alert>
           ) : userRole === 'tutor' || userRole === 'admin' || userRole === 'owner' ? (
             <HomeworkManager />
-          ) : (userRole === 'student' || userRole === 'parent') && studentId ? (
-            <StudentHomeworkView studentId={studentId} />
+          ) : (userRole === 'student' || userRole === 'parent') && selectedStudentId ? (
+            <>
+              {userRole === 'parent' && students.length > 1 && (
+                <div className="mb-6">
+                  <label className="text-sm font-medium mb-2 block">Select Child:</label>
+                  <select 
+                    value={selectedStudentId} 
+                    onChange={(e) => setSelectedStudentId(Number(e.target.value))}
+                    className="w-full max-w-xs p-2 border border-input bg-background rounded-md"
+                  >
+                    {students.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.first_name} {student.last_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <StudentHomeworkView studentId={selectedStudentId} />
+            </>
           ) : (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
