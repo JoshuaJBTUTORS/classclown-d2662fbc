@@ -383,6 +383,7 @@ export const useCalendarData = ({
             console.log('✅ Found tutor data:', tutorData);
 
             // Fetch both original lessons and instances for this tutor
+            // Exclude demo sessions from tutor view
             query = supabase
               .from('lessons')
               .select(`
@@ -392,7 +393,8 @@ export const useCalendarData = ({
                   student:students(id, first_name, last_name)
                 )
               `)
-              .eq('tutor_id', tutorData.id);
+              .eq('tutor_id', tutorData.id)
+              .neq('lesson_type', 'demo');
 
             // Add date range filter if provided
             if (startDate && endDate) {
