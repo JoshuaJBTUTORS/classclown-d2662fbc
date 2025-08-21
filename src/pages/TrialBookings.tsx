@@ -508,7 +508,6 @@ const TrialBookings = () => {
         isOpen={isApprovalOpen}
         onClose={() => setIsApprovalOpen(false)}
         onApprovalComplete={handleApprovalComplete}
-        tutors={tutors}
         admins={admins}
       />
     </>
