@@ -19,6 +19,104 @@ interface HubSpotSearchResponse {
   results: HubSpotContact[];
 }
 
+interface HubSpotCreateContactResponse {
+  id: string;
+}
+
+interface HubSpotCreateNoteResponse {
+  id: string;
+}
+
+// Helper function to create a new contact in HubSpot
+const createHubSpotContact = async (
+  hubspotApiKey: string,
+  email: string,
+  parentName: string
+): Promise<string> => {
+  // Split parent name into first and last name
+  const nameParts = parentName.trim().split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+
+  console.log(`Creating new HubSpot contact for email: ${email}, name: ${parentName}`);
+
+  const createContactResponse = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${hubspotApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      properties: {
+        email: email,
+        firstname: firstName,
+        lastname: lastName
+      }
+    }),
+  });
+
+  if (!createContactResponse.ok) {
+    const errorText = await createContactResponse.text();
+    console.error('HubSpot contact creation failed:', createContactResponse.status, errorText);
+    throw new Error(`HubSpot contact creation failed: ${createContactResponse.status}`);
+  }
+
+  const contactData: HubSpotCreateContactResponse = await createContactResponse.json();
+  console.log('HubSpot contact created successfully:', contactData.id);
+  
+  return contactData.id;
+};
+
+// Helper function to create a note associated with a contact
+const createHubSpotNote = async (
+  hubspotApiKey: string,
+  contactId: string,
+  parentName: string,
+  childName: string
+): Promise<string> => {
+  const noteBody = `Trial lesson booked Directly - Parent: ${parentName}, Child: ${childName}`;
+  
+  console.log(`Creating note for contact ID: ${contactId}`);
+
+  const createNoteResponse = await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${hubspotApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      properties: {
+        hs_timestamp: new Date().toISOString(),
+        hs_note_body: noteBody
+      },
+      associations: [
+        {
+          to: {
+            id: contactId
+          },
+          types: [
+            {
+              associationCategory: 'HUBSPOT_DEFINED',
+              associationTypeId: 202 // Note to Contact association
+            }
+          ]
+        }
+      ]
+    }),
+  });
+
+  if (!createNoteResponse.ok) {
+    const errorText = await createNoteResponse.text();
+    console.error('HubSpot note creation failed:', createNoteResponse.status, errorText);
+    throw new Error(`HubSpot note creation failed: ${createNoteResponse.status}`);
+  }
+
+  const noteData: HubSpotCreateNoteResponse = await createNoteResponse.json();
+  console.log('HubSpot note created successfully:', noteData.id);
+  
+  return noteData.id;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -78,63 +176,31 @@ const handler = async (req: Request): Promise<Response> => {
     const searchData: HubSpotSearchResponse = await searchResponse.json();
     console.log('HubSpot search results:', searchData);
 
+    let contactId: string;
+    let contactCreated = false;
+
     if (searchData.results.length === 0) {
+      // Contact not found - create new contact
       console.log('No contact found in HubSpot for email:', email);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'Contact not found in HubSpot' 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      contactId = await createHubSpotContact(hubspotApiKey, email, parentName);
+      contactCreated = true;
+    } else {
+      // Contact found - use existing contact
+      contactId = searchData.results[0].id;
+      console.log('Found HubSpot contact ID:', contactId);
     }
 
-    const contactId = searchData.results[0].id;
-    console.log('Found HubSpot contact ID:', contactId);
-
-    // Create note for the contact
-    const noteBody = `Trial lesson booked Directly - Parent: ${parentName}, Child: ${childName}`;
-    const createNoteResponse = await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${hubspotApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        properties: {
-          hs_timestamp: new Date().toISOString(),
-          hs_note_body: noteBody
-        },
-        associations: [
-          {
-            to: {
-              id: contactId
-            },
-            types: [
-              {
-                associationCategory: 'HUBSPOT_DEFINED',
-                associationTypeId: 202 // Note to Contact association
-              }
-            ]
-          }
-        ]
-      }),
-    });
-
-    if (!createNoteResponse.ok) {
-      const errorText = await createNoteResponse.text();
-      console.error('HubSpot note creation failed:', createNoteResponse.status, errorText);
-      throw new Error(`HubSpot note creation failed: ${createNoteResponse.status}`);
-    }
-
-    const noteData = await createNoteResponse.json();
-    console.log('HubSpot note created successfully:', noteData.id);
+    // Create note for the contact (existing or newly created)
+    const noteId = await createHubSpotNote(hubspotApiKey, contactId, parentName, childName);
 
     return new Response(JSON.stringify({ 
       success: true, 
       contactId,
-      noteId: noteData.id,
-      message: 'HubSpot integration completed successfully'
+      noteId,
+      contactCreated,
+      message: contactCreated 
+        ? 'Contact created and note added successfully' 
+        : 'Note added to existing contact successfully'
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
