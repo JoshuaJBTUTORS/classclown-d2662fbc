@@ -142,9 +142,10 @@ const handler = async (req: Request): Promise<Response> => {
         // Use child name from trial booking
         const childName = trialBooking.child_name || 'your child';
 
-        // Generate lesson URL - use demo lesson URL since that's where they start
-        const lessonUrl = demoLesson.lesson_space_room_url || 
-                          `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/student-join/${demoLesson.id}`;
+        // Generate lesson URL - use demo lesson room ID for consistency with invite URLs
+        const lessonUrl = demoLesson.lesson_space_room_id 
+                          ? `https://www.thelessonspace.com/space/${demoLesson.lesson_space_room_id}`
+                          : `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/student-join/${demoLesson.id}`;
 
         // Generate email HTML
         const emailHtml = await renderAsync(
