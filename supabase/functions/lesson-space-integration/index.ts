@@ -138,8 +138,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       },
       features: {
         invite: true
-      },
-      invite_url: `https://www.thelessonspace.com/space/${spaceId}`
+      }
     };
 
     console.log("=== TUTOR LAUNCH API REQUEST ===");
@@ -203,8 +202,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         },
         features: {
           invite: true
-        },
-        invite_url: `https://www.thelessonspace.com/space/${spaceId}`
+        }
       };
 
       console.log(`Creating Launch URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
@@ -373,8 +371,7 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       },
       features: {
         invite: true
-      },
-      invite_url: `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`
+      }
     };
 
     console.log("=== DYNAMIC STUDENT LAUNCH API REQUEST ===");
@@ -498,8 +495,7 @@ async function addStudentsToRoom(data: any, supabase: any) {
         },
         features: {
           invite: true
-        },
-        invite_url: `https://www.thelessonspace.com/space/${lesson.lesson_space_space_id}`
+        }
       };
 
       try {
