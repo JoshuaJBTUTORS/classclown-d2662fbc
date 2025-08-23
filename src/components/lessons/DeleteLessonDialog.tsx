@@ -65,7 +65,7 @@ const DeleteLessonDialog: React.FC<DeleteLessonDialogProps> = ({
     onConfirm(deleteScope);
   };
 
-  const isBulkDelete = deleteScope === DeleteScope.ALL_RECURRING_LESSONS;
+  const isBulkDelete = deleteScope === DeleteScope.ALL_RECURRING_LESSONS || deleteScope === DeleteScope.DELETE_FROM_DATE_ONWARDS;
   const lessonCount = deletionSummary?.lessonsToDelete || 1;
 
   return (
@@ -94,6 +94,12 @@ const DeleteLessonDialog: React.FC<DeleteLessonDialogProps> = ({
                       <RadioGroupItem value={DeleteScope.THIS_LESSON_ONLY} id="this-only" />
                       <Label htmlFor="this-only" className="text-sm">
                         Delete this lesson only
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value={DeleteScope.DELETE_FROM_DATE_ONWARDS} id="from-date-onwards" />
+                      <Label htmlFor="from-date-onwards" className="text-sm">
+                        Delete this lesson and all future occurrences
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">

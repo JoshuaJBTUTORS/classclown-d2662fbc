@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 export enum DeleteScope {
   THIS_LESSON_ONLY = 'this_lesson_only',
+  DELETE_FROM_DATE_ONWARDS = 'delete_from_date_onwards',
   ALL_RECURRING_LESSONS = 'all_recurring_lessons'
 }
 
@@ -29,8 +30,34 @@ export const lessonDeletionService = {
       
       if (deleteScope === DeleteScope.THIS_LESSON_ONLY) {
         lessonIds = [lessonId];
+      } else if (deleteScope === DeleteScope.DELETE_FROM_DATE_ONWARDS) {
+        // Get the current lesson's start time and recurring info
+        const { data: currentLesson } = await supabase
+          .from('lessons')
+          .select('start_time, parent_lesson_id, is_recurring')
+          .eq('id', lessonId)
+          .single();
+
+        if (!currentLesson) throw new Error('Lesson not found');
+
+        const currentStartTime = currentLesson.start_time;
+        let parentLessonId = currentLesson.is_recurring ? lessonId : currentLesson.parent_lesson_id;
+
+        if (parentLessonId) {
+          // Get all instances from this date onwards
+          const { data: instances } = await supabase
+            .from('lessons')
+            .select('id')
+            .or(`id.eq.${parentLessonId},parent_lesson_id.eq.${parentLessonId}`)
+            .gte('start_time', currentStartTime);
+          
+          lessonIds = instances?.map(l => l.id) || [];
+        } else {
+          // Single lesson, just include this one
+          lessonIds = [lessonId];
+        }
       } else {
-        // Get all instances of the recurring lesson
+        // Get all instances of the recurring lesson (existing logic)
         const { data: lesson } = await supabase
           .from('lessons')
           .select('parent_lesson_id, is_recurring')
@@ -116,6 +143,61 @@ export const lessonDeletionService = {
       await this.deleteSingleLesson(lessonId);
     } catch (error) {
       console.error('Error deleting recurring instance:', error);
+      throw error;
+    }
+  },
+
+  async deleteFromDateOnwards(lessonId: string): Promise<void> {
+    try {
+      // Get the current lesson's start time and recurring info
+      const { data: currentLesson } = await supabase
+        .from('lessons')
+        .select('start_time, parent_lesson_id, is_recurring')
+        .eq('id', lessonId)
+        .single();
+
+      if (!currentLesson) throw new Error('Lesson not found');
+
+      const currentStartTime = currentLesson.start_time;
+      let parentLessonId = currentLesson.is_recurring ? lessonId : currentLesson.parent_lesson_id;
+
+      if (!parentLessonId) {
+        // This is a single lesson, just delete it
+        await this.deleteSingleLesson(lessonId);
+        return;
+      }
+
+      // Get all instances from this date onwards
+      const { data: instances } = await supabase
+        .from('lessons')
+        .select('id')
+        .or(`id.eq.${parentLessonId},parent_lesson_id.eq.${parentLessonId}`)
+        .gte('start_time', currentStartTime);
+
+      const lessonIds = instances?.map(l => l.id) || [];
+
+      if (lessonIds.length === 0) return;
+
+      // Clean up all related data
+      await this.cleanupRelatedData(lessonIds);
+
+      // Delete lessons from this date onwards
+      const { error } = await supabase
+        .from('lessons')
+        .delete()
+        .in('id', lessonIds);
+
+      if (error) throw error;
+
+      // Sync Google Calendar deletions
+      for (const id of lessonIds) {
+        await this.syncGoogleCalendarDeletion(id);
+      }
+
+      toast.success(`Deleted ${lessonIds.length} lessons from this date onwards`);
+    } catch (error) {
+      console.error('Error deleting lessons from date onwards:', error);
+      toast.error('Failed to delete lessons from date onwards');
       throw error;
     }
   },

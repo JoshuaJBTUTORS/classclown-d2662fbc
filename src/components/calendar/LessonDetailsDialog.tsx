@@ -232,6 +232,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     try {
       if (deleteScope === DeleteScope.THIS_LESSON_ONLY) {
         await lessonDeletionService.deleteSingleLesson(lesson.id);
+      } else if (deleteScope === DeleteScope.DELETE_FROM_DATE_ONWARDS) {
+        await lessonDeletionService.deleteFromDateOnwards(lesson.id);
       } else {
         await lessonDeletionService.deleteAllRecurringLessons(lesson.id);
       }
