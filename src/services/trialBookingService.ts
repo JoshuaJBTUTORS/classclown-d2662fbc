@@ -65,6 +65,29 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
     // Use preferred_time as the demo start time (time shown to clients)
     const formattedDemoTime = data.preferred_time;
 
+    // HubSpot integration for direct bookings (not Musa)
+    if (!data.booking_source || data.booking_source !== 'musa') {
+      try {
+        console.log('Calling HubSpot integration for trial booking...');
+        const hubspotResult = await supabase.functions.invoke('hubspot-trial-integration', {
+          body: {
+            email: data.email,
+            parentName: data.parent_name,
+            childName: data.child_name
+          }
+        });
+        
+        if (hubspotResult.error) {
+          console.error('HubSpot integration failed:', hubspotResult.error);
+        } else {
+          console.log('HubSpot integration completed:', hubspotResult.data);
+        }
+      } catch (hubspotError) {
+        console.error('HubSpot integration error:', hubspotError);
+        // Don't fail the booking if HubSpot integration fails
+      }
+    }
+
     // Send confirmation email to parent (don't fail if email fails)
     try {
       await supabase.functions.invoke('send-trial-booking-confirmation', {

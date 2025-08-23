@@ -58,6 +58,9 @@ verify_jwt = true
 [functions.generate-agora-token]
 verify_jwt = true
 
+[functions.hubspot-trial-integration]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 port = 54328
