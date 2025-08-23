@@ -9,6 +9,9 @@ interface HubSpotIntegrationRequest {
   email: string;
   parentName: string;
   childName: string;
+  subject: string;
+  preferredDate: string;
+  preferredTime: string;
 }
 
 interface HubSpotContact {
@@ -72,9 +75,17 @@ const createHubSpotNote = async (
   hubspotApiKey: string,
   contactId: string,
   parentName: string,
-  childName: string
+  childName: string,
+  subject: string,
+  preferredDate: string,
+  preferredTime: string
 ): Promise<string> => {
-  const noteBody = `Trial lesson booked Directly - Parent: ${parentName}, Child: ${childName}`;
+  const noteBody = `Trial lesson booked Directly
+Parent: ${parentName}
+Child: ${childName}
+Subject: ${subject}
+Date: ${preferredDate}
+Time: ${preferredTime}`;
   
   console.log(`Creating note for contact ID: ${contactId}`);
 
@@ -140,7 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, parentName, childName }: HubSpotIntegrationRequest = await req.json();
+    const { email, parentName, childName, subject, preferredDate, preferredTime }: HubSpotIntegrationRequest = await req.json();
     console.log(`Starting HubSpot integration for email: ${email}`);
 
     // Search for contact by email
@@ -191,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create note for the contact (existing or newly created)
-    const noteId = await createHubSpotNote(hubspotApiKey, contactId, parentName, childName);
+    const noteId = await createHubSpotNote(hubspotApiKey, contactId, parentName, childName, subject, preferredDate, preferredTime);
 
     return new Response(JSON.stringify({ 
       success: true, 
