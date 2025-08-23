@@ -138,7 +138,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       },
       features: {
         invite: true
-      }
+      },
+      invite_url: `https://www.thelessonspace.com/space/${spaceId}`
     };
 
     console.log("=== TUTOR LAUNCH API REQUEST ===");
@@ -202,7 +203,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         },
         features: {
           invite: true
-        }
+        },
+        invite_url: `https://www.thelessonspace.com/space/${tutorSpaceData.room_id}`
       };
 
       console.log(`Creating Launch URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
@@ -371,7 +373,8 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       },
       features: {
         invite: true
-      }
+      },
+      invite_url: `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`
     };
 
     console.log("=== DYNAMIC STUDENT LAUNCH API REQUEST ===");
@@ -476,6 +479,17 @@ async function addStudentsToRoom(data: any, supabase: any) {
 
     const newParticipantUrls = [];
 
+    // Get lesson space room ID for invite URL
+    const { data: lessonWithRoomId, error: roomError } = await supabase
+      .from("lessons")
+      .select("lesson_space_room_id")
+      .eq("id", lessonId)
+      .single();
+
+    if (roomError || !lessonWithRoomId?.lesson_space_room_id) {
+      throw new Error("Room ID not found for this lesson space");
+    }
+
     // Create Launch API URLs for new students
     for (const student of newStudents) {
       const studentRequestBody = {
@@ -495,7 +509,8 @@ async function addStudentsToRoom(data: any, supabase: any) {
         },
         features: {
           invite: true
-        }
+        },
+        invite_url: `https://www.thelessonspace.com/space/${lessonWithRoomId.lesson_space_room_id}`
       };
 
       try {
