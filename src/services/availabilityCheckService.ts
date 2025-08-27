@@ -255,8 +255,8 @@ export const checkCalendarConflicts = async (
       `)
       .eq('tutor_id', tutorId)
       .in('status', ['scheduled', 'in_progress'])
-      .gte('end_time', startTime)
-      .lte('start_time', endTime);
+      .gt('end_time', startTime)
+      .lt('start_time', endTime);
 
     if (excludeLessonId) {
       query = query.neq('id', excludeLessonId);
@@ -351,8 +351,8 @@ export const checkStudentConflicts = async (
         )
       `)
       .in('status', ['scheduled', 'in_progress'])
-      .gte('end_time', startTime)
-      .lte('start_time', endTime);
+      .gt('end_time', startTime)
+      .lt('start_time', endTime);
 
     if (excludeLessonId) {
       query = query.neq('id', excludeLessonId);
