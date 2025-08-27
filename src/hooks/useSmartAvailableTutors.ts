@@ -60,10 +60,14 @@ export const useSmartAvailableTutors = (
         }
 
         // Create the lesson date/time for availability checking
+        // Only check tutor availability for the trial lesson portion (30 mins)
+        // The demo session (first 15 mins) is conducted by the Account Manager
         const lessonDate = new Date(preferredDate);
         const ukDateTime = createUKDateTime(lessonDate, preferredTime);
-        const utcStartTime = convertUKToUTC(ukDateTime);
-        const utcEndTime = new Date(utcStartTime.getTime() + 60 * 60 * 1000); // 1 hour lesson
+        // Add 15 minutes to skip the demo session and check only the trial lesson
+        const trialLessonStartTime = new Date(ukDateTime.getTime() + 15 * 60 * 1000);
+        const utcStartTime = convertUKToUTC(trialLessonStartTime);
+        const utcEndTime = new Date(utcStartTime.getTime() + 30 * 60 * 1000); // 30 minute trial lesson
 
         // Check availability for each tutor
         const tutorsWithAvailability = await Promise.all(
