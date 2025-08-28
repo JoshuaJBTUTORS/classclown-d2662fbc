@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Loader2, Lock, Eye, EyeOff, Shield, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { validatePassword, calculatePasswordStrength, sanitizeInput } from '@/utils/validation';
+import { validatePasswordDetailed, calculatePasswordStrength, sanitizeInput } from '@/utils/validation';
 
 const SecuritySettings: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ const SecuritySettings: React.FC = () => {
   });
 
   const passwordStrength = calculatePasswordStrength(formData.newPassword);
-  const { isValid: isPasswordValid, requirements } = validatePassword(formData.newPassword);
+  const { isValid: isPasswordValid, requirements } = validatePasswordDetailed(formData.newPassword);
 
   const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
     setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));

@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
+import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -23,11 +24,16 @@ const Auth = () => {
   } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
   useEffect(() => {
     if (user) {
       navigate('/');
     }
   }, [user, navigate]);
+
+  // Check if we're in reset password mode
+  const tab = searchParams.get('tab');
+  const isResetPassword = tab === 'reset-password';
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const sanitizedEmail = sanitizeInput(email);
@@ -52,6 +58,11 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  // Handle reset password mode
+  if (isResetPassword) {
+    return <ResetPasswordForm />;
+  }
 
   // Handle showing forgot password form
   if (showForgotPassword) {

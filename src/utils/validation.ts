@@ -5,7 +5,19 @@ export const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-export const validatePassword = (password: string): {
+export const validatePassword = (password: string): boolean => {
+  const requirements = [
+    { name: 'At least 8 characters', met: password.length >= 8 },
+    { name: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { name: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+    { name: 'Contains number', met: /\d/.test(password) },
+    { name: 'Contains special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+  ];
+
+  return requirements.every(req => req.met);
+};
+
+export const validatePasswordDetailed = (password: string): {
   isValid: boolean;
   requirements: Array<{ name: string; met: boolean }>;
 } => {
@@ -31,7 +43,7 @@ export const calculatePasswordStrength = (password: string): {
   label: string;
   color: string;
 } => {
-  const { requirements } = validatePassword(password);
+  const { requirements } = validatePasswordDetailed(password);
   const metCount = requirements.filter(req => req.met).length;
   
   let score = (metCount / requirements.length) * 100;
@@ -53,4 +65,12 @@ export const calculatePasswordStrength = (password: string): {
   }
   
   return { score, label, color };
+};
+
+export const getPasswordStrength = (password: string): 'weak' | 'medium' | 'strong' => {
+  const { score } = calculatePasswordStrength(password);
+  
+  if (score >= 80) return 'strong';
+  if (score >= 60) return 'medium';
+  return 'weak';
 };
