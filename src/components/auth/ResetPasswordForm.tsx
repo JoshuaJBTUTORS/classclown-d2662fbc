@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Lock, Loader2, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { validatePassword, getPasswordStrength } from '@/utils/validation';
@@ -18,25 +18,42 @@ const ResetPasswordForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check if we have the necessary tokens from the email link
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
+    // Extract custom token from URL params
+    const resetToken = searchParams.get('token');
     
-    if (!accessToken || !refreshToken) {
+    if (resetToken) {
+      // Validate the custom token
+      validateResetToken(resetToken);
+    } else {
       setError('Invalid reset link. Please request a new password reset.');
-      return;
     }
-
-    // Set the session from the URL parameters
-    supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
   }, [searchParams]);
+
+  const validateResetToken = async (token: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('validate-reset-token', {
+        body: { token }
+      });
+
+      if (error) {
+        setError('Invalid or expired reset token');
+        return;
+      }
+
+      // Token is valid, store it for password update
+      setResetToken(token);
+    } catch (error) {
+      setError('Invalid or expired reset token');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const passwordStrength = getPasswordStrength(password);
   const isPasswordValid = validatePassword(password);
@@ -44,6 +61,11 @@ const ResetPasswordForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!resetToken) {
+      setError('Invalid reset token');
+      return;
+    }
     
     if (!password || !confirmPassword) {
       setError('Please fill in all fields');
@@ -64,8 +86,11 @@ const ResetPasswordForm: React.FC = () => {
     setError('');
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
+      const { data, error } = await supabase.functions.invoke('update-password-with-token', {
+        body: { 
+          token: resetToken,
+          password: password 
+        }
       });
 
       if (error) {
@@ -86,6 +111,43 @@ const ResetPasswordForm: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Show loading state while validating token
+  if (loading && !resetToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-auto">
+          <CardHeader className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <CardTitle>Validating Reset Token...</CardTitle>
+            <CardDescription>Please wait while we validate your reset link.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error if token validation failed
+  if (error && !resetToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-auto">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-xl text-red-600">Invalid Reset Link</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate('/auth')} className="w-full">
+              Back to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (success) {
     return (

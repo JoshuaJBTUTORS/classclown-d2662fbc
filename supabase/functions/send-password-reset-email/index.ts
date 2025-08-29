@@ -45,24 +45,61 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Processing password reset request for:", email);
 
-    // Generate password reset via Supabase Auth
-    const redirectUrl = `${Deno.env.get("SUPABASE_URL")?.replace("/v1", "")}/auth?tab=reset-password`;
-    
-    const { data, error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
-
-    if (resetError) {
-      console.error("Supabase reset error:", resetError);
-      throw resetError;
+    // Check if user exists
+    const { data: users, error: userError } = await supabase.auth.admin.listUsers();
+    if (userError) {
+      console.error("Error checking users:", userError);
+      throw userError;
     }
 
-    // For now, we'll send our custom email alongside Supabase's
-    // In production, you might want to disable Supabase's email in favor of this custom one
+    const user = users.users.find(u => u.email === email);
+    if (!user) {
+      // Return success even if user doesn't exist (security best practice)
+      console.log("User not found, but returning success for security");
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "If an account with that email exists, a password reset email has been sent." 
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Clean up old tokens for this email
+    await supabase
+      .from('password_reset_tokens')
+      .delete()
+      .eq('email', email);
+
+    // Generate custom reset token
+    const resetToken = crypto.randomUUID();
+    
+    // Store token in database
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('password_reset_tokens')
+      .insert({
+        user_id: user.id,
+        token: resetToken,
+        email: email,
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
+      })
+      .select()
+      .single();
+
+    if (tokenError) {
+      console.error("Error creating reset token:", tokenError);
+      throw tokenError;
+    }
+
+    console.log("Created reset token:", tokenData.id);
+
+    // Create reset URL pointing to the current domain 
+    const resetUrl = `https://jb-tutors.lovable.app/auth?tab=reset-password&token=${resetToken}`;
+    
     const html = await renderAsync(
       React.createElement(PasswordResetEmail, {
         email: email,
-        resetUrl: redirectUrl,
+        resetUrl: resetUrl,
       })
     );
 
