@@ -19,6 +19,8 @@ interface ChatMessage {
   type: 'user' | 'assistant';
   content: string;
   lessons?: any[];
+  availabilitySlots?: any[];
+  tutor?: any;
   timestamp: Date;
 }
 
@@ -91,6 +93,8 @@ export default function Optimiser() {
         type: 'assistant',
         content: data.aiResponse || "I found some lessons based on your query.",
         lessons: data.lessons || [],
+        availabilitySlots: data.availabilitySlots || [],
+        tutor: data.tutor || null,
         timestamp: new Date()
       };
 
@@ -137,7 +141,7 @@ export default function Optimiser() {
           <div className="container mx-auto px-4 py-6 max-w-6xl">
             <PageTitle title="Optimiser" />
             <p className="text-muted-foreground mb-6">
-              AI-powered lesson search and management assistant
+              AI-powered lesson search and availability checker
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]">
@@ -147,7 +151,7 @@ export default function Optimiser() {
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2">
                       <Bot className="h-5 w-5" />
-                      Lesson Search Assistant
+                      Lesson Search & Availability Assistant
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col p-0">
@@ -235,6 +239,55 @@ export default function Optimiser() {
                                   </div>
                                 )}
                                 
+                                {/* Availability Results */}
+                                {message.availabilitySlots && message.availabilitySlots.length > 0 && (
+                                  <div className="space-y-2">
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                      {message.tutor ? `${message.tutor.first_name} ${message.tutor.last_name}'s availability` : 'Availability slots'}:
+                                    </p>
+                                    <div className="grid gap-2">
+                                      {message.availabilitySlots.map((slot: any, index: number) => (
+                                        <Card 
+                                          key={index} 
+                                          className={`border-l-4 ${
+                                            slot.available 
+                                              ? 'border-l-green-500 bg-green-50/50' 
+                                              : 'border-l-red-500 bg-red-50/50'
+                                          }`}
+                                        >
+                                          <CardContent className="p-3">
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
+                                                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                  <span className="font-medium">{slot.day}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                                  <span className="text-sm">{slot.startTime} - {slot.endTime}</span>
+                                                </div>
+                                              </div>
+                                              <Badge 
+                                                variant={slot.available ? "default" : "destructive"}
+                                                className="text-xs"
+                                              >
+                                                {slot.available ? '🟢 Available' : '🔴 Busy'}
+                                              </Badge>
+                                            </div>
+                                            {!slot.available && slot.conflictingLessons?.length > 0 && (
+                                              <div className="mt-2 pt-2 border-t">
+                                                <p className="text-xs text-muted-foreground">
+                                                  Conflicts: {slot.conflictingLessons.join(', ')}
+                                                </p>
+                                              </div>
+                                            )}
+                                          </CardContent>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <p className="text-xs text-muted-foreground">
                                   {format(message.timestamp, 'HH:mm')}
                                 </p>
@@ -267,7 +320,7 @@ export default function Optimiser() {
                     <div className="border-t p-4">
                       <div className="flex gap-2">
                         <Input
-                          placeholder="Ask me to find lessons... (e.g., 'GCSE English lessons for year 11 with Liberty')"
+                          placeholder="Ask me to find lessons or check availability... (e.g., 'What time slots is Liberty available over the weekend?')"
                           value={inputValue}
                           onChange={(e) => setInputValue(e.target.value)}
                           onKeyPress={handleKeyPress}
@@ -304,10 +357,22 @@ export default function Optimiser() {
                           "Find all GCSE Maths lessons this week"
                         </button>
                         <button
+                          onClick={() => setInputValue("What time slots is Liberty available over the weekend")}
+                          className="w-full text-left p-2 rounded hover:bg-muted transition-colors"
+                        >
+                          "What time slots is Liberty available over the weekend"
+                        </button>
+                        <button
                           onClick={() => setInputValue("Show me lessons with John Smith as tutor")}
                           className="w-full text-left p-2 rounded hover:bg-muted transition-colors"
                         >
                           "Show me lessons with John Smith as tutor"
+                        </button>
+                        <button
+                          onClick={() => setInputValue("When is Sarah available for Maths lessons")}
+                          className="w-full text-left p-2 rounded hover:bg-muted transition-colors"
+                        >
+                          "When is Sarah available for Maths lessons"
                         </button>
                         <button
                           onClick={() => setInputValue("Find English lessons for year 11 students")}

@@ -13,6 +13,196 @@ const corsHeaders = {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Helper function to handle availability queries
+async function handleAvailabilityQuery(searchParams, aiResponse, corsHeaders, supabase) {
+  try {
+    const tutorNames = searchParams.tutorNames || [];
+    const dayFilter = searchParams.dayFilter || '';
+    
+    if (tutorNames.length === 0) {
+      return new Response(JSON.stringify({
+        aiResponse: "Please specify which tutor's availability you'd like to check.",
+        availabilitySlots: [],
+        searchParams
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Find the tutor
+    const { data: tutors, error: tutorError } = await supabase
+      .from('tutors')
+      .select('id, first_name, last_name')
+      .or(tutorNames.map(name => 
+        `first_name.ilike.%${name}%,last_name.ilike.%${name}%`
+      ).join(','));
+
+    if (tutorError || !tutors?.length) {
+      return new Response(JSON.stringify({
+        aiResponse: `I couldn't find a tutor named ${tutorNames.join(' or ')}.`,
+        availabilitySlots: [],
+        searchParams
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const tutor = tutors[0];
+
+    // Get tutor's availability schedule
+    const { data: availability, error: availError } = await supabase
+      .from('tutor_availability')
+      .select('day_of_week, start_time, end_time')
+      .eq('tutor_id', tutor.id);
+
+    if (availError) {
+      console.error('Error fetching availability:', availError);
+      return new Response(JSON.stringify({
+        aiResponse: "Sorry, I couldn't retrieve the availability schedule.",
+        availabilitySlots: [],
+        searchParams
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Filter availability by day if specified
+    let filteredAvailability = availability || [];
+    if (dayFilter.toLowerCase().includes('weekend')) {
+      filteredAvailability = filteredAvailability.filter(slot => 
+        slot.day_of_week === 'saturday' || slot.day_of_week === 'sunday'
+      );
+    }
+
+    if (filteredAvailability.length === 0) {
+      const dayText = dayFilter.toLowerCase().includes('weekend') ? 'on weekends' : '';
+      return new Response(JSON.stringify({
+        aiResponse: `${tutor.first_name} ${tutor.last_name} has no availability scheduled ${dayText}.`,
+        availabilitySlots: [],
+        searchParams
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get upcoming lessons for the next 2 weeks
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(startDate.getDate() + 14);
+
+    const { data: lessons, error: lessonsError } = await supabase
+      .from('lessons')
+      .select('start_time, end_time, title')
+      .eq('tutor_id', tutor.id)
+      .gte('start_time', startDate.toISOString())
+      .lte('start_time', endDate.toISOString())
+      .in('status', ['scheduled', 'in_progress']);
+
+    if (lessonsError) {
+      console.error('Error fetching lessons:', lessonsError);
+    }
+
+    // Calculate available time slots
+    const availableSlots = [];
+    const upcomingLessons = lessons || [];
+
+    filteredAvailability.forEach(avail => {
+      const dayName = avail.day_of_week.charAt(0).toUpperCase() + avail.day_of_week.slice(1);
+      const startTime = avail.start_time.slice(0, 5); // Format HH:MM
+      const endTime = avail.end_time.slice(0, 5);
+
+      // Find next occurrence of this day
+      const nextDate = getNextDayOfWeek(startDate, avail.day_of_week);
+      
+      // Check if there are any lessons on this day and time
+      const dayLessons = upcomingLessons.filter(lesson => {
+        const lessonDate = new Date(lesson.start_time);
+        const lessonDay = lessonDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+        return lessonDay === avail.day_of_week;
+      });
+
+      const hasConflicts = dayLessons.some(lesson => {
+        const lessonStart = new Date(lesson.start_time);
+        const lessonEnd = new Date(lesson.end_time);
+        const availStart = new Date(`${nextDate.toDateString()} ${avail.start_time}`);
+        const availEnd = new Date(`${nextDate.toDateString()} ${avail.end_time}`);
+        
+        return (lessonStart < availEnd && lessonEnd > availStart);
+      });
+
+      availableSlots.push({
+        day: dayName,
+        date: nextDate.toDateString(),
+        startTime,
+        endTime,
+        available: !hasConflicts,
+        conflictingLessons: hasConflicts ? dayLessons.map(l => l.title) : []
+      });
+    });
+
+    // Format response
+    const freeSlots = availableSlots.filter(slot => slot.available);
+    const busySlots = availableSlots.filter(slot => !slot.available);
+
+    let responseText = `${tutor.first_name} ${tutor.last_name}'s availability`;
+    if (dayFilter.toLowerCase().includes('weekend')) {
+      responseText += ' over the weekend';
+    }
+    responseText += ':\n\n';
+
+    if (freeSlots.length > 0) {
+      responseText += '🟢 **Available Time Slots:**\n';
+      freeSlots.forEach(slot => {
+        responseText += `• ${slot.day}: ${slot.startTime} - ${slot.endTime}\n`;
+      });
+    }
+
+    if (busySlots.length > 0) {
+      responseText += '\n🔴 **Busy Time Slots:**\n';
+      busySlots.forEach(slot => {
+        responseText += `• ${slot.day}: ${slot.startTime} - ${slot.endTime} (${slot.conflictingLessons.join(', ')})\n`;
+      });
+    }
+
+    if (freeSlots.length === 0 && busySlots.length === 0) {
+      responseText += 'No availability found for the specified time period.';
+    }
+
+    return new Response(JSON.stringify({
+      aiResponse: responseText,
+      availabilitySlots: availableSlots,
+      tutor: tutor,
+      searchParams
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in availability query:', error);
+    return new Response(JSON.stringify({
+      aiResponse: "Sorry, I encountered an error checking availability.",
+      availabilitySlots: [],
+      searchParams
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Helper function to get next occurrence of a specific day
+function getNextDayOfWeek(fromDate, dayName) {
+  const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const targetDay = daysOfWeek.indexOf(dayName.toLowerCase());
+  const currentDay = fromDate.getDay();
+  
+  let daysUntilTarget = (targetDay - currentDay + 7) % 7;
+  if (daysUntilTarget === 0) daysUntilTarget = 7; // Next week if it's the same day
+  
+  const nextDate = new Date(fromDate);
+  nextDate.setDate(fromDate.getDate() + daysUntilTarget);
+  return nextDate;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -54,41 +244,61 @@ serve(async (req) => {
     };
 
     const systemPrompt = `You are an AI assistant for a tutoring company's lesson management system. 
-Your job is to help administrators find and search for lessons based on natural language queries.
+You can handle two types of queries:
+
+1. LESSON SEARCH: Find existing lessons matching criteria
+2. AVAILABILITY SEARCH: Find available time slots for tutors
 
 Available data:
 Students: ${context.students.join(', ')}
 Tutors: ${context.tutors.join(', ')}
 Subjects: ${context.subjects.join(', ')}
 
-When a user asks about lessons, parse their query and respond with:
-1. A natural language acknowledgment of what they're looking for
-2. JSON search parameters in this format:
+For LESSON SEARCH queries, respond with:
 {
+  "queryType": "lessons",
   "searchParams": {
     "studentNames": ["extracted student names"],
     "tutorNames": ["extracted tutor names"], 
     "subjects": ["extracted subjects"],
-    "grades": ["extracted grade levels like 'year 11', 'gcse', 'a-level'"],
+    "grades": ["extracted grade levels"],
     "dateRange": "extracted date range if mentioned",
     "timeRange": "extracted time range if mentioned"
   }
 }
 
-Example:
-User: "Find GCSE English lessons for year 11 with Liberty"
-Response: "I'll search for GCSE English lessons for year 11 students with Liberty as either the student or tutor.
-
+For AVAILABILITY queries (when asking about "available", "free time", "when is X available", etc.), respond with:
 {
+  "queryType": "availability", 
+  "searchParams": {
+    "tutorNames": ["extracted tutor names"],
+    "subjects": ["extracted subjects if mentioned"],
+    "dayFilter": "extracted day filter (weekend, weekday, monday, etc.)",
+    "timeFilter": "extracted time preference (morning, afternoon, evening)",
+    "dateRange": "this week/next week/specific dates"
+  }
+}
+
+Examples:
+User: "Find GCSE English lessons for year 11 with Liberty"
+Response: {
+  "queryType": "lessons",
   "searchParams": {
     "studentNames": ["Liberty"],
     "tutorNames": ["Liberty"],
     "subjects": ["English"],
-    "grades": ["year 11", "gcse"],
-    "dateRange": "",
-    "timeRange": ""
+    "grades": ["year 11", "gcse"]
   }
-}"`;
+}
+
+User: "What time slots is Liberty available and not teaching over the weekend"
+Response: {
+  "queryType": "availability",
+  "searchParams": {
+    "tutorNames": ["Liberty"],
+    "dayFilter": "weekend"
+  }
+}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -116,17 +326,25 @@ Response: "I'll search for GCSE English lessons for year 11 students with Libert
 
     // Extract JSON from AI response
     let searchParams = {};
+    let queryType = 'lessons';
+    
     try {
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const jsonData = JSON.parse(jsonMatch[0]);
+        queryType = jsonData.queryType || 'lessons';
         searchParams = jsonData.searchParams || {};
       }
     } catch (e) {
       console.log('Could not parse JSON from AI response:', e);
     }
 
-    // Search for lessons based on parsed parameters
+    // Handle availability queries
+    if (queryType === 'availability') {
+      return await handleAvailabilityQuery(searchParams, aiResponse, corsHeaders, supabase);
+    }
+
+    // Handle lesson search queries (existing logic)
     let lessonsQuery = supabase
       .from('lessons')
       .select(`
