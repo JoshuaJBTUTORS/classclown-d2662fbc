@@ -20,6 +20,7 @@ import {
   BookOpen,
   UserPlus,
   DollarSign,
+  Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -91,6 +92,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           label: 'Staff',
           href: '/staff',
           roles: ['owner'],
+        },
+        {
+          icon: Bot,
+          label: 'Optimiser',
+          href: '/optimiser',
+          roles: ['admin', 'owner'],
         },
         {
           icon: ClipboardList,

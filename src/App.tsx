@@ -53,6 +53,7 @@ import JBTutorsPreview from './pages/JBTutorsPreview';
 import SchoolProgress from './pages/SchoolProgress';
 import CreateAdmin from './pages/CreateAdmin';
 import Staff from './pages/Staff';
+import Optimiser from './pages/Optimiser';
 import LessonSummaries from './pages/LessonSummaries';
 import Earnings from './pages/Earnings';
 import AdminEarnings from './pages/AdminEarnings';
@@ -188,6 +189,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['owner']}>
                         <Staff />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="optimiser" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <Optimiser />
                       </ProtectedRoute>
                     } 
                   />
