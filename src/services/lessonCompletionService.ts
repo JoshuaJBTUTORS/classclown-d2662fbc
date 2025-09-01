@@ -87,7 +87,9 @@ export const getCompletedLessons = async (filters: {
       query = query.gte('start_time', filters.dateRange.from.toISOString());
     }
     if (filters.dateRange.to) {
-      query = query.lte('end_time', filters.dateRange.to.toISOString());
+      const nextDay = new Date(filters.dateRange.to);
+      nextDay.setDate(nextDay.getDate() + 1);
+      query = query.lt('end_time', nextDay.toISOString());
     }
     if (filters.selectedTutors.length > 0) {
       query = query.in('tutor_id', filters.selectedTutors);
