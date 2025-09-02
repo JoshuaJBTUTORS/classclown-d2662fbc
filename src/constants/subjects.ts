@@ -31,7 +31,8 @@ export const LESSON_SUBJECTS = [
   'A-level Maths',
   'A-level Biology',
   'A-level Chemistry',
-  'A-level Physics'
+  'A-level Physics',
+  'A-level Computer Science'
 ] as const;
 
 export type LessonSubject = typeof LESSON_SUBJECTS[number];
@@ -61,6 +62,12 @@ export const EDUCATIONAL_STAGES = {
     description: 'Ages 14-16 GCSE preparation',
     subjects: ['GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'GCSE Computer Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'],
     icon: 'Award'
+  },
+  'a_level': {
+    label: 'A-Level',
+    description: 'Ages 16-18 advanced level studies',
+    subjects: ['A-level Maths', 'A-level Biology', 'A-level Chemistry', 'A-level Physics', 'A-level Computer Science'],
+    icon: 'GraduationCap'
   }
 } as const;
 

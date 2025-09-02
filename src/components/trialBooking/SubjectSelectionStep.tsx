@@ -20,7 +20,8 @@ const CATEGORY_LABELS = {
   'entrance': '11 Plus / Entrance Exams',
   'primary': 'Primary Education (KS1 & KS2)',
   'secondary': 'Secondary Education (KS3)',
-  'gcse': 'GCSE & Year 11'
+  'gcse': 'GCSE & Year 11',
+  'a_level': 'A-Level'
 };
 const SubjectSelectionStep: React.FC<SubjectSelectionStepProps> = ({
   selectedSubject,
