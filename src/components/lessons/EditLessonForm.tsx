@@ -72,7 +72,9 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
   lessonId
 }) => {
   const [tutors, setTutors] = useState<Tutor[]>([]);
+  // Store raw lesson data for accessing database fields
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [rawLessonData, setRawLessonData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
@@ -204,6 +206,7 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       };
       
       setLesson(processedLesson);
+      setRawLessonData(data);
       
       // Parse dates for the form
       const startDate = parseISO(data.start_time);
@@ -322,8 +325,12 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       };
 
       if (isRecurringLesson && editScope === EditScope.ALL_FUTURE_LESSONS) {
-        // Update all future lessons
-        const updatedCount = await updateAllFutureLessons(lessonId, updateData);
+        // Update all future lessons - determine correct fromDate
+        const fromDate = rawLessonData?.instance_date 
+          ? format(parseISO(rawLessonData.instance_date), 'yyyy-MM-dd')
+          : format(parseISO(rawLessonData?.start_time || ''), 'yyyy-MM-dd');
+        
+        const updatedCount = await updateAllFutureLessons(lessonId, updateData, fromDate);
         toast.success(`Successfully updated ${updatedCount} lessons`);
       } else {
         // Update single lesson
