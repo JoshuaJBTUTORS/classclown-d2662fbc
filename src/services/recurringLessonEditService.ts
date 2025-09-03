@@ -179,7 +179,7 @@ export const updateAllFutureLessons = async (
       throw new Error('Failed to fetch original lesson details');
     }
 
-    // Determine the date to start updates from
+    // Determine the date to start updates from - use actual datetime to ensure current lesson is included
     const startDate = fromDate ? parseISO(fromDate) : new Date();
     
     // Create base update data (non-time fields)

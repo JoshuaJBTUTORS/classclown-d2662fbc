@@ -325,12 +325,12 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       };
 
       if (isRecurringLesson && editScope === EditScope.ALL_FUTURE_LESSONS) {
-        // Update all future lessons - determine correct fromDate
-        const fromDate = rawLessonData?.instance_date 
-          ? format(parseISO(rawLessonData.instance_date), 'yyyy-MM-dd')
-          : format(parseISO(rawLessonData?.start_time || ''), 'yyyy-MM-dd');
+        // Update all future lessons - use actual lesson start time as boundary to ensure current lesson is included
+        const fromDateTime = rawLessonData?.instance_date 
+          ? rawLessonData.instance_date
+          : rawLessonData?.start_time;
         
-        const updatedCount = await updateAllFutureLessons(lessonId, updateData, fromDate);
+        const updatedCount = await updateAllFutureLessons(lessonId, updateData, fromDateTime);
         toast.success(`Successfully updated ${updatedCount} lessons`);
       } else {
         // Update single lesson
