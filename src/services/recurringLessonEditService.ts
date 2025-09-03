@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { format, addDays, addWeeks, differenceInMinutes, getDay, setDay } from 'date-fns';
+import { format, addDays, addWeeks, differenceInMinutes, getDay, setDay, parseISO } from 'date-fns';
+import { createUKDateTime, convertUKToUTC, convertUTCToUK } from '@/utils/timezone';
 
 export interface LessonUpdate {
   title?: string;
@@ -10,6 +11,7 @@ export interface LessonUpdate {
   end_time?: string;
   is_group?: boolean;
   selectedStudents?: number[];
+  student_ids?: number[];
 }
 
 export enum EditScope {
@@ -117,284 +119,189 @@ export const updateSingleRecurringInstance = async (
   console.log('Successfully updated single recurring instance');
 };
 
-// Calculate the changes between original and new lesson data
-const calculateLessonChanges = (originalLesson: any, updates: LessonUpdate) => {
-  const changes: any = {};
-  
-  // Handle non-date/time fields directly
-  if (updates.title && updates.title !== originalLesson.title) {
-    changes.title = updates.title;
-  }
-  if (updates.description !== undefined && updates.description !== originalLesson.description) {
-    changes.description = updates.description;
-  }
-  if (updates.subject && updates.subject !== originalLesson.subject) {
-    changes.subject = updates.subject;
-  }
-  if (updates.tutor_id && updates.tutor_id !== originalLesson.tutor_id) {
-    changes.tutor_id = updates.tutor_id;
-    changes.tutorChanged = true; // Flag to indicate tutor change
-  }
-  if (updates.is_group !== undefined && updates.is_group !== originalLesson.is_group) {
-    changes.is_group = updates.is_group;
-  }
-  
-  // Handle date/time changes
-  if (updates.start_time || updates.end_time) {
-    const originalStart = new Date(originalLesson.start_time);
-    const originalEnd = new Date(originalLesson.end_time);
-    const originalDayOfWeek = getDay(originalStart);
-    
-    if (updates.start_time) {
-      const newStart = new Date(updates.start_time);
-      const newDayOfWeek = getDay(newStart);
-      
-      // Calculate time difference (in minutes from start of day)
-      const originalTimeOfDay = originalStart.getHours() * 60 + originalStart.getMinutes();
-      const newTimeOfDay = newStart.getHours() * 60 + newStart.getMinutes();
-      const timeDifference = newTimeOfDay - originalTimeOfDay;
-      
-      changes.timeDifference = timeDifference;
-      changes.dayOfWeekChange = newDayOfWeek - originalDayOfWeek;
-    }
-    
-    if (updates.end_time) {
-      const newEnd = new Date(updates.end_time);
-      const newStart = updates.start_time ? new Date(updates.start_time) : originalStart;
-      const newDuration = differenceInMinutes(newEnd, newStart);
-      const originalDuration = differenceInMinutes(originalEnd, originalStart);
-      
-      changes.durationChange = newDuration - originalDuration;
-    }
-  }
-  
-  return changes;
-};
-
-// Apply calculated changes to a specific lesson instance
-const applyChangesToInstance = (instanceLesson: any, changes: any) => {
+// Create update data (non-time fields only, time will be calculated per instance)
+const createUpdateData = (updates: LessonUpdate) => {
   const updateData: any = {};
   
-  // Apply non-date/time changes directly
-  if (changes.title) updateData.title = changes.title;
-  if (changes.description !== undefined) updateData.description = changes.description;
-  if (changes.subject) updateData.subject = changes.subject;
-  if (changes.tutor_id) updateData.tutor_id = changes.tutor_id;
-  if (changes.is_group !== undefined) updateData.is_group = changes.is_group;
-  
-  // Apply date/time changes while preserving the instance's weekly pattern
-  if (changes.timeDifference !== undefined || changes.dayOfWeekChange !== undefined || changes.durationChange !== undefined) {
-    const currentStart = new Date(instanceLesson.start_time);
-    const currentEnd = new Date(instanceLesson.end_time);
-    
-    let newStart = new Date(currentStart);
-    let newEnd = new Date(currentEnd);
-    
-    // Apply day of week change
-    if (changes.dayOfWeekChange !== undefined && changes.dayOfWeekChange !== 0) {
-      const currentDayOfWeek = getDay(newStart);
-      let targetDayOfWeek = currentDayOfWeek + changes.dayOfWeekChange;
-      
-      // Handle week wrapping
-      if (targetDayOfWeek > 6) {
-        targetDayOfWeek = targetDayOfWeek - 7;
-        newStart = addWeeks(newStart, 1);
-        newEnd = addWeeks(newEnd, 1);
-      } else if (targetDayOfWeek < 0) {
-        targetDayOfWeek = targetDayOfWeek + 7;
-        newStart = addWeeks(newStart, -1);
-        newEnd = addWeeks(newEnd, -1);
-      }
-      
-      newStart = setDay(newStart, targetDayOfWeek);
-      newEnd = setDay(newEnd, targetDayOfWeek);
-    }
-    
-    // Apply time difference
-    if (changes.timeDifference !== undefined && changes.timeDifference !== 0) {
-      const minutesToAdd = changes.timeDifference;
-      newStart.setMinutes(newStart.getMinutes() + minutesToAdd);
-      newEnd.setMinutes(newEnd.getMinutes() + minutesToAdd);
-    }
-    
-    // Apply duration change
-    if (changes.durationChange !== undefined && changes.durationChange !== 0) {
-      newEnd.setMinutes(newEnd.getMinutes() + changes.durationChange);
-    }
-    
-    updateData.start_time = newStart.toISOString();
-    updateData.end_time = newEnd.toISOString();
-  }
+  if (updates.title) updateData.title = updates.title;
+  if (updates.description !== undefined) updateData.description = updates.description;
+  if (updates.subject) updateData.subject = updates.subject;
+  if (updates.tutor_id) updateData.tutor_id = updates.tutor_id;
+  if (updates.is_group !== undefined) updateData.is_group = updates.is_group;
   
   return updateData;
 };
 
-// Update all future instances from a specific date forward
+// Apply time updates to a specific lesson instance using duration-based approach
+const applyTimeUpdatesToInstance = (instanceLesson: any, newStartTime: Date, newEndTime: Date) => {
+  // Get the instance date (preserve the specific date of this instance)
+  const instanceDate = new Date(instanceLesson.start_time);
+  const lessonDuration = differenceInMinutes(newEndTime, newStartTime);
+  
+  // Extract the time components from the new times (in UK timezone)
+  const ukStartTime = convertUTCToUK(newStartTime);
+  const ukEndTime = convertUTCToUK(newEndTime);
+  
+  // Create new times for this instance date using UK timezone
+  const instanceUKStartTime = createUKDateTime(instanceDate, 
+    `${ukStartTime.getHours().toString().padStart(2, '0')}:${ukStartTime.getMinutes().toString().padStart(2, '0')}`
+  );
+  const instanceUKEndTime = createUKDateTime(instanceDate,
+    `${ukEndTime.getHours().toString().padStart(2, '0')}:${ukEndTime.getMinutes().toString().padStart(2, '0')}`
+  );
+  
+  // Convert back to UTC for storage
+  const instanceStartTime = convertUKToUTC(instanceUKStartTime);
+  const instanceEndTime = convertUKToUTC(instanceUKEndTime);
+  
+  return {
+    start_time: instanceStartTime.toISOString(),
+    end_time: instanceEndTime.toISOString()
+  };
+};
+
 export const updateAllFutureLessons = async (
-  lessonId: string,
-  updates: LessonUpdate,
+  lessonId: string, 
+  updates: LessonUpdate, 
   fromDate?: string
 ): Promise<number> => {
-  console.log('Updating all future lessons from:', fromDate);
+  console.log('Starting updateAllFutureLessons with updates:', updates);
   
-  const { selectedStudents, ...lessonData } = updates;
-  
-  // Get the lesson to determine if it's a parent or instance
-  const { data: currentLesson } = await supabase
-    .from('lessons')
-    .select('*, parent_lesson_id, is_recurring, is_recurring_instance, instance_date')
-    .eq('id', lessonId)
-    .single();
-  
-  if (!currentLesson) throw new Error('Lesson not found');
-  
-  let parentLessonId: string;
-  let updateFromDate: string;
-  
-  if (currentLesson.is_recurring_instance && currentLesson.parent_lesson_id) {
-    // Editing an instance - update parent and all future instances
-    parentLessonId = currentLesson.parent_lesson_id;
-    updateFromDate = currentLesson.instance_date || format(new Date(currentLesson.start_time), 'yyyy-MM-dd');
-  } else {
-    // Editing the parent lesson
-    parentLessonId = lessonId;
-    updateFromDate = fromDate || format(new Date(), 'yyyy-MM-dd');
-  }
-  
-  // Get the original parent lesson data to calculate changes
-  const { data: originalParentLesson } = await supabase
-    .from('lessons')
-    .select('*')
-    .eq('id', parentLessonId)
-    .single();
-    
-  if (!originalParentLesson) throw new Error('Parent lesson not found');
-  
-  // Calculate what changes need to be applied
-  const changes = calculateLessonChanges(originalParentLesson, updates);
-  console.log('Calculated changes:', changes);
-  console.log('Editing child instance:', currentLesson.is_recurring_instance);
-  console.log('Update from date:', updateFromDate);
-  
-  // Only update the parent lesson if we're editing the parent lesson itself
-  // When editing a child instance, we should NOT update the parent lesson
-  if (!currentLesson.is_recurring_instance) {
-    console.log('Updating parent lesson as we are editing the parent');
-    const parentUpdateData = applyChangesToInstance(originalParentLesson, changes);
-    
-    const { error: parentError } = await supabase
+  try {
+    // Get the original lesson details
+    const { data: originalLesson, error: fetchError } = await supabase
       .from('lessons')
-      .update(parentUpdateData)
-      .eq('id', parentLessonId);
-    
-    if (parentError) throw parentError;
-  } else {
-    console.log('Skipping parent lesson update as we are editing a child instance');
-  }
-  
-  // Get all future instances to update
-  const { data: futureInstances, error: instancesError } = await supabase
-    .from('lessons')
-    .select('*')
-    .eq('parent_lesson_id', parentLessonId)
-    .eq('is_recurring_instance', true)
-    .gte('instance_date', updateFromDate);
-  
-  if (instancesError) throw instancesError;
-  
-  // Count updated lessons (only count parent if it was actually updated)
-  let updatedCount = currentLesson.is_recurring_instance ? 0 : 1;
-  
-  if (futureInstances && futureInstances.length > 0) {
-    // Update each instance individually with calculated changes
-    for (const instance of futureInstances) {
-      const instanceUpdateData = applyChangesToInstance(instance, changes);
-      
-      const { error: updateError } = await supabase
-        .from('lessons')
-        .update(instanceUpdateData)
-        .eq('id', instance.id);
-      
-      if (updateError) {
-        console.error(`Failed to update instance ${instance.id}:`, updateError);
-        continue;
-      }
-      
-      updatedCount++;
+      .select('*')
+      .eq('id', lessonId)
+      .single();
+
+    if (fetchError || !originalLesson) {
+      throw new Error('Failed to fetch original lesson details');
     }
+
+    // Determine the date to start updates from
+    const startDate = fromDate ? parseISO(fromDate) : new Date();
     
-    // Update students for all affected lessons if provided
-    if (selectedStudents) {
-      // Only include parent lesson ID if we actually updated the parent lesson
-      const allLessonIds = currentLesson.is_recurring_instance 
-        ? futureInstances.map(i => i.id)
-        : [parentLessonId, ...futureInstances.map(i => i.id)];
+    // Create base update data (non-time fields)
+    const baseUpdateData = createUpdateData(updates);
+    const hasTimeChanges = updates.start_time || updates.end_time;
+    const tutorChanged = updates.tutor_id && updates.tutor_id !== originalLesson.tutor_id;
+
+    // Find all future lessons to update
+    const { data: futureLessons, error: queryError } = await supabase
+      .from('lessons')
+      .select('*')
+      .eq('parent_lesson_id', originalLesson.parent_lesson_id || lessonId)
+      .gte('start_time', startDate.toISOString())
+      .order('start_time', { ascending: true });
+
+    if (queryError) {
+      throw new Error(`Failed to fetch future lessons: ${queryError.message}`);
+    }
+
+    if (!futureLessons || futureLessons.length === 0) {
+      console.log('No future lessons found to update');
+      return 0;
+    }
+
+    console.log(`Found ${futureLessons.length} future lessons to update`);
+
+    let updatedCount = 0;
+    const batchSize = 10;
+    
+    // Process lessons in batches
+    for (let i = 0; i < futureLessons.length; i += batchSize) {
+      const batch = futureLessons.slice(i, i + batchSize);
       
-      // Delete existing lesson_students entries for all lessons
+      // Process each lesson in the batch
+      for (const lesson of batch) {
+        let updateData = { ...baseUpdateData };
+        
+        // Apply time changes if needed (using duration-based approach like working code)
+        if (hasTimeChanges) {
+          const timeUpdates = applyTimeUpdatesToInstance(
+            lesson,
+            new Date(updates.start_time!),
+            new Date(updates.end_time!)
+          );
+          updateData = { ...updateData, ...timeUpdates };
+        }
+
+        // Update the lesson
+        const { error: updateError } = await supabase
+          .from('lessons')
+          .update(updateData)
+          .eq('id', lesson.id);
+
+        if (updateError) {
+          console.error(`Failed to update lesson ${lesson.id}:`, updateError);
+          throw new Error(`Failed to update lesson: ${updateError.message}`);
+        }
+
+        updatedCount++;
+      }
+    }
+
+    // Update student associations if students changed
+    if (updates.student_ids || updates.selectedStudents) {
+      const studentIds = updates.student_ids || updates.selectedStudents || [];
+      console.log('Updating student associations for future lessons');
+      
+      // Remove existing student associations for future lessons
       const { error: deleteError } = await supabase
         .from('lesson_students')
         .delete()
-        .in('lesson_id', allLessonIds);
-      
-      if (deleteError) throw deleteError;
-      
-      // Add updated students for all lessons
-      if (selectedStudents.length > 0) {
-        const lessonStudentsData = allLessonIds.flatMap(lessonId =>
-          selectedStudents.map(studentId => ({
-            lesson_id: lessonId,
-            student_id: studentId
-          }))
-        );
-        
-        const { error: studentsError } = await supabase
+        .in('lesson_id', futureLessons.map(l => l.id));
+
+      if (deleteError) {
+        console.error('Failed to delete existing student associations:', deleteError);
+      }
+
+      // Add new student associations
+      if (studentIds.length > 0) {
+        const newAssociations = [];
+        for (const lesson of futureLessons) {
+          for (const studentId of studentIds) {
+            newAssociations.push({
+              lesson_id: lesson.id,
+              student_id: studentId
+            });
+          }
+        }
+
+        const { error: insertError } = await supabase
           .from('lesson_students')
-          .insert(lessonStudentsData);
-        
-        if (studentsError) throw studentsError;
+          .insert(newAssociations);
+
+        if (insertError) {
+          console.error('Failed to create new student associations:', insertError);
+          throw new Error(`Failed to update student associations: ${insertError.message}`);
+        }
       }
     }
-  } else if (selectedStudents) {
-    // Update students for parent lesson only
-    const { error: deleteError } = await supabase
-      .from('lesson_students')
-      .delete()
-      .eq('lesson_id', parentLessonId);
-    
-    if (deleteError) throw deleteError;
-    
-    if (selectedStudents.length > 0) {
-      const lessonStudentsData = selectedStudents.map(studentId => ({
-        lesson_id: parentLessonId,
-        student_id: studentId
-      }));
+
+    // Recreate LessonSpace rooms if tutor changed
+    if (tutorChanged) {
+      console.log('Tutor changed, recreating LessonSpace rooms for future lessons');
       
-      const { error: studentsError } = await supabase
-        .from('lesson_students')
-        .insert(lessonStudentsData);
-      
-      if (studentsError) throw studentsError;
-    }
-  }
-  
-  // Recreate LessonSpace room for all affected lessons if tutor or students changed
-  if (changes.tutorChanged || selectedStudents !== undefined) {
-    console.log('Tutor or students changed, recreating LessonSpace rooms for all affected lessons');
-    // Only include parent lesson ID if we actually updated the parent lesson
-    const allLessonIds = currentLesson.is_recurring_instance 
-      ? (futureInstances?.map(i => i.id) || [])
-      : [parentLessonId, ...(futureInstances?.map(i => i.id) || [])];
-    
-    for (const lessonId of allLessonIds) {
-      const roomData = await recreateLessonSpaceRoom(lessonId);
-      if (!roomData) {
-        console.warn(`Failed to recreate room for lesson ${lessonId} after tutor/student change`);
+      for (const lesson of futureLessons) {
+        try {
+          await recreateLessonSpaceRoom(lesson.id);
+          console.log(`Recreated LessonSpace room for lesson ${lesson.id}`);
+        } catch (roomError) {
+          console.error(`Failed to recreate room for lesson ${lesson.id}:`, roomError);
+          // Continue with other lessons even if one fails
+        }
       }
     }
+
+    console.log(`Successfully updated ${updatedCount} future lessons`);
+    return updatedCount;
+
+  } catch (error) {
+    console.error('Error in updateAllFutureLessons:', error);
+    throw error;
   }
-  
-  console.log(`Successfully updated ${updatedCount} lessons with LessonSpace rooms`);
-  return updatedCount;
 };
 
 // Get count of affected lessons for preview

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
+import { createUKDateTime, convertUKToUTC, convertUTCToUK } from '@/utils/timezone';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -302,14 +303,12 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       setIsLoading(true);
       setLoadingStep(`Updating ${affectedLessonsCount} lesson${affectedLessonsCount !== 1 ? 's' : ''}...`);
       
-      // Format the date and times into ISO strings
-      const startTime = new Date(values.date);
-      const [startHours, startMinutes] = values.startTime.split(':');
-      startTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
-
-      const endTime = new Date(values.date);
-      const [endHours, endMinutes] = values.endTime.split(':');
-      endTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
+      // Create UK local time and convert to UTC for storage (same as AddLessonForm)
+      const ukStartTime = createUKDateTime(values.date, values.startTime);
+      const ukEndTime = createUKDateTime(values.date, values.endTime);
+      
+      const startTime = convertUKToUTC(ukStartTime);
+      const endTime = convertUKToUTC(ukEndTime);
 
       const updateData = {
         title: values.title,
