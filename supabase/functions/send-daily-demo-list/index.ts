@@ -57,8 +57,30 @@ const handler = async (req: Request): Promise<Response> => {
     const currentDate = getCurrentUKDate();
     console.log(`Processing daily demo list for date: ${currentDate}`);
 
-    // Query for today's demo sessions
-    const { data: demos, error } = await supabase
+    // First, get all demo sessions for today
+    const { data: demoSessions, error: demoError } = await supabase
+      .from('lessons')
+      .select(`
+        id,
+        title,
+        start_time,
+        end_time,
+        subject
+      `)
+      .eq('lesson_type', 'demo')
+      .gte('start_time', `${currentDate}T00:00:00`)
+      .lt('start_time', `${currentDate}T23:59:59`)
+      .order('start_time', { ascending: true });
+
+    if (demoError) {
+      console.error('Error fetching demo sessions:', demoError);
+      throw demoError;
+    }
+
+    console.log(`Found ${demoSessions?.length || 0} demo sessions for ${currentDate}`);
+
+    // Now get all trial lessons for today with their bookings
+    const { data: trialLessons, error: trialError } = await supabase
       .from('lessons')
       .select(`
         id,
@@ -67,25 +89,39 @@ const handler = async (req: Request): Promise<Response> => {
         end_time,
         subject,
         trial_bookings (
-          child_first_name,
-          child_last_name,
-          parent_first_name,
-          parent_last_name,
+          child_name,
+          parent_name,
           email,
           phone
         )
       `)
-      .eq('lesson_type', 'demo')
+      .eq('lesson_type', 'trial')
       .gte('start_time', `${currentDate}T00:00:00`)
-      .lt('start_time', `${currentDate}T23:59:59`)
-      .order('start_time', { ascending: true });
+      .lt('start_time', `${currentDate}T23:59:59`);
 
-    if (error) {
-      console.error('Error fetching demo sessions:', error);
-      throw error;
+    if (trialError) {
+      console.error('Error fetching trial lessons:', trialError);
+      throw trialError;
     }
 
-    console.log(`Found ${demos?.length || 0} demo sessions for ${currentDate}`);
+    console.log(`Found ${trialLessons?.length || 0} trial lessons for ${currentDate}`);
+
+    // Match demo sessions with their corresponding trial lessons
+    const demos = (demoSessions || []).map(demo => {
+      // Find matching trial lesson (same subject, demo before trial, same day)
+      const matchingTrial = trialLessons?.find(trial => 
+        trial.subject === demo.subject &&
+        new Date(trial.start_time) > new Date(demo.start_time) &&
+        new Date(trial.start_time).getDate() === new Date(demo.start_time).getDate()
+      );
+
+      return {
+        ...demo,
+        trial_bookings: matchingTrial?.trial_bookings || []
+      };
+    });
+
+
 
     // Format demo data
     const formattedDemos: DemoSession[] = (demos || []).map(demo => {
@@ -96,8 +132,8 @@ const handler = async (req: Request): Promise<Response> => {
       return {
         lesson_id: demo.id,
         demo_time: `${formatInUKTime(startTime, 'HH:mm')} - ${formatInUKTime(endTime, 'HH:mm')}`,
-        child_name: trialBooking ? `${trialBooking.child_first_name} ${trialBooking.child_last_name}` : 'N/A',
-        parent_name: trialBooking ? `${trialBooking.parent_first_name} ${trialBooking.parent_last_name}` : 'N/A',
+        child_name: trialBooking?.child_name || 'N/A',
+        parent_name: trialBooking?.parent_name || 'N/A',
         parent_email: trialBooking?.email || 'N/A',
         phone: trialBooking?.phone || 'N/A',
         subject: demo.subject || 'N/A',
@@ -109,47 +145,52 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedDate = formatInUKTime(new Date(), 'EEEE, MMMM d, yyyy');
     const totalDemos = formattedDemos.length;
     
-    const html = await renderAsync(
-      React.createElement(DailyDemoListEmail, {
-        date: formattedDate,
-        totalDemos,
-        demos: formattedDemos
-      })
-    );
+    try {
+      const html = await renderAsync(
+        React.createElement(DailyDemoListEmail, {
+          date: formattedDate,
+          totalDemos,
+          demos: formattedDemos
+        })
+      );
 
-    // Send email
-    const emailSubject = `Daily Demo List - ${formattedDate} (${totalDemos} demo${totalDemos !== 1 ? 's' : ''} scheduled)`;
-    
-    const { error: emailError } = await resend.emails.send({
-      from: 'JB Tutors Demo List <noreply@jb-tutors.com>',
-      to: ['joshua@jb-tutors.com'],
-      subject: emailSubject,
-      html,
-    });
+      // Send email
+      const emailSubject = `Daily Demo List - ${formattedDate} (${totalDemos} demo${totalDemos !== 1 ? 's' : ''} scheduled)`;
+      
+      const { error: emailError } = await resend.emails.send({
+        from: 'JB Tutors Demo List <noreply@jb-tutors.com>',
+        to: ['joshua@jb-tutors.com'],
+        subject: emailSubject,
+        html,
+      });
 
-    if (emailError) {
-      console.error('Error sending daily demo list email:', emailError);
-      throw emailError;
-    }
-
-    console.log(`Daily demo list email sent successfully to joshua@jb-tutors.com for ${currentDate}`);
-    console.log(`Email contained ${totalDemos} demo sessions`);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        date: currentDate,
-        totalDemos,
-        message: 'Daily demo list email sent successfully'
-      }), 
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders,
-        },
+      if (emailError) {
+        console.error('Error sending daily demo list email:', emailError);
+        throw emailError;
       }
-    );
+
+      console.log(`Daily demo list email sent successfully to joshua@jb-tutors.com for ${currentDate}`);
+      console.log(`Email contained ${totalDemos} demo sessions`);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          date: currentDate,
+          totalDemos,
+          message: 'Daily demo list email sent successfully'
+        }), 
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        }
+      );
+    } catch (emailRenderError) {
+      console.error('Error rendering email template:', emailRenderError);
+      throw new Error(`Email template rendering failed: ${emailRenderError.message}`);
+    }
 
   } catch (error: any) {
     console.error('Error in send-daily-demo-list function:', error);
