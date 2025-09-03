@@ -187,12 +187,13 @@ export const updateAllFutureLessons = async (
     const hasTimeChanges = updates.start_time || updates.end_time;
     const tutorChanged = updates.tutor_id && updates.tutor_id !== originalLesson.tutor_id;
 
-    // Find all future lessons to update
+    // Find all future lessons to update - use gt with 1 second earlier to ensure current lesson is included
+    const inclusiveStartDate = new Date(startDate.getTime() - 1000); // 1 second earlier
     const { data: futureLessons, error: queryError } = await supabase
       .from('lessons')
       .select('*')
       .eq('parent_lesson_id', originalLesson.parent_lesson_id || lessonId)
-      .gte('start_time', startDate.toISOString())
+      .gte('start_time', inclusiveStartDate.toISOString())
       .order('start_time', { ascending: true });
 
     if (queryError) {
