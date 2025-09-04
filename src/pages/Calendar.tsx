@@ -288,7 +288,7 @@ const Calendar = () => {
                 />
               </div>
 
-              <TabsContent value="calendar" className="flex-1 mt-0 mobile-scroll-container">
+              <TabsContent value="calendar" className="flex-1 mt-0">
                 <CalendarDisplay 
                   isLoading={isLoading} 
                   events={events} 
@@ -298,7 +298,7 @@ const Calendar = () => {
               </TabsContent>
 
               {canUseTeacherView && (
-                <TabsContent value="teacher" className="flex-1 mt-0 mobile-scroll-container">
+                <TabsContent value="teacher" className="flex-1 mt-0">
                   <TeacherCalendarView
                     events={events}
                     viewType={teacherViewType as 'teacherWeek' | 'teacherDay'}

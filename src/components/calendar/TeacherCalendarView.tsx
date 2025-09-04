@@ -114,7 +114,7 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
   }
 
   return (
-    <div className="teacher-calendar-view h-full flex flex-col bg-background border rounded-lg overflow-hidden">
+    <div className="teacher-calendar-view h-full w-full max-w-full flex flex-col bg-background border rounded-lg overflow-hidden">
       {/* Navigation Header */}
       {onDateChange && (
         <TeacherViewNavigation
