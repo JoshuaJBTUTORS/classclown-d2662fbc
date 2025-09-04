@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, Users } from 'lucide-react';
 import { useTutorSlotAvailability, SlotAvailability } from '@/hooks/useTutorSlotAvailability';
+import { getSubjectClass } from '@/utils/calendarColors';
 
 interface TutorRowProps {
   tutor: {
@@ -56,41 +57,43 @@ const TutorRow: React.FC<TutorRowProps> = ({
     const students = event.extendedProps?.students || [];
     const studentNames = students.map((s: any) => s.name).join(', ');
     const subject = event.extendedProps?.subject || '';
+    const lessonType = event.extendedProps?.lessonType || '';
     const eventStart = parseISO(event.start);
     const eventEnd = parseISO(event.end);
     
+    // Get the subject color class using the same system as main calendar
+    const subjectClass = getSubjectClass(subject, lessonType);
+    
     return (
-      <Button
+      <div
         key={event.id}
-        variant="outline"
-        size="sm"
-        className="w-full mb-1 p-2 h-auto text-left justify-start hover:bg-accent/50 transition-colors"
+        className={`w-full mb-1 p-2 h-auto text-left justify-start cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md rounded-md border border-white/20 ${subjectClass}`}
         onClick={() => onEventClick?.(event)}
       >
         <div className="flex flex-col w-full min-w-0">
           <div className="flex items-center gap-1 mb-1">
-            <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+            <Clock className="h-3 w-3 flex-shrink-0 opacity-80" />
             <span className="text-xs font-medium truncate">
               {format(eventStart, 'HH:mm')} - {format(eventEnd, 'HH:mm')}
             </span>
           </div>
           
           {subject && (
-            <Badge variant="secondary" className="mb-1 text-xs w-fit">
+            <div className="mb-1 text-xs font-medium truncate opacity-90">
               {subject}
-            </Badge>
+            </div>
           )}
           
           {students.length > 0 && (
             <div className="flex items-center gap-1">
-              <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-              <span className="text-xs text-muted-foreground truncate">
+              <Users className="h-3 w-3 flex-shrink-0 opacity-80" />
+              <span className="text-xs truncate opacity-90">
                 {studentNames}
               </span>
             </div>
           )}
         </div>
-      </Button>
+      </div>
     );
   };
 
