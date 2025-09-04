@@ -79,7 +79,7 @@ export const useTutorAvailability = ({ tutorIds, dateRange, viewType }: UseTutor
           const tutorLessons = existingLessons?.filter(lesson => lesson.tutor_id === tutorId) || [];
 
           dates.forEach(date => {
-            const dayName = format(date, 'EEEE').toLowerCase();
+            const dayName = format(date, 'EEEE');
             const dayAvailability = tutorAvailability.filter(slot => slot.day_of_week === dayName);
 
             if (viewType === 'teacherDay') {
