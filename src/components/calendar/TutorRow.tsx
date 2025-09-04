@@ -102,29 +102,27 @@ const TutorRow: React.FC<TutorRowProps> = ({
       </div>
 
       {/* Time slots */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="flex">
-          {timeSlots.map(slot => {
-            const slotEvents = getEventsForSlot(slot);
-            
-            return (
-              <div
-                key={slot.key}
-                className="w-40 p-2 border-r last:border-r-0 min-h-20 flex-shrink-0"
-              >
-                {slotEvents.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    <span className="text-xs">Available</span>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {slotEvents.map(renderEventBlock)}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      <div className="flex">
+        {timeSlots.map(slot => {
+          const slotEvents = getEventsForSlot(slot);
+          
+          return (
+            <div
+              key={slot.key}
+              className="w-40 p-2 border-r last:border-r-0 min-h-20 flex-shrink-0"
+            >
+              {slotEvents.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground">
+                  <span className="text-xs">Available</span>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {slotEvents.map(renderEventBlock)}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
