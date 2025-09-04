@@ -97,13 +97,6 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
     }
   }, [viewType, currentDate]);
 
-  // Calculate minimum width needed for horizontal scrolling
-  const minWidth = useMemo(() => {
-    const tutorColumnWidth = 192; // w-48 = 12rem = 192px
-    const timeSlotWidth = 160; // w-40 = 10rem = 160px
-    const totalWidth = tutorColumnWidth + (timeSlots.length * timeSlotWidth);
-    return `${totalWidth}px`;
-  }, [timeSlots.length]);
 
   if (isLoading) {
     return (
@@ -126,7 +119,7 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
       
       {/* Single horizontal scroll container */}
       <div className="flex-1 overflow-x-auto">
-        <div className="flex flex-col" style={{ minWidth }}>
+        <div className="flex flex-col min-w-fit">
           {/* Header with time slots */}
           <div className="flex border-b bg-muted/50">
             <div className="w-48 flex-shrink-0 p-3 border-r bg-background">
