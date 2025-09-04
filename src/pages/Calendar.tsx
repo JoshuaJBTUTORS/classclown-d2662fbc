@@ -5,6 +5,8 @@ import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
+import TeacherCalendarView from '@/components/calendar/TeacherCalendarView';
+import ViewOptions from '@/components/calendar/ViewOptions';
 import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -35,6 +37,7 @@ const Calendar = () => {
   const [currentStartDate, setCurrentStartDate] = useState<Date | undefined>(undefined);
   const [currentEndDate, setCurrentEndDate] = useState<Date | undefined>(undefined);
   const [currentViewType, setCurrentViewType] = useState<string>('timeGridWeek');
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
   // Memoize filters to prevent infinite loop - only recreate when dependencies change
   const filters = useMemo(() => ({
@@ -102,13 +105,23 @@ const Calendar = () => {
     setCurrentStartDate(viewInfo.start);
     setCurrentEndDate(viewInfo.end);
     setCurrentViewType(viewInfo.view);
+    setCurrentDate(viewInfo.start);
+  };
+
+  // Handle view type change from ViewOptions
+  const handleViewTypeChange = (viewType: string) => {
+    setCurrentViewType(viewType);
   };
 
   // Check if user can see filters (admin/owner only for full filters)
   const canUseFilters = userRole === 'admin' || userRole === 'owner';
 
-  // Only allow admins and owners to schedule lessons
+  // Only allow admins and owners to schedule lessons and see teacher view
   const canScheduleLessons = userRole === 'admin' || userRole === 'owner';
+  const canUseTeacherView = userRole === 'admin' || userRole === 'owner';
+
+  // Check if current view is teacher view
+  const isTeacherView = currentViewType === 'teacherWeek' || currentViewType === 'teacherDay';
 
   const openAddLessonDialog = () => {
     setShowAddLessonDialog(true);
@@ -178,7 +191,14 @@ const Calendar = () => {
                 </TooltipProvider>
               </div>
               
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                {/* View Options */}
+                <ViewOptions 
+                  currentView={currentViewType}
+                  onViewChange={handleViewTypeChange}
+                  showTeacherView={canUseTeacherView}
+                />
+
                 {/* Filter button */}
                 <Button 
                   onClick={toggleFilters}
@@ -209,12 +229,22 @@ const Calendar = () => {
           
           {/* Calendar Display - Full height */}
           <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4 mobile-scroll-container">
-            <CalendarDisplay 
-              isLoading={isLoading} 
-              events={events} 
-              onLessonsUpdated={handleRefresh}
-              onViewChange={handleViewChange}
-            />
+            {isTeacherView ? (
+              <TeacherCalendarView
+                events={events}
+                viewType={currentViewType as 'teacherWeek' | 'teacherDay'}
+                currentDate={currentDate}
+                isLoading={isLoading}
+                onLessonsUpdated={handleRefresh}
+              />
+            ) : (
+              <CalendarDisplay 
+                isLoading={isLoading} 
+                events={events} 
+                onLessonsUpdated={handleRefresh}
+                onViewChange={handleViewChange}
+              />
+            )}
           </div>
         </main>
       </div>
