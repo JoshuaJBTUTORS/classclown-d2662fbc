@@ -46,12 +46,34 @@ export const useTutorSlotAvailability = (
       setIsLoading(true);
       
       try {
-        const tutorIds = tutors.map(t => t.id);
+        const tutorIds = tutors.map(t => t.id).filter(Boolean); // Filter out any undefined/null ids
         
-        // Get date range for queries
-        const dates = timeSlots.map(slot => slot.date);
+        if (tutorIds.length === 0) {
+          console.warn('No valid tutor IDs found');
+          setAvailability({});
+          setIsLoading(false);
+          return;
+        }
+        
+        // Get date range for queries with safety checks
+        const dates = timeSlots.map(slot => slot.date).filter(Boolean);
+        if (dates.length === 0) {
+          console.warn('No valid dates found in time slots');
+          setAvailability({});
+          setIsLoading(false);
+          return;
+        }
+        
         const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
         const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
+        
+        // Validate date range
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.warn('Invalid date range detected');
+          setAvailability({});
+          setIsLoading(false);
+          return;
+        }
         
         // Fetch tutor availability schedules
         const { data: tutorAvailability, error: availabilityError } = await supabase
@@ -194,12 +216,28 @@ export const useTutorSlotAvailability = (
 
         setAvailability(result);
       } catch (error) {
+        // Enhanced error handling for better debugging
+        let errorMessage = 'Unknown error';
+        let errorDetails = {};
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          errorDetails = { name: error.name, stack: error.stack };
+        } else if (typeof error === 'object' && error !== null) {
+          // Handle objects that aren't Error instances
+          errorMessage = JSON.stringify(error);
+          errorDetails = error;
+        } else {
+          errorMessage = String(error);
+        }
+        
         console.error('Error fetching tutor availability:', {
-          message: error instanceof Error ? error.message : String(error),
+          message: errorMessage,
           tutorCount: tutors.length,
           timeSlotCount: timeSlots.length,
           viewType,
-          error
+          errorDetails,
+          originalError: error
         });
         
         // Set all slots as unavailable on error
