@@ -106,7 +106,7 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
   }
 
   return (
-    <div className="teacher-calendar-view bg-background border rounded-lg overflow-hidden">
+    <div className="teacher-calendar-view h-full flex flex-col bg-background border rounded-lg overflow-hidden">
       {/* Navigation Header */}
       {onDateChange && (
         <TeacherViewNavigation
@@ -136,7 +136,7 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
       </div>
 
       {/* Scrollable content area */}
-      <ScrollArea className="h-[calc(100vh-200px)]">
+      <ScrollArea className="flex-1">
         <div className="min-h-full">
           {tutorGroups.length === 0 ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
