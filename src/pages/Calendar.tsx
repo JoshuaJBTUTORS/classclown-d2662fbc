@@ -178,6 +178,12 @@ const Calendar = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  // Handle date navigation for teacher view
+  const handleTeacherDateChange = (newDate: Date) => {
+    setCurrentDate(newDate);
+    updateTeacherViewDateRanges(teacherViewType, newDate);
+  };
+
   // If user has learning_hub_only role, show locked feature
   if (isLearningHubOnly) {
     return (
@@ -299,6 +305,7 @@ const Calendar = () => {
                     currentDate={currentDate}
                     isLoading={isLoading}
                     onLessonsUpdated={handleRefresh}
+                    onDateChange={handleTeacherDateChange}
                   />
                 </TabsContent>
               )}

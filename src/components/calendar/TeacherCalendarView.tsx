@@ -3,6 +3,7 @@ import { format, addHours, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import TutorRow from './TutorRow';
 import LessonDetailsDialog from './LessonDetailsDialog';
+import TeacherViewNavigation from './TeacherViewNavigation';
 import { convertUTCToUK } from '@/utils/timezone';
 
 interface TeacherCalendarViewProps {
@@ -11,6 +12,7 @@ interface TeacherCalendarViewProps {
   currentDate: Date;
   isLoading: boolean;
   onLessonsUpdated?: () => void;
+  onDateChange?: (date: Date) => void;
 }
 
 const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
@@ -18,7 +20,8 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
   viewType,
   currentDate,
   isLoading,
-  onLessonsUpdated
+  onLessonsUpdated,
+  onDateChange
 }) => {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [instanceDetails, setInstanceDetails] = useState<any>(null);
@@ -104,6 +107,15 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
 
   return (
     <div className="teacher-calendar-view bg-background border rounded-lg overflow-hidden">
+      {/* Navigation Header */}
+      {onDateChange && (
+        <TeacherViewNavigation
+          currentDate={currentDate}
+          viewType={viewType}
+          onDateChange={onDateChange}
+        />
+      )}
+      
       {/* Header with time slots */}
       <div className="flex border-b bg-muted/50">
         <div className="w-48 flex-shrink-0 p-3 border-r bg-background">
