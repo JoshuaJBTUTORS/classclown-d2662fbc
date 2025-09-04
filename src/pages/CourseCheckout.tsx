@@ -83,11 +83,7 @@ const CourseCheckout = () => {
         navigate(`/course/${course.id}`);
       }
     } catch (error) {
-      console.error('Error checking course access:', {
-        message: error instanceof Error ? error.message : String(error),
-        courseId: course?.id,
-        error
-      });
+      console.error('Error checking course access:', error);
     }
   };
 
@@ -114,11 +110,7 @@ const CourseCheckout = () => {
       }
       
     } catch (error) {
-      console.error('Error creating payment intent:', {
-        message: error instanceof Error ? error.message : String(error),
-        courseId: course?.id,
-        error
-      });
+      console.error('Error creating payment intent:', error);
       setPaymentError(error instanceof Error ? error.message : "Unable to initialize payment. Please try again.");
     } finally {
       setIsLoadingPayment(false);

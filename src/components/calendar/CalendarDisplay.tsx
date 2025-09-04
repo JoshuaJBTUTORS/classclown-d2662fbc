@@ -52,19 +52,13 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     console.log('📅 Calendar view changed:', {
       viewType: dateInfo.view.type,
       start: dateInfo.start,
-      end: dateInfo.end,
-      currentStart: dateInfo.view.currentStart,
-      currentEnd: dateInfo.view.currentEnd
+      end: dateInfo.end
     });
     
     if (onViewChange) {
-      // Use the view's current range for more accurate date boundaries
-      const startDate = dateInfo.view.currentStart || dateInfo.start;
-      const endDate = dateInfo.view.currentEnd || dateInfo.end;
-      
       onViewChange({
-        start: startDate,
-        end: endDate,
+        start: dateInfo.start,
+        end: dateInfo.end,
         view: dateInfo.view.type
       });
     }
