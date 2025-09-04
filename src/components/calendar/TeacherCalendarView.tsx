@@ -122,11 +122,11 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
           <h3 className="font-medium text-sm text-muted-foreground">Tutors</h3>
         </div>
         <div className="flex-1 overflow-x-auto">
-          <div className="flex min-w-max">
+          <div className="flex">
             {timeSlots.map(slot => (
               <div
                 key={slot.key}
-                className="flex-1 min-w-32 p-3 border-r last:border-r-0 text-center"
+                className="w-40 p-3 border-r last:border-r-0 text-center flex-shrink-0"
               >
                 <span className="text-sm font-medium">{slot.time}</span>
               </div>
