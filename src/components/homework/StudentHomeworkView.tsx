@@ -36,6 +36,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentHomeworkProps {
@@ -436,94 +437,96 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
 
       {/* Submit Homework Dialog */}
       <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Submit Homework</DialogTitle>
             <DialogDescription>
               Complete the homework assignment and submit it for review.
             </DialogDescription>
           </DialogHeader>
           
-          {selectedHomework && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-1">{selectedHomework.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedHomework.lesson.title} - {selectedHomework.lesson.tutor.first_name} {selectedHomework.lesson.tutor.last_name}
-                </p>
-              </div>
-              
-              {selectedHomework.description && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Instructions</h4>
-                  <div className="bg-muted/50 p-3 rounded-md text-sm whitespace-pre-wrap">
-                    {selectedHomework.description}
-                  </div>
-                </div>
-              )}
-              
-              {selectedHomework.attachment_url && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Reference Material</h4>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log("Opening homework attachment:", selectedHomework.attachment_url);
-                      window.open(selectedHomework.attachment_url!, '_blank');
-                    }}
-                    className="gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    View Assignment Material
-                  </Button>
-                </div>
-              )}
-              
-              <Separator />
-              
+          <ScrollArea className="flex-1 max-h-[calc(90vh-140px)] pr-4">
+            {selectedHomework && (
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="submission_text" className="block text-sm font-medium mb-1">Your Answer</label>
-                  <Textarea 
-                    id="submission_text" 
-                    placeholder="Type your homework answer here..."
-                    className="min-h-[150px]"
-                    value={submissionText}
-                    onChange={(e) => setSubmissionText(e.target.value)}
-                  />
+                  <h3 className="text-lg font-semibold mb-1">{selectedHomework.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedHomework.lesson.title} - {selectedHomework.lesson.tutor.first_name} {selectedHomework.lesson.tutor.last_name}
+                  </p>
                 </div>
                 
-                <div>
-                  <label htmlFor="submission_file" className="block text-sm font-medium mb-1">
-                    Attach File (Optional)
-                  </label>
-                  <div className="grid w-full items-center gap-1.5">
-                    <Input
-                      id="submission_file"
-                      type="file"
-                      onChange={handleFileChange}
-                      className="cursor-pointer"
+                {selectedHomework.description && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Instructions</h4>
+                    <div className="bg-muted/50 p-3 rounded-md text-sm whitespace-pre-wrap">
+                      {selectedHomework.description}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedHomework.attachment_url && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Reference Material</h4>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Opening homework attachment:", selectedHomework.attachment_url);
+                        window.open(selectedHomework.attachment_url!, '_blank');
+                      }}
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      View Assignment Material
+                    </Button>
+                  </div>
+                )}
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="submission_text" className="block text-sm font-medium mb-1">Your Answer</label>
+                    <Textarea 
+                      id="submission_text" 
+                      placeholder="Type your homework answer here..."
+                      className="min-h-[150px]"
+                      value={submissionText}
+                      onChange={(e) => setSubmissionText(e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Upload your completed homework (PDF, Word document, etc.)
-                    </p>
-                    {selectedFile && (
-                      <p className="text-xs text-green-600">
-                        Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)}MB)
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="submission_file" className="block text-sm font-medium mb-1">
+                      Attach File (Optional)
+                    </label>
+                    <div className="grid w-full items-center gap-1.5">
+                      <Input
+                        id="submission_file"
+                        type="file"
+                        onChange={handleFileChange}
+                        className="cursor-pointer"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Upload your completed homework (PDF, Word document, etc.)
                       </p>
-                    )}
-                    {fileUploadError && (
-                      <p className="text-xs text-red-500">{fileUploadError}</p>
-                    )}
+                      {selectedFile && (
+                        <p className="text-xs text-green-600">
+                          Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)}MB)
+                        </p>
+                      )}
+                      {fileUploadError && (
+                        <p className="text-xs text-red-500">{fileUploadError}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </ScrollArea>
           
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsSubmitDialogOpen(false)}
