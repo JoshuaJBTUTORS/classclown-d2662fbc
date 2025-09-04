@@ -3,6 +3,7 @@ import { format, isSameDay, parseISO, isSameHour } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, Users } from 'lucide-react';
+import { useTutorSlotAvailability, SlotAvailability } from '@/hooks/useTutorSlotAvailability';
 
 interface TutorRowProps {
   tutor: {
@@ -28,6 +29,12 @@ const TutorRow: React.FC<TutorRowProps> = ({
   viewType,
   onEventClick
 }) => {
+  // Get availability data for this tutor
+  const { availability, isLoading: availabilityLoading } = useTutorSlotAvailability(
+    [tutor],
+    timeSlots,
+    viewType
+  );
   // Find events for each time slot
   const getEventsForSlot = (slot: { time: string; date: Date; key: string }) => {
     return events.filter(event => {
@@ -87,6 +94,19 @@ const TutorRow: React.FC<TutorRowProps> = ({
     );
   };
 
+  const getAvailabilityTooltip = (availabilityStatus: SlotAvailability) => {
+    switch (availabilityStatus) {
+      case 'available':
+        return 'Available for booking';
+      case 'unavailable':
+        return 'Not available (outside schedule or time off)';
+      case 'booked':
+        return 'Has existing lesson';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className="flex border-b hover:bg-muted/30 transition-colors">
       {/* Tutor info column */}
@@ -113,9 +133,12 @@ const TutorRow: React.FC<TutorRowProps> = ({
                 className="flex-1 min-w-32 p-2 border-r last:border-r-0 min-h-20"
               >
                 {slotEvents.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    <span className="text-xs">Available</span>
-                  </div>
+                  <AvailabilitySlot
+                    slotKey={slot.key}
+                    tutorId={tutor.id}
+                    availability={availability}
+                    isLoading={availabilityLoading}
+                  />
                 ) : (
                   <div className="space-y-1">
                     {slotEvents.map(renderEventBlock)}
@@ -126,6 +149,57 @@ const TutorRow: React.FC<TutorRowProps> = ({
           })}
         </div>
       </div>
+    </div>
+  );
+};
+
+// Component for rendering availability slots
+const AvailabilitySlot: React.FC<{
+  slotKey: string;
+  tutorId: string;
+  availability: { [tutorId: string]: { [slotKey: string]: SlotAvailability } };
+  isLoading: boolean;
+}> = ({ slotKey, tutorId, availability, isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const availabilityStatus = availability[tutorId]?.[slotKey] || 'unavailable';
+  
+  const getSlotClass = () => {
+    switch (availabilityStatus) {
+      case 'available':
+        return 'slot-available h-full flex items-center justify-center';
+      case 'unavailable':
+        return 'slot-unavailable h-full flex items-center justify-center';
+      default:
+        return 'h-full flex items-center justify-center bg-muted/30';
+    }
+  };
+
+  const getTooltip = () => {
+    switch (availabilityStatus) {
+      case 'available':
+        return 'Available for booking';
+      case 'unavailable':
+        return 'Not available (outside schedule or time off)';
+      default:
+        return 'Unknown status';
+    }
+  };
+
+  return (
+    <div 
+      className={getSlotClass()}
+      title={getTooltip()}
+    >
+      <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+        {availabilityStatus === 'available' ? '✓' : '✗'}
+      </span>
     </div>
   );
 };
