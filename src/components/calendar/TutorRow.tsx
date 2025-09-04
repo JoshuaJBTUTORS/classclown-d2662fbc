@@ -57,7 +57,7 @@ const TutorRow: React.FC<TutorRowProps> = ({
     return (
       <div
         key={event.id}
-        className={`w-full mb-1 p-2 h-auto rounded-md cursor-pointer transition-all duration-200 border ${subjectClass} hover:scale-105 hover:shadow-sm`}
+        className={`fc-event w-full mb-1 p-2 h-auto rounded-md cursor-pointer transition-all duration-200 border ${subjectClass} hover:scale-105 hover:shadow-sm`}
         onClick={() => onEventClick?.(event)}
       >
         <div className="flex flex-col w-full min-w-0">
