@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
@@ -50,8 +50,42 @@ const Calendar = () => {
     selectedLessonType
   }), [selectedStudents, selectedTutors, selectedSubjects, selectedLessonType]);
 
+  // Helper function to update date ranges for teacher view
+  const updateTeacherViewDateRanges = (viewType: string, date: Date) => {
+    if (viewType === 'teacherDay') {
+      // For day view, use the single day
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      setCurrentStartDate(startOfDay);
+      setCurrentEndDate(endOfDay);
+    } else if (viewType === 'teacherWeek') {
+      // For week view, use the entire week
+      const startOfWeek = new Date(date);
+      const dayOfWeek = startOfWeek.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Start on Monday
+      startOfWeek.setDate(startOfWeek.getDate() + mondayOffset);
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+      
+      setCurrentStartDate(startOfWeek);
+      setCurrentEndDate(endOfWeek);
+    }
+  };
+
   // Determine the active view type based on current tab
   const activeViewType = activeTab === 'teacher' ? teacherViewType : currentViewType;
+
+  // Initialize teacher view date ranges when switching to teacher tab
+  useEffect(() => {
+    if (activeTab === 'teacher') {
+      updateTeacherViewDateRanges(teacherViewType, currentDate);
+    }
+  }, [activeTab, teacherViewType]);
 
   // Fetch calendar data using the hook with date range
   const { events, isLoading } = useCalendarData({
@@ -118,6 +152,8 @@ const Calendar = () => {
   const handleViewTypeChange = (viewType: string) => {
     if (activeTab === 'teacher') {
       setTeacherViewType(viewType);
+      // Update date ranges for teacher view
+      updateTeacherViewDateRanges(viewType, currentDate);
     } else {
       setCurrentViewType(viewType);
     }
