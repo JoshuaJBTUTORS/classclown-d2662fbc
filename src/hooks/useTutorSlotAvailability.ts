@@ -194,7 +194,14 @@ export const useTutorSlotAvailability = (
 
         setAvailability(result);
       } catch (error) {
-        console.error('Error fetching tutor availability:', error);
+        console.error('Error fetching tutor availability:', {
+          message: error instanceof Error ? error.message : String(error),
+          tutorCount: tutors.length,
+          timeSlotCount: timeSlots.length,
+          viewType,
+          error
+        });
+        
         // Set all slots as unavailable on error
         const result: AvailabilityResult = {};
         tutors.forEach(tutor => {
