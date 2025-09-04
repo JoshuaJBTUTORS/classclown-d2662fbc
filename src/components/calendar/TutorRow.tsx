@@ -109,7 +109,7 @@ const TutorRow: React.FC<TutorRowProps> = ({
           return (
             <div
               key={slot.key}
-              className="w-40 p-2 border-r last:border-r-0 min-h-20 flex-shrink-0"
+              className="w-32 p-2 border-r last:border-r-0 min-h-20 flex-shrink-0"
             >
               {slotEvents.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-muted-foreground">
