@@ -19,6 +19,9 @@ interface TutorRowProps {
   }>;
   viewType: 'teacherWeek' | 'teacherDay';
   onEventClick?: (event: any) => void;
+  availabilityData?: {
+    [timeSlotKey: string]: boolean;
+  };
 }
 
 const TutorRow: React.FC<TutorRowProps> = ({
@@ -26,7 +29,8 @@ const TutorRow: React.FC<TutorRowProps> = ({
   events,
   timeSlots,
   viewType,
-  onEventClick
+  onEventClick,
+  availabilityData
 }) => {
   // Find events for each time slot
   const getEventsForSlot = (slot: { time: string; date: Date; key: string }) => {
@@ -106,14 +110,27 @@ const TutorRow: React.FC<TutorRowProps> = ({
         {timeSlots.map(slot => {
           const slotEvents = getEventsForSlot(slot);
           
+          // Determine availability key based on view type
+          const availabilityKey = viewType === 'teacherDay' 
+            ? `${format(slot.date, 'yyyy-MM-dd')}-${parseInt(slot.time.split(':')[0])}`
+            : format(slot.date, 'yyyy-MM-dd');
+          
+          const isAvailable = availabilityData?.[availabilityKey] || false;
+          
           return (
             <div
               key={slot.key}
               className={`${viewType === 'teacherDay' ? 'w-24' : 'w-32'} p-2 border-r last:border-r-0 min-h-20 flex-shrink-0`}
             >
               {slotEvents.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
-                  <span className="text-xs">Available</span>
+                <div className={`h-full flex items-center justify-center rounded-md transition-colors ${
+                  isAvailable 
+                    ? 'bg-green-100 text-green-800 border border-green-200' 
+                    : 'text-muted-foreground'
+                }`}>
+                  <span className="text-xs font-medium">
+                    {isAvailable ? 'Available' : 'Unavailable'}
+                  </span>
                 </div>
               ) : (
                 <div className="space-y-1">

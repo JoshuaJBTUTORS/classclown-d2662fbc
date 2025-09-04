@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { format, addHours, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, addHours, startOfWeek, addDays, isSameDay, endOfWeek, startOfDay, endOfDay } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import TutorRow from './TutorRow';
 import LessonDetailsDialog from './LessonDetailsDialog';
 import TeacherViewNavigation from './TeacherViewNavigation';
 import { convertUTCToUK } from '@/utils/timezone';
+import { useTutorAvailability } from '@/hooks/useTutorAvailability';
 
 interface TeacherCalendarViewProps {
   events: any[];
@@ -97,6 +98,34 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
     }
   }, [viewType, currentDate]);
 
+  // Calculate date range and tutor IDs for availability hook
+  const { tutorIds, dateRange } = useMemo(() => {
+    const ids = tutorGroups.map(group => group.tutor.id);
+    
+    let range;
+    if (viewType === 'teacherDay') {
+      range = {
+        start: startOfDay(currentDate),
+        end: endOfDay(currentDate)
+      };
+    } else {
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      range = {
+        start: startOfDay(weekStart),
+        end: endOfDay(endOfWeek(weekStart))
+      };
+    }
+    
+    return { tutorIds: ids, dateRange: range };
+  }, [tutorGroups, viewType, currentDate]);
+
+  // Fetch tutor availability data
+  const { availabilityData, isLoading: availabilityLoading } = useTutorAvailability({
+    tutorIds,
+    dateRange,
+    viewType
+  });
+
 
   if (isLoading) {
     return (
@@ -155,6 +184,7 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
                         timeSlots={timeSlots}
                         viewType={viewType}
                         onEventClick={handleEventClick}
+                        availabilityData={availabilityData[group.tutor.id]}
                       />
                     ))
                   )}
