@@ -77,6 +77,58 @@ const Calendar = () => {
     }
   };
 
+  // Helper function to update date ranges for standard calendar views
+  const updateStandardCalendarDateRanges = (viewType: string, date: Date) => {
+    const today = new Date(date);
+    
+    if (viewType === 'timeGridDay' || viewType === 'dayGridDay') {
+      // Day view - show single day
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+      setCurrentStartDate(startOfDay);
+      setCurrentEndDate(endOfDay);
+    } else if (viewType === 'timeGridWeek' || viewType === 'dayGridWeek') {
+      // Week view - show current week
+      const startOfWeek = new Date(today);
+      const dayOfWeek = startOfWeek.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Start on Monday
+      startOfWeek.setDate(startOfWeek.getDate() + mondayOffset);
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+      
+      setCurrentStartDate(startOfWeek);
+      setCurrentEndDate(endOfWeek);
+    } else if (viewType === 'dayGridMonth') {
+      // Month view - show current month with padding for calendar grid
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      // Get the first day of the month and find the Monday before it
+      const dayOfWeek = startOfMonth.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const calendarStart = new Date(startOfMonth);
+      calendarStart.setDate(calendarStart.getDate() + mondayOffset);
+      
+      // Get the last day of the month and find the Sunday after it
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+      
+      const endDayOfWeek = endOfMonth.getDay();
+      const sundayOffset = endDayOfWeek === 0 ? 0 : 7 - endDayOfWeek;
+      const calendarEnd = new Date(endOfMonth);
+      calendarEnd.setDate(calendarEnd.getDate() + sundayOffset);
+      calendarEnd.setHours(23, 59, 59, 999);
+      
+      setCurrentStartDate(calendarStart);
+      setCurrentEndDate(calendarEnd);
+    }
+  };
+
   // Determine the active view type based on current tab
   const activeViewType = activeTab === 'teacher' ? teacherViewType : currentViewType;
 
@@ -86,6 +138,13 @@ const Calendar = () => {
       updateTeacherViewDateRanges(teacherViewType, currentDate);
     }
   }, [activeTab, teacherViewType]);
+
+  // Initialize standard calendar date ranges on mount and when switching to standard calendar
+  useEffect(() => {
+    if (activeTab === 'calendar') {
+      updateStandardCalendarDateRanges(currentViewType, currentDate);
+    }
+  }, [activeTab, currentViewType]);
 
   // Fetch calendar data using the hook with date range
   const { events, isLoading } = useCalendarData({
@@ -139,12 +198,20 @@ const Calendar = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Handle view change from calendar
+  // Handle view change from calendar (includes navigation and view type changes)
   const handleViewChange = (viewInfo: { start: Date; end: Date; view: string }) => {
     console.log('📅 View change received in Calendar:', viewInfo);
+    
+    // Always update the date range and view type based on FullCalendar's current state
     setCurrentStartDate(viewInfo.start);
     setCurrentEndDate(viewInfo.end);
-    setCurrentViewType(viewInfo.view);
+    
+    // Only update current view type if it's different (avoids infinite loops)
+    if (activeTab === 'calendar' && viewInfo.view !== currentViewType) {
+      setCurrentViewType(viewInfo.view);
+    }
+    
+    // Update current date based on the start of the view
     setCurrentDate(viewInfo.start);
   };
 
@@ -156,6 +223,8 @@ const Calendar = () => {
       updateTeacherViewDateRanges(viewType, currentDate);
     } else {
       setCurrentViewType(viewType);
+      // Update date ranges for standard calendar view
+      updateStandardCalendarDateRanges(viewType, currentDate);
     }
   };
 
