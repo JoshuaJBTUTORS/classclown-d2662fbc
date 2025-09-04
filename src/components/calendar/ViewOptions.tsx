@@ -17,63 +17,15 @@ interface ViewOptionsProps {
 }
 
 const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, showTeacherView = false }) => {
+  // Determine if we're in teacher view context based on current view
+  const isTeacherContext = currentView === 'teacherWeek' || currentView === 'teacherDay';
+  
   return (
     <TooltipProvider>
       <div className="flex items-center space-x-1 border rounded-md">
-        {/* Standard calendar views */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Toggle
-              pressed={currentView === 'dayGridMonth'}
-              onPressedChange={() => onViewChange('dayGridMonth')}
-              size="sm"
-              className="data-[state=on]:bg-muted"
-            >
-              <CalendarDays className="h-4 w-4" />
-            </Toggle>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Month view</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Toggle
-              pressed={currentView === 'timeGridWeek'}
-              onPressedChange={() => onViewChange('timeGridWeek')}
-              size="sm"
-              className="data-[state=on]:bg-muted"
-            >
-              <Calendar className="h-4 w-4" />
-            </Toggle>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Week view</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Toggle
-              pressed={currentView === 'timeGridDay'}
-              onPressedChange={() => onViewChange('timeGridDay')}
-              size="sm"
-              className="data-[state=on]:bg-muted"
-            >
-              <Clock className="h-4 w-4" />
-            </Toggle>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Day view</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Teacher view options (only for admin/owner) */}
-        {showTeacherView && (
+        {isTeacherContext ? (
+          // Teacher view options only
           <>
-            <Separator orientation="vertical" className="h-6" />
-            
             <Tooltip>
               <TooltipTrigger asChild>
                 <Toggle
@@ -105,6 +57,57 @@ const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, sh
               </TooltipTrigger>
               <TooltipContent>
                 <p>Teacher day view</p>
+              </TooltipContent>
+            </Tooltip>
+          </>
+        ) : (
+          // Standard calendar views
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={currentView === 'dayGridMonth'}
+                  onPressedChange={() => onViewChange('dayGridMonth')}
+                  size="sm"
+                  className="data-[state=on]:bg-muted"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Month view</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={currentView === 'timeGridWeek'}
+                  onPressedChange={() => onViewChange('timeGridWeek')}
+                  size="sm"
+                  className="data-[state=on]:bg-muted"
+                >
+                  <Calendar className="h-4 w-4" />
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Week view</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={currentView === 'timeGridDay'}
+                  onPressedChange={() => onViewChange('timeGridDay')}
+                  size="sm"
+                  className="data-[state=on]:bg-muted"
+                >
+                  <Clock className="h-4 w-4" />
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Day view</p>
               </TooltipContent>
             </Tooltip>
           </>

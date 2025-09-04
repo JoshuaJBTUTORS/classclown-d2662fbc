@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { CalendarPlus, Info, Filter } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
@@ -37,7 +38,9 @@ const Calendar = () => {
   const [currentStartDate, setCurrentStartDate] = useState<Date | undefined>(undefined);
   const [currentEndDate, setCurrentEndDate] = useState<Date | undefined>(undefined);
   const [currentViewType, setCurrentViewType] = useState<string>('timeGridWeek');
+  const [teacherViewType, setTeacherViewType] = useState<string>('teacherWeek');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState<string>('calendar');
 
   // Memoize filters to prevent infinite loop - only recreate when dependencies change
   const filters = useMemo(() => ({
@@ -47,6 +50,9 @@ const Calendar = () => {
     selectedLessonType
   }), [selectedStudents, selectedTutors, selectedSubjects, selectedLessonType]);
 
+  // Determine the active view type based on current tab
+  const activeViewType = activeTab === 'teacher' ? teacherViewType : currentViewType;
+
   // Fetch calendar data using the hook with date range
   const { events, isLoading } = useCalendarData({
     userRole,
@@ -55,7 +61,7 @@ const Calendar = () => {
     refreshKey,
     startDate: currentStartDate,
     endDate: currentEndDate,
-    viewType: currentViewType,
+    viewType: activeViewType,
     filters
   });
 
@@ -110,7 +116,11 @@ const Calendar = () => {
 
   // Handle view type change from ViewOptions
   const handleViewTypeChange = (viewType: string) => {
-    setCurrentViewType(viewType);
+    if (activeTab === 'teacher') {
+      setTeacherViewType(viewType);
+    } else {
+      setCurrentViewType(viewType);
+    }
   };
 
   // Check if user can see filters (admin/owner only for full filters)
@@ -119,9 +129,6 @@ const Calendar = () => {
   // Only allow admins and owners to schedule lessons and see teacher view
   const canScheduleLessons = userRole === 'admin' || userRole === 'owner';
   const canUseTeacherView = userRole === 'admin' || userRole === 'owner';
-
-  // Check if current view is teacher view
-  const isTeacherView = currentViewType === 'teacherWeek' || currentViewType === 'teacherDay';
 
   const openAddLessonDialog = () => {
     setShowAddLessonDialog(true);
@@ -192,13 +199,6 @@ const Calendar = () => {
               </div>
               
               <div className="flex flex-wrap gap-2 items-center">
-                {/* View Options */}
-                <ViewOptions 
-                  currentView={currentViewType}
-                  onViewChange={handleViewTypeChange}
-                  showTeacherView={canUseTeacherView}
-                />
-
                 {/* Filter button */}
                 <Button 
                   onClick={toggleFilters}
@@ -227,24 +227,46 @@ const Calendar = () => {
             </div>
           </div>
           
-          {/* Calendar Display - Full height */}
-          <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4 mobile-scroll-container">
-            {isTeacherView ? (
-              <TeacherCalendarView
-                events={events}
-                viewType={currentViewType as 'teacherWeek' | 'teacherDay'}
-                currentDate={currentDate}
-                isLoading={isLoading}
-                onLessonsUpdated={handleRefresh}
-              />
-            ) : (
-              <CalendarDisplay 
-                isLoading={isLoading} 
-                events={events} 
-                onLessonsUpdated={handleRefresh}
-                onViewChange={handleViewChange}
-              />
-            )}
+          {/* Tabbed Calendar Interface */}
+          <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <TabsList>
+                  <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+                  {canUseTeacherView && (
+                    <TabsTrigger value="teacher">Teacher View</TabsTrigger>
+                  )}
+                </TabsList>
+                
+                {/* View Options for active tab */}
+                <ViewOptions 
+                  currentView={activeTab === 'teacher' ? teacherViewType : currentViewType}
+                  onViewChange={handleViewTypeChange}
+                  showTeacherView={false}
+                />
+              </div>
+
+              <TabsContent value="calendar" className="flex-1 mt-0 mobile-scroll-container">
+                <CalendarDisplay 
+                  isLoading={isLoading} 
+                  events={events} 
+                  onLessonsUpdated={handleRefresh}
+                  onViewChange={handleViewChange}
+                />
+              </TabsContent>
+
+              {canUseTeacherView && (
+                <TabsContent value="teacher" className="flex-1 mt-0 mobile-scroll-container">
+                  <TeacherCalendarView
+                    events={events}
+                    viewType={teacherViewType as 'teacherWeek' | 'teacherDay'}
+                    currentDate={currentDate}
+                    isLoading={isLoading}
+                    onLessonsUpdated={handleRefresh}
+                  />
+                </TabsContent>
+              )}
+            </Tabs>
           </div>
         </main>
       </div>
