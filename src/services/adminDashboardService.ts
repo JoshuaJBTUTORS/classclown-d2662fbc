@@ -24,7 +24,7 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
 
     if (trialError) throw trialError;
 
-    // Get trial lesson attendance rate for this month
+    // Get trial lesson attendance rate for this month (only past lessons)
     const { data: trialLessons, error: trialLessonsError } = await supabase
       .from('lessons')
       .select(`
@@ -36,28 +36,31 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
       `)
       .eq('lesson_type', 'trial')
       .gte('start_time', monthStart.toISOString())
-      .lte('start_time', monthEnd.toISOString());
+      .lte('start_time', monthEnd.toISOString())
+      .lt('start_time', new Date().toISOString()); // Only past lessons
 
     if (trialLessonsError) throw trialLessonsError;
 
-    // Calculate trial attendance rate
-    let totalTrialLessons = 0;
-    let attendedTrialLessons = 0;
+    // Calculate trial attendance rate based on attended vs missed
+    let attendedCount = 0;
+    let missedCount = 0;
     
     trialLessons?.forEach(lesson => {
       if (lesson.lesson_attendance && lesson.lesson_attendance.length > 0) {
-        totalTrialLessons++;
-        const hasAttended = lesson.lesson_attendance.some(
-          (attendance: any) => attendance.attendance_status === 'present'
-        );
-        if (hasAttended) {
-          attendedTrialLessons++;
-        }
+        lesson.lesson_attendance.forEach((attendance: any) => {
+          if (attendance.attendance_status === 'attended' || attendance.attendance_status === 'late') {
+            attendedCount++;
+          } else if (attendance.attendance_status === 'absent') {
+            missedCount++;
+          }
+          // Exclude 'excused' from calculation
+        });
       }
     });
 
-    const trialAttendanceRate = totalTrialLessons > 0 
-      ? Math.round((attendedTrialLessons / totalTrialLessons) * 100)
+    const totalMarkedLessons = attendedCount + missedCount;
+    const trialAttendanceRate = totalMarkedLessons > 0 
+      ? Math.round((attendedCount / totalMarkedLessons) * 100)
       : 0;
 
     // Get regular scheduled lessons this month
