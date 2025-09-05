@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { checkEmailPhoneUniqueness } from '@/services/uniquenessValidationService';
+import { checkParentEmailUniqueness } from '@/services/uniquenessValidationService';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -68,19 +68,19 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
     setLoading(true);
 
     try {
-      // Step 1: Check email uniqueness
-      console.log("Checking email uniqueness...");
-      const uniquenessResult = await checkEmailPhoneUniqueness(data.email, data.phone);
+      // Step 1: Check parent email uniqueness (allows same email as students)
+      console.log("Checking parent email uniqueness...");
+      const uniquenessResult = await checkParentEmailUniqueness(data.email, data.phone);
       
       if (!uniquenessResult.isUnique) {
-        const existingRecords = [
-          ...uniquenessResult.existingRecords.students,
-          ...uniquenessResult.existingRecords.parents
-        ];
-        
-        const errorMessage = `Email or phone already exists: ${existingRecords.map(r => `${r.first_name} ${r.last_name} (${r.email})`).join(', ')}`;
+        const errorMessage = `Parent account already exists: ${uniquenessResult.existingParents.map(r => `${r.first_name} ${r.last_name} (${r.email})`).join(', ')}`;
         toast.error(errorMessage);
         return;
+      }
+
+      // Log if there are matching trial students
+      if (uniquenessResult.matchingTrialStudents && uniquenessResult.matchingTrialStudents.length > 0) {
+        console.log("Found matching trial students:", uniquenessResult.matchingTrialStudents);
       }
 
       // Step 2: Create parent account
@@ -120,6 +120,23 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
         .single();
 
       if (parentProfileError) throw parentProfileError;
+
+      // Step 4: Link any matching trial students to this parent
+      if (uniquenessResult.matchingTrialStudents && uniquenessResult.matchingTrialStudents.length > 0) {
+        console.log("Linking trial students to parent...");
+        const { error: linkError } = await supabase
+          .from('students')  
+          .update({ parent_id: parentProfile.id })
+          .eq('email', data.email.toLowerCase())
+          .in('status', ['trial', 'active']);
+
+        if (linkError) {
+          console.error('Error linking trial students:', linkError);
+          // Don't throw error, just log it - parent account was still created successfully
+        } else {
+          console.log(`Successfully linked ${uniquenessResult.matchingTrialStudents.length} trial student(s) to parent`);
+        }
+      }
 
       const successMessage = `Parent account created successfully for ${data.first_name} ${data.last_name}. They can now log in and manage their account.`;
 

@@ -8,6 +8,12 @@ interface UniquenessResult {
   };
 }
 
+interface ParentUniquenessResult {
+  isUnique: boolean;
+  existingParents: any[];
+  matchingTrialStudents?: any[];
+}
+
 export const checkEmailPhoneUniqueness = async (email: string, phone?: string): Promise<UniquenessResult> => {
   try {
     const result: UniquenessResult = {
@@ -86,6 +92,68 @@ export const checkEmailPhoneUniqueness = async (email: string, phone?: string): 
         students: [],
         parents: []
       }
+    };
+  }
+};
+
+// Check uniqueness for parent-only account creation (allows same email as trial students)
+export const checkParentEmailUniqueness = async (email: string, phone?: string): Promise<ParentUniquenessResult> => {
+  try {
+    const result: ParentUniquenessResult = {
+      isUnique: true,
+      existingParents: [],
+      matchingTrialStudents: []
+    };
+
+    // Check parents table only
+    const parentQueries = [];
+    
+    // Check by email
+    if (email) {
+      parentQueries.push(
+        supabase
+          .from('parents')
+          .select('id, first_name, last_name, email, phone')
+          .eq('email', email.toLowerCase())
+      );
+    }
+
+    // Check by phone if provided
+    if (phone) {
+      parentQueries.push(
+        supabase
+          .from('parents')
+          .select('id, first_name, last_name, email, phone')
+          .eq('phone', phone)
+      );
+    }
+
+    // Execute parent queries
+    const parentResults = await Promise.all(parentQueries);
+    const parentMatches = parentResults.flatMap(result => result.data || []);
+    result.existingParents = parentMatches;
+
+    // Check for matching trial students (for potential linking)
+    if (email) {
+      const { data: trialStudents } = await supabase
+        .from('students')
+        .select('id, first_name, last_name, email, account_type, status')
+        .eq('email', email.toLowerCase())
+        .in('status', ['trial', 'active']);
+      
+      result.matchingTrialStudents = trialStudents || [];
+    }
+
+    // Only consider parent conflicts, not student conflicts
+    result.isUnique = parentMatches.length === 0;
+
+    return result;
+  } catch (error) {
+    console.error('Error checking parent uniqueness:', error);  
+    return {
+      isUnique: true, // Default to unique on error to allow creation
+      existingParents: [],
+      matchingTrialStudents: []
     };
   }
 };
