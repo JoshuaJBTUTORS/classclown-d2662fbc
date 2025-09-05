@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { checkParentEmailUniqueness } from '@/services/uniquenessValidationService';
+
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,7 +39,6 @@ const formSchema = z.object({
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email format." }),
   phone: z.string().optional(),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   billing_address: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
@@ -57,7 +56,6 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
       last_name: "",
       email: "",
       phone: "",
-      password: "",
       billing_address: "",
       emergency_contact_name: "",
       emergency_contact_phone: "",
@@ -66,89 +64,44 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
-
+    
     try {
-      // Step 1: Check parent email uniqueness (allows same email as students)
-      console.log("Checking parent email uniqueness...");
-      const uniquenessResult = await checkParentEmailUniqueness(data.email, data.phone);
-      
-      if (!uniquenessResult.isUnique) {
-        const errorMessage = `Parent account already exists: ${uniquenessResult.existingParents.map(r => `${r.first_name} ${r.last_name} (${r.email})`).join(', ')}`;
-        toast.error(errorMessage);
+      // Call the server-side edge function to create parent account
+      const { data: result, error: functionError } = await supabase.functions.invoke(
+        'create-parent-account',
+        {
+          body: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            email: data.email,
+            phone: data.phone,
+            billing_address: data.billing_address,
+            emergency_contact_name: data.emergency_contact_name,
+            emergency_contact_phone: data.emergency_contact_phone,
+          }
+        }
+      );
+
+      if (functionError) {
+        console.error('Function error:', functionError);
+        toast.error(functionError.message || "Failed to create parent account");
         return;
       }
 
-      // Log if there are matching trial students
-      if (uniquenessResult.matchingTrialStudents && uniquenessResult.matchingTrialStudents.length > 0) {
-        console.log("Found matching trial students:", uniquenessResult.matchingTrialStudents);
+      if (result?.error) {
+        console.error('Server error:', result.error);
+        toast.error(result.error);
+        return;
       }
 
-      // Step 2: Create parent account
-      console.log("Creating parent account...");
-      const { data: parentAuthData, error: parentAuthError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            first_name: data.first_name,
-            last_name: data.last_name,
-            role: 'parent',
-          }
-        }
-      });
+      toast.success(result?.message || "Parent account created successfully! They will need to reset their password to log in.");
 
-      if (parentAuthError) throw parentAuthError;
-      if (!parentAuthData.user) throw new Error("Failed to create parent account");
-
-      console.log("Parent account created, creating parent profile...");
-
-      // Step 3: Create parent profile
-      const { data: parentProfile, error: parentProfileError } = await supabase
-        .from('parents')
-        .insert({
-          user_id: parentAuthData.user.id,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          phone: data.phone || null,
-          billing_address: data.billing_address || null,
-          emergency_contact_name: data.emergency_contact_name || null,
-          emergency_contact_phone: data.emergency_contact_phone || null,
-        })
-        .select()
-        .single();
-
-      if (parentProfileError) throw parentProfileError;
-
-      // Step 4: Link any matching trial students to this parent
-      if (uniquenessResult.matchingTrialStudents && uniquenessResult.matchingTrialStudents.length > 0) {
-        console.log("Linking trial students to parent...");
-        const { error: linkError } = await supabase
-          .from('students')  
-          .update({ parent_id: parentProfile.id })
-          .eq('email', data.email.toLowerCase())
-          .in('status', ['trial', 'active']);
-
-        if (linkError) {
-          console.error('Error linking trial students:', linkError);
-          // Don't throw error, just log it - parent account was still created successfully
-        } else {
-          console.log(`Successfully linked ${uniquenessResult.matchingTrialStudents.length} trial student(s) to parent`);
-        }
-      }
-
-      const successMessage = `Parent account created successfully for ${data.first_name} ${data.last_name}. They can now log in and manage their account.`;
-
-      toast.success(successMessage);
-
-      // Reset form
       form.reset();
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      console.error('Error creating parent account:', error);
-      toast.error(error.message || 'Failed to create parent account. Please try again.');
+      console.error('Unexpected error:', error);
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -221,35 +174,19 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123-456-7890" type="tel" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="••••••••" type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123-456-7890" type="tel" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
