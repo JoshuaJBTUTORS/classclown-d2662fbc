@@ -189,12 +189,25 @@ export const updateAllFutureLessons = async (
 
     // Find all future lessons to update - use gt with 1 second earlier to ensure current lesson is included
     const inclusiveStartDate = new Date(startDate.getTime() - 1000); // 1 second earlier
-    const { data: futureLessons, error: queryError } = await supabase
+    
+    // Determine if we're editing the original lesson or an instance
+    const isEditingOriginal = originalLesson.parent_lesson_id === null;
+    
+    let futureLessonsQuery = supabase
       .from('lessons')
       .select('*')
-      .eq('parent_lesson_id', originalLesson.parent_lesson_id || lessonId)
       .gte('start_time', inclusiveStartDate.toISOString())
       .order('start_time', { ascending: true });
+    
+    if (isEditingOriginal) {
+      // For original lesson: find the lesson itself AND all its instances
+      futureLessonsQuery = futureLessonsQuery.or(`id.eq.${lessonId},parent_lesson_id.eq.${lessonId}`);
+    } else {
+      // For instances: find all instances with the same parent
+      futureLessonsQuery = futureLessonsQuery.eq('parent_lesson_id', originalLesson.parent_lesson_id);
+    }
+    
+    const { data: futureLessons, error: queryError } = await futureLessonsQuery;
 
     if (queryError) {
       throw new Error(`Failed to fetch future lessons: ${queryError.message}`);
