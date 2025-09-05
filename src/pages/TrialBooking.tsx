@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { createTrialBooking } from '@/services/trialBookingService';
-import { useEnhancedAggregatedAvailability } from '@/hooks/useEnhancedAggregatedAvailability';
+import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
 import StepIndicator from '@/components/trialBooking/StepIndicator';
 import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
 import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
@@ -49,7 +49,7 @@ const TrialBookingPage: React.FC = () => {
   const {
     slots,
     isLoading: availabilityLoading
-  } = useEnhancedAggregatedAvailability(formData.subject ? formData.subject.id : undefined, formData.date ? formData.date : undefined);
+  } = useAggregatedAvailability(formData.subject ? formData.subject.id : undefined, formData.date ? formData.date : undefined);
   const updateFormData = (field: string, value: string | {
     id: string;
     name: string;
