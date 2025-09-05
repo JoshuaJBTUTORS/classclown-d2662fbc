@@ -40,7 +40,7 @@ const AdminEarnings: React.FC = () => {
       setIsLoading(true);
       const data = await getAdminEarningsData(user.id, period);
       setEarningsData(data);
-      setGoalAmount((data.goalAmount / 100).toString()); // Convert from pence to pounds
+      setGoalAmount((data.goalAmount / 100).toString()); // Convert from cents to rands
     } catch (error) {
       console.error('Error loading earnings data:', error);
       toast({
@@ -74,15 +74,15 @@ const AdminEarnings: React.FC = () => {
   const handleGoalSet = async () => {
     if (!user?.id || !goalAmount) return;
     
-    const goalInPence = Math.round(parseFloat(goalAmount) * 100);
+    const goalInCents = Math.round(parseFloat(goalAmount) * 100);
     
     setIsSettingGoal(true);
     try {
-      await setAdminEarningGoal(user.id, goalInPence, period);
+      await setAdminEarningGoal(user.id, goalInCents, period);
       await loadEarningsData(); // Reload data to show updated goal
       toast({
         title: "Goal Updated",
-        description: `Your ${period} earning goal has been set to £${goalAmount}`
+        description: `Your ${period} earning goal has been set to R${goalAmount}`
       });
     } catch (error) {
       console.error('Error setting goal:', error);
@@ -112,8 +112,8 @@ const AdminEarnings: React.FC = () => {
     return 'text-red-600';
   };
 
-  const formatCurrency = (amountInPence: number): string => {
-    return `£${(amountInPence / 100).toFixed(2)}`;
+  const formatCurrency = (amountInCents: number): string => {
+    return `R${(amountInCents / 100).toFixed(2)}`;
   };
 
   if (isLoading) {
@@ -159,7 +159,7 @@ const AdminEarnings: React.FC = () => {
             </CardHeader>
             <CardContent className="flex items-end gap-4">
               <div className="flex-1">
-                <Label htmlFor="goalAmount">Target Amount (£)</Label>
+                <Label htmlFor="goalAmount">Target Amount (R)</Label>
                 <Input
                   id="goalAmount"
                   type="number"

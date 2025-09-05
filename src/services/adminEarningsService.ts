@@ -98,8 +98,8 @@ export const calculateAdminEarnings = async (adminId: string, period: 'weekly' |
     }
 
     // Count unique Musa bookings in the period
-    // For now, we'll assign a fixed value per unique booking (e.g., £50)
-    const earningsPerUniqueBooking = 5000; // £50 in pence
+    // Each booking is worth R23 (South African Rands)
+    const earningsPerUniqueBooking = 2300; // R23 in cents
 
     const { data, error } = await supabase
       .from('trial_bookings')
