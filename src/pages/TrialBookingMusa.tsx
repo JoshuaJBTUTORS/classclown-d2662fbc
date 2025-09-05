@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createTrialBooking } from '@/services/trialBookingService';
 import { checkEmailPhoneUniqueness } from '@/services/uniquenessValidationService';
-import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
+import { useEnhancedAggregatedAvailability } from '@/hooks/useEnhancedAggregatedAvailability';
 import StepIndicator from '@/components/trialBooking/StepIndicator';
 import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
 import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
@@ -60,7 +60,7 @@ const TrialBookingMusaPage: React.FC = () => {
   const {
     slots,
     isLoading: availabilityLoading
-  } = useAggregatedAvailability(formData.subject ? formData.subject.id : undefined, formData.date ? formData.date : undefined);
+  } = useEnhancedAggregatedAvailability(formData.subject ? formData.subject.id : undefined, formData.date ? formData.date : undefined);
 
   // Check uniqueness when email or phone changes on the contact step
   useEffect(() => {
