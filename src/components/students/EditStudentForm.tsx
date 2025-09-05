@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/student';
 
@@ -45,7 +46,7 @@ const formSchema = z.object({
   subjects: z.string().min(2, {
     message: "Subjects must be at least 2 characters.",
   }),
-  status: z.enum(['active', 'inactive']),
+  status: z.enum(['active', 'inactive', 'trial']),
 });
 
 const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onClose, onUpdate }) => {
@@ -64,9 +65,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
       email: student?.email || "",
       studentId: student?.student_id || "",
       subjects: subjectsString,
-      status: (student?.status === 'active' || student?.status === 'inactive' 
+      status: (student?.status === 'active' || student?.status === 'inactive' || student?.status === 'trial'
               ? student.status 
-              : "active") as 'active' | 'inactive',
+              : "active") as 'active' | 'inactive' | 'trial',
     },
   });
 
@@ -83,9 +84,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         email: student.email || "",
         studentId: student.student_id || "",
         subjects: subjectsValue,
-        status: (student.status === 'active' || student.status === 'inactive' 
+        status: (student.status === 'active' || student.status === 'inactive' || student.status === 'trial'
                 ? student.status 
-                : "active") as 'active' | 'inactive',
+                : "active") as 'active' | 'inactive' | 'trial',
       });
     }
   }, [student, form]);
@@ -129,7 +130,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           email: data[0].email || '',
           phone: data[0].phone || '',
           subjects: data[0].subjects || '',
-          status: data[0].status || 'active',
+          status: data[0].status as 'active' | 'inactive' | 'trial' || 'active',
           joinedDate: new Date(data[0].created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -245,7 +246,16 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
                 <FormItem>
                   <FormLabel>Status</FormLabel>
                   <FormControl>
-                    <Input placeholder="Status" {...field} />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="trial">Trial</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
