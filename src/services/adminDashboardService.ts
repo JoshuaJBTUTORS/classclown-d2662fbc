@@ -41,26 +41,22 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
 
     if (trialLessonsError) throw trialLessonsError;
 
-    // Calculate trial attendance rate based on attended vs missed
+    // Calculate trial attendance rate: attended / total past lessons
     let attendedCount = 0;
-    let missedCount = 0;
+    const totalPastTrialLessons = trialLessons?.length || 0;
     
     trialLessons?.forEach(lesson => {
       if (lesson.lesson_attendance && lesson.lesson_attendance.length > 0) {
         lesson.lesson_attendance.forEach((attendance: any) => {
           if (attendance.attendance_status === 'attended' || attendance.attendance_status === 'late') {
             attendedCount++;
-          } else if (attendance.attendance_status === 'absent') {
-            missedCount++;
           }
-          // Exclude 'excused' from calculation
         });
       }
     });
 
-    const totalMarkedLessons = attendedCount + missedCount;
-    const trialAttendanceRate = totalMarkedLessons > 0 
-      ? Math.round((attendedCount / totalMarkedLessons) * 100)
+    const trialAttendanceRate = totalPastTrialLessons > 0 
+      ? Math.round((attendedCount / totalPastTrialLessons) * 100)
       : 0;
 
     // Get regular scheduled lessons this month
