@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { addMinutes, subMinutes } from 'date-fns';
+import { studentDataService } from './studentDataService';
 
 
 interface CreateTrialLessonData {
@@ -43,36 +44,44 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     // Create student record if studentId is not provided
     let studentId = data.studentId;
     if (!studentId) {
-      console.log('Creating student record from trial booking data');
+      console.log('Checking for existing student with email:', trialBooking.email);
+      const existingStudent = await studentDataService.getStudentByEmail(trialBooking.email);
       
-      // Split child name into first and last name
-      const childNameParts = trialBooking.child_name.trim().split(' ');
-      const childFirstName = childNameParts[0] || trialBooking.child_name;
-      const childLastName = childNameParts.slice(1).join(' ') || '';
-      
-      // Create standalone trial student
-      const { data: studentData, error: studentError } = await supabase
-        .from('students')
-        .insert({
-          first_name: childFirstName,
-          last_name: childLastName,
-          email: trialBooking.email,
-          phone: trialBooking.phone || null,
-          parent_id: null, // Standalone student - no parent
-          account_type: 'trial',
-          trial_status: 'pending',
-          status: 'trial'
-        })
-        .select()
-        .single();
+      if (existingStudent) {
+        console.log('Reusing existing student:', existingStudent);
+        studentId = existingStudent.id;
+      } else {
+        console.log('Creating new student record from trial booking data');
+        
+        // Split child name into first and last name
+        const childNameParts = trialBooking.child_name.trim().split(' ');
+        const childFirstName = childNameParts[0] || trialBooking.child_name;
+        const childLastName = childNameParts.slice(1).join(' ') || '';
+        
+        // Create standalone trial student
+        const { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .insert({
+            first_name: childFirstName,
+            last_name: childLastName,
+            email: trialBooking.email,
+            phone: trialBooking.phone || null,
+            parent_id: null, // Standalone student - no parent
+            account_type: 'trial',
+            trial_status: 'pending',
+            status: 'trial'
+          })
+          .select()
+          .single();
 
-      if (studentError) {
-        console.error('Student creation error:', studentError);
-        throw new Error(`Failed to create student: ${studentError.message}`);
+        if (studentError) {
+          console.error('Student creation error:', studentError);
+          throw new Error(`Failed to create student: ${studentError.message}`);
+        }
+
+        studentId = studentData.id;
+        console.log('Student created successfully:', studentData);
       }
-
-      studentId = studentData.id;
-      console.log('Student created successfully:', studentData);
     }
 
     // Use preferred_time as the demo start time (displayed to clients)
