@@ -20,6 +20,7 @@ import {
   BookOpen,
   UserPlus,
   DollarSign,
+  LayoutDashboard,
   Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -134,6 +135,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Analytics & Insights',
       items: [
+        {
+          icon: LayoutDashboard,
+          label: 'Admin Dashboard',
+          href: '/admin-dashboard',
+          roles: ['admin', 'owner'],
+        },
         {
           icon: DollarSign,
           label: 'Earnings',

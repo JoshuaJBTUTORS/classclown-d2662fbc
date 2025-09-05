@@ -57,6 +57,7 @@ import Optimiser from './pages/Optimiser';
 import LessonSummaries from './pages/LessonSummaries';
 import Earnings from './pages/Earnings';
 import AdminEarnings from './pages/AdminEarnings';
+import AdminDashboard from './pages/AdminDashboard';
 import TrialBookingMusa from './pages/TrialBookingMusa';
 
 
@@ -136,6 +137,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <AdminEarnings />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin-dashboard" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <AdminDashboard />
                       </ProtectedRoute>
                     } 
                   />
