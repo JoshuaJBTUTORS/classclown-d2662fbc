@@ -36,6 +36,7 @@ import { Student } from '@/types/student';
 import AddStudentForm from '@/components/students/AddStudentForm';
 import AddParentStudentForm from '@/components/students/AddParentStudentForm';
 import AddStudentToParentForm from '@/components/students/AddStudentToParentForm';
+import LinkStudentToParentForm from '@/components/students/LinkStudentToParentForm';
 import EditParentForm from '@/components/parents/EditParentForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { BulkImportDialog } from '@/components/students/BulkImportDialog';
@@ -61,6 +62,7 @@ const Students = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddFamilyDialogOpen, setIsAddFamilyDialogOpen] = useState(false);
   const [isAddToParentDialogOpen, setIsAddToParentDialogOpen] = useState(false);
+  const [isLinkStudentDialogOpen, setIsLinkStudentDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedParent, setSelectedParent] = useState<any>(null);
@@ -450,12 +452,19 @@ const Students = () => {
                       <Users className="h-4 w-4" />
                       Add Family
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                     <DropdownMenuItem 
                       onClick={() => setIsAddToParentDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <UserPlus className="h-4 w-4" />
                       Add to Parent
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setIsLinkStudentDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Link Existing Student
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => setIsAddDialogOpen(true)}
@@ -711,6 +720,12 @@ const Students = () => {
             isOpen={isEditDialogOpen}
             onClose={() => setIsEditDialogOpen(false)}
             onUpdate={handleStudentUpdated}
+          />
+
+          <LinkStudentToParentForm
+            isOpen={isLinkStudentDialogOpen}
+            onClose={() => setIsLinkStudentDialogOpen(false)}
+            onSuccess={fetchStudents}
           />
         </main>
       </div>
