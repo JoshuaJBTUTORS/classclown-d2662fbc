@@ -77,20 +77,28 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
 
     if (tutorsError) throw tutorsError;
 
-    // Get active customers (students) count
-    const { data: students, error: studentsError } = await supabase
-      .from('students')
-      .select('id')
-      .or('status.is.null,status.eq.active');
+    // Get active customers (students with lessons this month)
+    const { data: activeStudents, error: studentsError } = await supabase
+      .from('lesson_students')
+      .select(`
+        student_id,
+        lessons!inner(start_time)
+      `)
+      .gte('lessons.start_time', monthStart.toISOString())
+      .lte('lessons.start_time', monthEnd.toISOString());
 
     if (studentsError) throw studentsError;
+
+    // Count unique students
+    const uniqueStudentIds = new Set(activeStudents?.map(ls => ls.student_id) || []);
+    const activeCustomersCount = uniqueStudentIds.size;
 
     return {
       trialLessonsBooked: trialBookings?.length || 0,
       trialAttendanceRate,
       regularLessonsCount: regularLessons?.length || 0,
       activeTutorsCount: tutors?.length || 0,
-      activeCustomersCount: students?.length || 0,
+      activeCustomersCount,
     };
   } catch (error) {
     console.error('Error fetching admin dashboard data:', error);
