@@ -12,30 +12,42 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log('=== BACKEND AUTH DEBUG ===');
+  console.log('🔍 Incoming request headers:', {
+    authorization: req.headers.get('Authorization') ? 'EXISTS' : 'MISSING',
+    authLength: req.headers.get('Authorization')?.length || 0,
+    contentType: req.headers.get('Content-Type'),
+    userAgent: req.headers.get('User-Agent'),
+    origin: req.headers.get('Origin')
+  });
+
   try {
+    // Get environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    console.log('🔧 Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceRoleKey: !!serviceRoleKey,
+      hasAnonKey: !!anonKey
+    });
+
     // Initialize Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
+    const supabaseAdmin = createClient(supabaseUrl ?? '', serviceRoleKey ?? '');
 
-    // Initialize regular client to verify the calling user
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
+    // Get and validate authorization header
+    const authHeader = req.headers.get('Authorization');
+    console.log('🔑 Authorization header details:', {
+      exists: !!authHeader,
+      startsWithBearer: authHeader?.startsWith('Bearer '),
+      length: authHeader?.length || 0
+    });
 
-    // Verify the calling user is authenticated and has admin/owner role
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error('Authentication error:', authError);
+    if (!authHeader) {
+      console.log('❌ No Authorization header found');
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'No authorization header' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -43,14 +55,75 @@ serve(async (req) => {
       );
     }
 
+    // Initialize regular client to verify the calling user
+    const supabaseClient = createClient(
+      supabaseUrl ?? '',
+      anonKey ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    console.log('🏗️ Supabase client initialized, attempting auth.getUser()...');
+    
+    // Verify the calling user is authenticated and has admin/owner role
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    console.log('👤 Auth.getUser() result:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      hasAuthError: !!authError,
+      authErrorMessage: authError?.message,
+      authErrorName: authError?.name,
+      authErrorStatus: authError?.status,
+      fullAuthError: authError
+    });
+
+    if (authError || !user) {
+      console.error('❌ Authentication failed:', {
+        error: authError,
+        hasUser: !!user,
+        errorDetails: {
+          message: authError?.message,
+          name: authError?.name,
+          status: authError?.status,
+          code: authError?.code
+        }
+      });
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: ' + (authError?.message || 'No user found') }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('✅ User authenticated successfully, checking roles...');
+    
     // Check if user has admin or owner role
     const { data: userRoles, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
 
+    console.log('🔍 Role check result:', {
+      hasRoleError: !!roleError,
+      roleError: roleError?.message,
+      userRoles: userRoles,
+      hasAdminRole: userRoles?.some(r => r.role === 'admin'),
+      hasOwnerRole: userRoles?.some(r => r.role === 'owner'),
+      isAuthorized: userRoles?.some(r => ['admin', 'owner'].includes(r.role))
+    });
+
     if (roleError || !userRoles?.some(r => ['admin', 'owner'].includes(r.role))) {
-      console.error('Role verification failed:', roleError);
+      console.error('❌ Role verification failed:', {
+        roleError,
+        userRoles,
+        userId: user.id
+      });
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions' }),
         { 

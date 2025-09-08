@@ -68,16 +68,56 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
     setLoading(true);
     
     try {
+      console.log('=== FRONTEND AUTH DEBUG ===');
+      
       // Check if user is authenticated and has proper role
       if (!user) {
+        console.log('❌ No user found in auth context');
         toast.error("You must be logged in to create parent accounts");
         return;
       }
 
+      console.log('✅ User found:', {
+        id: user.id,
+        email: user.email,
+        isAdmin,
+        isOwner
+      });
+
       if (!isAdmin && !isOwner) {
+        console.log('❌ User lacks admin/owner permissions');
         toast.error("You don't have permission to create parent accounts");
         return;
       }
+
+      // Get current session for debugging
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      console.log('Session state:', {
+        hasSession: !!session?.session,
+        accessToken: session?.session?.access_token ? 'EXISTS' : 'MISSING',
+        expiresAt: session?.session?.expires_at,
+        currentTime: Math.floor(Date.now() / 1000),
+        isExpired: session?.session?.expires_at ? session.session.expires_at < Math.floor(Date.now() / 1000) : 'UNKNOWN',
+        sessionError
+      });
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        toast.error("Session error. Please log in again.");
+        return;
+      }
+
+      if (!session?.session?.access_token) {
+        console.error('No access token in session');
+        toast.error("No valid session. Please log in again.");
+        return;
+      }
+
+      console.log('🚀 Making API call to create-parent-account with payload:', {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email
+      });
 
       // Call the server-side edge function to create parent account
       const { data: result, error: functionError } = await supabase.functions.invoke(
@@ -95,8 +135,18 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
         }
       );
 
+      console.log('📋 Function response:', { result, functionError });
+
       if (functionError) {
-        console.error('Function error:', functionError);
+        console.error('❌ Function error details:', {
+          message: functionError.message,
+          context: functionError.context,
+          details: functionError.details,
+          hint: functionError.hint,
+          code: functionError.code,
+          fullError: functionError
+        });
+        
         if (functionError.message?.includes('401') || functionError.message?.includes('Unauthorized')) {
           toast.error("Authentication failed. Please log in again and try again.");
         } else if (functionError.message?.includes('403') || functionError.message?.includes('Insufficient permissions')) {
