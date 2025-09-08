@@ -256,10 +256,19 @@ export const updateAllFutureLessons = async (
       }
     }
 
-    // Update student associations if students changed
+    // Update student associations and generate URLs if students changed
     if (updates.student_ids || updates.selectedStudents) {
       const studentIds = updates.student_ids || updates.selectedStudents || [];
       console.log('Updating student associations for future lessons');
+      
+      // Get existing students before making changes to identify new ones
+      const { data: existingStudents } = await supabase
+        .from('lesson_students')
+        .select('student_id')
+        .eq('lesson_id', lessonId);
+      
+      const existingStudentIds = existingStudents?.map(s => s.student_id) || [];
+      const newStudentIds = studentIds.filter(id => !existingStudentIds.includes(id));
       
       // Remove existing student associations for future lessons
       const { error: deleteError } = await supabase
@@ -290,6 +299,33 @@ export const updateAllFutureLessons = async (
         if (insertError) {
           console.error('Failed to create new student associations:', insertError);
           throw new Error(`Failed to update student associations: ${insertError.message}`);
+        }
+      }
+      
+      // Generate participant URLs for newly added students
+      if (newStudentIds.length > 0) {
+        console.log(`Generating participant URLs for ${newStudentIds.length} new students in ${futureLessons.length} future lessons`);
+        
+        // Generate URLs for each affected lesson
+        for (const lesson of futureLessons) {
+          try {
+            const { error: urlError } = await supabase.functions.invoke('lesson-space-integration', {
+              body: {
+                action: 'add-students-to-room',
+                lessonId: lesson.id,
+                newStudentIds: newStudentIds
+              }
+            });
+            
+            if (urlError) {
+              console.error(`Failed to generate URLs for lesson ${lesson.id}:`, urlError);
+            } else {
+              console.log(`Generated URLs for ${newStudentIds.length} new students in lesson ${lesson.id}`);
+            }
+          } catch (urlError) {
+            console.error(`Error generating URLs for lesson ${lesson.id}:`, urlError);
+            // Continue with other lessons even if one fails
+          }
         }
       }
     }
