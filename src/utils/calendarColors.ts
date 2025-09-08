@@ -12,6 +12,11 @@ export const getSubjectClass = (subject: string, lessonType?: string): string =>
 
   const subjectLower = subject.toLowerCase();
 
+  // Handle SATS subjects first
+  if (subjectLower.includes('sats') || subjectLower.includes('sat')) {
+    return 'sats-event';
+  }
+
   // Handle 11 Plus subjects
   if (subjectLower.includes('11 plus') || subjectLower.includes('11plus') || subjectLower.includes('eleven plus')) {
     return 'eleven-plus-event';
