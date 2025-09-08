@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ type FormData = z.infer<typeof formSchema>;
 
 const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const { user, isAdmin, isOwner } = useAuth();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -66,6 +68,17 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
     setLoading(true);
     
     try {
+      // Check if user is authenticated and has proper role
+      if (!user) {
+        toast.error("You must be logged in to create parent accounts");
+        return;
+      }
+
+      if (!isAdmin && !isOwner) {
+        toast.error("You don't have permission to create parent accounts");
+        return;
+      }
+
       // Call the server-side edge function to create parent account
       const { data: result, error: functionError } = await supabase.functions.invoke(
         'create-parent-account',
@@ -84,7 +97,13 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
 
       if (functionError) {
         console.error('Function error:', functionError);
-        toast.error(functionError.message || "Failed to create parent account");
+        if (functionError.message?.includes('401') || functionError.message?.includes('Unauthorized')) {
+          toast.error("Authentication failed. Please log in again and try again.");
+        } else if (functionError.message?.includes('403') || functionError.message?.includes('Insufficient permissions')) {
+          toast.error("You don't have permission to create parent accounts.");
+        } else {
+          toast.error(functionError.message || "Failed to create parent account");
+        }
         return;
       }
 
@@ -94,7 +113,7 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
         return;
       }
 
-      toast.success(result?.message || "Parent account created successfully! They will need to reset their password to log in.");
+      toast.success(result?.message || "Parent account created successfully! Default password: jbtutors123!");
 
       form.reset();
       onSuccess?.();
