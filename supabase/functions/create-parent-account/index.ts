@@ -44,10 +44,10 @@ serve(async (req) => {
       length: authHeader?.length || 0
     });
 
-    if (!authHeader) {
-      console.log('❌ No Authorization header found');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ Missing or invalid authorization header');
       return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
+        JSON.stringify({ error: 'Unauthorized' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -55,21 +55,11 @@ serve(async (req) => {
       );
     }
 
-    // Initialize regular client to verify the calling user
-    const supabaseClient = createClient(
-      supabaseUrl ?? '',
-      anonKey ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
-
-    console.log('🏗️ Supabase client initialized, attempting auth.getUser()...');
+    console.log('🏗️ Supabase admin client initialized, attempting to verify JWT token...');
     
-    // Verify the calling user is authenticated and has admin/owner role
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Extract JWT token and verify using service role client
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     console.log('👤 Auth.getUser() result:', {
       hasUser: !!user,
       userId: user?.id,
@@ -103,8 +93,8 @@ serve(async (req) => {
 
     console.log('✅ User authenticated successfully, checking roles...');
     
-    // Check if user has admin or owner role
-    const { data: userRoles, error: roleError } = await supabaseClient
+    // Check if user has admin or owner role using service role client
+    const { data: userRoles, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
