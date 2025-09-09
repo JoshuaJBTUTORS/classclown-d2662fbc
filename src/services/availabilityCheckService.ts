@@ -255,6 +255,7 @@ export const checkCalendarConflicts = async (
       `)
       .eq('tutor_id', tutorId)
       .in('status', ['scheduled', 'in_progress'])
+      .neq('lesson_type', 'demo') // Exclude demo sessions as they're handled by admin team
       .gt('end_time', startTime)
       .lt('start_time', endTime);
 
@@ -351,6 +352,7 @@ export const checkStudentConflicts = async (
         )
       `)
       .in('status', ['scheduled', 'in_progress'])
+      .neq('lesson_type', 'demo') // Exclude demo sessions as they're handled by admin team
       .gt('end_time', startTime)
       .lt('start_time', endTime);
 
