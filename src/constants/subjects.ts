@@ -13,11 +13,15 @@ export const LESSON_SUBJECTS = [
   'KS3 Maths',
   'KS3 English',
   'KS3 Science',
+  'KS3 Geography',
   'GCSE Maths Highier',
   'GCSE Maths Foundation',
   'GCSE English',
   'GCSE Combined Science',
   'GCSE Computer Science',
+  'GCSE Geography',
+  'GCSE Business',
+  'GCSE Economics',
   'Year 11 Maths Highier',
   'Year 11 Maths Foundation',
   'Year 11 English',
@@ -32,7 +36,10 @@ export const LESSON_SUBJECTS = [
   'A-level Biology',
   'A-level Chemistry',
   'A-level Physics',
-  'A-level Computer Science'
+  'A-level Computer Science',
+  'A-level Geography',
+  'A-level Business',
+  'A-level Economics'
 ] as const;
 
 export type LessonSubject = typeof LESSON_SUBJECTS[number];
@@ -54,19 +61,19 @@ export const EDUCATIONAL_STAGES = {
   'ks3': {
     label: 'Key Stage 3',
     description: 'Ages 11-14 secondary education',
-    subjects: ['KS3 Maths', 'KS3 English', 'KS3 Science'],
+    subjects: ['KS3 Maths', 'KS3 English', 'KS3 Science', 'KS3 Geography'],
     icon: 'School'
   },
   'gcse': {
     label: 'GCSE & Year 11',
     description: 'Ages 14-16 GCSE preparation',
-    subjects: ['GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'GCSE Computer Science', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'],
+    subjects: ['GCSE Maths', 'GCSE English', 'GCSE Combined Science', 'GCSE Computer Science', 'GCSE Geography', 'GCSE Business', 'GCSE Economics', 'Year 11 Maths', 'Year 11 English', 'Year 11 Combined Science', 'GCSE Physics', 'GCSE Chemistry', 'GCSE Biology', 'Year 11 Physics', 'Year 11 Biology', 'Year 11 Chemistry'],
     icon: 'Award'
   },
   'a_level': {
     label: 'A-Level',
     description: 'Ages 16-18 advanced level studies',
-    subjects: ['A-level Maths', 'A-level Biology', 'A-level Chemistry', 'A-level Physics', 'A-level Computer Science'],
+    subjects: ['A-level Maths', 'A-level Biology', 'A-level Chemistry', 'A-level Physics', 'A-level Computer Science', 'A-level Geography', 'A-level Business', 'A-level Economics'],
     icon: 'GraduationCap'
   }
 } as const;
@@ -83,6 +90,7 @@ export function getSubjectArea(subject: string): string {
   if (subject.includes('Maths')) return 'Maths';
   if (subject.includes('English')) return 'English';
   if (subject.includes('Science') || subject.includes('Physics') || subject.includes('Chemistry') || subject.includes('Biology')) return 'Sciences';
+  if (subject.includes('Geography') || subject.includes('Business') || subject.includes('Economics')) return 'Other';
   return 'Other';
 }
 
