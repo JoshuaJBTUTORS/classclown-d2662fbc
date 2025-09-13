@@ -11,7 +11,7 @@ export const useAttendanceManager = () => {
   const markAttendance = async (
     lessonId: string,
     studentId: number,
-    status: 'attended' | 'absent' | 'late' | 'excused',
+    status: 'attended' | 'absent' | 'late' | 'excused' | 'scheduled',
     notes?: string
   ) => {
     setIsUpdating(true);

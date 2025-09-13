@@ -80,7 +80,7 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
     }
   };
 
-  const handleMarkAttendance = async (status: 'attended' | 'absent' | 'excused') => {
+  const handleMarkAttendance = async (status: 'attended' | 'absent' | 'excused' | 'scheduled') => {
     if (!student.id) {
       console.error('Cannot mark attendance: student ID is missing');
       return;
@@ -116,6 +116,8 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
         return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Absent</Badge>;
       case 'excused':
         return <Badge variant="secondary">Excused</Badge>;
+      case 'scheduled':
+        return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Scheduled</Badge>;
       default:
         return <Badge variant="outline">Pending</Badge>;
     }
@@ -184,6 +186,10 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
               <DropdownMenuItem onClick={() => handleMarkAttendance('excused')}>
                 <UserCheck className="h-4 w-4 mr-2 text-blue-600" />
                 Excused Absence
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleMarkAttendance('scheduled')}>
+                <Clock className="h-4 w-4 mr-2 text-gray-600" />
+                Reset to Scheduled
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
