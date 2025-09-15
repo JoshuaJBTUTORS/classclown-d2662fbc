@@ -66,7 +66,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    console.log('🔄 Starting weekly participant URL validation...');
+    console.log('🔄 Starting weekly participant URL validation and verification process...');
+    console.log('🚀 Function deployment timestamp:', new Date().toISOString());
     
     const stats: ProcessingStats = {
       lessons_found: 0,
