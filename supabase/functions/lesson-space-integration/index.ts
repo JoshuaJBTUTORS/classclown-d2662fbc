@@ -449,7 +449,14 @@ async function addStudentsToRoom(data: any, supabase: any) {
   try {
     console.log("Adding students to existing room...", data);
     
-    const { lessonId, newStudentIds } = data;
+    const { lessonId, newStudentIds, students } = data;
+    
+    // Handle both formats: newStudentIds (array of IDs) or students (array of objects)
+    const targetStudentIds = newStudentIds || (students ? students.map(s => s.id) : []);
+    
+    if (!targetStudentIds || targetStudentIds.length === 0) {
+      throw new Error("No student IDs provided");
+    }
     
     // Get lesson and space details
     const { data: lesson, error: lessonError } = await supabase
@@ -470,7 +477,7 @@ async function addStudentsToRoom(data: any, supabase: any) {
     // Filter for new students only
     const newStudents = lesson.lesson_students
       .map(ls => ls.student)
-      .filter(student => newStudentIds.includes(student.id));
+      .filter(student => targetStudentIds.includes(student.id));
 
     console.log(`Creating URLs for ${newStudents.length} new students`);
 
