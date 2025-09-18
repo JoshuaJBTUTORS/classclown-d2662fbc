@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,19 +31,21 @@ import { Loader2, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStudentData } from '@/hooks/useStudentData';
 
-const baseTopicRequestSchema = z.object({
+interface SimpleStudent {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+const topicRequestSchema = z.object({
   subject: z.string().min(1, 'Please select a subject'),
   requestedTopic: z.string().min(1, 'Please describe the topic you want to learn'),
+  studentId: z.string().optional(), // For admin users to select student
 });
 
-const adminTopicRequestSchema = baseTopicRequestSchema.extend({
-  studentId: z.string().min(1, 'Please select a student'),
-});
-
-type TopicRequestForm = z.infer<typeof baseTopicRequestSchema>;
-type AdminTopicRequestForm = z.infer<typeof adminTopicRequestSchema>;
+type TopicRequestForm = z.infer<typeof topicRequestSchema>;
 
 interface TopicRequestDialogProps {
   open: boolean;
@@ -67,22 +69,48 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
   onOpenChange,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [studentList, setStudentList] = useState<SimpleStudent[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const { user, userRole } = useAuth();
-  const { students, isLoading: studentsLoading } = useStudentData();
   
-  const isAdminOrOwner = userRole === 'admin' || userRole === 'owner';
-  const schema = isAdminOrOwner ? adminTopicRequestSchema : baseTopicRequestSchema;
+  const isAdmin = userRole === 'admin' || userRole === 'owner';
 
-  const form = useForm<AdminTopicRequestForm>({
-    resolver: zodResolver(schema),
+  const form = useForm<TopicRequestForm>({
+    resolver: zodResolver(topicRequestSchema),
     defaultValues: {
       subject: '',
       requestedTopic: '',
-      ...(isAdminOrOwner && { studentId: '' }),
+      studentId: '',
     },
   });
 
-  const onSubmit = async (data: AdminTopicRequestForm) => {
+  // Fetch students for admin users
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (!isAdmin || !open) return;
+      
+      setLoadingStudents(true);
+      try {
+        const { data, error } = await supabase
+          .from('students')
+          .select('id, first_name, last_name, email')
+          .eq('status', 'active')
+          .order('first_name');
+        
+        if (error) throw error;
+        setStudentList(data || []);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        toast.error('Failed to load students');
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+
+    fetchStudents();
+  }, [isAdmin, open]);
+
+  const onSubmit = async (data: TopicRequestForm) => {
     if (!user) {
       toast.error('You must be logged in to request a topic');
       return;
@@ -94,19 +122,16 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
       let studentId = null;
       let parentId = null;
 
-      if (isAdminOrOwner) {
-        // Admin/Owner creating request on behalf of a student
-        studentId = parseInt(data.studentId!);
-        
-        // Get the parent_id for the selected student
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('parent_id')
-          .eq('id', studentId)
-          .single();
-        
-        parentId = studentData?.parent_id;
+      if (isAdmin) {
+        // Admin is creating request on behalf of a student
+        if (!data.studentId) {
+          toast.error('Please select a student for this request');
+          setIsSubmitting(false);
+          return;
+        }
+        studentId = parseInt(data.studentId);
       } else if (userRole === 'student') {
+        // Student creating their own request
         const { data: studentData } = await supabase
           .from('students')
           .select('id')
@@ -115,6 +140,7 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
         
         studentId = studentData?.id;
       } else if (userRole === 'parent') {
+        // Parent creating request
         const { data: parentData } = await supabase
           .from('parents')
           .select('id')
@@ -131,7 +157,7 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
           parent_id: parentId,
           requested_topic: `${data.subject}: ${data.requestedTopic}`,
           status: 'pending',
-          lesson_id: '00000000-0000-0000-0000-000000000000'
+          lesson_id: '00000000-0000-0000-0000-000000000000' // Placeholder UUID
         });
 
       if (error) throw error;
@@ -156,35 +182,32 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
             Request a Topic
           </DialogTitle>
           <DialogDescription>
-            {isAdminOrOwner 
-              ? 'Create a topic request on behalf of a student. Select the student and describe the topic they need help with.'
-              : 'Request a specific topic you\'d like to cover in your lessons. Admins will review and approve your request.'
+            {isAdmin 
+              ? "Create a topic request on behalf of a student. Select the student and specify the topic they need help with."
+              : "Request a specific topic you'd like to cover in your lessons. Admins will review and approve your request."
             }
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {isAdminOrOwner && (
+            {isAdmin && (
               <FormField
                 control={form.control}
                 name="studentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Student</FormLabel>
+                    <FormLabel>Select Student</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue 
-                            placeholder={studentsLoading ? "Loading students..." : "Select a student"} 
-                          />
+                          <SelectValue placeholder={loadingStudents ? "Loading students..." : "Select a student"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {students.map((student) => (
+                        {studentList.map((student) => (
                           <SelectItem key={student.id} value={student.id.toString()}>
-                            {student.first_name} {student.last_name}
-                            {student.grade && ` (${student.grade})`}
+                            {student.first_name} {student.last_name} ({student.email})
                           </SelectItem>
                         ))}
                       </SelectContent>
