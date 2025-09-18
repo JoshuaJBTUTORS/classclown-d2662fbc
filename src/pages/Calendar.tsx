@@ -13,10 +13,11 @@ import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, Info, Filter } from 'lucide-react';
+import { CalendarPlus, Info, Filter, MessageSquare } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
@@ -33,6 +34,7 @@ const Calendar = () => {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
+  const [showTopicRequestDialog, setShowTopicRequestDialog] = useState(false);
 
   // New state for view-based date range
   const [currentStartDate, setCurrentStartDate] = useState<Date | undefined>(undefined);
@@ -165,6 +167,10 @@ const Calendar = () => {
   // Only allow admins and owners to schedule lessons and see teacher view
   const canScheduleLessons = userRole === 'admin' || userRole === 'owner';
   const canUseTeacherView = userRole === 'admin' || userRole === 'owner';
+  
+  // Check user roles for topic request button
+  const isStudent = userRole === 'student';
+  const isParent = userRole === 'parent';
 
   const openAddLessonDialog = () => {
     setShowAddLessonDialog(true);
@@ -355,6 +361,12 @@ const Calendar = () => {
           onSuccess={handleLessonAdded}
         />
       )}
+
+      {/* Topic Request Dialog for students and parents */}
+      <TopicRequestDialog
+        open={showTopicRequestDialog}
+        onOpenChange={setShowTopicRequestDialog}
+      />
     </>
   );
 };
