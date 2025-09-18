@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus } from 'lucide-react';
 import CalendarDisplay from '@/components/calendar/CalendarDisplay';
 import TeacherCalendarView from '@/components/calendar/TeacherCalendarView';
 import ViewOptions from '@/components/calendar/ViewOptions';
@@ -15,11 +14,12 @@ import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus, Info, Filter } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
+import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Calendar = () => {
-  const { isLearningHubOnly, userRole, user } = useAuth();
+  const { isLearningHubOnly, userRole, user, isStudent, isParent } = useAuth();
   const { openBookingModal } = useTrialBooking();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
@@ -33,71 +33,23 @@ const Calendar = () => {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
+  const [topicRequestDialogOpen, setTopicRequestDialogOpen] = useState(false);
 
-  // New state for view-based date range
-  const [currentStartDate, setCurrentStartDate] = useState<Date | undefined>(undefined);
-  const [currentEndDate, setCurrentEndDate] = useState<Date | undefined>(undefined);
-  const [currentViewType, setCurrentViewType] = useState<string>('timeGridWeek');
-  const [teacherViewType, setTeacherViewType] = useState<string>('teacherWeek');
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [activeTab, setActiveTab] = useState<string>('calendar');
+  const {
+    lessons,
+    isLoading,
+    error,
+    studentOptions,
+    tutorOptions,
+    subjectOptions,
+    handleStudentFilter,
+    handleTutorFilter,
+    handleSubjectFilter,
+    handleLessonTypeFilter,
+    clearAllFilters,
+  } = useCalendarData(refreshKey);
 
-  // Memoize filters to prevent infinite loop - only recreate when dependencies change
-  const filters = useMemo(() => ({
-    selectedStudents,
-    selectedTutors,
-    selectedSubjects,
-    selectedLessonType
-  }), [selectedStudents, selectedTutors, selectedSubjects, selectedLessonType]);
-
-  // Helper function to update date ranges for teacher view
-  const updateTeacherViewDateRanges = (viewType: string, date: Date) => {
-    if (viewType === 'teacherDay') {
-      // For day view, use the single day
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-      setCurrentStartDate(startOfDay);
-      setCurrentEndDate(endOfDay);
-    } else if (viewType === 'teacherWeek') {
-      // For week view, use the entire week
-      const startOfWeek = new Date(date);
-      const dayOfWeek = startOfWeek.getDay();
-      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Start on Monday
-      startOfWeek.setDate(startOfWeek.getDate() + mondayOffset);
-      startOfWeek.setHours(0, 0, 0, 0);
-      
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(endOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-      
-      setCurrentStartDate(startOfWeek);
-      setCurrentEndDate(endOfWeek);
-    }
-  };
-
-  // Determine the active view type based on current tab
-  const activeViewType = activeTab === 'teacher' ? teacherViewType : currentViewType;
-
-  // Initialize teacher view date ranges when switching to teacher tab
-  useEffect(() => {
-    if (activeTab === 'teacher') {
-      updateTeacherViewDateRanges(teacherViewType, currentDate);
-    }
-  }, [activeTab, teacherViewType]);
-
-  // Fetch calendar data using the hook with date range
-  const { events, isLoading } = useCalendarData({
-    userRole,
-    userEmail: user?.email || null,
-    isAuthenticated: !!user,
-    refreshKey,
-    startDate: currentStartDate,
-    endDate: currentEndDate,
-    viewType: activeViewType,
-    filters
-  });
+  const canScheduleLessons = userRole === 'admin' || userRole === 'tutor';
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -111,60 +63,9 @@ const Calendar = () => {
     setFiltersOpen(!filtersOpen);
   };
 
-  // Filter handlers
-  const handleStudentFilterChange = (studentIds: string[]) => {
-    setSelectedStudents(studentIds);
+  const closeFilters = () => {
+    setFiltersOpen(false);
   };
-
-  const handleTutorFilterChange = (tutorIds: string[]) => {
-    setSelectedTutors(tutorIds);
-  };
-
-  const handleSubjectFilterChange = (subjects: string[]) => {
-    setSelectedSubjects(subjects);
-  };
-
-  const handleLessonTypeFilterChange = (lessonType: string) => {
-    setSelectedLessonType(lessonType);
-  };
-
-  const handleClearFilters = () => {
-    setSelectedStudents([]);
-    setSelectedTutors([]);
-    setSelectedSubjects([]);
-    setSelectedLessonType('All Lessons');
-  };
-
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  // Handle view change from calendar
-  const handleViewChange = (viewInfo: { start: Date; end: Date; view: string }) => {
-    console.log('📅 View change received in Calendar:', viewInfo);
-    setCurrentStartDate(viewInfo.start);
-    setCurrentEndDate(viewInfo.end);
-    setCurrentViewType(viewInfo.view);
-    setCurrentDate(viewInfo.start);
-  };
-
-  // Handle view type change from ViewOptions
-  const handleViewTypeChange = (viewType: string) => {
-    if (activeTab === 'teacher') {
-      setTeacherViewType(viewType);
-      // Update date ranges for teacher view
-      updateTeacherViewDateRanges(viewType, currentDate);
-    } else {
-      setCurrentViewType(viewType);
-    }
-  };
-
-  // Check if user can see filters (admin/owner only for full filters)
-  const canUseFilters = userRole === 'admin' || userRole === 'owner';
-
-  // Only allow admins and owners to schedule lessons and see teacher view
-  const canScheduleLessons = userRole === 'admin' || userRole === 'owner';
-  const canUseTeacherView = userRole === 'admin' || userRole === 'owner';
 
   const openAddLessonDialog = () => {
     setShowAddLessonDialog(true);
@@ -178,30 +79,12 @@ const Calendar = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Handle date navigation for teacher view
-  const handleTeacherDateChange = (newDate: Date) => {
-    setCurrentDate(newDate);
-    updateTeacherViewDateRanges(teacherViewType, newDate);
-  };
+  const openTopicRequestDialog = () => setTopicRequestDialogOpen(true);
+  const closeTopicRequestDialog = () => setTopicRequestDialogOpen(false);
 
-  // If user has learning_hub_only role, show locked feature
-  if (isLearningHubOnly) {
-    return (
-      <>
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className="flex flex-col flex-1 w-full">
-          <Navbar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 p-4 md:p-6">
-            <LockedFeature
-              featureName="Calendar & Scheduling"
-              featureIcon={<CalendarIcon className="h-16 w-16 text-gray-300" />}
-              description="Access your lesson calendar, book sessions, and manage your tutoring schedule."
-            />
-          </main>
-        </div>
-      </>
-    );
-  }
+  const handleTopicRequestSuccess = () => {
+    closeTopicRequestDialog();
+  };
 
   return (
     <>
@@ -213,125 +96,89 @@ const Calendar = () => {
           {/* Header with title and controls */}
           <div className="flex-shrink-0 px-4 md:px-6 py-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center mb-4 md:mb-0">
-                <PageTitle title="Calendar" className="mb-0" />
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="ml-2">
-                        <Info className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="p-2 max-w-xs">
-                        <p className="mb-2 text-sm font-medium">Calendar Legend:</p>
-                        <div className="flex items-center mb-1">
-                          <div className="w-3 h-3 bg-blue-500 rounded-sm mr-2"></div>
-                          <span className="text-xs">Regular lessons</span>
-                        </div>
-                        <div className="flex items-center mb-1">
-                          <div className="w-3 h-3 border-l-2 border-purple-600 pl-1 mr-2">🔄</div>
-                          <span className="text-xs">Recurring lessons</span>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              <div className="mb-4 md:mb-0">
+                <PageTitle title="Calendar" />
               </div>
               
               <div className="flex flex-wrap gap-2 items-center">
-                {/* Filter button */}
                 <Button 
                   onClick={toggleFilters}
                   variant={filtersOpen ? "default" : "outline"}
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                   size="sm"
                 >
-                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">{filtersOpen ? 'Hide Filters' : 'Show Filters'}</span>
-                  <span className="sm:hidden">Filter</span>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
                 </Button>
 
-                {/* Schedule lesson button for admins and owners */}
                 {canScheduleLessons && (
-                  <Button 
-                    onClick={openAddLessonDialog}
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                    size="sm"
-                  >
-                    <CalendarPlus className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Schedule Lesson</span>
-                    <span className="sm:hidden">Schedule</span>
+                  <Button onClick={openAddLessonDialog} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Schedule Lesson
+                  </Button>
+                )}
+                {(isStudent || isParent) && (
+                  <Button onClick={openTopicRequestDialog} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Request Topic
                   </Button>
                 )}
               </div>
             </div>
           </div>
           
-          {/* Tabbed Calendar Interface */}
-          <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <TabsList>
-                  <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-                  {canUseTeacherView && (
-                    <TabsTrigger value="teacher">Teacher View</TabsTrigger>
-                  )}
-                </TabsList>
-                
-                {/* View Options for active tab */}
-                <ViewOptions 
-                  currentView={activeTab === 'teacher' ? teacherViewType : currentViewType}
-                  onViewChange={handleViewTypeChange}
-                  showTeacherView={false}
-                />
-              </div>
+          <Tabs defaultValue="calendar" className="flex flex-col flex-1 h-full">
+            <TabsList className="m-4">
+              <TabsTrigger value="calendar">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                Calendar View
+              </TabsTrigger>
+              {canScheduleLessons && (
+                <TabsTrigger value="teacher">
+                  <CalendarPlus className="h-4 w-4 mr-2" />
+                  Teacher View
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-              <TabsContent value="calendar" className="flex-1 mt-0 min-w-0">
-                <CalendarDisplay 
-                  isLoading={isLoading} 
-                  events={events} 
-                  onLessonsUpdated={handleRefresh}
-                  onViewChange={handleViewChange}
+            <div className="flex-1 overflow-auto">
+              <TabsContent value="calendar" className="h-full p-4">
+                <CalendarDisplay
+                  lessons={lessons}
+                  isLoading={isLoading}
+                  error={error}
                 />
               </TabsContent>
-
-              {canUseTeacherView && (
-                <TabsContent value="teacher" className="flex-1 mt-0 min-w-0 overflow-hidden">
+              {canScheduleLessons && (
+                <TabsContent value="teacher" className="h-full p-4">
                   <TeacherCalendarView
-                    events={events}
-                    viewType={teacherViewType as 'teacherWeek' | 'teacherDay'}
-                    currentDate={currentDate}
+                    lessons={lessons}
                     isLoading={isLoading}
-                    onLessonsUpdated={handleRefresh}
-                    onDateChange={handleTeacherDateChange}
+                    error={error}
                   />
                 </TabsContent>
               )}
-            </Tabs>
-          </div>
+            </div>
+          </Tabs>
         </main>
       </div>
 
-      {/* Fixed Positioned Filters Sidebar */}
       <CollapsibleFilters
+        open={filtersOpen}
+        onClose={closeFilters}
+        studentOptions={studentOptions}
+        tutorOptions={tutorOptions}
+        subjectOptions={subjectOptions}
         selectedStudents={selectedStudents}
         selectedTutors={selectedTutors}
         selectedSubjects={selectedSubjects}
         selectedLessonType={selectedLessonType}
-        onStudentFilterChange={handleStudentFilterChange}
-        onTutorFilterChange={handleTutorFilterChange}
-        onSubjectFilterChange={handleSubjectFilterChange}
-        onLessonTypeFilterChange={handleLessonTypeFilterChange}
-        onClearFilters={handleClearFilters}
-        canUseFilters={canUseFilters}
-        isOpen={filtersOpen}
-        onToggle={toggleFilters}
-        sidebarOpen={sidebarOpen}
+        handleStudentFilter={handleStudentFilter}
+        handleTutorFilter={handleTutorFilter}
+        handleSubjectFilter={handleSubjectFilter}
+        handleLessonTypeFilter={handleLessonTypeFilter}
+        clearAllFilters={clearAllFilters}
       />
 
-      {/* Add Lesson Dialog for admins and owners */}
       {canScheduleLessons && (
         <AddLessonForm 
           isOpen={showAddLessonDialog} 
@@ -339,6 +186,12 @@ const Calendar = () => {
           onSuccess={handleLessonAdded}
         />
       )}
+
+      <TopicRequestDialog
+        open={topicRequestDialogOpen}
+        onOpenChange={setTopicRequestDialogOpen}
+        onSuccess={handleTopicRequestSuccess}
+      />
     </>
   );
 };
