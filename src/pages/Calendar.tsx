@@ -241,17 +241,19 @@ const Calendar = () => {
               </div>
               
               <div className="flex flex-wrap gap-2 items-center">
-                {/* Filter button */}
-                <Button 
-                  onClick={toggleFilters}
-                  variant={filtersOpen ? "default" : "outline"}
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                  size="sm"
-                >
-                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">{filtersOpen ? 'Hide Filters' : 'Show Filters'}</span>
-                  <span className="sm:hidden">Filter</span>
-                </Button>
+                {/* Filter button - only show for admins and owners */}
+                {canUseFilters && (
+                  <Button 
+                    onClick={toggleFilters}
+                    variant={filtersOpen ? "default" : "outline"}
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                    size="sm"
+                  >
+                    <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">{filtersOpen ? 'Hide Filters' : 'Show Filters'}</span>
+                    <span className="sm:hidden">Filter</span>
+                  </Button>
+                )}
 
                 {/* Schedule lesson button for admins and owners */}
                 {canScheduleLessons && (
