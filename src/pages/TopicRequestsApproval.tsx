@@ -14,9 +14,6 @@ import { MessageSquare, Check, X, Search, Filter } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
-import PageTitle from '@/components/ui/PageTitle';
 
 interface TopicRequest {
   id: string;
@@ -46,7 +43,6 @@ const TopicRequestsApproval = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Fetch topic requests with student details
   const { data: topicRequests, isLoading } = useQuery({
@@ -240,36 +236,21 @@ const TopicRequestsApproval = () => {
 
   if (!isAdmin && !isOwner) {
     return (
-      <>
-        <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <div className="flex">
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-          <div className="flex-1 p-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
-              <p className="text-muted-foreground mt-2">You don't have permission to view this page.</p>
-            </div>
-          </div>
+      <div className="container mx-auto p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
+          <p className="text-muted-foreground mt-2">You don't have permission to view this page.</p>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-      <div className="flex">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <div className="flex-1">
-          <PageTitle 
-            title="Topic Request Approval" 
-            subtitle="Review and approve student topic requests"
-          />
-          <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Topic Requests</h1>
-          <p className="text-muted-foreground">Manage student topic requests</p>
+          <h1 className="text-3xl font-bold">Topic Request Approval</h1>
+          <p className="text-muted-foreground">Review and approve student topic requests</p>
         </div>
         <MessageSquare className="h-8 w-8 text-primary" />
       </div>
@@ -450,10 +431,7 @@ const TopicRequestsApproval = () => {
           </Card>
         )}
       </div>
-          </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 };
 
