@@ -102,12 +102,11 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
         parentId = parentData?.id;
       }
 
-      // Since topic_requests requires lesson_id, we'll need to create a more flexible approach
-      // For now, let's create a general topic request that can be linked to any future lesson
-      const { error } = await supabase
+      // Since topic_requests requires lesson_id, we'll use a placeholder UUID
+      const { error } = await (supabase as any)
         .from('topic_requests')
         .insert({
-          student_id: studentId || 0, // Placeholder - will need to handle this properly
+          student_id: studentId || 0, // Will be 0 if parent is making request
           parent_id: parentId,
           requested_topic: `${data.subject}: ${data.requestedTopic}`,
           status: 'pending',

@@ -2504,6 +2504,70 @@ export type Database = {
           },
         ]
       }
+      topic_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          lesson_id: string
+          parent_id: string | null
+          requested_topic: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["topic_request_status"]
+          student_id: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          lesson_id: string
+          parent_id?: string | null
+          requested_topic: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["topic_request_status"]
+          student_id: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          parent_id?: string | null
+          requested_topic?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["topic_request_status"]
+          student_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_requests_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_requests_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trial_bookings: {
         Row: {
           admin_id: string | null
@@ -3037,6 +3101,7 @@ export type Database = {
         | "subject_rotation"
         | "60_10_rule"
         | "none"
+      topic_request_status: "pending" | "approved" | "denied"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3180,6 +3245,7 @@ export const Constants = {
         "60_10_rule",
         "none",
       ],
+      topic_request_status: ["pending", "approved", "denied"],
     },
   },
 } as const
