@@ -268,7 +268,7 @@ const Calendar = () => {
                   <>
                     <Button 
                       onClick={() => setShowTopicRequestDialog(true)}
-                      variant="outline"
+                      variant="default"
                       className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                       size="sm"
                     >
@@ -279,7 +279,7 @@ const Calendar = () => {
                     
                     <Button 
                       onClick={() => setShowReferFriendDialog(true)}
-                      variant="outline"
+                      variant="default"
                       className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                       size="sm"
                     >
