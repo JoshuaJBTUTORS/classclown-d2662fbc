@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, Users, Calendar, UserCheck, GraduationCap, TrendingUp, MessageSquare } from 'lucide-react';
+import { RefreshCw, Users, Calendar, UserCheck, GraduationCap, TrendingUp } from 'lucide-react';
 import { getAdminDashboardData, AdminDashboardData } from '@/services/adminDashboardService';
-import { TopicRequestsManager } from '@/components/admin/TopicRequestsManager';
 import PageTitle from '@/components/ui/PageTitle';
 
 const AdminDashboard = () => {
@@ -90,119 +88,104 @@ const AdminDashboard = () => {
           disabled={isRefreshing}
           variant="outline"
           size="sm"
+          className="flex items-center gap-2"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="topic-requests">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Topic Requests
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Trial Lessons Booked */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Trial Lessons Booked
+            </CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {dashboardData?.trialLessonsBooked || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              New trial bookings this month
+            </p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Trial Lessons Booked */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Trial Lessons Booked
-                </CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {dashboardData?.trialLessonsBooked || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  New trial bookings this month
-                </p>
-              </CardContent>
-            </Card>
+        {/* Trial Attendance Rate */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Trial Attendance Rate
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {dashboardData?.trialAttendanceRate || 0}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Students who attended trial lessons
+            </p>
+          </CardContent>
+        </Card>
 
-            {/* Trial Attendance Rate */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Trial Attendance Rate
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {dashboardData?.trialAttendanceRate || 0}%
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Students who attended trial lessons
-                </p>
-              </CardContent>
-            </Card>
+        {/* Regular Lessons */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Regular Lessons
+            </CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {dashboardData?.regularLessonsCount || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Scheduled lessons this month
+            </p>
+          </CardContent>
+        </Card>
 
-            {/* Regular Lessons */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Regular Lessons
-                </CardTitle>
-                <GraduationCap className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {dashboardData?.regularLessonsCount || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Scheduled lessons this month
-                </p>
-              </CardContent>
-            </Card>
+        {/* Active Tutors */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Active Tutors
+            </CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {dashboardData?.activeTutorsCount || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Currently active tutors
+            </p>
+          </CardContent>
+        </Card>
 
-            {/* Active Tutors */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Tutors
-                </CardTitle>
-                <UserCheck className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {dashboardData?.activeTutorsCount || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Currently active tutors
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Active Customers */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Customers
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {dashboardData?.activeCustomersCount || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Currently active students
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="topic-requests">
-          <TopicRequestsManager />
-        </TabsContent>
-      </Tabs>
+        {/* Active Customers */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Active Customers
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {dashboardData?.activeCustomersCount || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Currently active students
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

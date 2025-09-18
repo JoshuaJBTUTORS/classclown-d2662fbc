@@ -11,7 +11,7 @@ import { format, startOfDay, endOfDay, addHours, parseISO, eachDayOfInterval } f
 
 interface CalendarDisplayProps {
   isLoading: boolean;
-  events?: any[];
+  events: any[];
   onLessonsUpdated: () => void;
   onViewChange?: (viewInfo: { start: Date; end: Date; view: string }) => void;
 }
@@ -39,7 +39,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   // Extract unique tutor IDs from events
   const tutorIds = useMemo(() => {
     const ids = new Set<string>();
-    (events || []).forEach(event => {
+    events.forEach(event => {
       if (event.extendedProps?.tutor?.id) {
         ids.add(event.extendedProps.tutor.id);
       }
@@ -92,7 +92,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 
   // Combine lesson events with availability background events
   const allEvents = useMemo(() => {
-    return [...(events || []), ...backgroundEvents];
+    return [...events, ...backgroundEvents];
   }, [events, backgroundEvents]);
 
   const handleEventClick = (eventInfo: any) => {
