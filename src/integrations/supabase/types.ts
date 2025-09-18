@@ -2515,7 +2515,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["topic_request_status"]
-          student_id: number
+          student_id: number | null
           updated_at: string
         }
         Insert: {
@@ -2528,7 +2528,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["topic_request_status"]
-          student_id: number
+          student_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -2541,7 +2541,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["topic_request_status"]
-          student_id?: number
+          student_id?: number | null
           updated_at?: string
         }
         Relationships: [

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,17 +32,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface SimpleStudent {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
-
 const topicRequestSchema = z.object({
   subject: z.string().min(1, 'Please select a subject'),
   requestedTopic: z.string().min(1, 'Please describe the topic you want to learn'),
-  studentId: z.string().min(1, 'Please select a student'), // Required for all users
 });
 
 type TopicRequestForm = z.infer<typeof topicRequestSchema>;
@@ -69,8 +61,6 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
   onOpenChange,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [studentList, setStudentList] = useState<SimpleStudent[]>([]);
-  const [loadingStudents, setLoadingStudents] = useState(false);
   const { user, userRole } = useAuth();
   
   const isAdmin = userRole === 'admin' || userRole === 'owner';
@@ -82,64 +72,8 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
     defaultValues: {
       subject: '',
       requestedTopic: '',
-      studentId: '',
     },
   });
-
-  // Fetch students based on user role
-  useEffect(() => {
-    const fetchStudents = async () => {
-      if (!open || !user) return;
-      
-      setLoadingStudents(true);
-      try {
-        let query = supabase
-          .from('students')
-          .select('id, first_name, last_name, email')
-          .eq('status', 'active')
-          .order('first_name');
-
-        if (isAdmin) {
-          // Admins can see all active students
-        } else if (isParent) {
-          // Parents can only see their own children
-          const { data: parentData } = await supabase
-            .from('parents')
-            .select('id')
-            .eq('user_id', user.id)
-            .single();
-
-          if (parentData) {
-            query = query.eq('parent_id', parentData.id);
-          }
-        } else if (isStudent) {
-          // Students can only see themselves
-          query = query.eq('email', user.email);
-        }
-
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        setStudentList(data || []);
-
-        // Auto-select for students
-        if (isStudent && data && data.length > 0) {
-          form.setValue('studentId', data[0].id.toString());
-        }
-      } catch (error) {
-        console.error('Error fetching students:', error);
-        toast.error('Failed to load students');
-      } finally {
-        setLoadingStudents(false);
-      }
-    };
-
-    fetchStudents();
-  }, [open, user, isAdmin, isParent, isStudent, form]);
-
-  // Show error if student user has no student record
-  const showStudentError = isStudent && !loadingStudents && studentList.length === 0;
-  const showParentError = isParent && !loadingStudents && studentList.length === 0;
 
   const onSubmit = async (data: TopicRequestForm) => {
     if (!user) {
@@ -147,16 +81,9 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
       return;
     }
 
-    // Validate that we have a student selected
-    if (!data.studentId) {
-      toast.error('Please select a student for this request');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const studentId = parseInt(data.studentId);
       let parentId = null;
 
       // If user is a parent, get their parent ID for tracking
@@ -168,12 +95,21 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
           .single();
         
         parentId = parentData?.id;
+      } else if (isStudent) {
+        // For students, get parent_id from their student record
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('parent_id')
+          .eq('email', user.email)
+          .single();
+        
+        parentId = studentData?.parent_id;
       }
 
       const { error } = await supabase
         .from('topic_requests')
         .insert({
-          student_id: studentId,
+          student_id: null, // No longer requiring student selection
           parent_id: parentId,
           requested_topic: `${data.subject}: ${data.requestedTopic}`,
           status: 'pending',
@@ -203,84 +139,16 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
           </DialogTitle>
           <DialogDescription>
             {isAdmin 
-              ? "Create a topic request on behalf of a student. Select the student and specify the topic they need help with."
+              ? "Create a topic request on behalf of a student. Specify the topic they need help with."
               : isParent
-              ? "Request a specific topic for one of your children. Select which child needs help with this topic."
+              ? "Request a specific topic for your child. Describe what topic you'd like them to learn."
               : "Request a specific topic you'd like to cover in your lessons. Admins will review and approve your request."
             }
           </DialogDescription>
         </DialogHeader>
 
-        {showStudentError && (
-          <div className="p-4 text-sm text-destructive bg-destructive/10 rounded-md">
-            No student record found for your account. Please contact an admin to set up your student profile.
-          </div>
-        )}
-
-        {showParentError && (
-          <div className="p-4 text-sm text-destructive bg-destructive/10 rounded-md">
-            No children found in your account. Please contact an admin to link your children to your parent account.
-          </div>
-        )}
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {(isAdmin || isParent) && (
-              <FormField
-                control={form.control}
-                name="studentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {isAdmin ? "Select Student" : "Select Child"}
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue 
-                            placeholder={
-                              loadingStudents 
-                                ? "Loading..." 
-                                : isParent
-                                ? "Select which child needs help"
-                                : "Select a student"
-                            } 
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {studentList.map((student) => (
-                          <SelectItem key={student.id} value={student.id.toString()}>
-                            {student.first_name} {student.last_name} ({student.email})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {isStudent && studentList.length > 0 && (
-              <FormField
-                control={form.control}
-                name="studentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Student</FormLabel>
-                    <FormControl>
-                      <div className="p-3 bg-muted rounded-md">
-                        <span className="text-sm">
-                          {studentList[0].first_name} {studentList[0].last_name} ({studentList[0].email})
-                        </span>
-                      </div>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            )}
-            
             <FormField
               control={form.control}
               name="subject"
@@ -333,7 +201,7 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting || showStudentError || showParentError}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
