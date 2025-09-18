@@ -24,6 +24,7 @@ import Progress from './pages/Progress';
 import Reports from './pages/Reports';
 import TimeOff from './pages/TimeOff';
 import TimeOffRequests from './pages/TimeOffRequests';
+import TopicRequestsApproval from './pages/TopicRequestsApproval';
 import TrialBookings from './pages/TrialBookings';
 import TrialBooking from './pages/TrialBooking';
 import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
@@ -170,6 +171,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <TimeOffRequests />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="topic-requests" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <TopicRequestsApproval />
                       </ProtectedRoute>
                     } 
                   />

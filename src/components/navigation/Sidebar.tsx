@@ -22,6 +22,7 @@ import {
   DollarSign,
   LayoutDashboard,
   Bot,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -107,13 +108,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner'],
         },
         {
+          icon: MessageSquare,
+          label: 'Topic Requests',
+          href: '/topic-requests',
+          roles: ['admin', 'owner'],
+        },
+        {
           icon: Clock,
           label: 'Time Off',
           href: '/time-off',
           roles: ['tutor'],
         },
         {
-          icon: MessageSquare,
+          icon: MessageCircle,
           label: 'Team Chat',
           href: '#',
           roles: ['admin', 'owner', 'tutor'],
