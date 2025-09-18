@@ -13,11 +13,12 @@ import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, Info, Filter, MessageSquare } from 'lucide-react';
+import { CalendarPlus, Info, Filter, MessageSquare, Users } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
+import { ReferFriendDialog } from '@/components/calendar/ReferFriendDialog';
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
@@ -35,6 +36,7 @@ const Calendar = () => {
   const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
   const [showTopicRequestDialog, setShowTopicRequestDialog] = useState(false);
+  const [showReferFriendDialog, setShowReferFriendDialog] = useState(false);
 
   // New state for view-based date range
   const [currentStartDate, setCurrentStartDate] = useState<Date | undefined>(undefined);
@@ -263,16 +265,29 @@ const Calendar = () => {
 
                 {/* Topic Request button - only show for students and parents */}
                 {!canUseFilters && (isStudent || isParent) && (
-                  <Button 
-                    onClick={() => setShowTopicRequestDialog(true)}
-                    variant="outline"
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                    size="sm"
-                  >
-                    <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Request Topic</span>
-                    <span className="sm:hidden">Request</span>  
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={() => setShowTopicRequestDialog(true)}
+                      variant="outline"
+                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                      size="sm"
+                    >
+                      <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Request Topic</span>
+                      <span className="sm:hidden">Request</span>  
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => setShowReferFriendDialog(true)}
+                      variant="outline"
+                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                      size="sm"
+                    >
+                      <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Refer Friend £100</span>
+                      <span className="sm:hidden">Refer £100</span>  
+                    </Button>
+                  </>
                 )}
 
                 {/* Schedule lesson button for admins and owners */}
@@ -366,6 +381,12 @@ const Calendar = () => {
       <TopicRequestDialog
         open={showTopicRequestDialog}
         onOpenChange={setShowTopicRequestDialog}
+      />
+
+      {/* Refer Friend Dialog for students and parents */}
+      <ReferFriendDialog
+        open={showReferFriendDialog}
+        onOpenChange={setShowReferFriendDialog}
       />
     </>
   );
