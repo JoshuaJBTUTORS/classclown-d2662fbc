@@ -35,19 +35,19 @@ const Calendar = () => {
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
   const [topicRequestDialogOpen, setTopicRequestDialogOpen] = useState(false);
 
+  // State for teacher view
+  const [viewType, setViewType] = useState<'teacherWeek' | 'teacherDay'>('teacherWeek');
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   const {
-    lessons,
+    events,
     isLoading,
-    error,
-    studentOptions,
-    tutorOptions,
-    subjectOptions,
-    handleStudentFilter,
-    handleTutorFilter,
-    handleSubjectFilter,
-    handleLessonTypeFilter,
-    clearAllFilters,
-  } = useCalendarData(refreshKey);
+  } = useCalendarData({
+    userRole,
+    userEmail: user?.email || null,
+    isAuthenticated: !!user,
+    refreshKey,
+  });
 
   const canScheduleLessons = userRole === 'admin' || userRole === 'tutor';
 
@@ -76,6 +76,10 @@ const Calendar = () => {
   };
 
   const handleLessonAdded = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleLessonsUpdated = () => {
     setRefreshKey(prev => prev + 1);
   };
 
@@ -143,17 +147,20 @@ const Calendar = () => {
             <div className="flex-1 overflow-auto">
               <TabsContent value="calendar" className="h-full p-4">
                 <CalendarDisplay
-                  lessons={lessons}
+                  events={events}
                   isLoading={isLoading}
-                  error={error}
+                  onLessonsUpdated={handleLessonsUpdated}
                 />
               </TabsContent>
               {canScheduleLessons && (
                 <TabsContent value="teacher" className="h-full p-4">
                   <TeacherCalendarView
-                    lessons={lessons}
+                    events={events}
                     isLoading={isLoading}
-                    error={error}
+                    viewType={viewType}
+                    currentDate={currentDate}
+                    onLessonsUpdated={handleLessonsUpdated}
+                    onDateChange={setCurrentDate}
                   />
                 </TabsContent>
               )}
@@ -162,22 +169,6 @@ const Calendar = () => {
         </main>
       </div>
 
-      <CollapsibleFilters
-        open={filtersOpen}
-        onClose={closeFilters}
-        studentOptions={studentOptions}
-        tutorOptions={tutorOptions}
-        subjectOptions={subjectOptions}
-        selectedStudents={selectedStudents}
-        selectedTutors={selectedTutors}
-        selectedSubjects={selectedSubjects}
-        selectedLessonType={selectedLessonType}
-        handleStudentFilter={handleStudentFilter}
-        handleTutorFilter={handleTutorFilter}
-        handleSubjectFilter={handleSubjectFilter}
-        handleLessonTypeFilter={handleLessonTypeFilter}
-        clearAllFilters={clearAllFilters}
-      />
 
       {canScheduleLessons && (
         <AddLessonForm 
