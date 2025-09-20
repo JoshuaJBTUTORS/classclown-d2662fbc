@@ -77,8 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile, role, and parent profile
   const fetchUserData = async (userId: string) => {
     try {
-      console.log('🔍 AuthContext: Fetching user data for:', userId);
-
       // Fetch basic profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -87,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileError) throw profileError;
-      console.log('👤 AuthContext: Profile data:', profileData);
 
       // Fetch primary role
       const { data: roleData, error: roleError } = await supabase
@@ -98,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (roleError) throw roleError;
-      console.log('🎭 AuthContext: Role data:', roleData);
 
       // Fetch parent profile if user is a parent or learning hub user
       const { data: parentData, error: parentError } = await supabase
@@ -107,20 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .maybeSingle();
 
-      console.log('👨‍👩‍👧‍👦 AuthContext: Parent data:', parentData);
-
       if (profileData) {
         setProfile(profileData);
-        console.log('✅ AuthContext: Profile set');
       }
 
       if (roleData) {
         setUserRole(roleData.role as AppRole);
-        console.log('✅ AuthContext: Role set to:', roleData.role);
       } else if (user) {
         // If no role found, create default based on whether they have parent profile
         const defaultRole = parentData ? 'learning_hub_only' : 'student';
-        console.log('⚠️ AuthContext: No role found, creating default:', defaultRole);
         try {
           const { error: insertError } = await supabase
             .from('user_roles')
@@ -132,7 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
           if (!insertError) {
             setUserRole(defaultRole);
-            console.log('✅ AuthContext: Default role created and set');
           }
         } catch (err) {
           console.error("Failed to create default role:", err);
@@ -141,7 +131,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (parentData) {
         setParentProfile(parentData);
-        console.log('✅ AuthContext: Parent profile set');
       }
     } catch (error) {
       console.error('❌ AuthContext: Error fetching user data:', error);
@@ -149,13 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    console.log('🚀 AuthContext: Setting up auth state listener');
-    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
-        console.log("🔄 AuthContext: Auth state change event:", event);
-        console.log("📧 AuthContext: User email:", newSession?.user?.email || 'None');
-        
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
@@ -168,7 +152,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
-          console.log('🔄 AuthContext: Clearing user data on sign out');
           setProfile(null);
           setParentProfile(null);
           setUserRole(null);
@@ -187,7 +170,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      console.log("🔍 AuthContext: Checking for existing session:", existingSession?.user?.email || "None");
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
       
@@ -223,7 +205,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Error during pre-signup signout:", err);
       }
       
-      console.log("Starting signup with metadata:", metadata);
       const { error, data } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -232,8 +213,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           emailRedirectTo: `${window.location.origin}/auth`
         }
       });
-      
-      console.log("Signup response:", { error, data });
       
       if (error) {
         throw error;
@@ -265,14 +244,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Error during pre-signin signout:", err);
       }
       
-      console.log("Attempting to sign in:", email);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         throw error;
       }
       
-      console.log("Sign-in successful, navigating to home");
       navigate('/');
       
     } catch (error: any) {
@@ -311,13 +288,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isStudent = userRole === 'student';
   const isParent = userRole === 'parent';
   const isLearningHubOnly = userRole === 'learning_hub_only';
-
-  console.log('🎭 AuthContext: Current role state:');
-  console.log('- User Role:', userRole);
-  console.log('- Is Admin:', isAdmin);
-  console.log('- Is Owner:', isOwner);
-  console.log('- Is Tutor:', isTutor);
-  console.log('- Is Learning Hub Only:', isLearningHubOnly);
 
   const value = {
     user,

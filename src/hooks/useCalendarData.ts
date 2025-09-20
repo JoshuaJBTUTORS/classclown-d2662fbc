@@ -47,7 +47,6 @@ export const useCalendarData = ({
       return [];
     }
     const validIds = rawLessons.map(lesson => lesson?.id).filter(id => id != null);
-    console.log(`📊 Lesson ID Processing: ${validIds.length} valid lesson IDs extracted from ${rawLessons.length} raw lessons`);
     return validIds;
   }, [rawLessons]);
 
@@ -143,27 +142,20 @@ export const useCalendarData = ({
     const fetchEvents = async () => {
       // Prevent overlapping fetch calls
       if (currentFetchRef.current) {
-        console.log('🔄 Fetch already in progress, skipping...');
         return;
       }
 
       if (!isAuthenticated || !userRole || !userEmail) {
-        console.log('❌ Missing authentication data:', { isAuthenticated, userRole, userEmail });
         setRawLessons([]);
         setIsLoading(false);
         return;
       }
 
       try {
-        console.log("🔍 Starting lesson fetch process for role:", userRole);
-        console.log(`📅 Date range: ${startDate?.toISOString()} to ${endDate?.toISOString()} (${viewType} view)`);
-        
         const fetchPromise = (async () => {
           let query;
 
           if (userRole === 'student') {
-            console.log('👨‍🎓 Processing student data for email:', userEmail);
-            
             // Enhanced student lookup with better error handling
             const { data: studentData, error: studentError } = await supabase
               .from('students')
@@ -179,19 +171,14 @@ export const useCalendarData = ({
             }
 
             if (!studentData) {
-              console.log('❌ No student record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
 
-            console.log('✅ Found student data:', studentData);
-
             // Check if student record needs user_id update
             const currentUser = await supabase.auth.getUser();
             if (currentUser.data.user && !studentData.user_id) {
-              console.log('🔄 Student record missing user_id, updating...');
-              
               // Update student record to link user_id
               const { error: updateError } = await supabase
                 .from('students')
@@ -200,8 +187,6 @@ export const useCalendarData = ({
 
               if (updateError) {
                 console.error('❌ Failed to update student user_id:', updateError);
-              } else {
-                console.log('✅ Successfully updated student user_id');
               }
             }
 
@@ -224,8 +209,6 @@ export const useCalendarData = ({
             }
 
           } else if (userRole === 'parent') {
-            console.log('👨‍👩‍👧‍👦 Processing parent data for email:', userEmail);
-            
             // For parents, first get the parent record
             const { data: parentData, error: parentError } = await supabase
               .from('parents')
@@ -241,7 +224,6 @@ export const useCalendarData = ({
             }
 
             if (!parentData) {
-              console.log('❌ No parent record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
@@ -261,14 +243,12 @@ export const useCalendarData = ({
             }
 
             if (!studentData || studentData.length === 0) {
-              console.log('❌ No students found for parent:', parentData.id);
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
 
             const studentIds = studentData.map(s => s.id);
-            console.log('✅ Found students for parent:', studentIds);
 
             // Fetch both original lessons and instances for this parent's students
             query = supabase
@@ -290,8 +270,6 @@ export const useCalendarData = ({
             }
 
           } else if (userRole === 'tutor') {
-            console.log('👨‍🏫 Processing tutor data for email:', userEmail);
-            
             const { data: tutorData, error: tutorError } = await supabase
               .from('tutors')
               .select('id')
@@ -306,13 +284,10 @@ export const useCalendarData = ({
             }
 
             if (!tutorData) {
-              console.log('❌ No tutor record found for email:', userEmail);
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
-
-            console.log('✅ Found tutor data:', tutorData);
 
             // Fetch both original lessons and instances for this tutor
             // Exclude demo sessions from tutor view
@@ -336,8 +311,6 @@ export const useCalendarData = ({
             }
 
           } else if (userRole === 'admin' || userRole === 'owner') {
-            console.log('👑 Processing admin/owner data - fetching lessons for date range');
-            
             // Fetch all lessons (original lessons and instances) for admin/owner
             query = supabase
               .from('lessons')
@@ -358,23 +331,19 @@ export const useCalendarData = ({
             }
 
             if (filters?.selectedTutors && filters.selectedTutors.length > 0) {
-              console.log('🔍 Applying tutor filter:', filters.selectedTutors);
               query = query.in('tutor_id', filters.selectedTutors);
             }
 
             if (filters?.selectedStudents && filters.selectedStudents.length > 0) {
-              console.log('🔍 Applying student filter:', filters.selectedStudents);
               query = query.in('lesson_students.student_id', filters.selectedStudents.map(id => parseInt(id)));
             }
 
           } else {
-            console.log('❓ Unknown user role:', userRole);
             setRawLessons([]);
             setIsLoading(false);
             return;
           }
 
-          console.log('🚀 Executing database query...');
           const { data, error } = await query;
 
           if (error) {
@@ -382,42 +351,30 @@ export const useCalendarData = ({
             throw error;
           }
 
-          console.log(`✅ Database query completed. Raw results: ${data?.length || 0} lessons`);
-          
           let filteredData = data || [];
           
           // Filter out demo data if not requested
-          const beforeDemoFilter = filteredData.length;
           filteredData = filteredData.filter(lesson => !lesson.is_demo_data);
-          const afterDemoFilter = filteredData.length;
-          console.log(`🧹 Demo data filter: ${beforeDemoFilter} → ${afterDemoFilter} (removed ${beforeDemoFilter - afterDemoFilter} demo lessons)`);
           
           // Apply student filter for admin/owner
           if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedStudents && filters.selectedStudents.length > 0) {
-            const beforeStudentFilter = filteredData.length;
             filteredData = filteredData.filter(lesson => {
               if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
               return lesson.lesson_students.some(ls => 
                 filters.selectedStudents.includes(ls.student_id.toString())
               );
             });
-            const afterStudentFilter = filteredData.length;
-            console.log(`👥 Student filter: ${beforeStudentFilter} → ${afterStudentFilter} (removed ${beforeStudentFilter - afterStudentFilter} lessons)`);
           }
 
           // Apply subject filter
           if (filters?.selectedSubjects && filters.selectedSubjects.length > 0) {
-            const beforeSubjectFilter = filteredData.length;
             filteredData = filteredData.filter(lesson => 
               filters.selectedSubjects.includes(lesson.subject)
             );
-            const afterSubjectFilter = filteredData.length;
-            console.log(`📚 Subject filter: ${beforeSubjectFilter} → ${afterSubjectFilter} (removed ${beforeSubjectFilter - afterSubjectFilter} lessons)`);
           }
 
           // Apply lesson type filter
           if (filters?.selectedLessonType && filters.selectedLessonType !== 'All Lessons') {
-            const beforeTypeFilter = filteredData.length;
             if (filters.selectedLessonType === 'Trial Lessons') {
               filteredData = filteredData.filter(lesson => lesson.lesson_type === 'trial');
             } else if (filters.selectedLessonType === 'Demo Lessons') {
@@ -425,11 +382,8 @@ export const useCalendarData = ({
             } else if (filters.selectedLessonType === 'Full Lessons') {
               filteredData = filteredData.filter(lesson => lesson.lesson_type !== 'trial' && lesson.lesson_type !== 'demo' || lesson.lesson_type == null);
             }
-            const afterTypeFilter = filteredData.length;
-            console.log(`🎯 Lesson type filter (${filters.selectedLessonType}): ${beforeTypeFilter} → ${afterTypeFilter} (removed ${beforeTypeFilter - afterTypeFilter} lessons)`);
           }
 
-          console.log(`🎯 FINAL RESULT: ${filteredData.length} lessons will be processed for completion data`);
           setRawLessons(filteredData);
 
         })();

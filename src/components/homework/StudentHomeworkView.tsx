@@ -83,7 +83,6 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
 
   useEffect(() => {
     if (studentId) {
-      console.log("Fetching homework for student ID:", studentId);
       fetchHomework();
     } else {
       console.error("No student ID provided");
@@ -96,8 +95,6 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      console.log("Starting homework fetch for student ID:", studentId);
-      
       // Fetch all lesson IDs the student is part of
       const { data: lessonStudents, error: lessonError } = await supabase
         .from('lesson_students')
@@ -109,16 +106,12 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         throw lessonError;
       }
       
-      console.log("Found lesson students:", lessonStudents);
-      
       if (!lessonStudents || lessonStudents.length === 0) {
-        console.log("No lessons found for student");
         setHomeworks([]);
         return;
       }
 
       const lessonIds = lessonStudents.map(ls => ls.lesson_id);
-      console.log("Lesson IDs to fetch homework for:", lessonIds);
 
       // Get all homework for these lessons
       const { data: homeworkData, error: homeworkError } = await supabase
@@ -143,12 +136,9 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         throw homeworkError;
       }
 
-      console.log("Found homework assignments:", homeworkData);
-
       // For each homework, check if the student has a submission
       const homeworkWithSubmissions = await Promise.all(
         homeworkData.map(async (hw) => {
-          console.log("Checking submissions for homework:", hw.id);
           const { data: submission, error: submissionError } = await supabase
             .from('homework_submissions')
             .select('id, status, submission_text, attachment_url, submitted_at, grade, feedback')
@@ -160,8 +150,6 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
             console.error('Error fetching submission:', submissionError);
             return hw; // Return homework without submission info
           }
-
-          console.log("Submission data for homework", hw.id, ":", submission);
           
           return {
             ...hw,
@@ -170,7 +158,6 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
         })
       );
       
-      console.log("Final homework data with submissions:", homeworkWithSubmissions);
       setHomeworks(homeworkWithSubmissions);
     } catch (error) {
       console.error('Error fetching homework:', error);

@@ -117,12 +117,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   };
 
   const handleDatesSet = (dateInfo: DatesSetArg) => {
-    console.log('📅 Calendar view changed:', {
-      viewType: dateInfo.view.type,
-      start: dateInfo.start,
-      end: dateInfo.end
-    });
-    
     // Update current date range for availability fetching
     setCurrentDateRange({
       start: startOfDay(dateInfo.start),

@@ -101,8 +101,6 @@ const HomeworkManager: React.FC = () => {
   const fetchHomeworks = async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching homework assignments with demo filtering...');
-      
       // Apply RLS policies
       let homeworkQuery = supabase
         .from('homework')
@@ -117,7 +115,6 @@ const HomeworkManager: React.FC = () => {
       }
 
       if (!homeworkData || homeworkData.length === 0) {
-        console.log('No homework data found (filtered by RLS)');
         setHomeworks([]);
         setIsLoading(false);
         return;

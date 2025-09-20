@@ -24,7 +24,6 @@ export const useLessonCompletion = (lessonIds: string[]) => {
     }
     // Filter out null/undefined values and sort for stable comparison
     const validIds = lessonIds.filter(id => id != null && id !== '');
-    console.log(`🔧 useLessonCompletion: Processing ${validIds.length} lesson IDs`);
     return validIds.slice().sort();
   }, [lessonIds?.length, lessonIds?.filter(id => id != null && id !== '').sort().join('|')]);
 
@@ -39,38 +38,31 @@ export const useLessonCompletion = (lessonIds: string[]) => {
       batches.push(ids.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`📦 ${operationName}: Processing ${ids.length} items in ${batches.length} batches of ${BATCH_SIZE}`);
-
     const allResults: T[] = [];
     
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      console.log(`🔄 ${operationName}: Processing batch ${i + 1}/${batches.length} with ${batch.length} items`);
       
       try {
         const batchResults = await batchProcessor(batch);
         allResults.push(...batchResults);
-        console.log(`✅ ${operationName}: Batch ${i + 1} completed with ${batchResults.length} results`);
       } catch (error) {
         console.error(`❌ ${operationName}: Batch ${i + 1} failed:`, error);
         // Continue with other batches even if one fails
       }
     }
 
-    console.log(`🎯 ${operationName}: All batches completed. Total results: ${allResults.length}`);
     return allResults;
   };
 
   useEffect(() => {
     if (!stableLessonIds || stableLessonIds.length === 0) {
-      console.log('⚠️ useLessonCompletion: No lesson IDs to process, resetting completion data');
       setCompletionData({});
       setIsLoading(false);
       return;
     }
 
     const fetchCompletionData = async () => {
-      console.log(`🚀 useLessonCompletion: Starting batch completion data fetch for ${stableLessonIds.length} lessons`);
       setIsLoading(true);
       
       try {
@@ -123,12 +115,6 @@ export const useLessonCompletion = (lessonIds: string[]) => {
         const newCompletionData: LessonCompletionData = {};
         let completedLessons = 0;
 
-        console.log('🔄 Processing completion data for each lesson...');
-        console.log(`📊 Data Summary:`);
-        console.log(`   • Attendance records: ${attendanceData.length}`);
-        console.log(`   • Homework records: ${homeworkData.length}`);
-        console.log(`   • Lesson-student records: ${lessonStudentData.length}`);
-
         stableLessonIds.forEach(lessonId => {
           const studentCount = lessonStudentData.filter(ls => ls.lesson_id === lessonId).length;
           const attendanceCount = attendanceData.filter(att => att.lesson_id === lessonId).length;
@@ -145,12 +131,6 @@ export const useLessonCompletion = (lessonIds: string[]) => {
             hasHomework
           };
         });
-
-        console.log(`📊 Completion processing complete:`);
-        console.log(`   • Total lessons processed: ${stableLessonIds.length}`);
-        console.log(`   • Lessons with students: ${Object.values(newCompletionData).filter(d => d.totalStudents > 0).length}`);
-        console.log(`   • Lessons with homework: ${Object.values(newCompletionData).filter(d => d.hasHomework).length}`);
-        console.log(`   • Completed lessons: ${completedLessons}`);
         
         setCompletionData(newCompletionData);
       } catch (error) {
@@ -159,7 +139,6 @@ export const useLessonCompletion = (lessonIds: string[]) => {
         setCompletionData({});
       } finally {
         setIsLoading(false);
-        console.log('✅ useLessonCompletion: Batch fetch process completed');
       }
     };
 

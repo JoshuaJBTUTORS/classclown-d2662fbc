@@ -145,7 +145,6 @@ const Calendar = () => {
 
   // Handle view change from calendar
   const handleViewChange = (viewInfo: { start: Date; end: Date; view: string }) => {
-    console.log('📅 View change received in Calendar:', viewInfo);
     setCurrentStartDate(viewInfo.start);
     setCurrentEndDate(viewInfo.end);
     setCurrentViewType(viewInfo.view);

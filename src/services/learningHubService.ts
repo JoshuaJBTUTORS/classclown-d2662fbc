@@ -222,16 +222,13 @@ export const learningHubService = {
 
       if (student && !studentError) {
         // Traditional student - use student_id
-        console.log('Found student record:', student);
         query = query.eq('student_id', student.id);
       } else {
         // Learning Hub user - use user_id from auth
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email === email) {
-          console.log('Using user_id for Learning Hub user:', user.id);
           query = query.eq('user_id', user.id);
         } else {
-          console.log('No student record or auth user found for email:', email);
           return [];
         }
       }

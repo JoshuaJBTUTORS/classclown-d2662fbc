@@ -484,7 +484,6 @@ export const personalizedLearningPathService = {
     try {
       const cacheKey = `personalized_path_${userId}_${courseId}`;
       localStorage.removeItem(cacheKey);
-      console.log(`Cleared personalized path cache for user ${userId}, course ${courseId}`);
     } catch (error) {
       console.error('Error clearing cached personalized path:', error);
     }
@@ -503,8 +502,6 @@ export const personalizedLearningPathService = {
       userCacheKeys.forEach(key => {
         localStorage.removeItem(key);
       });
-      
-      console.log(`Cleared ${userCacheKeys.length} cached personalized paths for user ${userId}`);
     } catch (error) {
       console.error('Error clearing all user cache:', error);
     }
