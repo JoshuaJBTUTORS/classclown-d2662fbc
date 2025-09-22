@@ -137,6 +137,36 @@ export const getAlternativeTutorsForLesson = async (
   }
 };
 
+const recreateLessonSpaceRoom = async (lessonId: string) => {
+  try {
+    console.log('Recreating LessonSpace room for lesson:', lessonId);
+    
+    const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
+      body: {
+        action: 'create-room',
+        lessonId: lessonId,
+        title: 'Reassigned Lesson Room',
+        startTime: new Date().toISOString(),
+      }
+    });
+
+    if (error) {
+      console.error('Error calling lesson-space-integration:', error);
+      return null;
+    }
+
+    if (data && data.success) {
+      console.log('LessonSpace room recreated successfully:', data);
+      return data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in recreateLessonSpaceRoom:', error);
+    return null;
+  }
+};
+
 export const reassignLesson = async (
   lessonId: string,
   newTutorId: string,
@@ -144,6 +174,19 @@ export const reassignLesson = async (
   adminUserId: string
 ): Promise<void> => {
   try {
+    // Get original lesson details to check if tutor actually changed
+    const { data: originalLesson, error: fetchError } = await supabase
+      .from('lessons')
+      .select('tutor_id')
+      .eq('id', lessonId)
+      .single();
+
+    if (fetchError || !originalLesson) {
+      throw new Error('Failed to fetch original lesson details');
+    }
+
+    const tutorChanged = originalLesson.tutor_id !== newTutorId;
+
     // Update lesson with new tutor
     const { error: updateError } = await supabase
       .from('lessons')
@@ -157,11 +200,18 @@ export const reassignLesson = async (
       throw updateError;
     }
 
-    // Log the reassignment (you could create a separate audit table for this)
+    // Recreate LessonSpace room if tutor changed to regenerate participant URLs
+    if (tutorChanged) {
+      console.log('Tutor changed, recreating LessonSpace room for new authorization');
+      const roomData = await recreateLessonSpaceRoom(lessonId);
+      if (!roomData) {
+        console.warn('Failed to recreate room for lesson after tutor change - video room may not work properly');
+        // Don't throw error here as the lesson reassignment itself was successful
+      }
+    }
+
+    // Log the reassignment
     console.log(`Lesson ${lessonId} reassigned to tutor ${newTutorId} by admin ${adminUserId}. Reason: ${reason}`);
-    
-    // TODO: Send notifications to affected parties (students, old tutor, new tutor)
-    // This would integrate with your existing notification system
     
   } catch (error) {
     console.error('Error reassigning lesson:', error);
