@@ -15,6 +15,8 @@ import { formatInUKTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import { TimeOffFilters } from '@/components/timeOff/TimeOffFilters';
+import { ConflictDetectionDialog } from '@/components/timeOff/ConflictDetectionDialog';
+import { checkTimeOffConflicts, resolveAllConflicts, TimeOffConflict, ConflictResolution } from '@/services/timeOffConflictService';
 import { cn } from '@/lib/utils';
 
 const TimeOffRequests = () => {
@@ -23,6 +25,11 @@ const TimeOffRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [actionType, setActionType] = useState<'approve' | 'deny' | null>(null);
+  
+  // Conflict detection states
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [conflicts, setConflicts] = useState<TimeOffConflict[]>([]);
+  const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
   
   // Filter states
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
@@ -111,10 +118,64 @@ const TimeOffRequests = () => {
     }
   });
 
-  const handleAction = (request: any, action: 'approve' | 'deny') => {
+  const handleAction = async (request: any, action: 'approve' | 'deny') => {
     setSelectedRequest(request);
     setActionType(action);
     setAdminNotes('');
+    
+    // If approving, check for conflicts first
+    if (action === 'approve') {
+      await checkForConflicts(request);
+    }
+  };
+
+  const checkForConflicts = async (request: any) => {
+    setIsCheckingConflicts(true);
+    setShowConflictDialog(true);
+    
+    try {
+      const conflictResult = await checkTimeOffConflicts(
+        request.tutor_id,
+        request.start_date,
+        request.end_date
+      );
+      
+      setConflicts(conflictResult.conflicts);
+      
+      if (!conflictResult.hasConflicts) {
+        // No conflicts, proceed with normal approval
+        setShowConflictDialog(false);
+        proceedWithApproval();
+      }
+    } catch (error) {
+      console.error('Error checking conflicts:', error);
+      toast.error('Failed to check for conflicts. Please try again.');
+      setShowConflictDialog(false);
+    } finally {
+      setIsCheckingConflicts(false);
+    }
+  };
+
+  const proceedWithApproval = () => {
+    setShowConflictDialog(false);
+    handleSubmitAction();
+  };
+
+  const handleResolveConflicts = async (resolutions: ConflictResolution[]) => {
+    try {
+      await resolveAllConflicts(resolutions, user!.id);
+      toast.success('Conflicts resolved successfully');
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['allTimeOffRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['lessons'] });
+      
+      // Proceed with approval
+      proceedWithApproval();
+    } catch (error) {
+      console.error('Error resolving conflicts:', error);
+      toast.error('Failed to resolve conflicts. Please try again.');
+    }
   };
 
   const handleSubmitAction = () => {
@@ -344,12 +405,12 @@ const TimeOffRequests = () => {
         </main>
       </div>
 
-      {/* Action Dialog */}
-      <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
+      {/* Action Dialog - Only shown for denial or when no conflicts */}
+      <Dialog open={!!selectedRequest && actionType === 'deny'} onOpenChange={() => setSelectedRequest(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {actionType === 'approve' ? 'Approve' : 'Deny'} Time Off Request
+              Deny Time Off Request
             </DialogTitle>
           </DialogHeader>
           {selectedRequest && (
@@ -379,17 +440,31 @@ const TimeOffRequests = () => {
                 <Button
                   onClick={handleSubmitAction}
                   disabled={updateRequestMutation.isPending}
-                  className={actionType === 'approve' ? 'bg-green-600 hover:bg-green-700' : ''}
-                  variant={actionType === 'deny' ? 'destructive' : 'default'}
+                  variant="destructive"
                 >
-                  {updateRequestMutation.isPending ? 'Processing...' : 
-                   actionType === 'approve' ? 'Approve Request' : 'Deny Request'}
+                  {updateRequestMutation.isPending ? 'Processing...' : 'Deny Request'}
                 </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Conflict Detection Dialog */}
+      <ConflictDetectionDialog
+        isOpen={showConflictDialog}
+        onClose={() => {
+          setShowConflictDialog(false);
+          setSelectedRequest(null);
+          setActionType(null);
+        }}
+        conflicts={conflicts}
+        isLoading={isCheckingConflicts}
+        onResolveConflicts={handleResolveConflicts}
+        onProceedWithApproval={proceedWithApproval}
+        tutorName={selectedRequest ? `${selectedRequest.tutor.first_name} ${selectedRequest.tutor.last_name}` : ''}
+        timeOffPeriod={selectedRequest ? `${formatInUKTime(selectedRequest.start_date, 'PPP')} - ${formatInUKTime(selectedRequest.end_date, 'PPP')}` : ''}
+      />
     </div>
   );
 };
