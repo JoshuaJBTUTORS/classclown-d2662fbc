@@ -1662,6 +1662,7 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           first_name: string
+          has_complimentary_access: boolean
           id: string
           last_name: string
           phone: string | null
@@ -1678,6 +1679,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name: string
+          has_complimentary_access?: boolean
           id?: string
           last_name: string
           phone?: string | null
@@ -1694,6 +1696,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name?: string
+          has_complimentary_access?: boolean
           id?: string
           last_name?: string
           phone?: string | null

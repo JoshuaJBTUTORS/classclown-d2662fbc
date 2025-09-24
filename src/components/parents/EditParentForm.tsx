@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 
 interface EditParentFormProps {
   parent: Parent | null;
@@ -41,6 +42,7 @@ const formSchema = z.object({
   billing_address: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
+  has_complimentary_access: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -58,6 +60,7 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
       billing_address: parent?.billing_address || "",
       emergency_contact_name: parent?.emergency_contact_name || "",
       emergency_contact_phone: parent?.emergency_contact_phone || "",
+      has_complimentary_access: parent?.has_complimentary_access || false,
     },
   });
 
@@ -72,6 +75,7 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
         billing_address: parent.billing_address || "",
         emergency_contact_name: parent.emergency_contact_name || "",
         emergency_contact_phone: parent.emergency_contact_phone || "",
+        has_complimentary_access: parent.has_complimentary_access || false,
       });
     }
   }, [parent, form]);
@@ -92,6 +96,7 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
           billing_address: data.billing_address || null,
           emergency_contact_name: data.emergency_contact_name || null,
           emergency_contact_phone: data.emergency_contact_phone || null,
+          has_complimentary_access: data.has_complimentary_access,
         })
         .eq('id', parent.id)
         .select()
@@ -160,6 +165,27 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="has_complimentary_access"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>Free Course Access</FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      Grant complimentary access to all e-learning courses
+                    </div>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

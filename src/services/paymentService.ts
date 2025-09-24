@@ -212,6 +212,29 @@ export const paymentService = {
 
     console.log('Checking course purchase for user:', user.id, 'course:', courseId);
 
+    // Check if user is owner first
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    if (roles?.some(r => r.role === 'owner')) {
+      console.log('User is owner, granting access');
+      return true;
+    }
+
+    // Check if user is a parent with complimentary access
+    const { data: parentData } = await supabase
+      .from('parents')
+      .select('has_complimentary_access')
+      .eq('user_id', user.id)
+      .single();
+
+    if (parentData?.has_complimentary_access) {
+      console.log('Parent has complimentary access, granting access');
+      return true;
+    }
+
     const { data, error } = await supabase
       .from('course_purchases')
       .select('id, status, grace_period_end, trial_end, stripe_subscription_id, stripe_session_id')

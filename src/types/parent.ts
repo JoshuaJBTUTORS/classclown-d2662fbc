@@ -9,6 +9,7 @@ export interface Parent {
   billing_address?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
+  has_complimentary_access?: boolean;
   created_at?: string;
   updated_at?: string;
 }
