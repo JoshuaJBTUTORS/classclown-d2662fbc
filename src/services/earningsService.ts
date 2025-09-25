@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getCompletedLessons } from './lessonCompletionService';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
+import { getEarningsPeriod } from '@/utils/earningsPeriodUtils';
 
 export interface TutorEarningGoal {
   id: string;
@@ -26,9 +27,7 @@ export interface EarningsData {
 export const getTutorEarningGoal = async (tutorId: string, period: 'weekly' | 'monthly' = 'monthly'): Promise<TutorEarningGoal | null> => {
   try {
     const now = new Date();
-    const startDate = period === 'weekly' 
-      ? startOfWeek(now, { weekStartsOn: 1 })
-      : startOfMonth(now);
+    const { start: startDate } = getEarningsPeriod(now, period);
 
     const { data, error } = await supabase
       .from('tutor_earning_goals')
@@ -59,9 +58,7 @@ export const setTutorEarningGoal = async (
 ): Promise<TutorEarningGoal> => {
   try {
     const now = new Date();
-    const startDate = period === 'weekly' 
-      ? startOfWeek(now, { weekStartsOn: 1 })
-      : startOfMonth(now);
+    const { start: startDate } = getEarningsPeriod(now, period);
 
     const { data, error } = await supabase
       .from('tutor_earning_goals')
@@ -91,12 +88,7 @@ export const calculateTutorEarnings = async (
 ): Promise<number> => {
   try {
     const now = new Date();
-    const periodStart = period === 'weekly' 
-      ? startOfWeek(now, { weekStartsOn: 1 })
-      : startOfMonth(now);
-    const periodEnd = period === 'weekly' 
-      ? endOfWeek(now, { weekStartsOn: 1 })
-      : endOfMonth(now);
+    const { start: periodStart, end: periodEnd } = getEarningsPeriod(now, period);
 
     // Get tutor's hourly rate
     const { data: tutorData, error: tutorError } = await supabase
@@ -138,12 +130,7 @@ export const getTutorEarningsData = async (
 ): Promise<EarningsData> => {
   try {
     const now = new Date();
-    const periodStart = period === 'weekly' 
-      ? startOfWeek(now, { weekStartsOn: 1 })
-      : startOfMonth(now);
-    const periodEnd = period === 'weekly' 
-      ? endOfWeek(now, { weekStartsOn: 1 })
-      : endOfMonth(now);
+    const { start: periodStart, end: periodEnd } = getEarningsPeriod(now, period);
 
     // Get all data in parallel - fetch completed lessons only once
     const [goal, tutorData, completedLessons] = await Promise.all([
