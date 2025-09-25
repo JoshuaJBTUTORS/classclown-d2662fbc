@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { getCompletedLessons } from './lessonCompletionService';
+import { getCompletedLessons, getAbsenceStateForLessons } from './lessonCompletionService';
 
 export interface TutorPayrollData {
   tutor_id: string;
@@ -24,6 +24,10 @@ export const calculateTutorPayroll = async (filters: {
   try {
     // Get completed lessons using the proper completion logic
     const completedLessons = await getCompletedLessons(filters);
+    
+    // Get absence status for all lessons in batch
+    const lessonIds = completedLessons.map(lesson => lesson.id);
+    const absenceSet = await getAbsenceStateForLessons(lessonIds);
 
     // Get tutor rates
     const { data: tutorRates, error: ratesError } = await supabase
@@ -59,28 +63,8 @@ export const calculateTutorPayroll = async (filters: {
       const end = new Date(lesson.end_time);
       const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
-      // Check if all students were absent for this lesson
-      const { data: lessonStudents } = await supabase
-        .from('lesson_students')
-        .select('student_id')
-        .eq('lesson_id', lesson.id);
-
-      let isAbsenceLesson = false;
-      
-      if (lessonStudents && lessonStudents.length > 0) {
-        const { data: attendanceData } = await supabase
-          .from('lesson_attendance')
-          .select('student_id, attendance_status')
-          .eq('lesson_id', lesson.id);
-
-        if (attendanceData && attendanceData.length > 0) {
-          isAbsenceLesson = lessonStudents.every(ls => 
-            attendanceData.some(att => 
-              att.student_id === ls.student_id && att.attendance_status === 'absent'
-            )
-          );
-        }
-      }
+      // Use batched absence data instead of per-lesson queries
+      const isAbsenceLesson = absenceSet.has(lesson.id);
 
       // Initialize or update tutor data
       if (!tutorPayrollMap.has(tutorId)) {

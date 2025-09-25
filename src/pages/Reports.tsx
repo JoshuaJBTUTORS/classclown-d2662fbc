@@ -24,7 +24,10 @@ const Reports: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [filters, setFilters] = useState<ReportFilters>({
-    dateRange: { from: null, to: null },
+    dateRange: { 
+      from: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Last 14 days
+      to: new Date() 
+    },
     selectedTutors: [],
     selectedSubjects: []
   });

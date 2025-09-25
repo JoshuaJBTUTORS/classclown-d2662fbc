@@ -8,7 +8,7 @@ import { Download, UserX, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { getCompletedLessons } from '@/services/lessonCompletionService';
+import { getCompletedLessons, getAbsenceStateForLessons, getAbsentStudentNamesForLessons } from '@/services/lessonCompletionService';
 
 interface TutorAbsenceData {
   tutor_id: string;
@@ -50,84 +50,52 @@ const StudentAbsenceReport: React.FC<StudentAbsenceReportProps> = ({ filters }) 
       // Get completed lessons using the proper completion logic
       const completedLessons = await getCompletedLessons(filters);
 
-      const absenceLessons: AbsenceLessonData[] = [];
-
-      // For each completed lesson, check if all students were absent
-      for (const lesson of completedLessons) {
-        // Get students enrolled in this lesson
-        const { data: lessonStudents } = await supabase
-          .from('lesson_students')
-          .select(`
-            student_id,
-            students!inner(
-              first_name,
-              last_name
-            )
-          `)
-          .eq('lesson_id', lesson.id);
-
-        if (lessonStudents && lessonStudents.length > 0) {
-          // Get attendance for this lesson
-          const { data: attendanceData } = await supabase
-            .from('lesson_attendance')
-            .select('student_id, attendance_status')
-            .eq('lesson_id', lesson.id);
-
-          if (attendanceData && attendanceData.length > 0) {
-            // Check if all students were absent
-            const allAbsent = lessonStudents.every(ls => 
-              attendanceData.some(att => 
-                att.student_id === ls.student_id && att.attendance_status === 'absent'
-              )
-            );
-
-            if (allAbsent) {
-              const start = new Date(lesson.start_time);
-              const end = new Date(lesson.end_time);
-              const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-              const absentStudents = lessonStudents.map(ls => 
-                `${ls.students.first_name} ${ls.students.last_name}`
-              );
-
-              absenceLessons.push({
-                lesson_id: lesson.id,
-                lesson_title: lesson.title,
-                lesson_date: lesson.start_time,
-                duration_hours: Math.round(duration * 10) / 10,
-                subject: lesson.subject || 'General',
-                absent_students: absentStudents
-              });
-            }
-          }
-        }
-      }
+      // Get lessons where all students were absent using batched helper
+      const lessonIds = completedLessons.map(lesson => lesson.id);
+      const absenceSet = await getAbsenceStateForLessons(lessonIds);
+      const absenceLessonIds = Array.from(absenceSet);
+      
+      // Get student names for absence lessons
+      const studentNamesMap = await getAbsentStudentNamesForLessons(absenceLessonIds);
 
       // Group absence lessons by tutor
       const tutorAbsenceMap = new Map<string, TutorAbsenceData>();
 
-      for (const absenceLesson of absenceLessons) {
-        // Find the corresponding completed lesson to get tutor info
-        const completedLesson = completedLessons.find(cl => cl.id === absenceLesson.lesson_id);
-        if (completedLesson) {
-          const tutorKey = completedLesson.tutor_id;
-          const tutorName = `${completedLesson.tutors.first_name} ${completedLesson.tutors.last_name}`;
+      // Process absence lessons
+      for (const lesson of completedLessons) {
+        if (!absenceSet.has(lesson.id)) continue;
 
-          if (!tutorAbsenceMap.has(tutorKey)) {
-            tutorAbsenceMap.set(tutorKey, {
-              tutor_id: tutorKey,
-              tutor_name: tutorName,
-              total_absence_hours: 0,
-              absence_lesson_count: 0,
-              absence_lessons: []
-            });
-          }
+        const absentStudents = studentNamesMap.get(lesson.id) || [];
+        const start = new Date(lesson.start_time);
+        const end = new Date(lesson.end_time);
+        const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
-          const tutorData = tutorAbsenceMap.get(tutorKey)!;
-          tutorData.total_absence_hours += absenceLesson.duration_hours;
-          tutorData.absence_lesson_count += 1;
-          tutorData.absence_lessons.push(absenceLesson);
+        const absenceLesson: AbsenceLessonData = {
+          lesson_id: lesson.id,
+          lesson_title: lesson.title,
+          lesson_date: lesson.start_time,
+          duration_hours: Math.round(duration * 10) / 10,
+          subject: lesson.subject || 'General',
+          absent_students: absentStudents
+        };
+
+        const tutorKey = lesson.tutor_id;
+        const tutorName = `${lesson.tutors.first_name} ${lesson.tutors.last_name}`;
+
+        if (!tutorAbsenceMap.has(tutorKey)) {
+          tutorAbsenceMap.set(tutorKey, {
+            tutor_id: tutorKey,
+            tutor_name: tutorName,
+            total_absence_hours: 0,
+            absence_lesson_count: 0,
+            absence_lessons: []
+          });
         }
+
+        const tutorData = tutorAbsenceMap.get(tutorKey)!;
+        tutorData.total_absence_hours += absenceLesson.duration_hours;
+        tutorData.absence_lesson_count += 1;
+        tutorData.absence_lessons.push(absenceLesson);
       }
 
       // Convert to array and sort by total absence hours descending

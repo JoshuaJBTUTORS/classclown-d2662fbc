@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Users, UserX, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { getCompletedLessons } from '@/services/lessonCompletionService';
+import { getCompletedLessons, getAbsenceStateForLessons } from '@/services/lessonCompletionService';
 
 interface ReportSummaryCardsProps {
   filters: {
@@ -43,42 +43,15 @@ const ReportSummaryCards: React.FC<ReportSummaryCardsProps> = ({ filters }) => {
 
       const activeTutors = new Set(completedLessons.map(lesson => lesson.tutor_id)).size;
 
-      // Calculate absence lessons - lessons where all students were absent
-      let absenceLessons = 0;
-      for (const lesson of completedLessons) {
-        // Get students enrolled in this lesson
-        const { data: lessonStudents } = await supabase
-          .from('lesson_students')
-          .select('student_id')
-          .eq('lesson_id', lesson.id);
-
-        if (lessonStudents && lessonStudents.length > 0) {
-          // Get attendance for this lesson
-          const { data: attendanceData } = await supabase
-            .from('lesson_attendance')
-            .select('student_id, attendance_status')
-            .eq('lesson_id', lesson.id);
-
-          if (attendanceData && attendanceData.length > 0) {
-            // Check if all students were absent
-            const allAbsent = lessonStudents.every(ls => 
-              attendanceData.some(att => 
-                att.student_id === ls.student_id && att.attendance_status === 'absent'
-              )
-            );
-            
-            if (allAbsent) {
-              absenceLessons++;
-            }
-          }
-        }
-      }
+      // Calculate absence lessons using batched helper
+      const lessonIds = completedLessons.map(lesson => lesson.id);
+      const absenceSet = await getAbsenceStateForLessons(lessonIds);
 
       setSummaryData({
         totalHours: Math.round(totalHours * 10) / 10,
         totalLessons,
         activeTutors,
-        absenceLessons
+        absenceLessons: absenceSet.size
       });
     } catch (error) {
       console.error('Error fetching summary data:', error);
