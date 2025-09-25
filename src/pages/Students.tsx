@@ -145,7 +145,7 @@ const Students = () => {
       if (parentIds.length > 0) {
         let parentsQuery = supabase
           .from('parents')
-          .select('id, first_name, last_name, email, phone')
+          .select('id, first_name, last_name, email, phone, has_complimentary_access')
           .in('id', parentIds);
 
 
@@ -373,24 +373,28 @@ const Students = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleEditParentClick = (student: Student) => {
-    // Create a parent object from the student's parent data
+  const handleEditParentClick = async (student: Student) => {
+    // Fetch the complete parent data from the database
     if (student.parent_id) {
-      const parentData = {
-        id: student.parent_id,
-        user_id: '', // We'll need to fetch this if needed
-        first_name: student.parentName?.split(' ')[0] || '',
-        last_name: student.parentName?.split(' ').slice(1).join(' ') || '',
-        email: student.parentEmail || '',
-        phone: student.parentPhone || '',
-        billing_address: '',
-        emergency_contact_name: '',
-        emergency_contact_phone: '',
-        created_at: '',
-        updated_at: '',
-      };
-      setSelectedParent(parentData);
-      setIsEditParentDialogOpen(true);
+      try {
+        const { data: parentData, error } = await supabase
+          .from('parents')
+          .select('*')
+          .eq('id', student.parent_id)
+          .single();
+
+        if (error || !parentData) {
+          console.error('Error fetching parent data:', error);
+          toast.error('Failed to load parent data');
+          return;
+        }
+
+        setSelectedParent(parentData);
+        setIsEditParentDialogOpen(true);
+      } catch (error) {
+        console.error('Error in handleEditParentClick:', error);
+        toast.error('Failed to load parent data');
+      }
     }
   };
 
@@ -400,6 +404,8 @@ const Students = () => {
   };
 
   const handleParentUpdated = (updatedParent: any) => {
+    // Update the selectedParent state with the new data
+    setSelectedParent(updatedParent);
     fetchStudents();
     setIsEditParentDialogOpen(false);
   };
