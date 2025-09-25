@@ -66,7 +66,11 @@ export const getCompletedLessons = async (filters: {
   isDemoMode?: boolean;
 }): Promise<CompletedLessonData[]> => {
   try {
-    // Get lessons with completion criteria in a single query
+    // Handle empty filters - if no tutors/subjects selected, don't apply filter
+    const shouldFilterTutors = filters.selectedTutors.length > 0;
+    const shouldFilterSubjects = filters.selectedSubjects.length > 0;
+
+    // Build base query
     let query = supabase
       .from('lessons')
       .select(`
@@ -82,7 +86,7 @@ export const getCompletedLessons = async (filters: {
         )
       `);
 
-    // Apply filters
+    // Apply date filters
     if (filters.dateRange.from) {
       query = query.gte('start_time', filters.dateRange.from.toISOString());
     }
@@ -91,94 +95,181 @@ export const getCompletedLessons = async (filters: {
       nextDay.setDate(nextDay.getDate() + 1);
       query = query.lt('end_time', nextDay.toISOString());
     }
-    if (filters.selectedTutors.length > 0) {
-      query = query.in('tutor_id', filters.selectedTutors);
+
+    // Handle large tutor filter arrays by batching
+    if (shouldFilterTutors) {
+      const BATCH_SIZE = 50;
+      if (filters.selectedTutors.length > BATCH_SIZE) {
+        // Process in batches for large arrays
+        const allLessons: any[] = [];
+        for (let i = 0; i < filters.selectedTutors.length; i += BATCH_SIZE) {
+          const tutorBatch = filters.selectedTutors.slice(i, i + BATCH_SIZE);
+          let batchQuery = supabase
+            .from('lessons')
+            .select(`
+              id,
+              title,
+              start_time,
+              end_time,
+              tutor_id,
+              subject,
+              tutors!inner(
+                first_name,
+                last_name
+              )
+            `)
+            .in('tutor_id', tutorBatch);
+
+          // Apply same date filters to batch
+          if (filters.dateRange.from) {
+            batchQuery = batchQuery.gte('start_time', filters.dateRange.from.toISOString());
+          }
+          if (filters.dateRange.to) {
+            const nextDay = new Date(filters.dateRange.to);
+            nextDay.setDate(nextDay.getDate() + 1);
+            batchQuery = batchQuery.lt('end_time', nextDay.toISOString());
+          }
+          if (shouldFilterSubjects) {
+            batchQuery = batchQuery.in('subject', filters.selectedSubjects);
+          }
+
+          const { data: batchLessons, error: batchError } = await batchQuery;
+          if (batchError) {
+            console.error('Error in batch query:', batchError);
+            throw batchError;
+          }
+          if (batchLessons) {
+            allLessons.push(...batchLessons);
+          }
+        }
+        
+        // Remove duplicates if any
+        const uniqueLessons = allLessons.filter((lesson, index, self) => 
+          index === self.findIndex(l => l.id === lesson.id)
+        );
+        
+        if (uniqueLessons.length === 0) {
+          return [];
+        }
+
+        const lessons = uniqueLessons;
+        const lessonIds = lessons.map(l => l.id);
+
+        // Get completion data for all lessons
+        const completionData = await getCompletionDataForLessons(lessonIds);
+        return filterCompletedLessons(lessons, completionData);
+      } else {
+        query = query.in('tutor_id', filters.selectedTutors);
+      }
     }
-    if (filters.selectedSubjects.length > 0) {
+
+    // Apply subject filter if needed and not already applied in batch processing
+    if (shouldFilterSubjects && filters.selectedTutors.length <= 50) {
       query = query.in('subject', filters.selectedSubjects);
     }
 
-    const { data: lessons, error: lessonsError } = await query;
-    if (lessonsError) throw lessonsError;
+    // Execute single query for non-batched case
+    if (!shouldFilterTutors || filters.selectedTutors.length <= 50) {
+      const { data: lessons, error: lessonsError } = await query;
+      if (lessonsError) {
+        console.error('Error fetching lessons:', lessonsError);
+        throw lessonsError;
+      }
 
-    if (!lessons || lessons.length === 0) {
-      return [];
+      if (!lessons || lessons.length === 0) {
+        return [];
+      }
+
+      const lessonIds = lessons.map(l => l.id);
+
+      // Get completion data for all lessons
+      const completionData = await getCompletionDataForLessons(lessonIds);
+      return filterCompletedLessons(lessons, completionData);
     }
 
-    const lessonIds = lessons.map(l => l.id);
-
-    // Get all completion data in parallel
-    const [studentsData, homeworkData, attendanceData] = await Promise.all([
-      supabase
-        .from('lesson_students')
-        .select('lesson_id, student_id')
-        .in('lesson_id', lessonIds),
-      supabase
-        .from('homework')
-        .select('lesson_id')
-        .in('lesson_id', lessonIds),
-      supabase
-        .from('lesson_attendance')
-        .select('lesson_id, student_id')
-        .in('lesson_id', lessonIds)
-    ]);
-
-    if (studentsData.error || homeworkData.error || attendanceData.error) {
-      console.error('Error fetching completion data:', {
-        studentsError: studentsData.error,
-        homeworkError: homeworkData.error,
-        attendanceError: attendanceData.error
-      });
-      return [];
-    }
-
-    // Group data by lesson_id for efficient lookup
-    const lessonStudentsMap = new Map<string, Set<number>>();
-    const homeworkLessons = new Set<string>();
-    const attendanceMap = new Map<string, Set<number>>();
-
-    studentsData.data?.forEach(item => {
-      if (!lessonStudentsMap.has(item.lesson_id)) {
-        lessonStudentsMap.set(item.lesson_id, new Set());
-      }
-      lessonStudentsMap.get(item.lesson_id)!.add(item.student_id);
-    });
-
-    homeworkData.data?.forEach(item => {
-      homeworkLessons.add(item.lesson_id);
-    });
-
-    attendanceData.data?.forEach(item => {
-      if (!attendanceMap.has(item.lesson_id)) {
-        attendanceMap.set(item.lesson_id, new Set());
-      }
-      attendanceMap.get(item.lesson_id)!.add(item.student_id);
-    });
-
-    // Filter completed lessons
-    const completedLessons = lessons.filter(lesson => {
-      const enrolledStudents = lessonStudentsMap.get(lesson.id);
-      const attendanceStudents = attendanceMap.get(lesson.id);
-      const hasHomework = homeworkLessons.has(lesson.id);
-
-      // Check completion criteria
-      if (!enrolledStudents || enrolledStudents.size === 0) return false;
-      if (!hasHomework) return false;
-      if (!attendanceStudents || attendanceStudents.size === 0) return false;
-
-      // Check if all enrolled students have attendance
-      for (const studentId of enrolledStudents) {
-        if (!attendanceStudents.has(studentId)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    return completedLessons;
+    return [];
   } catch (error) {
     console.error('Error fetching completed lessons:', error);
     return [];
   }
+};
+
+// Helper function to get completion data for lesson IDs
+const getCompletionDataForLessons = async (lessonIds: string[]) => {
+  const [studentsData, homeworkData, attendanceData] = await Promise.all([
+    supabase
+      .from('lesson_students')
+      .select('lesson_id, student_id')
+      .in('lesson_id', lessonIds),
+    supabase
+      .from('homework')
+      .select('lesson_id')
+      .in('lesson_id', lessonIds),
+    supabase
+      .from('lesson_attendance')
+      .select('lesson_id, student_id')
+      .in('lesson_id', lessonIds)
+  ]);
+
+  if (studentsData.error || homeworkData.error || attendanceData.error) {
+    console.error('Error fetching completion data:', {
+      studentsError: studentsData.error,
+      homeworkError: homeworkData.error,
+      attendanceError: attendanceData.error
+    });
+    throw new Error('Failed to fetch completion data');
+  }
+
+  return { studentsData, homeworkData, attendanceData };
+};
+
+// Helper function to filter completed lessons based on completion data
+const filterCompletedLessons = (lessons: any[], completionData: any): CompletedLessonData[] => {
+  const { studentsData, homeworkData, attendanceData } = completionData;
+
+  // Group data by lesson_id for efficient lookup
+  const lessonStudentsMap = new Map<string, Set<number>>();
+  const homeworkLessons = new Set<string>();
+  const attendanceMap = new Map<string, Set<number>>();
+
+  studentsData.data?.forEach((item: any) => {
+    if (!lessonStudentsMap.has(item.lesson_id)) {
+      lessonStudentsMap.set(item.lesson_id, new Set());
+    }
+    lessonStudentsMap.get(item.lesson_id)!.add(item.student_id);
+  });
+
+  homeworkData.data?.forEach((item: any) => {
+    homeworkLessons.add(item.lesson_id);
+  });
+
+  attendanceData.data?.forEach((item: any) => {
+    if (!attendanceMap.has(item.lesson_id)) {
+      attendanceMap.set(item.lesson_id, new Set());
+    }
+    attendanceMap.get(item.lesson_id)!.add(item.student_id);
+  });
+
+  // Filter completed lessons
+  const completedLessons = lessons.filter(lesson => {
+    const enrolledStudents = lessonStudentsMap.get(lesson.id);
+    const attendanceStudents = attendanceMap.get(lesson.id);
+    const hasHomework = homeworkLessons.has(lesson.id);
+
+    // Check completion criteria
+    if (!enrolledStudents || enrolledStudents.size === 0) return false;
+    if (!hasHomework) return false;
+    if (!attendanceStudents || attendanceStudents.size === 0) return false;
+
+    // Check if all enrolled students have attendance
+    for (const studentId of enrolledStudents) {
+      if (!attendanceStudents.has(studentId)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  return completedLessons;
 };
