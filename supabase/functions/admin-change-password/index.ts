@@ -12,7 +12,8 @@ const supabase = createClient(
 );
 
 interface PasswordChangeRequest {
-  userId: string;
+  userId?: string;
+  email?: string;
   newPassword: string;
 }
 
@@ -65,13 +66,30 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { userId, newPassword }: PasswordChangeRequest = await req.json();
+    const { userId, email, newPassword }: PasswordChangeRequest = await req.json();
     
-    if (!userId || !newPassword) {
-      return new Response(JSON.stringify({ error: "User ID and new password are required" }), {
+    if ((!userId && !email) || !newPassword) {
+      return new Response(JSON.stringify({ error: "User ID or email and new password are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    let targetUserId = userId;
+    
+    // If email provided, find the user ID
+    if (email && !userId) {
+      const { data: authUsers } = await supabase.auth.admin.listUsers();
+      const targetUser = authUsers?.users.find(u => u.email === email);
+      
+      if (!targetUser) {
+        return new Response(JSON.stringify({ error: "User not found with provided email" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      
+      targetUserId = targetUser.id;
     }
 
     if (newPassword.length < 6) {
@@ -81,11 +99,11 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log("Admin password change request by:", user.email, "for user:", userId);
+    console.log("Admin password change request by:", user.email, "for user:", targetUserId);
 
     // Update user password using admin API
     const { data: userData, error: updateError } = await supabase.auth.admin.updateUserById(
-      userId,
+      targetUserId!,
       { password: newPassword }
     );
 
@@ -99,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log("Password updated successfully for user:", userId, "by admin:", user.email);
+    console.log("Password updated successfully for user:", targetUserId, "by admin:", user.email);
 
     return new Response(JSON.stringify({ 
       success: true, 

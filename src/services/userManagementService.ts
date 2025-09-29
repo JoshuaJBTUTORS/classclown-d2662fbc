@@ -145,3 +145,25 @@ export const resetUserPassword = async (userId: string, newPassword: string): Pr
     throw new Error(error.message || 'Failed to reset password');
   }
 };
+
+export const resetUserPasswordByEmail = async (email: string, newPassword: string): Promise<void> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-change-password', {
+      body: {
+        email,
+        newPassword
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to reset password');
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Password reset failed');
+    }
+  } catch (error: any) {
+    console.error('Error resetting password:', error);
+    throw new Error(error.message || 'Failed to reset password');
+  }
+};

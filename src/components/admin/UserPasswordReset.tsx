@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Shield, Search, Copy, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { UserSelector } from './UserSelector';
-import { resetUserPassword } from '@/services/userManagementService';
+import { resetUserPassword, resetUserPasswordByEmail } from '@/services/userManagementService';
 
 interface User {
   id: string;
@@ -25,6 +25,8 @@ export const UserPasswordReset = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [quickResetPassword, setQuickResetPassword] = useState("");
   const { toast } = useToast();
 
   const generateRandomPassword = () => {
@@ -92,6 +94,38 @@ export const UserPasswordReset = () => {
     setSelectedUserType('');
     setNewPassword('');
     setShowPassword(false);
+    setResetEmail("");
+    setQuickResetPassword("");
+  };
+
+  const handleQuickReset = async () => {
+    if (!resetEmail.trim() || !quickResetPassword.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await resetUserPasswordByEmail(resetEmail.trim(), quickResetPassword);
+      toast({
+        title: "Success",
+        description: `Password reset successfully for ${resetEmail}`
+      });
+      setResetEmail("");
+      setQuickResetPassword("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const getUserDisplayName = (user: User) => {
@@ -109,7 +143,42 @@ export const UserPasswordReset = () => {
         </CardTitle>
         <Shield className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        {/* Quick Reset by Email */}
+        <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+          <h3 className="font-medium text-sm">Quick Password Reset</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Input
+              placeholder="Enter user email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              type="email"
+            />
+            <Input
+              placeholder="New password"
+              value={quickResetPassword}
+              onChange={(e) => setQuickResetPassword(e.target.value)}
+              type="password"
+            />
+            <Button 
+              onClick={handleQuickReset}
+              disabled={isResetting || !resetEmail.trim() || !quickResetPassword.trim()}
+              size="sm"
+            >
+              {isResetting ? "Resetting..." : "Reset Password"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or select from list</span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="userType">User Type</Label>
