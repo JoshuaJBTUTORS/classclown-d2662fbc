@@ -64,12 +64,6 @@ verify_jwt = false
 [functions.ensure-weekly-participant-urls]
 verify_jwt = true
 
-[functions.admin-list-users]
-verify_jwt = true
-
-[functions.admin-change-password]
-verify_jwt = true
-
 [edge_runtime]
 enabled = true
 port = 54328
