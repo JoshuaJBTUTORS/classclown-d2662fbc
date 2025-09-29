@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, Users, Calendar, UserCheck, GraduationCap, TrendingUp } from 'lucide-react';
 import { getAdminDashboardData, AdminDashboardData } from '@/services/adminDashboardService';
 import PageTitle from '@/components/ui/PageTitle';
+import { UserPasswordReset } from '@/components/admin/UserPasswordReset';
 
 const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
@@ -185,6 +186,9 @@ const AdminDashboard = () => {
             </p>
           </CardContent>
         </Card>
+        
+        {/* User Password Management */}
+        <UserPasswordReset />
       </div>
     </div>
   );
