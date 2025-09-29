@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { getCompletedLessons } from './lessonCompletionService';
+import { getCompletedLessons, getAbsenceStateForLessons } from './lessonCompletionService';
 import { format } from 'date-fns';
 import { getEarningsPeriod } from '@/utils/earningsPeriodUtils';
 
@@ -90,16 +90,17 @@ export const calculateTutorEarnings = async (
     const now = new Date();
     const { start: periodStart, end: periodEnd } = getEarningsPeriod(now, period);
 
-    // Get tutor's hourly rate
+    // Get tutor's hourly rates
     const { data: tutorData, error: tutorError } = await supabase
       .from('tutors')
-      .select('normal_hourly_rate')
+      .select('normal_hourly_rate, absence_hourly_rate')
       .eq('id', tutorId)
       .single();
 
     if (tutorError) throw tutorError;
 
-    const hourlyRate = tutorData?.normal_hourly_rate || 0;
+    const normalHourlyRate = tutorData?.normal_hourly_rate || 0;
+    const absenceHourlyRate = tutorData?.absence_hourly_rate || 0;
 
     // Get completed lessons for the period
     const completedLessons = await getCompletedLessons({
@@ -108,12 +109,19 @@ export const calculateTutorEarnings = async (
       selectedSubjects: []
     });
 
-    // Calculate total earnings
+    // Get absence states for all completed lessons
+    const lessonIds = completedLessons.map(lesson => lesson.id);
+    const absenceLessonIds = await getAbsenceStateForLessons(lessonIds);
+
+    // Calculate total earnings with proper rate application
     let totalEarnings = 0;
     for (const lesson of completedLessons) {
       const startTime = new Date(lesson.start_time);
       const endTime = new Date(lesson.end_time);
       const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+      
+      // Use absence rate if all students were absent, otherwise normal rate
+      const hourlyRate = absenceLessonIds.has(lesson.id) ? absenceHourlyRate : normalHourlyRate;
       totalEarnings += durationHours * hourlyRate;
     }
 
@@ -137,7 +145,7 @@ export const getTutorEarningsData = async (
       getTutorEarningGoal(tutorId, period),
       supabase
         .from('tutors')
-        .select('normal_hourly_rate')
+        .select('normal_hourly_rate, absence_hourly_rate')
         .eq('id', tutorId)
         .maybeSingle(),
       getCompletedLessons({
@@ -151,14 +159,22 @@ export const getTutorEarningsData = async (
       console.error('Error fetching tutor data:', tutorData.error);
     }
 
-    const hourlyRate = tutorData.data?.normal_hourly_rate || 0;
+    const normalHourlyRate = tutorData.data?.normal_hourly_rate || 0;
+    const absenceHourlyRate = tutorData.data?.absence_hourly_rate || 0;
 
-    // Calculate earnings from the already-fetched completed lessons
+    // Get absence states for all completed lessons
+    const lessonIds = completedLessons.map(lesson => lesson.id);
+    const absenceLessonIds = await getAbsenceStateForLessons(lessonIds);
+
+    // Calculate earnings from the already-fetched completed lessons with proper rate application
     let currentEarnings = 0;
     for (const lesson of completedLessons) {
       const startTime = new Date(lesson.start_time);
       const endTime = new Date(lesson.end_time);
       const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+      
+      // Use absence rate if all students were absent, otherwise normal rate
+      const hourlyRate = absenceLessonIds.has(lesson.id) ? absenceHourlyRate : normalHourlyRate;
       currentEarnings += durationHours * hourlyRate;
     }
 
