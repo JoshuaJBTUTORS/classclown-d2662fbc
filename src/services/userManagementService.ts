@@ -12,45 +12,72 @@ export const fetchUsersByType = async (userType: string): Promise<User[]> => {
   try {
     switch (userType) {
       case 'tutors':
+        const { data: authData } = await supabase.auth.admin.listUsers();
+        if (!authData) return [];
+
         const { data: tutors, error: tutorsError } = await supabase
           .from('tutors')
-          .select('id, email, first_name, last_name')
+          .select('email, first_name, last_name')
           .or('status.eq.active,status.is.null,status.eq.')
           .order('last_name', { ascending: true });
         
         if (tutorsError) throw tutorsError;
-        return tutors?.map(tutor => ({ 
-          ...tutor, 
-          id: tutor.id || '', 
-          role: 'tutor' 
-        })) || [];
+        
+        return tutors?.map(tutor => {
+          const authUser = authData.users.find((u: any) => u.email === tutor.email);
+          return authUser ? {
+            id: authUser.id,
+            email: tutor.email,
+            first_name: tutor.first_name,
+            last_name: tutor.last_name,
+            role: 'tutor'
+          } : null;
+        }).filter(Boolean) || [];
 
       case 'parents':
+        const { data: authDataParents } = await supabase.auth.admin.listUsers();
+        if (!authDataParents) return [];
+
         const { data: parents, error: parentsError } = await supabase
           .from('parents')
-          .select('id, email, first_name, last_name')
+          .select('email, first_name, last_name')
           .order('last_name', { ascending: true });
         
         if (parentsError) throw parentsError;
-        return parents?.map(parent => ({ 
-          ...parent, 
-          id: parent.id || '', 
-          role: 'parent' 
-        })) || [];
+        
+        return parents?.map(parent => {
+          const authUser = authDataParents.users.find((u: any) => u.email === parent.email);
+          return authUser ? {
+            id: authUser.id,
+            email: parent.email,
+            first_name: parent.first_name,
+            last_name: parent.last_name,
+            role: 'parent'
+          } : null;
+        }).filter(Boolean) || [];
 
       case 'students':
+        const { data: authDataStudents } = await supabase.auth.admin.listUsers();
+        if (!authDataStudents) return [];
+
         const { data: students, error: studentsError } = await supabase
           .from('students')
-          .select('id, email, first_name, last_name')
+          .select('email, first_name, last_name')
           .or('status.eq.active,status.is.null,status.eq.')
           .order('last_name', { ascending: true });
         
         if (studentsError) throw studentsError;
-        return students?.map(student => ({ 
-          ...student, 
-          id: student.id?.toString() || '', 
-          role: 'student' 
-        })) || [];
+        
+        return students?.map(student => {
+          const authUser = authDataStudents.users.find((u: any) => u.email === student.email);
+          return authUser ? {
+            id: authUser.id,
+            email: student.email,
+            first_name: student.first_name,
+            last_name: student.last_name,
+            role: 'student'
+          } : null;
+        }).filter(Boolean) || [];
 
       case 'admins':
         const { data: adminRoles, error: adminError } = await supabase
@@ -63,7 +90,7 @@ export const fetchUsersByType = async (userType: string): Promise<User[]> => {
         if (!adminRoles || adminRoles.length === 0) return [];
 
         // Get user emails from auth.users
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        const { data: authDataAdmins, error: authError } = await supabase.auth.admin.listUsers();
         if (authError) throw authError;
 
         // Get profiles separately
@@ -78,7 +105,7 @@ export const fetchUsersByType = async (userType: string): Promise<User[]> => {
         const adminUsers: User[] = [];
         
         for (const roleData of adminRoles) {
-          const authUser = authData.users.find((u: any) => u.id === roleData.user_id);
+          const authUser = authDataAdmins.users.find((u: any) => u.id === roleData.user_id);
           const profile = profiles?.find((p: any) => p.id === roleData.user_id);
           
           if (authUser?.email) {
