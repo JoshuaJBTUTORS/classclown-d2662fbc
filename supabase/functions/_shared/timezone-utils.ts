@@ -1,4 +1,4 @@
-import { toZonedTime, fromZonedTime, formatInTimeZone } from 'npm:date-fns-tz@3.0.0';
+import { toZonedTime, fromZonedTime, formatInTimeZone } from 'npm:date-fns-tz@3.2.0';
 import { format, parseISO } from 'npm:date-fns@3.6.0';
 
 // UK timezone constant
