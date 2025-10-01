@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { formatPeriodDisplay, getNextPaymentDate, isPeriodInFuture } from '@/utils/earningsPeriodUtils';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 
 interface EarningsPeriodSelectorProps {
   periodStart: Date;
@@ -19,7 +19,8 @@ export const EarningsPeriodSelector = ({
   isCurrentPeriod
 }: EarningsPeriodSelectorProps) => {
   const paymentDate = getNextPaymentDate(periodEnd);
-  const isFuture = isPeriodInFuture(periodStart);
+  const nextPeriodStart = addDays(periodEnd, 1);
+  const isFuture = isPeriodInFuture(nextPeriodStart);
 
   return (
     <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border">

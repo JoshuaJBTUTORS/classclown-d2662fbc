@@ -106,12 +106,20 @@ const AdminEarnings: React.FC = () => {
 
   const handlePreviousPeriod = () => {
     const previousPeriod = getPreviousEarningsPeriod(selectedPeriodDate, period);
-    setSelectedPeriodDate(previousPeriod.start);
+    if (period === 'monthly') {
+      setSelectedPeriodDate(new Date(previousPeriod.end.getFullYear(), previousPeriod.end.getMonth(), 15));
+    } else {
+      setSelectedPeriodDate(previousPeriod.start);
+    }
   };
 
   const handleNextPeriod = () => {
     const nextPeriod = getNextEarningsPeriod(selectedPeriodDate, period);
-    setSelectedPeriodDate(nextPeriod.start);
+    if (period === 'monthly') {
+      setSelectedPeriodDate(new Date(nextPeriod.end.getFullYear(), nextPeriod.end.getMonth(), 15));
+    } else {
+      setSelectedPeriodDate(nextPeriod.start);
+    }
   };
 
   const isCurrentPeriod = () => {
