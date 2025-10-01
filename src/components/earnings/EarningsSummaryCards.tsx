@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarDays, Clock, TrendingUp, Target } from 'lucide-react';
+import { CalendarDays, Clock, Target } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { getNextPaymentDate } from '@/utils/earningsPeriodUtils';
 
@@ -22,7 +22,6 @@ export const EarningsSummaryCards = ({
   periodEnd,
   period
 }: EarningsSummaryCardsProps) => {
-  const averagePerLesson = completedLessons > 0 ? currentEarnings / completedLessons : 0;
   const daysRemaining = Math.max(differenceInDays(periodEnd, new Date()), 0);
   const dailyTargetRemaining = daysRemaining > 0 ? remainingAmount / daysRemaining : 0;
   
@@ -48,13 +47,6 @@ export const EarningsSummaryCards = ({
       color: 'text-success'
     },
     {
-      title: 'Average per Lesson',
-      description: 'Earnings per completed lesson',
-      value: `£${averagePerLesson.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      icon: TrendingUp,
-      color: 'text-warning'
-    },
-    {
       title: period === 'monthly' ? 'Days Until Payment' : 'Days Remaining',
       description: period === 'monthly' 
         ? (nextPaymentDate ? `Payment on ${format(nextPaymentDate, 'MMM d')}` : 'Payment pending')
@@ -68,7 +60,7 @@ export const EarningsSummaryCards = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {cards.map((card, index) => (
         <Card key={card.title} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
