@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { getEarningsPeriod } from '@/utils/earningsPeriodUtils';
 
 interface AdminEarningGoal {
   id: string;
@@ -83,19 +83,9 @@ export const setAdminEarningGoal = async (adminId: string, goalAmount: number, p
   }
 };
 
-export const calculateAdminEarnings = async (adminId: string, period: 'weekly' | 'monthly' = 'monthly'): Promise<number> => {
+export const calculateAdminEarnings = async (adminId: string, period: 'weekly' | 'monthly' = 'monthly', referenceDate: Date = new Date()): Promise<number> => {
   try {
-    const now = new Date();
-    let startDate: Date;
-    let endDate: Date;
-
-    if (period === 'weekly') {
-      startDate = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-      endDate = endOfWeek(now, { weekStartsOn: 1 });
-    } else {
-      startDate = startOfMonth(now);
-      endDate = endOfMonth(now);
-    }
+    const { start: startDate, end: endDate } = getEarningsPeriod(referenceDate, period);
 
     // Count unique Musa bookings in the period
     // Each booking is worth R23 (South African Rands)
@@ -122,22 +112,12 @@ export const calculateAdminEarnings = async (adminId: string, period: 'weekly' |
   }
 };
 
-export const getAdminEarningsData = async (adminId: string, period: 'weekly' | 'monthly' = 'monthly'): Promise<AdminEarningsData> => {
+export const getAdminEarningsData = async (adminId: string, period: 'weekly' | 'monthly' = 'monthly', referenceDate: Date = new Date()): Promise<AdminEarningsData> => {
   try {
-    const now = new Date();
-    let periodStart: Date;
-    let periodEnd: Date;
-
-    if (period === 'weekly') {
-      periodStart = startOfWeek(now, { weekStartsOn: 1 });
-      periodEnd = endOfWeek(now, { weekStartsOn: 1 });
-    } else {
-      periodStart = startOfMonth(now);
-      periodEnd = endOfMonth(now);
-    }
+    const { start: periodStart, end: periodEnd } = getEarningsPeriod(referenceDate, period);
 
     // Get current earnings
-    const currentEarnings = await calculateAdminEarnings(adminId, period);
+    const currentEarnings = await calculateAdminEarnings(adminId, period, referenceDate);
 
     // Get goal
     const goal = await getAdminEarningGoal(adminId, period);

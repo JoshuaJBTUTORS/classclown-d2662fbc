@@ -1,4 +1,4 @@
-import { endOfMonth, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { endOfMonth, addDays, startOfWeek, endOfWeek, format } from 'date-fns';
 
 /**
  * Gets the last Friday of a given month
@@ -50,4 +50,44 @@ export const getEarningsPeriod = (date: Date, period: 'weekly' | 'monthly') => {
 export const getNextPaymentDate = (periodEnd: Date): Date => {
   const nextMonth = new Date(periodEnd.getFullYear(), periodEnd.getMonth() + 1, 1);
   return nextMonth;
+};
+
+/**
+ * Gets the previous earnings period
+ */
+export const getPreviousEarningsPeriod = (currentDate: Date, period: 'weekly' | 'monthly'): { start: Date; end: Date } => {
+  if (period === 'weekly') {
+    const previousWeekDate = addDays(currentDate, -7);
+    return getEarningsPeriod(previousWeekDate, 'weekly');
+  } else {
+    const previousMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 15);
+    return getMonthlyEarningsPeriod(previousMonthDate);
+  }
+};
+
+/**
+ * Gets the next earnings period
+ */
+export const getNextEarningsPeriod = (currentDate: Date, period: 'weekly' | 'monthly'): { start: Date; end: Date } => {
+  if (period === 'weekly') {
+    const nextWeekDate = addDays(currentDate, 7);
+    return getEarningsPeriod(nextWeekDate, 'weekly');
+  } else {
+    const nextMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 15);
+    return getMonthlyEarningsPeriod(nextMonthDate);
+  }
+};
+
+/**
+ * Checks if a period is in the future
+ */
+export const isPeriodInFuture = (periodStart: Date): boolean => {
+  return periodStart > new Date();
+};
+
+/**
+ * Formats a period for display
+ */
+export const formatPeriodDisplay = (start: Date, end: Date): string => {
+  return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
 };

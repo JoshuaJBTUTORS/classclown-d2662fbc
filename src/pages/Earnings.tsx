@@ -3,21 +3,25 @@ import PageTitle from '@/components/ui/PageTitle';
 import { EarningGoalSetter } from '@/components/earnings/EarningGoalSetter';
 import { EarningsProgressWheel } from '@/components/earnings/EarningsProgressWheel';
 import { EarningsSummaryCards } from '@/components/earnings/EarningsSummaryCards';
+import { EarningsPeriodSelector } from '@/components/earnings/EarningsPeriodSelector';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getTutorEarningsData, setTutorEarningGoal, type EarningsData } from '@/services/earningsService';
+import { getPreviousEarningsPeriod, getNextEarningsPeriod, getEarningsPeriod } from '@/utils/earningsPeriodUtils';
 import { supabase } from '@/integrations/supabase/client';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { isSameDay } from 'date-fns';
 
 export default function Earnings() {
   const [earningsData, setEarningsData] = useState<EarningsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [period, setPeriod] = useState<'weekly' | 'monthly'>('monthly');
+  const [selectedPeriodDate, setSelectedPeriodDate] = useState<Date>(new Date());
   const [tutorId, setTutorId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
@@ -52,7 +56,7 @@ export default function Earnings() {
 
     try {
       setIsRefreshing(true);
-      const data = await getTutorEarningsData(tutorId, period);
+      const data = await getTutorEarningsData(tutorId, period, selectedPeriodDate);
       setEarningsData(data);
     } catch (error) {
       console.error('Error loading earnings data:', error);
@@ -69,7 +73,7 @@ export default function Earnings() {
 
   useEffect(() => {
     loadEarningsData();
-  }, [tutorId, period]);
+  }, [tutorId, period, selectedPeriodDate]);
 
   const handleGoalSet = async (amount: number, goalPeriod: 'weekly' | 'monthly') => {
     if (!tutorId) return;
@@ -88,6 +92,22 @@ export default function Earnings() {
 
   const handlePeriodChange = (newPeriod: string) => {
     setPeriod(newPeriod as 'weekly' | 'monthly');
+    setSelectedPeriodDate(new Date()); // Reset to current period when changing period type
+  };
+
+  const handlePreviousPeriod = () => {
+    const previousPeriod = getPreviousEarningsPeriod(selectedPeriodDate, period);
+    setSelectedPeriodDate(previousPeriod.start);
+  };
+
+  const handleNextPeriod = () => {
+    const nextPeriod = getNextEarningsPeriod(selectedPeriodDate, period);
+    setSelectedPeriodDate(nextPeriod.start);
+  };
+
+  const isCurrentPeriod = () => {
+    const currentPeriod = getEarningsPeriod(new Date(), period);
+    return isSameDay(currentPeriod.start, earningsData?.periodStart || new Date());
   };
 
   const toggleSidebar = () => {
@@ -147,6 +167,15 @@ export default function Earnings() {
               </TabsList>
 
               <TabsContent value={period} className="space-y-6">
+                {earningsData && (
+                  <EarningsPeriodSelector
+                    periodStart={earningsData.periodStart}
+                    periodEnd={earningsData.periodEnd}
+                    onPreviousPeriod={handlePreviousPeriod}
+                    onNextPeriod={handleNextPeriod}
+                    isCurrentPeriod={isCurrentPeriod()}
+                  />
+                )}
                 {!earningsData?.goalAmount ? (
                   <Card className="border-dashed">
                     <CardHeader className="text-center">

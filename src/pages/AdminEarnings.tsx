@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getAdminEarningsData, setAdminEarningGoal } from '@/services/adminEarningsService';
+import { getPreviousEarningsPeriod, getNextEarningsPeriod, getEarningsPeriod } from '@/utils/earningsPeriodUtils';
+import { EarningsPeriodSelector } from '@/components/earnings/EarningsPeriodSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, TrendingUp, Target, Users, Award } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 
 interface AdminEarningsData {
   currentEarnings: number;
@@ -24,6 +26,7 @@ interface AdminEarningsData {
 
 const AdminEarnings: React.FC = () => {
   const [period, setPeriod] = useState<'weekly' | 'monthly'>('monthly');
+  const [selectedPeriodDate, setSelectedPeriodDate] = useState<Date>(new Date());
   const [earningsData, setEarningsData] = useState<AdminEarningsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -38,7 +41,7 @@ const AdminEarnings: React.FC = () => {
     
     try {
       setIsLoading(true);
-      const data = await getAdminEarningsData(user.id, period);
+      const data = await getAdminEarningsData(user.id, period, selectedPeriodDate);
       setEarningsData(data);
       setGoalAmount((data.goalAmount / 100).toString()); // Convert from cents to rands
     } catch (error) {
@@ -58,7 +61,7 @@ const AdminEarnings: React.FC = () => {
     
     setIsRefreshing(true);
     try {
-      const data = await getAdminEarningsData(user.id, period);
+      const data = await getAdminEarningsData(user.id, period, selectedPeriodDate);
       setEarningsData(data);
       toast({
         title: "Refreshed",
@@ -98,11 +101,27 @@ const AdminEarnings: React.FC = () => {
 
   const handlePeriodChange = (newPeriod: 'weekly' | 'monthly') => {
     setPeriod(newPeriod);
+    setSelectedPeriodDate(new Date()); // Reset to current period when changing period type
+  };
+
+  const handlePreviousPeriod = () => {
+    const previousPeriod = getPreviousEarningsPeriod(selectedPeriodDate, period);
+    setSelectedPeriodDate(previousPeriod.start);
+  };
+
+  const handleNextPeriod = () => {
+    const nextPeriod = getNextEarningsPeriod(selectedPeriodDate, period);
+    setSelectedPeriodDate(nextPeriod.start);
+  };
+
+  const isCurrentPeriod = () => {
+    const currentPeriod = getEarningsPeriod(new Date(), period);
+    return isSameDay(currentPeriod.start, earningsData?.periodStart || new Date());
   };
 
   useEffect(() => {
     loadEarningsData();
-  }, [user?.id, period]);
+  }, [user?.id, period, selectedPeriodDate]);
 
   const getProgressColor = (percentage: number): string => {
     if (percentage >= 100) return 'text-green-600';
@@ -146,6 +165,16 @@ const AdminEarnings: React.FC = () => {
         </TabsList>
 
         <TabsContent value={period} className="space-y-6">
+          {earningsData && (
+            <EarningsPeriodSelector
+              periodStart={earningsData.periodStart}
+              periodEnd={earningsData.periodEnd}
+              onPreviousPeriod={handlePreviousPeriod}
+              onNextPeriod={handleNextPeriod}
+              isCurrentPeriod={isCurrentPeriod()}
+            />
+          )}
+
           {/* Goal Setting Card */}
           <Card>
             <CardHeader>

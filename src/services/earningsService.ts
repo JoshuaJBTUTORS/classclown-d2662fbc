@@ -84,11 +84,11 @@ export const setTutorEarningGoal = async (
 
 export const calculateTutorEarnings = async (
   tutorId: string,
-  period: 'weekly' | 'monthly' = 'monthly'
+  period: 'weekly' | 'monthly' = 'monthly',
+  referenceDate: Date = new Date()
 ): Promise<number> => {
   try {
-    const now = new Date();
-    const { start: periodStart, end: periodEnd } = getEarningsPeriod(now, period);
+    const { start: periodStart, end: periodEnd } = getEarningsPeriod(referenceDate, period);
 
     // Get tutor's hourly rates
     const { data: tutorData, error: tutorError } = await supabase
@@ -134,11 +134,11 @@ export const calculateTutorEarnings = async (
 
 export const getTutorEarningsData = async (
   tutorId: string,
-  period: 'weekly' | 'monthly' = 'monthly'
+  period: 'weekly' | 'monthly' = 'monthly',
+  referenceDate: Date = new Date()
 ): Promise<EarningsData> => {
   try {
-    const now = new Date();
-    const { start: periodStart, end: periodEnd } = getEarningsPeriod(now, period);
+    const { start: periodStart, end: periodEnd } = getEarningsPeriod(referenceDate, period);
 
     // Get all data in parallel - fetch completed lessons only once
     const [goal, tutorData, completedLessons] = await Promise.all([
