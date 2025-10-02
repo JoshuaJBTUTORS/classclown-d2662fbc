@@ -32,6 +32,7 @@ const Calendar = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
+  const [selectedParents, setSelectedParents] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
@@ -50,9 +51,10 @@ const Calendar = () => {
   const filters = useMemo(() => ({
     selectedStudents,
     selectedTutors,
+    selectedParents,
     selectedSubjects,
     selectedLessonType
-  }), [selectedStudents, selectedTutors, selectedSubjects, selectedLessonType]);
+  }), [selectedStudents, selectedTutors, selectedParents, selectedSubjects, selectedLessonType]);
 
   // Helper function to update date ranges for teacher view
   const updateTeacherViewDateRanges = (viewType: string, date: Date) => {
@@ -135,6 +137,7 @@ const Calendar = () => {
   const handleClearFilters = () => {
     setSelectedStudents([]);
     setSelectedTutors([]);
+    setSelectedParents([]);
     setSelectedSubjects([]);
     setSelectedLessonType('All Lessons');
   };
@@ -352,15 +355,17 @@ const Calendar = () => {
 
       {/* Fixed Positioned Filters Sidebar */}
       <CollapsibleFilters
-        selectedStudents={selectedStudents}
-        selectedTutors={selectedTutors}
-        selectedSubjects={selectedSubjects}
-        selectedLessonType={selectedLessonType}
-        onStudentFilterChange={handleStudentFilterChange}
-        onTutorFilterChange={handleTutorFilterChange}
-        onSubjectFilterChange={handleSubjectFilterChange}
-        onLessonTypeFilterChange={handleLessonTypeFilterChange}
-        onClearFilters={handleClearFilters}
+            selectedStudents={selectedStudents}
+            selectedTutors={selectedTutors}
+            selectedParents={selectedParents}
+            selectedSubjects={selectedSubjects}
+            selectedLessonType={selectedLessonType}
+            onStudentFilterChange={handleStudentFilterChange}
+            onTutorFilterChange={handleTutorFilterChange}
+            onParentFilterChange={setSelectedParents}
+            onSubjectFilterChange={handleSubjectFilterChange}
+            onLessonTypeFilterChange={handleLessonTypeFilterChange}
+            onClearFilters={handleClearFilters}
         canUseFilters={canUseFilters}
         isOpen={filtersOpen}
         onToggle={toggleFilters}

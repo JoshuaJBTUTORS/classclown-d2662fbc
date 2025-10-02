@@ -19,6 +19,7 @@ interface UseCalendarDataProps {
   filters?: {
     selectedStudents: string[];
     selectedTutors: string[];
+    selectedParents?: string[];
     selectedSubjects: string[];
     selectedLessonType: string;
   };
@@ -319,7 +320,7 @@ export const useCalendarData = ({
                 tutor:tutors(id, first_name, last_name, email),
                 lesson_students(
                   student_id,
-                  student:students(id, first_name, last_name)
+                  student:students(id, first_name, last_name, parent_id)
                 )
               `);
 
@@ -362,6 +363,16 @@ export const useCalendarData = ({
               if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
               return lesson.lesson_students.some(ls => 
                 filters.selectedStudents.includes(ls.student_id.toString())
+              );
+            });
+          }
+
+          // Apply parent filter for admin/owner
+          if ((userRole === 'admin' || userRole === 'owner') && filters?.selectedParents && filters.selectedParents.length > 0) {
+            filteredData = filteredData.filter(lesson => {
+              if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
+              return lesson.lesson_students.some(ls => 
+                ls.student?.parent_id && filters.selectedParents.includes(ls.student.parent_id)
               );
             });
           }

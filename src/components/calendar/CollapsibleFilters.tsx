@@ -7,35 +7,39 @@ import CalendarFilters from './CalendarFilters';
 import { cn } from '@/lib/utils';
 
 interface CollapsibleFiltersProps {
-  selectedStudents: string[];
-  selectedTutors: string[];
-  selectedSubjects: string[];
-  selectedLessonType: string;
-  onStudentFilterChange: (studentIds: string[]) => void;
-  onTutorFilterChange: (tutorIds: string[]) => void;
-  onSubjectFilterChange: (subjects: string[]) => void;
-  onLessonTypeFilterChange: (lessonType: string) => void;
-  onClearFilters: () => void;
   canUseFilters: boolean;
   isOpen: boolean;
   onToggle: () => void;
   sidebarOpen: boolean;
+  selectedStudents: string[];
+  selectedTutors: string[];
+  selectedParents: string[];
+  selectedSubjects: string[];
+  selectedLessonType: string;
+  onStudentFilterChange: (studentIds: string[]) => void;
+  onTutorFilterChange: (tutorIds: string[]) => void;
+  onParentFilterChange: (parentIds: string[]) => void;
+  onSubjectFilterChange: (subjects: string[]) => void;
+  onLessonTypeFilterChange: (lessonType: string) => void;
+  onClearFilters: () => void;
 }
 
 const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
+  canUseFilters,
+  isOpen,
+  onToggle,
+  sidebarOpen,
   selectedStudents,
   selectedTutors,
+  selectedParents,
   selectedSubjects,
   selectedLessonType,
   onStudentFilterChange,
   onTutorFilterChange,
+  onParentFilterChange,
   onSubjectFilterChange,
   onLessonTypeFilterChange,
-  onClearFilters,
-  canUseFilters,
-  isOpen,
-  onToggle,
-  sidebarOpen
+  onClearFilters
 }) => {
   if (!canUseFilters) return null;
 
@@ -67,17 +71,19 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
               </div>
               
               <div className="flex-1 overflow-y-auto p-4">
-                <CalendarFilters
-                  selectedStudents={selectedStudents}
-                  selectedTutors={selectedTutors}
-                  selectedSubjects={selectedSubjects}
-                  selectedLessonType={selectedLessonType}
-                  onStudentFilterChange={onStudentFilterChange}
-                  onTutorFilterChange={onTutorFilterChange}
-                  onSubjectFilterChange={onSubjectFilterChange}
-                  onLessonTypeFilterChange={onLessonTypeFilterChange}
-                  onClearFilters={onClearFilters}
-                />
+            <CalendarFilters
+              selectedStudents={selectedStudents}
+              selectedTutors={selectedTutors}
+              selectedParents={selectedParents}
+              selectedSubjects={selectedSubjects}
+              selectedLessonType={selectedLessonType}
+              onStudentFilterChange={onStudentFilterChange}
+              onTutorFilterChange={onTutorFilterChange}
+              onParentFilterChange={onParentFilterChange}
+              onSubjectFilterChange={onSubjectFilterChange}
+              onLessonTypeFilterChange={onLessonTypeFilterChange}
+              onClearFilters={onClearFilters}
+            />
               </div>
             </div>
           </div>
@@ -92,17 +98,19 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
               <SheetTitle>Calendar Filters</SheetTitle>
             </SheetHeader>
             <div className="mt-6">
-              <CalendarFilters
-                selectedStudents={selectedStudents}
-                selectedTutors={selectedTutors}
-                selectedSubjects={selectedSubjects}
-                selectedLessonType={selectedLessonType}
-                onStudentFilterChange={onStudentFilterChange}
-                onTutorFilterChange={onTutorFilterChange}
-                onSubjectFilterChange={onSubjectFilterChange}
-                onLessonTypeFilterChange={onLessonTypeFilterChange}
-                onClearFilters={onClearFilters}
-              />
+          <CalendarFilters
+            selectedStudents={selectedStudents}
+            selectedTutors={selectedTutors}
+            selectedParents={selectedParents}
+            selectedSubjects={selectedSubjects}
+            selectedLessonType={selectedLessonType}
+            onStudentFilterChange={onStudentFilterChange}
+            onTutorFilterChange={onTutorFilterChange}
+            onParentFilterChange={onParentFilterChange}
+            onSubjectFilterChange={onSubjectFilterChange}
+            onLessonTypeFilterChange={onLessonTypeFilterChange}
+            onClearFilters={onClearFilters}
+          />
             </div>
           </SheetContent>
         </Sheet>
