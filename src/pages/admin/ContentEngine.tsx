@@ -5,12 +5,13 @@ import ContentCalendarGrid from '@/components/content/ContentCalendarGrid';
 import VideoReviewCard from '@/components/content/VideoReviewCard';
 import ContentStatistics from '@/components/content/ContentStatistics';
 import FounderVideoManager from '@/components/content/FounderVideoManager';
+import AvailableVideosTab from '@/components/content/AvailableVideosTab';
 import { ExcelImportDialog } from '@/components/content/ExcelImportDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Sparkles } from 'lucide-react';
 
 const ContentEngine = () => {
   const [entries, setEntries] = useState<ContentCalendar[]>([]);
@@ -214,8 +215,12 @@ const ContentEngine = () => {
       </div>
 
       <Tabs defaultValue="calendar" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="available">
+            <Sparkles className="h-4 w-4 mr-2" />
+            Available Videos
+          </TabsTrigger>
           <TabsTrigger value="pending">
             Pending Review
             {pendingVideos.length > 0 && (
@@ -247,6 +252,10 @@ const ContentEngine = () => {
             entries={entries} 
             onEntryClick={setSelectedEntry}
           />
+        </TabsContent>
+
+        <TabsContent value="available">
+          <AvailableVideosTab />
         </TabsContent>
 
         <TabsContent value="pending">

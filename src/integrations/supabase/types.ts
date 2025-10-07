@@ -684,6 +684,7 @@ export type Database = {
           due_date: string | null
           hook: string | null
           id: string
+          is_open_assignment: boolean | null
           lighting_requirements: string | null
           max_duration_seconds: number | null
           month: number
@@ -696,6 +697,7 @@ export type Database = {
           updated_at: string | null
           video_format: Database["public"]["Enums"]["video_format"] | null
           video_number: number | null
+          video_type: Database["public"]["Enums"]["video_type"] | null
           week_number: number | null
         }
         Insert: {
@@ -705,6 +707,7 @@ export type Database = {
           due_date?: string | null
           hook?: string | null
           id?: string
+          is_open_assignment?: boolean | null
           lighting_requirements?: string | null
           max_duration_seconds?: number | null
           month: number
@@ -717,6 +720,7 @@ export type Database = {
           updated_at?: string | null
           video_format?: Database["public"]["Enums"]["video_format"] | null
           video_number?: number | null
+          video_type?: Database["public"]["Enums"]["video_type"] | null
           week_number?: number | null
         }
         Update: {
@@ -726,6 +730,7 @@ export type Database = {
           due_date?: string | null
           hook?: string | null
           id?: string
+          is_open_assignment?: boolean | null
           lighting_requirements?: string | null
           max_duration_seconds?: number | null
           month?: number
@@ -738,6 +743,7 @@ export type Database = {
           updated_at?: string | null
           video_format?: Database["public"]["Enums"]["video_format"] | null
           video_number?: number | null
+          video_type?: Database["public"]["Enums"]["video_type"] | null
           week_number?: number | null
         }
         Relationships: [
@@ -3443,6 +3449,7 @@ export type Database = {
         | "none"
       topic_request_status: "pending" | "approved" | "denied"
       video_format: "tiktok_reel" | "youtube_short" | "instagram_reel"
+      video_type: "educational" | "motivational"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3597,6 +3604,7 @@ export const Constants = {
       ],
       topic_request_status: ["pending", "approved", "denied"],
       video_format: ["tiktok_reel", "youtube_short", "instagram_reel"],
+      video_type: ["educational", "motivational"],
     },
   },
 } as const

@@ -1,5 +1,6 @@
 export type ContentStatus = 'planned' | 'assigned' | 'uploaded' | 'approved' | 'rejected' | 'downloaded' | 'archived';
 export type VideoFormat = 'tiktok_reel' | 'youtube_short' | 'instagram_reel';
+export type VideoType = 'educational' | 'motivational';
 export type Subject = 'Maths' | 'English' | 'Science';
 
 export interface ContentCalendar {
@@ -18,6 +19,8 @@ export interface ContentCalendar {
   video_format: VideoFormat;
   max_duration_seconds: number;
   status: ContentStatus;
+  video_type?: VideoType;
+  is_open_assignment?: boolean;
   assigned_tutor_id?: string;
   due_date?: string;
   created_at?: string;

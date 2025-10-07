@@ -108,10 +108,20 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <Badge variant="secondary" className="text-xs px-1.5 py-0">
                             {shortMonthNames[entry.month - 1]}
                           </Badge>
+                          {entry.video_type === 'motivational' && (
+                            <Badge variant="default" className="text-xs px-1.5 py-0 bg-purple-500 hover:bg-purple-600">
+                              Motivational
+                            </Badge>
+                          )}
+                          {entry.is_open_assignment && !entry.assigned_tutor_id && (
+                            <Badge variant="outline" className="text-xs px-1.5 py-0 border-green-500 text-green-600">
+                              Open
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             Video #{entry.video_number}
                           </span>

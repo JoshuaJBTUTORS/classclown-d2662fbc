@@ -76,6 +76,7 @@ export async function importExcelToCalendar(
       month: number;
       subject: Subject;
       title: string;
+      video_number?: number;
       hook?: string;
       summary?: string;
       talking_points?: string[];
@@ -85,6 +86,9 @@ export async function importExcelToCalendar(
       video_format: VideoFormat;
       max_duration_seconds: number;
       status: 'planned';
+      video_type?: 'educational' | 'motivational';
+      is_open_assignment?: boolean;
+      assigned_tutor_id?: string | null;
     }
 
     const allEntries: CalendarInsert[] = [];
@@ -121,10 +125,18 @@ export async function importExcelToCalendar(
           const { format, duration } = parseVideoFormat(row.Format || '9:16 TikTok/Reel, under 60 seconds');
           const { audio, quality } = splitAudioQuality(row['Audio/Quality Requirements'] || '');
           
+          // Get the video_number for this entry
+          const video_number = row['#'] || index + 1;
+          
+          // Auto-classify video type based on video_number
+          // Videos 1, 4, 7, 10 (video_number % 3 === 1) are motivational
+          const isMotivational = video_number % 3 === 1;
+          
           const entry: CalendarInsert = {
             month,
             subject,
             title,
+            video_number,
             hook: row.Hook?.trim(),
             summary: row['Summary (Talking Points)']?.trim(),
             talking_points: row['Summary (Talking Points)'] 
@@ -135,7 +147,10 @@ export async function importExcelToCalendar(
             quality_requirements: quality,
             video_format: format,
             max_duration_seconds: duration,
-            status: 'planned'
+            status: 'planned',
+            video_type: isMotivational ? 'motivational' : 'educational',
+            is_open_assignment: isMotivational,
+            assigned_tutor_id: null,
           };
           
           allEntries.push(entry);
