@@ -60,6 +60,7 @@ import Earnings from './pages/Earnings';
 import AdminEarnings from './pages/AdminEarnings';
 import AdminDashboard from './pages/AdminDashboard';
 import TrialBookingMusa from './pages/TrialBookingMusa';
+import ContentEngine from './pages/admin/ContentEngine';
 
 
 function App() {
@@ -231,6 +232,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <BlogEdit />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="content-engine" 
+                    element={
+                      <ProtectedRoute allowedRoles={['owner']}>
+                        <ContentEngine />
                       </ProtectedRoute>
                     } 
                   />
