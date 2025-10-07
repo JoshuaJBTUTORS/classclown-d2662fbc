@@ -676,6 +676,211 @@ export type Database = {
         }
         Relationships: []
       }
+      content_calendar: {
+        Row: {
+          assigned_tutor_id: string | null
+          audio_requirements: string | null
+          created_at: string | null
+          due_date: string | null
+          hook: string | null
+          id: string
+          lighting_requirements: string | null
+          max_duration_seconds: number | null
+          month: number
+          quality_requirements: string | null
+          status: Database["public"]["Enums"]["content_status"] | null
+          subject: string
+          summary: string | null
+          talking_points: string[] | null
+          title: string
+          updated_at: string | null
+          video_format: Database["public"]["Enums"]["video_format"] | null
+          video_number: number
+          week_number: number | null
+        }
+        Insert: {
+          assigned_tutor_id?: string | null
+          audio_requirements?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          hook?: string | null
+          id?: string
+          lighting_requirements?: string | null
+          max_duration_seconds?: number | null
+          month: number
+          quality_requirements?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          subject: string
+          summary?: string | null
+          talking_points?: string[] | null
+          title: string
+          updated_at?: string | null
+          video_format?: Database["public"]["Enums"]["video_format"] | null
+          video_number: number
+          week_number?: number | null
+        }
+        Update: {
+          assigned_tutor_id?: string | null
+          audio_requirements?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          hook?: string | null
+          id?: string
+          lighting_requirements?: string | null
+          max_duration_seconds?: number | null
+          month?: number
+          quality_requirements?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          subject?: string
+          summary?: string | null
+          talking_points?: string[] | null
+          title?: string
+          updated_at?: string | null
+          video_format?: Database["public"]["Enums"]["video_format"] | null
+          video_number?: number
+          week_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_calendar_assigned_tutor_id_fkey"
+            columns: ["assigned_tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_tutors: {
+        Row: {
+          average_approval_time_hours: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          joined_date: string | null
+          subjects: string[]
+          total_approved: number | null
+          total_rejected: number | null
+          total_videos_contributed: number | null
+          tutor_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          average_approval_time_hours?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          joined_date?: string | null
+          subjects?: string[]
+          total_approved?: number | null
+          total_rejected?: number | null
+          total_videos_contributed?: number | null
+          tutor_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          average_approval_time_hours?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          joined_date?: string | null
+          subjects?: string[]
+          total_approved?: number | null
+          total_rejected?: number | null
+          total_videos_contributed?: number | null
+          tutor_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_tutors_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: true
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_videos: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          calendar_entry_id: string
+          created_at: string | null
+          description: string | null
+          download_count: number | null
+          downloaded_by: string | null
+          duration_seconds: number | null
+          file_size_mb: number | null
+          id: string
+          last_downloaded_at: string | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["content_status"] | null
+          thumbnail_url: string | null
+          title: string
+          tutor_id: string
+          updated_at: string | null
+          upload_date: string | null
+          video_url: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_entry_id: string
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          downloaded_by?: string | null
+          duration_seconds?: number | null
+          file_size_mb?: number | null
+          id?: string
+          last_downloaded_at?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          thumbnail_url?: string | null
+          title: string
+          tutor_id: string
+          updated_at?: string | null
+          upload_date?: string | null
+          video_url: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_entry_id?: string
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          downloaded_by?: string | null
+          duration_seconds?: number | null
+          file_size_mb?: number | null
+          id?: string
+          last_downloaded_at?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          thumbnail_url?: string | null
+          title?: string
+          tutor_id?: string
+          updated_at?: string | null
+          upload_date?: string | null
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_videos_calendar_entry_id_fkey"
+            columns: ["calendar_entry_id"]
+            isOneToOne: false
+            referencedRelation: "content_calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_videos_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_lessons: {
         Row: {
           content_text: string | null
@@ -973,6 +1178,66 @@ export type Database = {
           summaries_generated?: number | null
           transcriptions_retrieved?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      founder_videos: {
+        Row: {
+          created_at: string | null
+          download_count: number | null
+          due_date: string | null
+          duration_seconds: number | null
+          file_size_mb: number | null
+          id: string
+          last_downloaded_at: string | null
+          script: string | null
+          status: Database["public"]["Enums"]["content_status"] | null
+          thumbnail_url: string | null
+          topic: string
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+          video_url: string | null
+          week_number: number
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          download_count?: number | null
+          due_date?: string | null
+          duration_seconds?: number | null
+          file_size_mb?: number | null
+          id?: string
+          last_downloaded_at?: string | null
+          script?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          thumbnail_url?: string | null
+          topic: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          video_url?: string | null
+          week_number: number
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          download_count?: number | null
+          due_date?: string | null
+          duration_seconds?: number | null
+          file_size_mb?: number | null
+          id?: string
+          last_downloaded_at?: string | null
+          script?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          thumbnail_url?: string | null
+          topic?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          video_url?: string | null
+          week_number?: number
+          year?: number
         }
         Relationships: []
       }
@@ -2867,6 +3132,66 @@ export type Database = {
         }
         Relationships: []
       }
+      video_replacement_suggestions: {
+        Row: {
+          calendar_entry_id: string
+          created_at: string | null
+          id: string
+          justification: string
+          original_topic: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          suggested_topic: string
+          tutor_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          calendar_entry_id: string
+          created_at?: string | null
+          id?: string
+          justification: string
+          original_topic: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          suggested_topic: string
+          tutor_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          calendar_entry_id?: string
+          created_at?: string | null
+          id?: string
+          justification?: string
+          original_topic?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          suggested_topic?: string
+          tutor_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_replacement_suggestions_calendar_entry_id_fkey"
+            columns: ["calendar_entry_id"]
+            isOneToOne: false
+            referencedRelation: "content_calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_replacement_suggestions_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whiteboard_files: {
         Row: {
           created_at: string
@@ -3101,6 +3426,14 @@ export type Database = {
         | "student"
         | "parent"
         | "learning_hub_only"
+      content_status:
+        | "planned"
+        | "assigned"
+        | "uploaded"
+        | "approved"
+        | "rejected"
+        | "downloaded"
+        | "archived"
       progress_file_format: "pdf" | "image"
       progress_file_type: "report_card" | "mock_exam" | "other"
       study_technique_enum:
@@ -3109,6 +3442,7 @@ export type Database = {
         | "60_10_rule"
         | "none"
       topic_request_status: "pending" | "approved" | "denied"
+      video_format: "tiktok_reel" | "youtube_short" | "instagram_reel"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3244,6 +3578,15 @@ export const Constants = {
         "parent",
         "learning_hub_only",
       ],
+      content_status: [
+        "planned",
+        "assigned",
+        "uploaded",
+        "approved",
+        "rejected",
+        "downloaded",
+        "archived",
+      ],
       progress_file_format: ["pdf", "image"],
       progress_file_type: ["report_card", "mock_exam", "other"],
       study_technique_enum: [
@@ -3253,6 +3596,7 @@ export const Constants = {
         "none",
       ],
       topic_request_status: ["pending", "approved", "denied"],
+      video_format: ["tiktok_reel", "youtube_short", "instagram_reel"],
     },
   },
 } as const
