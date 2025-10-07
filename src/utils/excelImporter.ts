@@ -144,14 +144,17 @@ export async function importExcelToCalendar(
     
     onProgress?.(80, `Importing ${allEntries.length} entries to database...`);
     
-    // Insert in batches of 50
+    // Insert in batches of 50, using upsert to prevent duplicates
     const batchSize = 50;
     for (let i = 0; i < allEntries.length; i += batchSize) {
       const batch = allEntries.slice(i, i + batchSize);
       
       const { error } = await supabase
         .from('content_calendar')
-        .insert(batch, { count: 'exact' });
+        .upsert(batch, { 
+          onConflict: 'subject,month,title',
+          count: 'exact' 
+        });
       
       if (error) {
         errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
