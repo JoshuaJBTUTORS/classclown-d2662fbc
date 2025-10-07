@@ -151,7 +151,7 @@ export async function importExcelToCalendar(
       
       const { error } = await supabase
         .from('content_calendar')
-        .insert(batch);
+        .insert(batch, { count: 'exact' });
       
       if (error) {
         errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
