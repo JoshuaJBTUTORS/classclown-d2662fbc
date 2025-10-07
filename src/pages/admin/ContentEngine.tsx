@@ -5,11 +5,12 @@ import ContentCalendarGrid from '@/components/content/ContentCalendarGrid';
 import VideoReviewCard from '@/components/content/VideoReviewCard';
 import ContentStatistics from '@/components/content/ContentStatistics';
 import FounderVideoManager from '@/components/content/FounderVideoManager';
+import { ExcelImportDialog } from '@/components/content/ExcelImportDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 
 const ContentEngine = () => {
   const [entries, setEntries] = useState<ContentCalendar[]>([]);
@@ -26,6 +27,7 @@ const ContentEngine = () => {
   });
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState<ContentCalendar | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -227,7 +229,20 @@ const ContentEngine = () => {
           <TabsTrigger value="founder">Founder Videos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="calendar">
+        <TabsContent value="calendar" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-xl font-semibold">Content Calendar</h3>
+              <p className="text-sm text-muted-foreground">
+                {entries.length} videos planned across all subjects
+              </p>
+            </div>
+            <Button onClick={() => setImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import Calendar Data
+            </Button>
+          </div>
+          
           <ContentCalendarGrid 
             entries={entries} 
             onEntryClick={setSelectedEntry}
@@ -286,6 +301,19 @@ const ContentEngine = () => {
           <FounderVideoManager />
         </TabsContent>
       </Tabs>
+
+      {/* Excel Import Dialog */}
+      <ExcelImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onSuccess={() => {
+          fetchCalendarEntries();
+          toast({
+            title: 'Success',
+            description: 'Calendar data imported successfully!',
+          });
+        }}
+      />
 
       {/* Entry Details Dialog */}
       <Dialog open={!!selectedEntry} onOpenChange={() => setSelectedEntry(null)}>

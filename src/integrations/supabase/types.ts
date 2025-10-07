@@ -695,7 +695,7 @@ export type Database = {
           title: string
           updated_at: string | null
           video_format: Database["public"]["Enums"]["video_format"] | null
-          video_number: number
+          video_number: number | null
           week_number: number | null
         }
         Insert: {
@@ -716,7 +716,7 @@ export type Database = {
           title: string
           updated_at?: string | null
           video_format?: Database["public"]["Enums"]["video_format"] | null
-          video_number: number
+          video_number?: number | null
           week_number?: number | null
         }
         Update: {
@@ -737,7 +737,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           video_format?: Database["public"]["Enums"]["video_format"] | null
-          video_number?: number
+          video_number?: number | null
           week_number?: number | null
         }
         Relationships: [

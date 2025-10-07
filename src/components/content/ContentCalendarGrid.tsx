@@ -23,7 +23,8 @@ const statusConfig = {
 };
 
 const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps) => {
-  const [selectedMonth, setSelectedMonth] = useState(11); // November
+  const currentMonth = new Date().getMonth() + 1; // Get current month (1-12)
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedSubject, setSelectedSubject] = useState<Subject>('Maths');
 
   const monthNames = [
@@ -35,6 +36,16 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
     (entry) => entry.month === selectedMonth && entry.subject === selectedSubject
   );
 
+  // Count entries per month for the dropdown
+  const getMonthCount = (month: number) => {
+    return entries.filter(e => e.month === month).length;
+  };
+
+  // Count entries per subject for current month
+  const getSubjectCount = (subject: Subject) => {
+    return entries.filter(e => e.month === selectedMonth && e.subject === subject).length;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -45,20 +56,38 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
             className="px-4 py-2 rounded-md border bg-background"
           >
-            {monthNames.map((month, index) => (
-              <option key={index} value={index + 1}>
-                {month}
-              </option>
-            ))}
+            {monthNames.map((month, index) => {
+              const count = getMonthCount(index + 1);
+              return (
+                <option key={index} value={index + 1}>
+                  {month} {count > 0 ? `(${count})` : ''}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>
 
       <Tabs value={selectedSubject} onValueChange={(value) => setSelectedSubject(value as Subject)}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="Maths">Maths</TabsTrigger>
-          <TabsTrigger value="English">English</TabsTrigger>
-          <TabsTrigger value="Science">Science</TabsTrigger>
+          <TabsTrigger value="Maths">
+            Maths
+            {getSubjectCount('Maths') > 0 && (
+              <span className="ml-2 text-xs opacity-70">({getSubjectCount('Maths')})</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="English">
+            English
+            {getSubjectCount('English') > 0 && (
+              <span className="ml-2 text-xs opacity-70">({getSubjectCount('English')})</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="Science">
+            Science
+            {getSubjectCount('Science') > 0 && (
+              <span className="ml-2 text-xs opacity-70">({getSubjectCount('Science')})</span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value={selectedSubject} className="space-y-4 mt-6">
@@ -116,7 +145,12 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
           {filteredEntries.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No videos found for {monthNames[selectedMonth - 1]} - {selectedSubject}</p>
+              <p className="mb-2">No videos found for {monthNames[selectedMonth - 1]} - {selectedSubject}</p>
+              {entries.length === 0 && (
+                <p className="text-sm">
+                  Click "Import Calendar Data" to get started
+                </p>
+              )}
             </div>
           )}
         </TabsContent>
