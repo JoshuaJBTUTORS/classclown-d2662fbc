@@ -23,6 +23,7 @@ import {
   LayoutDashboard,
   Bot,
   MessageCircle,
+  Film,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -136,6 +137,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           label: 'Trial Bookings',
           href: '/trial-bookings',
           roles: ['admin', 'owner'],
+        },
+        {
+          icon: Film,
+          label: 'Content Engine',
+          href: '/content-engine',
+          roles: ['owner'],
         },
       ]
     },
