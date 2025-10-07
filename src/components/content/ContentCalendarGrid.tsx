@@ -31,6 +31,11 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+  
+  const shortMonthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
 
   const filteredEntries = entries.filter(
     (entry) => entry.month === selectedMonth && entry.subject === selectedSubject
@@ -103,10 +108,15 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                            {shortMonthNames[entry.month - 1]}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            Video #{entry.video_number}
+                          </span>
+                        </div>
                         <h3 className="font-semibold text-sm line-clamp-2">{entry.title}</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Video #{entry.video_number}
-                        </p>
                       </div>
                       <StatusIcon className="h-4 w-4 text-muted-foreground ml-2 flex-shrink-0" />
                     </div>

@@ -89,6 +89,9 @@ export async function importExcelToCalendar(
 
     const allEntries: CalendarInsert[] = [];
     
+    // Track titles per subject to detect duplicates across months
+    const titlesBySubject = new Map<Subject, Map<string, number[]>>();
+    
     // Process each sheet (each represents a subject)
     for (let sheetIndex = 0; sheetIndex < Math.min(sheetNames.length, 3); sheetIndex++) {
       const sheetName = sheetNames[sheetIndex];
@@ -136,10 +139,39 @@ export async function importExcelToCalendar(
           };
           
           allEntries.push(entry);
+          
+          // Track titles to detect duplicates across months
+          if (!titlesBySubject.has(subject)) {
+            titlesBySubject.set(subject, new Map());
+          }
+          const subjectTitles = titlesBySubject.get(subject)!;
+          if (!subjectTitles.has(title)) {
+            subjectTitles.set(title, []);
+          }
+          subjectTitles.get(title)!.push(month);
         } catch (error) {
           errors.push(`Row ${index + 2} in ${subject}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       });
+    }
+    
+    // Validate: Check for duplicate titles across months
+    const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    for (const [subject, titles] of titlesBySubject.entries()) {
+      for (const [title, months] of titles.entries()) {
+        if (months.length > 1) {
+          const monthsList = months.map(m => monthNames[m]).join(', ');
+          errors.push(
+            `❌ DUPLICATE TITLE in ${subject}: "${title}" appears in months: ${monthsList}. ` +
+            `Each video must have a unique title within each subject. Please update your Excel file.`
+          );
+        }
+      }
+    }
+    
+    // If we found duplicates, stop the import
+    if (errors.length > 0) {
+      return { success: 0, errors };
     }
     
     onProgress?.(80, `Importing ${allEntries.length} entries to database...`);
