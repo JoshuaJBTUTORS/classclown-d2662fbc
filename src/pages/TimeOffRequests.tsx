@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,11 +17,12 @@ import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import { TimeOffFilters } from '@/components/timeOff/TimeOffFilters';
 import { ConflictDetectionDialog } from '@/components/timeOff/ConflictDetectionDialog';
-import { checkTimeOffConflicts, resolveAllConflicts, TimeOffConflict, ConflictResolution } from '@/services/timeOffConflictService';
+import { checkTimeOffConflicts, TimeOffConflict } from '@/services/timeOffConflictService';
 import { cn } from '@/lib/utils';
 
 const TimeOffRequests = () => {
   const { userRole, user } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
@@ -164,21 +166,11 @@ const TimeOffRequests = () => {
     handleSubmitAction();
   };
 
-  const handleResolveConflicts = async (resolutions: ConflictResolution[]) => {
-    try {
-      await resolveAllConflicts(resolutions, user!.id);
-      toast.success('Conflicts resolved successfully');
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['allTimeOffRequests'] });
-      queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      
-      // Proceed with approval
-      proceedWithApproval();
-    } catch (error) {
-      console.error('Error resolving conflicts:', error);
-      toast.error('Failed to resolve conflicts. Please try again.');
-    }
+  const handleGoToCalendar = () => {
+    setShowConflictDialog(false);
+    setHasNoConflicts(false);
+    toast.info('Please resolve the conflicts in the calendar before approving this request.');
+    navigate('/calendar');
   };
 
   const handleSubmitAction = () => {
@@ -465,9 +457,8 @@ const TimeOffRequests = () => {
         conflicts={conflicts}
         isLoading={isCheckingConflicts}
         hasNoConflicts={hasNoConflicts}
-        onResolveConflicts={handleResolveConflicts}
-        onProceedWithApproval={proceedWithApproval}
         onNoConflictsContinue={proceedWithApproval}
+        onGoToCalendar={handleGoToCalendar}
         tutorName={selectedRequest ? `${selectedRequest.tutor.first_name} ${selectedRequest.tutor.last_name}` : ''}
         timeOffPeriod={selectedRequest ? `${formatInUKTime(selectedRequest.start_date, 'PPP')} - ${formatInUKTime(selectedRequest.end_date, 'PPP')}` : ''}
       />
