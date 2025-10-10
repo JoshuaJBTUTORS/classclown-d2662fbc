@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertTriangle, Calendar, Users, Clock } from 'lucide-react';
+import { Loader2, AlertTriangle, Calendar, Users, Clock, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatInUKTime } from '@/utils/timezone';
 import { TimeOffConflict, ConflictResolution } from '@/services/timeOffConflictService';
@@ -15,8 +15,10 @@ interface ConflictDetectionDialogProps {
   onClose: () => void;
   conflicts: TimeOffConflict[];
   isLoading: boolean;
+  hasNoConflicts?: boolean;
   onResolveConflicts: (resolutions: ConflictResolution[]) => void;
   onProceedWithApproval: () => void;
+  onNoConflictsContinue?: () => void;
   tutorName: string;
   timeOffPeriod: string;
 }
@@ -26,8 +28,10 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
   onClose,
   conflicts,
   isLoading,
+  hasNoConflicts = false,
   onResolveConflicts,
   onProceedWithApproval,
+  onNoConflictsContinue,
   tutorName,
   timeOffPeriod
 }) => {
@@ -111,6 +115,45 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mr-3" />
             <span>Checking for scheduling conflicts...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // No conflicts found - show success message
+  if (hasNoConflicts && conflicts.length === 0) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>No Conflicts Found</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-center py-6">
+              <CheckCircle className="h-16 w-16 text-green-600" />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-lg font-medium">No scheduling conflicts detected</p>
+              <p className="text-sm text-muted-foreground">
+                The time off request for <strong>{tutorName}</strong> during{' '}
+                <strong>{timeOffPeriod}</strong> does not conflict with any existing lessons.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                The request can be approved safely.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={onNoConflictsContinue}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Continue with Approval
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

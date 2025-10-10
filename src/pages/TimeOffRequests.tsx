@@ -30,6 +30,7 @@ const TimeOffRequests = () => {
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [conflicts, setConflicts] = useState<TimeOffConflict[]>([]);
   const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
+  const [hasNoConflicts, setHasNoConflicts] = useState(false);
   
   // Filter states
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
@@ -143,9 +144,10 @@ const TimeOffRequests = () => {
       setConflicts(conflictResult.conflicts);
       
       if (!conflictResult.hasConflicts) {
-        // No conflicts, proceed with normal approval
-        setShowConflictDialog(false);
-        proceedWithApproval();
+        // No conflicts found - keep dialog open to show success message
+        setHasNoConflicts(true);
+      } else {
+        setHasNoConflicts(false);
       }
     } catch (error) {
       console.error('Error checking conflicts:', error);
@@ -158,6 +160,7 @@ const TimeOffRequests = () => {
 
   const proceedWithApproval = () => {
     setShowConflictDialog(false);
+    setHasNoConflicts(false);
     handleSubmitAction();
   };
 
@@ -457,11 +460,14 @@ const TimeOffRequests = () => {
           setShowConflictDialog(false);
           setSelectedRequest(null);
           setActionType(null);
+          setHasNoConflicts(false);
         }}
         conflicts={conflicts}
         isLoading={isCheckingConflicts}
+        hasNoConflicts={hasNoConflicts}
         onResolveConflicts={handleResolveConflicts}
         onProceedWithApproval={proceedWithApproval}
+        onNoConflictsContinue={proceedWithApproval}
         tutorName={selectedRequest ? `${selectedRequest.tutor.first_name} ${selectedRequest.tutor.last_name}` : ''}
         timeOffPeriod={selectedRequest ? `${formatInUKTime(selectedRequest.start_date, 'PPP')} - ${formatInUKTime(selectedRequest.end_date, 'PPP')}` : ''}
       />
