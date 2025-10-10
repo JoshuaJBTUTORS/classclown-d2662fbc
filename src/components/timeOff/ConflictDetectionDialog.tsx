@@ -105,6 +105,9 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Checking for Conflicts</DialogTitle>
+          </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mr-3" />
             <span>Checking for scheduling conflicts...</span>
