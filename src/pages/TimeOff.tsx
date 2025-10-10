@@ -9,7 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Plus } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Calendar, Clock, Plus, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { convertUKToUTC, formatInUKTime, createUKDateTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -22,6 +24,8 @@ const TimeOff = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  const [showNoticeErrorDialog, setShowNoticeErrorDialog] = useState(false);
+  const [daysNotice, setDaysNotice] = useState(0);
   const queryClient = useQueryClient();
 
   const closeSidebar = () => {
@@ -30,6 +34,28 @@ const TimeOff = () => {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  // Validate minimum notice period (6 days)
+  const validateNoticeMinimum = (startDateStr: string): { isValid: boolean, daysNotice: number } => {
+    const now = new Date();
+    const [datePart, timePart] = startDateStr.split('T');
+    const startDateObj = new Date(datePart);
+    
+    // Create UK time for fair comparison
+    const ukStartDate = createUKDateTime(startDateObj, timePart);
+    
+    // Calculate difference in milliseconds
+    const diffMs = ukStartDate.getTime() - now.getTime();
+    
+    // Convert to days (round down)
+    const daysNotice = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    // Minimum 6 days notice required
+    return {
+      isValid: daysNotice >= 6,
+      daysNotice: Math.max(0, daysNotice) // Don't show negative days
+    };
   };
 
   // Fetch tutor's time off requests
@@ -118,6 +144,14 @@ const TimeOff = () => {
       return;
     }
 
+    // Validate minimum notice period
+    const noticeValidation = validateNoticeMinimum(startDate);
+    if (!noticeValidation.isValid) {
+      setDaysNotice(noticeValidation.daysNotice);
+      setShowNoticeErrorDialog(true);
+      return;
+    }
+
     createTimeOffMutation.mutate({ startDate, endDate, reason });
   };
 
@@ -174,6 +208,12 @@ const TimeOff = () => {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    <Alert className="border-amber-200 bg-amber-50">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        <strong>Please note:</strong> A minimum of 1 week notice is required. If lessons are affected, please give a team member a call.
+                      </AlertDescription>
+                    </Alert>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="startDate">Start Date</Label>
@@ -268,6 +308,27 @@ const TimeOff = () => {
           </div>
         </main>
       </div>
+
+      <AlertDialog open={showNoticeErrorDialog} onOpenChange={setShowNoticeErrorDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Insufficient Notice Period</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Your time off request is less than 1 week away (currently <strong>{daysNotice} day{daysNotice !== 1 ? 's' : ''}</strong> notice).
+              </p>
+              <p className="font-semibold">
+                Please contact a team member directly to discuss urgent time off needs.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowNoticeErrorDialog(false)}>
+              I Understand
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
