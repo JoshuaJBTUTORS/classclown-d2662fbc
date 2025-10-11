@@ -8,7 +8,7 @@ export interface ContentCalendar {
   month: number;
   week_number?: number | null;
   video_number?: number | null;
-  subject?: Subject | null; // Optional - content is now subject-agnostic
+  subject?: Subject | string | null;
   title: string;
   hook?: string;
   summary?: string;
@@ -25,6 +25,11 @@ export interface ContentCalendar {
   due_date?: string | null;
   created_at?: string;
   updated_at?: string;
+  submission_deadline?: string | null;
+  resubmission_deadline?: string | null;
+  is_available_for_claim?: boolean;
+  current_request_id?: string | null;
+  release_schedule_id?: string | null;
 }
 
 export interface ContentVideo {

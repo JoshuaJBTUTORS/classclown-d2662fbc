@@ -6,6 +6,7 @@ import VideoReviewCard from '@/components/content/VideoReviewCard';
 import ContentStatistics from '@/components/content/ContentStatistics';
 import AvailableVideosTab from '@/components/content/AvailableVideosTab';
 import { ExcelImportDialog } from '@/components/content/ExcelImportDialog';
+import { VideoRequestCard } from '@/components/content/VideoRequestCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ const ContentEngine = () => {
   const [entries, setEntries] = useState<ContentCalendar[]>([]);
   const [pendingVideos, setPendingVideos] = useState<any[]>([]);
   const [approvedVideos, setApprovedVideos] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [statistics, setStatistics] = useState({
     totalVideos: 0,
     approved: 0,
@@ -40,6 +42,7 @@ const ContentEngine = () => {
       fetchPendingVideos(),
       fetchApprovedVideos(),
       fetchStatistics(),
+      fetchPendingRequests(),
     ]);
     setLoading(false);
   };
@@ -143,6 +146,134 @@ const ContentEngine = () => {
     }
   };
 
+  const fetchPendingRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('video_requests')
+        .select(`
+          *,
+          calendar_entry:content_calendar(*),
+          tutor:tutors(*)
+        `)
+        .eq('status', 'pending')
+        .order('request_date', { ascending: true });
+
+      if (error) throw error;
+      setPendingRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching pending requests:', error);
+    }
+  };
+
+  const calculateSundayDeadline = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysUntilSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() + daysUntilSunday);
+    sunday.setHours(23, 59, 59, 999);
+    return sunday.toISOString();
+  };
+
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      const request = pendingRequests.find(r => r.id === requestId);
+      if (!request) return;
+
+      // Update request status
+      const { error: requestError } = await supabase
+        .from('video_requests')
+        .update({
+          status: 'approved',
+          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+
+      if (requestError) throw requestError;
+
+      // Update calendar entry
+      const { error: calendarError } = await supabase
+        .from('content_calendar')
+        .update({
+          status: 'assigned',
+          assigned_tutor_id: request.tutor_id,
+          submission_deadline: calculateSundayDeadline(),
+        })
+        .eq('id', request.calendar_entry_id);
+
+      if (calendarError) throw calendarError;
+
+      // Create active assignment
+      const { error: assignmentError } = await supabase
+        .from('tutor_active_assignments')
+        .insert({
+          tutor_id: request.tutor_id,
+          calendar_entry_id: request.calendar_entry_id,
+          video_request_id: requestId,
+          can_request_next: false,
+        });
+
+      if (assignmentError) throw assignmentError;
+
+      toast({
+        title: 'Request approved',
+        description: 'The tutor can now submit their video',
+      });
+
+      fetchAllData();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleDenyRequest = async (requestId: string, reason: string) => {
+    try {
+      const request = pendingRequests.find(r => r.id === requestId);
+      if (!request) return;
+
+      // Update request status
+      const { error: requestError } = await supabase
+        .from('video_requests')
+        .update({
+          status: 'denied',
+          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          reviewed_at: new Date().toISOString(),
+          denial_reason: reason,
+        })
+        .eq('id', requestId);
+
+      if (requestError) throw requestError;
+
+      // Reset calendar entry
+      const { error: calendarError } = await supabase
+        .from('content_calendar')
+        .update({
+          current_request_id: null,
+        })
+        .eq('id', request.calendar_entry_id);
+
+      if (calendarError) throw calendarError;
+
+      toast({
+        title: 'Request denied',
+        description: 'The tutor has been notified',
+      });
+
+      fetchAllData();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+    }
+  };
+
   const handleApproveVideo = async (videoId: string) => {
     try {
       const { error } = await supabase
@@ -216,9 +347,17 @@ const ContentEngine = () => {
       <Tabs defaultValue="calendar" className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="requests">
+            Pending Requests
+            {pendingRequests.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-500 text-white rounded-full">
+                {pendingRequests.length}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="available">
             <Sparkles className="h-4 w-4 mr-2" />
-            Available Videos
+            Available
           </TabsTrigger>
           <TabsTrigger value="pending">
             Pending Review
@@ -250,6 +389,30 @@ const ContentEngine = () => {
             entries={entries} 
             onEntryClick={setSelectedEntry}
           />
+        </TabsContent>
+
+        <TabsContent value="requests">
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Pending Video Requests</h3>
+            {pendingRequests.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No pending requests</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pendingRequests.map((request) => (
+                  <VideoRequestCard
+                    key={request.id}
+                    request={request}
+                    video={request.calendar_entry}
+                    tutor={request.tutor}
+                    onApprove={handleApproveRequest}
+                    onDeny={handleDenyRequest}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="available">
