@@ -31,11 +31,19 @@ export const TutorContentDashboard = () => {
       const { data: tutorData } = await supabase.rpc('get_current_user_tutor_id');
       
       if (!tutorData) {
-        toast({
-          title: "Error",
-          description: "Could not find your tutor profile",
-          variant: "destructive",
-        });
+        setLoading(false);
+        return;
+      }
+
+      // Check if tutor is registered in content_tutors
+      const { data: contentTutor } = await supabase
+        .from('content_tutors')
+        .select('is_active')
+        .eq('tutor_id', tutorData)
+        .maybeSingle();
+
+      if (!contentTutor || !contentTutor.is_active) {
+        setLoading(false);
         return;
       }
 
@@ -126,6 +134,20 @@ export const TutorContentDashboard = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
+    );
+  }
+
+  // Check if tutor has access
+  if (!activeAssignment && !assignedVideo && availableVideos.length === 0 && !loading) {
+    return (
+      <Card className="p-8 text-center">
+        <Video className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Content Creation Access Required</h3>
+        <p className="text-muted-foreground">
+          You don't have access to content creation yet. 
+          Please contact an administrator to be added to the content creation platform.
+        </p>
+      </Card>
     );
   }
 

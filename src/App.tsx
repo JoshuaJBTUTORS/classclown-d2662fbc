@@ -61,6 +61,7 @@ import AdminEarnings from './pages/AdminEarnings';
 import AdminDashboard from './pages/AdminDashboard';
 import TrialBookingMusa from './pages/TrialBookingMusa';
 import ContentEngine from './pages/admin/ContentEngine';
+import TutorContentPage from './pages/tutor/TutorContentPage';
 
 
 function App() {
@@ -168,7 +169,15 @@ function App() {
                     } 
                   />
                   <Route 
-                    path="time-off-requests" 
+                    path="tutor-content" 
+                    element={
+                      <ProtectedRoute allowedRoles={['tutor']}>
+                        <TutorContentPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="time-off-requests"
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <TimeOffRequests />

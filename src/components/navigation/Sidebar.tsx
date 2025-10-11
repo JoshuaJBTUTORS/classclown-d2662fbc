@@ -144,6 +144,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           href: '/content-engine',
           roles: ['owner'],
         },
+        {
+          icon: Film,
+          label: 'Content Creation',
+          href: '/tutor-content',
+          roles: ['tutor'],
+        },
       ]
     },
     {
