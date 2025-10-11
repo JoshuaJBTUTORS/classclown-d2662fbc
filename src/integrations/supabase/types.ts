@@ -690,7 +690,7 @@ export type Database = {
           month: number
           quality_requirements: string | null
           status: Database["public"]["Enums"]["content_status"] | null
-          subject: string
+          subject: string | null
           summary: string | null
           talking_points: string[] | null
           title: string
@@ -713,7 +713,7 @@ export type Database = {
           month: number
           quality_requirements?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
-          subject: string
+          subject?: string | null
           summary?: string | null
           talking_points?: string[] | null
           title: string
@@ -736,7 +736,7 @@ export type Database = {
           month?: number
           quality_requirements?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
-          subject?: string
+          subject?: string | null
           summary?: string | null
           talking_points?: string[] | null
           title?: string

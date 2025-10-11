@@ -1,6 +1,5 @@
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
-import type { ContentCalendar, Subject, VideoFormat } from '@/types/content';
 
 const MONTH_MAP: Record<string, number> = {
   'January': 1, 'February': 2, 'March': 3, 'April': 4,
@@ -9,47 +8,29 @@ const MONTH_MAP: Record<string, number> = {
 };
 
 interface ExcelRow {
-  Month: string;
-  'Video Title': string;
-  Hook?: string;
-  'Summary (Talking Points)'?: string;
-  'Lighting Requirements'?: string;
-  'Audio/Quality Requirements'?: string;
-  Format?: string;
-  Status?: string;
+  'Month': string;
+  'Video title': string;
+  'Hook'?: string;
+  'Summary (Talking points)'?: string;
+  'Status'?: string;
 }
 
-function parseVideoFormat(formatStr: string): { format: VideoFormat; duration: number } {
-  const lower = formatStr.toLowerCase();
+// Calculate due date based on month, week number, and video number (1-7 = Mon-Sun)
+function calculateDueDate(month: number, weekNumber: number, videoNumber: number, year: number = 2025): Date {
+  // Determine the first day of the month
+  const firstDayOfMonth = new Date(year, month - 1, 1);
   
-  // Extract duration (default to 60 seconds)
-  const durationMatch = formatStr.match(/(\d+)\s*seconds?/i);
-  const duration = durationMatch ? parseInt(durationMatch[1]) : 60;
+  // Calculate the week offset (weeks start from 1)
+  const weekOffset = (weekNumber - 1) * 7;
   
-  // Determine format based on keywords
-  if (lower.includes('tiktok') || lower.includes('reel')) {
-    return { format: 'tiktok_reel', duration };
-  } else if (lower.includes('youtube') || lower.includes('short')) {
-    return { format: 'youtube_short', duration };
-  } else if (lower.includes('instagram')) {
-    return { format: 'instagram_reel', duration };
-  }
+  // Calculate days to add based on video number (1=Mon, 2=Tue, etc.)
+  const dayOffset = videoNumber - 1;
   
-  return { format: 'tiktok_reel', duration };
-}
-
-function splitAudioQuality(combined: string): { audio: string; quality: string } {
-  // Split on common delimiters or return the whole string
-  const parts = combined.split(/[,;]/).map(s => s.trim());
+  // Calculate final date
+  const dueDate = new Date(firstDayOfMonth);
+  dueDate.setDate(firstDayOfMonth.getDate() + weekOffset + dayOffset);
   
-  if (parts.length >= 2) {
-    return {
-      audio: parts.slice(0, Math.ceil(parts.length / 2)).join(', '),
-      quality: parts.slice(Math.ceil(parts.length / 2)).join(', ')
-    };
-  }
-  
-  return { audio: combined, quality: combined };
+  return dueDate;
 }
 
 export async function importExcelToCalendar(
@@ -65,160 +46,196 @@ export async function importExcelToCalendar(
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
     
-    const sheetNames = workbook.SheetNames;
-    const subjectMap: Record<number, Subject> = {
-      0: 'Maths',
-      1: 'English',
-      2: 'Science'
-    };
-    
-    interface CalendarInsert {
-      month: number;
-      subject: Subject;
-      title: string;
-      video_number?: number;
-      hook?: string;
-      summary?: string;
-      talking_points?: string[];
-      lighting_requirements?: string;
-      audio_requirements?: string;
-      quality_requirements?: string;
-      video_format: VideoFormat;
-      max_duration_seconds: number;
-      status: 'planned';
-      video_type?: 'educational' | 'motivational';
-      is_open_assignment?: boolean;
-      assigned_tutor_id?: string | null;
-    }
-
-    const allEntries: CalendarInsert[] = [];
-    
-    // Track titles per subject to detect duplicates across months
-    const titlesBySubject = new Map<Subject, Map<string, number[]>>();
-    
-    // Process each sheet (each represents a subject)
-    for (let sheetIndex = 0; sheetIndex < Math.min(sheetNames.length, 3); sheetIndex++) {
-      const sheetName = sheetNames[sheetIndex];
-      const subject = subjectMap[sheetIndex];
-      
-      onProgress?.(20 + (sheetIndex * 20), `Processing ${subject} sheet...`);
-      
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet);
-      
-      jsonData.forEach((row, index) => {
-        try {
-          const monthName = row.Month?.trim();
-          const month = MONTH_MAP[monthName];
-          
-          if (!month) {
-            errors.push(`Row ${index + 2} in ${subject}: Invalid month "${monthName}"`);
-            return;
-          }
-
-          const title = row['Video Title']?.trim();
-          if (!title) {
-            errors.push(`Row ${index + 2} in ${subject}: Missing video title`);
-            return;
-          }
-          
-          const { format, duration } = parseVideoFormat(row.Format || '9:16 TikTok/Reel, under 60 seconds');
-          const { audio, quality } = splitAudioQuality(row['Audio/Quality Requirements'] || '');
-          
-          // Get the video_number for this entry
-          const video_number = row['#'] || index + 1;
-          
-          // Auto-classify video type based on video_number
-          // Videos 1, 4, 7, 10 (video_number % 3 === 1) are motivational
-          const isMotivational = video_number % 3 === 1;
-          
-          const entry: CalendarInsert = {
-            month,
-            subject,
-            title,
-            video_number,
-            hook: row.Hook?.trim(),
-            summary: row['Summary (Talking Points)']?.trim(),
-            talking_points: row['Summary (Talking Points)'] 
-              ? [row['Summary (Talking Points)'].trim()]
-              : undefined,
-            lighting_requirements: row['Lighting Requirements']?.trim(),
-            audio_requirements: audio,
-            quality_requirements: quality,
-            video_format: format,
-            max_duration_seconds: duration,
-            status: 'planned',
-            video_type: isMotivational ? 'motivational' : 'educational',
-            is_open_assignment: isMotivational,
-            assigned_tutor_id: null,
-          };
-          
-          allEntries.push(entry);
-          
-          // Track titles to detect duplicates across months
-          if (!titlesBySubject.has(subject)) {
-            titlesBySubject.set(subject, new Map());
-          }
-          const subjectTitles = titlesBySubject.get(subject)!;
-          if (!subjectTitles.has(title)) {
-            subjectTitles.set(title, []);
-          }
-          subjectTitles.get(title)!.push(month);
-        } catch (error) {
-          errors.push(`Row ${index + 2} in ${subject}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-      });
-    }
-    
-    // Validate: Check for duplicate titles across months
-    const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    for (const [subject, titles] of titlesBySubject.entries()) {
-      for (const [title, months] of titles.entries()) {
-        if (months.length > 1) {
-          const monthsList = months.map(m => monthNames[m]).join(', ');
-          errors.push(
-            `❌ DUPLICATE TITLE in ${subject}: "${title}" appears in months: ${monthsList}. ` +
-            `Each video must have a unique title within each subject. Please update your Excel file.`
-          );
-        }
-      }
-    }
-    
-    // If we found duplicates, stop the import
-    if (errors.length > 0) {
+    if (workbook.SheetNames.length < 2) {
+      errors.push('Excel file must contain at least 2 sheets (Main Content and Founder Videos)');
       return { success: 0, errors };
     }
     
-    onProgress?.(80, `Importing ${allEntries.length} entries to database...`);
+    const allEntries: any[] = [];
     
-    // Insert in batches of 50, using upsert to prevent duplicates
+    onProgress?.(20, 'Processing main content sheet...');
+    
+    // Sheet 1: Main tutor content (open assignments)
+    const mainSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const mainRows = XLSX.utils.sheet_to_json<ExcelRow>(mainSheet);
+    
+    console.log(`Processing main content sheet with ${mainRows.length} rows`);
+    
+    if (mainRows.length === 0) {
+      errors.push('Main content sheet is empty');
+      return { success: 0, errors };
+    }
+    
+    // Track video counter for calculating week and video numbers
+    let videoCounter = 0;
+    let currentMonth: number | null = null;
+    let monthVideoCounter = 0;
+    
+    for (const row of mainRows) {
+      try {
+        const monthName = row['Month']?.trim();
+        const videoTitle = row['Video title']?.trim();
+        
+        if (!monthName || !videoTitle) {
+          errors.push(`Main content: Skipping row - missing Month or Video title`);
+          continue;
+        }
+        
+        const month = MONTH_MAP[monthName];
+        if (!month) {
+          errors.push(`Main content: Invalid month "${monthName}"`);
+          continue;
+        }
+        
+        // Reset month counter when month changes
+        if (currentMonth !== month) {
+          currentMonth = month;
+          monthVideoCounter = 0;
+        }
+        
+        // Calculate week number within month (7 videos per week)
+        const weekInMonth = Math.floor(monthVideoCounter / 7) + 1;
+        // Calculate absolute week number from start of October (month 10)
+        const baseMonth = 10; // October
+        const monthOffset = month - baseMonth;
+        const weekNumber = (monthOffset * 4) + weekInMonth; // Approximate 4 weeks per month
+        
+        // Calculate video number within week (1-7)
+        const videoNumber = (monthVideoCounter % 7) + 1;
+        
+        // Calculate due date
+        const dueDate = calculateDueDate(month, weekInMonth, videoNumber);
+        
+        allEntries.push({
+          month,
+          week_number: weekNumber,
+          video_number: videoNumber,
+          subject: null, // No subject in new structure
+          title: videoTitle,
+          hook: row['Hook']?.trim() || '',
+          summary: row['Summary (Talking points)']?.trim() || '',
+          talking_points: row['Summary (Talking points)']?.trim().split('\n').filter(p => p.trim()) || [],
+          lighting_requirements: 'Natural lighting preferred',
+          audio_requirements: 'Clear audio, minimal background noise',
+          quality_requirements: 'HD 1080p minimum',
+          video_format: 'tiktok_reel',
+          max_duration_seconds: 60,
+          status: 'planned',
+          video_type: 'educational',
+          is_open_assignment: true, // All main content is open for claiming
+          assigned_tutor_id: null,
+          due_date: dueDate.toISOString(),
+        });
+        
+        videoCounter++;
+        monthVideoCounter++;
+      } catch (rowError) {
+        console.error('Error processing main content row:', rowError);
+        errors.push(`Main content: Error processing row - ${rowError instanceof Error ? rowError.message : 'Unknown error'}`);
+      }
+    }
+    
+    // Validate video counts per week
+    const weekCounts = new Map<number, number>();
+    for (const entry of allEntries) {
+      const count = weekCounts.get(entry.week_number) || 0;
+      weekCounts.set(entry.week_number, count + 1);
+    }
+    
+    for (const [week, count] of weekCounts.entries()) {
+      if (count !== 7 && count !== 6) {
+        errors.push(`Warning: Week ${week} has ${count} videos (expected 6-7)`);
+      }
+    }
+    
+    onProgress?.(50, 'Processing founder videos sheet...');
+    
+    // Sheet 2: Founder videos (NOT open assignments)
+    const founderSheet = workbook.Sheets[workbook.SheetNames[1]];
+    const founderRows = XLSX.utils.sheet_to_json<ExcelRow>(founderSheet);
+    
+    console.log(`Processing founder videos sheet with ${founderRows.length} rows`);
+    
+    for (const row of founderRows) {
+      try {
+        const monthName = row['Month']?.trim();
+        const videoTitle = row['Video title']?.trim();
+        
+        if (!monthName || !videoTitle) {
+          errors.push(`Founder videos: Skipping row - missing Month or Video title`);
+          continue;
+        }
+        
+        const month = MONTH_MAP[monthName];
+        if (!month) {
+          errors.push(`Founder videos: Invalid month "${monthName}"`);
+          continue;
+        }
+        
+        allEntries.push({
+          month,
+          week_number: null, // Founder videos don't follow weekly structure
+          video_number: null,
+          subject: null,
+          title: videoTitle,
+          hook: row['Hook']?.trim() || '',
+          summary: row['Summary (Talking points)']?.trim() || '',
+          talking_points: row['Summary (Talking points)']?.trim().split('\n').filter(p => p.trim()) || [],
+          lighting_requirements: 'Professional lighting setup',
+          audio_requirements: 'Studio quality audio',
+          quality_requirements: '4K preferred',
+          video_format: 'youtube_short',
+          max_duration_seconds: 60,
+          status: 'planned',
+          video_type: 'motivational',
+          is_open_assignment: false, // Founder videos are NOT open for claiming
+          assigned_tutor_id: null,
+          due_date: null, // Founder videos may not have fixed due dates
+        });
+      } catch (rowError) {
+        console.error('Error processing founder video row:', rowError);
+        errors.push(`Founder videos: Error processing row - ${rowError instanceof Error ? rowError.message : 'Unknown error'}`);
+      }
+    }
+    
+    if (allEntries.length === 0) {
+      errors.push('No valid entries found in Excel file');
+      return { success: 0, errors };
+    }
+    
+    onProgress?.(70, `Inserting ${allEntries.length} entries into database...`);
+    
+    // Insert entries in batches
     const batchSize = 50;
     for (let i = 0; i < allEntries.length; i += batchSize) {
       const batch = allEntries.slice(i, i + batchSize);
       
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('content_calendar')
-        .upsert(batch, { 
-          onConflict: 'subject,month,title',
-          count: 'exact' 
+        .upsert(batch, {
+          onConflict: 'month,week_number,video_number',
+          ignoreDuplicates: false
         });
       
-      if (error) {
-        errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        errors.push(`Database error: ${insertError.message}`);
       } else {
         successCount += batch.length;
       }
       
-      onProgress?.(
-        80 + ((i / allEntries.length) * 20),
-        `Imported ${i + batch.length}/${allEntries.length} entries...`
-      );
+      const progress = 70 + ((i + batch.length) / allEntries.length) * 25;
+      onProgress?.(progress, `Inserted ${Math.min(i + batchSize, allEntries.length)} of ${allEntries.length} entries...`);
     }
     
-    onProgress?.(100, 'Import complete!');
+    onProgress?.(100, 'Import completed!');
     
-    return { success: successCount, errors };
+    return {
+      success: successCount,
+      errors
+    };
   } catch (error) {
+    console.error('Import error:', error);
     errors.push(`Fatal error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return { success: successCount, errors };
   }

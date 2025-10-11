@@ -86,8 +86,17 @@ export function ExcelImportDialog({ open, onOpenChange, onSuccess }: ExcelImport
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Import Content Calendar</DialogTitle>
-          <DialogDescription>
-            Upload your Excel file with content calendar data. The file should have three sheets (Maths, English, Science).
+          <DialogDescription className="space-y-2">
+            <p>Upload your Excel file with content calendar data.</p>
+            <div className="text-sm space-y-1">
+              <p className="font-semibold">Expected format:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>Sheet 1 (Main Content):</strong> Tutor videos - Columns: Month, Video title, Hook, Summary (Talking points), Status</li>
+                <li><strong>Sheet 2 (Founder Videos):</strong> Founder content - Same columns as above</li>
+                <li>Typically covers <strong>3 months</strong> (~84 tutor videos + 5 founder videos)</li>
+                <li>Week numbers and video positions calculated automatically (7 videos per week)</li>
+              </ul>
+            </div>
           </DialogDescription>
         </DialogHeader>
 

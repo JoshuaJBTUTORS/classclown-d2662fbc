@@ -6,9 +6,9 @@ export type Subject = 'Maths' | 'English' | 'Science';
 export interface ContentCalendar {
   id: string;
   month: number;
-  week_number?: number;
-  subject: Subject;
-  video_number: number;
+  week_number?: number | null;
+  video_number?: number | null;
+  subject?: Subject | null; // Optional - content is now subject-agnostic
   title: string;
   hook?: string;
   summary?: string;
@@ -16,13 +16,13 @@ export interface ContentCalendar {
   lighting_requirements?: string;
   audio_requirements?: string;
   quality_requirements?: string;
-  video_format: VideoFormat;
-  max_duration_seconds: number;
+  video_format?: VideoFormat;
+  max_duration_seconds?: number;
   status: ContentStatus;
   video_type?: VideoType;
   is_open_assignment?: boolean;
-  assigned_tutor_id?: string;
-  due_date?: string;
+  assigned_tutor_id?: string | null;
+  due_date?: string | null;
   created_at?: string;
   updated_at?: string;
 }
