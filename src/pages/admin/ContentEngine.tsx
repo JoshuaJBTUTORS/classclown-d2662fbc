@@ -7,6 +7,7 @@ import ContentStatistics from '@/components/content/ContentStatistics';
 import AvailableVideosTab from '@/components/content/AvailableVideosTab';
 import { ExcelImportDialog } from '@/components/content/ExcelImportDialog';
 import { VideoRequestCard } from '@/components/content/VideoRequestCard';
+import { ContentTutorManagement } from '@/components/content/ContentTutorManagement';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -345,10 +346,10 @@ const ContentEngine = () => {
       </div>
 
       <Tabs defaultValue="calendar" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="requests">
-            Pending Requests
+            Requests
             {pendingRequests.length > 0 && (
               <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-500 text-white rounded-full">
                 {pendingRequests.length}
@@ -360,7 +361,7 @@ const ContentEngine = () => {
             Available
           </TabsTrigger>
           <TabsTrigger value="pending">
-            Pending Review
+            Review
             {pendingVideos.length > 0 && (
               <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
                 {pendingVideos.length}
@@ -368,7 +369,8 @@ const ContentEngine = () => {
             )}
           </TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="statistics">Statistics</TabsTrigger>
+          <TabsTrigger value="manage-tutors">Tutors</TabsTrigger>
+          <TabsTrigger value="statistics">Stats</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -463,6 +465,10 @@ const ContentEngine = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="manage-tutors">
+          <ContentTutorManagement />
+        </TabsContent>
+
         <TabsContent value="statistics">
           <ContentStatistics stats={statistics} />
         </TabsContent>
@@ -528,10 +534,15 @@ const ContentEngine = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button className="flex-1">Assign Tutor</Button>
-                <Button variant="outline" className="flex-1">Edit</Button>
-              </div>
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={() => setSelectedEntry(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
             </div>
           )}
         </DialogContent>
