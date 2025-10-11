@@ -20,6 +20,7 @@ export const TutorContentDashboard = () => {
   const [selectedVideo, setSelectedVideo] = useState<ContentCalendar | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [detailsVideo, setDetailsVideo] = useState<ContentCalendar | null>(null);
+  const [currentWeek, setCurrentWeek] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,16 +73,36 @@ export const TutorContentDashboard = () => {
 
       // Fetch available videos only if no active assignment
       if (!assignment) {
-        const { data: videos, error } = await supabase
+        // First, find the earliest week with available videos
+        const { data: weekData } = await supabase
           .from('content_calendar')
-          .select('*')
+          .select('week_number')
           .eq('is_available_for_claim', true)
           .eq('status', 'planned')
           .is('assigned_tutor_id', null)
-          .order('due_date', { ascending: true });
+          .order('week_number', { ascending: true })
+          .limit(1)
+          .maybeSingle();
 
-        if (error) throw error;
-        setAvailableVideos(videos || []);
+        if (weekData) {
+          setCurrentWeek(weekData.week_number);
+          
+          // Fetch only videos from the current active week
+          const { data: videos, error } = await supabase
+            .from('content_calendar')
+            .select('*')
+            .eq('week_number', weekData.week_number)
+            .eq('is_available_for_claim', true)
+            .eq('status', 'planned')
+            .is('assigned_tutor_id', null)
+            .order('video_number', { ascending: true });
+
+          if (error) throw error;
+          setAvailableVideos(videos || []);
+        } else {
+          setCurrentWeek(null);
+          setAvailableVideos([]);
+        }
       }
     } catch (error: any) {
       toast({
@@ -243,12 +264,15 @@ export const TutorContentDashboard = () => {
   // Show available videos
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Available Videos</h2>
-        <p className="text-muted-foreground">
-          Request a video to work on. You can only work on one video at a time.
-        </p>
-      </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-2">
+            Available Videos {currentWeek && `- Week ${currentWeek}`}
+          </h2>
+          <p className="text-muted-foreground">
+            Request a video to work on. You can only work on one video at a time.
+            {currentWeek && ` Showing ${availableVideos.length} video${availableVideos.length !== 1 ? 's' : ''} from Week ${currentWeek}.`}
+          </p>
+        </div>
 
       {availableVideos.length === 0 ? (
         <Card>
