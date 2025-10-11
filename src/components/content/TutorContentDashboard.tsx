@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Video, CheckCircle2 } from "lucide-react";
 import { ReleaseFormDialog } from "./ReleaseFormDialog";
+import { VideoDetailsDialog } from "./VideoDetailsDialog";
 import { ContentCalendar } from "@/types/content";
 import { TutorActiveAssignment } from "@/types/videoRequest";
 import { format } from "date-fns";
@@ -17,6 +18,8 @@ export const TutorContentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showReleaseForm, setShowReleaseForm] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<ContentCalendar | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [detailsVideo, setDetailsVideo] = useState<ContentCalendar | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -184,6 +187,13 @@ export const TutorContentDashboard = () => {
               </div>
             </div>
 
+            {assignedVideo.hook && (
+              <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+                <h4 className="font-medium mb-2">Hook:</h4>
+                <p className="text-sm text-muted-foreground">{assignedVideo.hook}</p>
+              </div>
+            )}
+
             {assignedVideo.talking_points && assignedVideo.talking_points.length > 0 && (
               <div>
                 <h4 className="font-medium mb-2">Key Points to Cover:</h4>
@@ -192,6 +202,32 @@ export const TutorContentDashboard = () => {
                     <li key={idx}>{point}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {(assignedVideo.lighting_requirements || assignedVideo.audio_requirements || assignedVideo.quality_requirements) && (
+              <div>
+                <h4 className="font-medium mb-2">Technical Requirements:</h4>
+                <div className="space-y-2">
+                  {assignedVideo.lighting_requirements && (
+                    <div className="text-sm">
+                      <span className="font-medium">Lighting:</span>{' '}
+                      <span className="text-muted-foreground">{assignedVideo.lighting_requirements}</span>
+                    </div>
+                  )}
+                  {assignedVideo.audio_requirements && (
+                    <div className="text-sm">
+                      <span className="font-medium">Audio:</span>{' '}
+                      <span className="text-muted-foreground">{assignedVideo.audio_requirements}</span>
+                    </div>
+                  )}
+                  {assignedVideo.quality_requirements && (
+                    <div className="text-sm">
+                      <span className="font-medium">Quality:</span>{' '}
+                      <span className="text-muted-foreground">{assignedVideo.quality_requirements}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -227,7 +263,14 @@ export const TutorContentDashboard = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {availableVideos.map((video) => (
-            <Card key={video.id} className="hover:border-primary transition-colors">
+            <Card 
+              key={video.id} 
+              className="hover:border-primary transition-colors cursor-pointer"
+              onClick={() => {
+                setDetailsVideo(video);
+                setShowDetailsDialog(true);
+              }}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-lg">{video.title}</CardTitle>
@@ -256,20 +299,40 @@ export const TutorContentDashboard = () => {
                       {video.talking_points.slice(0, 3).map((point, idx) => (
                         <li key={idx}>{point}</li>
                       ))}
+                      {video.talking_points.length > 3 && (
+                        <li className="text-primary">+{video.talking_points.length - 3} more...</li>
+                      )}
                     </ul>
                   </div>
                 )}
 
                 <Button 
                   className="w-full" 
-                  onClick={() => handleRequestVideo(video)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDetailsVideo(video);
+                    setShowDetailsDialog(true);
+                  }}
                 >
-                  Request This Video
+                  View Full Details
                 </Button>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {detailsVideo && (
+        <VideoDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          video={detailsVideo}
+          onRequestVideo={() => {
+            setShowDetailsDialog(false);
+            setSelectedVideo(detailsVideo);
+            setShowReleaseForm(true);
+          }}
+        />
       )}
 
       {selectedVideo && (
