@@ -1187,66 +1187,6 @@ export type Database = {
         }
         Relationships: []
       }
-      founder_videos: {
-        Row: {
-          created_at: string | null
-          download_count: number | null
-          due_date: string | null
-          duration_seconds: number | null
-          file_size_mb: number | null
-          id: string
-          last_downloaded_at: string | null
-          script: string | null
-          status: Database["public"]["Enums"]["content_status"] | null
-          thumbnail_url: string | null
-          topic: string
-          updated_at: string | null
-          uploaded_at: string | null
-          uploaded_by: string | null
-          video_url: string | null
-          week_number: number
-          year: number
-        }
-        Insert: {
-          created_at?: string | null
-          download_count?: number | null
-          due_date?: string | null
-          duration_seconds?: number | null
-          file_size_mb?: number | null
-          id?: string
-          last_downloaded_at?: string | null
-          script?: string | null
-          status?: Database["public"]["Enums"]["content_status"] | null
-          thumbnail_url?: string | null
-          topic: string
-          updated_at?: string | null
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-          video_url?: string | null
-          week_number: number
-          year: number
-        }
-        Update: {
-          created_at?: string | null
-          download_count?: number | null
-          due_date?: string | null
-          duration_seconds?: number | null
-          file_size_mb?: number | null
-          id?: string
-          last_downloaded_at?: string | null
-          script?: string | null
-          status?: Database["public"]["Enums"]["content_status"] | null
-          thumbnail_url?: string | null
-          topic?: string
-          updated_at?: string | null
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-          video_url?: string | null
-          week_number?: number
-          year?: number
-        }
-        Relationships: []
-      }
       homework: {
         Row: {
           attachment_type: string | null
