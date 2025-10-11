@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Video, CheckCircle2 } from "lucide-react";
 import { ReleaseFormDialog } from "./ReleaseFormDialog";
 import { VideoDetailsDialog } from "./VideoDetailsDialog";
+import VideoUploadDialog from "./VideoUploadDialog";
 import { ContentCalendar } from "@/types/content";
 import { TutorActiveAssignment } from "@/types/videoRequest";
 import { format } from "date-fns";
@@ -23,6 +24,8 @@ export const TutorContentDashboard = () => {
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
   const [weekDateRange, setWeekDateRange] = useState<string>('');
   const [isBeforeWeekStart, setIsBeforeWeekStart] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [tutorId, setTutorId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Calculate current active week based on date
@@ -78,6 +81,8 @@ export const TutorContentDashboard = () => {
         setLoading(false);
         return;
       }
+
+      setTutorId(tutorData);
 
       // Check if tutor is registered in content_tutors
       const { data: contentTutor } = await supabase
@@ -283,11 +288,32 @@ export const TutorContentDashboard = () => {
               </div>
             )}
 
-            <Button className="w-full" size="lg">
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => setShowUploadDialog(true)}
+            >
               Upload Video
             </Button>
           </CardContent>
         </Card>
+
+        {tutorId && assignedVideo && (
+          <VideoUploadDialog
+            open={showUploadDialog}
+            onOpenChange={setShowUploadDialog}
+            calendarEntryId={assignedVideo.id}
+            tutorId={tutorId}
+            onSuccess={() => {
+              setShowUploadDialog(false);
+              fetchData(); // Refresh data after successful upload
+              toast({
+                title: "Video submitted successfully",
+                description: "Your video has been submitted for review",
+              });
+            }}
+          />
+        )}
       </div>
     );
   }
