@@ -142,6 +142,21 @@ export const VideoDetailsDialog = ({
                 <p className="text-sm text-muted-foreground">{video.quality_requirements}</p>
               </div>
             )}
+
+            {/* Video Format Requirements */}
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Video className="w-4 h-4 text-muted-foreground" />
+                <p className="font-medium text-sm">Video Format</p>
+              </div>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p><strong>Aspect Ratio:</strong> 9:16 (Portrait/Vertical)</p>
+                <p><strong>Recommended Resolution:</strong> 1080x1920 (Full HD)</p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2">
+                  ⚠️ Videos must be recorded in portrait orientation for optimal viewing on mobile devices
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Action Buttons */}

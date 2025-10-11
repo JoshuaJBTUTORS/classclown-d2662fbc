@@ -233,14 +233,18 @@ export const TutorContentDashboard = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
+            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
                 <span>Due: {assignedVideo.submission_deadline ? format(new Date(assignedVideo.submission_deadline), 'PPp') : 'Not set'}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
                 <span>Max Duration: {assignedVideo.max_duration_seconds}s</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                <span>Format: 9:16 Portrait</span>
               </div>
             </div>
 
@@ -378,14 +382,20 @@ export const TutorContentDashboard = () => {
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Due: {video.due_date ? format(new Date(video.due_date), 'PP') : 'Not set'}</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4 text-sm flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span>Due: {video.due_date ? format(new Date(video.due_date), 'PP') : 'Not set'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span>{video.max_duration_seconds}s max</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{video.max_duration_seconds}s max</span>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Video className="w-3 h-3" />
+                    <span>9:16 Portrait</span>
                   </div>
                 </div>
 

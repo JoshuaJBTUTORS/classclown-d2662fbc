@@ -151,6 +151,25 @@ const VideoUploadDialog = ({
         <DialogHeader>
           <DialogTitle>Upload Video</DialogTitle>
         </DialogHeader>
+
+        {/* Video Format Requirements Alert */}
+        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Video className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                Required Video Format
+              </p>
+              <ul className="text-blue-800 dark:text-blue-200 space-y-1">
+                <li>• <strong>Aspect Ratio:</strong> 9:16 (Portrait/Vertical)</li>
+                <li>• <strong>Recommended:</strong> 1080x1920 pixels</li>
+                <li>• <strong>Max Size:</strong> 500MB</li>
+                <li>• <strong>Orientation:</strong> Record in portrait mode</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-4">
           <div>
             <Label htmlFor="title">Title *</Label>
