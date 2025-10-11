@@ -21,7 +21,47 @@ export const TutorContentDashboard = () => {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [detailsVideo, setDetailsVideo] = useState<ContentCalendar | null>(null);
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
+  const [weekDateRange, setWeekDateRange] = useState<string>('');
+  const [isBeforeWeekStart, setIsBeforeWeekStart] = useState(false);
   const { toast } = useToast();
+
+  // Calculate current active week based on date
+  const calculateCurrentWeek = (): number => {
+    const today = new Date();
+    const baseStartDate = new Date('2025-10-13'); // Week 1 starts Oct 13, 2025
+    
+    // If before Week 1 start, return Week 1 (to show it in preview)
+    if (today < baseStartDate) {
+      return 1;
+    }
+    
+    // Calculate days since base start date
+    const daysSinceStart = Math.floor((today.getTime() - baseStartDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Each week is 7 days
+    const weekNumber = Math.floor(daysSinceStart / 7) + 1;
+    
+    return weekNumber;
+  };
+
+  // Get date range for a specific week
+  const getWeekDateRange = (weekNumber: number): string => {
+    const baseStartDate = new Date('2025-10-13');
+    const weekStartDate = new Date(baseStartDate);
+    weekStartDate.setDate(baseStartDate.getDate() + (weekNumber - 1) * 7);
+    
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setDate(weekStartDate.getDate() + 6);
+    
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString('en-GB', { 
+        day: 'numeric', 
+        month: 'short' 
+      });
+    };
+    
+    return `${formatDate(weekStartDate)} - ${formatDate(weekEndDate)}`;
+  };
 
   useEffect(() => {
     fetchData();
@@ -73,36 +113,27 @@ export const TutorContentDashboard = () => {
 
       // Fetch available videos only if no active assignment
       if (!assignment) {
-        // First, find the earliest week with available videos
-        const { data: weekData } = await supabase
+        // Calculate the current active week based on date
+        const today = new Date();
+        const baseStartDate = new Date('2025-10-13'); // Week 1 starts Oct 13, 2025
+        const activeWeek = calculateCurrentWeek();
+        
+        setCurrentWeek(activeWeek);
+        setWeekDateRange(getWeekDateRange(activeWeek));
+        setIsBeforeWeekStart(today < baseStartDate);
+        
+        // Fetch videos for the current active week
+        const { data: videos, error } = await supabase
           .from('content_calendar')
-          .select('week_number')
+          .select('*')
+          .eq('week_number', activeWeek)
           .eq('is_available_for_claim', true)
           .eq('status', 'planned')
           .is('assigned_tutor_id', null)
-          .order('week_number', { ascending: true })
-          .limit(1)
-          .maybeSingle();
+          .order('video_number', { ascending: true });
 
-        if (weekData) {
-          setCurrentWeek(weekData.week_number);
-          
-          // Fetch only videos from the current active week
-          const { data: videos, error } = await supabase
-            .from('content_calendar')
-            .select('*')
-            .eq('week_number', weekData.week_number)
-            .eq('is_available_for_claim', true)
-            .eq('status', 'planned')
-            .is('assigned_tutor_id', null)
-            .order('video_number', { ascending: true });
-
-          if (error) throw error;
-          setAvailableVideos(videos || []);
-        } else {
-          setCurrentWeek(null);
-          setAvailableVideos([]);
-        }
+        if (error) throw error;
+        setAvailableVideos(videos || []);
       }
     } catch (error: any) {
       toast({
@@ -266,12 +297,28 @@ export const TutorContentDashboard = () => {
     <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold mb-2">
-            Available Videos {currentWeek && `- Week ${currentWeek}`}
+            Available Videos - Week {currentWeek}
+            {weekDateRange && (
+              <span className="text-base font-normal text-muted-foreground ml-2">
+                ({weekDateRange})
+              </span>
+            )}
           </h2>
-          <p className="text-muted-foreground">
-            Request a video to work on. You can only work on one video at a time.
-            {currentWeek && ` Showing ${availableVideos.length} video${availableVideos.length !== 1 ? 's' : ''} from Week ${currentWeek}.`}
-          </p>
+          {isBeforeWeekStart ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+                Coming Soon
+              </Badge>
+              <p className="text-muted-foreground">
+                Week {currentWeek} videos will be available from {new Date('2025-10-13').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">
+              Request a video to work on. You can only work on one video at a time.
+              {currentWeek && ` Showing ${availableVideos.length} video${availableVideos.length !== 1 ? 's' : ''} available this week.`}
+            </p>
+          )}
         </div>
 
       {availableVideos.length === 0 ? (
@@ -337,8 +384,9 @@ export const TutorContentDashboard = () => {
                     setDetailsVideo(video);
                     setShowDetailsDialog(true);
                   }}
+                  disabled={isBeforeWeekStart}
                 >
-                  View Full Details
+                  {isBeforeWeekStart ? 'Available Soon' : 'View Full Details'}
                 </Button>
               </CardContent>
             </Card>
