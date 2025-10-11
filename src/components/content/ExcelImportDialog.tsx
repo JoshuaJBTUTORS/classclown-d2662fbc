@@ -91,10 +91,9 @@ export function ExcelImportDialog({ open, onOpenChange, onSuccess }: ExcelImport
             <div className="text-sm space-y-1">
               <p className="font-semibold">Expected format:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li><strong>Sheet 1 (Main Content):</strong> Tutor videos - Columns: Month, Video title, Hook, Summary (Talking points), Status</li>
-                <li><strong>Sheet 2 (Founder Videos):</strong> Founder content - Same columns as above</li>
-                <li>Typically covers <strong>3 months</strong> (~84 tutor videos + 5 founder videos)</li>
-                <li>Week numbers and video positions calculated automatically (7 videos per week)</li>
+                <li><strong>Single Sheet:</strong> Main Content - Columns: Month, Video title, Hook, Summary (Talking points), Status</li>
+                <li>Typically covers <strong>3 months</strong> with 6 videos per week</li>
+                <li>Week numbers and video positions calculated automatically (6 videos per week)</li>
               </ul>
             </div>
           </DialogDescription>

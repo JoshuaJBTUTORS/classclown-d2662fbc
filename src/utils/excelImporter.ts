@@ -15,7 +15,7 @@ interface ExcelRow {
   'Status'?: string;
 }
 
-// Calculate due date based on month, week number, and video number (1-7 = Mon-Sun)
+// Calculate due date based on month, week number, and video number (1-6 = Mon-Sat)
 function calculateDueDate(month: number, weekNumber: number, videoNumber: number, year: number = 2025): Date {
   // Determine the first day of the month
   const firstDayOfMonth = new Date(year, month - 1, 1);
@@ -46,8 +46,8 @@ export async function importExcelToCalendar(
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
     
-    if (workbook.SheetNames.length < 2) {
-      errors.push('Excel file must contain at least 2 sheets (Main Content and Founder Videos)');
+    if (workbook.SheetNames.length < 1) {
+      errors.push('Excel file must contain at least 1 sheet (Main Content)');
       return { success: 0, errors };
     }
     
@@ -93,15 +93,15 @@ export async function importExcelToCalendar(
           monthVideoCounter = 0;
         }
         
-        // Calculate week number within month (7 videos per week)
-        const weekInMonth = Math.floor(monthVideoCounter / 7) + 1;
+        // Calculate week number within month (6 videos per week)
+        const weekInMonth = Math.floor(monthVideoCounter / 6) + 1;
         // Calculate absolute week number from start of October (month 10)
         const baseMonth = 10; // October
         const monthOffset = month - baseMonth;
         const weekNumber = (monthOffset * 4) + weekInMonth; // Approximate 4 weeks per month
         
-        // Calculate video number within week (1-7)
-        const videoNumber = (monthVideoCounter % 7) + 1;
+        // Calculate video number within week (1-6)
+        const videoNumber = (monthVideoCounter % 6) + 1;
         
         // Calculate due date
         const dueDate = calculateDueDate(month, weekInMonth, videoNumber);
@@ -143,60 +143,11 @@ export async function importExcelToCalendar(
     }
     
     for (const [week, count] of weekCounts.entries()) {
-      if (count !== 7 && count !== 6) {
-        errors.push(`Warning: Week ${week} has ${count} videos (expected 6-7)`);
+      if (count !== 6) {
+        errors.push(`Warning: Week ${week} has ${count} videos (expected 6)`);
       }
     }
     
-    onProgress?.(50, 'Processing founder videos sheet...');
-    
-    // Sheet 2: Founder videos (NOT open assignments)
-    const founderSheet = workbook.Sheets[workbook.SheetNames[1]];
-    const founderRows = XLSX.utils.sheet_to_json<ExcelRow>(founderSheet);
-    
-    console.log(`Processing founder videos sheet with ${founderRows.length} rows`);
-    
-    for (const row of founderRows) {
-      try {
-        const monthName = row['Month']?.trim();
-        const videoTitle = row['Video title']?.trim();
-        
-        if (!monthName || !videoTitle) {
-          errors.push(`Founder videos: Skipping row - missing Month or Video title`);
-          continue;
-        }
-        
-        const month = MONTH_MAP[monthName];
-        if (!month) {
-          errors.push(`Founder videos: Invalid month "${monthName}"`);
-          continue;
-        }
-        
-        allEntries.push({
-          month,
-          week_number: null, // Founder videos don't follow weekly structure
-          video_number: null,
-          subject: null,
-          title: videoTitle,
-          hook: row['Hook']?.trim() || '',
-          summary: row['Summary (Talking points)']?.trim() || '',
-          talking_points: row['Summary (Talking points)']?.trim().split('\n').filter(p => p.trim()) || [],
-          lighting_requirements: 'Professional lighting setup',
-          audio_requirements: 'Studio quality audio',
-          quality_requirements: '4K preferred',
-          video_format: 'youtube_short',
-          max_duration_seconds: 60,
-          status: 'planned',
-          video_type: 'motivational',
-          is_open_assignment: false, // Founder videos are NOT open for claiming
-          assigned_tutor_id: null,
-          due_date: null, // Founder videos may not have fixed due dates
-        });
-      } catch (rowError) {
-        console.error('Error processing founder video row:', rowError);
-        errors.push(`Founder videos: Error processing row - ${rowError instanceof Error ? rowError.message : 'Unknown error'}`);
-      }
-    }
     
     if (allEntries.length === 0) {
       errors.push('No valid entries found in Excel file');

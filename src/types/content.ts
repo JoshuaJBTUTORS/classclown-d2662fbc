@@ -63,26 +63,6 @@ export interface ContentTutor {
   updated_at?: string;
 }
 
-export interface FounderVideo {
-  id: string;
-  week_number: number;
-  year: number;
-  topic: string;
-  script?: string;
-  video_url?: string;
-  thumbnail_url?: string;
-  file_size_mb?: number;
-  duration_seconds?: number;
-  status: ContentStatus;
-  uploaded_by?: string;
-  uploaded_at?: string;
-  due_date?: string;
-  download_count: number;
-  last_downloaded_at?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
 export interface VideoReplacementSuggestion {
   id: string;
   calendar_entry_id: string;

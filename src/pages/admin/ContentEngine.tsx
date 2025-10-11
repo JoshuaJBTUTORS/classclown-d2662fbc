@@ -4,7 +4,6 @@ import { ContentCalendar } from '@/types/content';
 import ContentCalendarGrid from '@/components/content/ContentCalendarGrid';
 import VideoReviewCard from '@/components/content/VideoReviewCard';
 import ContentStatistics from '@/components/content/ContentStatistics';
-import FounderVideoManager from '@/components/content/FounderVideoManager';
 import AvailableVideosTab from '@/components/content/AvailableVideosTab';
 import { ExcelImportDialog } from '@/components/content/ExcelImportDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -231,7 +230,6 @@ const ContentEngine = () => {
           </TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
-          <TabsTrigger value="founder">Founder Videos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -306,9 +304,6 @@ const ContentEngine = () => {
           <ContentStatistics stats={statistics} />
         </TabsContent>
 
-        <TabsContent value="founder">
-          <FounderVideoManager />
-        </TabsContent>
       </Tabs>
 
       {/* Excel Import Dialog */}
