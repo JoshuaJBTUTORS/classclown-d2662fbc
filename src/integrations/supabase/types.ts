@@ -681,16 +681,21 @@ export type Database = {
           assigned_tutor_id: string | null
           audio_requirements: string | null
           created_at: string | null
+          current_request_id: string | null
           due_date: string | null
           hook: string | null
           id: string
+          is_available_for_claim: boolean | null
           is_open_assignment: boolean | null
           lighting_requirements: string | null
           max_duration_seconds: number | null
           month: number
           quality_requirements: string | null
+          release_schedule_id: string | null
+          resubmission_deadline: string | null
           status: Database["public"]["Enums"]["content_status"] | null
           subject: string | null
+          submission_deadline: string | null
           summary: string | null
           talking_points: string[] | null
           title: string
@@ -704,16 +709,21 @@ export type Database = {
           assigned_tutor_id?: string | null
           audio_requirements?: string | null
           created_at?: string | null
+          current_request_id?: string | null
           due_date?: string | null
           hook?: string | null
           id?: string
+          is_available_for_claim?: boolean | null
           is_open_assignment?: boolean | null
           lighting_requirements?: string | null
           max_duration_seconds?: number | null
           month: number
           quality_requirements?: string | null
+          release_schedule_id?: string | null
+          resubmission_deadline?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
           subject?: string | null
+          submission_deadline?: string | null
           summary?: string | null
           talking_points?: string[] | null
           title: string
@@ -727,16 +737,21 @@ export type Database = {
           assigned_tutor_id?: string | null
           audio_requirements?: string | null
           created_at?: string | null
+          current_request_id?: string | null
           due_date?: string | null
           hook?: string | null
           id?: string
+          is_available_for_claim?: boolean | null
           is_open_assignment?: boolean | null
           lighting_requirements?: string | null
           max_duration_seconds?: number | null
           month?: number
           quality_requirements?: string | null
+          release_schedule_id?: string | null
+          resubmission_deadline?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
           subject?: string | null
+          submission_deadline?: string | null
           summary?: string | null
           talking_points?: string[] | null
           title?: string
@@ -754,15 +769,33 @@ export type Database = {
             referencedRelation: "tutors"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "content_calendar_current_request_id_fkey"
+            columns: ["current_request_id"]
+            isOneToOne: false
+            referencedRelation: "video_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_calendar_release_schedule_id_fkey"
+            columns: ["release_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_release_schedules"
+            referencedColumns: ["id"]
+          },
         ]
       }
       content_tutors: {
         Row: {
+          average_approval_rate: number | null
           average_approval_time_hours: number | null
           created_at: string | null
           id: string
           is_active: boolean | null
           joined_date: string | null
+          late_submissions: number | null
+          missed_deadlines: number | null
+          on_time_submissions: number | null
           subjects: string[]
           total_approved: number | null
           total_rejected: number | null
@@ -771,11 +804,15 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          average_approval_rate?: number | null
           average_approval_time_hours?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           joined_date?: string | null
+          late_submissions?: number | null
+          missed_deadlines?: number | null
+          on_time_submissions?: number | null
           subjects?: string[]
           total_approved?: number | null
           total_rejected?: number | null
@@ -784,11 +821,15 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          average_approval_rate?: number | null
           average_approval_time_hours?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           joined_date?: string | null
+          late_submissions?: number | null
+          missed_deadlines?: number | null
+          on_time_submissions?: number | null
           subjects?: string[]
           total_approved?: number | null
           total_rejected?: number | null
@@ -818,9 +859,13 @@ export type Database = {
           duration_seconds: number | null
           file_size_mb: number | null
           id: string
+          is_resubmission: boolean | null
           last_downloaded_at: string | null
+          original_submission_id: string | null
+          rejection_count: number | null
           rejection_reason: string | null
           status: Database["public"]["Enums"]["content_status"] | null
+          submission_attempt: number | null
           thumbnail_url: string | null
           title: string
           tutor_id: string
@@ -839,9 +884,13 @@ export type Database = {
           duration_seconds?: number | null
           file_size_mb?: number | null
           id?: string
+          is_resubmission?: boolean | null
           last_downloaded_at?: string | null
+          original_submission_id?: string | null
+          rejection_count?: number | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
+          submission_attempt?: number | null
           thumbnail_url?: string | null
           title: string
           tutor_id: string
@@ -860,9 +909,13 @@ export type Database = {
           duration_seconds?: number | null
           file_size_mb?: number | null
           id?: string
+          is_resubmission?: boolean | null
           last_downloaded_at?: string | null
+          original_submission_id?: string | null
+          rejection_count?: number | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
+          submission_attempt?: number | null
           thumbnail_url?: string | null
           title?: string
           tutor_id?: string
@@ -876,6 +929,13 @@ export type Database = {
             columns: ["calendar_entry_id"]
             isOneToOne: false
             referencedRelation: "content_calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_videos_original_submission_id_fkey"
+            columns: ["original_submission_id"]
+            isOneToOne: false
+            referencedRelation: "content_videos"
             referencedColumns: ["id"]
           },
           {
@@ -2896,6 +2956,61 @@ export type Database = {
           },
         ]
       }
+      tutor_active_assignments: {
+        Row: {
+          assigned_at: string
+          calendar_entry_id: string
+          can_request_next: boolean
+          created_at: string
+          id: string
+          tutor_id: string
+          updated_at: string
+          video_request_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          calendar_entry_id: string
+          can_request_next?: boolean
+          created_at?: string
+          id?: string
+          tutor_id: string
+          updated_at?: string
+          video_request_id: string
+        }
+        Update: {
+          assigned_at?: string
+          calendar_entry_id?: string
+          can_request_next?: boolean
+          created_at?: string
+          id?: string
+          tutor_id?: string
+          updated_at?: string
+          video_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_active_assignments_calendar_entry_id_fkey"
+            columns: ["calendar_entry_id"]
+            isOneToOne: false
+            referencedRelation: "content_calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_active_assignments_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: true
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_active_assignments_video_request_id_fkey"
+            columns: ["video_request_id"]
+            isOneToOne: false
+            referencedRelation: "video_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_availability: {
         Row: {
           created_at: string | null
@@ -3137,6 +3252,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      video_requests: {
+        Row: {
+          calendar_entry_id: string
+          created_at: string
+          denial_reason: string | null
+          id: string
+          release_form_accepted: boolean
+          release_form_accepted_at: string | null
+          request_date: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          calendar_entry_id: string
+          created_at?: string
+          denial_reason?: string | null
+          id?: string
+          release_form_accepted?: boolean
+          release_form_accepted_at?: string | null
+          request_date?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          calendar_entry_id?: string
+          created_at?: string
+          denial_reason?: string | null
+          id?: string
+          release_form_accepted?: boolean
+          release_form_accepted_at?: string | null
+          request_date?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_requests_calendar_entry_id_fkey"
+            columns: ["calendar_entry_id"]
+            isOneToOne: false
+            referencedRelation: "content_calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_requests_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_release_schedules: {
+        Row: {
+          created_at: string
+          id: string
+          release_date: string
+          status: string
+          total_videos: number
+          videos_released: number
+          week_number: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          release_date: string
+          status?: string
+          total_videos?: number
+          videos_released?: number
+          week_number: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          release_date?: string
+          status?: string
+          total_videos?: number
+          videos_released?: number
+          week_number?: number
+          year?: number
+        }
+        Relationships: []
       }
       whiteboard_files: {
         Row: {
