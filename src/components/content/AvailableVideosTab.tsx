@@ -4,7 +4,6 @@ import { ContentCalendar } from '@/types/content';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Clock, Sparkles, Video } from 'lucide-react';
 import { format } from 'date-fns';
@@ -13,10 +12,8 @@ const AvailableVideosTab = () => {
   const [openVideos, setOpenVideos] = useState<ContentCalendar[]>([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const { toast } = useToast();
 
-  const subjects = ['all', 'Maths', 'English', 'Science'];
   const shortMonthNames = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -95,9 +92,6 @@ const AvailableVideosTab = () => {
     }
   };
 
-  const filteredVideos = openVideos.filter(
-    video => selectedSubject === 'all' || video.subject === selectedSubject
-  );
 
   if (loading) {
     return (
@@ -112,42 +106,26 @@ const AvailableVideosTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Available Motivational Videos</h2>
-          <p className="text-muted-foreground">
-            Claim open videos to contribute to the content calendar
-          </p>
-        </div>
-        <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by subject" />
-          </SelectTrigger>
-          <SelectContent>
-            {subjects.map(subject => (
-              <SelectItem key={subject} value={subject}>
-                {subject === 'all' ? 'All Subjects' : subject}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div>
+        <h2 className="text-2xl font-bold">Available Motivational Videos</h2>
+        <p className="text-muted-foreground">
+          Claim open videos to contribute to the content calendar
+        </p>
       </div>
 
-      {filteredVideos.length === 0 ? (
+      {openVideos.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No Open Videos Available</h3>
             <p className="text-muted-foreground">
-              {selectedSubject === 'all'
-                ? 'All motivational videos have been claimed. Check back later!'
-                : `No open ${selectedSubject} videos at the moment.`}
+              All motivational videos have been claimed. Check back later!
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredVideos.map((video) => (
+          {openVideos.map((video) => (
             <Card key={video.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between mb-2">
