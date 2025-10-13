@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Video, AlertCircle, CheckCircle, Download, Clock } from 'lucide-react';
 import { ContentCalendar } from '@/types/content';
 import { format } from 'date-fns';
+import { getAcademicWeekInfo } from '@/utils/academicWeekUtils';
 
 interface ContentCalendarGridProps {
   entries: ContentCalendar[];
@@ -22,7 +23,9 @@ const statusConfig = {
 
 const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps) => {
   const currentMonth = new Date().getMonth() + 1; // Get current month (1-12)
+  const currentWeekInfo = getAcademicWeekInfo();
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedWeek, setSelectedWeek] = useState<number | 'all'>('all');
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -34,34 +37,83 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
-  const filteredEntries = entries.filter(
-    (entry) => entry.month === selectedMonth
-  );
+  const filteredEntries = entries.filter((entry) => {
+    const monthMatch = entry.month === selectedMonth;
+    
+    if (selectedWeek === 'all') {
+      return monthMatch;
+    }
+    
+    return monthMatch && entry.week_number === selectedWeek;
+  });
 
   // Count entries per month for the dropdown
   const getMonthCount = (month: number) => {
     return entries.filter(e => e.month === month).length;
   };
 
+  // Get unique weeks for the selected month
+  const getWeeksInMonth = (month: number) => {
+    const weeksInMonth = entries
+      .filter(e => e.month === month)
+      .map(e => e.week_number)
+      .filter((week, index, arr) => arr.indexOf(week) === index)
+      .sort((a, b) => (a || 0) - (b || 0));
+    
+    return weeksInMonth.filter(week => week !== null && week !== undefined) as number[];
+  };
+
+  const availableWeeks = getWeeksInMonth(selectedMonth);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Content Calendar</h2>
-        <div className="flex gap-2">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="px-4 py-2 rounded-md border bg-background"
-          >
-            {monthNames.map((month, index) => {
-              const count = getMonthCount(index + 1);
-              return (
-                <option key={index} value={index + 1}>
-                  {month} {count > 0 ? `(${count})` : ''}
-                </option>
-              );
-            })}
-          </select>
+        <div className="flex gap-3 items-center">
+          <div className="flex flex-col">
+            <label className="text-xs text-muted-foreground mb-1">Month</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(Number(e.target.value));
+                setSelectedWeek('all');
+              }}
+              className="px-4 py-2 rounded-md border bg-background"
+            >
+              {monthNames.map((month, index) => {
+                const count = getMonthCount(index + 1);
+                return (
+                  <option key={index} value={index + 1}>
+                    {month} {count > 0 ? `(${count})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          
+          <div className="flex flex-col">
+            <label className="text-xs text-muted-foreground mb-1">Week</label>
+            <select
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              className="px-4 py-2 rounded-md border bg-background min-w-[180px]"
+            >
+              <option value="all">
+                All Weeks ({entries.filter(e => e.month === selectedMonth).length})
+              </option>
+              {availableWeeks.map((weekNum) => {
+                const weekCount = entries.filter(e => 
+                  e.month === selectedMonth && e.week_number === weekNum
+                ).length;
+                const isCurrent = weekNum === currentWeekInfo.currentWeek;
+                return (
+                  <option key={weekNum} value={weekNum}>
+                    Week {weekNum} {isCurrent ? '(Current)' : ''} ({weekCount} {weekCount === 1 ? 'video' : 'videos'})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -140,7 +192,10 @@ const ContentCalendarGrid = ({ entries, onEntryClick }: ContentCalendarGridProps
         {filteredEntries.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="mb-2">No videos found for {monthNames[selectedMonth - 1]}</p>
+            <p className="mb-2">
+              No videos found for {monthNames[selectedMonth - 1]}
+              {selectedWeek !== 'all' && ` - Week ${selectedWeek}`}
+            </p>
             {entries.length === 0 && (
               <p className="text-sm">
                 Click "Import Calendar Data" to get started
