@@ -9,7 +9,8 @@ import { Calendar, Clock, Video, CheckCircle2, AlertCircle } from "lucide-react"
 import { ReleaseFormDialog } from "./ReleaseFormDialog";
 import { VideoDetailsDialog } from "./VideoDetailsDialog";
 import VideoUploadDialog from "./VideoUploadDialog";
-import { ContentCalendar } from "@/types/content";
+import { TutorSubmissionsTab } from "./TutorSubmissionsTab";
+import { ContentCalendar, ContentVideo } from "@/types/content";
 import { TutorActiveAssignment, VideoRequest } from "@/types/videoRequest";
 import { format } from "date-fns";
 
@@ -18,6 +19,7 @@ export const TutorContentDashboard = () => {
   const [activeAssignment, setActiveAssignment] = useState<TutorActiveAssignment | null>(null);
   const [assignedVideo, setAssignedVideo] = useState<ContentCalendar | null>(null);
   const [requestedVideos, setRequestedVideos] = useState<Array<VideoRequest & { calendar_entry: ContentCalendar }>>([]);
+  const [submittedVideos, setSubmittedVideos] = useState<Array<ContentVideo & { calendar_entry: ContentCalendar }>>([]);
   const [loading, setLoading] = useState(true);
   const [showReleaseForm, setShowReleaseForm] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<ContentCalendar | null>(null);
@@ -130,6 +132,18 @@ export const TutorContentDashboard = () => {
 
       setRequestedVideos((requests || []) as Array<VideoRequest & { calendar_entry: ContentCalendar }>);
 
+      // Fetch submitted videos for this tutor
+      const { data: submissions } = await supabase
+        .from('content_videos')
+        .select(`
+          *,
+          calendar_entry:content_calendar!content_videos_calendar_entry_id_fkey(*)
+        `)
+        .eq('tutor_id', tutorData)
+        .order('created_at', { ascending: false });
+
+      setSubmittedVideos((submissions || []) as Array<ContentVideo & { calendar_entry: ContentCalendar }>);
+
       // Fetch available videos only if no active assignment
       if (!assignment) {
         // Calculate the current active week based on date
@@ -229,10 +243,14 @@ export const TutorContentDashboard = () => {
 
   return (
     <Tabs defaultValue="active" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="active">
           Active Assignment
           {activeAssignment && <Badge className="ml-2" variant="secondary">1</Badge>}
+        </TabsTrigger>
+        <TabsTrigger value="submissions">
+          My Submissions
+          {submittedVideos.length > 0 && <Badge className="ml-2" variant="secondary">{submittedVideos.length}</Badge>}
         </TabsTrigger>
         <TabsTrigger value="requested">
           Requested Videos
@@ -362,6 +380,14 @@ export const TutorContentDashboard = () => {
             </CardContent>
           </Card>
         )}
+      </TabsContent>
+
+      <TabsContent value="submissions" className="mt-6">
+        <TutorSubmissionsTab 
+          submissions={submittedVideos}
+          onRefresh={fetchData}
+          tutorId={tutorId || ''}
+        />
       </TabsContent>
 
       <TabsContent value="requested" className="mt-6">
