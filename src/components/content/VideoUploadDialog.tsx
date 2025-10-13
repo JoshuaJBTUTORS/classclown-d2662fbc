@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -148,13 +147,16 @@ const VideoUploadDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] !flex !flex-col">
         <DialogHeader>
           <DialogTitle>Upload Video</DialogTitle>
+          <DialogDescription className="sr-only">
+            Upload a portrait video under 500MB. Provide a title, optional description, and select a file.
+          </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4 h-[calc(85vh-120px)]">
-          <div className="space-y-4 pb-2 min-h-full">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
+          <div className="space-y-4 pb-2">
             {/* Video Format Requirements Alert */}
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <div className="flex items-start gap-3">
@@ -234,26 +236,26 @@ const VideoUploadDialog = ({
                 </p>
               </div>
             )}
-
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                onClick={handleUpload}
-                disabled={uploading || !videoFile || !title}
-              >
-                {uploading ? 'Uploading...' : 'Upload Video'}
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => onOpenChange(false)}
-                disabled={uploading}
-              >
-                Cancel
-              </Button>
-            </div>
           </div>
-        </ScrollArea>
+        </div>
+
+        <div className="mt-4 flex gap-2 pt-2 border-t bg-background">
+          <Button
+            className="flex-1"
+            onClick={handleUpload}
+            disabled={uploading || !videoFile || !title}
+          >
+            {uploading ? 'Uploading...' : 'Upload Video'}
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+            disabled={uploading}
+          >
+            Cancel
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
