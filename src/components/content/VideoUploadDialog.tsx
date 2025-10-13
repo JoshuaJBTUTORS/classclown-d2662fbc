@@ -153,8 +153,8 @@ const VideoUploadDialog = ({
           <DialogTitle>Upload Video</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4 pb-2">
+        <ScrollArea className="flex-1 pr-4 h-[calc(85vh-120px)]">
+          <div className="space-y-4 pb-2 min-h-full">
             {/* Video Format Requirements Alert */}
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <div className="flex items-start gap-3">
@@ -221,7 +221,7 @@ const VideoUploadDialog = ({
                   src={videoPreview}
                   controls
                   className="w-full"
-                  style={{ maxHeight: '200px' }}
+                  style={{ maxHeight: '150px' }}
                 />
               </div>
             )}
