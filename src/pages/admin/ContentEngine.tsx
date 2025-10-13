@@ -153,7 +153,7 @@ const ContentEngine = () => {
         .from('video_requests')
         .select(`
           *,
-          calendar_entry:content_calendar(*),
+          calendar_entry:content_calendar!video_requests_calendar_entry_id_fkey(*),
           tutor:tutors(*)
         `)
         .eq('status', 'pending')
