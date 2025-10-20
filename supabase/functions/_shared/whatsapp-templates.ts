@@ -38,7 +38,7 @@ Thank you for booking a trial lesson for ${childName} in ${subject}.
 
 📅 Preferred Date: ${preferredDate}
 ⏰ Session Start Time: ${preferredTime}
-⏱️ Session Structure: 15 mins platform demo + 30 mins trial lesson
+⏱️ Session Structure: 30 mins platform demo + 30 mins trial lesson
 
 We'll contact you within 24 hours to confirm the lesson details and send you the joining link.
 
@@ -58,11 +58,11 @@ Your trial lesson for ${childName} has been approved:
 📚 Subject: ${subject}
 📅 Date: ${lessonDate}
 ⏰ Session Start Time: ${lessonTime}
-⏱️ Duration: 45 minutes (15 min consultation + 30 min lesson)
+⏱️ Duration: 60 minutes (30 min consultation + 30 min lesson)
 
 🔗 Join the session here: ${studentLessonLink}
 
-Please join at the scheduled time for the parent consultation. ${childName} will join the same call after 15 minutes for their lesson.
+Please join at the scheduled time for the parent consultation. ${childName} will join the same call after 30 minutes for their lesson.
 
 Looking forward to meeting you both!
 
@@ -82,7 +82,7 @@ Excited reminder about ${childName}'s trial session:
 ⏰ ${lessonTime}
 
 ⏱️ How it works:
-• First 15 mins: Platform demo & introduction
+• First 30 mins: Platform demo & introduction
 • Next 30 mins: Personalized trial lesson with ${childName}
 
 Parents join with one link and stay for the entire session!

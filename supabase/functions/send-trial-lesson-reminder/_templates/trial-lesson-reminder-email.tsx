@@ -88,7 +88,7 @@ export const TrialLessonReminderEmail = ({
             <Text style={structureTitle}>⏱️ How Your Trial Session Works</Text>
             <Hr style={structureDivider} />
             <Text style={structureText}>
-              <strong>First 15 minutes:</strong> Platform demonstration and introduction
+              <strong>First 30 minutes:</strong> Platform demonstration and introduction
             </Text>
             <Text style={structureText}>
               <strong>Next 30 minutes:</strong> Your personalized trial lesson with {childName}

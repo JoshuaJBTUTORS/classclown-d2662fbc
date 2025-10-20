@@ -50,7 +50,7 @@ export const TrialLessonApprovalEmail = ({
             <strong>Subject:</strong> {subject}<br />
             <strong>Date:</strong> {lessonDate}<br />
             <strong>Start Time:</strong> {lessonTime}<br />
-            <strong>Total Duration:</strong> 45 minutes (15 min parent consultation + 30 min lesson)
+            <strong>Total Duration:</strong> 60 minutes (30 min parent consultation + 30 min lesson)
           </Text>
         </div>
 
@@ -61,7 +61,7 @@ export const TrialLessonApprovalEmail = ({
           Your session will have two parts in one continuous call:
         </Text>
         <ul style={listStyle}>
-          <li><strong>Parent Consultation (First 15 minutes):</strong> You'll discuss {childName}'s learning goals, challenges, and what you'd like to achieve from tutoring</li>
+          <li><strong>Parent Consultation (First 30 minutes):</strong> You'll discuss {childName}'s learning goals, challenges, and what you'd like to achieve from tutoring</li>
           <li><strong>Trial Lesson (Next 30 minutes):</strong> {childName} will join the same call for their trial lesson with the tutor</li>
         </ul>
 
@@ -69,7 +69,7 @@ export const TrialLessonApprovalEmail = ({
           <strong>How to join:</strong>
         </Text>
         <Text style={text}>
-          You (the parent) will join at the scheduled start time for the consultation. {childName} will join the same call after the initial 15-minute discussion.
+          You (the parent) will join at the scheduled start time for the consultation. {childName} will join the same call after the initial 30-minute discussion.
         </Text>
 
         <div style={buttonContainer}>

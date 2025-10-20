@@ -86,7 +86,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
 
     // Use preferred_time as the demo start time (displayed to clients)
     const demoStartDateTime = new Date(`${trialBooking.preferred_date}T${trialBooking.preferred_time}`);
-    const demoEndDateTime = addMinutes(demoStartDateTime, 15); // 15-minute demo
+    const demoEndDateTime = addMinutes(demoStartDateTime, 30); // 30-minute demo
     
     // Lesson starts 15 minutes after demo start (i.e., when demo ends)
     const lessonStartDateTime = demoEndDateTime;
@@ -173,7 +173,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
           lessonId: lessonData.id,
           title: `Trial Session - ${title}`,
           startTime: demoStartDateTime.toISOString(),
-          duration: 45
+          duration: 60
         }
       });
 
@@ -221,7 +221,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
       .from('lessons')
       .insert({
         title: demoTitle,
-        description: `15-minute demo session before trial lesson for ${studentName}`,
+        description: `30-minute demo session before trial lesson for ${studentName}`,
         tutor_id: demoTutorId,
         start_time: demoStartDateTime.toISOString(),
         end_time: demoEndDateTime.toISOString(),
