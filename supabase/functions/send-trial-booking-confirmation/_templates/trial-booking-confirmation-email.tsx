@@ -46,7 +46,7 @@ export const TrialBookingConfirmationEmail = ({
             <strong>Subject:</strong> {subject}<br />
             <strong>Preferred Date:</strong> {preferredDate}<br />
             <strong>Session Start Time:</strong> {preferredTime}<br />
-            <strong>Session Structure:</strong> 30 mins platform demo + 30 mins trial lesson
+            <strong>Session Structure:</strong> 15 mins platform demo + 30 mins trial lesson
             {message && (
               <>
                 <br />
