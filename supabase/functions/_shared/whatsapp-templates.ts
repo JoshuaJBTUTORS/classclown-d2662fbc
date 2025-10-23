@@ -193,5 +193,55 @@ Booking ID: ${bookingId}
 💬 Message: ${message || 'No additional message'}
 
 ⚡ ACTION REQUIRED: Please contact the parent to confirm the trial lesson!
-  `.trim()
+  `.trim(),
+
+  demoImminentReminder: (
+    parentName: string,
+    childName: string,
+    lessonUrl: string
+  ) => `
+🚨 STARTING IN 10 MINUTES! 🚨
+
+Hi ${parentName}!
+
+${childName}'s demo session is starting very soon!
+
+⏰ Starts in: 10 MINUTES
+
+🔗 Join here NOW: ${lessonUrl}
+
+Important reminders:
+📹 Camera must be on
+💻 Test your connection now
+👋 Join a few minutes early
+
+See you soon!
+
+JB Tutors Team 🎯
+`.trim(),
+
+  demoImminentReminderAdmin: (
+    parentName: string,
+    childName: string,
+    parentEmail: string,
+    parentPhone: string,
+    lessonUrl: string
+  ) => `
+🚨 DEMO STARTING IN 10 MINUTES! 🚨
+
+Demo session about to begin:
+
+👨‍👩‍👧‍👦 Parent: ${parentName}
+👦👧 Child: ${childName}
+📧 Email: ${parentEmail}
+📱 Phone: ${parentPhone}
+
+⏰ Starts in: 10 MINUTES
+
+🔗 Join here: ${lessonUrl}
+
+⚡ ACTION: Join the demo session now!
+
+JB Tutors Team
+`.trim()
 };

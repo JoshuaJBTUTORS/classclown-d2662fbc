@@ -1780,6 +1780,7 @@ export type Database = {
           flexible_classroom_room_id: string | null
           flexible_classroom_session_data: Json | null
           id: string
+          imminent_reminder_sent: boolean | null
           instance_date: string | null
           is_group: boolean
           is_recurring: boolean
@@ -1813,6 +1814,7 @@ export type Database = {
           flexible_classroom_room_id?: string | null
           flexible_classroom_session_data?: Json | null
           id?: string
+          imminent_reminder_sent?: boolean | null
           instance_date?: string | null
           is_group?: boolean
           is_recurring?: boolean
@@ -1846,6 +1848,7 @@ export type Database = {
           flexible_classroom_room_id?: string | null
           flexible_classroom_session_data?: Json | null
           id?: string
+          imminent_reminder_sent?: boolean | null
           instance_date?: string | null
           is_group?: boolean
           is_recurring?: boolean
@@ -3428,16 +3431,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      advance_school_progress_cycle: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      calculate_course_completion: {
-        Args:
-          | { course_id_param: string; student_id_param: number }
-          | { course_id_param: string; student_id_param: string }
-        Returns: number
-      }
+      advance_school_progress_cycle: { Args: never; Returns: undefined }
+      calculate_course_completion:
+        | {
+            Args: { course_id_param: string; student_id_param: string }
+            Returns: number
+          }
+        | {
+            Args: { course_id_param: string; student_id_param: number }
+            Returns: number
+          }
       calculate_session_score: {
         Args: { session_id_param: string }
         Returns: {
@@ -3464,54 +3467,21 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: boolean
       }
-      cleanup_expired_reset_tokens: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_time_off_requests: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      extend_recurring_lessons: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_reset_tokens: { Args: never; Returns: undefined }
+      cleanup_old_time_off_requests: { Args: never; Returns: number }
+      extend_recurring_lessons: { Args: never; Returns: undefined }
       generate_future_school_progress_cycles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: undefined
       }
-      get_current_school_progress_cycle: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_tutor_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_email: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_parent_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_student_id: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_current_user_tutor_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_week_number: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_next_lesson: {
-        Args: { current_lesson_id: string }
-        Returns: string
-      }
+      get_current_school_progress_cycle: { Args: never; Returns: string }
+      get_current_tutor_id: { Args: never; Returns: string }
+      get_current_user_email: { Args: never; Returns: string }
+      get_current_user_parent_id: { Args: never; Returns: string }
+      get_current_user_student_id: { Args: never; Returns: number }
+      get_current_user_tutor_id: { Args: never; Returns: string }
+      get_current_week_number: { Args: never; Returns: number }
+      get_next_lesson: { Args: { current_lesson_id: string }; Returns: string }
       get_primary_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -3555,10 +3525,7 @@ export type Database = {
         Args: { cycle_id_param: string; parent_id_param: string }
         Returns: boolean
       }
-      trigger_hourly_lesson_processing: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      trigger_hourly_lesson_processing: { Args: never; Returns: undefined }
       user_can_edit_assessment: {
         Args: { assessment_id_param: string }
         Returns: boolean
