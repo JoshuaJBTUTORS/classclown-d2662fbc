@@ -56,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Query for demo lessons starting in 10-15 minutes that haven't been reminded yet
     const { data: demoLessons, error: lessonsError } = await supabase
       .from('lessons')
-      .select('*, trial_bookings(*)')
+      .select('*')
       .eq('lesson_type', 'demo')
       .eq('status', 'scheduled')
       .eq('imminent_reminder_sent', false)
@@ -88,12 +88,22 @@ const handler = async (req: Request): Promise<Response> => {
     // Process each demo lesson
     for (const lesson of demoLessons) {
       try {
-        const trialBooking = lesson.trial_bookings;
+        console.log(`Processing lesson ${lesson.id} with trial_booking_id: ${lesson.trial_booking_id}`);
         
-        if (!trialBooking || !trialBooking.email) {
-          console.warn(`No trial booking data found for lesson ${lesson.id}`);
+        // Fetch trial booking explicitly by ID
+        const { data: trialBooking, error: bookingError } = await supabase
+          .from('trial_bookings')
+          .select('id, parent_name, child_name, email, phone')
+          .eq('id', lesson.trial_booking_id)
+          .single();
+
+        if (bookingError || !trialBooking) {
+          console.error(`Failed to fetch trial booking ${lesson.trial_booking_id} for lesson ${lesson.id}:`, bookingError);
+          errors.push(`No trial booking found for lesson ${lesson.id}`);
           continue;
         }
+
+        console.log(`Trial booking found: email=${trialBooking.email ? 'yes' : 'NO'}, phone=${trialBooking.phone ? 'yes' : 'NO'}`);
 
         // Format times for display
         const lessonTime = formatInUKTime(lesson.start_time, 'HH:mm');
@@ -103,91 +113,145 @@ const handler = async (req: Request): Promise<Response> => {
           ? `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`
           : `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/student-join/${lesson.id}`;
 
-        // Send email to parent
-        const parentEmailHtml = await renderAsync(
-          React.createElement(DemoImminentEmail, {
-            parentName: trialBooking.parent_name || 'Parent',
-            childName: trialBooking.child_name || 'your child',
-            lessonUrl,
-            lessonTime,
-          })
-        );
+        let sentChannels: string[] = [];
 
-        console.log(`Sending imminent demo reminder to parent: ${trialBooking.email}`);
+        // Send email to parent if email exists
+        if (trialBooking.email) {
+          try {
+            const parentEmailHtml = await renderAsync(
+              React.createElement(DemoImminentEmail, {
+                parentName: trialBooking.parent_name || 'Parent',
+                childName: trialBooking.child_name || 'your child',
+                lessonUrl,
+                lessonTime,
+              })
+            );
 
-        const parentEmailResult = await sendEmailWithRetry({
-          from: 'JB Tutors <lessons@jb-tutors.com>',
-          to: [trialBooking.email],
-          subject: `🚨 STARTING IN 10 MINUTES - Demo Session for ${trialBooking.child_name}`,
-          html: parentEmailHtml,
-        });
+            console.log(`Sending imminent demo reminder email to parent: ${trialBooking.email}`);
+
+            await sendEmailWithRetry({
+              from: 'JB Tutors <lessons@jb-tutors.com>',
+              to: [trialBooking.email],
+              subject: `🚨 STARTING IN 10 MINUTES - Demo Session for ${trialBooking.child_name}`,
+              html: parentEmailHtml,
+            });
+
+            sentChannels.push('parent-email');
+            console.log(`✓ Parent email sent successfully`);
+          } catch (emailError: any) {
+            console.error(`Failed to send parent email:`, emailError);
+            errors.push(`Failed to send parent email for lesson ${lesson.id}: ${emailError.message}`);
+          }
+        } else {
+          console.warn(`No parent email available for lesson ${lesson.id}`);
+        }
 
         // Send WhatsApp to parent if phone is available
         if (trialBooking.phone) {
-          const whatsappText = WhatsAppTemplates.demoImminentReminder(
+          try {
+            const whatsappText = WhatsAppTemplates.demoImminentReminder(
+              trialBooking.parent_name || 'Parent',
+              trialBooking.child_name || 'your child',
+              lessonUrl
+            );
+
+            const whatsappNumber = whatsappService.formatPhoneNumber(trialBooking.phone);
+            const whatsappResponse = await whatsappService.sendMessage({
+              phoneNumber: whatsappNumber,
+              text: whatsappText
+            });
+
+            if (whatsappResponse.success) {
+              sentChannels.push('parent-whatsapp');
+              console.log(`✓ Parent WhatsApp sent successfully to ${whatsappNumber}`);
+            } else {
+              console.error(`Failed to send parent WhatsApp:`, whatsappResponse.error);
+              errors.push(`Failed to send parent WhatsApp for lesson ${lesson.id}: ${whatsappResponse.error}`);
+            }
+          } catch (whatsappError: any) {
+            console.error(`Failed to send parent WhatsApp:`, whatsappError);
+            errors.push(`Failed to send parent WhatsApp for lesson ${lesson.id}: ${whatsappError.message}`);
+          }
+        } else {
+          console.warn(`No parent phone available for lesson ${lesson.id}`);
+        }
+
+        // Always send admin notifications
+        const contactNote = (!trialBooking.email && !trialBooking.phone) 
+          ? '⚠️ NO PARENT CONTACT INFO AVAILABLE ⚠️' 
+          : '';
+
+        try {
+          const adminEmailHtml = await renderAsync(
+            React.createElement(DemoImminentAdminEmail, {
+              parentName: trialBooking.parent_name || 'Parent',
+              childName: trialBooking.child_name || 'Child',
+              parentEmail: trialBooking.email || 'Not provided',
+              parentPhone: trialBooking.phone || 'Not provided',
+              lessonUrl,
+              lessonTime,
+            })
+          );
+
+          console.log('Sending imminent demo reminder to admin: joshua@jb-tutors.com');
+
+          await sendEmailWithRetry({
+            from: 'JB Tutors Alerts <lessons@jb-tutors.com>',
+            to: ['joshua@jb-tutors.com'],
+            subject: `🚨 Demo Starting in 10 Min - ${trialBooking.parent_name} & ${trialBooking.child_name} ${contactNote}`,
+            html: adminEmailHtml,
+          });
+
+          sentChannels.push('admin-email');
+          console.log(`✓ Admin email sent successfully`);
+        } catch (adminEmailError: any) {
+          console.error(`Failed to send admin email:`, adminEmailError);
+          errors.push(`Failed to send admin email for lesson ${lesson.id}: ${adminEmailError.message}`);
+        }
+
+        try {
+          const adminWhatsappText = WhatsAppTemplates.demoImminentReminderAdmin(
             trialBooking.parent_name || 'Parent',
-            trialBooking.child_name || 'your child',
+            trialBooking.child_name || 'Child',
+            trialBooking.email || 'Not provided',
+            trialBooking.phone || 'Not provided',
             lessonUrl
           );
 
-          const whatsappNumber = whatsappService.formatPhoneNumber(trialBooking.phone);
-          const whatsappResponse = await whatsappService.sendMessage({
-            phoneNumber: whatsappNumber,
-            text: whatsappText
+          const adminWhatsappResponse = await whatsappService.sendMessage({
+            phoneNumber: '+447413069120',
+            text: `${contactNote}\n${adminWhatsappText}`
           });
 
-          console.log(`WhatsApp imminent reminder to parent ${whatsappNumber}:`, whatsappResponse);
+          if (adminWhatsappResponse.success) {
+            sentChannels.push('admin-whatsapp');
+            console.log(`✓ Admin WhatsApp sent successfully`);
+          } else {
+            console.error(`Failed to send admin WhatsApp:`, adminWhatsappResponse.error);
+            errors.push(`Failed to send admin WhatsApp for lesson ${lesson.id}: ${adminWhatsappResponse.error}`);
+          }
+        } catch (adminWhatsappError: any) {
+          console.error(`Failed to send admin WhatsApp:`, adminWhatsappError);
+          errors.push(`Failed to send admin WhatsApp for lesson ${lesson.id}: ${adminWhatsappError.message}`);
         }
 
-        // Send email to admin (Joshua)
-        const adminEmailHtml = await renderAsync(
-          React.createElement(DemoImminentAdminEmail, {
-            parentName: trialBooking.parent_name || 'Parent',
-            childName: trialBooking.child_name || 'Child',
-            parentEmail: trialBooking.email,
-            parentPhone: trialBooking.phone || 'Not provided',
-            lessonUrl,
-            lessonTime,
-          })
-        );
+        // Mark reminder as sent if ANY channel succeeded
+        if (sentChannels.length > 0) {
+          const { error: updateError } = await supabase
+            .from('lessons')
+            .update({ imminent_reminder_sent: true })
+            .eq('id', lesson.id);
 
-        console.log('Sending imminent demo reminder to admin: joshua@jb-tutors.com');
-
-        const adminEmailResult = await sendEmailWithRetry({
-          from: 'JB Tutors Alerts <lessons@jb-tutors.com>',
-          to: ['joshua@jb-tutors.com'],
-          subject: `🚨 Demo Starting in 10 Min - ${trialBooking.parent_name} & ${trialBooking.child_name}`,
-          html: adminEmailHtml,
-        });
-
-        // Send WhatsApp to admin (Joshua)
-        const adminWhatsappText = WhatsAppTemplates.demoImminentReminderAdmin(
-          trialBooking.parent_name || 'Parent',
-          trialBooking.child_name || 'Child',
-          trialBooking.email,
-          trialBooking.phone || 'Not provided',
-          lessonUrl
-        );
-
-        const adminWhatsappResponse = await whatsappService.sendMessage({
-          phoneNumber: '+447413069120',
-          text: adminWhatsappText
-        });
-
-        console.log('WhatsApp imminent reminder to admin +447413069120:', adminWhatsappResponse);
-
-        // Mark reminder as sent
-        const { error: updateError } = await supabase
-          .from('lessons')
-          .update({ imminent_reminder_sent: true })
-          .eq('id', lesson.id);
-
-        if (updateError) {
-          console.error(`Failed to mark reminder as sent for lesson ${lesson.id}:`, updateError);
-          errors.push(`Failed to update lesson ${lesson.id}: ${updateError.message}`);
+          if (updateError) {
+            console.error(`Failed to mark reminder as sent for lesson ${lesson.id}:`, updateError);
+            errors.push(`Failed to update lesson ${lesson.id}: ${updateError.message}`);
+          } else {
+            remindersSent++;
+            console.log(`✓ Successfully processed lesson ${lesson.id}. Channels: ${sentChannels.join(', ')}`);
+          }
         } else {
-          remindersSent++;
-          console.log(`Successfully sent imminent reminders for lesson ${lesson.id}`);
+          console.error(`No channels succeeded for lesson ${lesson.id}`);
+          errors.push(`All channels failed for lesson ${lesson.id}`);
         }
 
         // Rate limiting
