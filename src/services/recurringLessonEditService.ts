@@ -28,33 +28,43 @@ export interface EditRecurringOptions {
   instanceDate?: string;
 }
 
-const recreateLessonSpaceRoom = async (lessonId: string) => {
+const regenerateAllParticipantUrls = async (lessonId: string) => {
   try {
-    console.log('Recreating LessonSpace room for lesson:', lessonId);
+    console.log('Regenerating all participant URLs for lesson:', lessonId);
     
+    // Delete all existing participant URLs for this lesson
+    const { error: deleteError } = await supabase
+      .from('lesson_participant_urls')
+      .delete()
+      .eq('lesson_id', lessonId);
+    
+    if (deleteError) {
+      console.error('Error deleting old participant URLs:', deleteError);
+    } else {
+      console.log('✅ Deleted old participant URLs');
+    }
+    
+    // Create new room with new tutor and regenerate all URLs
     const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
       body: {
         action: 'create-room',
-        lessonId: lessonId,
-        title: 'Updated Lesson Room',
-        startTime: new Date().toISOString(),
-        duration: 60
+        lessonId: lessonId
       }
     });
 
     if (error) {
-      console.error('Error recreating LessonSpace room:', error);
+      console.error('Error regenerating participant URLs:', error);
       return null;
     }
 
     if (data && data.success) {
-      console.log('LessonSpace room recreated successfully:', data);
+      console.log('✅ All participant URLs regenerated successfully:', data);
       return data;
     }
     
     return null;
   } catch (error) {
-    console.error('Error in recreateLessonSpaceRoom:', error);
+    console.error('Error in regenerateAllParticipantUrls:', error);
     return null;
   }
 };
@@ -107,12 +117,12 @@ export const updateSingleRecurringInstance = async (
     }
   }
   
-  // Recreate LessonSpace room if tutor or students changed
+  // Regenerate participant URLs if tutor or students changed
   if (tutorChanged || studentsChanged) {
-    console.log('Tutor or students changed, recreating LessonSpace room');
-    const roomData = await recreateLessonSpaceRoom(lessonId);
+    console.log('Tutor or students changed, regenerating participant URLs');
+    const roomData = await regenerateAllParticipantUrls(lessonId);
     if (!roomData) {
-      console.warn('Failed to recreate room for lesson after tutor/student change');
+      console.warn('Failed to regenerate URLs for lesson after tutor/student change');
     }
   }
   
@@ -309,38 +319,53 @@ export const updateAllFutureLessons = async (
         // Generate URLs for each affected lesson
         for (const lesson of futureLessons) {
           try {
-            const { error: urlError } = await supabase.functions.invoke('lesson-space-integration', {
-              body: {
-                action: 'add-students-to-room',
-                lessonId: lesson.id,
-                newStudentIds: newStudentIds
+            // Check if lesson has a room - if not, create one first
+            if (!lesson.lesson_space_space_id || !lesson.lesson_space_room_id) {
+              console.log(`Lesson ${lesson.id} has no room, creating one first`);
+              const { error: createError } = await supabase.functions.invoke('lesson-space-integration', {
+                body: {
+                  action: 'create-room',
+                  lessonId: lesson.id
+                }
+              });
+              
+              if (createError) {
+                console.error(`Failed to create room for lesson ${lesson.id}:`, createError);
+                continue; // Skip to next lesson
               }
-            });
-            
-            if (urlError) {
-              console.error(`Failed to generate URLs for lesson ${lesson.id}:`, urlError);
             } else {
-              console.log(`Generated URLs for ${newStudentIds.length} new students in lesson ${lesson.id}`);
+              // Room exists, add new students to it
+              const { error: urlError } = await supabase.functions.invoke('lesson-space-integration', {
+                body: {
+                  action: 'add-students-to-room',
+                  lessonId: lesson.id,
+                  newStudentIds: newStudentIds
+                }
+              });
+              
+              if (urlError) {
+                console.error(`Failed to generate URLs for lesson ${lesson.id}:`, urlError);
+              } else {
+                console.log(`Generated URLs for ${newStudentIds.length} new students in lesson ${lesson.id}`);
+              }
             }
           } catch (urlError) {
             console.error(`Error generating URLs for lesson ${lesson.id}:`, urlError);
-            // Continue with other lessons even if one fails
           }
         }
       }
     }
 
-    // Recreate LessonSpace rooms if tutor changed
+    // Regenerate ALL participant URLs if tutor changed
     if (tutorChanged) {
-      console.log('Tutor changed, recreating LessonSpace rooms for future lessons');
+      console.log('Tutor changed, regenerating all participant URLs for future lessons');
       
       for (const lesson of futureLessons) {
         try {
-          await recreateLessonSpaceRoom(lesson.id);
-          console.log(`Recreated LessonSpace room for lesson ${lesson.id}`);
+          await regenerateAllParticipantUrls(lesson.id);
+          console.log(`✅ Regenerated all URLs for lesson ${lesson.id}`);
         } catch (roomError) {
-          console.error(`Failed to recreate room for lesson ${lesson.id}:`, roomError);
-          // Continue with other lessons even if one fails
+          console.error(`Failed to regenerate URLs for lesson ${lesson.id}:`, roomError);
         }
       }
     }
