@@ -245,9 +245,8 @@ const generateParticipantUrlsForInstances = async (
       // Call lesson-space-integration to create room and generate participant URLs
       const { error: integrationError } = await supabase.functions.invoke('lesson-space-integration', {
         body: {
-          action: 'create_room',
-          lesson_id: lesson.id,
-          student_ids: selectedStudents
+          action: 'create-room',
+          lessonId: lesson.id
         }
       });
 
