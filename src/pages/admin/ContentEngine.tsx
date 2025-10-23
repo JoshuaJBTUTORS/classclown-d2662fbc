@@ -277,6 +277,14 @@ const ContentEngine = () => {
 
   const handleApproveVideo = async (videoId: string) => {
     try {
+      // Get video details first
+      const { data: video } = await supabase
+        .from('content_videos')
+        .select('tutor_id, calendar_entry_id')
+        .eq('id', videoId)
+        .single();
+
+      // Update video status
       const { error } = await supabase
         .from('content_videos')
         .update({
@@ -287,6 +295,9 @@ const ContentEngine = () => {
         .eq('id', videoId);
 
       if (error) throw error;
+
+      // Note: Active assignment cleanup is now handled by database trigger
+      // The trigger automatically removes the assignment when status changes to 'approved'
 
       toast({
         title: 'Success',
@@ -305,6 +316,14 @@ const ContentEngine = () => {
 
   const handleRejectVideo = async (videoId: string, reason: string) => {
     try {
+      // Get video details first
+      const { data: video } = await supabase
+        .from('content_videos')
+        .select('tutor_id, calendar_entry_id')
+        .eq('id', videoId)
+        .single();
+
+      // Update video status
       const { error } = await supabase
         .from('content_videos')
         .update({
@@ -314,6 +333,9 @@ const ContentEngine = () => {
         .eq('id', videoId);
 
       if (error) throw error;
+
+      // Note: Active assignment cleanup is now handled by database trigger
+      // The trigger automatically removes the assignment when status changes to 'rejected'
 
       toast({
         title: 'Video rejected',

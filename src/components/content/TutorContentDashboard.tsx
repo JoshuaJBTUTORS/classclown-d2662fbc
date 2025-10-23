@@ -16,8 +16,8 @@ import { format } from "date-fns";
 
 export const TutorContentDashboard = () => {
   const [availableVideos, setAvailableVideos] = useState<ContentCalendar[]>([]);
-  const [activeAssignment, setActiveAssignment] = useState<TutorActiveAssignment | null>(null);
-  const [assignedVideo, setAssignedVideo] = useState<ContentCalendar | null>(null);
+  const [activeAssignments, setActiveAssignments] = useState<TutorActiveAssignment[]>([]);
+  const [assignedVideos, setAssignedVideos] = useState<ContentCalendar[]>([]);
   const [requestedVideos, setRequestedVideos] = useState<Array<VideoRequest & { calendar_entry: ContentCalendar }>>([]);
   const [submittedVideos, setSubmittedVideos] = useState<Array<ContentVideo & { calendar_entry: ContentCalendar }>>([]);
   const [loading, setLoading] = useState(true);
@@ -100,24 +100,23 @@ export const TutorContentDashboard = () => {
         return;
       }
 
-      // Check for active assignment
-      const { data: assignment } = await supabase
+      // Check for active assignments (now can be multiple)
+      const { data: assignments } = await supabase
         .from('tutor_active_assignments')
         .select('*')
-        .eq('tutor_id', tutorData)
-        .maybeSingle();
+        .eq('tutor_id', tutorData);
 
-      setActiveAssignment(assignment);
+      setActiveAssignments(assignments || []);
 
-      // If has active assignment, fetch that video
-      if (assignment) {
-        const { data: video } = await supabase
+      // Fetch all assigned videos
+      if (assignments && assignments.length > 0) {
+        const videoIds = assignments.map(a => a.calendar_entry_id);
+        const { data: videos } = await supabase
           .from('content_calendar')
           .select('*')
-          .eq('id', assignment.calendar_entry_id)
-          .single();
+          .in('id', videoIds);
         
-        setAssignedVideo(video);
+        setAssignedVideos(videos || []);
       }
 
       // Fetch requested videos for this tutor
@@ -144,30 +143,27 @@ export const TutorContentDashboard = () => {
 
       setSubmittedVideos((submissions || []) as Array<ContentVideo & { calendar_entry: ContentCalendar }>);
 
-      // Fetch available videos only if no active assignment
-      if (!assignment) {
-        // Calculate the current active week based on date
-        const today = new Date();
-        const baseStartDate = new Date('2025-10-13'); // Week 1 starts Oct 13, 2025
-        const activeWeek = calculateCurrentWeek();
-        
-        setCurrentWeek(activeWeek);
-        setWeekDateRange(getWeekDateRange(activeWeek));
-        setIsBeforeWeekStart(today < baseStartDate);
-        
-        // Fetch videos for the current active week
-        const { data: videos, error } = await supabase
-          .from('content_calendar')
-          .select('*')
-          .eq('week_number', activeWeek)
-          .eq('is_available_for_claim', true)
-          .eq('status', 'planned')
-          .is('assigned_tutor_id', null)
-          .order('video_number', { ascending: true });
+      // Always fetch available videos (no restriction on assignments)
+      const today = new Date();
+      const baseStartDate = new Date('2025-10-13'); // Week 1 starts Oct 13, 2025
+      const activeWeek = calculateCurrentWeek();
+      
+      setCurrentWeek(activeWeek);
+      setWeekDateRange(getWeekDateRange(activeWeek));
+      setIsBeforeWeekStart(today < baseStartDate);
+      
+      // Fetch videos for the current active week
+      const { data: videos, error } = await supabase
+        .from('content_calendar')
+        .select('*')
+        .eq('week_number', activeWeek)
+        .eq('is_available_for_claim', true)
+        .eq('status', 'planned')
+        .is('assigned_tutor_id', null)
+        .order('video_number', { ascending: true });
 
-        if (error) throw error;
-        setAvailableVideos(videos || []);
-      }
+      if (error) throw error;
+      setAvailableVideos(videos || []);
     } catch (error: any) {
       toast({
         title: "Error loading content",
@@ -226,7 +222,7 @@ export const TutorContentDashboard = () => {
   }
 
   // Check if tutor has access
-  if (!activeAssignment && !assignedVideo && availableVideos.length === 0 && requestedVideos.length === 0 && !loading) {
+  if (activeAssignments.length === 0 && assignedVideos.length === 0 && availableVideos.length === 0 && requestedVideos.length === 0 && !loading) {
     return (
       <Card className="p-8 text-center">
         <Video className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -245,8 +241,8 @@ export const TutorContentDashboard = () => {
     <Tabs defaultValue="active" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="active">
-          Active Assignment
-          {activeAssignment && <Badge className="ml-2" variant="secondary">1</Badge>}
+          Active Assignments
+          {activeAssignments.length > 0 && <Badge className="ml-2" variant="secondary">{activeAssignments.length}</Badge>}
         </TabsTrigger>
         <TabsTrigger value="submissions">
           My Submissions
@@ -258,108 +254,88 @@ export const TutorContentDashboard = () => {
         </TabsTrigger>
         <TabsTrigger value="available">
           Available Videos
-          {!activeAssignment && availableVideos.length > 0 && <Badge className="ml-2" variant="secondary">{availableVideos.length}</Badge>}
+          {availableVideos.length > 0 && <Badge className="ml-2" variant="secondary">{availableVideos.length}</Badge>}
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="active" className="mt-6">
-        {activeAssignment && assignedVideo ? (
+        {activeAssignments.length > 0 && assignedVideos.length > 0 ? (
           <div className="space-y-6">
-            <Card className="border-primary">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Video className="w-5 h-5" />
-                  Your Current Assignment
-                </CardTitle>
-                <CardDescription>
-                  Complete this video before requesting another
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{assignedVideo.title}</h3>
-                  {assignedVideo.summary && (
-                    <p className="text-muted-foreground mt-2">{assignedVideo.summary}</p>
-                  )}
-                </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {assignedVideos.map((assignedVideo) => {
+                const assignment = activeAssignments.find(a => a.calendar_entry_id === assignedVideo.id);
+                return (
+                  <Card key={assignedVideo.id} className="border-primary">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Video className="w-5 h-5" />
+                        {assignedVideo.title}
+                      </CardTitle>
+                      <CardDescription>
+                        Week {assignedVideo.week_number} • Video #{assignedVideo.video_number}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {assignedVideo.summary && (
+                        <p className="text-muted-foreground text-sm">{assignedVideo.summary}</p>
+                      )}
 
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>Due: {assignedVideo.submission_deadline ? format(new Date(assignedVideo.submission_deadline), 'PPp') : 'Not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>Max Duration: {assignedVideo.max_duration_seconds}s</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Video className="w-4 h-4" />
-                    <span>Format: 9:16 Portrait</span>
-                  </div>
-                </div>
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>Due: {assignedVideo.submission_deadline ? format(new Date(assignedVideo.submission_deadline), 'PPp') : 'Not set'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>Max: {assignedVideo.max_duration_seconds}s</span>
+                        </div>
+                      </div>
 
-                {assignedVideo.hook && (
-                  <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
-                    <h4 className="font-medium mb-2">Hook:</h4>
-                    <p className="text-sm text-muted-foreground">{assignedVideo.hook}</p>
-                  </div>
-                )}
-
-                {assignedVideo.talking_points && assignedVideo.talking_points.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2">Key Points to Cover:</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      {assignedVideo.talking_points.map((point, idx) => (
-                        <li key={idx}>{point}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {(assignedVideo.lighting_requirements || assignedVideo.audio_requirements || assignedVideo.quality_requirements) && (
-                  <div>
-                    <h4 className="font-medium mb-2">Technical Requirements:</h4>
-                    <div className="space-y-2">
-                      {assignedVideo.lighting_requirements && (
-                        <div className="text-sm">
-                          <span className="font-medium">Lighting:</span>{' '}
-                          <span className="text-muted-foreground">{assignedVideo.lighting_requirements}</span>
+                      {assignedVideo.hook && (
+                        <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+                          <h4 className="font-medium mb-1 text-sm">Hook:</h4>
+                          <p className="text-sm text-muted-foreground">{assignedVideo.hook}</p>
                         </div>
                       )}
-                      {assignedVideo.audio_requirements && (
-                        <div className="text-sm">
-                          <span className="font-medium">Audio:</span>{' '}
-                          <span className="text-muted-foreground">{assignedVideo.audio_requirements}</span>
+
+                      {assignedVideo.talking_points && assignedVideo.talking_points.length > 0 && (
+                        <div>
+                          <h4 className="font-medium mb-2 text-sm">Key Points:</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                            {assignedVideo.talking_points.slice(0, 3).map((point, idx) => (
+                              <li key={idx}>{point}</li>
+                            ))}
+                            {assignedVideo.talking_points.length > 3 && (
+                              <li className="text-xs">+{assignedVideo.talking_points.length - 3} more</li>
+                            )}
+                          </ul>
                         </div>
                       )}
-                      {assignedVideo.quality_requirements && (
-                        <div className="text-sm">
-                          <span className="font-medium">Quality:</span>{' '}
-                          <span className="text-muted-foreground">{assignedVideo.quality_requirements}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={() => setShowUploadDialog(true)}
-                >
-                  Upload Video
-                </Button>
-              </CardContent>
-            </Card>
+                      <Button 
+                        className="w-full" 
+                        onClick={() => {
+                          setSelectedVideo(assignedVideo);
+                          setShowUploadDialog(true);
+                        }}
+                      >
+                        Upload Video
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
-            {tutorId && assignedVideo && (
+            {tutorId && selectedVideo && (
               <VideoUploadDialog
                 open={showUploadDialog}
                 onOpenChange={setShowUploadDialog}
-                calendarEntryId={assignedVideo.id}
+                calendarEntryId={selectedVideo.id}
                 tutorId={tutorId}
                 onSuccess={() => {
                   setShowUploadDialog(false);
+                  setSelectedVideo(null);
                   fetchData();
                   toast({
                     title: "Video submitted successfully",
@@ -373,9 +349,9 @@ export const TutorContentDashboard = () => {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Video className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Active Assignment</h3>
+              <h3 className="text-lg font-semibold mb-2">No Active Assignments</h3>
               <p className="text-muted-foreground text-center">
-                You don't have an active video assignment. Request one from the Available Videos tab.
+                You don't have any active video assignments. Request videos from the Available Videos tab.
               </p>
             </CardContent>
           </Card>
