@@ -62,7 +62,7 @@ export default function ProposalDashboard() {
   };
 
   const copyProposalLink = async (proposal: Proposal) => {
-    const baseUrl = window.location.origin;
+    const baseUrl = 'https://classclowncrm.com';
     const proposalUrl = `${baseUrl}/proposal/${proposal.id}/${proposal.access_token}`;
     
     try {
@@ -242,7 +242,7 @@ export default function ProposalDashboard() {
                             variant="ghost"
                             size="icon"
                             onClick={() => {
-                              const url = `/proposal/${proposal.id}/${proposal.access_token}`;
+                              const url = `https://classclowncrm.com/proposal/${proposal.id}/${proposal.access_token}`;
                               window.open(url, '_blank');
                             }}
                             title="View proposal"

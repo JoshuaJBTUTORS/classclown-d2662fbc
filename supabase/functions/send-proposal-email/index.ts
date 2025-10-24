@@ -24,9 +24,16 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization') || '';
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: authHeader ? { Authorization: authHeader } : {},
+        },
+      }
     );
 
     const { proposalId, recipientEmail, recipientName }: EmailRequest = await req.json();
@@ -45,8 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate proposal URL
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '') || 'http://localhost:5173';
-    const proposalUrl = `${baseUrl}/proposal/${proposal.id}/${proposal.access_token}`;
+    const proposalUrl = `https://classclowncrm.com/proposal/${proposal.id}/${proposal.access_token}`;
 
     // Render email HTML
     const html = await renderAsync(
