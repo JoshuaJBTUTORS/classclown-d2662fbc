@@ -132,8 +132,8 @@ const handler = async (req: Request): Promise<Response> => {
       // Don't fail the whole request if email fails
     }
 
-    // Generate shareable URL
-    const proposalUrl = `https://classclowncrm.com/proposal/${proposal.id}/${accessToken}`;
+    // Generate shareable URL (using /p alias for public access)
+    const proposalUrl = `https://classclowncrm.com/p/${proposal.id}/${accessToken}`;
 
     return new Response(
       JSON.stringify({

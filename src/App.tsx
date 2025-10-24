@@ -93,6 +93,7 @@ function App() {
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
+                <Route path="/p/:proposalId/:token" element={<ProposalView />} />
                 
                 {/* Main App Layout - all main application routes */}
                 <Route

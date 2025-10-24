@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
@@ -22,7 +22,6 @@ interface Proposal {
 
 export default function ProposalView() {
   const { proposalId, token } = useParams<{ proposalId: string; token: string }>();
-  const navigate = useNavigate();
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<'view' | 'agreement' | 'payment'>('view');
@@ -101,6 +100,9 @@ export default function ProposalView() {
   if (!proposal) {
     return (
       <div className="container max-w-2xl py-16 text-center space-y-4">
+        <p className="text-muted-foreground text-sm mb-2">
+          This is a public proposal page — no sign-in required
+        </p>
         <p className="text-destructive text-lg font-semibold">
           {errorMessage || 'Invalid or expired proposal link.'}
         </p>
