@@ -26,6 +26,7 @@ export default function ProposalView() {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<'view' | 'agreement' | 'payment'>('view');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadProposal();
@@ -38,7 +39,8 @@ export default function ProposalView() {
         description: 'This proposal link is invalid.',
         variant: 'destructive',
       });
-      navigate('/');
+      setErrorMessage('This proposal link is invalid.');
+      setLoading(false);
       return;
     }
 
@@ -51,17 +53,20 @@ export default function ProposalView() {
         .single();
 
       if (error || !data) {
-        throw new Error('Proposal not found');
+        console.error('Supabase error:', error);
+        throw new Error(error?.message || 'Proposal not found');
       }
 
       setProposal(data as unknown as Proposal);
+      setErrorMessage(null);
 
       // Mark as viewed if not already
       if (data.status === 'sent') {
         await supabase
           .from('lesson_proposals')
           .update({ status: 'viewed', viewed_at: new Date().toISOString() })
-          .eq('id', proposalId);
+          .eq('id', proposalId)
+          .eq('access_token', token);
       }
 
       // Determine current step based on status
@@ -76,10 +81,10 @@ export default function ProposalView() {
       console.error('Error loading proposal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load proposal',
+        description: error?.message || 'Failed to load proposal',
         variant: 'destructive',
       });
-      navigate('/');
+      setErrorMessage(error?.message || 'Failed to load proposal. This link may be invalid or expired.');
     } finally {
       setLoading(false);
     }
@@ -94,7 +99,19 @@ export default function ProposalView() {
   }
 
   if (!proposal) {
-    return null;
+    return (
+      <div className="container max-w-2xl py-16 text-center space-y-4">
+        <p className="text-destructive text-lg font-semibold">
+          {errorMessage || 'Invalid or expired proposal link.'}
+        </p>
+        <button
+          onClick={loadProposal}
+          className="underline text-primary hover:text-primary/80 transition-colors"
+        >
+          Try again
+        </button>
+      </div>
+    );
   }
 
   if (proposal.status === 'completed') {
