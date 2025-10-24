@@ -34,6 +34,7 @@ export default function ProposalView() {
 
   const loadProposal = async () => {
     if (!proposalId || !token) {
+      console.log('❌ Missing proposalId or token');
       toast({
         title: 'Invalid Link',
         description: 'This proposal link is invalid.',
@@ -45,6 +46,9 @@ export default function ProposalView() {
     }
 
     try {
+      console.log('🔍 Loading proposal:', { proposalId, token: token.substring(0, 8) + '...' });
+      
+      // Query as anon user - no authentication required
       const { data, error } = await supabase
         .from('lesson_proposals')
         .select('*')
@@ -53,20 +57,32 @@ export default function ProposalView() {
         .single();
 
       if (error || !data) {
-        console.error('Supabase error:', error);
+        console.error('❌ Supabase error:', error);
+        console.error('Error details:', {
+          message: error?.message,
+          details: error?.details,
+          hint: error?.hint,
+          code: error?.code
+        });
         throw new Error(error?.message || 'Proposal not found');
       }
 
+      console.log('✅ Proposal loaded successfully:', data.id);
       setProposal(data as unknown as Proposal);
       setErrorMessage(null);
 
       // Mark as viewed if not already
       if (data.status === 'sent') {
-        await supabase
+        console.log('📝 Updating proposal status to viewed');
+        const { error: updateError } = await supabase
           .from('lesson_proposals')
           .update({ status: 'viewed', viewed_at: new Date().toISOString() })
           .eq('id', proposalId)
           .eq('access_token', token);
+        
+        if (updateError) {
+          console.error('⚠️ Failed to update status:', updateError);
+        }
       }
 
       // Determine current step based on status
@@ -78,9 +94,11 @@ export default function ProposalView() {
         setCurrentStep('payment');
       }
     } catch (error: any) {
-      console.error('Error loading proposal:', error);
+      console.error('❌ Error loading proposal:', error);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+      
       toast({
-        title: 'Error',
+        title: 'Error Loading Proposal',
         description: error?.message || 'Failed to load proposal',
         variant: 'destructive',
       });
