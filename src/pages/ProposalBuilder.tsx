@@ -51,17 +51,22 @@ export default function ProposalBuilder() {
   });
 
   const addLessonTime = () => {
-    setLessonTimes([...lessonTimes, { day: '', time: '', duration: 60 }]);
+    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60 }];
+    setLessonTimes(newLessonTimes);
+    form.setValue('lessonTimes', newLessonTimes);
   };
 
   const removeLessonTime = (index: number) => {
-    setLessonTimes(lessonTimes.filter((_, i) => i !== index));
+    const filtered = lessonTimes.filter((_, i) => i !== index);
+    setLessonTimes(filtered);
+    form.setValue('lessonTimes', filtered);
   };
 
   const updateLessonTime = (index: number, field: string, value: string | number) => {
     const updated = [...lessonTimes];
     updated[index] = { ...updated[index], [field]: value };
     setLessonTimes(updated);
+    form.setValue('lessonTimes', updated);
   };
 
   const onSubmit = async (data: ProposalFormData) => {
@@ -294,6 +299,15 @@ export default function ProposalBuilder() {
                     )}
                   </div>
                 ))}
+                <FormField
+                  control={form.control}
+                  name="lessonTimes"
+                  render={() => (
+                    <FormItem>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className="flex gap-4">
