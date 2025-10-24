@@ -74,6 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
       customer: customerId,
       payment_method_types: ['card'],
       usage: 'off_session',
+      currency: 'gbp',
       metadata: {
         proposal_id: proposalId,
         student_id: proposal.student_id?.toString() || '',
