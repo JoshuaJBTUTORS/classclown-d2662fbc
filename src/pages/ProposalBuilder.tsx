@@ -192,7 +192,10 @@ export default function ProposalBuilder() {
                           type="number"
                           step="0.01"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value === '' ? 0 : parseFloat(value) || 0);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -271,7 +274,10 @@ export default function ProposalBuilder() {
                         <Input
                           type="number"
                           value={lessonTime.duration}
-                          onChange={(e) => updateLessonTime(index, 'duration', parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
+                          }}
                         />
                       </div>
                     </div>
