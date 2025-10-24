@@ -214,12 +214,11 @@ export default function ProposalView() {
             <h2 className="text-2xl font-bold text-primary">Our Offering</h2>
             <ul className="space-y-3 list-none">
               {[
-                'Personalized one-to-one tuition tailored to your child\'s needs',
-                'Expert tutors with proven track records',
-                'Flexible scheduling to fit your family\'s lifestyle',
-                'Regular progress reports and feedback',
-                'Interactive online learning platform',
-                'Comprehensive study materials included',
+                'Lesson recordings available for revision',
+                'Unlimited access to our learning hub E learning courses',
+                'Parent dashboard with progress updates and six-week check-ins',
+                'Half-termly assessments with feedback',
+                'Homework after each session, marked to track progress',
               ].map((item, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -233,10 +232,29 @@ export default function ProposalView() {
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-primary">Our Tutors</h2>
             <p className="text-base leading-relaxed text-muted-foreground">
-              Our tutors are carefully selected professionals with extensive experience in their subject areas. 
+              Our tutors are carefully selected professionals with at least 3 years of experience in their subject areas. 
               They are passionate about education and committed to helping every student reach their full potential. 
               All tutors undergo rigorous background checks and continuous professional development.
             </p>
+          </div>
+
+          {/* Success Rates */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-primary">Our Track Record</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                <p className="text-4xl font-bold text-primary mb-2">92%</p>
+                <p className="text-sm font-medium text-muted-foreground">A*/A rate for GCSE</p>
+              </div>
+              <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                <p className="text-4xl font-bold text-primary mb-2">95%</p>
+                <p className="text-sm font-medium text-muted-foreground">Pass rate for 11 plus</p>
+              </div>
+              <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                <p className="text-4xl font-bold text-primary mb-2">98%</p>
+                <p className="text-sm font-medium text-muted-foreground">Satisfaction rate</p>
+              </div>
+            </div>
           </div>
 
           {/* Call to Action */}
