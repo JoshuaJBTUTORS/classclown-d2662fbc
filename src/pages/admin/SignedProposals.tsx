@@ -224,14 +224,12 @@ export default function SignedProposals() {
                               <TableCell>
                                 <Button
                                   variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    const url = `https://classclowncrm.com/proposal/${proposal.id}/${proposal.access_token}`;
-                                    window.open(url, '_blank');
-                                  }}
-                                  title="View proposal"
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/proposals/${proposal.id}/view`)}
+                                  title="View full proposal details"
                                 >
-                                  <ExternalLink className="h-4 w-4" />
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  View Details
                                 </Button>
                               </TableCell>
                             </TableRow>
