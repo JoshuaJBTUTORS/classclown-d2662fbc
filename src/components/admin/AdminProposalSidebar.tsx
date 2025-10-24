@@ -1,4 +1,5 @@
-import { FileText, BarChart3, Filter, Settings } from 'lucide-react';
+import { FileText, BarChart3, Filter, Settings, FileCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +27,7 @@ const statusItems = [
 ];
 
 export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminProposalSidebarProps) {
+  const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
@@ -80,10 +82,19 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
 
         <SidebarGroup>
           <SidebarGroupLabel>
-            {!isCollapsed && 'Actions'}
+            {!isCollapsed && 'Quick Links'}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  className="hover:bg-muted/50"
+                  onClick={() => navigate('/admin/proposals/signed')}
+                >
+                  <FileCheck className="h-4 w-4" />
+                  {!isCollapsed && <span>Signed Proposals</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton className="hover:bg-muted/50">
                   <Settings className="h-4 w-4" />

@@ -16,7 +16,7 @@ interface Proposal {
   subject: string;
   price_per_lesson: number;
   payment_cycle: string;
-  lesson_times: Array<{ day: string; time: string; duration: number }>;
+  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
   status: string;
   created_at: string;
 }
@@ -220,7 +220,8 @@ export default function ProposalView() {
                 <div className="space-y-2">
                   {proposal.lesson_times.map((time, index) => (
                     <p key={index} className="text-base">
-                      <span className="font-semibold">{time.day}</span> at {time.time} ({time.duration} minutes)
+                      <span className="font-semibold">{time.subject || proposal.subject}</span> - 
+                      <span className="font-semibold"> {time.day}</span> at {time.time} ({time.duration} minutes)
                     </p>
                   ))}
                 </div>

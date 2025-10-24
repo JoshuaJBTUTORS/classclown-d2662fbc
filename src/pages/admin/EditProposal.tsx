@@ -16,6 +16,7 @@ const lessonTimeSchema = z.object({
   day: z.string().min(1, 'Day is required'),
   time: z.string().min(1, 'Time is required'),
   duration: z.number().min(15, 'Duration must be at least 15 minutes'),
+  subject: z.string().min(1, 'Subject is required'),
 });
 
 const proposalSchema = z.object({
@@ -41,8 +42,8 @@ export default function EditProposal() {
   const { proposalId } = useParams<{ proposalId: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number }>>([
-    { day: '', time: '', duration: 60 },
+  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>([
+    { day: '', time: '', duration: 60, subject: '' },
   ]);
 
   const form = useForm<ProposalFormData>({
@@ -93,14 +94,15 @@ export default function EditProposal() {
         return;
       }
 
-      // Parse lesson times with proper type casting
+      // Parse lesson times with proper type casting, use top-level subject as fallback
       const parsedLessonTimes = proposal.lesson_times && Array.isArray(proposal.lesson_times)
         ? proposal.lesson_times.map((lt: any) => ({
             day: lt.day || '',
             time: lt.time || '',
             duration: lt.duration || 60,
+            subject: lt.subject || proposal.subject || '',
           }))
-        : [{ day: '', time: '', duration: 60 }];
+        : [{ day: '', time: '', duration: 60, subject: proposal.subject || '' }];
 
       // Pre-fill form with existing data
       form.reset({
@@ -131,7 +133,7 @@ export default function EditProposal() {
   };
 
   const addLessonTime = () => {
-    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60 }];
+    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '' }];
     setLessonTimes(newLessonTimes);
     form.setValue('lessonTimes', newLessonTimes);
   };
@@ -153,12 +155,12 @@ export default function EditProposal() {
     setIsSubmitting(true);
     try {
       const { data: response, error } = await supabase.functions.invoke('update-lesson-proposal', {
-        body: {
-          proposalId,
-          ...data,
-          recipientPhone: data.recipientPhone || null,
-          lessonTimes: lessonTimes.filter(lt => lt.day && lt.time),
-        },
+          body: {
+            proposalId,
+            ...data,
+            recipientPhone: data.recipientPhone || null,
+            lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
+          },
       });
 
       if (error) throw error;
@@ -342,7 +344,7 @@ export default function EditProposal() {
 
                 {lessonTimes.map((lessonTime, index) => (
                   <div key={index} className="flex gap-4 items-end">
-                    <div className="flex-1 grid grid-cols-3 gap-4">
+                    <div className="flex-1 grid grid-cols-4 gap-4">
                       <div>
                         <FormLabel>Day</FormLabel>
                         <Select
@@ -382,6 +384,15 @@ export default function EditProposal() {
                             const value = e.target.value;
                             updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
                           }}
+                        />
+                      </div>
+
+                      <div>
+                        <FormLabel>Subject</FormLabel>
+                        <Input
+                          placeholder="e.g., Maths, English"
+                          value={lessonTime.subject}
+                          onChange={(e) => updateLessonTime(index, 'subject', e.target.value)}
                         />
                       </div>
                     </div>

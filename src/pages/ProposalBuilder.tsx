@@ -16,6 +16,7 @@ const lessonTimeSchema = z.object({
   day: z.string().min(1, 'Day is required'),
   time: z.string().min(1, 'Time is required'),
   duration: z.number().min(15, 'Duration must be at least 15 minutes'),
+  subject: z.string().min(1, 'Subject is required'),
 });
 
 const proposalSchema = z.object({
@@ -39,8 +40,8 @@ type ProposalFormData = z.infer<typeof proposalSchema>;
 export default function ProposalBuilder() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number }>>([
-    { day: '', time: '', duration: 60 },
+  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>([
+    { day: '', time: '', duration: 60, subject: '' },
   ]);
 
   const form = useForm<ProposalFormData>({
@@ -58,7 +59,7 @@ export default function ProposalBuilder() {
   });
 
   const addLessonTime = () => {
-    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60 }];
+    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '' }];
     setLessonTimes(newLessonTimes);
     form.setValue('lessonTimes', newLessonTimes);
   };
@@ -80,11 +81,11 @@ export default function ProposalBuilder() {
     setIsSubmitting(true);
     try {
       const { data: response, error } = await supabase.functions.invoke('create-lesson-proposal', {
-        body: {
-          ...data,
-          recipientPhone: data.recipientPhone || null,
-          lessonTimes: lessonTimes.filter(lt => lt.day && lt.time),
-        },
+          body: {
+            ...data,
+            recipientPhone: data.recipientPhone || null,
+            lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
+          },
       });
 
       if (error) throw error;
@@ -265,7 +266,7 @@ export default function ProposalBuilder() {
 
                 {lessonTimes.map((lessonTime, index) => (
                   <div key={index} className="flex gap-4 items-end">
-                    <div className="flex-1 grid grid-cols-3 gap-4">
+                    <div className="flex-1 grid grid-cols-4 gap-4">
                       <div>
                         <FormLabel>Day</FormLabel>
                         <Select
@@ -305,6 +306,15 @@ export default function ProposalBuilder() {
                             const value = e.target.value;
                             updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
                           }}
+                        />
+                      </div>
+
+                      <div>
+                        <FormLabel>Subject</FormLabel>
+                        <Input
+                          placeholder="e.g., Maths, English"
+                          value={lessonTime.subject}
+                          onChange={(e) => updateLessonTime(index, 'subject', e.target.value)}
                         />
                       </div>
                     </div>

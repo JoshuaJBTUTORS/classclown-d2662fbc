@@ -20,6 +20,7 @@ interface ProposalRequest {
     day: string;
     time: string;
     duration: number;
+    subject: string;
   }>;
 }
 
