@@ -1,0 +1,2 @@
+-- Drop the conflicting RLS policy that prevents parents from creating general topic requests
+DROP POLICY IF EXISTS "Parents can create topic requests for their children's lessons" ON public.topic_requests;
