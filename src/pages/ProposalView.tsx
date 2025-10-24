@@ -214,15 +214,15 @@ export default function ProposalView() {
             <h2 className="text-2xl font-bold text-primary">✨ Our Offering</h2>
             <ul className="space-y-3 list-none">
               {[
-                { text: 'Lesson recordings available for revision', emoji: '📹' },
-                { text: 'Unlimited access to our learning hub E learning courses', emoji: '🌐' },
-                { text: 'Parent dashboard with progress updates and six-week check-ins', emoji: '📊' },
-                { text: 'Half-termly assessments with feedback', emoji: '📝' },
-                { text: 'Homework after each session, marked to track progress', emoji: '✅' },
+                'Lesson recordings available for revision',
+                'Unlimited access to our learning hub E learning courses',
+                'Parent dashboard with progress updates and six-week check-ins',
+                'Half-termly assessments with feedback',
+                'Homework after each session, marked to track progress',
               ].map((item, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <span className="text-xl mt-0.5 flex-shrink-0">{item.emoji}</span>
-                  <span>{item.text}</span>
+                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
