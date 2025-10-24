@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
-import jbLogo from '@/assets/jb-logo.svg';
+import jbLogo from '@/assets/jb-tutors-logo.png';
 
 interface Proposal {
   id: string;
