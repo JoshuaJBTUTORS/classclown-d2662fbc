@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
+import jbLogo from '@/assets/jb-logo.svg';
 
 interface Proposal {
   id: string;
@@ -131,6 +132,7 @@ export default function ProposalView() {
         <Card className="p-8 md:p-12 space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
+            <img src={jbLogo} alt="Journey Beyond Education" className="h-16 mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-primary">Journey Beyond Education</h1>
             <p className="text-xl text-muted-foreground">Lesson Proposal</p>
           </div>

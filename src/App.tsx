@@ -64,6 +64,7 @@ import ContentEngine from './pages/admin/ContentEngine';
 import TutorContentPage from './pages/tutor/TutorContentPage';
 import ProposalView from './pages/ProposalView';
 import ProposalBuilder from './pages/ProposalBuilder';
+import ProposalDashboard from './pages/admin/ProposalDashboard';
 
 
 function App() {
@@ -151,6 +152,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <AdminDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin/proposals" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <ProposalDashboard />
                       </ProtectedRoute>
                     } 
                   />

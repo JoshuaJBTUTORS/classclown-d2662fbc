@@ -291,7 +291,7 @@ export default function ProposalBuilder() {
               </div>
 
               <div className="flex gap-4">
-                <Button type="button" variant="outline" onClick={() => navigate('/admin/proposals')}>
+                <Button type="button" variant="outline" onClick={() => navigate(-1)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
