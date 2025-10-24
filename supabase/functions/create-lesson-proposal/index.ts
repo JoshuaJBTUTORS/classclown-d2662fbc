@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate shareable URL
-    const proposalUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '')}/proposal/${proposal.id}/${accessToken}`;
+    const proposalUrl = `https://classclowncrm.com/proposal/${proposal.id}/${accessToken}`;
 
     return new Response(
       JSON.stringify({
