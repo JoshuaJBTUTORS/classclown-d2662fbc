@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { AdminProposalSidebar } from '@/components/admin/AdminProposalSidebar';
 import { Loader2, Plus, Copy, ExternalLink, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -146,17 +148,29 @@ export default function ProposalDashboard() {
   }
 
   return (
-    <div className="container py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Lesson Proposals</h1>
-          <p className="text-muted-foreground">Manage and track all lesson proposals</p>
-        </div>
-        <Button onClick={() => navigate('/admin/proposals/create')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Proposal
-        </Button>
-      </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AdminProposalSidebar 
+          totalProposals={proposals.length} 
+          filteredCount={filteredProposals.length} 
+        />
+        
+        <div className="flex-1">
+          <header className="h-12 flex items-center border-b bg-background sticky top-0 z-10">
+            <SidebarTrigger className="ml-2" />
+          </header>
+
+          <div className="container py-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold">Lesson Proposals</h1>
+                <p className="text-muted-foreground">Manage and track all lesson proposals</p>
+              </div>
+              <Button onClick={() => navigate('/admin/proposals/create')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Proposal
+              </Button>
+            </div>
 
       <Card>
         <CardHeader>
@@ -266,11 +280,14 @@ export default function ProposalDashboard() {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <p>Showing {filteredProposals.length} of {proposals.length} proposals</p>
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <p>Showing {filteredProposals.length} of {proposals.length} proposals</p>
+            </div>
+          </CardContent>
+        </Card>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
