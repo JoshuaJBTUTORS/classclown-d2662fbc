@@ -112,8 +112,7 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
           student_id: null, // No longer requiring student selection
           parent_id: parentId,
           requested_topic: `${data.subject}: ${data.requestedTopic}`,
-          status: 'pending',
-          lesson_id: '00000000-0000-0000-0000-000000000000' // Placeholder UUID
+          status: 'pending'
         });
 
       if (error) throw error;
@@ -121,9 +120,9 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
       toast.success('Topic request submitted successfully! Admins will review your request.');
       form.reset();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting topic request:', error);
-      toast.error('Failed to submit topic request. Please try again.');
+      toast.error(error?.message ?? 'Failed to submit topic request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

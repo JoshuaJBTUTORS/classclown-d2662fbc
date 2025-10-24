@@ -2966,7 +2966,7 @@ export type Database = {
           admin_notes: string | null
           created_at: string
           id: string
-          lesson_id: string
+          lesson_id: string | null
           parent_id: string | null
           requested_topic: string
           reviewed_at: string | null
@@ -2979,7 +2979,7 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           id?: string
-          lesson_id: string
+          lesson_id?: string | null
           parent_id?: string | null
           requested_topic: string
           reviewed_at?: string | null
@@ -2992,7 +2992,7 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           id?: string
-          lesson_id?: string
+          lesson_id?: string | null
           parent_id?: string | null
           requested_topic?: string
           reviewed_at?: string | null
