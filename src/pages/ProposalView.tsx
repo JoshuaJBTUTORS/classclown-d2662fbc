@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { ProposalSidebar } from '@/components/proposals/ProposalSidebar';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
 import jbLogo from '@/assets/jb-tutors-logo.png';
@@ -146,32 +148,40 @@ export default function ProposalView() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl py-12">
-        <Card className="p-8 md:p-12 space-y-8">
-          {/* Header */}
-          <div className="text-center space-y-4">
-            <img src={jbLogo} alt="Journey Beyond Education" className="h-16 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-primary">Journey Beyond Education</h1>
-            <p className="text-xl text-muted-foreground">Lesson Proposal</p>
-          </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <ProposalSidebar currentStep={currentStep} proposalStatus={proposal.status} />
+        
+        <div className="flex-1">
+          <header className="h-12 flex items-center border-b bg-background sticky top-0 z-10">
+            <SidebarTrigger className="ml-2" />
+          </header>
 
-          {/* Prepared For Section */}
-          <div className="grid md:grid-cols-2 gap-8 py-8 border-y">
-            <div>
-              <h3 className="font-semibold text-sm text-muted-foreground mb-2">PREPARED FOR</h3>
-              <p className="text-lg font-medium">{proposal.recipient_name}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm text-muted-foreground mb-2">PREPARED BY</h3>
-              <p className="text-lg font-medium">Journey Beyond Education</p>
-              <p className="text-sm text-muted-foreground">Business Development Team</p>
-            </div>
-          </div>
+          <div className="container max-w-4xl py-12">
+            <Card className="p-8 md:p-12 space-y-8">
+              {/* Header */}
+              <div className="text-center space-y-4">
+                <img src={jbLogo} alt="Journey Beyond Education" className="h-16 mx-auto mb-4" />
+                <h1 className="text-4xl font-bold text-primary">Journey Beyond Education</h1>
+                <p className="text-xl text-muted-foreground">Lesson Proposal</p>
+              </div>
 
-          {/* Investment Section */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-primary">💎 Investment in Your Child's Future</h2>
+              {/* Prepared For Section */}
+              <div className="grid md:grid-cols-2 gap-8 py-8 border-y">
+                <div>
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">PREPARED FOR</h3>
+                  <p className="text-lg font-medium">{proposal.recipient_name}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">PREPARED BY</h3>
+                  <p className="text-lg font-medium">Journey Beyond Education</p>
+                  <p className="text-sm text-muted-foreground">Business Development Team</p>
+                </div>
+              </div>
+
+              {/* Investment Section */}
+              <div id="investment" className="space-y-6 scroll-mt-20">
+                <h2 className="text-2xl font-bold text-primary">💎 Investment in Your Child's Future</h2>
             
             <div className="grid gap-4 bg-muted/50 p-6 rounded-lg">
               <div className="grid md:grid-cols-2 gap-4">
@@ -209,9 +219,9 @@ export default function ProposalView() {
             </div>
           </div>
 
-          {/* Our Offering */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-primary">✨ Our Offering</h2>
+              {/* Our Offering */}
+              <div id="offering" className="space-y-4 scroll-mt-20">
+                <h2 className="text-2xl font-bold text-primary">✨ Our Offering</h2>
             <ul className="space-y-3 list-none">
               {[
                 'Lesson recordings available for revision',
@@ -228,9 +238,9 @@ export default function ProposalView() {
             </ul>
           </div>
 
-          {/* Our Tutors */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-primary">👨‍🏫 Our Tutors</h2>
+              {/* Our Tutors */}
+              <div id="tutors" className="space-y-4 scroll-mt-20">
+                <h2 className="text-2xl font-bold text-primary">👨‍🏫 Our Tutors</h2>
             <p className="text-base leading-relaxed text-muted-foreground">
               Our tutors are carefully selected professionals with at least 3 years of experience in their subject areas. 
               They are passionate about education and committed to helping every student reach their full potential. 
@@ -238,9 +248,9 @@ export default function ProposalView() {
             </p>
           </div>
 
-          {/* Success Rates */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-primary">🏆 Our Track Record</h2>
+              {/* Success Rates */}
+              <div id="track-record" className="space-y-4 scroll-mt-20">
+                <h2 className="text-2xl font-bold text-primary">🏆 Our Track Record</h2>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
                 <p className="text-4xl font-bold text-primary mb-2">🎓 92%</p>
@@ -257,25 +267,27 @@ export default function ProposalView() {
             </div>
           </div>
 
-          {/* Call to Action */}
-          <div className="pt-6 text-center">
-            <button
-              onClick={() => setCurrentStep('agreement')}
-              className="bg-primary text-primary-foreground px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Get Started
-            </button>
-          </div>
+              {/* Call to Action */}
+              <div className="pt-6 text-center">
+                <button
+                  onClick={() => setCurrentStep('agreement')}
+                  className="bg-primary text-primary-foreground px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Get Started
+                </button>
+              </div>
 
-          {/* Footer */}
-          <div className="text-center pt-8 border-t">
-            <p className="text-sm font-semibold text-primary">✨ Helping Every Child Shine ✨</p>
-            <p className="text-xs text-muted-foreground mt-2">
-              &copy; {new Date().getFullYear()} Journey Beyond Education. All rights reserved.
-            </p>
+              {/* Footer */}
+              <div className="text-center pt-8 border-t">
+                <p className="text-sm font-semibold text-primary">✨ Helping Every Child Shine ✨</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  &copy; {new Date().getFullYear()} Journey Beyond Education. All rights reserved.
+                </p>
+              </div>
+            </Card>
           </div>
-        </Card>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
