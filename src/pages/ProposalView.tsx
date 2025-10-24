@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
+import UrgencyPriceDisplay from '@/components/proposals/UrgencyPriceDisplay';
 import jbLogo from '@/assets/jb-tutors-logo.png';
 
 interface Proposal {
@@ -186,10 +187,10 @@ export default function ProposalView() {
               </div>
               
               <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">💰 Price Per Lesson</p>
-                  <p className="text-2xl font-bold text-primary">£{proposal.price_per_lesson.toFixed(2)}</p>
-                </div>
+                <UrgencyPriceDisplay 
+                  price={proposal.price_per_lesson} 
+                  createdAt={proposal.created_at}
+                />
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">📅 Payment Cycle</p>
                   <p className="text-lg font-semibold">{proposal.payment_cycle}</p>
