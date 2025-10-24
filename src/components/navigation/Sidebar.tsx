@@ -24,6 +24,7 @@ import {
   Bot,
   MessageCircle,
   Film,
+  FileSignature,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -136,6 +137,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: Video,
           label: 'Trial Bookings',
           href: '/trial-bookings',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: FileSignature,
+          label: 'Lesson Proposals',
+          href: '/admin/proposals',
           roles: ['admin', 'owner'],
         },
         {
