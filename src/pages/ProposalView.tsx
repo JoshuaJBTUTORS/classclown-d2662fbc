@@ -120,7 +120,7 @@ export default function ProposalView() {
     return (
       <div className="container max-w-2xl py-16 text-center">
         <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold mb-2">Welcome to Journey Beyond!</h1>
+        <h1 className="text-3xl font-bold mb-2">🎉 Welcome to Journey Beyond!</h1>
         <p className="text-muted-foreground">
           Your proposal has been completed. We'll be in touch shortly to schedule your first lesson.
         </p>
@@ -171,33 +171,33 @@ export default function ProposalView() {
 
           {/* Investment Section */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-primary">Investment in Your Child's Future</h2>
+            <h2 className="text-2xl font-bold text-primary">💎 Investment in Your Child's Future</h2>
             
             <div className="grid gap-4 bg-muted/50 p-6 rounded-lg">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Lesson Type</p>
+                  <p className="text-sm font-medium text-muted-foreground">📚 Lesson Type</p>
                   <p className="text-lg font-semibold">{proposal.lesson_type}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Subject</p>
+                  <p className="text-sm font-medium text-muted-foreground">📖 Subject</p>
                   <p className="text-lg font-semibold">{proposal.subject}</p>
                 </div>
               </div>
               
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Price Per Lesson</p>
+                  <p className="text-sm font-medium text-muted-foreground">💰 Price Per Lesson</p>
                   <p className="text-2xl font-bold text-primary">£{proposal.price_per_lesson.toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Payment Cycle</p>
+                  <p className="text-sm font-medium text-muted-foreground">📅 Payment Cycle</p>
                   <p className="text-lg font-semibold">{proposal.payment_cycle}</p>
                 </div>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Lesson Times</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">⏰ Lesson Times</p>
                 <div className="space-y-2">
                   {proposal.lesson_times.map((time, index) => (
                     <p key={index} className="text-base">
@@ -211,18 +211,18 @@ export default function ProposalView() {
 
           {/* Our Offering */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-primary">Our Offering</h2>
+            <h2 className="text-2xl font-bold text-primary">✨ Our Offering</h2>
             <ul className="space-y-3 list-none">
               {[
-                'Lesson recordings available for revision',
-                'Unlimited access to our learning hub E learning courses',
-                'Parent dashboard with progress updates and six-week check-ins',
-                'Half-termly assessments with feedback',
-                'Homework after each session, marked to track progress',
+                { text: 'Lesson recordings available for revision', emoji: '📹' },
+                { text: 'Unlimited access to our learning hub E learning courses', emoji: '🌐' },
+                { text: 'Parent dashboard with progress updates and six-week check-ins', emoji: '📊' },
+                { text: 'Half-termly assessments with feedback', emoji: '📝' },
+                { text: 'Homework after each session, marked to track progress', emoji: '✅' },
               ].map((item, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>{item}</span>
+                  <span className="text-xl mt-0.5 flex-shrink-0">{item.emoji}</span>
+                  <span>{item.text}</span>
                 </li>
               ))}
             </ul>
@@ -230,7 +230,7 @@ export default function ProposalView() {
 
           {/* Our Tutors */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-primary">Our Tutors</h2>
+            <h2 className="text-2xl font-bold text-primary">👨‍🏫 Our Tutors</h2>
             <p className="text-base leading-relaxed text-muted-foreground">
               Our tutors are carefully selected professionals with at least 3 years of experience in their subject areas. 
               They are passionate about education and committed to helping every student reach their full potential. 
@@ -240,18 +240,18 @@ export default function ProposalView() {
 
           {/* Success Rates */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-primary">Our Track Record</h2>
+            <h2 className="text-2xl font-bold text-primary">🏆 Our Track Record</h2>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                <p className="text-4xl font-bold text-primary mb-2">92%</p>
+                <p className="text-4xl font-bold text-primary mb-2">🎓 92%</p>
                 <p className="text-sm font-medium text-muted-foreground">A*/A rate for GCSE</p>
               </div>
               <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                <p className="text-4xl font-bold text-primary mb-2">95%</p>
+                <p className="text-4xl font-bold text-primary mb-2">🎯 95%</p>
                 <p className="text-sm font-medium text-muted-foreground">Pass rate for 11 plus</p>
               </div>
               <div className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                <p className="text-4xl font-bold text-primary mb-2">98%</p>
+                <p className="text-4xl font-bold text-primary mb-2">⭐ 98%</p>
                 <p className="text-sm font-medium text-muted-foreground">Satisfaction rate</p>
               </div>
             </div>
@@ -269,7 +269,7 @@ export default function ProposalView() {
 
           {/* Footer */}
           <div className="text-center pt-8 border-t">
-            <p className="text-sm font-semibold text-primary">Helping Every Child Shine</p>
+            <p className="text-sm font-semibold text-primary">✨ Helping Every Child Shine ✨</p>
             <p className="text-xs text-muted-foreground mt-2">
               &copy; {new Date().getFullYear()} Journey Beyond Education. All rights reserved.
             </p>
