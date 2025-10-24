@@ -51,8 +51,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Proposal not found');
     }
 
-    // Generate proposal URL (using /p alias for public access)
-    const proposalUrl = `https://classclowncrm.com/p/${proposal.id}/${proposal.access_token}`;
+    // Generate proposal URL
+    const proposalUrl = `https://classclowncrm.com/proposal/${proposal.id}/${proposal.access_token}`;
 
     // Render email HTML
     const html = await renderAsync(
