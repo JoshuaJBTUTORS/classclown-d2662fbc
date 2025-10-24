@@ -21,6 +21,12 @@ const lessonTimeSchema = z.object({
 const proposalSchema = z.object({
   recipientName: z.string().min(1, 'Recipient name is required').max(100),
   recipientEmail: z.string().email('Invalid email address').max(255),
+  recipientPhone: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(20, 'Phone number must be less than 20 characters')
+    .regex(/^[\d\s\+\-\(\)]+$/, 'Invalid phone number format')
+    .optional()
+    .or(z.literal('')),
   lessonType: z.string().min(1, 'Lesson type is required'),
   subject: z.string().min(1, 'Subject is required'),
   pricePerLesson: z.number().min(0, 'Price must be positive'),
@@ -42,6 +48,7 @@ export default function ProposalBuilder() {
     defaultValues: {
       recipientName: '',
       recipientEmail: '',
+      recipientPhone: '',
       lessonType: '',
       subject: '',
       pricePerLesson: 45,
@@ -75,6 +82,7 @@ export default function ProposalBuilder() {
       const { data: response, error } = await supabase.functions.invoke('create-lesson-proposal', {
         body: {
           ...data,
+          recipientPhone: data.recipientPhone || null,
           lessonTimes: lessonTimes.filter(lt => lt.day && lt.time),
         },
       });
@@ -139,6 +147,20 @@ export default function ProposalBuilder() {
                       <FormLabel>Recipient Email</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="john@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="recipientPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recipient Phone (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="+44 7123 456789" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

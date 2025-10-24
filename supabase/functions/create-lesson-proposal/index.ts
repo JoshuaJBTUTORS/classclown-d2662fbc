@@ -9,6 +9,7 @@ const corsHeaders = {
 interface ProposalRequest {
   recipientEmail: string;
   recipientName: string;
+  recipientPhone?: string;
   studentId?: number;
   parentId?: string;
   lessonType: string;
@@ -99,6 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
         created_by: user.id,
         recipient_email: proposalData.recipientEmail,
         recipient_name: proposalData.recipientName,
+        recipient_phone: proposalData.recipientPhone || null,
         lesson_type: proposalData.lessonType,
         subject: proposalData.subject,
         price_per_lesson: proposalData.pricePerLesson,
@@ -124,6 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
         proposalId: proposal.id,
         recipientEmail: proposalData.recipientEmail,
         recipientName: proposalData.recipientName,
+        recipientPhone: proposalData.recipientPhone,
       },
     });
 

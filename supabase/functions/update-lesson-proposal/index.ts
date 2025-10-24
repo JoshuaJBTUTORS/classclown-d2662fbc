@@ -5,6 +5,7 @@ interface UpdateProposalRequest {
   proposalId: string;
   recipientName: string;
   recipientEmail: string;
+  recipientPhone?: string;
   lessonType: string;
   subject: string;
   pricePerLesson: number;
@@ -84,6 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
       proposalId,
       recipientName,
       recipientEmail,
+      recipientPhone,
       lessonType,
       subject,
       pricePerLesson,
@@ -126,6 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
       .update({
         recipient_name: recipientName,
         recipient_email: recipientEmail,
+        recipient_phone: recipientPhone || null,
         lesson_type: lessonType,
         subject: subject,
         price_per_lesson: pricePerLesson,

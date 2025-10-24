@@ -176,6 +176,35 @@ Best regards,
 JB Tutors Team
   `.trim(),
 
+  proposalNotification: (
+    recipientName: string,
+    subject: string,
+    pricePerLesson: number,
+    paymentCycle: string,
+    proposalUrl: string
+  ): string => {
+    return `🎓 *Lesson Proposal from JB Tutors*
+
+Hi ${recipientName}! 👋
+
+Thank you for your interest in our tutoring services. We've prepared a personalized lesson proposal for you:
+
+📚 *Subject:* ${subject}
+💰 *Price:* £${pricePerLesson.toFixed(2)} ${paymentCycle.toLowerCase()}
+
+To view your full proposal and get started:
+👉 ${proposalUrl}
+
+✅ Review the details
+✅ Agree to terms
+✅ Set up your payment method
+
+If you have any questions, feel free to reply to this message!
+
+_Journey Beyond Education_
+Building confidence, one lesson at a time 🌟`;
+  },
+
   trialSalesNotification: (parentName: string, childName: string, email: string, phone: string, subject: string, preferredDate: string, preferredTime: string, message: string, bookingId: string) => `
 🚨 NEW TRIAL BOOKING ALERT! 🚨
 

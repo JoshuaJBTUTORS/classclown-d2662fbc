@@ -21,6 +21,12 @@ const lessonTimeSchema = z.object({
 const proposalSchema = z.object({
   recipientName: z.string().min(1, 'Recipient name is required').max(100),
   recipientEmail: z.string().email('Invalid email address').max(255),
+  recipientPhone: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(20, 'Phone number must be less than 20 characters')
+    .regex(/^[\d\s\+\-\(\)]+$/, 'Invalid phone number format')
+    .optional()
+    .or(z.literal('')),
   lessonType: z.string().min(1, 'Lesson type is required'),
   subject: z.string().min(1, 'Subject is required'),
   pricePerLesson: z.number().min(0, 'Price must be positive'),
@@ -44,6 +50,7 @@ export default function EditProposal() {
     defaultValues: {
       recipientName: '',
       recipientEmail: '',
+      recipientPhone: '',
       lessonType: '',
       subject: '',
       pricePerLesson: 45,
@@ -99,6 +106,7 @@ export default function EditProposal() {
       form.reset({
         recipientName: proposal.recipient_name || '',
         recipientEmail: proposal.recipient_email || '',
+        recipientPhone: proposal.recipient_phone || '',
         lessonType: proposal.lesson_type || '',
         subject: proposal.subject || '',
         pricePerLesson: proposal.price_per_lesson || 45,
@@ -148,6 +156,7 @@ export default function EditProposal() {
         body: {
           proposalId,
           ...data,
+          recipientPhone: data.recipientPhone || null,
           lessonTimes: lessonTimes.filter(lt => lt.day && lt.time),
         },
       });
@@ -215,6 +224,20 @@ export default function EditProposal() {
                       <FormLabel>Recipient Email</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="john@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="recipientPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recipient Phone (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="+44 7123 456789" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

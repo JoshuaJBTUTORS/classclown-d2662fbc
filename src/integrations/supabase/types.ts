@@ -1699,6 +1699,7 @@ export type Database = {
           price_per_lesson: number
           recipient_email: string
           recipient_name: string
+          recipient_phone: string | null
           sent_at: string | null
           status: string
           student_id: number | null
@@ -1720,6 +1721,7 @@ export type Database = {
           price_per_lesson: number
           recipient_email: string
           recipient_name: string
+          recipient_phone?: string | null
           sent_at?: string | null
           status?: string
           student_id?: number | null
@@ -1741,6 +1743,7 @@ export type Database = {
           price_per_lesson?: number
           recipient_email?: string
           recipient_name?: string
+          recipient_phone?: string | null
           sent_at?: string | null
           status?: string
           student_id?: number | null
