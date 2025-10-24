@@ -62,6 +62,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import TrialBookingMusa from './pages/TrialBookingMusa';
 import ContentEngine from './pages/admin/ContentEngine';
 import TutorContentPage from './pages/tutor/TutorContentPage';
+import ProposalView from './pages/ProposalView';
+import ProposalBuilder from './pages/ProposalBuilder';
 
 
 function App() {
@@ -89,6 +91,7 @@ function App() {
                 <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 
                 {/* Main App Layout - all main application routes */}
                 <Route
@@ -148,6 +151,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <AdminDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin/proposals/create" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <ProposalBuilder />
                       </ProtectedRoute>
                     } 
                   />

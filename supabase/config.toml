@@ -64,6 +64,18 @@ verify_jwt = false
 [functions.ensure-weekly-participant-urls]
 verify_jwt = true
 
+[functions.create-lesson-proposal]
+verify_jwt = true
+
+[functions.send-proposal-email]
+verify_jwt = false
+
+[functions.create-proposal-setup-intent]
+verify_jwt = false
+
+[functions.complete-proposal-setup]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 port = 54328
