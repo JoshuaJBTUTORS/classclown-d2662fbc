@@ -35,23 +35,43 @@ const handler = async (req: Request): Promise<Response> => {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
         },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
       }
     );
 
     // Verify user is authenticated and has owner role
-    console.log('Authorization header:', req.headers.get('Authorization') ? 'Present' : 'Missing');
-    
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
-    console.log('Auth check result:', { 
-      userError: userError?.message, 
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization') || '';
+    console.log('Authorization header:', authHeader ? 'Present' : 'Missing');
+    const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+
+    let user: any = null;
+    let userError: any = null;
+    try {
+      if (token) {
+        const res = await supabaseClient.auth.getUser(token);
+        user = res.data.user;
+        userError = res.error;
+      } else {
+        const res = await supabaseClient.auth.getUser();
+        user = res.data.user;
+        userError = res.error;
+      }
+    } catch (e: any) {
+      userError = e;
+    }
+
+    console.log('Auth check result:', {
+      userError: userError?.message,
       userId: user?.id,
-      hasUser: !!user 
+      hasUser: !!user
     });
-    
+
     if (userError || !user) {
       console.error('Authentication failed:', userError);
-      throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
+      throw new Error(`Unauthorized: ${userError?.message || 'Auth session missing!'}`);
     }
 
     const { data: userRole } = await supabaseClient
