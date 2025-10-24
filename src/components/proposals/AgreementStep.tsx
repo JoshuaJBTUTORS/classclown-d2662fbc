@@ -76,34 +76,34 @@ export default function AgreementStep({ proposal, onAgree, onBack }: AgreementSt
   };
 
   return (
-    <div className="container max-w-4xl py-12">
+    <div className="container max-w-4xl py-6 md:py-12">
       <Card className="p-8 md:p-12 space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-primary">Terms & Conditions</h1>
           <p className="text-muted-foreground">Please review and accept our terms to continue</p>
         </div>
 
-        <div className="bg-muted/50 p-6 rounded-lg max-h-96 overflow-y-auto space-y-4 text-sm">
+        <div className="bg-muted/50 p-4 md:p-6 rounded-lg max-h-96 overflow-y-auto space-y-4 text-sm">
           <div dangerouslySetInnerHTML={{ __html: TERMS_AND_CONDITIONS }} />
         </div>
 
-        <div className="flex items-start gap-3 p-4 border rounded-lg">
+        <div className="flex items-start gap-3 p-4 border rounded-lg leading-relaxed">
           <Checkbox
             id="agree"
             checked={agreed}
             onCheckedChange={(checked) => setAgreed(checked as boolean)}
           />
-          <label htmlFor="agree" className="text-sm cursor-pointer">
+          <label htmlFor="agree" className="text-sm cursor-pointer text-left">
             I have read and agree to the Terms & Conditions outlined above. I understand that by clicking
             "I Agree," I am entering into a binding agreement with Journey Beyond Education.
           </label>
         </div>
 
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={onBack} disabled={isSubmitting}>
+        <div className="flex flex-col md:flex-row gap-4">
+          <Button variant="outline" onClick={onBack} disabled={isSubmitting} className="w-full md:w-auto">
             Back to Proposal
           </Button>
-          <Button onClick={handleAgree} disabled={!agreed || isSubmitting} className="flex-1">
+          <Button onClick={handleAgree} disabled={!agreed || isSubmitting} className="w-full md:flex-1">
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             I Agree - Continue to Payment Setup
           </Button>
@@ -136,7 +136,7 @@ const TERMS_AND_CONDITIONS = `
 <p class="mb-4">We are committed to protecting your privacy. Personal information will be processed in accordance with GDPR and our Privacy Policy. We will never share your data with third parties without consent.</p>
 
 <h3 class="font-semibold text-base mb-2">8. Termination</h3>
-<p class="mb-4">Either party may terminate this agreement with 14 days written notice. Prepaid fees for unused lessons will be refunded on a pro-rata basis, less any administrative fees.</p>
+<p class="mb-4">Either party may terminate this agreement with 1 month (30 days) written notice. Prepaid fees for unused lessons will be refunded on a pro-rata basis, less any administrative fees.</p>
 
 <h3 class="font-semibold text-base mb-2">9. Modifications</h3>
 <p class="mb-4">We reserve the right to modify these terms with reasonable notice. Continued use of our services after notification constitutes acceptance of revised terms.</p>
