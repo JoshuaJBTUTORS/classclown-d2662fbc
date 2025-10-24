@@ -1581,6 +1581,183 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_proposal_payment_methods: {
+        Row: {
+          billing_email: string | null
+          billing_name: string | null
+          captured_at: string
+          card_brand: string | null
+          card_exp_month: number | null
+          card_exp_year: number | null
+          card_last4: string | null
+          created_at: string
+          id: string
+          proposal_id: string
+          stripe_customer_id: string
+          stripe_payment_method_id: string
+          stripe_setup_intent_id: string
+        }
+        Insert: {
+          billing_email?: string | null
+          billing_name?: string | null
+          captured_at?: string
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          id?: string
+          proposal_id: string
+          stripe_customer_id: string
+          stripe_payment_method_id: string
+          stripe_setup_intent_id: string
+        }
+        Update: {
+          billing_email?: string | null
+          billing_name?: string | null
+          captured_at?: string
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          id?: string
+          proposal_id?: string
+          stripe_customer_id?: string
+          stripe_payment_method_id?: string
+          stripe_setup_intent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_proposal_payment_methods_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_proposal_signatures: {
+        Row: {
+          agreement_text: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          proposal_id: string
+          signed_at: string
+          signer_email: string
+          signer_name: string
+          signer_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          agreement_text: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          proposal_id: string
+          signed_at?: string
+          signer_email: string
+          signer_name: string
+          signer_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          agreement_text?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          proposal_id?: string
+          signed_at?: string
+          signer_email?: string
+          signer_name?: string
+          signer_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_proposal_signatures_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_proposals: {
+        Row: {
+          access_token: string
+          agreed_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          lesson_times: Json
+          lesson_type: string
+          parent_id: string | null
+          payment_cycle: string
+          price_per_lesson: number
+          recipient_email: string
+          recipient_name: string
+          sent_at: string | null
+          status: string
+          student_id: number | null
+          subject: string
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          access_token: string
+          agreed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lesson_times?: Json
+          lesson_type: string
+          parent_id?: string | null
+          payment_cycle: string
+          price_per_lesson: number
+          recipient_email: string
+          recipient_name: string
+          sent_at?: string | null
+          status?: string
+          student_id?: number | null
+          subject: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          agreed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lesson_times?: Json
+          lesson_type?: string
+          parent_id?: string | null
+          payment_cycle?: string
+          price_per_lesson?: number
+          recipient_email?: string
+          recipient_name?: string
+          sent_at?: string | null
+          status?: string
+          student_id?: number | null
+          subject?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_proposals_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_student_summaries: {
         Row: {
           ai_summary: string | null
