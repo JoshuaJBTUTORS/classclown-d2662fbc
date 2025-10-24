@@ -39,9 +39,19 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     // Verify user is authenticated and has owner role
+    console.log('Authorization header:', req.headers.get('Authorization') ? 'Present' : 'Missing');
+    
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    console.log('Auth check result:', { 
+      userError: userError?.message, 
+      userId: user?.id,
+      hasUser: !!user 
+    });
+    
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      console.error('Authentication failed:', userError);
+      throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
     }
 
     const { data: userRole } = await supabaseClient
