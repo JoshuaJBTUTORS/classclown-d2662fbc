@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminProposalSidebar } from '@/components/admin/AdminProposalSidebar';
-import { Loader2, Plus, Copy, ExternalLink, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Proposal {
@@ -244,14 +244,22 @@ export default function ProposalDashboard() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => copyProposalLink(proposal)}
-                            title="Copy proposal link"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate(`/admin/proposals/edit/${proposal.id}`)}
+                              title="Edit proposal"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => copyProposalLink(proposal)}
+                              title="Copy proposal link"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
                           <Button
                             variant="ghost"
                             size="icon"

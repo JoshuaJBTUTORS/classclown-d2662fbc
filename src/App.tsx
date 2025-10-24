@@ -65,6 +65,7 @@ import TutorContentPage from './pages/tutor/TutorContentPage';
 import ProposalView from './pages/ProposalView';
 import ProposalBuilder from './pages/ProposalBuilder';
 import ProposalDashboard from './pages/admin/ProposalDashboard';
+import EditProposal from './pages/admin/EditProposal';
 
 
 function App() {
@@ -169,6 +170,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <ProposalBuilder />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin/proposals/edit/:proposalId" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <EditProposal />
                       </ProtectedRoute>
                     } 
                   />
