@@ -79,6 +79,9 @@ verify_jwt = false
 [functions.update-lesson-proposal]
 verify_jwt = true
 
+[functions.send-daily-reminders]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 port = 54328

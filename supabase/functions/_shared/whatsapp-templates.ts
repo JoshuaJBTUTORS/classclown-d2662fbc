@@ -273,4 +273,63 @@ Demo session about to begin:
 
 JB Tutors Team
 `.trim()
+  },
+
+  proposalReminder: (
+    recipientName: string,
+    subject: string,
+    pricePerLesson: number,
+    paymentCycle: string,
+    proposalUrl: string
+  ): string => {
+    return `📢 *Reminder: Your Lesson Proposal - JB Tutors*
+
+Hi ${recipientName}! 👋
+
+Just a friendly reminder about your personalized lesson proposal:
+
+📚 *Subject:* ${subject}
+💰 *Price:* £${pricePerLesson.toFixed(2)} ${paymentCycle.toLowerCase()}
+
+👉 Review and sign here: ${proposalUrl}
+
+✨ *What's included:*
+• Personalized learning approach
+• Expert tutors since 2009
+• Flexible online lessons
+• Proven exam success
+
+Questions? Just reply to this message!
+
+_Journey Beyond Education_
+Building confidence, one lesson at a time 🌟`;
+  },
+
+  proposalAgreedReminder: (
+    recipientName: string,
+    subject: string,
+    proposalUrl: string
+  ): string => {
+    return `⏰ *Complete Your Proposal - JB Tutors*
+
+Hi ${recipientName}! 👋
+
+Thanks for agreeing to your lesson proposal! To secure your lesson times and lock in your pricing, please complete the final step:
+
+📚 *Subject:* ${subject}
+
+👉 Complete your proposal here: ${proposalUrl}
+
+🔒 *Secure your spot:*
+• Lock in your current pricing
+• Reserve your preferred lesson times
+• Start lessons as soon as possible
+
+Don't miss out - lesson slots fill up fast!
+
+Questions? Just reply to this message!
+
+_Journey Beyond Education_
+Building confidence, one lesson at a time 🌟`;
+  },
 };
