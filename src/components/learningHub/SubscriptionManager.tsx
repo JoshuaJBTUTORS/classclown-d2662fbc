@@ -102,14 +102,12 @@ const SubscriptionManager: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center">
-            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-            Loading subscription details...
-          </div>
-        </CardContent>
-      </Card>
+      <div className="pt-6">
+        <div className="flex items-center justify-center">
+          <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+          Loading subscription details...
+        </div>
+      </div>
     );
   }
 
