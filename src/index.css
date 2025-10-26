@@ -41,7 +41,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: var(--cyan-blue);
+    --ring: 0 0% 100%;
     --radius: 0.75rem;
     
     /* Chart Colors using gradient palette */
@@ -109,7 +109,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: var(--cyan-blue);
+    --ring: 0 0% 100%;
   }
 }
 
