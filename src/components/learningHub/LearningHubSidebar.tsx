@@ -84,7 +84,11 @@ const LearningHubSidebar = () => {
         {/* Header */}
         <div className="flex items-center gap-3 p-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 via-white to-white">
           <div className="p-2 bg-gradient-to-r from-primary/20 to-primary/30 rounded-lg">
-            <GraduationCap className="h-6 w-6 text-primary" />
+            <img 
+              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+              alt="ClassClown Logo" 
+              className="h-6 w-6 object-contain"
+            />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Learning Hub</h2>
