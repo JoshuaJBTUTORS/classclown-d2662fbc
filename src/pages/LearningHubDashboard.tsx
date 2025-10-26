@@ -56,7 +56,7 @@ const LearningHubDashboard = () => {
           <Button
             onClick={handleAccessLiveTutoring}
             size="lg"
-            className="bg-white !bg-opacity-100 text-purple-700 hover:bg-gray-50 border-2 border-white text-lg px-8 py-6 rounded-xl shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 font-bold"
+            className="bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-700 text-lg px-8 py-6 rounded-xl shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 font-bold"
           >
             <Video className="h-5 w-5 mr-2" />
             Access Live Tutoring
