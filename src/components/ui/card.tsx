@@ -24,7 +24,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 border-b border-gray-100 rounded-t-xl", className)}
+    className={cn("flex flex-col space-y-1.5 p-6 bg-white border-b border-gray-100 rounded-t-xl", className)}
     {...props}
   />
 ))
@@ -71,7 +71,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0 bg-gradient-to-r from-[hsl(var(--light-green))]/10 to-[hsl(var(--medium-green))]/10 border-t border-gray-100 rounded-b-xl", className)}
+    className={cn("flex items-center p-6 pt-0 bg-white border-t border-gray-100 rounded-b-xl", className)}
     {...props}
   />
 ))
