@@ -126,7 +126,7 @@ const LearningHubDashboard = () => {
       <SubscriptionManager />
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -141,6 +141,25 @@ const LearningHubDashboard = () => {
             <Button asChild className="w-full">
               <Link to="/learning-hub/my-courses">
                 View My Courses
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-orange-600" />
+              Browse Courses
+            </CardTitle>
+            <CardDescription>
+              Explore our complete course catalog
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/learning-hub/courses">
+                Browse All
               </Link>
             </Button>
           </CardContent>
@@ -190,7 +209,7 @@ const LearningHubDashboard = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Featured Courses</h2>
           <Button asChild variant="outline">
-            <Link to="/learning-hub/library">
+            <Link to="/learning-hub/courses">
               Browse All Courses
             </Link>
           </Button>

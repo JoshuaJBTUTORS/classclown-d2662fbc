@@ -42,6 +42,11 @@ const navigationItems = [
     icon: BookOpen
   },
   {
+    title: 'Browse Courses',
+    href: '/learning-hub/courses',
+    icon: Library
+  },
+  {
     title: 'Personal Growth',
     href: '/learning-hub/assessments',
     icon: Brain
@@ -50,11 +55,6 @@ const navigationItems = [
     title: 'Revision Calendar',
     href: '/learning-hub/revision',
     icon: Calendar
-  },
-  {
-    title: 'Course Library',
-    href: '/learning-hub/library',
-    icon: Library
   },
   {
     title: 'Settings',

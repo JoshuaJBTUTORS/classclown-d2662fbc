@@ -392,8 +392,8 @@ function App() {
                     </ProtectedRoute>
                   }
                 >
-                  <Route index element={<LearningHub />} />
-                  <Route path="dashboard" element={<LearningHubDashboard />} />
+                  <Route index element={<LearningHubDashboard />} />
+                  <Route path="courses" element={<LearningHub />} />
                   <Route path="library" element={<LearningHub />} />
                   <Route path="my-courses" element={<LearningHubMyCourses />} />
                   <Route path="assessments" element={<LearningHubAssessments />} />
