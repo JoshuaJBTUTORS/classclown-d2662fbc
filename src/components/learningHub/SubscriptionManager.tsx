@@ -117,7 +117,7 @@ const SubscriptionManager: React.FC = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-playfair">
             <CreditCard className="h-5 w-5" />
             Subscription Management
           </CardTitle>
@@ -141,10 +141,10 @@ const SubscriptionManager: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CreditCard className="h-5 w-5" />
-          Subscription Management
-        </CardTitle>
+          <CardTitle className="flex items-center gap-2 font-playfair">
+            <CreditCard className="h-5 w-5" />
+            Subscription Management
+          </CardTitle>
         <CardDescription>
           Manage your course subscriptions and billing
         </CardDescription>
