@@ -43,13 +43,13 @@ const LearningHubDashboard = () => {
   return (
     <div className="container mx-auto py-8 px-4 space-y-8">
       {/* Hero Section with Live Tutoring CTA */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-purple-700 p-8 md:p-12 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-200 via-blue-200 to-indigo-200 p-8 md:p-12 text-gray-800 shadow-2xl">
         <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,transparent)]" />
         <div className="relative z-10 text-center max-w-4xl mx-auto">
           <h1 className="text-3xl md:text-5xl font-bold mb-4">
             Welcome to Your Learning Hub, {user?.user_metadata?.first_name || 'Learner'}! 🎓
           </h1>
-          <p className="text-lg md:text-xl mb-8 text-purple-100">
+          <p className="text-lg md:text-xl mb-8 text-purple-800">
             Explore self-paced courses, track your progress, and unlock your potential
           </p>
           
@@ -64,7 +64,7 @@ const LearningHubDashboard = () => {
           </Button>
           
           {userRole === 'learning_hub_only' && (
-            <p className="mt-4 text-sm text-purple-100">
+            <p className="mt-4 text-sm text-purple-800">
               🌟 Upgrade to unlock 1-on-1 tutoring from £9.99/month
             </p>
           )}
