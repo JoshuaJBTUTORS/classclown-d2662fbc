@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, 
   BookOpen, 
@@ -10,7 +11,10 @@ import {
   Home,
   Calendar,
   Settings,
+  Video,
+  Lock,
 } from 'lucide-react';
+import LiveTutoringUpgradeModal from './LiveTutoringUpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -61,8 +65,20 @@ const navigationItems = [
 
 const LearningHubSidebar = () => {
   const location = useLocation();
+  const { userRole } = useAuth();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const hasLiveTutoringAccess = userRole === 'parent' || userRole === 'student' || userRole === 'admin' || userRole === 'owner' || userRole === 'tutor';
+
+  const handleLiveTutoringClick = (e: React.MouseEvent) => {
+    if (!hasLiveTutoringAccess) {
+      e.preventDefault();
+      setShowUpgradeModal(true);
+    }
+  };
 
   return (
+    <>
     <Sidebar collapsible="offcanvas">
       <SidebarContent className="bg-white border-r border-gray-200 shadow-lg z-20 min-h-screen md:min-h-0">
         {/* Header */}
@@ -94,6 +110,28 @@ const LearningHubSidebar = () => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Live Tutoring Menu Item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild={hasLiveTutoringAccess}
+                  onClick={handleLiveTutoringClick}
+                  className={!hasLiveTutoringAccess ? 'cursor-pointer' : ''}
+                >
+                  {hasLiveTutoringAccess ? (
+                    <Link to="/calendar">
+                      <Video className="h-4 w-4" />
+                      <span>Live Tutoring</span>
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4" />
+                      <span>Live Tutoring</span>
+                      <Lock className="h-3 w-3 ml-auto text-yellow-600" />
+                    </div>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -109,12 +147,19 @@ const LearningHubSidebar = () => {
           >
             <Link to="/">
               <Home className="h-4 w-4 mr-2" />
-              Back to Main App
+              Back to Home
             </Link>
           </Button>
         </SidebarFooter>
       </SidebarContent>
+
+      {/* Upgrade Modal */}
+      <LiveTutoringUpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </Sidebar>
+    </>
   );
 };
 

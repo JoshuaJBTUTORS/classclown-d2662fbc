@@ -1,17 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { learningHubService } from '@/services/learningHubService';
 import { useAuth } from '@/contexts/AuthContext';
 import CourseCard from '@/components/learningHub/CourseCard';
 import SubscriptionManager from '@/components/learningHub/SubscriptionManager';
-import { BookOpen, Brain, Calendar, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import LiveTutoringUpgradeModal from '@/components/learningHub/LiveTutoringUpgradeModal';
+import { BookOpen, Brain, Calendar, TrendingUp, Video, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LearningHubDashboard = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
+  const navigate = useNavigate();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const { data: courses, isLoading: coursesLoading } = useQuery({
     queryKey: ['courses'],
@@ -27,16 +30,45 @@ const LearningHubDashboard = () => {
 
   const featuredCourses = courses?.filter(course => course.status === 'published').slice(0, 3) || [];
 
+  const handleAccessLiveTutoring = () => {
+    // If user is parent or student, navigate to CRM
+    if (userRole === 'parent' || userRole === 'student' || userRole === 'admin' || userRole === 'owner' || userRole === 'tutor') {
+      navigate('/calendar');
+    } else {
+      // Otherwise show upgrade modal
+      setShowUpgradeModal(true);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 space-y-8">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Welcome to Learning Hub
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Discover courses, track your progress, and accelerate your learning journey
-        </p>
+      {/* Hero Section with Live Tutoring CTA */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-purple-700 p-8 md:p-12 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,transparent)]" />
+        <div className="relative z-10 text-center max-w-4xl mx-auto">
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">
+            Welcome to Your Learning Hub, {user?.user_metadata?.first_name || 'Learner'}! 🎓
+          </h1>
+          <p className="text-lg md:text-xl mb-8 text-purple-100">
+            Explore self-paced courses, track your progress, and unlock your potential
+          </p>
+          
+          <Button
+            onClick={handleAccessLiveTutoring}
+            size="lg"
+            className="bg-white text-purple-700 hover:bg-purple-50 text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 font-bold"
+          >
+            <Video className="h-5 w-5 mr-2" />
+            Access Live Tutoring
+            <Sparkles className="h-5 w-5 ml-2" />
+          </Button>
+          
+          {userRole === 'learning_hub_only' && (
+            <p className="mt-4 text-sm text-purple-100">
+              🌟 Upgrade to unlock 1-on-1 tutoring from £9.99/month
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -185,6 +217,12 @@ const LearningHubDashboard = () => {
           </Card>
         )}
       </div>
+
+      {/* Upgrade Modal */}
+      <LiveTutoringUpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </div>
   );
 };

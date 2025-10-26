@@ -30,8 +30,8 @@ const LandingPage = () => {
             <div className="relative">
               <img 
                 src="/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png" 
-                alt="JB Tutors Logo" 
-                className="h-16 w-16 object-contain"
+                alt="ClassClown Logo" 
+                className="h-20 w-20 object-contain"
               />
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
@@ -43,14 +43,14 @@ const LandingPage = () => {
             </div>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            Welcome to JB Tutors! 🎓
+            Welcome to ClassClown 🎓
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Empowering students to achieve their academic goals through personalized tutoring and innovative learning solutions.
+            Your complete learning platform - from self-paced courses to 1-on-1 live tutoring starting at £9.99/month
           </p>
         </motion.div>
 
-        {/* Main Question Card */}
+        {/* Main Action Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -60,12 +60,12 @@ const LandingPage = () => {
           <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
             <CardContent className="p-8 text-center">
               <div className="mb-6">
-                <Users className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+                <GraduationCap className="h-12 w-12 text-purple-600 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Are you already a member of JB Tutors?
+                  Start Your Learning Journey
                 </h2>
                 <p className="text-gray-600">
-                  Choose the option that best describes you to get started.
+                  Sign up for free access to our Learning Hub or sign in to continue
                 </p>
               </div>
 
@@ -75,12 +75,12 @@ const LandingPage = () => {
                   whileTap={{ scale: 0.98 }}
                 >
                   <Button
-                    onClick={handleExistingMember}
+                    onClick={handleNewMember}
                     size="lg"
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold rounded-xl shadow-lg"
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-6 text-lg font-semibold rounded-xl shadow-lg"
                   >
-                    <Users className="h-5 w-5 mr-2" />
-                    Yes, I'm a member
+                    <BookOpen className="h-5 w-5 mr-2" />
+                    Sign Up Free
                     <ChevronRight className="h-5 w-5 ml-2" />
                   </Button>
                 </motion.div>
@@ -90,12 +90,13 @@ const LandingPage = () => {
                   whileTap={{ scale: 0.98 }}
                 >
                   <Button
-                    onClick={handleNewMember}
+                    onClick={handleExistingMember}
                     size="lg"
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-6 text-lg font-semibold rounded-xl shadow-lg"
+                    variant="outline"
+                    className="w-full py-6 text-lg font-semibold rounded-xl shadow-lg border-2"
                   >
-                    <BookOpen className="h-5 w-5 mr-2" />
-                    No, I'm new here
+                    <Users className="h-5 w-5 mr-2" />
+                    Sign In
                     <ChevronRight className="h-5 w-5 ml-2" />
                   </Button>
                 </motion.div>

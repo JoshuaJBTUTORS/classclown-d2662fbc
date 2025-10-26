@@ -45,6 +45,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Core Operations',
       items: [
         {
+          icon: BookOpen,
+          label: 'Learning Hub',
+          href: '/learning-hub',
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+        },
+        {
           icon: Calendar,
           label: 'Calendar',
           href: '/calendar',
@@ -67,12 +73,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           label: 'Lesson Summaries',
           href: '/lesson-summaries',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
-        },
-        {
-          icon: Building2,
-          label: 'Learning Hub',
-          href: '/learning-hub',
-          roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
         },
       ]
     },
@@ -294,12 +294,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-2">
               <img 
                 src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
-                alt="JB Tutors Logo" 
+                alt="ClassClown Logo" 
                 className="h-8 w-8 object-contain"
               />
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-gray-900">Classclown</span>
-                <span className="text-xs text-gray-500">powered by JB Tutors</span>
+                <span className="text-xl font-bold text-gray-900">ClassClown</span>
+                <span className="text-xs text-gray-500">Live Tutoring Account</span>
               </div>
             </div>
             <button
