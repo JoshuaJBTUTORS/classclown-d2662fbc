@@ -272,8 +272,7 @@ Demo session about to begin:
 ⚡ ACTION: Join the demo session now!
 
 JB Tutors Team
-`.trim()
-  },
+`.trim(),
 
   proposalReminder: (
     recipientName: string,
