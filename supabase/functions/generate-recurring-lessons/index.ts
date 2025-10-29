@@ -7,6 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Utility function to add delay between API calls to respect rate limits
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -191,7 +194,11 @@ serve(async (req) => {
 
           // Create LessonSpace rooms and participant URLs for all new instances
           console.log(`Creating LessonSpace rooms and participant URLs for ${insertedLessons.length} new instances`);
+          console.log(`⏱️ Adding 250ms delays between requests to respect LessonSpace rate limit (5 req/sec)`);
+          
           let roomsCreatedCount = 0;
+          let roomsFailedCount = 0;
+          const failedLessons: string[] = [];
           
           // Get student IDs for the original lesson
           const { data: originalStudents } = await supabase
@@ -214,7 +221,19 @@ serve(async (req) => {
               });
 
               if (roomError) {
-                console.error(`Failed to create LessonSpace room for lesson ${lesson.id}:`, roomError);
+                console.error(`❌ Failed to create LessonSpace room for lesson ${lesson.id}:`, roomError);
+                roomsFailedCount++;
+                failedLessons.push(lesson.id);
+                
+                // Track failed room creation in database
+                await supabase.from('failed_room_creations').insert({
+                  lesson_id: lesson.id,
+                  error_message: roomError.message || 'Unknown error',
+                  error_code: roomError.status || null,
+                  attempt_count: 1
+                });
+                
+                // Continue with next lesson
                 continue;
               }
 
@@ -223,13 +242,42 @@ serve(async (req) => {
                 roomsCreatedCount++;
               } else {
                 console.error(`❌ LessonSpace room creation failed for lesson ${lesson.id}:`, roomData);
+                roomsFailedCount++;
+                failedLessons.push(lesson.id);
+                
+                // Track failed room creation in database
+                await supabase.from('failed_room_creations').insert({
+                  lesson_id: lesson.id,
+                  error_message: roomData?.error || 'Room creation returned success: false',
+                  error_code: roomData?.status || null,
+                  attempt_count: 1
+                });
               }
             } catch (roomCreationError) {
               console.error(`❌ Error creating LessonSpace room for lesson ${lesson.id}:`, roomCreationError);
+              roomsFailedCount++;
+              failedLessons.push(lesson.id);
+              
+              // Track failed room creation in database
+              await supabase.from('failed_room_creations').insert({
+                lesson_id: lesson.id,
+                error_message: roomCreationError.message || 'Exception during room creation',
+                error_code: null,
+                attempt_count: 1
+              });
             }
+            
+            // Add 250ms delay between requests to respect LessonSpace rate limit (5 req/sec)
+            // This ensures we stay under the limit even with network jitter
+            await sleep(250);
           }
 
-          console.log(`Created LessonSpace rooms for ${roomsCreatedCount}/${insertedLessons.length} lessons`);
+          console.log(`📊 LessonSpace Room Creation Summary:`);
+          console.log(`   ✅ Success: ${roomsCreatedCount}/${insertedLessons.length}`);
+          console.log(`   ❌ Failed: ${roomsFailedCount}/${insertedLessons.length}`);
+          if (failedLessons.length > 0) {
+            console.log(`   📋 Failed lesson IDs:`, failedLessons);
+          }
 
           // Update the recurring group with new generation info
           const { error: updateError } = await supabase

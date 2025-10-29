@@ -6,6 +6,42 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Utility function for exponential backoff retry
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // If we get a 429 (rate limit), wait and retry with exponential backoff
+      if (response.status === 429) {
+        if (attempt < maxRetries) {
+          const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+          console.log(`⏱️ Rate limited (429). Waiting ${waitTime}ms before retry ${attempt}/${maxRetries}...`);
+          await sleep(waitTime);
+          continue;
+        }
+      }
+      
+      // If successful or non-retryable error, return response
+      return response;
+    } catch (error) {
+      lastError = error;
+      
+      if (attempt < maxRetries) {
+        const waitTime = Math.pow(2, attempt) * 1000;
+        console.log(`⚠️ Request failed (attempt ${attempt}/${maxRetries}). Retrying in ${waitTime}ms...`);
+        await sleep(waitTime);
+      }
+    }
+  }
+  
+  throw lastError || new Error('Max retries exceeded');
+}
+
 interface CreateRoomRequest {
   lessonId: string;
   title: string;
@@ -146,8 +182,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     console.log("Request Body:", JSON.stringify(tutorRequestBody, null, 2));
     console.log("================================");
 
-    // Create space with teacher as leader using the Launch endpoint
-    const tutorResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
+    // Create space with teacher as leader using the Launch endpoint with retry logic
+    const tutorResponse = await fetchWithRetry("https://api.thelessonspace.com/v2/spaces/launch/", {
       method: "POST",
       headers: {
         "Authorization": `Organisation ${lessonSpaceApiKey}`,
@@ -208,7 +244,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       console.log(`Creating Launch URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
 
       try {
-        const studentResponse = await fetch("https://api.thelessonspace.com/v2/spaces/launch/", {
+        const studentResponse = await fetchWithRetry("https://api.thelessonspace.com/v2/spaces/launch/", {
           method: "POST",
           headers: {
             "Authorization": `Organisation ${lessonSpaceApiKey}`,
