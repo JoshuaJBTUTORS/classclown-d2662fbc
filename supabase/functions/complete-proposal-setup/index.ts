@@ -84,7 +84,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Proposal completed successfully:', proposalId);
 
-    // Send notification email to Joshua
+    // Send notification emails to Joshua and Britney
     try {
       const Resend = (await import('npm:resend@2.0.0')).Resend;
       const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -126,6 +126,52 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
       `;
 
+      // Onboarding email template for Britney
+      const onboardingEmailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1e3a5f;">👋 New Customer to Onboard</h2>
+          <p>A new customer has completed their proposal and is ready for onboarding:</p>
+          
+          <div style="background-color: #f0f7ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #1e3a5f;">Customer Information</h3>
+            <p><strong>Parent Name:</strong> ${updatedProposal.recipient_name}</p>
+            <p><strong>Email:</strong> ${updatedProposal.recipient_email}</p>
+            <p><strong>Phone:</strong> ${updatedProposal.recipient_phone || 'Not provided'}</p>
+          </div>
+
+          <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #856404;">Lesson Package Details</h3>
+            <p><strong>Subject:</strong> ${updatedProposal.subject}</p>
+            <p><strong>Price per Lesson:</strong> £${updatedProposal.price_per_lesson}</p>
+            <p><strong>Payment Cycle:</strong> ${updatedProposal.payment_cycle}</p>
+            <p><strong>Scheduled Times:</strong> ${lessonTimesFormatted}</p>
+          </div>
+
+          <div style="background-color: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #0066cc;">Next Steps</h3>
+            <ul style="line-height: 1.8;">
+              <li>Welcome the customer and confirm onboarding process</li>
+              <li>Set up student accounts in the system</li>
+              <li>Schedule first lesson sessions</li>
+              <li>Assign appropriate tutor(s)</li>
+              <li>Send welcome materials and platform access</li>
+            </ul>
+          </div>
+
+          <div style="margin: 30px 0;">
+            <a href="https://classclowncrm.com/admin/proposals/${updatedProposal.id}/view" 
+               style="background-color: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              View Full Proposal & Details
+            </a>
+          </div>
+
+          <p style="color: #666; font-size: 14px; margin-top: 40px;">
+            This is an automated onboarding notification from the JB Tutors CRM system.
+          </p>
+        </div>
+      `;
+
+      // Send email to Joshua
       await resend.emails.send({
         from: 'JB Tutors CRM <enquiries@jb-tutors.com>',
         to: ['joshua@jb-tutors.com'],
@@ -134,8 +180,18 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       console.log('Admin notification email sent to Joshua');
+
+      // Send onboarding email to Britney
+      await resend.emails.send({
+        from: 'JB Tutors CRM <enquiries@jb-tutors.com>',
+        to: ['britney@jb-tutors.com'],
+        subject: 'New Customer to Onboard',
+        html: onboardingEmailHtml,
+      });
+
+      console.log('Onboarding notification email sent to Britney');
     } catch (emailError: any) {
-      console.error('Error sending admin notification email:', emailError);
+      console.error('Error sending admin notification emails:', emailError);
       // Don't throw - we don't want to fail the whole request if email fails
     }
 
