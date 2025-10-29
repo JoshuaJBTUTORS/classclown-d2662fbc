@@ -142,19 +142,6 @@ const LearningHubSidebar = () => {
         <Separator className="my-2" />
 
         {/* Footer */}
-        <SidebarFooter>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            asChild
-          >
-            <Link to="/">
-              <Home className="h-4 w-4 mr-2" />
-              Back to Home
-            </Link>
-          </Button>
-        </SidebarFooter>
       </SidebarContent>
 
       {/* Upgrade Modal */}
