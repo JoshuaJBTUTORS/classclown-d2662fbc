@@ -1247,6 +1247,50 @@ export type Database = {
         }
         Relationships: []
       }
+      failed_room_creations: {
+        Row: {
+          attempt_count: number | null
+          created_at: string | null
+          error_code: number | null
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          lesson_id: string
+          resolved: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          created_at?: string | null
+          error_code?: number | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          lesson_id: string
+          resolved?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          created_at?: string | null
+          error_code?: number | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          lesson_id?: string
+          resolved?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "failed_room_creations_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homework: {
         Row: {
           attachment_type: string | null
@@ -3608,7 +3652,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      failed_room_creations_summary: {
+        Row: {
+          avg_attempts_unresolved: number | null
+          last_failure_at: string | null
+          resolved_count: number | null
+          total_count: number | null
+          unresolved_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       advance_school_progress_cycle: { Args: never; Returns: undefined }
