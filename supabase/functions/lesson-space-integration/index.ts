@@ -9,8 +9,9 @@ const corsHeaders = {
 // Utility function for exponential backoff retry
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3, rid?: string): Promise<Response> {
   let lastError;
+  const prefix = rid ? `[${rid.substring(0, 8)}]` : '';
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -20,7 +21,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
       if (response.status === 429) {
         if (attempt < maxRetries) {
           const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-          console.log(`⏱️ Rate limited (429). Waiting ${waitTime}ms before retry ${attempt}/${maxRetries}...`);
+          console.log(`${prefix} ⏱️ Rate limited (429). Waiting ${waitTime}ms before retry ${attempt}/${maxRetries}...`);
           await sleep(waitTime);
           continue;
         }
@@ -33,7 +34,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
       
       if (attempt < maxRetries) {
         const waitTime = Math.pow(2, attempt) * 1000;
-        console.log(`⚠️ Request failed (attempt ${attempt}/${maxRetries}). Retrying in ${waitTime}ms...`);
+        console.log(`${prefix} ⚠️ Request failed (attempt ${attempt}/${maxRetries}). Retrying in ${waitTime}ms...`);
         await sleep(waitTime);
       }
     }
@@ -123,10 +124,16 @@ function generateSpaceId(lesson: any): string {
 
 async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
   const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY') || "832a4e97-e402-4757-8ba3-a8afb14941b2";
+  const rid = crypto.randomUUID();
+  let stage = "init";
+  let spaceId: string | undefined;
+  let external_status: number | undefined;
+  let external_body: string | undefined;
   
   try {
-    console.log("Creating Lesson Space room for lesson:", data.lessonId);
+    console.log(`[${rid.substring(0, 8)}] 🚀 Creating Lesson Space room | action: create-room | lessonId: ${data.lessonId}`);
     
+    stage = "fetch_lesson";
     // Get lesson details to determine if it's a group lesson and get tutor info
     const { data: lesson, error: lessonError } = await supabase
       .from("lessons")
@@ -142,16 +149,21 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       .single();
 
     if (lessonError || !lesson) {
+      console.error(`[${rid.substring(0, 8)}] ❌ Failed to fetch lesson | stage: ${stage} | error: ${lessonError?.message}`);
       throw new Error(`Failed to fetch lesson details: ${lessonError?.message}`);
     }
 
     if (!lesson.lesson_students || lesson.lesson_students.length === 0) {
+      console.error(`[${rid.substring(0, 8)}] ❌ No students found | stage: ${stage} | lessonId: ${data.lessonId}`);
       throw new Error("No students found for this lesson");
     }
 
+    console.log(`[${rid.substring(0, 8)}] 📊 Lesson data | is_group: ${lesson.is_group} | tutor: ${lesson.tutor.first_name} ${lesson.tutor.last_name} (${lesson.tutor.id}) | students: ${lesson.lesson_students.length}`);
+
+    stage = "generate_space_id";
     // Generate space ID based on new logic
-    const spaceId = generateSpaceId(lesson);
-    console.log("Generated space ID:", spaceId);
+    spaceId = generateSpaceId(lesson);
+    console.log(`[${rid.substring(0, 8)}] 🔑 Generated space ID: ${spaceId} | stage: ${stage}`);
 
     // Store all participant URLs
     const participantUrls = [];
@@ -177,10 +189,9 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       }
     };
 
-    console.log("=== TUTOR LAUNCH API REQUEST ===");
-    console.log("URL: https://api.thelessonspace.com/v2/spaces/launch/");
-    console.log("Request Body:", JSON.stringify(tutorRequestBody, null, 2));
-    console.log("================================");
+    stage = "tutor_launch";
+    const tutorRequestBodySanitized = { ...tutorRequestBody };
+    console.log(`[${rid.substring(0, 8)}] 📤 TUTOR LAUNCH REQUEST | stage: ${stage} | endpoint: https://api.thelessonspace.com/v2/spaces/launch/ | body: ${JSON.stringify(tutorRequestBodySanitized)}`);
 
     // Create space with teacher as leader using the Launch endpoint with retry logic
     const tutorResponse = await fetchWithRetry("https://api.thelessonspace.com/v2/spaces/launch/", {
@@ -190,22 +201,18 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(tutorRequestBody),
-    });
+    }, 3, rid);
 
     if (!tutorResponse.ok) {
-      const errorText = await tutorResponse.text();
-      console.error("=== TUTOR API ERROR ===");
-      console.error("Status:", tutorResponse.status);
-      console.error("Error Text:", errorText);
-      console.error("=====================");
-      throw new Error(`Failed to create space for tutor: ${tutorResponse.status} ${errorText}`);
+      external_status = tutorResponse.status;
+      external_body = await tutorResponse.text();
+      const truncatedBody = external_body.substring(0, 1000);
+      console.error(`[${rid.substring(0, 8)}] ❌ TUTOR LAUNCH FAILED | stage: ${stage} | status: ${external_status} | lessonId: ${data.lessonId} | spaceId: ${spaceId} | response: ${truncatedBody}`);
+      throw new Error(`Failed to create space for tutor: ${external_status} - ${truncatedBody}`);
     }
 
     const tutorSpaceData = await tutorResponse.json();
-    console.log("=== TUTOR SPACE CREATED ===");
-    console.log("Room ID:", tutorSpaceData.room_id);
-    console.log("Session ID:", tutorSpaceData.session_id);
-    console.log("========================");
+    console.log(`[${rid.substring(0, 8)}] ✅ TUTOR SPACE CREATED | room_id: ${tutorSpaceData.room_id} | session_id: ${tutorSpaceData.session_id} | client_url: ${tutorSpaceData.client_url ? 'present' : 'missing'}`);
 
     // Store tutor URL
     participantUrls.push({
@@ -216,8 +223,9 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       launch_url: tutorSpaceData.client_url
     });
 
+    stage = "student_launch";
     // 2. Now create Launch API URLs for all students
-    console.log("=== CREATING STUDENT LAUNCH URLS ===");
+    console.log(`[${rid.substring(0, 8)}] 📤 CREATING STUDENT LAUNCH URLS | stage: ${stage} | count: ${lesson.lesson_students.length}`);
     for (const lessonStudent of lesson.lesson_students) {
       const student = lessonStudent.student;
       
@@ -241,7 +249,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         }
       };
 
-      console.log(`Creating Launch URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
+      console.log(`[${rid.substring(0, 8)}] 🔄 Creating Launch URL for student: ${student.first_name} ${student.last_name} (ID: ${student.id})`);
 
       try {
         const studentResponse = await fetchWithRetry("https://api.thelessonspace.com/v2/spaces/launch/", {
@@ -251,11 +259,11 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(studentRequestBody),
-        });
+        }, 3, rid);
 
         if (studentResponse.ok) {
           const studentSpaceData = await studentResponse.json();
-          console.log(`✅ Student ${student.first_name} ${student.last_name} URL created successfully`);
+          console.log(`[${rid.substring(0, 8)}] ✅ Student ${student.first_name} ${student.last_name} URL created successfully`);
           
           // Store student URL
           participantUrls.push({
@@ -267,19 +275,21 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
           });
         } else {
           const errorText = await studentResponse.text();
-          console.error(`❌ Failed to create URL for student ${student.first_name} ${student.last_name}: ${studentResponse.status} ${errorText}`);
+          const truncatedError = errorText.substring(0, 500);
+          console.error(`[${rid.substring(0, 8)}] ❌ Failed to create URL for student ${student.first_name} ${student.last_name}: ${studentResponse.status} - ${truncatedError}`);
           // Continue with other students even if one fails
         }
       } catch (studentError) {
-        console.error(`❌ Error creating URL for student ${student.first_name} ${student.last_name}:`, studentError);
+        console.error(`[${rid.substring(0, 8)}] ❌ Error creating URL for student ${student.first_name} ${student.last_name}:`, studentError);
         // Continue with other students even if one fails
       }
     }
-    console.log("===================================");
+    console.log(`[${rid.substring(0, 8)}] 📊 Student URLs created: ${participantUrls.filter(p => p.participant_type === 'student').length}/${lesson.lesson_students.length}`);
 
+    stage = "db_upsert";
     // 3. Store all participant URLs in the database using UPSERT
     if (participantUrls.length > 0) {
-      console.log(`🔄 Upserting ${participantUrls.length} participant URLs into database`);
+      console.log(`[${rid.substring(0, 8)}] 🔄 Upserting ${participantUrls.length} participant URLs into database | stage: ${stage}`);
       const { error: urlsError } = await supabase
         .from("lesson_participant_urls")
         .upsert(participantUrls, { 
@@ -288,13 +298,14 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         });
 
       if (urlsError) {
-        console.error("Error upserting participant URLs:", urlsError);
+        console.error(`[${rid.substring(0, 8)}] ❌ Error upserting participant URLs | stage: ${stage} | error: ${urlsError.message}`);
         // Don't fail the entire operation for this
       } else {
-        console.log(`✅ Successfully upserted ${participantUrls.length} participant URLs in database`);
+        console.log(`[${rid.substring(0, 8)}] ✅ Successfully upserted ${participantUrls.length} participant URLs in database`);
       }
     }
 
+    stage = "lesson_update";
     // 4. Update the lesson with room details
     const { error: updateError } = await supabase
       .from("lessons")
@@ -307,11 +318,15 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       .eq("id", data.lessonId);
 
     if (updateError) {
-      console.error("Error updating lesson with room data:", updateError);
+      console.error(`[${rid.substring(0, 8)}] ❌ Error updating lesson with room data | stage: ${stage} | error: ${updateError.message}`);
       throw updateError;
     }
+    
+    console.log(`[${rid.substring(0, 8)}] ✅ Lesson updated successfully | stage: ${stage}`);
 
     const studentUrlsCount = participantUrls.filter(p => p.participant_type === 'student').length;
+    
+    console.log(`[${rid.substring(0, 8)}] 🎉 SUCCESS | roomId: ${tutorSpaceData.room_id} | spaceId: ${spaceId} | participantUrls: ${participantUrls.length} | studentUrls: ${studentUrlsCount}`);
     
     return new Response(
       JSON.stringify({
@@ -323,18 +338,27 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         sessionId: tutorSpaceData.session_id,
         participantUrlsCreated: participantUrls.length,
         studentUrlsCreated: studentUrlsCount,
-        message: `Lesson space created/updated with authenticated URLs for tutor and ${studentUrlsCount} students.`
+        message: `Lesson space created/updated with authenticated URLs for tutor and ${studentUrlsCount} students.`,
+        rid: rid
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error creating Lesson Space room:", error);
+    console.error(`[${rid.substring(0, 8)}] ❌ FAILED | stage: ${stage} | lessonId: ${data.lessonId} | spaceId: ${spaceId || 'N/A'} | error: ${error.message}`);
+    
+    // Return 200 with structured error so caller can access details
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        error: error.message,
+        rid: rid,
+        stage: stage,
+        lessonId: data.lessonId,
+        spaceId: spaceId,
+        external_status: external_status,
+        external_body: external_body ? external_body.substring(0, 1000) : undefined
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 }

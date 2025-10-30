@@ -321,7 +321,7 @@ export const backfillMissingParticipantUrls = async () => {
     try {
       const studentIds = lesson.lesson_students.map((ls: any) => ls.student_id);
       
-      const { error: integrationError } = await supabase.functions.invoke('lesson-space-integration', {
+      const { data: roomData, error: integrationError } = await supabase.functions.invoke('lesson-space-integration', {
         body: {
           action: 'create-room',
           lessonId: lesson.id
@@ -329,9 +329,16 @@ export const backfillMissingParticipantUrls = async () => {
       });
 
       if (integrationError) {
-        console.error(`Failed to backfill URLs for lesson ${lesson.id}:`, integrationError);
+        console.error(`Failed to backfill URLs for lesson ${lesson.id} - invoke error`);
+        console.error(`Error object:`, JSON.stringify(integrationError));
+        console.error(`Message: ${integrationError.message}, Status: ${integrationError.status}`);
+      } else if (roomData && !roomData.success) {
+        console.error(`Failed to backfill URLs for lesson ${lesson.id} - structured error`);
+        console.error(`rid: ${roomData.rid}, stage: ${roomData.stage}, external_status: ${roomData.external_status}`);
+        console.error(`external_body: ${roomData.external_body || 'N/A'}`);
+        console.error(`error: ${roomData.error}`);
       } else {
-        console.log(`✅ Backfilled participant URLs for lesson: ${lesson.title}`);
+        console.log(`✅ Backfilled participant URLs for lesson: ${lesson.title} | rid: ${roomData?.rid || 'N/A'}`);
         processedCount++;
       }
     } catch (error) {

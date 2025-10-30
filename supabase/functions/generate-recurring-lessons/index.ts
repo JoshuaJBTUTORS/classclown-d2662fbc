@@ -220,7 +220,9 @@ serve(async (req) => {
               });
 
               if (roomError) {
-                console.error(`❌ Failed to create LessonSpace room for lesson ${lesson.id}:`, roomError);
+                console.error(`   ❌ Failed to create room for lesson ${lesson.id} - invoke error`);
+                console.error(`   Error: ${JSON.stringify(roomError)}`);
+                console.error(`   Message: ${roomError.message}, Status: ${roomError.status}`);
                 roomsFailedCount++;
                 failedLessons.push(lesson.id);
                 
@@ -237,20 +239,30 @@ serve(async (req) => {
               }
 
               if (roomData && roomData.success) {
-                console.log(`✅ LessonSpace room and participant URLs created successfully for lesson ${lesson.id}`);
+                console.log(`✅ LessonSpace room and participant URLs created successfully for lesson ${lesson.id} | rid: ${roomData.rid || 'N/A'}`);
                 roomsCreatedCount++;
-              } else {
-                console.error(`❌ LessonSpace room creation failed for lesson ${lesson.id}:`, roomData);
+              } else if (roomData && !roomData.success) {
+                console.error(`   ❌ Room creation failed - structured error for lesson ${lesson.id}`);
+                console.error(`   rid: ${roomData.rid}, stage: ${roomData.stage}, external_status: ${roomData.external_status}`);
+                console.error(`   external_body: ${roomData.external_body || 'N/A'}`);
+                console.error(`   error: ${roomData.error}`);
                 roomsFailedCount++;
                 failedLessons.push(lesson.id);
+                
+                const detailedError = `Stage: ${roomData.stage || 'unknown'} | Status: ${roomData.external_status || 'N/A'} | ${roomData.error || 'Unknown'} | Body: ${roomData.external_body ? roomData.external_body.substring(0, 200) : 'N/A'}`;
                 
                 // Track failed room creation in database
                 await supabase.from('failed_room_creations').insert({
                   lesson_id: lesson.id,
-                  error_message: roomData?.error || 'Room creation returned success: false',
-                  error_code: roomData?.status || null,
+                  error_message: detailedError,
+                  error_code: roomData.external_status || null,
                   attempt_count: 1
                 });
+              } else {
+                console.error(`   ❌ Unexpected response format for lesson ${lesson.id}`);
+                console.error(`   roomData: ${JSON.stringify(roomData)}`);
+                roomsFailedCount++;
+                failedLessons.push(lesson.id);
               }
             } catch (roomCreationError) {
               console.error(`❌ Error creating LessonSpace room for lesson ${lesson.id}:`, roomCreationError);

@@ -100,7 +100,13 @@ serve(async (req) => {
         });
 
         if (roomError) {
-          console.error(`   ❌ Failed to create room: ${roomError.message}`);
+          console.error(`   ❌ Failed to create room - invoke error`);
+          console.error(`   Error object: ${JSON.stringify(roomError)}`);
+          console.error(`   Message: ${roomError.message}`);
+          console.error(`   Status: ${roomError.status}`);
+          console.error(`   Name: ${roomError.name}`);
+          if (roomError.stack) console.error(`   Stack: ${roomError.stack}`);
+          
           failCount++;
           failedLessonIds.push(lesson.id);
 
@@ -121,30 +127,47 @@ serve(async (req) => {
         }
 
         if (roomData && roomData.success) {
-          console.log(`   ✅ Room created successfully`);
+          console.log(`   ✅ Room created successfully | rid: ${roomData.rid || 'N/A'}`);
           successCount++;
 
           // Mark as resolved if it was previously failed
           await supabase.from('failed_room_creations')
             .update({ resolved: true })
             .eq('lesson_id', lesson.id);
-        } else {
-          console.error(`   ❌ Room creation failed: ${roomData?.error || 'Unknown error'}`);
+        } else if (roomData && !roomData.success) {
+          // Structured error from lesson-space-integration
+          console.error(`   ❌ Room creation failed - structured error`);
+          console.error(`   rid: ${roomData.rid || 'N/A'}`);
+          console.error(`   stage: ${roomData.stage || 'N/A'}`);
+          console.error(`   external_status: ${roomData.external_status || 'N/A'}`);
+          console.error(`   external_body: ${roomData.external_body || 'N/A'}`);
+          console.error(`   lessonId: ${roomData.lessonId || lesson.id}`);
+          console.error(`   spaceId: ${roomData.spaceId || 'N/A'}`);
+          console.error(`   error: ${roomData.error || 'Unknown error'}`);
+          
           failCount++;
           failedLessonIds.push(lesson.id);
+
+          // Store more detailed error message
+          const detailedError = `Stage: ${roomData.stage || 'unknown'} | Status: ${roomData.external_status || 'N/A'} | ${roomData.error || 'Unknown'} | Body: ${roomData.external_body ? roomData.external_body.substring(0, 200) : 'N/A'}`;
 
           // Update failed_room_creations table
           await supabase.from('failed_room_creations')
             .upsert({
               lesson_id: lesson.id,
-              error_message: roomData?.error || 'Room creation returned success: false',
-              error_code: roomData?.status || null,
+              error_message: detailedError,
+              error_code: roomData.external_status || null,
               attempt_count: 1,
               last_attempt_at: new Date().toISOString(),
               resolved: false
             }, {
               onConflict: 'lesson_id'
             });
+        } else {
+          console.error(`   ❌ Unexpected response format`);
+          console.error(`   roomData: ${JSON.stringify(roomData)}`);
+          failCount++;
+          failedLessonIds.push(lesson.id);
         }
       } catch (error) {
         console.error(`   ❌ Exception processing lesson ${lesson.id}:`, error);
