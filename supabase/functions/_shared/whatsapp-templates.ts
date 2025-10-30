@@ -179,23 +179,20 @@ JB Tutors Team
   proposalNotification: (
     recipientName: string,
     subject: string,
-    pricePerLesson: number,
-    paymentCycle: string,
     proposalUrl: string
   ): string => {
     return `🎓 *Lesson Proposal from JB Tutors*
 
 Hi ${recipientName}! 👋
 
-Thank you for your interest in our tutoring services. We've prepared a personalized lesson proposal for you:
+Thank you for joining the trial lesson! We've prepared a personalized lesson proposal for you:
 
 📚 *Subject:* ${subject}
-💰 *Price:* £${pricePerLesson.toFixed(2)} ${paymentCycle.toLowerCase()}
 
 To view your full proposal and get started:
 👉 ${proposalUrl}
 
-✅ Review the details
+✅ Review all the details
 ✅ Agree to terms
 ✅ Set up your payment method
 

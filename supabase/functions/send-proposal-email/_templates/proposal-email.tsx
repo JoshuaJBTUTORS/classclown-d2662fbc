@@ -15,16 +15,12 @@ interface ProposalEmailProps {
   recipientName: string;
   proposalUrl: string;
   subject: string;
-  pricePerLesson: number;
-  paymentCycle: string;
 }
 
 export const ProposalEmail = ({
   recipientName,
   proposalUrl,
   subject,
-  pricePerLesson,
-  paymentCycle,
 }: ProposalEmailProps) => (
   <Html>
     <Head />

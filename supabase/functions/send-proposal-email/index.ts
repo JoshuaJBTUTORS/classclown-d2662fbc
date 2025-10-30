@@ -63,8 +63,6 @@ const handler = async (req: Request): Promise<Response> => {
         recipientName,
         proposalUrl,
         subject: proposal.subject,
-        pricePerLesson: Number(proposal.price_per_lesson),
-        paymentCycle: proposal.payment_cycle,
       })
     );
 
@@ -91,8 +89,6 @@ const handler = async (req: Request): Promise<Response> => {
       const whatsappText = WhatsAppTemplates.proposalNotification(
         recipientName,
         proposal.subject,
-        Number(proposal.price_per_lesson),
-        proposal.payment_cycle,
         proposalUrl
       );
 
