@@ -94,9 +94,8 @@ serve(async (req) => {
         // Call lesson-space-integration to create room
         const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
           body: {
-            action: 'create_room',
-            lesson_id: lesson.id,
-            student_ids: studentIds
+            action: 'create-room',
+            lessonId: lesson.id
           }
         });
 

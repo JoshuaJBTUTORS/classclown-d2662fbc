@@ -323,9 +323,8 @@ export const backfillMissingParticipantUrls = async () => {
       
       const { error: integrationError } = await supabase.functions.invoke('lesson-space-integration', {
         body: {
-          action: 'create_room',
-          lesson_id: lesson.id,
-          student_ids: studentIds
+          action: 'create-room',
+          lessonId: lesson.id
         }
       });
 
