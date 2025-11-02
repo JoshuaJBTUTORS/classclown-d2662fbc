@@ -24,7 +24,17 @@ interface Conversation {
   status: string;
 }
 
-export const CleoChat: React.FC = () => {
+interface CleoChatProps {
+  initialTopic?: string;
+  initialYearGroup?: string;
+  contextMessage?: string;
+}
+
+export const CleoChat: React.FC<CleoChatProps> = ({
+  initialTopic,
+  initialYearGroup,
+  contextMessage
+}) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -48,6 +58,61 @@ export const CleoChat: React.FC = () => {
     if (!user) return;
 
     try {
+      // If initialTopic is provided, find or create a conversation for it
+      if (initialTopic) {
+        const { data: conversations, error: convError } = await supabase
+          .from('cleo_conversations')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('topic', initialTopic)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (convError) throw convError;
+
+        if (conversations) {
+          // Use existing conversation for this topic
+          setConversation(conversations);
+          
+          const { data: msgData, error: msgError } = await supabase
+            .from('cleo_messages')
+            .select('*')
+            .eq('conversation_id', conversations.id)
+            .order('created_at', { ascending: true });
+
+          if (msgError) throw msgError;
+          setMessages((msgData || []).map(msg => ({
+            ...msg,
+            role: msg.role as 'user' | 'assistant' | 'system'
+          })));
+        } else {
+          // Create new conversation for this topic
+          const { data: newConv, error: createError } = await supabase
+            .from('cleo_conversations')
+            .insert({
+              user_id: user.id,
+              topic: initialTopic,
+              year_group: initialYearGroup,
+              status: 'active'
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          
+          setConversation(newConv);
+          
+          // Send context message if provided
+          if (contextMessage) {
+            setTimeout(() => handleSendMessage(contextMessage), 500);
+          }
+        }
+        return;
+      }
+
+      // No initial topic - load most recent active conversation
       const { data: convData, error: convError } = await supabase
         .from('cleo_conversations')
         .select('*')

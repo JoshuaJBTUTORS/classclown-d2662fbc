@@ -259,14 +259,14 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
                   <div className="grid grid-cols-5 gap-8 xl:gap-12">
                     {learningStops.slice(5, 10).map((stop) => (
                       <div key={stop.id} className="relative z-10">
-                        <SimplePathStop
-                          stopNumber={stop.stopNumber}
-                          title={stop.title}
-                          status={stop.status}
-                          progress={stop.progress}
-                          onClick={() => handleStopClick(stop.id)}
-                          isPersonalized={stop.isPersonalized}
-                        />
+                      <SimplePathStop
+                        stopNumber={stop.stopNumber}
+                        title={stop.title}
+                        status={stop.status}
+                        progress={stop.progress}
+                        onClick={() => handleStopClick(stop.id)}
+                        isPersonalized={stop.isPersonalized}
+                      />
                       </div>
                     ))}
                   </div>

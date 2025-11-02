@@ -24,8 +24,10 @@ import {
   BookOpen,
   CheckCircle,
   Play,
-  Trophy
+  Trophy,
+  Bot
 } from 'lucide-react';
+import { CleoChat } from '@/components/cleo/CleoChat';
 
 const ModuleDetail = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
@@ -35,6 +37,7 @@ const ModuleDetail = () => {
   const { toast } = useToast();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [showAssessmentDialog, setShowAssessmentDialog] = useState(false);
+  const [learningMode, setLearningMode] = useState<'elearning' | 'cleo'>('elearning');
 
   const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -341,9 +344,43 @@ const ModuleDetail = () => {
               </CardHeader>
             </Card>
 
+            {/* Learning Mode Selector */}
+            <Card className="mb-6">
+              <CardContent className="p-4">
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    variant={learningMode === 'elearning' ? 'default' : 'outline'}
+                    onClick={() => setLearningMode('elearning')}
+                    className="flex-1 max-w-xs"
+                  >
+                    <BookOpen className="h-5 w-5 mr-2" />
+                    E-Learning
+                  </Button>
+                  <Button
+                    variant={learningMode === 'cleo' ? 'default' : 'outline'}
+                    onClick={() => setLearningMode('cleo')}
+                    className="flex-1 max-w-xs"
+                  >
+                    <Bot className="h-5 w-5 mr-2" />
+                    Ask Cleo
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {lessons.length > 0 && (currentLesson || showAssessmentTimeScreen) ? (
               <div className="space-y-6">
-                {showAssessmentTimeScreen ? (
+                {learningMode === 'cleo' ? (
+                  <Card>
+                    <CardContent className="p-0 h-[600px]">
+                      <CleoChat
+                        initialTopic={currentModule.title}
+                        initialYearGroup={course.subject.includes('GCSE') ? 'GCSE' : course.subject.includes('A-Level') ? 'A-Level' : undefined}
+                        contextMessage={`Hi! I'd like to learn about ${currentModule.title}`}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : showAssessmentTimeScreen ? (
                   <AssessmentTimeScreen 
                     onBeginAssessment={handleBeginAssessment}
                     moduleTitle={currentModule.title}
