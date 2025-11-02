@@ -53,22 +53,46 @@ serve(async (req) => {
     let conversation;
     let messages: Message[] = [];
 
-    // If no conversationId, create a new conversation
+    // If no conversationId, try to reuse existing active conversation
     if (!conversationId) {
-      const { data: newConversation, error: convError } = await supabase
+      // Try reusing latest active conversation for this user
+      const { data: existingActive } = await supabase
         .from('cleo_conversations')
-        .insert({
-          user_id: user.id,
-          topic: topic || null,
-          year_group: yearGroup || null,
-          learning_goal: learningGoal || null,
-          status: 'active'
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (convError) throw convError;
-      conversation = newConversation;
+      if (existingActive) {
+        conversation = existingActive;
+
+        // Load message history
+        const { data: messageHistory } = await supabase
+          .from('cleo_messages')
+          .select('role, content')
+          .eq('conversation_id', conversation.id)
+          .order('created_at', { ascending: true });
+
+        messages = (messageHistory || []) as Message[];
+      } else {
+        // Create a new conversation
+        const { data: newConversation, error: convError } = await supabase
+          .from('cleo_conversations')
+          .insert({
+            user_id: user.id,
+            topic: topic || null,
+            year_group: yearGroup || null,
+            learning_goal: learningGoal || null,
+            status: 'active'
+          })
+          .select()
+          .single();
+
+        if (convError) throw convError;
+        conversation = newConversation;
+      }
     } else {
       // Get existing conversation
       const { data: existingConv, error: convError } = await supabase
@@ -115,7 +139,7 @@ serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: 'Extract learning information from the user message. If information is present, return it in the specified format.'
+                content: 'Extract learning information from the user message (which may be a short fragment like "Year 6" or "surds"). If information is present, return it in the specified format.'
               },
               {
                 role: 'user',
@@ -195,20 +219,35 @@ serve(async (req) => {
 
     if (!conversation.topic || !conversation.year_group) {
       // Discovery phase
-      const hasAllInfo = conversation.topic && conversation.year_group;
-      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor.${hasAllInfo ? ' The student has just provided all the information you need.' : ' A student wants to learn something new.'}
+      const known = [
+        conversation.topic ? `topic: ${conversation.topic}` : null,
+        conversation.year_group ? `year group: ${conversation.year_group}` : null,
+        conversation.learning_goal ? `learning goal: ${conversation.learning_goal}` : null
+      ].filter(Boolean).join(' • ') || 'none yet';
 
-Your goal in this initial conversation is to understand:
-1. What specific topic they want to learn${conversation.topic ? ' ✓ Got: ' + conversation.topic : ' (be precise)'}
-2. Their year group or education level${conversation.year_group ? ' ✓ Got: ' + conversation.year_group : ' (e.g., Year 7, GCSE, A-Level, University)'}
-3. Their learning goal${conversation.learning_goal ? ' ✓ Got: ' + conversation.learning_goal : ' (exam preparation, understanding concepts, homework help, curiosity)'}
+      const missing = [
+        !conversation.topic ? 'topic' : null,
+        !conversation.year_group ? 'year group' : null,
+        !conversation.learning_goal ? 'learning goal' : null
+      ].filter(Boolean).join(', ');
 
-${hasAllInfo ? 
-  'All information gathered! Acknowledge what you learned and tell them you\'re ready to start teaching. Then begin with the first concept.' :
-  'Ask these questions naturally and conversationally, one at a time. Be warm and encouraging.'
-}
+      const isFirstAssistantTurn = !messages.some(m => m.role === 'assistant');
 
-Keep your responses concise and friendly. Use emojis sparingly (max 1-2 per message).`;
+      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor.
+
+Known info: ${known}
+Missing: ${missing || 'none'}
+
+CRITICAL RULES:
+- If this is NOT the first assistant message, do NOT greet again and do NOT re-introduce the topic.
+- Ask for exactly ONE missing item at a time (topic, year group, or learning goal). If none are missing, immediately start teaching.
+- Never repeat a question the student already answered. Acknowledge their answer and move forward.
+- Keep replies concise (1–3 short sentences), and use at most 1 emoji.
+
+${isFirstAssistantTurn 
+  ? 'Start warmly, then ask for the first missing item. If nothing is missing, start teaching immediately.' 
+  : 'Skip greeting. Ask only for the next missing item. If nothing is missing, transition to teaching immediately.'
+}`.trim();
     } else {
       // Teaching phase
       systemPrompt = `You are Cleo, an expert AI tutor helping a ${conversation.year_group} student learn about "${conversation.topic}".
@@ -216,12 +255,14 @@ Keep your responses concise and friendly. Use emojis sparingly (max 1-2 per mess
 Learning Goal: ${conversation.learning_goal || 'General understanding'}
 
 Teaching Guidelines:
+- Do NOT restart or re-introduce the topic. Continue from the last assistant message.
 - Break down concepts into small, digestible chunks (2-3 sentences maximum before asking a question)
 - Use clear, simple language appropriate for their level
 - Provide relevant examples and analogies
 - Ask questions frequently to check understanding (every 2-3 concepts)
 - If they answer incorrectly, provide gentle correction and re-explain using a different approach
 - If they answer correctly, praise them and move to the next concept
+- Do NOT re-ask the same check-question once answered. Progress to the next concept.
 - Use emojis sparingly for encouragement (✓, 🌟, etc.)
 - Be patient, supportive, and encouraging
 - Never give direct answers to homework - guide them to discover answers themselves
@@ -233,7 +274,7 @@ Current teaching strategy:
 3. Based on their answer, either move forward or review
 4. Build on previous concepts progressively
 
-Remember: Small steps, frequent questions, lots of encouragement!`;
+Remember: Small steps, frequent questions, lots of encouragement! Keep progressing forward.`;
     }
 
     // Build messages array for OpenAI
