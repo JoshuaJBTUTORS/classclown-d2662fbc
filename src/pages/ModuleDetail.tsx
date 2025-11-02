@@ -26,7 +26,8 @@ import {
   CheckCircle,
   Play,
   Trophy,
-  Bot
+  Bot,
+  Mic
 } from 'lucide-react';
 import { CleoChat } from '@/components/cleo/CleoChat';
 
@@ -365,11 +366,11 @@ const ModuleDetail = () => {
                       setShowModeDialog(false);
                     }}
                   >
-                    <Bot className="h-12 w-12 text-primary" />
+                    <Mic className="h-12 w-12 text-primary" />
                     <div className="text-center">
-                      <div className="font-semibold text-lg mb-1">Ask Cleo</div>
+                      <div className="font-semibold text-lg mb-1">Start Learning with Cleo</div>
                       <div className="text-sm text-muted-foreground font-normal">
-                        Get personalized AI tutoring with voice or text
+                        Interactive voice tutoring session about this lesson
                       </div>
                     </div>
                   </Button>
@@ -394,23 +395,22 @@ const ModuleDetail = () => {
               </DialogContent>
             </Dialog>
 
-            {/* Small Mode Toggle (only shown after initial selection) */}
-            {learningMode !== null && (
+            {/* Small Mode Toggle (only shown in e-learning mode) */}
+            {learningMode === 'elearning' && (
               <div className="flex justify-end mb-4">
                 <div className="flex gap-2 bg-muted/50 p-1 rounded-lg">
                   <Button
                     size="sm"
-                    variant={learningMode === 'cleo' ? 'default' : 'ghost'}
+                    variant="ghost"
                     onClick={() => setLearningMode('cleo')}
                     className="gap-2"
                   >
-                    <Bot className="h-4 w-4" />
-                    Ask Cleo
+                    <Mic className="h-4 w-4" />
+                    Voice Tutor
                   </Button>
                   <Button
                     size="sm"
-                    variant={learningMode === 'elearning' ? 'default' : 'ghost'}
-                    onClick={() => setLearningMode('elearning')}
+                    variant="default"
                     className="gap-2"
                   >
                     <BookOpen className="h-4 w-4" />
@@ -428,7 +428,8 @@ const ModuleDetail = () => {
                       <CleoChat
                         initialTopic={currentModule.title}
                         initialYearGroup={course.subject.includes('GCSE') ? 'GCSE' : course.subject.includes('A-Level') ? 'A-Level' : undefined}
-                        contextMessage={`Hi! I'd like to learn about ${currentModule.title}`}
+                        contextMessage={currentLesson ? `I'm studying: ${currentModule.title}. Current lesson: ${currentLesson.title}. ${currentLesson.description || ''}` : `I'm studying: ${currentModule.title}`}
+                        forceVoiceMode={true}
                       />
                     </CardContent>
                   </Card>

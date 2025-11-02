@@ -246,13 +246,21 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       <div className="flex-1 flex flex-col items-center justify-center p-8">
         {connectionState === 'idle' ? (
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold">Voice Chat with Cleo</h2>
-            <p className="text-muted-foreground">
-              Start a voice conversation for a natural learning experience
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6 mx-auto">
+              <Mic className="w-12 h-12 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold">
+              {topic ? `Learn ${topic}` : 'Voice Chat with Cleo'}
+            </h2>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              {topic 
+                ? `Press "Start Learning" to begin an interactive voice tutoring session about ${topic}.`
+                : 'Start a voice conversation for a natural learning experience'
+              }
             </p>
             <Button onClick={connect} size="lg" className="mt-4">
               <Mic className="w-5 h-5 mr-2" />
-              Start Voice Chat
+              {topic ? 'Start Learning' : 'Start Voice Chat'}
             </Button>
           </div>
         ) : (

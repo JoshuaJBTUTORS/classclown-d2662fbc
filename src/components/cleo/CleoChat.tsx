@@ -28,19 +28,21 @@ interface CleoChatProps {
   initialTopic?: string;
   initialYearGroup?: string;
   contextMessage?: string;
+  forceVoiceMode?: boolean;
 }
 
 export const CleoChat: React.FC<CleoChatProps> = ({
   initialTopic,
   initialYearGroup,
-  contextMessage
+  contextMessage,
+  forceVoiceMode = false
 }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [mode, setMode] = useState<'text' | 'voice'>('text');
+  const [mode, setMode] = useState<'text' | 'voice'>(forceVoiceMode ? 'voice' : 'text');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -293,15 +295,17 @@ export const CleoChat: React.FC<CleoChatProps> = ({
               <p className="text-sm text-muted-foreground">Voice Mode</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setMode('text')}>
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Switch to Text
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleNewConversation}>
-              New Topic
-            </Button>
-          </div>
+          {!forceVoiceMode && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setMode('text')}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Switch to Text
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNewConversation}>
+                New Topic
+              </Button>
+            </div>
+          )}
         </div>
         <CleoVoiceChat
           conversationId={conversation?.id}
@@ -315,7 +319,7 @@ export const CleoChat: React.FC<CleoChatProps> = ({
     );
   }
 
-  if (messages.length === 0) {
+  if (!forceVoiceMode && messages.length === 0) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between p-4 border-b bg-card">
@@ -331,6 +335,33 @@ export const CleoChat: React.FC<CleoChatProps> = ({
           </Button>
         </div>
         <CleoWelcome onSendMessage={handleSendMessage} />
+      </div>
+    );
+  }
+
+  if (forceVoiceMode) {
+    // In force voice mode, skip text UI entirely
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between p-4 border-b bg-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Bot className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold">Cleo AI Tutor</h2>
+              <p className="text-sm text-muted-foreground">Voice Mode</p>
+            </div>
+          </div>
+        </div>
+        <CleoVoiceChat
+          conversationId={conversation?.id}
+          topic={conversation?.topic || undefined}
+          yearGroup={conversation?.year_group || undefined}
+          onConversationCreated={(id) => {
+            setConversation(prev => prev ? { ...prev, id } : null);
+          }}
+        />
       </div>
     );
   }
