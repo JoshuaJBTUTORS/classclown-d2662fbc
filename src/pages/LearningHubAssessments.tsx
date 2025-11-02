@@ -17,7 +17,6 @@ import RevisionSetupWizard from '@/components/learningHub/RevisionSetupWizard';
 import RevisionCalendar from '@/components/learningHub/RevisionCalendar';
 import { revisionCalendarService } from '@/services/revisionCalendarService';
 import { Badge } from '@/components/ui/badge';
-import { BulkCreateAssessmentsDialog } from '@/components/learningHub/BulkCreateAssessmentsDialog';
 
 const LearningHubAssessments = () => {
   const { userRole, user } = useAuth();
@@ -27,7 +26,6 @@ const LearningHubAssessments = () => {
   const [selectedCourseName, setSelectedCourseName] = useState<string>('');
   const [isGeneratingImprovements, setIsGeneratingImprovements] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
-  const [showBulkCreateDialog, setShowBulkCreateDialog] = useState(false);
 
   // Ensure only authenticated users can access this data
   const isAuthenticated = !!user;
@@ -255,16 +253,6 @@ const LearningHubAssessments = () => {
           </p>
         </div>
         <div className="ml-auto flex gap-2">
-          {(userRole === 'admin' || userRole === 'owner') && (
-            <Button
-              onClick={() => setShowBulkCreateDialog(true)}
-              variant="default"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Bulk Create Assessments
-            </Button>
-          )}
           <Button
             onClick={handleGenerateMissingImprovements}
             disabled={isGeneratingImprovements}
@@ -526,17 +514,9 @@ const LearningHubAssessments = () => {
              </>
            )}
          </TabsContent>
-       </Tabs>
-
-       <BulkCreateAssessmentsDialog
-         open={showBulkCreateDialog}
-         onOpenChange={setShowBulkCreateDialog}
-         onSuccess={() => {
-           refetchTopics();
-         }}
-       />
-     </div>
-   );
- };
+        </Tabs>
+      </div>
+    );
+  };
  
  export default LearningHubAssessments;
