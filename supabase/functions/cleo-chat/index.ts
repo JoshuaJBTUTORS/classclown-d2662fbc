@@ -101,20 +101,112 @@ serve(async (req) => {
         content: message
       });
 
+    // Extract learning information if in discovery phase
+    if (!conversation.topic || !conversation.year_group) {
+      try {
+        const extractionResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              {
+                role: 'system',
+                content: 'Extract learning information from the user message. If information is present, return it in the specified format.'
+              },
+              {
+                role: 'user',
+                content: `User message: "${message}"\n\nPrevious context: topic=${conversation.topic || 'none'}, year_group=${conversation.year_group || 'none'}, learning_goal=${conversation.learning_goal || 'none'}`
+              }
+            ],
+            tools: [{
+              type: 'function',
+              function: {
+                name: 'extract_learning_info',
+                description: 'Extract topic, year group, and learning goal from user message',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    topic: { 
+                      type: 'string', 
+                      description: 'The specific subject or topic (e.g., "surds", "photosynthesis", "World War 2")' 
+                    },
+                    year_group: { 
+                      type: 'string', 
+                      description: 'Education level (e.g., "Year 7", "GCSE", "A-Level", "University")' 
+                    },
+                    learning_goal: { 
+                      type: 'string', 
+                      description: 'Why they want to learn (e.g., "exam preparation", "homework help", "understanding concepts")' 
+                    }
+                  }
+                }
+              }
+            }],
+            tool_choice: { type: 'function', function: { name: 'extract_learning_info' } }
+          }),
+        });
+
+        if (extractionResponse.ok) {
+          const extractionData = await extractionResponse.json();
+          const toolCall = extractionData.choices?.[0]?.message?.tool_calls?.[0];
+          
+          if (toolCall) {
+            const extracted = JSON.parse(toolCall.function.arguments);
+            
+            // Update conversation with any newly extracted information
+            const updates: any = {};
+            if (extracted.topic && !conversation.topic) {
+              updates.topic = extracted.topic;
+              conversation.topic = extracted.topic;
+            }
+            if (extracted.year_group && !conversation.year_group) {
+              updates.year_group = extracted.year_group;
+              conversation.year_group = extracted.year_group;
+            }
+            if (extracted.learning_goal && !conversation.learning_goal) {
+              updates.learning_goal = extracted.learning_goal;
+              conversation.learning_goal = extracted.learning_goal;
+            }
+            
+            // Save to database
+            if (Object.keys(updates).length > 0) {
+              await supabase
+                .from('cleo_conversations')
+                .update(updates)
+                .eq('id', conversation.id);
+              
+              console.log('Updated conversation with:', updates);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error extracting info:', error);
+        // Continue with normal flow even if extraction fails
+      }
+    }
+
     // Determine conversation phase and build system prompt
     const messageCount = messages.length;
     let systemPrompt = '';
 
-    if (messageCount === 0 || !conversation.topic || !conversation.year_group) {
+    if (!conversation.topic || !conversation.year_group) {
       // Discovery phase
-      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. A student wants to learn something new.
+      const hasAllInfo = conversation.topic && conversation.year_group;
+      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor.${hasAllInfo ? ' The student has just provided all the information you need.' : ' A student wants to learn something new.'}
 
 Your goal in this initial conversation is to understand:
-1. What specific topic they want to learn (be precise)
-2. Their year group or education level (e.g., Year 7, GCSE, A-Level, University)
-3. Their learning goal (exam preparation, understanding concepts, homework help, curiosity)
+1. What specific topic they want to learn${conversation.topic ? ' ✓ Got: ' + conversation.topic : ' (be precise)'}
+2. Their year group or education level${conversation.year_group ? ' ✓ Got: ' + conversation.year_group : ' (e.g., Year 7, GCSE, A-Level, University)'}
+3. Their learning goal${conversation.learning_goal ? ' ✓ Got: ' + conversation.learning_goal : ' (exam preparation, understanding concepts, homework help, curiosity)'}
 
-Ask these questions naturally and conversationally, one at a time. Be warm and encouraging. Once you have all the information, acknowledge it and tell them you're ready to start teaching.
+${hasAllInfo ? 
+  'All information gathered! Acknowledge what you learned and tell them you\'re ready to start teaching. Then begin with the first concept.' :
+  'Ask these questions naturally and conversationally, one at a time. Be warm and encouraging.'
+}
 
 Keep your responses concise and friendly. Use emojis sparingly (max 1-2 per message).`;
     } else {
