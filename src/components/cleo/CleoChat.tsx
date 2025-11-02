@@ -109,8 +109,10 @@ export const CleoChat: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session');
 
+      const FUNCTIONS_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://sjxbxkpegcnnfjbsxazo.supabase.co').replace(/\/+$/, '');
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cleo-chat`,
+        `${FUNCTIONS_BASE_URL}/functions/v1/cleo-chat`,
         {
           method: 'POST',
           headers: {
@@ -126,7 +128,9 @@ export const CleoChat: React.FC = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorBody = await response.text().catch(() => '');
+        console.error('cleo-chat error:', { status: response.status, body: errorBody });
+        throw new Error(`Failed to send message (${response.status})`);
       }
 
       // Get conversation ID from response header
