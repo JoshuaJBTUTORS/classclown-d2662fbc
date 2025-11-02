@@ -65,8 +65,7 @@ Deno.serve(async (req) => {
         .from('cleo_conversations')
         .insert({
           user_id: user.id,
-          status: 'active',
-          mode: 'voice'
+          status: 'active'
         })
         .select()
         .single();
