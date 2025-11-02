@@ -71,7 +71,13 @@ export const getCompletedLessons = async (filters: {
     const defaultToDate = new Date();
     
     const fromDate = filters.dateRange.from || defaultFromDate;
-    const toDate = filters.dateRange.to || defaultToDate;
+    let toDate = filters.dateRange.to || defaultToDate;
+
+    // Set toDate to end of day (23:59:59.999) to include all lessons on that date
+    if (filters.dateRange.to) {
+      toDate = new Date(filters.dateRange.to);
+      toDate.setHours(23, 59, 59, 999);
+    }
 
     // Handle empty filters - if no tutors/subjects selected, don't apply filter
     const shouldFilterTutors = filters.selectedTutors.length > 0;
