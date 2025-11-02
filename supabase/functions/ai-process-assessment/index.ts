@@ -42,6 +42,16 @@ serve(async (req) => {
       throw new Error(`Failed to fetch assessment: ${assessmentError?.message}`);
     }
 
+    // Fall back to ai_extraction_data if parameters not in request
+    const finalTopic = topic || assessment.ai_extraction_data?.topic;
+    const finalPrompt = prompt || assessment.ai_extraction_data?.prompt;
+    const finalNumberOfQuestions = numberOfQuestions || assessment.ai_extraction_data?.numberOfQuestions;
+
+    // Validate we have the data from either source
+    if (!finalTopic || !finalPrompt || !finalNumberOfQuestions) {
+      throw new Error("Missing required parameters: topic, prompt, or numberOfQuestions");
+    }
+
     // Update status to processing
     await supabase
       .from('ai_assessments')
@@ -52,14 +62,9 @@ serve(async (req) => {
       .eq('id', assessmentId);
 
     console.log("Processing assessment:", assessment.title);
-    console.log("Topic:", topic);
-    console.log("Number of questions:", numberOfQuestions);
-    console.log("Prompt:", prompt);
-
-    // Check if we have the required AI generation parameters
-    if (!topic || !prompt || !numberOfQuestions) {
-      throw new Error("Missing required parameters: topic, prompt, or numberOfQuestions");
-    }
+    console.log("Topic:", finalTopic);
+    console.log("Number of questions:", finalNumberOfQuestions);
+    console.log("Prompt:", finalPrompt);
 
     // Use OpenAI to extract questions from the provided text
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -68,7 +73,7 @@ serve(async (req) => {
     }
 
     const generationPrompt = `
-    You are an expert assessment creator. Generate ${numberOfQuestions} exam questions for the topic: "${topic}".
+    You are an expert assessment creator. Generate ${finalNumberOfQuestions} exam questions for the topic: "${finalTopic}".
     
     Assessment Details:
     - Subject: ${assessment.subject || 'Not specified'}
@@ -78,7 +83,7 @@ serve(async (req) => {
     - Time Limit: ${assessment.time_limit_minutes || 'Not specified'} minutes
     
     Generation Instructions:
-    ${prompt}
+    ${finalPrompt}
     
     Please generate and format as JSON with this exact structure:
     {
@@ -97,7 +102,7 @@ serve(async (req) => {
     }
     
     Requirements:
-    - Generate exactly ${numberOfQuestions} unique, high-quality questions
+    - Generate exactly ${finalNumberOfQuestions} unique, high-quality questions
     - Question types must be ONLY one of: short_answer, extended_writing
     - DO NOT generate multiple choice, calculation, draw, or any other question types - they are not supported
     - Use short_answer for questions requiring brief written responses (1-3 sentences)
@@ -225,29 +230,8 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in ai-process-assessment function:", error);
     
-    // Update the assessment status to failed
-    if (req.method === "POST") {
-      try {
-        const requestBody = await req.json();
-        const assessmentId = requestBody.assessmentId;
-        if (assessmentId) {
-          const supabase = createClient(
-            Deno.env.get("SUPABASE_URL") || "",
-            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-          );
-          
-          await supabase
-            .from('ai_assessments')
-            .update({ 
-              processing_status: 'failed',
-              processing_error: error.message
-            })
-            .eq('id', assessmentId);
-        }
-      } catch (updateError) {
-        console.error("Failed to update assessment status:", updateError);
-      }
-    }
+    // Note: assessmentId is already available from the outer scope
+    // No need to read the request body again
 
     return new Response(
       JSON.stringify({ error: error.message }),
