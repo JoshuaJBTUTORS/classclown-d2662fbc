@@ -91,3 +91,12 @@ export const isPeriodInFuture = (periodStart: Date): boolean => {
 export const formatPeriodDisplay = (start: Date, end: Date): string => {
   return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
 };
+
+/**
+ * Calculates the next payment date based on the end of the date range
+ * Payment is made on the 1st of the month following the period end
+ */
+export const calculatePaymentDateFromRange = (endDate: Date): Date => {
+  const nextMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
+  return nextMonth;
+};

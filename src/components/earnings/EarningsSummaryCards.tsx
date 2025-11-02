@@ -10,7 +10,6 @@ interface EarningsSummaryCardsProps {
   remainingAmount: number;
   periodStart: Date;
   periodEnd: Date;
-  period: 'weekly' | 'monthly';
 }
 
 export const EarningsSummaryCards = ({
@@ -19,43 +18,34 @@ export const EarningsSummaryCards = ({
   completedLessons,
   remainingAmount,
   periodStart,
-  periodEnd,
-  period
+  periodEnd
 }: EarningsSummaryCardsProps) => {
   const daysRemaining = Math.max(differenceInDays(periodEnd, new Date()), 0);
   const dailyTargetRemaining = daysRemaining > 0 ? remainingAmount / daysRemaining : 0;
-  
-  // For monthly periods, calculate payment date and days until payment
-  const nextPaymentDate = period === 'monthly' ? getNextPaymentDate(periodEnd) : null;
-  const daysUntilPayment = nextPaymentDate ? Math.max(differenceInDays(nextPaymentDate, new Date()), 0) : 0;
 
   const cards = [
     {
-      title: 'Current Period',
-      description: period === 'monthly' 
-        ? `Ends last Friday • Payment ${nextPaymentDate ? format(nextPaymentDate, 'MMM d') : ''}`
-        : `${format(periodStart, 'MMM d')} - ${format(periodEnd, 'MMM d, yyyy')}`,
+      title: 'Current Period Earnings',
+      description: `${format(periodStart, 'MMM d')} - ${format(periodEnd, 'MMM d, yyyy')}`,
       value: `£${currentEarnings.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: CalendarDays,
       color: 'text-primary'
     },
     {
       title: 'Lessons Completed',
-      description: `This ${period}`,
+      description: 'In selected period',
       value: completedLessons.toString(),
       icon: Target,
       color: 'text-success'
     },
     {
-      title: period === 'monthly' ? 'Days Until Payment' : 'Days Remaining',
-      description: period === 'monthly' 
-        ? (nextPaymentDate ? `Payment on ${format(nextPaymentDate, 'MMM d')}` : 'Payment pending')
-        : (remainingAmount > 0 
-            ? `£${dailyTargetRemaining.toLocaleString('en-GB', { minimumFractionDigits: 2 })} needed daily`
-            : 'Goal achieved!'),
-      value: period === 'monthly' ? daysUntilPayment.toString() : daysRemaining.toString(),
+      title: 'Days Remaining',
+      description: remainingAmount > 0 
+        ? `£${dailyTargetRemaining.toLocaleString('en-GB', { minimumFractionDigits: 2 })} needed daily`
+        : 'Goal achieved!',
+      value: daysRemaining.toString(),
       icon: Clock,
-      color: (period === 'monthly' ? daysUntilPayment : daysRemaining) <= 7 ? 'text-destructive' : 'text-muted-foreground'
+      color: daysRemaining <= 7 ? 'text-destructive' : 'text-muted-foreground'
     }
   ];
 

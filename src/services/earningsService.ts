@@ -19,7 +19,6 @@ export interface EarningsData {
   completedLessons: number;
   progressPercentage: number;
   remainingAmount: number;
-  period: 'weekly' | 'monthly';
   periodStart: Date;
   periodEnd: Date;
 }
@@ -84,11 +83,11 @@ export const setTutorEarningGoal = async (
 
 export const calculateTutorEarnings = async (
   tutorId: string,
-  period: 'weekly' | 'monthly' = 'monthly',
-  referenceDate: Date = new Date()
+  dateRange: { from: Date; to: Date }
 ): Promise<number> => {
   try {
-    const { start: periodStart, end: periodEnd } = getEarningsPeriod(referenceDate, period);
+    const periodStart = dateRange.from;
+    const periodEnd = dateRange.to;
 
     // Get tutor's hourly rates
     const { data: tutorData, error: tutorError } = await supabase
@@ -134,15 +133,15 @@ export const calculateTutorEarnings = async (
 
 export const getTutorEarningsData = async (
   tutorId: string,
-  period: 'weekly' | 'monthly' = 'monthly',
-  referenceDate: Date = new Date()
+  dateRange: { from: Date; to: Date }
 ): Promise<EarningsData> => {
   try {
-    const { start: periodStart, end: periodEnd } = getEarningsPeriod(referenceDate, period);
+    const periodStart = dateRange.from;
+    const periodEnd = dateRange.to;
 
     // Get all data in parallel - fetch completed lessons only once
     const [goal, tutorData, completedLessons] = await Promise.all([
-      getTutorEarningGoal(tutorId, period),
+      getTutorEarningGoal(tutorId, 'monthly'),
       supabase
         .from('tutors')
         .select('normal_hourly_rate, absence_hourly_rate')
@@ -190,7 +189,6 @@ export const getTutorEarningsData = async (
       completedLessons: completedLessons.length,
       progressPercentage,
       remainingAmount,
-      period,
       periodStart,
       periodEnd
     };
@@ -202,7 +200,6 @@ export const getTutorEarningsData = async (
       completedLessons: 0,
       progressPercentage: 0,
       remainingAmount: 0,
-      period,
       periodStart: new Date(),
       periodEnd: new Date()
     };

@@ -5,7 +5,6 @@ interface EarningsProgressWheelProps {
   currentEarnings: number;
   goalAmount: number;
   progressPercentage: number;
-  period: 'weekly' | 'monthly';
   className?: string;
 }
 
@@ -13,7 +12,6 @@ export const EarningsProgressWheel = ({
   currentEarnings, 
   goalAmount, 
   progressPercentage, 
-  period,
   className 
 }: EarningsProgressWheelProps) => {
   const radius = 80;
@@ -76,7 +74,7 @@ export const EarningsProgressWheel = ({
               {Math.round(displayPercentage)}%
             </div>
             <div className="text-xs text-muted-foreground uppercase tracking-wide">
-              {period}
+              Progress
             </div>
           </div>
         </div>
