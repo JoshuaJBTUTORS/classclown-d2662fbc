@@ -5,6 +5,13 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Log API key presence for debugging (without exposing the value)
+if (!OPENAI_API_KEY) {
+  console.error("FATAL: OPENAI_API_KEY environment variable is NOT set");
+} else {
+  console.log(`✅ OPENAI_API_KEY present (length: ${OPENAI_API_KEY.length}, starts with: ${OPENAI_API_KEY.substring(0, 7)}...)`);
+}
+
 interface RealtimeSession {
   conversationId: string;
   userId: string;
@@ -128,6 +135,19 @@ Deno.serve(async (req) => {
         const message = JSON.parse(event.data);
         console.log("OpenAI event:", message.type);
 
+      // Handle error events from OpenAI
+      if (message.type === 'error') {
+        console.error("🚨 OpenAI ERROR EVENT:", JSON.stringify(message, null, 2));
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'server_error',
+            details: message,
+            error: message.error?.message || message.message || 'Unknown OpenAI error'
+          }));
+        }
+        return;
+      }
+
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
         const systemPrompt = conversation.topic && conversation.year_group
@@ -210,11 +230,15 @@ Deno.serve(async (req) => {
     };
 
     openAISocket.onerror = (error) => {
-      console.error("OpenAI socket error:", error);
+      console.error("🚨 OpenAI WebSocket ERROR:", error);
+      console.error("Error type:", error?.type);
+      console.error("Error target:", error?.target);
+      console.error("Full error object:", JSON.stringify(error, null, 2));
+      
       if (clientSocket.readyState === WebSocket.OPEN) {
         clientSocket.send(JSON.stringify({
           type: 'error',
-          error: 'Connection to AI service failed'
+          error: 'Connection to AI service failed - check Edge Function logs for details'
         }));
       }
     };

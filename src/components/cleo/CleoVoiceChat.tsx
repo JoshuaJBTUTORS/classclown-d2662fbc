@@ -113,6 +113,15 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             setIsSpeaking(false);
             break;
 
+          case 'server_error':
+            console.error('🚨 Detailed Server Error:', data.details);
+            toast({
+              title: "OpenAI Error",
+              description: data.error || "Unknown error from AI service",
+              variant: "destructive",
+            });
+            break;
+
           case 'error':
             console.error('Server error:', data.error);
             toast({
