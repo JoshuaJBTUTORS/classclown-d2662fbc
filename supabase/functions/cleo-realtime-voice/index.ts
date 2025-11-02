@@ -82,31 +82,18 @@ Deno.serve(async (req) => {
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
-    // Connect to OpenAI Realtime API with correct Deno WebSocket syntax
-    let openAISocket: WebSocket;
-    try {
-      openAISocket = new WebSocket(
-        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
-        [],
-        {
-          headers: {
-            "Authorization": `Bearer ${OPENAI_API_KEY}`,
-            "OpenAI-Beta": "realtime=v1"
-          }
+    // Connect to OpenAI Realtime API using Deno's connectWebSocket for header support
+    console.log("Connecting to OpenAI Realtime API...");
+    const { socket: openAISocket } = await Deno.connectWebSocket(
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+      {
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "OpenAI-Beta": "realtime=v1"
         }
-      );
-      console.log("OpenAI WebSocket connection initiated");
-    } catch (error) {
-      console.error("Failed to create OpenAI WebSocket:", error);
-      clientSocket.onopen = () => {
-        clientSocket.send(JSON.stringify({
-          type: 'error',
-          error: 'Failed to connect to AI service'
-        }));
-        clientSocket.close();
-      };
-      return response;
-    }
+      }
+    );
+    console.log("OpenAI WebSocket connection initiated with authentication headers");
 
     const session: RealtimeSession = {
       conversationId: conversation.id,
