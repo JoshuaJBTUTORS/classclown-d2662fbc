@@ -171,10 +171,30 @@ serve(async (req) => {
 
     const openAIData = await openAIResponse.json();
     console.log("OpenAI response received");
+    
+    // Log full response structure for debugging
+    console.log("Full OpenAI response:", JSON.stringify(openAIData));
 
     let extractedData;
     try {
       const aiContent = openAIData.choices[0].message.content;
+      
+      // Check if content is empty or null
+      if (!aiContent || aiContent.trim() === '') {
+        console.error("Empty AI response received");
+        console.error("OpenAI response structure:", JSON.stringify(openAIData));
+        
+        // Check finish_reason to understand why
+        const finishReason = openAIData.choices[0]?.finish_reason;
+        if (finishReason === 'length') {
+          throw new Error("AI response was truncated due to token limit. Try reducing numberOfQuestions or increasing max_completion_tokens.");
+        } else if (finishReason === 'content_filter') {
+          throw new Error("AI response was blocked by content filter. Try rephrasing the prompt.");
+        } else {
+          throw new Error(`Empty AI response received. Finish reason: ${finishReason || 'unknown'}`);
+        }
+      }
+      
       console.log("AI response content:", aiContent);
       
       // Repair and clean the JSON response
@@ -182,7 +202,7 @@ serve(async (req) => {
       extractedData = JSON.parse(repairedContent);
     } catch (parseError) {
       console.error("Error parsing AI response:", parseError);
-      console.error("Raw content:", openAIData.choices[0].message.content);
+      console.error("Raw content:", openAIData.choices[0]?.message?.content || 'NO CONTENT');
       throw new Error(`Failed to parse AI response: ${parseError.message}`);
     }
 
@@ -261,30 +281,29 @@ serve(async (req) => {
     console.error("Error in ai-process-assessment function:", error);
     
     // Try to update assessment status to failed
+    // Note: assessmentId is available from the outer scope (line 41)
     try {
-      const { assessmentId } = await req.json();
-      if (assessmentId) {
-        const supabase = createClient(
-          Deno.env.get("SUPABASE_URL") || "",
-          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-        );
-        
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL") || "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
+      );
+      
+      // assessmentId is from the outer scope, extracted at line 41
+      if (typeof assessmentId !== 'undefined') {
         await supabase
           .from('ai_assessments')
           .update({ 
             processing_status: 'failed',
-            processing_error: error.message
+            processing_error: error.message || 'Unknown error occurred'
           })
           .eq('id', assessmentId);
       }
     } catch (updateError) {
       console.error("Failed to update assessment status:", updateError);
-      // If we can't parse the request again, assessmentId is lost
-      // This is acceptable since we're already in an error state
     }
 
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Unknown error occurred' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
