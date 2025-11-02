@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
           session: {
             modalities: ['text', 'audio'],
             instructions: systemPrompt,
-            voice: 'alloy',
+            voice: 'ballad',
             input_audio_format: 'pcm16',
             output_audio_format: 'pcm16',
             input_audio_transcription: {
@@ -177,6 +177,14 @@ Deno.serve(async (req) => {
         
         isSessionConfigured = true;
         console.log("Session configured");
+      }
+
+      // Cancel AI response when user starts speaking (interruption)
+      if (message.type === 'input_audio_buffer.speech_started') {
+        console.log("User started speaking - cancelling AI response");
+        openAISocket.send(JSON.stringify({
+          type: 'response.cancel'
+        }));
       }
 
       // Save student transcript to database

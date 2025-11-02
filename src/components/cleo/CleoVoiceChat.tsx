@@ -93,6 +93,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
           case 'input_audio_buffer.speech_started':
             setIsListening(true);
+            setIsSpeaking(false);
+            playerRef.current?.stop();
             break;
 
           case 'input_audio_buffer.speech_stopped':
