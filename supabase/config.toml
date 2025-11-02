@@ -85,6 +85,9 @@ verify_jwt = false
 [functions.lesson-space-integration]
 verify_jwt = false
 
+[functions.bulk-process-assessments]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328

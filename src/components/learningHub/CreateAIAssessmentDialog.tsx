@@ -200,67 +200,45 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
 
     const values = form.getValues();
     setProcessingStatus({ processing: 'processing' });
-    setBulkProgress({ current: 0, total: csvRows.length, failed: 0 });
 
     const { data: user } = await supabase.auth.getUser();
-    let failed = 0;
 
-    for (let i = 0; i < csvRows.length; i++) {
-      const row = csvRows[i];
-      setBulkProgress({ current: i + 1, total: csvRows.length, failed });
-
-      try {
-        // Create assessment
-        const { data: assessment, error: insertError } = await supabase
-          .from('ai_assessments')
-          .insert({
-            title: values.subject ? `${values.subject} - ${row.topic}` : row.topic,
-            description: row.description || values.description,
+    try {
+      // Call the new edge function with all CSV data
+      const { data, error } = await supabase.functions.invoke('bulk-process-assessments', {
+        body: {
+          csvRows,
+          commonFields: {
             subject: values.subject,
             exam_board: values.exam_board,
             year: values.year,
             paper_type: values.paper_type,
             time_limit_minutes: values.time_limit_minutes,
             total_marks: values.total_marks,
-            questions_text: row.prompt,
-            processing_status: 'pending',
-            is_ai_generated: true,
-            created_by: user.user?.id,
-            status: 'draft',
-            ai_extraction_data: {
-              numberOfQuestions: values.numberOfQuestions,
-              topic: row.topic,
-              prompt: row.prompt
-            },
-          })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-
-        // Trigger AI processing
-        await supabase.functions.invoke('ai-process-assessment', {
-          body: {
-            assessmentId: assessment.id,
             numberOfQuestions: values.numberOfQuestions,
-            topic: row.topic,
-            prompt: row.prompt
-          }
-        });
-      } catch (error) {
-        console.error(`Failed to create assessment for topic: ${row.topic}`, error);
-        failed++;
-        setBulkProgress({ current: i + 1, total: csvRows.length, failed });
-      }
-    }
+          },
+          userId: user.user?.id,
+        }
+      });
 
-    setProcessingStatus({ processing: 'completed' });
-    toast({
-      title: "Bulk creation completed",
-      description: `Created ${csvRows.length - failed} assessments successfully${failed > 0 ? `, ${failed} failed` : ''}`,
-    });
-    onSuccess();
-    handleClose();
+      if (error) throw error;
+
+      setProcessingStatus({ processing: 'completed' });
+      toast({
+        title: "Bulk job started!",
+        description: `${data.created} assessments are being created in the background. You can continue using the app.`,
+      });
+      onSuccess();
+      handleClose();
+    } catch (error: any) {
+      console.error('Failed to start bulk job:', error);
+      setProcessingStatus({ processing: 'error' });
+      toast({
+        title: "Error starting bulk job",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusIcon = (status: string) => {
