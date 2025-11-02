@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.5';
+import { WebSocket as WSClient } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -82,9 +83,9 @@ Deno.serve(async (req) => {
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
-    // Connect to OpenAI Realtime API using Deno's connectWebSocket for header support
+    // Connect to OpenAI Realtime API using WebSocket client that supports custom headers
     console.log("Connecting to OpenAI Realtime API...");
-    const { socket: openAISocket } = await Deno.connectWebSocket(
+    const openAISocket = new WSClient(
       "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
       {
         headers: {
