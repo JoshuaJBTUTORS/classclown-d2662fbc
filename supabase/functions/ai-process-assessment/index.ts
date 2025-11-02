@@ -7,6 +7,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Repair common JSON formatting issues
+function repairJSON(content: string): string {
+  // Remove markdown code blocks
+  let cleaned = content.replace(/```json\n?|\n?```/g, '').trim();
+  
+  // Fix unescaped quotes within string values
+  // This handles cases like "text": "Define the term "population" in..."
+  // by escaping the inner quotes
+  const lines = cleaned.split('\n');
+  const repairedLines = lines.map(line => {
+    // Match lines with key-value pairs
+    const match = line.match(/^(\s*"[^"]+"\s*:\s*")(.*)("[,]?)$/);
+    if (match) {
+      const [, prefix, value, suffix] = match;
+      // Escape unescaped quotes in the value portion
+      const repairedValue = value.replace(/(?<!\\)"/g, '\\"');
+      return prefix + repairedValue + suffix;
+    }
+    return line;
+  });
+  
+  return repairedLines.join('\n');
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -124,11 +148,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'o3-2025-04-16',
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert assessment creator specializing in generating high-quality exam questions. Always return valid JSON.'
+            content: 'You are an expert assessment creator specializing in generating high-quality exam questions. Always return valid JSON with properly escaped quotes.'
           },
           {
             role: 'user',
@@ -153,11 +177,12 @@ serve(async (req) => {
       const aiContent = openAIData.choices[0].message.content;
       console.log("AI response content:", aiContent);
       
-      // Clean up the JSON response (remove markdown code blocks if present)
-      const cleanedContent = aiContent.replace(/```json\n?|\n?```/g, '').trim();
-      extractedData = JSON.parse(cleanedContent);
+      // Repair and clean the JSON response
+      const repairedContent = repairJSON(aiContent);
+      extractedData = JSON.parse(repairedContent);
     } catch (parseError) {
       console.error("Error parsing AI response:", parseError);
+      console.error("Raw content:", openAIData.choices[0].message.content);
       throw new Error(`Failed to parse AI response: ${parseError.message}`);
     }
 
@@ -167,6 +192,11 @@ serve(async (req) => {
     }
 
     console.log(`Generated ${extractedData.questions.length} questions`);
+    
+    // Warn if we got fewer questions than expected
+    if (extractedData.questions.length < finalNumberOfQuestions) {
+      console.warn(`Expected ${finalNumberOfQuestions} questions but got ${extractedData.questions.length}`);
+    }
 
     // Store the questions in the database
     for (let i = 0; i < extractedData.questions.length; i++) {
@@ -230,8 +260,28 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in ai-process-assessment function:", error);
     
-    // Note: assessmentId is already available from the outer scope
-    // No need to read the request body again
+    // Try to update assessment status to failed
+    try {
+      const { assessmentId } = await req.json();
+      if (assessmentId) {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL") || "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
+        );
+        
+        await supabase
+          .from('ai_assessments')
+          .update({ 
+            processing_status: 'failed',
+            processing_error: error.message
+          })
+          .eq('id', assessmentId);
+      }
+    } catch (updateError) {
+      console.error("Failed to update assessment status:", updateError);
+      // If we can't parse the request again, assessmentId is lost
+      // This is acceptable since we're already in an error state
+    }
 
     return new Response(
       JSON.stringify({ error: error.message }),
