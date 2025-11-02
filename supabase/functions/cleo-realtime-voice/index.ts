@@ -76,16 +76,31 @@ Deno.serve(async (req) => {
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
-    // Connect to OpenAI Realtime API
-    const openAISocket = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
-      {
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "OpenAI-Beta": "realtime=v1"
+    // Connect to OpenAI Realtime API with correct Deno WebSocket syntax
+    let openAISocket: WebSocket;
+    try {
+      openAISocket = new WebSocket(
+        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+        [],
+        {
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "OpenAI-Beta": "realtime=v1"
+          }
         }
-      }
-    );
+      );
+      console.log("OpenAI WebSocket connection initiated");
+    } catch (error) {
+      console.error("Failed to create OpenAI WebSocket:", error);
+      clientSocket.onopen = () => {
+        clientSocket.send(JSON.stringify({
+          type: 'error',
+          error: 'Failed to connect to AI service'
+        }));
+        clientSocket.close();
+      };
+      return response;
+    }
 
     const session: RealtimeSession = {
       conversationId: conversation.id,
@@ -103,13 +118,15 @@ Deno.serve(async (req) => {
       console.log("Connected to OpenAI Realtime API");
       clientSocket.send(JSON.stringify({
         type: 'connection.status',
-        status: 'connected'
+        status: 'connected',
+        conversationId: conversation.id
       }));
     };
 
     openAISocket.onmessage = async (event) => {
-      const message = JSON.parse(event.data);
-      console.log("OpenAI event:", message.type);
+      try {
+        const message = JSON.parse(event.data);
+        console.log("OpenAI event:", message.type);
 
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
@@ -184,15 +201,22 @@ Deno.serve(async (req) => {
       }
 
       // Forward all events to client
-      clientSocket.send(event.data);
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.send(event.data);
+      }
+      } catch (error) {
+        console.error("Error processing OpenAI message:", error);
+      }
     };
 
     openAISocket.onerror = (error) => {
       console.error("OpenAI socket error:", error);
-      clientSocket.send(JSON.stringify({
-        type: 'error',
-        error: 'Connection to AI service failed'
-      }));
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.send(JSON.stringify({
+          type: 'error',
+          error: 'Connection to AI service failed'
+        }));
+      }
     };
 
     openAISocket.onclose = () => {
@@ -207,8 +231,14 @@ Deno.serve(async (req) => {
 
     clientSocket.onmessage = (event) => {
       // Forward client messages to OpenAI
-      if (openAISocket.readyState === WebSocket.OPEN) {
-        openAISocket.send(event.data);
+      try {
+        if (openAISocket.readyState === WebSocket.OPEN) {
+          openAISocket.send(event.data);
+        } else {
+          console.warn("OpenAI socket not ready, message dropped");
+        }
+      } catch (error) {
+        console.error("Error forwarding message to OpenAI:", error);
       }
     };
 
