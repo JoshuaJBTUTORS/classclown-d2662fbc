@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import CourseCard from '@/components/learningHub/CourseCard';
 import SubscriptionManager from '@/components/learningHub/SubscriptionManager';
 import LiveTutoringUpgradeModal from '@/components/learningHub/LiveTutoringUpgradeModal';
-import { BookOpen, Brain, Calendar, TrendingUp, Video, Sparkles } from 'lucide-react';
+import { BookOpen, Brain, Calendar, TrendingUp, Video, Sparkles, Bot } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,7 +130,26 @@ const LearningHubDashboard = () => {
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
+              <Bot className="h-5 w-5 text-primary" />
+              AI Tutor (Cleo)
+            </CardTitle>
+            <CardDescription>
+              Learn anything with personalized AI tutoring
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link to="/learning-hub/cleo">
+                Start Learning
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-green-600" />
               My Courses
             </CardTitle>
             <CardDescription>
@@ -138,7 +157,7 @@ const LearningHubDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full">
+            <Button asChild variant="outline" className="w-full">
               <Link to="/learning-hub/my-courses">
                 View My Courses
               </Link>
@@ -183,29 +202,10 @@ const LearningHubDashboard = () => {
             </Button>
           </CardContent>
         </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              Revision Calendar
-            </CardTitle>
-            <CardDescription>
-              Plan and schedule your study sessions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/learning-hub/revision">
-                Plan Study Time
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Featured Courses */}
-      <div>
+      <div className="space-y-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Featured Courses</h2>
           <Button asChild variant="outline">

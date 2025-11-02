@@ -88,6 +88,9 @@ verify_jwt = false
 [functions.bulk-process-assessments]
 verify_jwt = true
 
+[functions.cleo-chat]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328

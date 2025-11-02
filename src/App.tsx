@@ -38,6 +38,7 @@ import BlogManagement from './pages/BlogManagement';
 import BlogEdit from './pages/BlogEdit';
 import MainLayout from './components/layout/MainLayout';
 import LearningHubDashboard from './pages/LearningHubDashboard';
+import LearningHubCleo from './pages/LearningHubCleo';
 import LearningHubMyCourses from './pages/LearningHubMyCourses';
 import LearningHubSettings from './pages/LearningHubSettings';
 import LearningHubRevision from './pages/LearningHubRevision';
@@ -393,6 +394,7 @@ function App() {
                   }
                 >
                   <Route index element={<LearningHubDashboard />} />
+                  <Route path="cleo" element={<LearningHubCleo />} />
                   <Route path="courses" element={<LearningHub />} />
                   <Route path="library" element={<LearningHub />} />
                   <Route path="my-courses" element={<LearningHubMyCourses />} />

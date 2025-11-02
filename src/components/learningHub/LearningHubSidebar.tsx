@@ -13,6 +13,7 @@ import {
   Settings,
   Video,
   Lock,
+  Bot,
 } from 'lucide-react';
 import LiveTutoringUpgradeModal from './LiveTutoringUpgradeModal';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,11 @@ const navigationItems = [
     href: '/learning-hub',
     icon: LayoutDashboard,
     exact: true
+  },
+  {
+    title: 'AI Tutor (Cleo)',
+    href: '/learning-hub/cleo',
+    icon: Bot
   },
   {
     title: 'My Courses',

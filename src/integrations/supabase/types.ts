@@ -676,6 +676,112 @@ export type Database = {
         }
         Relationships: []
       }
+      cleo_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          learning_goal: string | null
+          status: string
+          topic: string | null
+          updated_at: string
+          user_id: string
+          year_group: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          learning_goal?: string | null
+          status?: string
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+          year_group?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          learning_goal?: string | null
+          status?: string
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+          year_group?: string | null
+        }
+        Relationships: []
+      }
+      cleo_learning_progress: {
+        Row: {
+          concept_name: string
+          conversation_id: string
+          created_at: string
+          id: string
+          questions_asked: number
+          questions_correct: number
+          understanding_level: number
+          updated_at: string
+        }
+        Insert: {
+          concept_name: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          questions_asked?: number
+          questions_correct?: number
+          understanding_level: number
+          updated_at?: string
+        }
+        Update: {
+          concept_name?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          questions_asked?: number
+          questions_correct?: number
+          understanding_level?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleo_learning_progress_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleo_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleo_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_calendar: {
         Row: {
           assigned_tutor_id: string | null

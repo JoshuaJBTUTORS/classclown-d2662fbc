@@ -1,0 +1,241 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.5';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+interface Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+interface ChatRequest {
+  conversationId?: string;
+  message: string;
+  topic?: string;
+  yearGroup?: string;
+  learningGoal?: string;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Get auth token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    // Create Supabase client with user's token
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Get user from JWT
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      throw new Error('Invalid user token');
+    }
+
+    const { conversationId, message, topic, yearGroup, learningGoal }: ChatRequest = await req.json();
+
+    let conversation;
+    let messages: Message[] = [];
+
+    // If no conversationId, create a new conversation
+    if (!conversationId) {
+      const { data: newConversation, error: convError } = await supabase
+        .from('cleo_conversations')
+        .insert({
+          user_id: user.id,
+          topic: topic || null,
+          year_group: yearGroup || null,
+          learning_goal: learningGoal || null,
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (convError) throw convError;
+      conversation = newConversation;
+    } else {
+      // Get existing conversation
+      const { data: existingConv, error: convError } = await supabase
+        .from('cleo_conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (convError) throw convError;
+      conversation = existingConv;
+
+      // Get message history
+      const { data: messageHistory, error: msgError } = await supabase
+        .from('cleo_messages')
+        .select('role, content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (msgError) throw msgError;
+      messages = messageHistory as Message[];
+    }
+
+    // Store user message
+    await supabase
+      .from('cleo_messages')
+      .insert({
+        conversation_id: conversation.id,
+        role: 'user',
+        content: message
+      });
+
+    // Determine conversation phase and build system prompt
+    const messageCount = messages.length;
+    let systemPrompt = '';
+
+    if (messageCount === 0 || !conversation.topic || !conversation.year_group) {
+      // Discovery phase
+      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. A student wants to learn something new.
+
+Your goal in this initial conversation is to understand:
+1. What specific topic they want to learn (be precise)
+2. Their year group or education level (e.g., Year 7, GCSE, A-Level, University)
+3. Their learning goal (exam preparation, understanding concepts, homework help, curiosity)
+
+Ask these questions naturally and conversationally, one at a time. Be warm and encouraging. Once you have all the information, acknowledge it and tell them you're ready to start teaching.
+
+Keep your responses concise and friendly. Use emojis sparingly (max 1-2 per message).`;
+    } else {
+      // Teaching phase
+      systemPrompt = `You are Cleo, an expert AI tutor helping a ${conversation.year_group} student learn about "${conversation.topic}".
+
+Learning Goal: ${conversation.learning_goal || 'General understanding'}
+
+Teaching Guidelines:
+- Break down concepts into small, digestible chunks (2-3 sentences maximum before asking a question)
+- Use clear, simple language appropriate for their level
+- Provide relevant examples and analogies
+- Ask questions frequently to check understanding (every 2-3 concepts)
+- If they answer incorrectly, provide gentle correction and re-explain using a different approach
+- If they answer correctly, praise them and move to the next concept
+- Use emojis sparingly for encouragement (✓, 🌟, etc.)
+- Be patient, supportive, and encouraging
+- Never give direct answers to homework - guide them to discover answers themselves
+- Keep responses concise and focused
+
+Current teaching strategy:
+1. Explain one concept clearly
+2. Ask a question to check understanding
+3. Based on their answer, either move forward or review
+4. Build on previous concepts progressively
+
+Remember: Small steps, frequent questions, lots of encouragement!`;
+    }
+
+    // Build messages array for OpenAI
+    const openAIMessages: Message[] = [
+      { role: 'system', content: systemPrompt },
+      ...messages,
+      { role: 'user', content: message }
+    ];
+
+    // Call OpenAI API with streaming
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-5-mini-2025-08-07',
+        messages: openAIMessages,
+        max_completion_tokens: 800,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('OpenAI API error:', error);
+      throw new Error('Failed to get AI response');
+    }
+
+    // Create a TransformStream to intercept and store the complete response
+    let completeResponse = '';
+    const transformStream = new TransformStream({
+      transform(chunk, controller) {
+        const text = new TextDecoder().decode(chunk);
+        
+        // Parse SSE format to extract content
+        const lines = text.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const json = JSON.parse(line.slice(6));
+              const content = json.choices?.[0]?.delta?.content;
+              if (content) {
+                completeResponse += content;
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+        
+        controller.enqueue(chunk);
+      },
+      flush: async () => {
+        // Store assistant message after streaming completes
+        if (completeResponse) {
+          try {
+            await supabase
+              .from('cleo_messages')
+              .insert({
+                conversation_id: conversation.id,
+                role: 'assistant',
+                content: completeResponse
+              });
+          } catch (error) {
+            console.error('Error storing assistant message:', error);
+          }
+        }
+      }
+    });
+
+    // Return streaming response
+    return new Response(
+      response.body?.pipeThrough(transformStream),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'X-Conversation-Id': conversation.id,
+        },
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in cleo-chat function:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+});
