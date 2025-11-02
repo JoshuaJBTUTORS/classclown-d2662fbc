@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
 
     // Get or create conversation
     const conversationId = url.searchParams.get("conversationId");
+    const topic = url.searchParams.get("topic");
+    const yearGroup = url.searchParams.get("yearGroup");
     let conversation;
 
     if (conversationId) {
@@ -65,7 +67,9 @@ Deno.serve(async (req) => {
         .from('cleo_conversations')
         .insert({
           user_id: user.id,
-          status: 'active'
+          status: 'active',
+          topic: topic || null,
+          year_group: yearGroup || null
         })
         .select()
         .single();

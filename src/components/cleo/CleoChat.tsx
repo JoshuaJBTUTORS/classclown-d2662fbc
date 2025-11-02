@@ -240,6 +240,8 @@ export const CleoChat: React.FC = () => {
         </div>
         <CleoVoiceChat
           conversationId={conversation?.id}
+          topic={conversation?.topic || undefined}
+          yearGroup={conversation?.year_group || undefined}
           onConversationCreated={(id) => {
             setConversation(prev => prev ? { ...prev, id } : null);
           }}

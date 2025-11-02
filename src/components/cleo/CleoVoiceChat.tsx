@@ -13,12 +13,16 @@ interface Message {
 
 interface CleoVoiceChatProps {
   conversationId?: string;
+  topic?: string;
+  yearGroup?: string;
   onConversationCreated?: (id: string) => void;
 }
 
-export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
+export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
   conversationId,
-  onConversationCreated
+  topic,
+  yearGroup,
+  onConversationCreated 
 }) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
@@ -52,7 +56,16 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       playerRef.current = new AudioStreamPlayer();
 
       // Connect WebSocket
-      const wsUrl = `wss://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/cleo-realtime-voice?token=${session.access_token}${currentConversationId.current ? `&conversationId=${currentConversationId.current}` : ''}`;
+      let wsUrl = `wss://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/cleo-realtime-voice?token=${session.access_token}`;
+      if (currentConversationId.current) {
+        wsUrl += `&conversationId=${currentConversationId.current}`;
+      }
+      if (topic) {
+        wsUrl += `&topic=${encodeURIComponent(topic)}`;
+      }
+      if (yearGroup) {
+        wsUrl += `&yearGroup=${encodeURIComponent(yearGroup)}`;
+      }
       
       wsRef.current = new WebSocket(wsUrl);
 
