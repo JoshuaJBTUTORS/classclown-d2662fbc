@@ -568,5 +568,25 @@ export const aiAssessmentService = {
 
     if (error) throw error;
     return data;
+  },
+
+  // Bulk create assessments from curriculum
+  async bulkCreateAssessments(
+    curriculum: any,
+    settings: any,
+    onProgress?: (progress: any) => void
+  ): Promise<any> {
+    const { data, error } = await supabase.functions.invoke('bulk-generate-assessments', {
+      body: {
+        curriculum,
+        generation_settings: settings
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to generate assessments');
+    }
+
+    return data;
   }
 };
