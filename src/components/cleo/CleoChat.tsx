@@ -4,7 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CleoMessage } from './CleoMessage';
 import { CleoInput } from './CleoInput';
 import { CleoWelcome } from './CleoWelcome';
-import { Bot, Loader2 } from 'lucide-react';
+import { CleoVoiceChat } from './CleoVoiceChat';
+import { Bot, Loader2, Mic, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface Message {
@@ -28,6 +30,7 @@ export const CleoChat: React.FC = () => {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [mode, setMode] = useState<'text' | 'voice'>('text');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -200,6 +203,7 @@ export const CleoChat: React.FC = () => {
   const handleNewConversation = () => {
     setConversation(null);
     setMessages([]);
+    setMode('text');
   };
 
   if (!user) {
@@ -210,8 +214,58 @@ export const CleoChat: React.FC = () => {
     );
   }
 
+  // Voice mode
+  if (mode === 'voice') {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between p-4 border-b bg-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Bot className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold">Cleo AI Tutor</h2>
+              <p className="text-sm text-muted-foreground">Voice Mode</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setMode('text')}>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Switch to Text
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleNewConversation}>
+              New Topic
+            </Button>
+          </div>
+        </div>
+        <CleoVoiceChat
+          conversationId={conversation?.id}
+          onConversationCreated={(id) => {
+            setConversation(prev => prev ? { ...prev, id } : null);
+          }}
+        />
+      </div>
+    );
+  }
+
   if (messages.length === 0) {
-    return <CleoWelcome onSendMessage={handleSendMessage} />;
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between p-4 border-b bg-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Bot className="w-6 h-6 text-primary" />
+            </div>
+            <h2 className="font-semibold">Cleo AI Tutor</h2>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setMode('voice')}>
+            <Mic className="w-4 h-4 mr-2" />
+            Voice Mode
+          </Button>
+        </div>
+        <CleoWelcome onSendMessage={handleSendMessage} />
+      </div>
+    );
   }
 
   return (
@@ -231,12 +285,18 @@ export const CleoChat: React.FC = () => {
             )}
           </div>
         </div>
-        <button
-          onClick={handleNewConversation}
-          className="text-sm text-primary hover:underline"
-        >
-          New Topic
-        </button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setMode('voice')}>
+            <Mic className="w-4 h-4 mr-2" />
+            Voice Mode
+          </Button>
+          <button
+            onClick={handleNewConversation}
+            className="text-sm text-primary hover:underline"
+          >
+            New Topic
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
