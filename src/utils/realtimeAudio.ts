@@ -34,6 +34,13 @@ export class AudioStreamRecorder {
         if (!this.isRecording) return;
 
         const inputData = e.inputBuffer.getChannelData(0);
+        
+        // Log audio level to verify microphone is working
+        const avgVolume = inputData.reduce((sum, val) => sum + Math.abs(val), 0) / inputData.length;
+        if (avgVolume > 0.01) {
+          console.log('🎤 Audio detected, level:', avgVolume.toFixed(4));
+        }
+        
         const pcm16 = this.float32ToPCM16(inputData);
         const base64 = this.pcm16ToBase64(pcm16);
         this.onAudioChunk(base64);
@@ -108,10 +115,22 @@ export class AudioStreamPlayer {
 
   constructor() {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
+    
+    this.audioContext.onstatechange = () => {
+      console.log('🔊 AudioContext state changed:', this.audioContext.state);
+    };
+    
+    console.log('🔊 AudioContext created with state:', this.audioContext.state);
   }
 
   async playChunk(base64Audio: string) {
     try {
+      // Ensure AudioContext is running
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+        console.log('🔊 AudioContext resumed');
+      }
+      
       const pcm16 = this.base64ToPCM16(base64Audio);
       this.audioQueue.push(new Uint8Array(pcm16.buffer));
 
@@ -120,6 +139,13 @@ export class AudioStreamPlayer {
       }
     } catch (error) {
       console.error('Error playing audio chunk:', error);
+    }
+  }
+
+  async resume() {
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log('🔊 AudioContext resumed after user gesture');
     }
   }
 

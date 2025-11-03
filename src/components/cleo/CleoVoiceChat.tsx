@@ -30,6 +30,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [audioContextState, setAudioContextState] = useState<string>('unknown');
+  const [microphoneActive, setMicrophoneActive] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<AudioStreamRecorder | null>(null);
@@ -52,8 +54,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         throw new Error('Not authenticated');
       }
 
-      // Create audio player
-      playerRef.current = new AudioStreamPlayer();
+    // Create audio player
+    playerRef.current = new AudioStreamPlayer();
+    
+    // Resume AudioContext immediately (user gesture)
+    await playerRef.current.resume();
+    setAudioContextState('running');
 
       // Connect WebSocket
       let wsUrl = `wss://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/cleo-realtime-voice?token=${session.access_token}`;
@@ -187,8 +193,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       });
 
       await recorderRef.current.start();
+      setMicrophoneActive(true);
+      console.log('🎤 Recording started');
     } catch (error) {
       console.error('Error starting recorder:', error);
+      setMicrophoneActive(false);
       toast({
         title: "Microphone Error",
         description: "Please allow microphone access",
@@ -200,6 +209,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const stopRecording = () => {
     recorderRef.current?.stop();
     recorderRef.current = null;
+    setMicrophoneActive(false);
+    console.log('🎤 Recording stopped');
   };
 
   const disconnect = () => {
@@ -217,17 +228,32 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     <div className="flex flex-col h-full">
       {/* Connection Status */}
       <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            connectionState === 'connected' ? 'bg-green-500' : 
-            connectionState === 'connecting' ? 'bg-yellow-500' : 
-            connectionState === 'error' ? 'bg-red-500' : 'bg-muted'
-          }`} />
-          <span className="text-sm font-medium">
-            {connectionState === 'connected' ? 'Connected' :
-             connectionState === 'connecting' ? 'Connecting...' :
-             connectionState === 'error' ? 'Connection Error' : 'Not Connected'}
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${
+              connectionState === 'connected' ? 'bg-green-500' : 
+              connectionState === 'connecting' ? 'bg-yellow-500' : 
+              connectionState === 'error' ? 'bg-red-500' : 'bg-muted'
+            }`} />
+            <span className="text-sm font-medium">
+              {connectionState === 'connected' ? 'Connected' :
+               connectionState === 'connecting' ? 'Connecting...' :
+               connectionState === 'error' ? 'Connection Error' : 'Not Connected'}
+            </span>
+          </div>
+          
+          {connectionState === 'connected' && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground border-l border-border/50 pl-3">
+              <div className="flex items-center gap-1">
+                <span>🎤</span>
+                <span>{microphoneActive ? 'Active' : 'Inactive'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>🔊</span>
+                <span>{audioContextState}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {connectionState === 'connected' && (

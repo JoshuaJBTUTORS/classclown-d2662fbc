@@ -282,6 +282,12 @@ Deno.serve(async (req) => {
       }
 
       // Forward all events to client
+      console.log('📥 OpenAI -> Client:', message.type);
+      
+      if (message.type === 'response.audio.delta') {
+        console.log('🔊 Sending audio chunk to client');
+      }
+      
       if (clientSocket.readyState === WebSocket.OPEN) {
         clientSocket.send(event.data);
       }
@@ -317,6 +323,9 @@ Deno.serve(async (req) => {
     clientSocket.onmessage = (event) => {
       // Forward client messages to OpenAI
       try {
+        const msg = JSON.parse(event.data);
+        console.log('📤 Client -> OpenAI:', msg.type);
+        
         if (openAISocket.readyState === WebSocket.OPEN) {
           openAISocket.send(event.data);
         } else {
