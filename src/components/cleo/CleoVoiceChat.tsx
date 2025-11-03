@@ -1,10 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Phone } from 'lucide-react';
 import { AudioStreamRecorder, AudioStreamPlayer } from '@/utils/realtimeAudio';
-import { VoiceWaveform } from './VoiceWaveform';
 import { supabase } from '@/integrations/supabase/client';
+import { ContentEvent } from '@/types/lessonContent';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -16,16 +14,29 @@ interface CleoVoiceChatProps {
   topic?: string;
   yearGroup?: string;
   onConversationCreated?: (id: string) => void;
+  onContentEvent?: (event: ContentEvent) => void;
+  onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
+  onListeningChange?: (isListening: boolean) => void;
+  onSpeakingChange?: (isSpeaking: boolean) => void;
 }
 
-export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
+export interface CleoVoiceChatHandle {
+  connect: () => void;
+  disconnect: () => void;
+}
+
+export const CleoVoiceChat = forwardRef<CleoVoiceChatHandle, CleoVoiceChatProps>(({ 
   conversationId,
   topic,
   yearGroup,
-  onConversationCreated 
-}) => {
+  onConversationCreated,
+  onContentEvent,
+  onConnectionStateChange,
+  onListeningChange,
+  onSpeakingChange
+}, ref) => {
   const { toast } = useToast();
-  const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
+  const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
@@ -37,6 +48,19 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const recorderRef = useRef<AudioStreamRecorder | null>(null);
   const playerRef = useRef<AudioStreamPlayer | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
+
+  // Notify parent of state changes
+  useEffect(() => {
+    onConnectionStateChange?.(connectionState);
+  }, [connectionState, onConnectionStateChange]);
+
+  useEffect(() => {
+    onListeningChange?.(isListening);
+  }, [isListening, onListeningChange]);
+
+  useEffect(() => {
+    onSpeakingChange?.(isSpeaking);
+  }, [isSpeaking, onSpeakingChange]);
 
   useEffect(() => {
     return () => {
@@ -94,6 +118,18 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             if (data.conversationId && !currentConversationId.current) {
               currentConversationId.current = data.conversationId;
               onConversationCreated?.(data.conversationId);
+            }
+            break;
+
+          case 'session.created':
+            console.log('Session created:', data);
+            setConnectionState('connected');
+            break;
+
+          case 'content.marker':
+            console.log('📍 Content marker received:', data);
+            if (onContentEvent) {
+              onContentEvent(data.data as ContentEvent);
             }
             break;
 
@@ -156,7 +192,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
       wsRef.current.onerror = (error) => {
         console.error('WebSocket error:', error);
-        setConnectionState('error');
+        setConnectionState('disconnected');
         toast({
           title: "Connection Error",
           description: "Failed to connect to voice service",
@@ -166,13 +202,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
       wsRef.current.onclose = () => {
         console.log('WebSocket closed');
-        setConnectionState('idle');
+        setConnectionState('disconnected');
         stopRecording();
       };
 
     } catch (error) {
       console.error('Error connecting:', error);
-      setConnectionState('error');
+      setConnectionState('disconnected');
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to connect',
@@ -214,142 +250,26 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   };
 
   const disconnect = () => {
+    console.log('Disconnecting...');
     stopRecording();
     playerRef.current?.stop();
-    wsRef.current?.close();
-    wsRef.current = null;
-    playerRef.current = null;
-    setConnectionState('idle');
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
   };
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Connection Status */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              connectionState === 'connected' ? 'bg-green-500' : 
-              connectionState === 'connecting' ? 'bg-yellow-500' : 
-              connectionState === 'error' ? 'bg-red-500' : 'bg-muted'
-            }`} />
-            <span className="text-sm font-medium">
-              {connectionState === 'connected' ? 'Connected' :
-               connectionState === 'connecting' ? 'Connecting...' :
-               connectionState === 'error' ? 'Connection Error' : 'Not Connected'}
-            </span>
-          </div>
-          
-          {connectionState === 'connected' && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground border-l border-border/50 pl-3">
-              <div className="flex items-center gap-1">
-                <span>🎤</span>
-                <span>{microphoneActive ? 'Active' : 'Inactive'}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span>🔊</span>
-                <span>{audioContextState}</span>
-              </div>
-            </div>
-          )}
-        </div>
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    connect,
+    disconnect,
+  }));
 
-        {connectionState === 'connected' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={disconnect}
-          >
-            <Phone className="w-4 h-4 mr-2" />
-            End Call
-          </Button>
-        )}
-      </div>
+  // This component now renders nothing - it's just for voice logic
+  return null;
+});
 
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
-        {connectionState === 'idle' ? (
-          <div className="text-center space-y-4">
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6 mx-auto">
-              <Mic className="w-12 h-12 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold">
-              {topic ? `Learn ${topic}` : 'Voice Chat with Cleo'}
-            </h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              {topic 
-                ? `Press "Start Learning" to begin an interactive voice tutoring session about ${topic}.`
-                : 'Start a voice conversation for a natural learning experience'
-              }
-            </p>
-            <Button onClick={connect} size="lg" className="mt-4">
-              <Mic className="w-5 h-5 mr-2" />
-              {topic ? 'Start Learning' : 'Start Voice Chat'}
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Waveform */}
-            <div className="mb-8">
-              <VoiceWaveform
-                isActive={isListening || isSpeaking}
-                type={isListening ? 'listening' : 'speaking'}
-              />
-            </div>
-
-            {/* Status */}
-            <div className="text-center mb-6">
-              <p className="text-lg font-medium">
-                {isListening ? (
-                  <span className="flex items-center gap-2 justify-center">
-                    <Mic className="w-5 h-5 text-primary" />
-                    Listening...
-                  </span>
-                ) : isSpeaking ? (
-                  <span className="flex items-center gap-2 justify-center">
-                    🔊 Cleo is speaking...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2 justify-center text-muted-foreground">
-                    <MicOff className="w-5 h-5" />
-                    Waiting for your voice...
-                  </span>
-                )}
-              </p>
-            </div>
-
-            {/* Live Transcript */}
-            {currentTranscript && (
-              <div className="w-full max-w-2xl p-4 bg-muted/50 rounded-lg mb-4">
-                <p className="text-sm text-muted-foreground italic">
-                  {currentTranscript}
-                </p>
-              </div>
-            )}
-
-            {/* Message History */}
-            <div className="w-full max-w-2xl space-y-3 max-h-64 overflow-y-auto">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3 rounded-lg ${
-                    msg.role === 'user'
-                      ? 'bg-primary/10 ml-auto max-w-[80%]'
-                      : 'bg-accent/10 mr-auto max-w-[80%]'
-                  }`}
-                >
-                  <p className="text-sm font-medium mb-1">
-                    {msg.role === 'user' ? 'You' : 'Cleo'}
-                  </p>
-                  <p className="text-sm">{msg.content}</p>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
+CleoVoiceChat.displayName = 'CleoVoiceChat';

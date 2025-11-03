@@ -168,17 +168,26 @@ Deno.serve(async (req) => {
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
         const systemPrompt = conversation.topic && conversation.year_group
-          ? `You are Cleo, a friendly and encouraging AI tutor. You're currently teaching ${conversation.topic} to a ${conversation.year_group} student. 
-             
-             Teaching style:
-             - Ask questions to check understanding
-             - Provide clear, age-appropriate explanations
-             - Encourage the student with positive feedback
-             - Break down complex topics into simple steps
-             - Use examples relevant to their age group
-             - Be patient and supportive
-             
-             Keep responses conversational and under 3 sentences unless explaining something complex.`
+          ? `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
+
+CONTENT MARKERS - Use these to trigger visual content displays:
+- Say "[SHOW_TABLE:table-id]" to display a table
+- Say "[SHOW_QUESTION:question-id]" to present an interactive question
+- Say "[SHOW_DEFINITION:definition-id]" to display a definition card
+- Say "[NEXT_STEP]" when moving to the next lesson step
+- Say "[COMPLETE_STEP:step-id]" when finishing a step
+
+Teaching style:
+- Start by introducing the lesson structure and steps
+- Use content markers naturally in your speech
+- For tables: "Let me show you this [SHOW_TABLE:definition-table]"
+- For questions: "Here's a question for you [SHOW_QUESTION:q1]"
+- Wait for student answers before continuing after questions
+- Provide clear explanations with visual aids
+- Break down complex topics into simple steps
+- Be patient and supportive
+
+Keep responses conversational and under 3 sentences unless explaining something complex.`
           : `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
 
         openAISocket.send(JSON.stringify({
@@ -263,9 +272,70 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Accumulate assistant response
+      // Accumulate assistant response and detect content markers
       if (message.type === 'response.audio_transcript.delta') {
         currentAssistantMessage += message.delta;
+        
+        // Detect content markers in the transcript
+        const text = currentAssistantMessage;
+        
+        // Check for table marker
+        const tableMatch = text.match(/\[SHOW_TABLE:(\w+-?\w*)\]/);
+        if (tableMatch && clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'content.marker',
+            data: {
+              type: 'show_content',
+              contentId: tableMatch[1]
+            }
+          }));
+        }
+        
+        // Check for question marker
+        const questionMatch = text.match(/\[SHOW_QUESTION:(\w+-?\w*)\]/);
+        if (questionMatch && clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'content.marker',
+            data: {
+              type: 'ask_question',
+              questionId: questionMatch[1]
+            }
+          }));
+        }
+        
+        // Check for definition marker
+        const definitionMatch = text.match(/\[SHOW_DEFINITION:(\w+-?\w*)\]/);
+        if (definitionMatch && clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'content.marker',
+            data: {
+              type: 'show_content',
+              contentId: definitionMatch[1]
+            }
+          }));
+        }
+        
+        // Check for next step marker
+        if (text.includes('[NEXT_STEP]') && clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'content.marker',
+            data: {
+              type: 'next_step'
+            }
+          }));
+        }
+        
+        // Check for complete step marker
+        const completeStepMatch = text.match(/\[COMPLETE_STEP:(\w+-?\w*)\]/);
+        if (completeStepMatch && clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'content.marker',
+            data: {
+              type: 'complete_step',
+              stepId: completeStepMatch[1]
+            }
+          }));
+        }
       }
 
       // Save assistant message when complete
