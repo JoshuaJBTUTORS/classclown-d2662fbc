@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AudioStreamRecorder, AudioStreamPlayer } from '@/utils/realtimeAudio';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,12 +20,7 @@ interface CleoVoiceChatProps {
   onSpeakingChange?: (isSpeaking: boolean) => void;
 }
 
-export interface CleoVoiceChatHandle {
-  connect: () => void;
-  disconnect: () => void;
-}
-
-export const CleoVoiceChat = forwardRef<CleoVoiceChatHandle, CleoVoiceChatProps>(({ 
+export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
   conversationId,
   topic,
   yearGroup,
@@ -34,7 +29,7 @@ export const CleoVoiceChat = forwardRef<CleoVoiceChatHandle, CleoVoiceChatProps>
   onConnectionStateChange,
   onListeningChange,
   onSpeakingChange
-}, ref) => {
+}) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
   const [isListening, setIsListening] = useState(false);
@@ -262,14 +257,6 @@ export const CleoVoiceChat = forwardRef<CleoVoiceChatHandle, CleoVoiceChatProps>
     setIsSpeaking(false);
   };
 
-  // Expose methods to parent via ref
-  useImperativeHandle(ref, () => ({
-    connect,
-    disconnect,
-  }));
-
-  // This component now renders nothing - it's just for voice logic
+  // This component renders nothing - it's just for voice logic
   return null;
-});
-
-CleoVoiceChat.displayName = 'CleoVoiceChat';
+};

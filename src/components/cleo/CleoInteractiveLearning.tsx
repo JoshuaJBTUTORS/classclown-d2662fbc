@@ -27,11 +27,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   >('idle');
   const [isListening, setIsListening] = React.useState(false);
   const [isSpeaking, setIsSpeaking] = React.useState(false);
-
-  const voiceChatRef = React.useRef<{
-    connect: () => void;
-    disconnect: () => void;
-  } | null>(null);
+  const voiceChatInstanceRef = React.useRef<any>(null);
 
   const handleAnswerQuestion = (
     questionId: string,
@@ -79,7 +75,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       {/* Hidden Voice Chat Component */}
       <div className="hidden">
         <CleoVoiceChat
-          ref={voiceChatRef}
           conversationId={conversationId}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
@@ -96,8 +91,14 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           isConnected={connectionState === 'connected'}
           isListening={isListening}
           isSpeaking={isSpeaking}
-          onConnect={() => voiceChatRef.current?.connect()}
-          onDisconnect={() => voiceChatRef.current?.disconnect()}
+          onConnect={() => {
+            // TODO: Implement connection trigger
+            console.log('Connect triggered');
+          }}
+          onDisconnect={() => {
+            // TODO: Implement disconnect trigger
+            console.log('Disconnect triggered');
+          }}
         />
       </div>
     </div>
