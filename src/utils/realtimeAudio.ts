@@ -152,11 +152,14 @@ export class AudioStreamPlayer {
   private async playNext() {
     if (this.audioQueue.length === 0) {
       this.isPlaying = false;
+      console.log('🔊 Audio queue empty, stopping playback');
       return;
     }
 
     this.isPlaying = true;
     const audioData = this.audioQueue.shift()!;
+    
+    console.log(`🔊 Playing audio chunk (${audioData.length} bytes), ${this.audioQueue.length} remaining in queue`);
 
     try {
       const wavData = this.createWavFromPCM(audioData);
@@ -166,7 +169,11 @@ export class AudioStreamPlayer {
       source.buffer = audioBuffer;
       source.connect(this.audioContext.destination);
 
-      source.onended = () => this.playNext();
+      source.onended = () => {
+        console.log('🔊 Audio chunk finished');
+        this.playNext();
+      };
+      
       source.start(0);
     } catch (error) {
       console.error('Error playing audio:', error);
@@ -225,10 +232,22 @@ export class AudioStreamPlayer {
     return wavArray;
   }
 
+  pause() {
+    this.audioQueue = [];
+    this.isPlaying = false;
+    console.log('🔊 Audio paused, queue cleared but AudioContext kept alive');
+  }
+
+  clearQueue() {
+    this.audioQueue = [];
+    console.log('🔊 Audio queue cleared');
+  }
+
   stop() {
     this.audioQueue = [];
     this.isPlaying = false;
     this.audioContext.close();
+    console.log('🔊 Audio stopped, AudioContext closed');
   }
 
   getIsPlaying(): boolean {
