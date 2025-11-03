@@ -39,8 +39,8 @@ const ModuleDetail = () => {
   const { toast } = useToast();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [showAssessmentDialog, setShowAssessmentDialog] = useState(false);
-  const [learningMode, setLearningMode] = useState<'elearning' | 'cleo' | null>(null);
-  const [showModeDialog, setShowModeDialog] = useState(true);
+  const [learningMode, setLearningMode] = useState<'elearning' | 'cleo' | null>('cleo');
+  const [showModeDialog, setShowModeDialog] = useState(false);
 
   const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -347,61 +347,13 @@ const ModuleDetail = () => {
               </CardHeader>
             </Card>
 
-            {/* Learning Mode Selection Dialog */}
-            <Dialog open={showModeDialog && learningMode === null} onOpenChange={setShowModeDialog}>
-              <DialogContent className="sm:max-w-md" hideCloseButton>
-                <DialogHeader>
-                  <DialogTitle className="text-2xl text-center">Choose Your Learning Style</DialogTitle>
-                  <DialogDescription className="text-center">
-                    How would you like to learn about {currentModule.title}?
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <Button
-                    variant="outline"
-                    className="h-auto py-6 px-6 flex flex-col items-center gap-3 hover:border-primary hover:bg-primary/5 transition-all"
-                    onClick={() => {
-                      setLearningMode('cleo');
-                      setShowModeDialog(false);
-                    }}
-                  >
-                    <Mic className="h-12 w-12 text-primary" />
-                    <div className="text-center">
-                      <div className="font-semibold text-lg mb-1">Start Learning with Cleo</div>
-                      <div className="text-sm text-muted-foreground font-normal">
-                        Interactive voice tutoring session about this lesson
-                      </div>
-                    </div>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="h-auto py-6 px-6 flex flex-col items-center gap-3 hover:border-primary hover:bg-primary/5 transition-all"
-                    onClick={() => {
-                      setLearningMode('elearning');
-                      setShowModeDialog(false);
-                    }}
-                  >
-                    <BookOpen className="h-12 w-12 text-primary" />
-                    <div className="text-center">
-                      <div className="font-semibold text-lg mb-1">E-Learning</div>
-                      <div className="text-sm text-muted-foreground font-normal">
-                        Watch structured video lessons and take quizzes
-                      </div>
-                    </div>
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* Small Mode Toggle (only shown in e-learning mode) */}
-            {learningMode === 'elearning' && (
+            {/* Mode Toggle - allows switching between Cleo and E-Learning */}
+            {learningMode !== null && (
               <div className="flex justify-end mb-4">
                 <div className="flex gap-2 bg-muted/50 p-1 rounded-lg">
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant={learningMode === 'cleo' ? 'default' : 'ghost'}
                     onClick={() => setLearningMode('cleo')}
                     className="gap-2"
                   >
@@ -410,7 +362,8 @@ const ModuleDetail = () => {
                   </Button>
                   <Button
                     size="sm"
-                    variant="default"
+                    variant={learningMode === 'elearning' ? 'default' : 'ghost'}
+                    onClick={() => setLearningMode('elearning')}
                     className="gap-2"
                   >
                     <BookOpen className="h-4 w-4" />
