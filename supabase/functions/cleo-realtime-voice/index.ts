@@ -46,6 +46,16 @@ Deno.serve(async (req) => {
 
     console.log("User authenticated:", user.id);
 
+    // Fetch user profile for personalized greeting
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('first_name')
+      .eq('id', user.id)
+      .single();
+
+    const userName = userProfile?.first_name || 'there';
+    console.log("User name:", userName);
+
     // Get or create conversation
     const conversationId = url.searchParams.get("conversationId");
     const topic = url.searchParams.get("topic");
@@ -82,6 +92,24 @@ Deno.serve(async (req) => {
     }
 
     console.log("Conversation ready:", conversation.id);
+
+    // Fetch lesson details if this is a lesson-based conversation
+    let lessonTitle = conversation.topic;
+    let lessonDescription = '';
+
+    if (conversation.lesson_id) {
+      const { data: lessonData } = await supabase
+        .from('course_lessons')
+        .select('title, description')
+        .eq('id', conversation.lesson_id)
+        .single();
+      
+      if (lessonData) {
+        lessonTitle = lessonData.title;
+        lessonDescription = lessonData.description || '';
+        console.log("Lesson details:", { lessonTitle, hasDescription: !!lessonDescription });
+      }
+    }
 
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
@@ -177,6 +205,42 @@ Deno.serve(async (req) => {
         
         isSessionConfigured = true;
         console.log("Session configured");
+
+        // Send initial greeting message
+        const greetingText = lessonTitle 
+          ? `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`
+          : `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
+
+        console.log("Sending initial greeting:", greetingText);
+
+        // Create a conversation item with the greeting prompt
+        openAISocket.send(JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [
+              {
+                type: 'input_text',
+                text: greetingText
+              }
+            ]
+          }
+        }));
+
+        // Immediately trigger a response so Cleo speaks the greeting
+        openAISocket.send(JSON.stringify({
+          type: 'response.create'
+        }));
+
+        // Save the greeting prompt to database as a system message
+        await supabase.from('cleo_messages').insert({
+          conversation_id: conversation.id,
+          role: 'system',
+          content: `Initial greeting prompt: ${greetingText}`
+        });
+
+        console.log("Initial greeting sent to OpenAI");
       }
 
       // Cancel AI response when user starts speaking (interruption)
