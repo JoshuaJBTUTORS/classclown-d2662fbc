@@ -1,4 +1,3 @@
-
 project_id = "sjxbxkpegcnnfjbsxazo"
 
 [api]
@@ -95,6 +94,9 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.cleo-realtime-voice]
+verify_jwt = false
+
+[functions.backfill-participant-urls]
 verify_jwt = false
 
 [edge_runtime]
