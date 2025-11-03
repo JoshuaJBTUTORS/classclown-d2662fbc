@@ -19,6 +19,8 @@ interface Message {
 interface ChatRequest {
   conversationId?: string;
   message: string;
+  lessonId?: string;
+  moduleId?: string;
   topic?: string;
   yearGroup?: string;
   learningGoal?: string;
@@ -48,50 +50,96 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    const { conversationId, message, topic, yearGroup, learningGoal }: ChatRequest = await req.json();
+    const { conversationId, message, lessonId, moduleId, topic, yearGroup, learningGoal }: ChatRequest = await req.json();
 
     let conversation;
     let messages: Message[] = [];
 
     // If no conversationId, try to reuse existing active conversation
     if (!conversationId) {
-      // Try reusing latest active conversation for this user
-      const { data: existingActive } = await supabase
-        .from('cleo_conversations')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (existingActive) {
-        conversation = existingActive;
-
-        // Load message history
-        const { data: messageHistory } = await supabase
-          .from('cleo_messages')
-          .select('role, content')
-          .eq('conversation_id', conversation.id)
-          .order('created_at', { ascending: true });
-
-        messages = (messageHistory || []) as Message[];
-      } else {
-        // Create a new conversation
-        const { data: newConversation, error: convError } = await supabase
+      // If lessonId provided, try to find existing conversation for this lesson
+      if (lessonId) {
+        const { data: existingLesson } = await supabase
           .from('cleo_conversations')
-          .insert({
-            user_id: user.id,
-            topic: topic || null,
-            year_group: yearGroup || null,
-            learning_goal: learningGoal || null,
-            status: 'active'
-          })
-          .select()
-          .single();
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('lesson_id', lessonId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-        if (convError) throw convError;
-        conversation = newConversation;
+        if (existingLesson) {
+          conversation = existingLesson;
+
+          // Load message history
+          const { data: messageHistory } = await supabase
+            .from('cleo_messages')
+            .select('role, content')
+            .eq('conversation_id', conversation.id)
+            .order('created_at', { ascending: true });
+
+          messages = (messageHistory || []) as Message[];
+        } else {
+          // Create new conversation for this lesson
+          const { data: newConversation, error: convError } = await supabase
+            .from('cleo_conversations')
+            .insert({
+              user_id: user.id,
+              lesson_id: lessonId,
+              module_id: moduleId || null,
+              topic: topic || null,
+              year_group: yearGroup || null,
+              learning_goal: learningGoal || null,
+              status: 'active'
+            })
+            .select()
+            .single();
+
+          if (convError) throw convError;
+          conversation = newConversation;
+        }
+      } else {
+        // No lessonId - try reusing latest active conversation for this user
+        const { data: existingActive } = await supabase
+          .from('cleo_conversations')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .is('lesson_id', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existingActive) {
+          conversation = existingActive;
+
+          // Load message history
+          const { data: messageHistory } = await supabase
+            .from('cleo_messages')
+            .select('role, content')
+            .eq('conversation_id', conversation.id)
+            .order('created_at', { ascending: true });
+
+          messages = (messageHistory || []) as Message[];
+        } else {
+          // Create a new conversation
+          const { data: newConversation, error: convError } = await supabase
+            .from('cleo_conversations')
+            .insert({
+              user_id: user.id,
+              module_id: moduleId || null,
+              topic: topic || null,
+              year_group: yearGroup || null,
+              learning_goal: learningGoal || null,
+              status: 'active'
+            })
+            .select()
+            .single();
+
+          if (convError) throw convError;
+          conversation = newConversation;
+        }
       }
     } else {
       // Get existing conversation

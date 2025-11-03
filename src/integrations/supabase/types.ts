@@ -681,6 +681,8 @@ export type Database = {
           created_at: string
           id: string
           learning_goal: string | null
+          lesson_id: string | null
+          module_id: string | null
           status: string
           topic: string | null
           updated_at: string
@@ -691,6 +693,8 @@ export type Database = {
           created_at?: string
           id?: string
           learning_goal?: string | null
+          lesson_id?: string | null
+          module_id?: string | null
           status?: string
           topic?: string | null
           updated_at?: string
@@ -701,13 +705,30 @@ export type Database = {
           created_at?: string
           id?: string
           learning_goal?: string | null
+          lesson_id?: string | null
+          module_id?: string | null
           status?: string
           topic?: string | null
           updated_at?: string
           user_id?: string
           year_group?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cleo_conversations_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleo_conversations_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cleo_learning_progress: {
         Row: {

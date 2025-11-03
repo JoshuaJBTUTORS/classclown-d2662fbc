@@ -25,6 +25,8 @@ interface Conversation {
 }
 
 interface CleoChatProps {
+  lessonId?: string;
+  moduleId?: string;
   initialTopic?: string;
   initialYearGroup?: string;
   contextMessage?: string;
@@ -32,6 +34,8 @@ interface CleoChatProps {
 }
 
 export const CleoChat: React.FC<CleoChatProps> = ({
+  lessonId,
+  moduleId,
   initialTopic,
   initialYearGroup,
   contextMessage,
@@ -60,13 +64,70 @@ export const CleoChat: React.FC<CleoChatProps> = ({
     if (!user) return;
 
     try {
-      // If initialTopic is provided, find or create a conversation for it
+      // If lessonId is provided, find or create a lesson-specific conversation
+      if (lessonId) {
+        const { data: conversations, error: convError } = await supabase
+          .from('cleo_conversations')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('lesson_id', lessonId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (convError) throw convError;
+
+        if (conversations) {
+          // Use existing conversation for this lesson
+          setConversation(conversations);
+          
+          const { data: msgData, error: msgError } = await supabase
+            .from('cleo_messages')
+            .select('*')
+            .eq('conversation_id', conversations.id)
+            .order('created_at', { ascending: true });
+
+          if (msgError) throw msgError;
+          setMessages((msgData || []).map(msg => ({
+            ...msg,
+            role: msg.role as 'user' | 'assistant' | 'system'
+          })));
+        } else {
+          // Create new conversation for this lesson
+          const { data: newConv, error: createError } = await supabase
+            .from('cleo_conversations')
+            .insert({
+              user_id: user.id,
+              lesson_id: lessonId,
+              module_id: moduleId,
+              topic: initialTopic,
+              year_group: initialYearGroup,
+              status: 'active'
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          
+          setConversation(newConv);
+          
+          // Send context message if provided
+          if (contextMessage) {
+            setTimeout(() => handleSendMessage(contextMessage), 500);
+          }
+        }
+        return;
+      }
+      
+      // If initialTopic is provided (but no lessonId), find or create a conversation for it
       if (initialTopic) {
         const { data: conversations, error: convError } = await supabase
           .from('cleo_conversations')
           .select('*')
           .eq('user_id', user.id)
           .eq('topic', initialTopic)
+          .is('lesson_id', null)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
@@ -95,6 +156,7 @@ export const CleoChat: React.FC<CleoChatProps> = ({
             .from('cleo_conversations')
             .insert({
               user_id: user.id,
+              module_id: moduleId,
               topic: initialTopic,
               year_group: initialYearGroup,
               status: 'active'
@@ -192,6 +254,8 @@ export const CleoChat: React.FC<CleoChatProps> = ({
           body: JSON.stringify({
             conversationId: conversation?.id,
             message: content.trim(),
+            lessonId,
+            moduleId,
           }),
           signal: abortControllerRef.current.signal,
         }

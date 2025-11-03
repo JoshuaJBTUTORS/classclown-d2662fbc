@@ -426,9 +426,11 @@ const ModuleDetail = () => {
                   <Card>
                     <CardContent className="p-0 h-[600px]">
                       <CleoChat
-                        initialTopic={currentModule.title}
+                        lessonId={currentLesson?.id}
+                        moduleId={currentModule.id}
+                        initialTopic={currentLesson?.title || currentModule.title}
                         initialYearGroup={course.subject.includes('GCSE') ? 'GCSE' : course.subject.includes('A-Level') ? 'A-Level' : undefined}
-                        contextMessage={currentLesson ? `I'm studying: ${currentModule.title}. Current lesson: ${currentLesson.title}. ${currentLesson.description || ''}` : `I'm studying: ${currentModule.title}`}
+                        contextMessage={currentLesson ? `I'm studying lesson: ${currentLesson.title}. ${currentLesson.description || ''}. This is part of the ${currentModule.title} module in ${course.title}.` : `I'm studying: ${currentModule.title}`}
                         forceVoiceMode={true}
                       />
                     </CardContent>
