@@ -38,14 +38,19 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     // The answer will be sent via the voice chat component
   };
 
+  // Check if we have minimal or no content
+  const hasMinimalContent = !lessonData.content || lessonData.content.length === 0;
+
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
       {/* Lesson Progress Bar */}
-      <LessonProgressBar
-        steps={lessonData.steps}
-        currentStep={activeStep}
-        completedSteps={completedSteps}
-      />
+      {lessonData.steps && lessonData.steps.length > 0 && (
+        <LessonProgressBar
+          steps={lessonData.steps}
+          currentStep={activeStep}
+          completedSteps={completedSteps}
+        />
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
@@ -60,12 +65,31 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             </p>
           </div>
 
-          {/* Content Display */}
-          <ContentDisplay
-            content={lessonData.content}
-            visibleContent={visibleContent}
-            onAnswerQuestion={handleAnswerQuestion}
-          />
+          {/* Minimal Content Fallback */}
+          {hasMinimalContent ? (
+            <div className="text-center py-12">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  Ready to Learn with Cleo
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Click the microphone button below to start your voice conversation with Cleo about {lessonData.topic}.
+                  Visual content will appear here as you learn.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <ContentDisplay
+              content={lessonData.content}
+              visibleContent={visibleContent}
+              onAnswerQuestion={handleAnswerQuestion}
+            />
+          )}
 
           {/* Spacer for floating controls */}
           <div className="h-32" />

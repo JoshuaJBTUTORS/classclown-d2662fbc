@@ -30,6 +30,8 @@ import {
   Mic
 } from 'lucide-react';
 import { CleoChat } from '@/components/cleo/CleoChat';
+import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
+import { buildLessonDataFromLesson } from '@/utils/lessonDataBuilder';
 
 const ModuleDetail = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
@@ -376,16 +378,17 @@ const ModuleDetail = () => {
             {learningMode !== null && lessons.length > 0 && (currentLesson || showAssessmentTimeScreen) ? (
               <div className="space-y-6">
                 {learningMode === 'cleo' ? (
-                  <Card>
-                    <CardContent className="p-0 h-[600px]">
-                      <CleoChat
-                        lessonId={currentLesson?.id}
-                        moduleId={currentModule.id}
-                        initialTopic={currentLesson?.title || currentModule.title}
-                        initialYearGroup={course.subject.includes('GCSE') ? 'GCSE' : course.subject.includes('A-Level') ? 'A-Level' : undefined}
-                        contextMessage={currentLesson ? `I'm studying lesson: ${currentLesson.title}. ${currentLesson.description || ''}. This is part of the ${currentModule.title} module in ${course.title}.` : `I'm studying: ${currentModule.title}`}
-                        forceVoiceMode={true}
-                      />
+                  <Card className="overflow-hidden">
+                    <CardContent className="p-0 h-[700px]">
+                      {currentLesson ? (
+                        <CleoInteractiveLearning
+                          lessonData={buildLessonDataFromLesson(currentLesson, currentModule, course)}
+                        />
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-muted-foreground">
+                          <p>Select a lesson to begin learning with Cleo</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ) : showAssessmentTimeScreen ? (
