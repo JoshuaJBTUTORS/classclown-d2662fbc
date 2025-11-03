@@ -50,6 +50,15 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
+    // Get user profile for personalization
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single();
+
+    const userName = userProfile?.first_name || 'there';
+
     const { conversationId, message, lessonId, moduleId, topic, yearGroup, learningGoal }: ChatRequest = await req.json();
 
     let conversation;
@@ -98,6 +107,40 @@ serve(async (req) => {
 
           if (convError) throw convError;
           conversation = newConversation;
+
+          // Fetch lesson details for personalized greeting
+          const { data: lessonData } = await supabase
+            .from('course_lessons')
+            .select('title, description')
+            .eq('id', lessonId)
+            .single();
+
+          const lessonTitle = lessonData?.title || topic || 'this topic';
+          const lessonDescription = lessonData?.description || '';
+
+          // Create a warm, personalized greeting
+          const greetingMessage = `Hi ${userName}! 👋 I'm Cleo, your AI tutor.
+
+I'm excited to help you learn about "${lessonTitle}"!${lessonDescription ? ` ${lessonDescription}` : ''}
+
+I'll guide you through this lesson step by step, checking your understanding as we go. Feel free to ask questions anytime - that's what I'm here for!
+
+Ready to get started? 🌟`;
+
+          // Insert the greeting as the first assistant message
+          await supabase
+            .from('cleo_messages')
+            .insert({
+              conversation_id: newConversation.id,
+              role: 'assistant',
+              content: greetingMessage
+            });
+
+          // Add to messages array so it's included in the history
+          messages.push({
+            role: 'assistant',
+            content: greetingMessage
+          });
         }
       } else {
         // No lessonId - try reusing latest active conversation for this user
@@ -279,7 +322,7 @@ serve(async (req) => {
         !conversation.learning_goal ? 'learning goal' : null
       ].filter(Boolean).join(', ');
 
-      const isFirstAssistantTurn = !messages.some(m => m.role === 'assistant');
+      const hasGreeting = messages.some(m => m.role === 'assistant');
 
       systemPrompt = `You are Cleo, a friendly and encouraging AI tutor.
 
@@ -287,15 +330,12 @@ Known info: ${known}
 Missing: ${missing || 'none'}
 
 CRITICAL RULES:
-- If this is NOT the first assistant message, do NOT greet again and do NOT re-introduce the topic.
+- ${hasGreeting ? 'You have already introduced yourself. Do NOT greet again.' : 'This is your first message - greet warmly.'}
 - Ask for exactly ONE missing item at a time (topic, year group, or learning goal). If none are missing, immediately start teaching.
 - Never repeat a question the student already answered. Acknowledge their answer and move forward.
 - Keep replies concise (1–3 short sentences), and use at most 1 emoji.
 
-${isFirstAssistantTurn 
-  ? 'Start warmly, then ask for the first missing item. If nothing is missing, start teaching immediately.' 
-  : 'Skip greeting. Ask only for the next missing item. If nothing is missing, transition to teaching immediately.'
-}`.trim();
+Continue the conversation naturally from where you left off.`.trim();
     } else {
       // Teaching phase
       systemPrompt = `You are Cleo, an expert AI tutor helping a ${conversation.year_group} student learn about "${conversation.topic}".
