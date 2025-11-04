@@ -33,11 +33,29 @@ serve(async (req) => {
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal });
 
+    // Validate lessonId against lessons table to avoid FK violations
+    let lessonIdToInsert: string | null = null;
+    if (lessonId) {
+      const { data: existingLesson, error: lessonCheckError } = await supabase
+        .from('lessons')
+        .select('id')
+        .eq('id', lessonId)
+        .single();
+      if (lessonCheckError) {
+        console.warn('Lesson check error (continuing without linking lesson):', lessonCheckError.message);
+      }
+      if (existingLesson?.id) {
+        lessonIdToInsert = existingLesson.id;
+      } else {
+        console.log('Provided lessonId not found, proceeding with null linkage');
+      }
+    }
+
     // Create lesson plan record
     const { data: lessonPlan, error: planError } = await supabase
       .from('cleo_lesson_plans')
       .insert({
-        lesson_id: lessonId,
+        lesson_id: lessonIdToInsert,
         conversation_id: conversationId,
         topic,
         year_group: yearGroup,
