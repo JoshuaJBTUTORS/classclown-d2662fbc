@@ -127,6 +127,20 @@ const ModuleDetail = () => {
   const currentLesson = lessons[currentLessonIndex];
   const hasAccess = isOwner || hasPurchased;
 
+  // Add class to root for full-width
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (root) {
+      root.classList.add('learning-hub-page');
+    }
+    return () => {
+      const root = document.getElementById('root');
+      if (root) {
+        root.classList.remove('learning-hub-page');
+      }
+    };
+  }, []);
+
   // Reset lesson index when module changes
   useEffect(() => {
     setCurrentLessonIndex(0);
@@ -323,8 +337,8 @@ const ModuleDetail = () => {
           </Button>
         </div>
 
-        <div className="pt-16 px-4">
-          <div className="container mx-auto py-8 max-w-4xl">
+        <div className="pt-16 px-2 sm:px-4 lg:px-8">
+          <div className="w-full max-w-none py-8">
             {/* Module Header */}
             <Card className="mb-6">
               <CardHeader>
@@ -379,7 +393,7 @@ const ModuleDetail = () => {
               <div className="space-y-6">
                 {learningMode === 'cleo' ? (
                   <Card className="overflow-hidden">
-                    <CardContent className="p-0 h-[700px]">
+                    <CardContent className="p-0 min-h-[60vh]">
                       {currentLesson ? (
                         <CleoInteractiveLearning
                           lessonData={buildLessonDataFromLesson(currentLesson, currentModule, course)}
