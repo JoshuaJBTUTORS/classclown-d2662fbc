@@ -172,6 +172,7 @@ Deno.serve(async (req) => {
     let currentTranscript = '';
     let currentAssistantMessage = '';
     let pendingGreetingText: string | null = null;
+    let audioChunkCount = 0;  // Track audio chunks for diagnostics
 
     // Handle OpenAI socket events
     openAISocket.onopen = () => {
@@ -255,12 +256,9 @@ Teaching style:
           session: {
             modalities: ['text', 'audio'],
             instructions: systemPrompt,
-            voice: 'ballad',
+            voice: 'alloy',
             input_audio_format: 'pcm16',
             output_audio_format: 'pcm16',
-            input_audio_transcription: {
-              model: 'whisper-1'
-            },
             turn_detection: {
               type: 'server_vad',
               threshold: 0.65,
@@ -355,9 +353,12 @@ Teaching style:
       // Send greeting AFTER session.updated is confirmed
       if (message.type === 'session.updated' && !isSessionConfigured && pendingGreetingText) {
         isSessionConfigured = true;
-        console.log("Session updated confirmed");
+        console.log("✅ Session updated confirmed");
+        
+        // Reset audio counter for greeting
+        audioChunkCount = 0;
 
-        console.log("Sending initial greeting:", pendingGreetingText);
+        console.log("🎤 Sending initial greeting:", pendingGreetingText);
 
         // Create a conversation item with the greeting prompt
         openAISocket.send(JSON.stringify({
@@ -381,6 +382,8 @@ Teaching style:
             modalities: ['audio', 'text']
           }
         }));
+        
+        console.log("🎤 Greeting response.create sent, expecting audio...");
 
         // Save the greeting prompt to database as a system message
         await supabase.from('cleo_messages').insert({
@@ -397,6 +400,8 @@ Teaching style:
       if (message.type === 'response.audio.delta') {
         isResponseActive = true;
         hasAudioStarted = true;
+        audioChunkCount++;
+        console.log(`🔊 Audio chunk #${audioChunkCount} from OpenAI, size: ${message.delta?.length || 0}`);
       }
 
       // Cancel AI response when user starts speaking (only if response is active)
@@ -592,6 +597,19 @@ Teaching style:
       if (message.type === 'response.done') {
         isResponseActive = false;
         hasAudioStarted = false;
+        
+        // Diagnostic: Check if any audio was generated
+        if (audioChunkCount === 0) {
+          console.log("⚠️ WARNING: response.done but NO audio chunks received!");
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(JSON.stringify({
+              type: 'debug.no_audio',
+              message: 'Response completed but no audio was generated'
+            }));
+          }
+        } else {
+          console.log(`✅ Response complete with ${audioChunkCount} audio chunks`);
+        }
         
         // Clear initial greeting flag after first response
         if (isInitialGreeting) {
