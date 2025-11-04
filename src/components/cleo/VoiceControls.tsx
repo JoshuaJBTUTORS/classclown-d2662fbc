@@ -58,27 +58,6 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         </motion.div>
       )}
 
-      {/* Main Control Button */}
-      {!isConnected ? (
-        <Button
-          onClick={onConnect}
-          size="lg"
-          className="gap-2 px-6 py-6 text-base font-semibold shadow-xl"
-        >
-          <Play className="w-5 h-5" />
-          Start Learning
-        </Button>
-      ) : (
-        <Button
-          onClick={onDisconnect}
-          size="lg"
-          variant="destructive"
-          className="gap-2 shadow-xl"
-        >
-          <Square className="w-4 h-4" />
-          End Session
-        </Button>
-      )}
     </div>
   );
 };
