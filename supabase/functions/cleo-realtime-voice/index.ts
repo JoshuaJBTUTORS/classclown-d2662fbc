@@ -170,11 +170,10 @@ Deno.serve(async (req) => {
         const systemPrompt = conversation.topic && conversation.year_group
           ? `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
 
-You have access to visual content tools that let you display information to the student:
-- show_table: Display tabular data with headers and rows
-- show_definition: Show a definition card for key terms
-- show_diagram: Display diagrams or images (when you have a relevant URL)
-- ask_question: Present interactive multiple-choice questions
+        You have access to visual content tools that let you display information to the student:
+        - show_table: Display tabular data with headers and rows
+        - show_definition: Show a definition card for key terms
+        - ask_question: Present interactive multiple-choice questions
 
 Teaching style:
 - Start by introducing the lesson naturally
@@ -248,21 +247,6 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
                     example: { type: "string", description: "Optional example to illustrate the term" }
                   },
                   required: ["id", "term", "definition"]
-                }
-              },
-              {
-                type: "function",
-                name: "show_diagram",
-                description: "Display a diagram or visual representation.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    url: { type: "string", description: "URL to the diagram image" },
-                    caption: { type: "string", description: "Caption describing the diagram" },
-                    alt: { type: "string", description: "Alt text for accessibility" }
-                  },
-                  required: ["id", "url"]
                 }
               },
               {
@@ -455,21 +439,9 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               definition: args.definition,
               example: args.example
             },
-            visible: false
-          };
-        } else if (functionName === 'show_diagram') {
-          contentBlock = {
-            id: args.id,
-            stepId: 'current',
-            type: 'diagram',
-            data: {
-              url: args.url,
-              caption: args.caption,
-              alt: args.alt
-            },
-            visible: false
-          };
-        } else if (functionName === 'ask_question') {
+          visible: false
+        };
+      } else if (functionName === 'ask_question') {
           contentBlock = {
             id: args.id,
             stepId: 'current',

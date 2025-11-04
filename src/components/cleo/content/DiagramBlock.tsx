@@ -18,22 +18,9 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data }) => {
       transition={{ duration: 0.4 }}
       className="my-6"
     >
-      {data.url ? (
-        <img
-          src={data.url}
-          alt={data.alt || 'Diagram'}
-          className="w-full rounded-lg border shadow-md"
-        />
-      ) : data.svg ? (
-        <div
-          className="w-full rounded-lg border shadow-md p-4 bg-card"
-          dangerouslySetInnerHTML={{ __html: data.svg }}
-        />
-      ) : (
-        <div className="w-full aspect-video rounded-lg border-2 border-dashed border-muted flex items-center justify-center bg-muted/20">
-          <span className="text-muted-foreground text-sm">Diagram</span>
-        </div>
-      )}
+      <div className="w-full aspect-video rounded-lg border-2 border-dashed border-muted flex items-center justify-center bg-muted/20">
+        <span className="text-muted-foreground text-sm">Visual content not available</span>
+      </div>
       {data.caption && (
         <p className="text-sm text-muted-foreground mt-2 text-center">
           {data.caption}
