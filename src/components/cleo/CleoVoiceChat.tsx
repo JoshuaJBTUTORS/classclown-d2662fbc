@@ -139,12 +139,16 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'session.created':
-            console.log('✅ OpenAI session ready, starting recording');
+            console.log('Session created, waiting for session.updated');
+            break;
+
+          case 'session.updated':
+            console.log('✅ OpenAI session updated, starting recording');
             setConnectionState('connected');
             startRecording();
             toast({
-              title: "Connected",
-              description: "Start speaking to Cleo!",
+              title: 'Connected',
+              description: 'Start speaking to Cleo!',
             });
             break;
 

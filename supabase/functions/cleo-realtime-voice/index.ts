@@ -171,6 +171,7 @@ Deno.serve(async (req) => {
     let isInitialGreeting = true;  // Protect the initial greeting
     let currentTranscript = '';
     let currentAssistantMessage = '';
+    let pendingGreetingText: string | null = null;
 
     // Handle OpenAI socket events
     openAISocket.onopen = () => {
@@ -205,153 +206,23 @@ Deno.serve(async (req) => {
         let systemPrompt;
         
         if (lessonPlan) {
-          // Build structured prompt with lesson plan data
-          const objectives = lessonPlan.learning_objectives || [];
-          const steps = lessonPlan.teaching_sequence || [];
-          
-          systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching "${lessonPlan.topic}" to a ${lessonPlan.year_group} student.
-
-LESSON STRUCTURE:
-${objectives.length > 0 ? `Learning Objectives:
-${objectives.map((obj: string, i: number) => `${i + 1}. ${obj}`).join('\n')}
-
-` : ''}Teaching Sequence (follow in order):
-${steps.map((step: any, i: number) => `${i + 1}. ${step.title || step}`).join('\n')}
-
-${contentBlocks.length > 0 ? `Available Content: ${contentBlocks.length} pre-generated visual aids ready to display` : ''}
-
-TEACHING APPROACH:
-- Follow the teaching sequence step by step
-- Use your tools (show_table, show_definition, ask_question) to display content
-- Check understanding before moving to the next step
-- Start with step 1: "${steps[0]?.title || steps[0]}"
-- Be conversational and encouraging
-- Keep responses under 3 sentences unless explaining complex concepts
-
-Visual Content Tools:
-- show_table: Display structured data
-- show_definition: Show key terms and definitions
-- ask_question: Present interactive multiple-choice questions`;
-        } else if (conversation.topic && conversation.year_group) {
-          systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
-
-You have access to visual content tools:
-- show_table: Display tabular data
-- show_definition: Show definitions
-- ask_question: Present questions
-
-Teaching style:
-- Use your tools to show visual content
-- Provide clear explanations
-- Be patient and supportive
-- Keep responses conversational and under 3 sentences`;
-        } else {
-          systemPrompt = `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
-        }
-
-        openAISocket.send(JSON.stringify({
-          type: 'session.update',
-          session: {
-            modalities: ['text', 'audio'],
-            instructions: systemPrompt,
-            voice: 'ballad',
-            input_audio_format: 'pcm16',
-            output_audio_format: 'pcm16',
-            input_audio_transcription: {
-              model: 'whisper-1'
-            },
-            turn_detection: {
-              type: 'server_vad',
-              threshold: 0.65,  // Less sensitive to ambient noise
-              prefix_padding_ms: 300,
-              silence_duration_ms: 1000  // More time for user to think
-            },
-            tools: [
-              {
-                type: "function",
-                name: "show_table",
-                description: "Display a table with headers and rows of data. Use this when you want to present structured information visually.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    id: { 
-                      type: "string", 
-                      description: "Unique ID for this table (e.g., 'periodic-table-basics')" 
-                    },
-                    headers: {
-                      type: "array",
-                      items: { type: "string" },
-                      description: "Column headers for the table"
-                    },
-                    rows: {
-                      type: "array",
-                      items: {
-                        type: "array",
-                        items: { type: "string" }
-                      },
-                      description: "Array of rows, each row is an array of cell values"
-                    }
-                  },
-                  required: ["id", "headers", "rows"]
-                }
-              },
-              {
-                type: "function",
-                name: "show_definition",
-                description: "Display a definition card for a key term or concept.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string", description: "Unique ID for this definition" },
-                    term: { type: "string", description: "The term being defined" },
-                    definition: { type: "string", description: "The definition text" },
-                    example: { type: "string", description: "Optional example to illustrate the term" }
-                  },
-                  required: ["id", "term", "definition"]
-                }
-              },
-              {
-                type: "function",
-                name: "ask_question",
-                description: "Present an interactive multiple-choice question to the student.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    question: { type: "string", description: "The question text" },
-                    options: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          text: { type: "string" },
-                          isCorrect: { type: "boolean" }
-                        },
-                        required: ["id", "text", "isCorrect"]
-                      }
-                    },
-                    explanation: { type: "string", description: "Explanation shown after answering" }
-                  },
-                  required: ["id", "question", "options"]
-                }
-              }
-            ],
-            tool_choice: "auto",
-            temperature: 0.8,
-            max_response_output_tokens: 4096
-          }
+...
         }));
         
-        isSessionConfigured = true;
-        console.log("Session configured");
+        console.log("Session configured, waiting for session.updated");
 
-        // Send initial greeting message
-        const greetingText = lessonTitle 
+        // Store greeting text to send AFTER session.updated
+        pendingGreetingText = lessonTitle 
           ? `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`
           : `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
+      }
 
-        console.log("Sending initial greeting:", greetingText);
+      // Send greeting AFTER session.updated is confirmed
+      if (message.type === 'session.updated' && !isSessionConfigured && pendingGreetingText) {
+        isSessionConfigured = true;
+        console.log("Session updated confirmed");
+
+        console.log("Sending initial greeting:", pendingGreetingText);
 
         // Create a conversation item with the greeting prompt
         openAISocket.send(JSON.stringify({
@@ -362,25 +233,29 @@ Teaching style:
             content: [
               {
                 type: 'input_text',
-                text: greetingText
+                text: pendingGreetingText
               }
             ]
           }
         }));
 
-        // Immediately trigger a response so Cleo speaks the greeting
+        // Force audio output for greeting
         openAISocket.send(JSON.stringify({
-          type: 'response.create'
+          type: 'response.create',
+          response: {
+            modalities: ['audio', 'text']
+          }
         }));
 
         // Save the greeting prompt to database as a system message
         await supabase.from('cleo_messages').insert({
           conversation_id: conversation.id,
           role: 'system',
-          content: `Initial greeting prompt: ${greetingText}`
+          content: `Initial greeting prompt: ${pendingGreetingText}`
         });
 
-        console.log("Initial greeting sent to OpenAI");
+        console.log("Initial greeting sent after session.updated");
+        pendingGreetingText = null;
       }
 
       // Track when audio response starts
