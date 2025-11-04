@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LessonProgressBar } from './LessonProgressBar';
 import { ContentDisplay } from './ContentDisplay';
 import { VoiceControls } from './VoiceControls';
 import { CleoVoiceChat } from './CleoVoiceChat';
@@ -101,15 +100,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
-      {/* Lesson Progress Bar */}
-      {lessonData.steps && lessonData.steps.length > 0 && (
-        <LessonProgressBar
-          steps={lessonData.steps}
-          currentStep={activeStep}
-          completedSteps={completedSteps}
-        />
-      )}
-
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
         <div className="w-full px-4 md:px-8 lg:px-12 py-6">
