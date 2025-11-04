@@ -119,13 +119,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
-        setConnectionState('connected');
+        console.log('WebSocket to edge function connected');
         toast({
-          title: "Connected",
-          description: "Start speaking to Cleo!",
+          title: "Connecting to Cleo...",
+          description: "Setting up voice connection",
         });
-        startRecording();
       };
 
       wsRef.current.onmessage = async (event) => {
@@ -141,8 +139,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'session.created':
-            console.log('Session created:', data);
+            console.log('✅ OpenAI session ready, starting recording');
             setConnectionState('connected');
+            startRecording();
+            toast({
+              title: "Connected",
+              description: "Start speaking to Cleo!",
+            });
             break;
 
           case 'content.marker':
