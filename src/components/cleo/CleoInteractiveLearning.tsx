@@ -112,7 +112,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-8">
+        <div className="w-full px-4 md:px-8 lg:px-12 py-6">
           {/* Debug info (development only) */}
           {process.env.NODE_ENV !== 'production' && (
             <div className="text-xs text-muted-foreground mb-2 opacity-50">
