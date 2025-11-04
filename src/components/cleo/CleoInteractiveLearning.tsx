@@ -31,8 +31,9 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   >('idle');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
-  const controlsRef = useRef<{ connect: () => void; disconnect: () => void } | null>(null);
+  const controlsRef = useRef<{ connect: () => void; disconnect: () => void; pause: () => void; resume: () => void } | null>(null);
 
   const handleAnswerQuestion = (
     questionId: string,
@@ -193,6 +194,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
+          onPausedChange={setIsPaused}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
           }}
@@ -205,11 +207,18 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           isConnected={connectionState === 'connected'}
           isListening={isListening}
           isSpeaking={isSpeaking}
+          isPaused={isPaused}
           onConnect={() => {
             controlsRef.current?.connect();
           }}
           onDisconnect={() => {
             controlsRef.current?.disconnect();
+          }}
+          onPause={() => {
+            controlsRef.current?.pause();
+          }}
+          onResume={() => {
+            controlsRef.current?.resume();
           }}
         />
       </div>

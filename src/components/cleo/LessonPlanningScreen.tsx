@@ -38,8 +38,44 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
   ]);
 
   useEffect(() => {
-    generateLessonPlan();
+    checkExistingPlan();
   }, []);
+
+  const checkExistingPlan = async () => {
+    if (!lessonId) {
+      // No lesson ID, generate new plan
+      generateLessonPlan();
+      return;
+    }
+
+    try {
+      // Check if plan exists for this lesson
+      const { data, error } = await supabase
+        .from('cleo_lesson_plans')
+        .select('id')
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking for existing plan:', error);
+        generateLessonPlan();
+        return;
+      }
+
+      if (data) {
+        // Plan exists, use it
+        console.log('📚 Found existing lesson plan:', data.id);
+        onComplete(data.id);
+      } else {
+        // No plan, generate new one
+        console.log('📝 No existing plan found, generating new one');
+        generateLessonPlan();
+      }
+    } catch (error) {
+      console.error('Error in checkExistingPlan:', error);
+      generateLessonPlan();
+    }
+  };
 
   const generateLessonPlan = async () => {
     try {

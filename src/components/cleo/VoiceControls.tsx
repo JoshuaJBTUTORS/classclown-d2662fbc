@@ -7,19 +7,26 @@ interface VoiceControlsProps {
   isConnected: boolean;
   isListening: boolean;
   isSpeaking: boolean;
+  isPaused?: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
+  onPause?: () => void;
+  onResume?: () => void;
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
   isConnected,
   isListening,
   isSpeaking,
+  isPaused = false,
   onConnect,
   onDisconnect,
+  onPause,
+  onResume,
 }) => {
   const getStatusColor = () => {
     if (!isConnected) return 'bg-muted';
+    if (isPaused) return 'bg-yellow-500';
     if (isListening) return 'bg-blue-500';
     if (isSpeaking) return 'bg-green-500';
     return 'bg-primary';
@@ -27,6 +34,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
 
   const getStatusText = () => {
     if (!isConnected) return 'Start Learning';
+    if (isPaused) return 'Lesson Paused';
     if (isListening) return 'Listening...';
     if (isSpeaking) return 'Cleo is speaking...';
     return 'Connected';
@@ -58,6 +66,46 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         </motion.div>
       )}
 
+      {/* Control Buttons */}
+      {isConnected && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-center gap-2"
+        >
+          {!isPaused && onPause && (
+            <Button
+              onClick={onPause}
+              variant="secondary"
+              size="sm"
+              className="gap-2"
+            >
+              <Square className="w-4 h-4" />
+              Pause
+            </Button>
+          )}
+          {isPaused && onResume && (
+            <Button
+              onClick={onResume}
+              variant="default"
+              size="sm"
+              className="gap-2"
+            >
+              <Play className="w-4 h-4" />
+              Resume
+            </Button>
+          )}
+          <Button
+            onClick={onDisconnect}
+            variant="destructive"
+            size="sm"
+            className="gap-2"
+          >
+            <Square className="w-4 h-4" />
+            Stop Lesson
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 };

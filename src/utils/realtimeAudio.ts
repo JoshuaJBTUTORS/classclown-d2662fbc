@@ -9,6 +9,7 @@ export class AudioStreamRecorder {
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private isRecording = false;
+  private isPaused = false;
 
   constructor(private onAudioChunk: (base64Audio: string) => void) {}
 
@@ -31,7 +32,7 @@ export class AudioStreamRecorder {
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
 
       this.processor.onaudioprocess = (e) => {
-        if (!this.isRecording) return;
+        if (!this.isRecording || this.isPaused) return;
 
         const inputData = e.inputBuffer.getChannelData(0);
         
@@ -100,6 +101,16 @@ export class AudioStreamRecorder {
     }
 
     return btoa(binary);
+  }
+
+  pause() {
+    this.isPaused = true;
+    console.log('🎤 Recording paused');
+  }
+
+  resume() {
+    this.isPaused = false;
+    console.log('🎤 Recording resumed');
   }
 
   getVolume(): number {

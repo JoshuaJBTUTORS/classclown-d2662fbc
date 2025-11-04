@@ -19,7 +19,8 @@ interface CleoVoiceChatProps {
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
-  onProvideControls?: (controls: { connect: () => void; disconnect: () => void }) => void;
+  onPausedChange?: (isPaused: boolean) => void;
+  onProvideControls?: (controls: { connect: () => void; disconnect: () => void; pause: () => void; resume: () => void }) => void;
 }
 
 export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
@@ -32,12 +33,14 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onConnectionStateChange,
   onListeningChange,
   onSpeakingChange,
+  onPausedChange,
   onProvideControls
 }) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [audioContextState, setAudioContextState] = useState<string>('unknown');
@@ -61,9 +64,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     onSpeakingChange?.(isSpeaking);
   }, [isSpeaking, onSpeakingChange]);
 
-  // Provide connect/disconnect controls to parent
   useEffect(() => {
-    onProvideControls?.({ connect, disconnect });
+    onPausedChange?.(isPaused);
+  }, [isPaused, onPausedChange]);
+
+  // Provide connect/disconnect/pause/resume controls to parent
+  useEffect(() => {
+    onProvideControls?.({ connect, disconnect, pause, resume });
   }, [onProvideControls]);
 
   useEffect(() => {
@@ -267,6 +274,29 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     console.log('🎤 Recording stopped');
   };
 
+  const pause = () => {
+    console.log('Pausing lesson...');
+    recorderRef.current?.pause();
+    playerRef.current?.pause();
+    setIsPaused(true);
+    setIsListening(false);
+    setIsSpeaking(false);
+    toast({
+      title: "Lesson Paused",
+      description: "Recording and playback paused",
+    });
+  };
+
+  const resume = () => {
+    console.log('Resuming lesson...');
+    recorderRef.current?.resume();
+    setIsPaused(false);
+    toast({
+      title: "Lesson Resumed",
+      description: "Continue speaking to Cleo",
+    });
+  };
+
   const disconnect = () => {
     console.log('Disconnecting...');
     stopRecording();
@@ -278,6 +308,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
+    setIsPaused(false);
   };
 
   // This component renders nothing - it's just for voice logic
