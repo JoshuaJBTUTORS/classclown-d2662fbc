@@ -1,43 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
+import { LessonProgressBar } from './LessonProgressBar';
 import { ContentDisplay } from './ContentDisplay';
 import { VoiceControls } from './VoiceControls';
 import { CleoVoiceChat } from './CleoVoiceChat';
-import { AudioDeviceSelector } from './AudioDeviceSelector';
 import { useContentSync } from '@/hooks/useContentSync';
-import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
+import { LessonData } from '@/types/lessonContent';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
   conversationId?: string;
-  lessonPlanId?: string;
 }
 
 export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = ({
   lessonData,
   conversationId,
-  lessonPlanId,
 }) => {
   const {
     activeStep,
     visibleContent,
     completedSteps,
-    showContent,
     handleContentEvent,
   } = useContentSync(lessonData);
 
-  const [connectionState, setConnectionState] = useState<
+  const [connectionState, setConnectionState] = React.useState<
     'idle' | 'connecting' | 'connected' | 'disconnected'
   >('idle');
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
-  const [inputDeviceId, setInputDeviceId] = useState<string>('default');
-  const [outputDeviceId, setOutputDeviceId] = useState<string>('default');
-  const [liveTranscript, setLiveTranscript] = useState('');
-  const controlsRef = useRef<{ connect: () => void; disconnect: () => void; pause: () => void; resume: () => void } | null>(null);
+  const [isListening, setIsListening] = React.useState(false);
+  const [isSpeaking, setIsSpeaking] = React.useState(false);
+  const controlsRef = React.useRef<{ connect: () => void; disconnect: () => void } | null>(null);
 
   const handleAnswerQuestion = (
     questionId: string,
@@ -47,54 +39,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     console.log('📝 Answer submitted:', { questionId, answerId, isCorrect });
     // The answer will be sent via the voice chat component
   };
-
-  const handleContentEventWithUpsert = (event: ContentEvent) => {
-    if (event.type === 'upsert_content' && event.block) {
-      console.log('🎨 Upserting content block:', event.block.id);
-      setContent(prev => {
-        const existingIndex = prev.findIndex(b => b.id === event.block!.id);
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = { ...updated[existingIndex], ...event.block };
-          return updated;
-        }
-        return [...prev, event.block!];
-      });
-      if (event.autoShow) {
-        showContent(event.block.id);
-      }
-    } else {
-      handleContentEvent(event);
-    }
-  };
-
-  // Dev fallback: inject demo table after 2s if no dynamic content
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' && connectionState === 'connected') {
-      const timer = setTimeout(() => {
-        const nonIntroVisible = visibleContent.filter(id => id !== content[0]?.id);
-        if (nonIntroVisible.length === 0) {
-          const demoTable: ContentBlock = {
-            id: 'demo-table',
-            stepId: lessonData.steps?.[1]?.id || lessonData.steps?.[0]?.id || 'main',
-            type: 'table',
-            data: { 
-              headers: ['Concept', 'Meaning'], 
-              rows: [
-                ['Atom', 'Smallest unit of matter'], 
-                ['Molecule', 'Two or more atoms bonded']
-              ] 
-            },
-            visible: false,
-          };
-          setContent(prev => prev.some(b => b.id === demoTable.id) ? prev : [...prev, demoTable]);
-          showContent('demo-table');
-          console.log('📦 Demo table injected for testing');
-        }
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [connectionState, visibleContent, content, lessonData.steps, showContent]);
 
   // Check if we have content and if any is visible
   const hasContent = lessonData.content && lessonData.content.length > 0;
@@ -107,9 +51,18 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
+      {/* Lesson Progress Bar */}
+      {lessonData.steps && lessonData.steps.length > 0 && (
+        <LessonProgressBar
+          steps={lessonData.steps}
+          currentStep={activeStep}
+          completedSteps={completedSteps}
+        />
+      )}
+
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full px-4 md:px-8 lg:px-12 py-6">
+        <div className="max-w-4xl mx-auto p-8">
           {/* Debug info (development only) */}
           {process.env.NODE_ENV !== 'production' && (
             <div className="text-xs text-muted-foreground mb-2 opacity-50">
@@ -126,29 +79,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             </p>
           </div>
 
-          {/* Teaching Sequence - Show BEFORE starting */}
-          {connectionState !== 'connected' && lessonData.steps?.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Teaching Sequence</h2>
-              <div className="space-y-3">
-                {lessonData.steps.map((step, index) => (
-                  <div key={step.id} className="flex items-start gap-3 p-4 bg-card border rounded-lg">
-                    <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-primary">{index + 1}</span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{step.title}</h3>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Content Display - Show AFTER starting */}
-          {connectionState === 'connected' && hasContent && (
+          {/* Content Display */}
+          {hasContent && (
             <ContentDisplay
-              content={content}
+              content={lessonData.content}
               visibleContent={derivedVisible}
               onAnswerQuestion={handleAnswerQuestion}
             />
@@ -168,17 +102,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 </h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
                   Begin your voice conversation with Cleo about {lessonData.topic}.
-                  Detailed content will appear as you progress through the lesson.
+                  Visual content will appear here as you learn.
                 </p>
-                
-                <div className="max-w-md mx-auto mb-6">
-                  <AudioDeviceSelector
-                    onInputDeviceChange={setInputDeviceId}
-                    onOutputDeviceChange={setOutputDeviceId}
-                    disabled={['connected'].includes(connectionState)}
-                  />
-                </div>
-                
                 <Button
                   onClick={() => controlsRef.current?.connect()}
                   size="lg"
@@ -187,6 +112,26 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   <Play className="w-5 h-5" />
                   Start Learning
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* No Content Fallback */}
+          {!hasContent && (
+            <div className="text-center py-12">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  Ready to Learn with Cleo
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Click the Start Learning button below to start your voice conversation with Cleo about {lessonData.topic}.
+                  Visual content will appear here as you learn.
+                </p>
               </div>
             </div>
           )}
@@ -202,32 +147,15 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           conversationId={conversationId}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
-          lessonPlanId={lessonPlanId}
-          inputDeviceId={inputDeviceId}
-          outputDeviceId={outputDeviceId}
-          onContentEvent={handleContentEventWithUpsert}
+          onContentEvent={handleContentEvent}
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
-          onPausedChange={setIsPaused}
-          onTranscriptChange={setLiveTranscript}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
           }}
         />
       </div>
-
-      {/* Debug: Live Transcript Display */}
-      {liveTranscript && (
-        <div className="fixed bottom-24 right-4 max-w-md bg-yellow-100 border-2 border-yellow-500 rounded-lg p-4 shadow-lg z-50">
-          <div className="text-xs font-semibold text-yellow-800 mb-2">
-            🐛 DEBUG: Live Transcript
-          </div>
-          <div className="text-sm text-yellow-900 max-h-32 overflow-y-auto">
-            {liveTranscript}
-          </div>
-        </div>
-      )}
 
       {/* Floating Voice Controls */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999]">
@@ -235,18 +163,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           isConnected={connectionState === 'connected'}
           isListening={isListening}
           isSpeaking={isSpeaking}
-          isPaused={isPaused}
           onConnect={() => {
             controlsRef.current?.connect();
           }}
           onDisconnect={() => {
             controlsRef.current?.disconnect();
-          }}
-          onPause={() => {
-            controlsRef.current?.pause();
-          }}
-          onResume={() => {
-            controlsRef.current?.resume();
           }}
         />
       </div>

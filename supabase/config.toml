@@ -96,9 +96,6 @@ verify_jwt = true
 [functions.cleo-realtime-voice]
 verify_jwt = false
 
-[functions.generate-lesson-plan]
-verify_jwt = true
-
 [functions.backfill-participant-urls]
 verify_jwt = false
 

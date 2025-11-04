@@ -14,7 +14,9 @@ const LearningHubLayout: React.FC = () => {
           <div className="fixed top-4 left-4 z-30 block md:hidden">
             <SidebarTrigger />
           </div>
-          <Outlet />
+          <div className="p-4 md:p-6">
+            <Outlet />
+          </div>
         </main>
       </div>
     </SidebarProvider>

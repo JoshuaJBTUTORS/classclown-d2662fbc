@@ -9,16 +9,14 @@ export class AudioStreamRecorder {
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private isRecording = false;
-  private isPaused = false;
 
   constructor(private onAudioChunk: (base64Audio: string) => void) {}
 
-  async start(deviceId?: string) {
+  async start() {
     try {
       // Request microphone access
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          deviceId: deviceId && deviceId !== 'default' ? { exact: deviceId } : undefined,
           sampleRate: 24000,
           channelCount: 1,
           echoCancellation: true,
@@ -33,7 +31,7 @@ export class AudioStreamRecorder {
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
 
       this.processor.onaudioprocess = (e) => {
-        if (!this.isRecording || this.isPaused) return;
+        if (!this.isRecording) return;
 
         const inputData = e.inputBuffer.getChannelData(0);
         
@@ -104,16 +102,6 @@ export class AudioStreamRecorder {
     return btoa(binary);
   }
 
-  pause() {
-    this.isPaused = true;
-    console.log('🎤 Recording paused');
-  }
-
-  resume() {
-    this.isPaused = false;
-    console.log('🎤 Recording resumed');
-  }
-
   getVolume(): number {
     // Could implement volume detection here for visual feedback
     return 0;
@@ -124,35 +112,15 @@ export class AudioStreamPlayer {
   private audioContext: AudioContext;
   private audioQueue: Uint8Array[] = [];
   private isPlaying = false;
-  private outputDeviceId?: string;
 
-  constructor(outputDeviceId?: string) {
+  constructor() {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
-    this.outputDeviceId = outputDeviceId;
     
     this.audioContext.onstatechange = () => {
       console.log('🔊 AudioContext state changed:', this.audioContext.state);
     };
     
     console.log('🔊 AudioContext created with state:', this.audioContext.state);
-    
-    // Set output device if supported and specified
-    if (outputDeviceId && outputDeviceId !== 'default') {
-      this.setOutputDevice(outputDeviceId);
-    }
-  }
-
-  private async setOutputDevice(deviceId: string) {
-    try {
-      if ('setSinkId' in this.audioContext.destination) {
-        await (this.audioContext.destination as any).setSinkId(deviceId);
-        console.log('🔊 Output device set to:', deviceId);
-      } else {
-        console.warn('🔊 Output device selection not supported in this browser');
-      }
-    } catch (error) {
-      console.error('🔊 Error setting output device:', error);
-    }
   }
 
   async playChunk(base64Audio: string) {
