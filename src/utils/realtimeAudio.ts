@@ -13,11 +13,12 @@ export class AudioStreamRecorder {
 
   constructor(private onAudioChunk: (base64Audio: string) => void) {}
 
-  async start() {
+  async start(deviceId?: string) {
     try {
       // Request microphone access
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
+          deviceId: deviceId && deviceId !== 'default' ? { exact: deviceId } : undefined,
           sampleRate: 24000,
           channelCount: 1,
           echoCancellation: true,
@@ -123,15 +124,35 @@ export class AudioStreamPlayer {
   private audioContext: AudioContext;
   private audioQueue: Uint8Array[] = [];
   private isPlaying = false;
+  private outputDeviceId?: string;
 
-  constructor() {
+  constructor(outputDeviceId?: string) {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
+    this.outputDeviceId = outputDeviceId;
     
     this.audioContext.onstatechange = () => {
       console.log('🔊 AudioContext state changed:', this.audioContext.state);
     };
     
     console.log('🔊 AudioContext created with state:', this.audioContext.state);
+    
+    // Set output device if supported and specified
+    if (outputDeviceId && outputDeviceId !== 'default') {
+      this.setOutputDevice(outputDeviceId);
+    }
+  }
+
+  private async setOutputDevice(deviceId: string) {
+    try {
+      if ('setSinkId' in this.audioContext.destination) {
+        await (this.audioContext.destination as any).setSinkId(deviceId);
+        console.log('🔊 Output device set to:', deviceId);
+      } else {
+        console.warn('🔊 Output device selection not supported in this browser');
+      }
+    } catch (error) {
+      console.error('🔊 Error setting output device:', error);
+    }
   }
 
   async playChunk(base64Audio: string) {

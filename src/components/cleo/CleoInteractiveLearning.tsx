@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ContentDisplay } from './ContentDisplay';
 import { VoiceControls } from './VoiceControls';
 import { CleoVoiceChat } from './CleoVoiceChat';
+import { AudioDeviceSelector } from './AudioDeviceSelector';
 import { useContentSync } from '@/hooks/useContentSync';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
+  const [inputDeviceId, setInputDeviceId] = useState<string>('default');
+  const [outputDeviceId, setOutputDeviceId] = useState<string>('default');
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void; pause: () => void; resume: () => void } | null>(null);
 
   const handleAnswerQuestion = (
@@ -166,6 +169,15 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   Begin your voice conversation with Cleo about {lessonData.topic}.
                   Detailed content will appear as you progress through the lesson.
                 </p>
+                
+                <div className="max-w-md mx-auto mb-6">
+                  <AudioDeviceSelector
+                    onInputDeviceChange={setInputDeviceId}
+                    onOutputDeviceChange={setOutputDeviceId}
+                    disabled={['connected'].includes(connectionState)}
+                  />
+                </div>
+                
                 <Button
                   onClick={() => controlsRef.current?.connect()}
                   size="lg"
@@ -190,6 +202,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
           lessonPlanId={lessonPlanId}
+          inputDeviceId={inputDeviceId}
+          outputDeviceId={outputDeviceId}
           onContentEvent={handleContentEventWithUpsert}
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}

@@ -14,6 +14,8 @@ interface CleoVoiceChatProps {
   topic?: string;
   yearGroup?: string;
   lessonPlanId?: string;
+  inputDeviceId?: string;
+  outputDeviceId?: string;
   onConversationCreated?: (id: string) => void;
   onContentEvent?: (event: ContentEvent) => void;
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
@@ -28,6 +30,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   topic,
   yearGroup,
   lessonPlanId,
+  inputDeviceId,
+  outputDeviceId,
   onConversationCreated,
   onContentEvent,
   onConnectionStateChange,
@@ -89,12 +93,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         throw new Error('Not authenticated');
       }
 
-    // Create audio player
-    playerRef.current = new AudioStreamPlayer();
+    // Create audio player with output device
+    playerRef.current = new AudioStreamPlayer(outputDeviceId);
     
     // Resume AudioContext immediately (user gesture)
     await playerRef.current.resume();
     setAudioContextState('running');
+    console.log('🔊 Audio player initialized with output device:', outputDeviceId);
 
       // Connect WebSocket
       let wsUrl = `wss://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/cleo-realtime-voice?token=${session.access_token}`;
@@ -253,9 +258,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         }
       });
 
-      await recorderRef.current.start();
+      await recorderRef.current.start(inputDeviceId);
       setMicrophoneActive(true);
-      console.log('🎤 Recording started');
+      console.log('🎤 Recording started with input device:', inputDeviceId);
     } catch (error) {
       console.error('Error starting recorder:', error);
       setMicrophoneActive(false);
