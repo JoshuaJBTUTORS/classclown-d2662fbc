@@ -38,44 +38,9 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
   ]);
 
   useEffect(() => {
-    checkExistingPlan();
+    // Edge function handles checking for existing plans, so just generate directly
+    generateLessonPlan();
   }, []);
-
-  const checkExistingPlan = async () => {
-    if (!lessonId) {
-      // No lesson ID, generate new plan
-      generateLessonPlan();
-      return;
-    }
-
-    try {
-      // Check if plan exists for this lesson
-      const { data, error } = await supabase
-        .from('cleo_lesson_plans')
-        .select('id')
-        .eq('lesson_id', lessonId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error checking for existing plan:', error);
-        generateLessonPlan();
-        return;
-      }
-
-      if (data) {
-        // Plan exists, use it
-        console.log('📚 Found existing lesson plan:', data.id);
-        onComplete(data.id);
-      } else {
-        // No plan, generate new one
-        console.log('📝 No existing plan found, generating new one');
-        generateLessonPlan();
-      }
-    } catch (error) {
-      console.error('Error in checkExistingPlan:', error);
-      generateLessonPlan();
-    }
-  };
 
   const generateLessonPlan = async () => {
     try {
@@ -114,15 +79,31 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
       if (error) {
         throw new Error(error.message || 'Failed to generate lesson plan');
       }
-      
-      // Complete all steps
-      setSteps(prev => prev.map(s => ({ ...s, completed: true })));
-      setCurrentStep(steps.length);
 
-      // Wait a moment before completing
-      setTimeout(() => {
+      // Handle different response types
+      if (data.isExisting) {
+        // Existing plan found - skip animation and go directly
+        console.log('📚 Using existing universal lesson plan:', data.lessonPlanId);
+        setSteps(prev => prev.map(s => ({ ...s, completed: true })));
+        setCurrentStep(steps.length);
         onComplete(data.lessonPlanId);
-      }, 500);
+      } else if (data.isGenerating) {
+        // Another instance is generating - wait a moment
+        console.log('⏳ Another request is generating this plan, loading...');
+        setSteps(prev => prev.map(s => ({ ...s, completed: true })));
+        setCurrentStep(steps.length);
+        setTimeout(() => {
+          onComplete(data.lessonPlanId);
+        }, 1500);
+      } else {
+        // New plan generated - show full animation
+        console.log('✨ New lesson plan generated:', data.lessonPlanId);
+        setSteps(prev => prev.map(s => ({ ...s, completed: true })));
+        setCurrentStep(steps.length);
+        setTimeout(() => {
+          onComplete(data.lessonPlanId);
+        }, 500);
+      }
 
     } catch (error) {
       console.error('Error generating lesson plan:', error);
