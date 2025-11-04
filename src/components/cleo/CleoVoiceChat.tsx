@@ -22,6 +22,7 @@ interface CleoVoiceChatProps {
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
   onPausedChange?: (isPaused: boolean) => void;
+  onTranscriptChange?: (transcript: string) => void;
   onProvideControls?: (controls: { connect: () => void; disconnect: () => void; pause: () => void; resume: () => void }) => void;
 }
 
@@ -38,6 +39,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onListeningChange,
   onSpeakingChange,
   onPausedChange,
+  onTranscriptChange,
   onProvideControls
 }) => {
   const { toast } = useToast();
@@ -182,6 +184,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
           case 'conversation.item.input_audio_transcription.completed':
             setCurrentTranscript('');
+            onTranscriptChange?.('');
             setMessages(prev => [...prev, { role: 'user', content: data.transcript }]);
             break;
 
@@ -194,7 +197,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'response.audio_transcript.delta':
-            setCurrentTranscript(prev => prev + data.delta);
+            const newTranscript = currentTranscript + data.delta;
+            setCurrentTranscript(newTranscript);
+            onTranscriptChange?.(newTranscript);
             break;
 
           case 'response.audio_transcript.done':
@@ -202,6 +207,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               setMessages(prev => [...prev, { role: 'assistant', content: data.transcript }]);
             }
             setCurrentTranscript('');
+            onTranscriptChange?.('');
             break;
 
           case 'response.done':

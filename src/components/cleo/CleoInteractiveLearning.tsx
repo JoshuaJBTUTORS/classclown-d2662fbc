@@ -36,6 +36,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [inputDeviceId, setInputDeviceId] = useState<string>('default');
   const [outputDeviceId, setOutputDeviceId] = useState<string>('default');
+  const [liveTranscript, setLiveTranscript] = useState('');
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void; pause: () => void; resume: () => void } | null>(null);
 
   const handleAnswerQuestion = (
@@ -209,11 +210,24 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
           onPausedChange={setIsPaused}
+          onTranscriptChange={setLiveTranscript}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
           }}
         />
       </div>
+
+      {/* Debug: Live Transcript Display */}
+      {liveTranscript && (
+        <div className="fixed bottom-24 right-4 max-w-md bg-yellow-100 border-2 border-yellow-500 rounded-lg p-4 shadow-lg z-50">
+          <div className="text-xs font-semibold text-yellow-800 mb-2">
+            🐛 DEBUG: Live Transcript
+          </div>
+          <div className="text-sm text-yellow-900 max-h-32 overflow-y-auto">
+            {liveTranscript}
+          </div>
+        </div>
+      )}
 
       {/* Floating Voice Controls */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999]">
