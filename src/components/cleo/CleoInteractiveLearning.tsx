@@ -38,8 +38,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     // The answer will be sent via the voice chat component
   };
 
-  // Check if we have minimal or no content
-  const hasMinimalContent = !lessonData.content || lessonData.content.length === 0;
+  // Check if we have minimal or no content, or if no content is visible yet
+  const hasMinimalContent = !lessonData.content || lessonData.content.length === 0 || visibleContent.length === 0;
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
