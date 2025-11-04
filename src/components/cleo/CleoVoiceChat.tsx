@@ -179,6 +179,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'response.audio.delta':
+            console.log('🔊 Audio chunk received, size:', data.delta?.length || 0);
             setIsSpeaking(true);
             if (playerRef.current && data.delta) {
               await playerRef.current.playChunk(data.delta);
@@ -197,10 +198,19 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'response.done':
+            console.log('✅ Response complete');
             setIsSpeaking(false);
             break;
 
           case 'server_error':
+            const errorCode = data.details?.error?.code;
+            
+            // Don't show toast for cancellation errors (they're not critical)
+            if (errorCode === 'response_cancel_not_active') {
+              console.log('ℹ️ Cancellation attempted on inactive response (harmless)');
+              break;
+            }
+            
             console.error('🚨 Detailed Server Error:', data.details);
             toast({
               title: "OpenAI Error",

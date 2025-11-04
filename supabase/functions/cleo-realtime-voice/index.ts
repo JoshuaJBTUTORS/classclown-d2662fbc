@@ -166,6 +166,9 @@ Deno.serve(async (req) => {
     };
 
     let isSessionConfigured = false;
+    let isResponseActive = false;  // Track if AI is speaking
+    let hasAudioStarted = false;   // Track if audio generation started
+    let isInitialGreeting = true;  // Protect the initial greeting
     let currentTranscript = '';
     let currentAssistantMessage = '';
 
@@ -259,9 +262,9 @@ Teaching style:
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.5,
+              threshold: 0.65,  // Less sensitive to ambient noise
               prefix_padding_ms: 300,
-              silence_duration_ms: 700
+              silence_duration_ms: 1000  // More time for user to think
             },
             tools: [
               {
@@ -380,12 +383,35 @@ Teaching style:
         console.log("Initial greeting sent to OpenAI");
       }
 
-      // Cancel AI response when user starts speaking (interruption)
+      // Track when audio response starts
+      if (message.type === 'response.audio.delta') {
+        isResponseActive = true;
+        hasAudioStarted = true;
+      }
+
+      // Cancel AI response when user starts speaking (only if response is active)
       if (message.type === 'input_audio_buffer.speech_started') {
-        console.log("User started speaking - cancelling AI response");
-        openAISocket.send(JSON.stringify({
-          type: 'response.cancel'
-        }));
+        // Don't cancel the initial greeting
+        if (isInitialGreeting) {
+          console.log("Speech detected during initial greeting - ignoring");
+          // Forward to client but don't cancel
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(event.data);
+          }
+          return;
+        }
+
+        // Only cancel if we're actually generating audio
+        if (isResponseActive && hasAudioStarted) {
+          console.log("User interrupted - cancelling AI response");
+          openAISocket.send(JSON.stringify({
+            type: 'response.cancel'
+          }));
+          isResponseActive = false;
+          hasAudioStarted = false;
+        } else {
+          console.log("Speech detected but no active response to cancel");
+        }
       }
 
       // Save student transcript to database
@@ -549,6 +575,18 @@ Teaching style:
             content: currentAssistantMessage
           });
           currentAssistantMessage = '';
+        }
+      }
+
+      // Track when response completes
+      if (message.type === 'response.done') {
+        isResponseActive = false;
+        hasAudioStarted = false;
+        
+        // Clear initial greeting flag after first response
+        if (isInitialGreeting) {
+          isInitialGreeting = false;
+          console.log("Initial greeting completed - interruptions now allowed");
         }
       }
 
