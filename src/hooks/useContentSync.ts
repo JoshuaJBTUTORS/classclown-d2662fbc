@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { LessonData, ContentEvent } from '@/types/lessonContent';
 
 export const useContentSync = (lessonData: LessonData) => {
@@ -55,6 +55,14 @@ export const useContentSync = (lessonData: LessonData) => {
     },
     [showContent, moveToNextStep, completeStep]
   );
+
+  // Auto-show first visible content block on mount
+  useEffect(() => {
+    const firstVisible = lessonData.content?.find(c => c.visible);
+    if (firstVisible && !visibleContent.includes(firstVisible.id)) {
+      showContent(firstVisible.id);
+    }
+  }, [lessonData, showContent, visibleContent]);
 
   return {
     activeStep,
