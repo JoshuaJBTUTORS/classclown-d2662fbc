@@ -10,11 +10,13 @@ import { Play } from 'lucide-react';
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
   conversationId?: string;
+  lessonPlanId?: string;
 }
 
 export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = ({
   lessonData,
   conversationId,
+  lessonPlanId,
 }) => {
   const {
     activeStep,
@@ -186,6 +188,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           conversationId={conversationId}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
+          lessonPlanId={lessonPlanId}
           onContentEvent={handleContentEventWithUpsert}
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}

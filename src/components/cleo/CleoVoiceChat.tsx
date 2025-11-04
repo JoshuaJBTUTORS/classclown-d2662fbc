@@ -13,6 +13,7 @@ interface CleoVoiceChatProps {
   conversationId?: string;
   topic?: string;
   yearGroup?: string;
+  lessonPlanId?: string;
   onConversationCreated?: (id: string) => void;
   onContentEvent?: (event: ContentEvent) => void;
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
@@ -25,6 +26,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   conversationId,
   topic,
   yearGroup,
+  lessonPlanId,
   onConversationCreated,
   onContentEvent,
   onConnectionStateChange,
@@ -97,6 +99,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       }
       if (yearGroup) {
         wsUrl += `&yearGroup=${encodeURIComponent(yearGroup)}`;
+      }
+      if (lessonPlanId) {
+        wsUrl += `&lessonPlanId=${encodeURIComponent(lessonPlanId)}`;
       }
       
       wsRef.current = new WebSocket(wsUrl);

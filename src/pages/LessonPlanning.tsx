@@ -85,6 +85,7 @@ const LessonPlanning: React.FC = () => {
             })),
             content: contentBlocks
           }}
+          lessonPlanId={lessonPlanId}
         />
       );
     }
