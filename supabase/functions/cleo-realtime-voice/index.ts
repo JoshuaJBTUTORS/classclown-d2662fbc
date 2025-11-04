@@ -206,7 +206,142 @@ Deno.serve(async (req) => {
         let systemPrompt;
         
         if (lessonPlan) {
-...
+          // Build structured prompt with lesson plan data
+          const objectives = lessonPlan.learning_objectives || [];
+          const steps = lessonPlan.teaching_sequence || [];
+          
+          systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching "${lessonPlan.topic}" to a ${lessonPlan.year_group} student.
+
+LESSON STRUCTURE:
+${objectives.length > 0 ? `Learning Objectives:
+${objectives.map((obj: string, i: number) => `${i + 1}. ${obj}`).join('\n')}
+
+` : ''}Teaching Sequence (follow in order):
+${steps.map((step: any, i: number) => `${i + 1}. ${step.title || step}`).join('\n')}
+
+${contentBlocks.length > 0 ? `Available Content: ${contentBlocks.length} pre-generated visual aids ready to display` : ''}
+
+TEACHING APPROACH:
+- Follow the teaching sequence step by step
+- Use your tools (show_table, show_definition, ask_question) to display content
+- Check understanding before moving to the next step
+- Start with step 1: "${steps[0]?.title || steps[0]}"
+- Be conversational and encouraging
+- Keep responses under 3 sentences unless explaining complex concepts
+
+Visual Content Tools:
+- show_table: Display structured data
+- show_definition: Show key terms and definitions
+- ask_question: Present interactive multiple-choice questions`;
+        } else if (conversation.topic && conversation.year_group) {
+          systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
+
+You have access to visual content tools:
+- show_table: Display tabular data
+- show_definition: Show definitions
+- ask_question: Present questions
+
+Teaching style:
+- Use your tools to show visual content
+- Provide clear explanations
+- Be patient and supportive
+- Keep responses conversational and under 3 sentences`;
+        } else {
+          systemPrompt = `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
+        }
+
+        openAISocket.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: systemPrompt,
+            voice: 'ballad',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: {
+              model: 'whisper-1'
+            },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.65,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 1000
+            },
+            tools: [
+              {
+                type: "function",
+                name: "show_table",
+                description: "Display a table with headers and rows of data. Use this when you want to present structured information visually.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { 
+                      type: "string", 
+                      description: "Unique ID for this table (e.g., 'periodic-table-basics')" 
+                    },
+                    headers: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Column headers for the table"
+                    },
+                    rows: {
+                      type: "array",
+                      items: {
+                        type: "array",
+                        items: { type: "string" }
+                      },
+                      description: "Array of rows, each row is an array of cell values"
+                    }
+                  },
+                  required: ["id", "headers", "rows"]
+                }
+              },
+              {
+                type: "function",
+                name: "show_definition",
+                description: "Display a definition card for a key term or concept.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", description: "Unique ID for this definition" },
+                    term: { type: "string", description: "The term being defined" },
+                    definition: { type: "string", description: "The definition text" },
+                    example: { type: "string", description: "Optional example to illustrate the term" }
+                  },
+                  required: ["id", "term", "definition"]
+                }
+              },
+              {
+                type: "function",
+                name: "ask_question",
+                description: "Present an interactive multiple-choice question to the student.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    question: { type: "string", description: "The question text" },
+                    options: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: { type: "string" },
+                          text: { type: "string" },
+                          isCorrect: { type: "boolean" }
+                        },
+                        required: ["id", "text", "isCorrect"]
+                      }
+                    },
+                    explanation: { type: "string", description: "Explanation shown after answering" }
+                  },
+                  required: ["id", "question", "options"]
+                }
+              }
+            ],
+            tool_choice: "auto",
+            temperature: 0.8,
+            max_response_output_tokens: 4096
+          }
         }));
         
         console.log("Session configured, waiting for session.updated");
