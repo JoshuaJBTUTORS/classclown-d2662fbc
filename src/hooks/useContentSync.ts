@@ -64,6 +64,18 @@ export const useContentSync = (lessonData: LessonData) => {
     }
   }, [lessonData, showContent, visibleContent]);
 
+  // Safety net: ensure first content shows after 300ms if nothing is visible
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (visibleContent.length === 0 && lessonData.content?.[0]) {
+        console.log('⚠️ Safety fallback: showing first content');
+        showContent(lessonData.content[0].id);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [visibleContent, lessonData.content, showContent]);
+
   return {
     activeStep,
     visibleContent,
