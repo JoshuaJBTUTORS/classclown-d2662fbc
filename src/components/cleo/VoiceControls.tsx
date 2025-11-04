@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Square, Volume2 } from 'lucide-react';
+import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface VoiceControlsProps {
@@ -26,18 +26,18 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   };
 
   const getStatusText = () => {
-    if (!isConnected) return 'Start Learning';
+    if (!isConnected) return 'Start Voice Session';
     if (isListening) return 'Listening...';
     if (isSpeaking) return 'Cleo is speaking...';
     return 'Connected';
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-end gap-3">
       {/* Status Indicator */}
       {isConnected && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-card border border-border rounded-full px-4 py-2 shadow-lg flex items-center gap-2"
         >
@@ -59,25 +59,26 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       )}
 
       {/* Main Control Button */}
-      {!isConnected ? (
-        <Button
-          onClick={onConnect}
-          size="lg"
-          className="gap-2 px-6 py-6 text-base font-semibold shadow-xl"
-        >
-          <Play className="w-5 h-5" />
-          Start Learning
-        </Button>
-      ) : (
-        <Button
-          onClick={onDisconnect}
-          size="lg"
-          variant="destructive"
-          className="gap-2 shadow-xl"
-        >
-          <Square className="w-4 h-4" />
-          End Session
-        </Button>
+      <Button
+        onClick={isConnected ? onDisconnect : onConnect}
+        size="lg"
+        className={`
+          w-16 h-16 rounded-full shadow-xl
+          ${isConnected ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'}
+        `}
+      >
+        {isConnected ? (
+          <MicOff className="w-7 h-7" />
+        ) : (
+          <Mic className="w-7 h-7" />
+        )}
+      </Button>
+
+      {/* Helper Text */}
+      {!isConnected && (
+        <p className="text-xs text-muted-foreground text-right max-w-[120px]">
+          Click to start learning with voice
+        </p>
       )}
     </div>
   );

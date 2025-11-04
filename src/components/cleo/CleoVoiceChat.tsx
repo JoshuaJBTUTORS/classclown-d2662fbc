@@ -18,7 +18,6 @@ interface CleoVoiceChatProps {
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
-  onProvideControls?: (controls: { connect: () => void; disconnect: () => void }) => void;
 }
 
 export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
@@ -29,8 +28,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onContentEvent,
   onConnectionStateChange,
   onListeningChange,
-  onSpeakingChange,
-  onProvideControls
+  onSpeakingChange
 }) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
@@ -58,11 +56,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   useEffect(() => {
     onSpeakingChange?.(isSpeaking);
   }, [isSpeaking, onSpeakingChange]);
-
-  // Provide connect/disconnect controls to parent
-  useEffect(() => {
-    onProvideControls?.({ connect, disconnect });
-  }, [onProvideControls]);
 
   useEffect(() => {
     return () => {

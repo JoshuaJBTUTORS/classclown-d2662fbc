@@ -27,7 +27,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   >('idle');
   const [isListening, setIsListening] = React.useState(false);
   const [isSpeaking, setIsSpeaking] = React.useState(false);
-  const controlsRef = React.useRef<{ connect: () => void; disconnect: () => void } | null>(null);
+  const voiceChatInstanceRef = React.useRef<any>(null);
 
   const handleAnswerQuestion = (
     questionId: string,
@@ -38,9 +38,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     // The answer will be sent via the voice chat component
   };
 
-  // Check if we have content and if any is visible
-  const hasContent = lessonData.content && lessonData.content.length > 0;
-  const hasVisibleContent = visibleContent.length > 0;
+  // Check if we have minimal or no content
+  const hasMinimalContent = !lessonData.content || lessonData.content.length === 0;
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
@@ -66,53 +65,30 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             </p>
           </div>
 
-          {/* Content Display */}
-          {hasContent && hasVisibleContent && (
+          {/* Minimal Content Fallback */}
+          {hasMinimalContent ? (
+            <div className="text-center py-12">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  Ready to Learn with Cleo
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Click the microphone button below to start your voice conversation with Cleo about {lessonData.topic}.
+                  Visual content will appear here as you learn.
+                </p>
+              </div>
+            </div>
+          ) : (
             <ContentDisplay
               content={lessonData.content}
               visibleContent={visibleContent}
               onAnswerQuestion={handleAnswerQuestion}
             />
-          )}
-
-          {/* Getting Started Message */}
-          {hasContent && !hasVisibleContent && (
-            <div className="text-center py-12">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Ready to Learn with Cleo
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Click the Start Learning button below to begin your voice conversation with Cleo about {lessonData.topic}.
-                  Visual content will appear here as you learn.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* No Content Fallback */}
-          {!hasContent && (
-            <div className="text-center py-12">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Ready to Learn with Cleo
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Click the Start Learning button below to start your voice conversation with Cleo about {lessonData.topic}.
-                  Visual content will appear here as you learn.
-                </p>
-              </div>
-            </div>
           )}
 
           {/* Spacer for floating controls */}
@@ -130,23 +106,22 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
-          onProvideControls={(controls) => {
-            controlsRef.current = controls;
-          }}
         />
       </div>
 
       {/* Floating Voice Controls */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed bottom-6 right-6 z-50">
         <VoiceControls
           isConnected={connectionState === 'connected'}
           isListening={isListening}
           isSpeaking={isSpeaking}
           onConnect={() => {
-            controlsRef.current?.connect();
+            // TODO: Implement connection trigger
+            console.log('Connect triggered');
           }}
           onDisconnect={() => {
-            controlsRef.current?.disconnect();
+            // TODO: Implement disconnect trigger
+            console.log('Disconnect triggered');
           }}
         />
       </div>
