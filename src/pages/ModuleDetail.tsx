@@ -30,8 +30,6 @@ import {
   Mic
 } from 'lucide-react';
 import { CleoChat } from '@/components/cleo/CleoChat';
-import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
-import { buildLessonDataFromLesson } from '@/utils/lessonDataBuilder';
 
 const ModuleDetail = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
@@ -395,9 +393,23 @@ const ModuleDetail = () => {
                   <Card className="overflow-hidden">
                     <CardContent className="p-0 min-h-[60vh]">
                       {currentLesson ? (
-                        <CleoInteractiveLearning
-                          lessonData={buildLessonDataFromLesson(currentLesson, currentModule, course)}
-                        />
+                        <Button
+                          onClick={() => {
+                            navigate(`/lesson-planning?topic=${encodeURIComponent(currentLesson.title)}&yearGroup=${encodeURIComponent(course.subject || 'GCSE')}&lessonId=${currentLesson.id}&moduleId=${moduleId}`);
+                          }}
+                          className="w-full h-full min-h-[60vh] bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 flex flex-col items-center justify-center gap-4"
+                          variant="ghost"
+                        >
+                          <Bot className="w-16 h-16 text-primary" />
+                          <div className="text-center">
+                            <h3 className="text-2xl font-bold text-foreground mb-2">
+                              Start Learning with Cleo
+                            </h3>
+                            <p className="text-muted-foreground">
+                              Cleo will prepare a personalized lesson just for you
+                            </p>
+                          </div>
+                        </Button>
                       ) : (
                         <div className="h-full flex items-center justify-center text-muted-foreground">
                           <p>Select a lesson to begin learning with Cleo</p>

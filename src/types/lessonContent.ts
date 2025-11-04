@@ -35,6 +35,9 @@ export interface ContentBlock {
   type: 'text' | 'table' | 'definition' | 'question' | 'diagram';
   data: TableContent | QuestionContent | DefinitionContent | string | any;
   visible: boolean;
+  title?: string;
+  teachingNotes?: string;
+  prerequisites?: string[];
 }
 
 export interface LessonData {

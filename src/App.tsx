@@ -45,6 +45,7 @@ import LearningHubRevision from './pages/LearningHubRevision';
 import LearningHubAssessments from './pages/LearningHubAssessments';
 import CourseDetail from './pages/CourseDetail';
 import ModuleDetail from './pages/ModuleDetail';
+import LessonPlanning from './pages/LessonPlanning';
 import CourseEdit from './pages/CourseEdit';
 import CourseCheckout from './pages/CourseCheckout';
 import CourseCreate from './pages/CourseCreate';
@@ -402,6 +403,16 @@ function App() {
                   <Route path="revision" element={<LearningHubRevision />} />
                   <Route path="settings" element={<LearningHubSettings />} />
                 </Route>
+
+                {/* Lesson Planning Route */}
+                <Route
+                  path="/lesson-planning"
+                  element={
+                    <ProtectedRoute>
+                      <LessonPlanning />
+                    </ProtectedRoute>
+                  }
+                />
               </Routes>
               <Toaster />
             </LearningHubProvider>
