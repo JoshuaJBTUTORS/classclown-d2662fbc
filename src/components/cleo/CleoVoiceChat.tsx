@@ -1,8 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AudioStreamRecorder, AudioStreamPlayer } from '@/utils/realtimeAudio';
 import { supabase } from '@/integrations/supabase/client';
 import { ContentEvent } from '@/types/lessonContent';
+
+export interface CleoVoiceChatHandle {
+  connect: () => Promise<void>;
+  disconnect: () => void;
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,7 +25,7 @@ interface CleoVoiceChatProps {
   onSpeakingChange?: (isSpeaking: boolean) => void;
 }
 
-export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
+export const CleoVoiceChat = forwardRef<CleoVoiceChatHandle, CleoVoiceChatProps>(({ 
   conversationId,
   topic,
   yearGroup,
@@ -29,7 +34,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onConnectionStateChange,
   onListeningChange,
   onSpeakingChange
-}) => {
+}, ref) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
   const [isListening, setIsListening] = useState(false);
@@ -43,6 +48,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const recorderRef = useRef<AudioStreamRecorder | null>(null);
   const playerRef = useRef<AudioStreamPlayer | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
+
+  // Expose connect and disconnect methods to parent
+  useImperativeHandle(ref, () => ({
+    connect,
+    disconnect
+  }), []);
 
   // Notify parent of state changes
   useEffect(() => {
@@ -259,4 +270,4 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   // This component renders nothing - it's just for voice logic
   return null;
-};
+});

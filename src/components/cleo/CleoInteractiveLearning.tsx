@@ -2,7 +2,7 @@ import React from 'react';
 import { LessonProgressBar } from './LessonProgressBar';
 import { ContentDisplay } from './ContentDisplay';
 import { VoiceControls } from './VoiceControls';
-import { CleoVoiceChat } from './CleoVoiceChat';
+import { CleoVoiceChat, CleoVoiceChatHandle } from './CleoVoiceChat';
 import { useContentSync } from '@/hooks/useContentSync';
 import { LessonData } from '@/types/lessonContent';
 
@@ -27,7 +27,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   >('idle');
   const [isListening, setIsListening] = React.useState(false);
   const [isSpeaking, setIsSpeaking] = React.useState(false);
-  const voiceChatInstanceRef = React.useRef<any>(null);
+  const voiceChatRef = React.useRef<CleoVoiceChatHandle>(null);
 
   const handleAnswerQuestion = (
     questionId: string,
@@ -88,12 +88,12 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   isListening={isListening}
                   isSpeaking={isSpeaking}
                   onConnect={() => {
-                    // TODO: Implement connection trigger
                     console.log('Connect triggered');
+                    voiceChatRef.current?.connect();
                   }}
                   onDisconnect={() => {
-                    // TODO: Implement disconnect trigger
                     console.log('Disconnect triggered');
+                    voiceChatRef.current?.disconnect();
                   }}
                 />
               </div>
@@ -112,6 +112,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       {/* Hidden Voice Chat Component */}
       <div className="hidden">
         <CleoVoiceChat
+          ref={voiceChatRef}
           conversationId={conversationId}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
