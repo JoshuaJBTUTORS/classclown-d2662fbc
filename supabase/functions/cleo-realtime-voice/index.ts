@@ -170,24 +170,23 @@ Deno.serve(async (req) => {
         const systemPrompt = conversation.topic && conversation.year_group
           ? `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
 
-CONTENT MARKERS - Use these to trigger visual content displays:
-- Say "[SHOW_TABLE:table-id]" to display a table
-- Say "[SHOW_QUESTION:question-id]" to present an interactive question
-- Say "[SHOW_DEFINITION:definition-id]" to display a definition card
-- Say "[NEXT_STEP]" when moving to the next lesson step
-- Say "[COMPLETE_STEP:step-id]" when finishing a step
+You have access to visual content tools that let you display information to the student:
+- show_table: Display tabular data with headers and rows
+- show_definition: Show a definition card for key terms
+- show_diagram: Display diagrams or images (when you have a relevant URL)
+- ask_question: Present interactive multiple-choice questions
 
 Teaching style:
-- Start by introducing the lesson structure and steps
-- Use content markers naturally in your speech
-- For tables: "Let me show you this [SHOW_TABLE:definition-table]"
-- For questions: "Here's a question for you [SHOW_QUESTION:q1]"
-- Wait for student answers before continuing after questions
+- Start by introducing the lesson naturally
+- USE YOUR TOOLS to show visual content instead of just describing it
+- Example: Instead of saying "let me explain atoms", call show_definition with term="Atom" and definition="..."
+- Example: Instead of saying "here's a comparison", call show_table with the comparison data
+- After showing a question, wait for the student's answer before continuing
 - Provide clear explanations with visual aids
 - Break down complex topics into simple steps
 - Be patient and supportive
 
-Keep responses conversational and under 3 sentences unless explaining something complex.`
+Keep spoken responses conversational and under 3 sentences unless explaining something complex.`
           : `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
 
         openAISocket.send(JSON.stringify({
@@ -207,6 +206,93 @@ Keep responses conversational and under 3 sentences unless explaining something 
               prefix_padding_ms: 300,
               silence_duration_ms: 700
             },
+            tools: [
+              {
+                type: "function",
+                name: "show_table",
+                description: "Display a table with headers and rows of data. Use this when you want to present structured information visually.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { 
+                      type: "string", 
+                      description: "Unique ID for this table (e.g., 'periodic-table-basics')" 
+                    },
+                    headers: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Column headers for the table"
+                    },
+                    rows: {
+                      type: "array",
+                      items: {
+                        type: "array",
+                        items: { type: "string" }
+                      },
+                      description: "Array of rows, each row is an array of cell values"
+                    }
+                  },
+                  required: ["id", "headers", "rows"]
+                }
+              },
+              {
+                type: "function",
+                name: "show_definition",
+                description: "Display a definition card for a key term or concept.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", description: "Unique ID for this definition" },
+                    term: { type: "string", description: "The term being defined" },
+                    definition: { type: "string", description: "The definition text" },
+                    example: { type: "string", description: "Optional example to illustrate the term" }
+                  },
+                  required: ["id", "term", "definition"]
+                }
+              },
+              {
+                type: "function",
+                name: "show_diagram",
+                description: "Display a diagram or visual representation.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    url: { type: "string", description: "URL to the diagram image" },
+                    caption: { type: "string", description: "Caption describing the diagram" },
+                    alt: { type: "string", description: "Alt text for accessibility" }
+                  },
+                  required: ["id", "url"]
+                }
+              },
+              {
+                type: "function",
+                name: "ask_question",
+                description: "Present an interactive multiple-choice question to the student.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    question: { type: "string", description: "The question text" },
+                    options: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: { type: "string" },
+                          text: { type: "string" },
+                          isCorrect: { type: "boolean" }
+                        },
+                        required: ["id", "text", "isCorrect"]
+                      }
+                    },
+                    explanation: { type: "string", description: "Explanation shown after answering" }
+                  },
+                  required: ["id", "question", "options"]
+                }
+              }
+            ],
+            tool_choice: "auto",
             temperature: 0.8,
             max_response_output_tokens: 4096
           }
@@ -336,6 +422,91 @@ Keep responses conversational and under 3 sentences unless explaining something 
             }
           }));
         }
+      }
+
+      // Handle function calls from the AI
+      if (message.type === 'response.function_call_arguments.done') {
+        const functionName = message.name;
+        const args = JSON.parse(message.arguments);
+        
+        console.log(`🎨 Function called: ${functionName}`, args);
+        
+        // Map function calls to content blocks
+        let contentBlock: any = null;
+        
+        if (functionName === 'show_table') {
+          contentBlock = {
+            id: args.id,
+            stepId: 'current',
+            type: 'table',
+            data: {
+              headers: args.headers,
+              rows: args.rows
+            },
+            visible: false
+          };
+        } else if (functionName === 'show_definition') {
+          contentBlock = {
+            id: args.id,
+            stepId: 'current',
+            type: 'definition',
+            data: {
+              term: args.term,
+              definition: args.definition,
+              example: args.example
+            },
+            visible: false
+          };
+        } else if (functionName === 'show_diagram') {
+          contentBlock = {
+            id: args.id,
+            stepId: 'current',
+            type: 'diagram',
+            data: {
+              url: args.url,
+              caption: args.caption,
+              alt: args.alt
+            },
+            visible: false
+          };
+        } else if (functionName === 'ask_question') {
+          contentBlock = {
+            id: args.id,
+            stepId: 'current',
+            type: 'question',
+            data: {
+              id: args.id,
+              question: args.question,
+              options: args.options,
+              explanation: args.explanation
+            },
+            visible: false
+          };
+        }
+        
+        // Send the content block to the frontend
+        if (contentBlock && clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'content.block',
+            block: contentBlock,
+            autoShow: true
+          }));
+          console.log(`✅ Sent content block to frontend: ${contentBlock.type} (${contentBlock.id})`);
+        }
+        
+        // Send function response back to OpenAI
+        openAISocket.send(JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'function_call_output',
+            call_id: message.call_id,
+            output: JSON.stringify({ success: true, displayed: true })
+          }
+        }));
+        
+        openAISocket.send(JSON.stringify({
+          type: 'response.create'
+        }));
       }
 
       // Save assistant message when complete
