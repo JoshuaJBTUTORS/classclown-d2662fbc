@@ -92,56 +92,8 @@ Deno.serve(async (req) => {
       conversation = data;
     }
 
+    // Lesson plan integration removed for debugging
     console.log("Conversation ready:", conversation.id);
-
-    // Fetch lesson plan data if lessonPlanId is provided
-    let lessonPlan = null;
-    let contentBlocks: any[] = [];
-
-    if (lessonPlanId) {
-      console.log("Fetching lesson plan:", lessonPlanId);
-      const { data: planData } = await supabase
-        .from('cleo_lesson_plans')
-        .select('*')
-        .eq('id', lessonPlanId)
-        .single();
-
-      if (planData) {
-        lessonPlan = planData;
-        console.log("Lesson plan loaded:", { 
-          topic: lessonPlan.topic, 
-          steps: lessonPlan.teaching_sequence?.length 
-        });
-
-        // Fetch content blocks for this lesson plan
-        const { data: blocks } = await supabase
-          .from('cleo_content_blocks')
-          .select('*')
-          .eq('lesson_plan_id', lessonPlanId)
-          .order('created_at');
-
-        contentBlocks = blocks || [];
-        console.log(`Loaded ${contentBlocks.length} content blocks`);
-      }
-    }
-
-    // Fetch lesson details if this is a lesson-based conversation
-    let lessonTitle = lessonPlan?.topic || conversation.topic;
-    let lessonDescription = '';
-
-    if (conversation.lesson_id) {
-      const { data: lessonData } = await supabase
-        .from('course_lessons')
-        .select('title, description')
-        .eq('id', conversation.lesson_id)
-        .single();
-      
-      if (lessonData) {
-        lessonTitle = lessonData.title;
-        lessonDescription = lessonData.description || '';
-        console.log("Lesson details:", { lessonTitle, hasDescription: !!lessonDescription });
-      }
-    }
 
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
@@ -204,52 +156,19 @@ Deno.serve(async (req) => {
 
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
-        let systemPrompt;
-        
-        if (lessonPlan) {
-          // Build structured prompt with lesson plan data
-          const objectives = lessonPlan.learning_objectives || [];
-          const steps = lessonPlan.teaching_sequence || [];
-          
-          systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching "${lessonPlan.topic}" to a ${lessonPlan.year_group} student.
-
-LESSON STRUCTURE:
-${objectives.length > 0 ? `Learning Objectives:
-${objectives.map((obj: string, i: number) => `${i + 1}. ${obj}`).join('\n')}
-
-` : ''}Teaching Sequence (follow in order):
-${steps.map((step: any, i: number) => `${i + 1}. ${step.title || step}`).join('\n')}
-
-${contentBlocks.length > 0 ? `Available Content: ${contentBlocks.length} pre-generated visual aids ready to display` : ''}
-
-TEACHING APPROACH:
-- Follow the teaching sequence step by step
-- Use your tools (show_table, show_definition, ask_question) to display content
-- Check understanding before moving to the next step
-- Start with step 1: "${steps[0]?.title || steps[0]}"
-- Be conversational and encouraging
-- Keep responses under 3 sentences unless explaining complex concepts
-
-Visual Content Tools:
-- show_table: Display structured data
-- show_definition: Show key terms and definitions
-- ask_question: Present interactive multiple-choice questions`;
-        } else if (conversation.topic && conversation.year_group) {
-          systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
-
-You have access to visual content tools:
-- show_table: Display tabular data
-- show_definition: Show definitions
-- ask_question: Present questions
+        // Simplified system prompt without lesson integration
+        const systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. Help students learn through interactive conversations.
 
 Teaching style:
-- Use your tools to show visual content
-- Provide clear explanations
-- Be patient and supportive
-- Keep responses conversational and under 3 sentences`;
-        } else {
-          systemPrompt = `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
-        }
+- Keep responses brief and conversational (2-3 sentences)
+- Be warm and supportive
+- Ask questions to check understanding
+- Use simple, clear language
+
+You have visual content tools available:
+- show_table: Display structured data
+- show_definition: Show key terms
+- ask_question: Present interactive questions`;
 
         openAISocket.send(JSON.stringify({
           type: 'session.update',
@@ -344,10 +263,8 @@ Teaching style:
         
         console.log("Session configured, waiting for session.updated");
 
-        // Store greeting text to send AFTER session.updated
-        pendingGreetingText = lessonTitle 
-          ? `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`
-          : `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
+        // Simplified greeting without lesson context
+        pendingGreetingText = `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to explore today?`;
       }
 
       // Send greeting AFTER session.updated is confirmed
