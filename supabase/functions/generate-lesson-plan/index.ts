@@ -35,7 +35,7 @@ serve(async (req) => {
 
     // Create lesson plan record
     const { data: lessonPlan, error: planError } = await supabase
-      .from('lesson_plans')
+      .from('cleo_lesson_plans')
       .insert({
         lesson_id: lessonId,
         conversation_id: conversationId,
@@ -183,7 +183,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
 
     // Update lesson plan with objectives and sequence
     const { error: updateError } = await supabase
-      .from('lesson_plans')
+      .from('cleo_lesson_plans')
       .update({
         learning_objectives: planData.objectives,
         teaching_sequence: planData.steps.map((s: any) => ({
