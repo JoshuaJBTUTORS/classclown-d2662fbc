@@ -47,8 +47,10 @@ export interface LessonData {
 }
 
 export interface ContentEvent {
-  type: 'show_content' | 'next_step' | 'complete_step' | 'ask_question';
+  type: 'show_content' | 'next_step' | 'complete_step' | 'ask_question' | 'upsert_content';
   contentId?: string;
   stepId?: string;
   questionId?: string;
+  block?: ContentBlock;
+  autoShow?: boolean;
 }

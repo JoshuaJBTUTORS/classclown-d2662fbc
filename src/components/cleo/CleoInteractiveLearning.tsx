@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LessonProgressBar } from './LessonProgressBar';
 import { ContentDisplay } from './ContentDisplay';
 import { VoiceControls } from './VoiceControls';
 import { CleoVoiceChat } from './CleoVoiceChat';
 import { useContentSync } from '@/hooks/useContentSync';
-import { LessonData } from '@/types/lessonContent';
+import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 
@@ -21,15 +21,17 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     activeStep,
     visibleContent,
     completedSteps,
+    showContent,
     handleContentEvent,
   } = useContentSync(lessonData);
 
-  const [connectionState, setConnectionState] = React.useState<
+  const [connectionState, setConnectionState] = useState<
     'idle' | 'connecting' | 'connected' | 'disconnected'
   >('idle');
-  const [isListening, setIsListening] = React.useState(false);
-  const [isSpeaking, setIsSpeaking] = React.useState(false);
-  const controlsRef = React.useRef<{ connect: () => void; disconnect: () => void } | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
+  const controlsRef = useRef<{ connect: () => void; disconnect: () => void } | null>(null);
 
   const handleAnswerQuestion = (
     questionId: string,
@@ -39,6 +41,54 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     console.log('📝 Answer submitted:', { questionId, answerId, isCorrect });
     // The answer will be sent via the voice chat component
   };
+
+  const handleContentEventWithUpsert = (event: ContentEvent) => {
+    if (event.type === 'upsert_content' && event.block) {
+      console.log('🎨 Upserting content block:', event.block.id);
+      setContent(prev => {
+        const existingIndex = prev.findIndex(b => b.id === event.block!.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = { ...updated[existingIndex], ...event.block };
+          return updated;
+        }
+        return [...prev, event.block!];
+      });
+      if (event.autoShow) {
+        showContent(event.block.id);
+      }
+    } else {
+      handleContentEvent(event);
+    }
+  };
+
+  // Dev fallback: inject demo table after 2s if no dynamic content
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production' && connectionState === 'connected') {
+      const timer = setTimeout(() => {
+        const nonIntroVisible = visibleContent.filter(id => id !== content[0]?.id);
+        if (nonIntroVisible.length === 0) {
+          const demoTable: ContentBlock = {
+            id: 'demo-table',
+            stepId: lessonData.steps?.[1]?.id || lessonData.steps?.[0]?.id || 'main',
+            type: 'table',
+            data: { 
+              headers: ['Concept', 'Meaning'], 
+              rows: [
+                ['Atom', 'Smallest unit of matter'], 
+                ['Molecule', 'Two or more atoms bonded']
+              ] 
+            },
+            visible: false,
+          };
+          setContent(prev => prev.some(b => b.id === demoTable.id) ? prev : [...prev, demoTable]);
+          showContent('demo-table');
+          console.log('📦 Demo table injected for testing');
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [connectionState, visibleContent, content, lessonData.steps, showContent]);
 
   // Check if we have content and if any is visible
   const hasContent = lessonData.content && lessonData.content.length > 0;
@@ -82,7 +132,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           {/* Content Display */}
           {hasContent && (
             <ContentDisplay
-              content={lessonData.content}
+              content={content}
               visibleContent={derivedVisible}
               onAnswerQuestion={handleAnswerQuestion}
             />
@@ -147,7 +197,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           conversationId={conversationId}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
-          onContentEvent={handleContentEvent}
+          onContentEvent={handleContentEventWithUpsert}
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}

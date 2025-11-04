@@ -135,6 +135,17 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             }
             break;
 
+          case 'content.block':
+            console.log('🎨 Content block received:', data.block);
+            if (onContentEvent && data.block) {
+              onContentEvent({ 
+                type: 'upsert_content', 
+                block: data.block, 
+                autoShow: data.autoShow 
+              });
+            }
+            break;
+
           case 'input_audio_buffer.speech_started':
             setIsListening(true);
             setIsSpeaking(false);

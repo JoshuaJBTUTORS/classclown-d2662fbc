@@ -4,6 +4,7 @@ import { TableBlock } from './content/TableBlock';
 import { TextBlock } from './content/TextBlock';
 import { QuestionBlock } from './content/QuestionBlock';
 import { DefinitionBlock } from './content/DefinitionBlock';
+import { DiagramBlock } from './content/DiagramBlock';
 
 interface ContentDisplayProps {
   content: ContentBlock[];
@@ -49,6 +50,8 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
         return <QuestionBlock data={block.data} onAnswer={onAnswerQuestion} />;
       case 'definition':
         return <DefinitionBlock data={block.data} />;
+      case 'diagram':
+        return <DiagramBlock data={block.data} />;
       default:
         return null;
     }
