@@ -23,7 +23,10 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
 
     if (!user) {
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Please sign in to generate lesson plans' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { lessonId, topic, yearGroup, learningGoal, conversationId } = await req.json();
@@ -146,6 +149,21 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI API error:', aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limits exceeded. Please try again later.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Payment required. Please add Lovable AI credits to your workspace.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw new Error(`AI API failed: ${aiResponse.status}`);
     }
 

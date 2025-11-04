@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Check, BookOpen, Table, HelpCircle, Lightbulb } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LessonPlanningScreenProps {
   topic: string;
@@ -42,6 +43,12 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
 
   const generateLessonPlan = async () => {
     try {
+      // Check if user is signed in
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        throw new Error('Please sign in to generate lesson plans');
+      }
+
       // Simulate progress through steps
       const stepInterval = setInterval(() => {
         setSteps(prev => {
@@ -55,32 +62,22 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
         });
       }, 2000);
 
-      // Call the edge function
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-lesson-plan`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            lessonId,
-            topic,
-            yearGroup,
-            learningGoal,
-            conversationId
-          })
+      // Call the edge function using Supabase client
+      const { data, error } = await supabase.functions.invoke('generate-lesson-plan', {
+        body: {
+          lessonId,
+          topic,
+          yearGroup,
+          learningGoal,
+          conversationId
         }
-      );
+      });
 
       clearInterval(stepInterval);
 
-      if (!response.ok) {
-        throw new Error('Failed to generate lesson plan');
+      if (error) {
+        throw new Error(error.message || 'Failed to generate lesson plan');
       }
-
-      const data = await response.json();
       
       // Complete all steps
       setSteps(prev => prev.map(s => ({ ...s, completed: true })));

@@ -27,13 +27,32 @@ const LessonPlanning: React.FC = () => {
 
   const handlePlanningError = (error: string) => {
     console.error('Planning error:', error);
+    
+    // Provide user-friendly messages based on error type
+    let title = 'Planning Failed';
+    let description = error;
+    
+    if (error.includes('Unauthorized') || error.includes('sign in')) {
+      title = 'Authentication Required';
+      description = 'Please sign in to generate lesson plans';
+    } else if (error.includes('Rate limits exceeded')) {
+      title = 'Rate Limit Reached';
+      description = 'Too many requests. Please try again in a few minutes.';
+    } else if (error.includes('Payment required') || error.includes('credits')) {
+      title = 'Credits Required';
+      description = 'Please add Lovable AI credits to your workspace to continue.';
+    }
+    
     toast({
-      title: 'Planning Failed',
-      description: error,
+      title,
+      description,
       variant: 'destructive'
     });
-    // Fallback to original flow
-    setShowLearning(true);
+    
+    // Only fallback to original flow if not an auth error
+    if (!error.includes('Unauthorized') && !error.includes('sign in')) {
+      setShowLearning(true);
+    }
   };
 
   if (showLearning) {
