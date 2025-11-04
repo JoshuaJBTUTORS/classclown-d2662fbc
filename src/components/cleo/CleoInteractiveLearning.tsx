@@ -77,10 +77,25 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 <h3 className="text-xl font-semibold text-foreground mb-2">
                   Ready to Learn with Cleo
                 </h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Click the microphone button below to start your voice conversation with Cleo about {lessonData.topic}.
+                <p className="text-muted-foreground max-w-md mx-auto mb-8">
+                  Click the button below to begin your lesson with Cleo about {lessonData.topic}.
                   Visual content will appear here as you learn.
                 </p>
+                
+                {/* Voice Controls */}
+                <VoiceControls
+                  isConnected={connectionState === 'connected'}
+                  isListening={isListening}
+                  isSpeaking={isSpeaking}
+                  onConnect={() => {
+                    // TODO: Implement connection trigger
+                    console.log('Connect triggered');
+                  }}
+                  onDisconnect={() => {
+                    // TODO: Implement disconnect trigger
+                    console.log('Disconnect triggered');
+                  }}
+                />
               </div>
             </div>
           ) : (
@@ -91,8 +106,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             />
           )}
 
-          {/* Spacer for floating controls */}
-          <div className="h-32" />
         </div>
       </div>
 
@@ -109,22 +122,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         />
       </div>
 
-      {/* Floating Voice Controls */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <VoiceControls
-          isConnected={connectionState === 'connected'}
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          onConnect={() => {
-            // TODO: Implement connection trigger
-            console.log('Connect triggered');
-          }}
-          onDisconnect={() => {
-            // TODO: Implement disconnect trigger
-            console.log('Disconnect triggered');
-          }}
-        />
-      </div>
     </div>
   );
 };
