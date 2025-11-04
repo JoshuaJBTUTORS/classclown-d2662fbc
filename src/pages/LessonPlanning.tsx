@@ -20,7 +20,7 @@ const LessonPlanning: React.FC = () => {
   const { lessonPlan, contentBlocks, loading } = useLessonPlan(lessonPlanId);
 
   const handlePlanningComplete = (planId: string) => {
-    console.log('Lesson plan generated:', planId);
+    console.log('Lesson plan generation complete. Plan ID:', planId);
     setLessonPlanId(planId);
     setShowLearning(true);
   };
