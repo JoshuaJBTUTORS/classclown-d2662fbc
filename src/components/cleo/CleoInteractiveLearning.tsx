@@ -119,8 +119,27 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             </p>
           </div>
 
-          {/* Content Display */}
-          {hasContent && (
+          {/* Teaching Sequence - Show BEFORE starting */}
+          {connectionState !== 'connected' && lessonData.steps?.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Teaching Sequence</h2>
+              <div className="space-y-3">
+                {lessonData.steps.map((step, index) => (
+                  <div key={step.id} className="flex items-start gap-3 p-4 bg-card border rounded-lg">
+                    <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold text-primary">{index + 1}</span>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{step.title}</h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Content Display - Show AFTER starting */}
+          {connectionState === 'connected' && hasContent && (
             <ContentDisplay
               content={content}
               visibleContent={derivedVisible}
@@ -142,7 +161,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 </h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
                   Begin your voice conversation with Cleo about {lessonData.topic}.
-                  Visual content will appear here as you learn.
+                  Detailed content will appear as you progress through the lesson.
                 </p>
                 <Button
                   onClick={() => controlsRef.current?.connect()}
@@ -152,26 +171,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   <Play className="w-5 h-5" />
                   Start Learning
                 </Button>
-              </div>
-            </div>
-          )}
-
-          {/* No Content Fallback */}
-          {!hasContent && (
-            <div className="text-center py-12">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Ready to Learn with Cleo
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Click the Start Learning button below to start your voice conversation with Cleo about {lessonData.topic}.
-                  Visual content will appear here as you learn.
-                </p>
               </div>
             </div>
           )}
