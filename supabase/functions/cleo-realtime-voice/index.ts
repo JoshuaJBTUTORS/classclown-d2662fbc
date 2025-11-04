@@ -115,16 +115,48 @@ Deno.serve(async (req) => {
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
     // Connect to OpenAI Realtime API using subprotocol authentication
-    console.log("Connecting to OpenAI Realtime API...");
-    const openAISocket = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
-      [
-        'realtime',
-        `openai-insecure-api-key.${OPENAI_API_KEY}`,
-        'openai-beta.realtime-v1'
-      ]
-    );
-    console.log("OpenAI WebSocket connection initiated with subprotocol authentication");
+    console.log("🔌 ATTEMPTING to connect to OpenAI Realtime API...");
+    console.log(`📋 Connection details:
+      - Model: gpt-4o-realtime-preview-2024-10-01
+      - API Key present: ${!!OPENAI_API_KEY}
+      - API Key length: ${OPENAI_API_KEY?.length}
+      - WebSocket URL: wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`);
+    
+    let openAISocket: WebSocket;
+    let connectionTimeout: number;
+    
+    try {
+      openAISocket = new WebSocket(
+        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+        [
+          'realtime',
+          `openai-insecure-api-key.${OPENAI_API_KEY}`,
+          'openai-beta.realtime-v1'
+        ]
+      );
+      console.log("✅ OpenAI WebSocket object created successfully");
+      
+      // Set connection timeout - if onopen doesn't fire in 10 seconds, something is wrong
+      connectionTimeout = setTimeout(() => {
+        if (openAISocket.readyState !== WebSocket.OPEN) {
+          console.error("⏱️ CONNECTION TIMEOUT: OpenAI WebSocket did not open within 10 seconds");
+          console.error(`Current WebSocket state: ${openAISocket.readyState} (0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)`);
+          openAISocket.close();
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(JSON.stringify({
+              type: 'error',
+              error: 'Connection to AI service timed out after 10 seconds'
+            }));
+            clientSocket.close();
+          }
+        }
+      }, 10000);
+    } catch (error) {
+      console.error("❌ FAILED to create OpenAI WebSocket:", error);
+      console.error("Error type:", error?.constructor?.name);
+      console.error("Error message:", error?.message);
+      throw error;
+    }
 
     const session: RealtimeSession = {
       conversationId: conversation.id,
@@ -139,12 +171,17 @@ Deno.serve(async (req) => {
 
     // Handle OpenAI socket events
     openAISocket.onopen = () => {
-      console.log("Connected to OpenAI Realtime API");
-      clientSocket.send(JSON.stringify({
-        type: 'connection.status',
-        status: 'connected',
-        conversationId: conversation.id
-      }));
+      clearTimeout(connectionTimeout);
+      console.log("✅✅✅ SUCCESSFULLY CONNECTED to OpenAI Realtime API");
+      console.log(`WebSocket state: ${openAISocket.readyState} (should be 1 = OPEN)`);
+      
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.send(JSON.stringify({
+          type: 'connection.status',
+          status: 'connected',
+          conversationId: conversation.id
+        }));
+      }
     };
 
     openAISocket.onmessage = async (event) => {
@@ -367,22 +404,59 @@ Keep responses conversational and under 3 sentences unless explaining something 
     };
 
     openAISocket.onerror = (error) => {
-      console.error("🚨 OpenAI WebSocket ERROR:", error);
-      console.error("Error type:", error?.type);
-      console.error("Error target:", error?.target);
-      console.error("Full error object:", JSON.stringify(error, null, 2));
+      clearTimeout(connectionTimeout);
+      console.error("🚨🚨🚨 OpenAI WebSocket ERROR EVENT FIRED");
+      console.error("Error event type:", error?.type);
+      console.error("Error constructor:", error?.constructor?.name);
+      console.error("WebSocket readyState:", openAISocket.readyState);
+      console.error("WebSocket URL:", openAISocket.url);
+      
+      // Try to extract any error details
+      const errorDetails: any = {
+        type: error?.type,
+        target: error?.target?.constructor?.name,
+        readyState: openAISocket.readyState,
+        url: openAISocket.url
+      };
+      
+      // Log full error object structure
+      try {
+        console.error("Error object keys:", Object.keys(error || {}));
+        console.error("Error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      } catch (e) {
+        console.error("Could not stringify error:", e);
+      }
       
       if (clientSocket.readyState === WebSocket.OPEN) {
         clientSocket.send(JSON.stringify({
           type: 'error',
-          error: 'Connection to AI service failed - check Edge Function logs for details'
+          error: 'Connection to AI service failed',
+          details: errorDetails
         }));
       }
     };
 
-    openAISocket.onclose = () => {
-      console.log("OpenAI socket closed");
-      clientSocket.close();
+    openAISocket.onclose = (event) => {
+      clearTimeout(connectionTimeout);
+      console.log("🔴 OpenAI WebSocket CLOSED");
+      console.log(`Close code: ${event.code}`);
+      console.log(`Close reason: ${event.reason || '(no reason provided)'}`);
+      console.log(`Was clean: ${event.wasClean}`);
+      
+      // Common WebSocket close codes:
+      // 1000 = Normal closure
+      // 1001 = Going away
+      // 1006 = Abnormal closure (no close frame)
+      // 1008 = Policy violation
+      // 1011 = Server error
+      
+      if (event.code !== 1000) {
+        console.error(`⚠️ Abnormal close! Code ${event.code} may indicate a connection problem`);
+      }
+      
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.close();
+      }
     };
 
     // Handle client socket events
