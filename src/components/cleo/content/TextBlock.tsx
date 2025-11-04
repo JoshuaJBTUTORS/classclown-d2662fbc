@@ -28,7 +28,7 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data }) => {
       transition={{ duration: 0.4 }}
       className="prose prose-lg max-w-none"
     >
-      <p className="text-lg text-foreground leading-relaxed">
+      <p className="text-lg text-muted-foreground leading-relaxed">
         {renderText(data)}
       </p>
     </motion.div>

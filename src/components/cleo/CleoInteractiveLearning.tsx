@@ -5,8 +5,6 @@ import { VoiceControls } from './VoiceControls';
 import { CleoVoiceChat } from './CleoVoiceChat';
 import { useContentSync } from '@/hooks/useContentSync';
 import { LessonData } from '@/types/lessonContent';
-import { Button } from '@/components/ui/button';
-import { Play } from 'lucide-react';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -43,11 +41,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   // Check if we have content and if any is visible
   const hasContent = lessonData.content && lessonData.content.length > 0;
   const hasVisibleContent = visibleContent.length > 0;
-  
-  // Ensure first content is always shown (fallback if markers don't fire)
-  const derivedVisible = hasVisibleContent 
-    ? visibleContent 
-    : (lessonData.content?.[0] ? [lessonData.content[0].id] : []);
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
@@ -63,12 +56,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-8">
-          {/* Debug info (development only) */}
-          {process.env.NODE_ENV !== 'production' && (
-            <div className="text-xs text-muted-foreground mb-2 opacity-50">
-              Content: {hasContent ? '✓' : '✗'} | Visible: {visibleContent.length} | Derived: {derivedVisible.length}
-            </div>
-          )}
           {/* Lesson Title */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -80,16 +67,16 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           </div>
 
           {/* Content Display */}
-          {hasContent && (
+          {hasContent && hasVisibleContent && (
             <ContentDisplay
               content={lessonData.content}
-              visibleContent={derivedVisible}
+              visibleContent={visibleContent}
               onAnswerQuestion={handleAnswerQuestion}
             />
           )}
 
           {/* Getting Started Message */}
-          {connectionState !== 'connected' && (
+          {hasContent && !hasVisibleContent && (
             <div className="text-center py-12">
               <div className="mb-6">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -100,18 +87,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 <h3 className="text-xl font-semibold text-foreground mb-2">
                   Ready to Learn with Cleo
                 </h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                  Begin your voice conversation with Cleo about {lessonData.topic}.
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Click the Start Learning button below to begin your voice conversation with Cleo about {lessonData.topic}.
                   Visual content will appear here as you learn.
                 </p>
-                <Button
-                  onClick={() => controlsRef.current?.connect()}
-                  size="lg"
-                  className="gap-2 px-6 py-6 text-base font-semibold shadow-xl"
-                >
-                  <Play className="w-5 h-5" />
-                  Start Learning
-                </Button>
               </div>
             </div>
           )}
@@ -158,7 +137,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       </div>
 
       {/* Floating Voice Controls */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999]">
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
         <VoiceControls
           isConnected={connectionState === 'connected'}
           isListening={isListening}
