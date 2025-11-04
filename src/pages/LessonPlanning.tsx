@@ -56,8 +56,20 @@ const LessonPlanning: React.FC = () => {
   };
 
   if (showLearning) {
+    // Show loading state while fetching lesson plan data
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-background/95">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Loading your lesson plan...</p>
+          </div>
+        </div>
+      );
+    }
+
     // If we have a lesson plan, use it
-    if (lessonPlan && contentBlocks.length > 0 && !loading) {
+    if (lessonPlan && contentBlocks.length > 0) {
       return (
         <CleoInteractiveLearning
           lessonData={{
@@ -77,7 +89,7 @@ const LessonPlanning: React.FC = () => {
       );
     }
 
-    // Fallback to simple mode if no plan
+    // Fallback to simple mode if no plan loaded
     return (
       <CleoInteractiveLearning
         lessonData={{
