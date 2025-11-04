@@ -6,29 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Validate block data structure based on type
-function validateBlockData(type: string, data: any): boolean {
-  if (!data || typeof data !== 'object') return false;
-  
-  switch (type) {
-    case 'text':
-      return typeof data.text === 'string' && data.text.length > 0;
-    case 'table':
-      return Array.isArray(data.headers) && Array.isArray(data.rows) && 
-             data.headers.length > 0 && data.rows.length > 0;
-    case 'definition':
-      return typeof data.term === 'string' && typeof data.definition === 'string' &&
-             data.term.length > 0 && data.definition.length > 0;
-    case 'question':
-      return typeof data.question === 'string' && Array.isArray(data.options) &&
-             data.options.length > 0 && data.options.every((opt: any) => 
-               typeof opt.text === 'string' && typeof opt.isCorrect === 'boolean'
-             );
-    case 'diagram':
-      return typeof data.description === 'string' && data.description.length > 0;
-    default:
-      return true;
-  }
+// Validate text block data structure
+function validateBlockData(data: any): boolean {
+  return data && typeof data === 'object' && typeof data.text === 'string' && data.text.length > 0;
 }
 
 serve(async (req) => {
@@ -103,99 +83,33 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert curriculum designer creating detailed lesson plans for students.
+            content: `You are an expert teacher creating clear, simple lesson plans for students.
 
-Your task: Create a comprehensive, engaging lesson plan that pre-generates ALL teaching materials.
-
-LESSON PLAN STRUCTURE:
+Create a lesson plan with:
 1. Learning Objectives (3-5 clear, measurable goals)
-2. Teaching Sequence (10-15 micro-steps, each 2-3 minutes)
-3. Content Blocks (tables, definitions, questions, diagrams, text)
+2. Teaching Steps (5-8 text sections covering key concepts)
 
-CRITICAL: Each content block MUST have a properly structured 'data' field. Here are the EXACT formats required:
+Each teaching step should have:
+- A clear, descriptive title
+- Simple text content (2-4 paragraphs of explanation)
+- Age-appropriate language for ${yearGroup}
 
-TEXT BLOCKS:
-{
-  "type": "text",
-  "title": "Introduction",
-  "data": {
-    "text": "Atoms are the fundamental building blocks of all matter. They are incredibly small particles that make up everything around us."
-  }
-}
-
-TABLE BLOCKS:
-{
-  "type": "table",
-  "title": "Subatomic Particles",
-  "data": {
-    "headers": ["Particle", "Charge", "Mass", "Location"],
-    "rows": [
-      ["Proton", "+1", "1 amu", "Nucleus"],
-      ["Neutron", "0", "1 amu", "Nucleus"],
-      ["Electron", "-1", "~0 amu", "Shells"]
-    ]
-  }
-}
-
-DEFINITION BLOCKS:
-{
-  "type": "definition",
-  "title": "Key Term",
-  "data": {
-    "term": "Atom",
-    "definition": "The smallest unit of a chemical element that retains the properties of that element.",
-    "example": "A single hydrogen atom consists of one proton and one electron."
-  }
-}
-
-QUESTION BLOCKS:
-{
-  "type": "question",
-  "title": "Check Understanding",
-  "data": {
-    "id": "q1",
-    "question": "What is the charge of a proton?",
-    "options": [
-      {"id": "a", "text": "Positive (+1)", "isCorrect": true},
-      {"id": "b", "text": "Negative (-1)", "isCorrect": false},
-      {"id": "c", "text": "Neutral (0)", "isCorrect": false}
-    ],
-    "explanation": "Protons have a positive charge of +1, which balances the negative charge of electrons."
-  }
-}
-
-DIAGRAM BLOCKS:
-{
-  "type": "diagram",
-  "title": "Atomic Structure",
-  "data": {
-    "description": "Diagram showing a carbon atom with nucleus containing 6 protons and 6 neutrons, surrounded by 2 electron shells with 2 and 4 electrons respectively.",
-    "elements": ["nucleus (6 protons + 6 neutrons)", "inner shell (2 electrons)", "outer shell (4 electrons)", "electron cloud"]
-  }
-}
-
-For each teaching step, specify:
-- What content blocks to display (with COMPLETE data fields)
-- When to show them (sequence order)
-- How to present them (teaching notes)
-- Prerequisites (what must be shown first)
-
-Make content rich, detailed, and age-appropriate for ${yearGroup}.`
+Focus on explaining concepts clearly with well-structured paragraphs that build understanding progressively.`
           },
           {
             role: 'user',
-            content: `Create a lesson plan for teaching: ${topic}
+            content: `Create a clear, simple lesson plan for: ${topic}
 Year Group: ${yearGroup}
 ${learningGoal ? `Learning Goal: ${learningGoal}` : ''}
 
-Generate a complete lesson with all necessary tables, definitions, diagrams, and questions.`
+Generate 5-8 text sections that explain the key concepts clearly.`
           }
         ],
         tools: [{
           type: 'function',
           function: {
             name: 'create_lesson_plan',
-            description: 'Create a structured lesson plan with pre-generated content',
+            description: 'Create a simple text-based lesson plan',
             parameters: {
               type: 'object',
               properties: {
@@ -209,44 +123,13 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                   items: {
                     type: 'object',
                     properties: {
-                      id: { type: 'string' },
-                      title: { type: 'string' },
-                      duration_minutes: { type: 'number' },
-                      content_blocks: {
-                        type: 'array',
-                        items: {
-                          type: 'object',
-                          properties: {
-                            type: { 
-                              type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text'],
-                              description: 'Type of content block'
-                            },
-                            title: { 
-                              type: 'string',
-                              description: 'Title for the content block'
-                            },
-                            data: { 
-                              type: 'object',
-                              description: 'Content data - structure depends on type. TEXT: {text: string}, TABLE: {headers: string[], rows: string[][]}, DEFINITION: {term: string, definition: string, example?: string}, QUESTION: {id: string, question: string, options: {id: string, text: string, isCorrect: boolean}[], explanation?: string}, DIAGRAM: {description: string, elements: string[]}',
-                              additionalProperties: true
-                            },
-                            teaching_notes: { 
-                              type: 'string',
-                              description: 'Notes for the teacher on how to present this content'
-                            },
-                            prerequisites: {
-                              type: 'array',
-                              items: { type: 'string' },
-                              description: 'IDs of content blocks that should be shown before this one'
-                            }
-                          },
-                          required: ['type', 'data', 'title']
-                        }
-                      }
+                      id: { type: 'string', description: 'Unique identifier for this step' },
+                      title: { type: 'string', description: 'Clear title for this teaching section' },
+                      content: { type: 'string', description: 'Text content explaining the concept (2-4 paragraphs)' }
                     },
-                    required: ['id', 'title', 'content_blocks']
-                  }
+                    required: ['id', 'title', 'content']
+                  },
+                  description: '5-8 teaching steps with text content'
                 }
               },
               required: ['objectives', 'steps']
@@ -308,37 +191,29 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
 
     if (updateError) throw updateError;
 
-    // Insert all content blocks with validation
+    // Insert text content blocks
     const contentBlocks: any[] = [];
-    let sequenceOrder = 0;
 
-    for (const step of planData.steps) {
-      for (const block of step.content_blocks) {
-        // Validate that data is not empty
-        if (!block.data || Object.keys(block.data).length === 0) {
-          console.warn(`Empty data for block type ${block.type} in step ${step.id}, skipping`);
-          continue;
-        }
-
-        // Type-specific validation
-        const isValid = validateBlockData(block.type, block.data);
-        if (!isValid) {
-          console.warn(`Invalid data structure for ${block.type} block:`, block.data);
-          continue;
-        }
-
-        contentBlocks.push({
-          lesson_plan_id: lessonPlan.id,
-          block_type: block.type,
-          sequence_order: sequenceOrder++,
-          step_id: step.id,
-          title: block.title || '',
-          data: block.data,
-          teaching_notes: block.teaching_notes || '',
-          prerequisites: block.prerequisites || []
-        });
+    planData.steps.forEach((step: any, index: number) => {
+      const blockData = { text: step.content };
+      
+      // Validate content is not empty
+      if (!validateBlockData(blockData)) {
+        console.warn(`Empty or invalid content for step ${step.id}, skipping`);
+        return;
       }
-    }
+
+      contentBlocks.push({
+        lesson_plan_id: lessonPlan.id,
+        block_type: 'text',
+        sequence_order: index,
+        step_id: step.id,
+        title: step.title,
+        data: blockData,
+        teaching_notes: '',
+        prerequisites: []
+      });
+    });
 
     console.log(`Generated ${contentBlocks.length} valid content blocks`);
 
