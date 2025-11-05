@@ -33,11 +33,10 @@ serve(async (req) => {
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal });
 
-    // Create lesson plan record
+    // Create lesson plan record (lesson_id is optional - only used if tied to course lesson)
     const { data: lessonPlan, error: planError } = await supabase
       .from('cleo_lesson_plans')
       .insert({
-        lesson_id: lessonId,
         conversation_id: conversationId,
         topic,
         year_group: yearGroup,
