@@ -11,6 +11,13 @@ interface LessonPlan {
     id: string;
     title: string;
     duration_minutes?: number;
+    content_blocks?: Array<{
+      type: string;
+      title?: string;
+      data: any;
+      teaching_notes?: string;
+      prerequisites?: string[];
+    }>;
   }>;
   status: string;
 }
@@ -45,13 +52,12 @@ export function useLessonPlan(lessonPlanId: string | null) {
     try {
       setLoading(true);
 
-      // Use direct REST API calls since types aren't generated yet
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      // Load lesson plan
+      // Load lesson plan from cleo_lesson_plans using direct fetch
+      const supabaseUrl = 'https://sjxbxkpegcnnfjbsxazo.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqeGJ4a3BlZ2NubmZqYnN4YXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MTE2NzIsImV4cCI6MjA2MzI4NzY3Mn0.QFNyi5omwRMPiL_nJlUOHo5ATwXd14PdQHfoG7oTnwA';
+      
       const planResponse = await fetch(
-        `${supabaseUrl}/rest/v1/lesson_plans?id=eq.${lessonPlanId}&select=*`,
+        `${supabaseUrl}/rest/v1/cleo_lesson_plans?id=eq.${lessonPlanId}&select=*`,
         {
           headers: {
             'apikey': supabaseKey,
@@ -64,35 +70,32 @@ export function useLessonPlan(lessonPlanId: string | null) {
       const plans = await planResponse.json();
       if (!plans || plans.length === 0) throw new Error('Lesson plan not found');
 
-      setLessonPlan(plans[0] as LessonPlan);
+      const planData = plans[0];
+      setLessonPlan(planData as LessonPlan);
 
-      // Load content blocks
-      const blocksResponse = await fetch(
-        `${supabaseUrl}/rest/v1/lesson_content_blocks?lesson_plan_id=eq.${lessonPlanId}&select=*&order=sequence_order.asc`,
-        {
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
+      // Extract content blocks from teaching_sequence
+      const allContentBlocks: ContentBlock[] = [];
+      
+      if (planData.teaching_sequence && Array.isArray(planData.teaching_sequence)) {
+        planData.teaching_sequence.forEach((step: any, stepIndex: number) => {
+          if (step.content_blocks && Array.isArray(step.content_blocks)) {
+            step.content_blocks.forEach((block: any, blockIndex: number) => {
+              allContentBlocks.push({
+                id: `${step.id}-block-${blockIndex}`,
+                stepId: step.id,
+                type: block.type as any,
+                data: block.data,
+                visible: false, // All blocks start hidden
+                title: block.title || undefined,
+                teachingNotes: block.teaching_notes || undefined,
+                prerequisites: block.prerequisites || []
+              });
+            });
           }
-        }
-      );
+        });
+      }
 
-      if (!blocksResponse.ok) throw new Error('Failed to load content blocks');
-      const blocks = await blocksResponse.json();
-
-      // Convert to ContentBlock format
-      const convertedBlocks: ContentBlock[] = (blocks as ContentBlockData[]).map((block: ContentBlockData) => ({
-        id: block.id,
-        stepId: block.step_id,
-        type: block.block_type as any,
-        data: block.data,
-        visible: false, // All blocks start hidden
-        title: block.title || undefined,
-        teachingNotes: block.teaching_notes || undefined,
-        prerequisites: block.prerequisites || []
-      }));
-
-      setContentBlocks(convertedBlocks);
+      setContentBlocks(allContentBlocks);
       setError(null);
     } catch (err) {
       console.error('Error loading lesson plan:', err);
