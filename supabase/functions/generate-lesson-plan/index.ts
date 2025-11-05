@@ -33,14 +33,19 @@ serve(async (req) => {
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal });
 
-    // Create lesson plan record (lesson_id is optional - only used if tied to course lesson)
+    // Upsert lesson plan record (update if exists, insert if not)
     const { data: lessonPlan, error: planError } = await supabase
       .from('cleo_lesson_plans')
-      .insert({
+      .upsert({
         conversation_id: conversationId,
         topic,
         year_group: yearGroup,
-        status: 'generating'
+        status: 'generating',
+        learning_objectives: [],
+        teaching_sequence: []
+      }, {
+        onConflict: 'conversation_id,topic',
+        ignoreDuplicates: false
       })
       .select()
       .single();
