@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Mail } from 'lucide-react';
 
 const lessonTimeSchema = z.object({
   day: z.string().min(1, 'Day is required'),
@@ -41,6 +41,7 @@ export default function EditProposal() {
   const navigate = useNavigate();
   const { proposalId } = useParams<{ proposalId: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>([
     { day: '', time: '', duration: 60, subject: '' },
@@ -180,6 +181,73 @@ export default function EditProposal() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveAndResend = async () => {
+    setIsResending(true);
+    try {
+      // First, validate and get form data
+      const isValid = await form.trigger();
+      if (!isValid) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please fix the form errors before resending.',
+          variant: 'destructive',
+        });
+        setIsResending(false);
+        return;
+      }
+
+      const formData = form.getValues();
+
+      // Update the proposal
+      const { error: updateError } = await supabase.functions.invoke('update-lesson-proposal', {
+        body: {
+          proposalId,
+          ...formData,
+          recipientPhone: formData.recipientPhone || null,
+          lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
+        },
+      });
+
+      if (updateError) throw updateError;
+
+      // Resend the proposal using the updated data
+      const { data: resendData, error: resendError } = await supabase.functions.invoke('send-proposal-email', {
+        body: {
+          proposalId,
+          recipientEmail: formData.recipientEmail,
+          recipientName: formData.recipientName,
+          recipientPhone: formData.recipientPhone,
+        },
+      });
+
+      if (resendError) throw resendError;
+
+      // Build detailed success message
+      let successMessage = `✉️ Email sent to ${formData.recipientEmail}`;
+      if (resendData?.whatsappSent && formData.recipientPhone) {
+        successMessage += `\n📱 WhatsApp sent to ${formData.recipientPhone}`;
+      } else if (formData.recipientPhone) {
+        successMessage += '\n⚠️ WhatsApp notification failed';
+      }
+
+      toast({
+        title: 'Proposal Updated & Resent!',
+        description: successMessage,
+      });
+
+      navigate('/admin/proposals');
+    } catch (error: any) {
+      console.error('Error updating and resending proposal:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update and resend proposal',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -424,9 +492,27 @@ export default function EditProposal() {
                 <Button type="button" variant="outline" onClick={() => navigate('/admin/proposals')}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting || isResending}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Update Proposal
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={handleSaveAndResend} 
+                  disabled={isSubmitting || isResending}
+                  variant="secondary"
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Save & Resend
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

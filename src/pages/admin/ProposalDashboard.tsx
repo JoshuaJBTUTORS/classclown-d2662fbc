@@ -10,13 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminProposalSidebar } from '@/components/admin/AdminProposalSidebar';
-import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil } from 'lucide-react';
+import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Proposal {
   id: string;
   recipient_name: string;
   recipient_email: string;
+  recipient_phone?: string;
   subject: string;
   lesson_type: string;
   price_per_lesson: number;
@@ -36,6 +37,7 @@ export default function ProposalDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProposals();
@@ -79,6 +81,44 @@ export default function ProposalDashboard() {
         description: 'Failed to copy link',
         variant: 'destructive',
       });
+    }
+  };
+
+  const resendProposal = async (proposal: Proposal) => {
+    setResendingId(proposal.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-proposal-email', {
+        body: {
+          proposalId: proposal.id,
+          recipientEmail: proposal.recipient_email,
+          recipientName: proposal.recipient_name,
+          recipientPhone: proposal.recipient_phone,
+        },
+      });
+
+      if (error) throw error;
+
+      // Build detailed success message
+      let successMessage = `✉️ Email sent to ${proposal.recipient_email}`;
+      if (data?.whatsappSent && proposal.recipient_phone) {
+        successMessage += `\n📱 WhatsApp sent to ${proposal.recipient_phone}`;
+      } else if (proposal.recipient_phone) {
+        successMessage += '\n⚠️ WhatsApp notification failed';
+      }
+
+      toast({
+        title: 'Proposal Resent',
+        description: successMessage,
+      });
+    } catch (error: any) {
+      console.error('Error resending proposal:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to resend proposal',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -244,6 +284,21 @@ export default function ProposalDashboard() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                            {['sent', 'viewed', 'agreed'].includes(proposal.status) && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => resendProposal(proposal)}
+                                disabled={resendingId === proposal.id}
+                                title="Resend email and WhatsApp"
+                              >
+                                {resendingId === proposal.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Mail className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
