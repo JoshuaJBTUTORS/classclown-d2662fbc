@@ -24,7 +24,7 @@ export const LessonProgressBar: React.FC<LessonProgressBarProps> = ({
             const isPast = index < currentStep;
 
             return (
-              <div key={step.id} className="contents">
+              <React.Fragment key={step.id}>
                 {/* Step Indicator */}
                 <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
                   <motion.div
@@ -82,7 +82,7 @@ export const LessonProgressBar: React.FC<LessonProgressBarProps> = ({
                     `}
                   />
                 )}
-              </div>
+              </React.Fragment>
             );
           })}
         </div>

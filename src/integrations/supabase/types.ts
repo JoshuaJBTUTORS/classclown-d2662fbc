@@ -771,6 +771,53 @@ export type Database = {
           },
         ]
       }
+      cleo_lesson_plans: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          learning_objectives: Json | null
+          lesson_id: string | null
+          status: string
+          teaching_sequence: Json | null
+          topic: string
+          updated_at: string | null
+          year_group: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          learning_objectives?: Json | null
+          lesson_id?: string | null
+          status?: string
+          teaching_sequence?: Json | null
+          topic: string
+          updated_at?: string | null
+          year_group: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          learning_objectives?: Json | null
+          lesson_id?: string | null
+          status?: string
+          teaching_sequence?: Json | null
+          topic?: string
+          updated_at?: string | null
+          year_group?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleo_lesson_plans_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cleo_messages: {
         Row: {
           content: string
@@ -1635,6 +1682,53 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_content_blocks: {
+        Row: {
+          block_type: string
+          created_at: string | null
+          data: Json
+          id: string
+          lesson_plan_id: string
+          prerequisites: Json | null
+          sequence_order: number
+          step_id: string
+          teaching_notes: string | null
+          title: string | null
+        }
+        Insert: {
+          block_type: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          lesson_plan_id: string
+          prerequisites?: Json | null
+          sequence_order: number
+          step_id: string
+          teaching_notes?: string | null
+          title?: string | null
+        }
+        Update: {
+          block_type?: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          lesson_plan_id?: string
+          prerequisites?: Json | null
+          sequence_order?: number
+          step_id?: string
+          teaching_notes?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_content_blocks_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_lesson_plans"
             referencedColumns: ["id"]
           },
         ]

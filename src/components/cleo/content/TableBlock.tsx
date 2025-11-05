@@ -3,10 +3,16 @@ import { motion } from 'framer-motion';
 import { TableContent } from '@/types/lessonContent';
 
 interface TableBlockProps {
-  data: TableContent;
+  data: TableContent | any;
 }
 
 export const TableBlock: React.FC<TableBlockProps> = ({ data }) => {
+  // Normalize data structure from database format
+  const normalizedData: TableContent = {
+    headers: Array.isArray(data?.headers) ? data.headers : [],
+    rows: Array.isArray(data?.rows) ? data.rows : []
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -19,7 +25,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data }) => {
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
-                {data.headers.map((header, index) => (
+                {normalizedData.headers.map((header, index) => (
                   <th
                     key={index}
                     scope="col"
@@ -31,7 +37,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-background">
-              {data.rows.map((row, rowIndex) => (
+              {normalizedData.rows.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
                   className="hover:bg-muted/50 transition-colors"

@@ -4,10 +4,17 @@ import { DefinitionContent } from '@/types/lessonContent';
 import { BookOpen } from 'lucide-react';
 
 interface DefinitionBlockProps {
-  data: DefinitionContent;
+  data: DefinitionContent | any;
 }
 
 export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data }) => {
+  // Normalize data structure from database format
+  const normalizedData: DefinitionContent = {
+    term: data?.term || '',
+    definition: data?.definition || '',
+    example: data?.example || undefined
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -21,14 +28,14 @@ export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data }) => {
             <BookOpen className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1">
-            <h4 className="text-lg font-bold text-foreground mb-2">{data.term}</h4>
+            <h4 className="text-lg font-bold text-foreground mb-2">{normalizedData.term}</h4>
             <p className="text-base text-muted-foreground mb-3 leading-relaxed">
-              {data.definition}
+              {normalizedData.definition}
             </p>
-            {data.example && (
+            {normalizedData.example && (
               <div className="bg-background/50 rounded-md p-3 mt-3">
                 <p className="text-sm font-medium text-primary mb-1">Example:</p>
-                <p className="text-sm text-muted-foreground italic">{data.example}</p>
+                <p className="text-sm text-muted-foreground italic">{normalizedData.example}</p>
               </div>
             )}
           </div>

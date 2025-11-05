@@ -4,6 +4,20 @@ import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearni
 import { vectorsScalarsLesson } from '@/data/lessons/vectorsScalars';
 
 const LearningHubCleo: React.FC = () => {
+  // Add class to root for full-width
+  React.useEffect(() => {
+    const root = document.getElementById('root');
+    if (root) {
+      root.classList.add('learning-hub-page');
+    }
+    return () => {
+      const root = document.getElementById('root');
+      if (root) {
+        root.classList.remove('learning-hub-page');
+      }
+    };
+  }, []);
+
   return (
     <>
       <Helmet>
@@ -14,7 +28,7 @@ const LearningHubCleo: React.FC = () => {
         />
       </Helmet>
       
-      <div className="h-[calc(100vh-6rem)] w-full">
+      <div className="h-screen w-full">
         <CleoInteractiveLearning lessonData={vectorsScalarsLesson} />
       </div>
     </>

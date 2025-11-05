@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
     const conversationId = url.searchParams.get("conversationId");
     const topic = url.searchParams.get("topic");
     const yearGroup = url.searchParams.get("yearGroup");
+    const lessonPlanId = url.searchParams.get("lessonPlanId");
     let conversation;
 
     if (conversationId) {
@@ -91,72 +92,23 @@ Deno.serve(async (req) => {
       conversation = data;
     }
 
+    // Lesson plan integration removed for debugging
     console.log("Conversation ready:", conversation.id);
-
-    // Fetch lesson details if this is a lesson-based conversation
-    let lessonTitle = conversation.topic;
-    let lessonDescription = '';
-
-    if (conversation.lesson_id) {
-      const { data: lessonData } = await supabase
-        .from('course_lessons')
-        .select('title, description')
-        .eq('id', conversation.lesson_id)
-        .single();
-      
-      if (lessonData) {
-        lessonTitle = lessonData.title;
-        lessonDescription = lessonData.description || '';
-        console.log("Lesson details:", { lessonTitle, hasDescription: !!lessonDescription });
-      }
-    }
 
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
     // Connect to OpenAI Realtime API using subprotocol authentication
-    console.log("🔌 ATTEMPTING to connect to OpenAI Realtime API...");
-    console.log(`📋 Connection details:
-      - Model: gpt-4o-realtime-preview-2024-10-01
-      - API Key present: ${!!OPENAI_API_KEY}
-      - API Key length: ${OPENAI_API_KEY?.length}
-      - WebSocket URL: wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`);
-    
-    let openAISocket: WebSocket;
-    let connectionTimeout: number;
-    
-    try {
-      openAISocket = new WebSocket(
-        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
-        [
-          'realtime',
-          `openai-insecure-api-key.${OPENAI_API_KEY}`,
-          'openai-beta.realtime-v1'
-        ]
-      );
-      console.log("✅ OpenAI WebSocket object created successfully");
-      
-      // Set connection timeout - if onopen doesn't fire in 10 seconds, something is wrong
-      connectionTimeout = setTimeout(() => {
-        if (openAISocket.readyState !== WebSocket.OPEN) {
-          console.error("⏱️ CONNECTION TIMEOUT: OpenAI WebSocket did not open within 10 seconds");
-          console.error(`Current WebSocket state: ${openAISocket.readyState} (0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)`);
-          openAISocket.close();
-          if (clientSocket.readyState === WebSocket.OPEN) {
-            clientSocket.send(JSON.stringify({
-              type: 'error',
-              error: 'Connection to AI service timed out after 10 seconds'
-            }));
-            clientSocket.close();
-          }
-        }
-      }, 10000);
-    } catch (error) {
-      console.error("❌ FAILED to create OpenAI WebSocket:", error);
-      console.error("Error type:", error?.constructor?.name);
-      console.error("Error message:", error?.message);
-      throw error;
-    }
+    console.log("Connecting to OpenAI Realtime API...");
+    const openAISocket = new WebSocket(
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+      [
+        'realtime',
+        `openai-insecure-api-key.${OPENAI_API_KEY}`,
+        'openai-beta.realtime-v1'
+      ]
+    );
+    console.log("OpenAI WebSocket connection initiated with subprotocol authentication");
 
     const session: RealtimeSession = {
       conversationId: conversation.id,
@@ -166,22 +118,22 @@ Deno.serve(async (req) => {
     };
 
     let isSessionConfigured = false;
+    let isResponseActive = false;  // Track if AI is speaking
+    let hasAudioStarted = false;   // Track if audio generation started
+    let isInitialGreeting = true;  // Protect the initial greeting
     let currentTranscript = '';
     let currentAssistantMessage = '';
+    let pendingGreetingText: string | null = null;
+    let audioChunkCount = 0;  // Track audio chunks for diagnostics
 
     // Handle OpenAI socket events
     openAISocket.onopen = () => {
-      clearTimeout(connectionTimeout);
-      console.log("✅✅✅ SUCCESSFULLY CONNECTED to OpenAI Realtime API");
-      console.log(`WebSocket state: ${openAISocket.readyState} (should be 1 = OPEN)`);
-      
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(JSON.stringify({
-          type: 'connection.status',
-          status: 'connected',
-          conversationId: conversation.id
-        }));
-      }
+      console.log("Connected to OpenAI Realtime API");
+      clientSocket.send(JSON.stringify({
+        type: 'connection.status',
+        status: 'connected',
+        conversationId: conversation.id
+      }));
     };
 
     openAISocket.onmessage = async (event) => {
@@ -204,60 +156,126 @@ Deno.serve(async (req) => {
 
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
-        const systemPrompt = conversation.topic && conversation.year_group
-          ? `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
-
-CONTENT MARKERS - Use these to trigger visual content displays:
-- Say "[SHOW_TABLE:table-id]" to display a table
-- Say "[SHOW_QUESTION:question-id]" to present an interactive question
-- Say "[SHOW_DEFINITION:definition-id]" to display a definition card
-- Say "[NEXT_STEP]" when moving to the next lesson step
-- Say "[COMPLETE_STEP:step-id]" when finishing a step
+        // Simplified system prompt without lesson integration
+        const systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. Help students learn through interactive conversations.
 
 Teaching style:
-- Start by introducing the lesson structure and steps
-- Use content markers naturally in your speech
-- For tables: "Let me show you this [SHOW_TABLE:definition-table]"
-- For questions: "Here's a question for you [SHOW_QUESTION:q1]"
-- Wait for student answers before continuing after questions
-- Provide clear explanations with visual aids
-- Break down complex topics into simple steps
-- Be patient and supportive
+- Keep responses brief and conversational (2-3 sentences)
+- Be warm and supportive
+- Ask questions to check understanding
+- Use simple, clear language
 
-Keep responses conversational and under 3 sentences unless explaining something complex.`
-          : `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
+You have visual content tools available:
+- show_table: Display structured data
+- show_definition: Show key terms
+- ask_question: Present interactive questions`;
 
         openAISocket.send(JSON.stringify({
           type: 'session.update',
           session: {
             modalities: ['text', 'audio'],
             instructions: systemPrompt,
-            voice: 'ballad',
+            voice: 'alloy',
             input_audio_format: 'pcm16',
             output_audio_format: 'pcm16',
-            input_audio_transcription: {
-              model: 'whisper-1'
-            },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.5,
+              threshold: 0.65,
               prefix_padding_ms: 300,
-              silence_duration_ms: 700
+              silence_duration_ms: 1000
             },
+            tools: [
+              {
+                type: "function",
+                name: "show_table",
+                description: "Display a table with headers and rows of data. Use this when you want to present structured information visually.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { 
+                      type: "string", 
+                      description: "Unique ID for this table (e.g., 'periodic-table-basics')" 
+                    },
+                    headers: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Column headers for the table"
+                    },
+                    rows: {
+                      type: "array",
+                      items: {
+                        type: "array",
+                        items: { type: "string" }
+                      },
+                      description: "Array of rows, each row is an array of cell values"
+                    }
+                  },
+                  required: ["id", "headers", "rows"]
+                }
+              },
+              {
+                type: "function",
+                name: "show_definition",
+                description: "Display a definition card for a key term or concept.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", description: "Unique ID for this definition" },
+                    term: { type: "string", description: "The term being defined" },
+                    definition: { type: "string", description: "The definition text" },
+                    example: { type: "string", description: "Optional example to illustrate the term" }
+                  },
+                  required: ["id", "term", "definition"]
+                }
+              },
+              {
+                type: "function",
+                name: "ask_question",
+                description: "Present an interactive multiple-choice question to the student.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    question: { type: "string", description: "The question text" },
+                    options: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: { type: "string" },
+                          text: { type: "string" },
+                          isCorrect: { type: "boolean" }
+                        },
+                        required: ["id", "text", "isCorrect"]
+                      }
+                    },
+                    explanation: { type: "string", description: "Explanation shown after answering" }
+                  },
+                  required: ["id", "question", "options"]
+                }
+              }
+            ],
+            tool_choice: "auto",
             temperature: 0.8,
             max_response_output_tokens: 4096
           }
         }));
         
+        console.log("Session configured, waiting for session.updated");
+
+        // Simplified greeting without lesson context
+        pendingGreetingText = `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to explore today?`;
+      }
+
+      // Send greeting AFTER session.updated is confirmed
+      if (message.type === 'session.updated' && !isSessionConfigured && pendingGreetingText) {
         isSessionConfigured = true;
-        console.log("Session configured");
+        console.log("✅ Session updated confirmed");
+        
+        // Reset audio counter for greeting
+        audioChunkCount = 0;
 
-        // Send initial greeting message
-        const greetingText = lessonTitle 
-          ? `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`
-          : `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
-
-        console.log("Sending initial greeting:", greetingText);
+        console.log("🎤 Sending initial greeting:", pendingGreetingText);
 
         // Create a conversation item with the greeting prompt
         openAISocket.send(JSON.stringify({
@@ -268,33 +286,64 @@ Keep responses conversational and under 3 sentences unless explaining something 
             content: [
               {
                 type: 'input_text',
-                text: greetingText
+                text: pendingGreetingText
               }
             ]
           }
         }));
 
-        // Immediately trigger a response so Cleo speaks the greeting
+        // Force audio output for greeting
         openAISocket.send(JSON.stringify({
-          type: 'response.create'
+          type: 'response.create',
+          response: {
+            modalities: ['audio', 'text']
+          }
         }));
+        
+        console.log("🎤 Greeting response.create sent, expecting audio...");
 
         // Save the greeting prompt to database as a system message
         await supabase.from('cleo_messages').insert({
           conversation_id: conversation.id,
           role: 'system',
-          content: `Initial greeting prompt: ${greetingText}`
+          content: `Initial greeting prompt: ${pendingGreetingText}`
         });
 
-        console.log("Initial greeting sent to OpenAI");
+        console.log("Initial greeting sent after session.updated");
+        pendingGreetingText = null;
       }
 
-      // Cancel AI response when user starts speaking (interruption)
+      // Track when audio response starts
+      if (message.type === 'response.audio.delta') {
+        isResponseActive = true;
+        hasAudioStarted = true;
+        audioChunkCount++;
+        console.log(`🔊 Audio chunk #${audioChunkCount} from OpenAI, size: ${message.delta?.length || 0}`);
+      }
+
+      // Cancel AI response when user starts speaking (only if response is active)
       if (message.type === 'input_audio_buffer.speech_started') {
-        console.log("User started speaking - cancelling AI response");
-        openAISocket.send(JSON.stringify({
-          type: 'response.cancel'
-        }));
+        // Don't cancel the initial greeting
+        if (isInitialGreeting) {
+          console.log("Speech detected during initial greeting - ignoring");
+          // Forward to client but don't cancel
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(event.data);
+          }
+          return;
+        }
+
+        // Only cancel if we're actually generating audio
+        if (isResponseActive && hasAudioStarted) {
+          console.log("User interrupted - cancelling AI response");
+          openAISocket.send(JSON.stringify({
+            type: 'response.cancel'
+          }));
+          isResponseActive = false;
+          hasAudioStarted = false;
+        } else {
+          console.log("Speech detected but no active response to cancel");
+        }
       }
 
       // Save student transcript to database
@@ -375,6 +424,79 @@ Keep responses conversational and under 3 sentences unless explaining something 
         }
       }
 
+      // Handle function calls from the AI
+      if (message.type === 'response.function_call_arguments.done') {
+        const functionName = message.name;
+        const args = JSON.parse(message.arguments);
+        
+        console.log(`🎨 Function called: ${functionName}`, args);
+        
+        // Map function calls to content blocks
+        let contentBlock: any = null;
+        
+        if (functionName === 'show_table') {
+          contentBlock = {
+            id: args.id,
+            stepId: 'current',
+            type: 'table',
+            data: {
+              headers: args.headers,
+              rows: args.rows
+            },
+            visible: false
+          };
+        } else if (functionName === 'show_definition') {
+          contentBlock = {
+            id: args.id,
+            stepId: 'current',
+            type: 'definition',
+            data: {
+              term: args.term,
+              definition: args.definition,
+              example: args.example
+            },
+          visible: false
+        };
+      } else if (functionName === 'ask_question') {
+          contentBlock = {
+            id: args.id,
+            stepId: 'current',
+            type: 'question',
+            data: {
+              id: args.id,
+              question: args.question,
+              options: args.options,
+              explanation: args.explanation
+            },
+            visible: false
+          };
+        }
+        
+        // Send the content block to the frontend
+        if (contentBlock && clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'content.block',
+            block: contentBlock,
+            autoShow: true
+          }));
+          console.log(`✅ Sent content block to frontend: ${contentBlock.type} (${contentBlock.id})`);
+        }
+        
+        // Send function response back to OpenAI
+        openAISocket.send(JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'function_call_output',
+            call_id: message.call_id,
+            output: JSON.stringify({ success: true, displayed: true })
+          }
+        }));
+        
+        openAISocket.send(JSON.stringify({
+          type: 'response.create'
+        }));
+      }
+
       // Save assistant message when complete
       if (message.type === 'response.audio_transcript.done') {
         if (currentAssistantMessage) {
@@ -385,6 +507,31 @@ Keep responses conversational and under 3 sentences unless explaining something 
             content: currentAssistantMessage
           });
           currentAssistantMessage = '';
+        }
+      }
+
+      // Track when response completes
+      if (message.type === 'response.done') {
+        isResponseActive = false;
+        hasAudioStarted = false;
+        
+        // Diagnostic: Check if any audio was generated
+        if (audioChunkCount === 0) {
+          console.log("⚠️ WARNING: response.done but NO audio chunks received!");
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(JSON.stringify({
+              type: 'debug.no_audio',
+              message: 'Response completed but no audio was generated'
+            }));
+          }
+        } else {
+          console.log(`✅ Response complete with ${audioChunkCount} audio chunks`);
+        }
+        
+        // Clear initial greeting flag after first response
+        if (isInitialGreeting) {
+          isInitialGreeting = false;
+          console.log("Initial greeting completed - interruptions now allowed");
         }
       }
 
@@ -404,59 +551,22 @@ Keep responses conversational and under 3 sentences unless explaining something 
     };
 
     openAISocket.onerror = (error) => {
-      clearTimeout(connectionTimeout);
-      console.error("🚨🚨🚨 OpenAI WebSocket ERROR EVENT FIRED");
-      console.error("Error event type:", error?.type);
-      console.error("Error constructor:", error?.constructor?.name);
-      console.error("WebSocket readyState:", openAISocket.readyState);
-      console.error("WebSocket URL:", openAISocket.url);
-      
-      // Try to extract any error details
-      const errorDetails: any = {
-        type: error?.type,
-        target: error?.target?.constructor?.name,
-        readyState: openAISocket.readyState,
-        url: openAISocket.url
-      };
-      
-      // Log full error object structure
-      try {
-        console.error("Error object keys:", Object.keys(error || {}));
-        console.error("Error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-      } catch (e) {
-        console.error("Could not stringify error:", e);
-      }
+      console.error("🚨 OpenAI WebSocket ERROR:", error);
+      console.error("Error type:", error?.type);
+      console.error("Error target:", error?.target);
+      console.error("Full error object:", JSON.stringify(error, null, 2));
       
       if (clientSocket.readyState === WebSocket.OPEN) {
         clientSocket.send(JSON.stringify({
           type: 'error',
-          error: 'Connection to AI service failed',
-          details: errorDetails
+          error: 'Connection to AI service failed - check Edge Function logs for details'
         }));
       }
     };
 
-    openAISocket.onclose = (event) => {
-      clearTimeout(connectionTimeout);
-      console.log("🔴 OpenAI WebSocket CLOSED");
-      console.log(`Close code: ${event.code}`);
-      console.log(`Close reason: ${event.reason || '(no reason provided)'}`);
-      console.log(`Was clean: ${event.wasClean}`);
-      
-      // Common WebSocket close codes:
-      // 1000 = Normal closure
-      // 1001 = Going away
-      // 1006 = Abnormal closure (no close frame)
-      // 1008 = Policy violation
-      // 1011 = Server error
-      
-      if (event.code !== 1000) {
-        console.error(`⚠️ Abnormal close! Code ${event.code} may indicate a connection problem`);
-      }
-      
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.close();
-      }
+    openAISocket.onclose = () => {
+      console.log("OpenAI socket closed");
+      clientSocket.close();
     };
 
     // Handle client socket events

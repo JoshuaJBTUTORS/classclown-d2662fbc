@@ -35,6 +35,9 @@ export interface ContentBlock {
   type: 'text' | 'table' | 'definition' | 'question' | 'diagram';
   data: TableContent | QuestionContent | DefinitionContent | string | any;
   visible: boolean;
+  title?: string;
+  teachingNotes?: string;
+  prerequisites?: string[];
 }
 
 export interface LessonData {
@@ -47,8 +50,10 @@ export interface LessonData {
 }
 
 export interface ContentEvent {
-  type: 'show_content' | 'next_step' | 'complete_step' | 'ask_question';
+  type: 'show_content' | 'next_step' | 'complete_step' | 'ask_question' | 'upsert_content';
   contentId?: string;
   stepId?: string;
   questionId?: string;
+  block?: ContentBlock;
+  autoShow?: boolean;
 }

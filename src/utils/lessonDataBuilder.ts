@@ -87,6 +87,11 @@ export function buildLessonDataFromLesson(
     });
   }
 
+  // Make first content block visible by default
+  if (content.length > 0) {
+    content[0].visible = true;
+  }
+
   return {
     id: lesson.id,
     title: lesson.title,

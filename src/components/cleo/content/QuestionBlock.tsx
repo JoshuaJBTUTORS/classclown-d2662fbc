@@ -5,7 +5,7 @@ import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface QuestionBlockProps {
-  data: QuestionContent;
+  data: QuestionContent | any;
   onAnswer: (questionId: string, answerId: string, isCorrect: boolean) => void;
 }
 
@@ -13,10 +13,18 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
+  // Normalize data structure from database format
+  const normalizedData: QuestionContent = {
+    id: data?.id || data?.questionId || 'question',
+    question: data?.question || data?.text || '',
+    options: Array.isArray(data?.options) ? data.options : [],
+    explanation: data?.explanation || undefined
+  };
+
   const handleAnswerClick = (optionId: string, isCorrect: boolean) => {
     setSelectedAnswer(optionId);
     setShowFeedback(true);
-    onAnswer(data.id, optionId, isCorrect);
+    onAnswer(normalizedData.id, optionId, isCorrect);
   };
 
   const getOptionClassName = (optionId: string, isCorrect: boolean) => {
@@ -47,12 +55,12 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
       <div className="bg-card border-2 border-primary/20 rounded-lg p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-xl font-semibold text-foreground mb-4">
-            {data.question}
+            {normalizedData.question}
           </h3>
         </div>
 
         <div className="space-y-3">
-          {data.options.map((option) => (
+          {normalizedData.options.map((option) => (
             <Button
               key={option.id}
               onClick={() => handleAnswerClick(option.id, option.isCorrect)}
@@ -87,7 +95,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
           ))}
         </div>
 
-        {showFeedback && data.explanation && (
+        {showFeedback && normalizedData.explanation && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -96,7 +104,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
           >
             <p className="text-sm font-medium text-primary mb-2">Explanation:</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {data.explanation}
+              {normalizedData.explanation}
             </p>
           </motion.div>
         )}

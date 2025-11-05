@@ -1,45 +1,53 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2 } from 'lucide-react';
+import { Play, Square, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface VoiceControlsProps {
   isConnected: boolean;
   isListening: boolean;
   isSpeaking: boolean;
+  isPaused?: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
+  onPause?: () => void;
+  onResume?: () => void;
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
   isConnected,
   isListening,
   isSpeaking,
+  isPaused = false,
   onConnect,
   onDisconnect,
+  onPause,
+  onResume,
 }) => {
   const getStatusColor = () => {
     if (!isConnected) return 'bg-muted';
+    if (isPaused) return 'bg-yellow-500';
     if (isListening) return 'bg-blue-500';
     if (isSpeaking) return 'bg-green-500';
     return 'bg-primary';
   };
 
   const getStatusText = () => {
-    if (!isConnected) return 'Start Voice Session';
+    if (!isConnected) return 'Start Learning';
+    if (isPaused) return 'Lesson Paused';
     if (isListening) return 'Listening...';
     if (isSpeaking) return 'Cleo is speaking...';
     return 'Connected';
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-3">
       {/* Status Indicator */}
       {isConnected && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border rounded-full px-6 py-3 shadow-lg flex items-center gap-3"
+          className="bg-card border border-border rounded-full px-4 py-2 shadow-lg flex items-center gap-2"
         >
           <motion.div
             animate={{
@@ -49,36 +57,55 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
               duration: 1,
               repeat: isListening || isSpeaking ? Infinity : 0,
             }}
-            className={`w-3 h-3 rounded-full ${getStatusColor()}`}
+            className={`w-2 h-2 rounded-full ${getStatusColor()}`}
           />
-          <span className="text-base font-medium text-foreground">
+          <span className="text-sm font-medium text-foreground">
             {getStatusText()}
           </span>
-          {isSpeaking && <Volume2 className="w-5 h-5 text-green-500" />}
+          {isSpeaking && <Volume2 className="w-4 h-4 text-green-500" />}
         </motion.div>
       )}
 
-      {/* Main Control Button */}
-      <Button
-        onClick={isConnected ? onDisconnect : onConnect}
-        size="lg"
-        className={`
-          min-w-[200px] px-8 py-6 text-lg font-semibold shadow-xl
-          ${isConnected ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'}
-        `}
-      >
-        {isConnected ? (
-          <>
-            <MicOff className="w-6 h-6 mr-3" />
-            End Lesson
-          </>
-        ) : (
-          <>
-            <Mic className="w-6 h-6 mr-3" />
-            Start Lesson
-          </>
-        )}
-      </Button>
+      {/* Control Buttons */}
+      {isConnected && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-center gap-2"
+        >
+          {!isPaused && onPause && (
+            <Button
+              onClick={onPause}
+              variant="secondary"
+              size="sm"
+              className="gap-2"
+            >
+              <Square className="w-4 h-4" />
+              Pause
+            </Button>
+          )}
+          {isPaused && onResume && (
+            <Button
+              onClick={onResume}
+              variant="default"
+              size="sm"
+              className="gap-2"
+            >
+              <Play className="w-4 h-4" />
+              Resume
+            </Button>
+          )}
+          <Button
+            onClick={onDisconnect}
+            variant="destructive"
+            size="sm"
+            className="gap-2"
+          >
+            <Square className="w-4 h-4" />
+            Stop Lesson
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 };
