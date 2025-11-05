@@ -35,7 +35,7 @@ serve(async (req) => {
 
     // Create lesson plan record
     const { data: lessonPlan, error: planError } = await supabase
-      .from('lesson_plans')
+      .from('cleo_lesson_plans')
       .insert({
         lesson_id: lessonId,
         conversation_id: conversationId,
@@ -181,48 +181,17 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       steps: planData.steps.length 
     });
 
-    // Update lesson plan with objectives and sequence
+    // Update lesson plan with objectives and full teaching sequence (including content blocks)
     const { error: updateError } = await supabase
-      .from('lesson_plans')
+      .from('cleo_lesson_plans')
       .update({
         learning_objectives: planData.objectives,
-        teaching_sequence: planData.steps.map((s: any) => ({
-          id: s.id,
-          title: s.title,
-          duration_minutes: s.duration_minutes
-        })),
+        teaching_sequence: planData.steps,
         status: 'ready'
       })
       .eq('id', lessonPlan.id);
 
     if (updateError) throw updateError;
-
-    // Insert all content blocks
-    const contentBlocks: any[] = [];
-    let sequenceOrder = 0;
-
-    for (const step of planData.steps) {
-      for (const block of step.content_blocks) {
-        contentBlocks.push({
-          lesson_plan_id: lessonPlan.id,
-          block_type: block.type,
-          sequence_order: sequenceOrder++,
-          step_id: step.id,
-          title: block.title || '',
-          data: block.data,
-          teaching_notes: block.teaching_notes || '',
-          prerequisites: block.prerequisites || []
-        });
-      }
-    }
-
-    if (contentBlocks.length > 0) {
-      const { error: blocksError } = await supabase
-        .from('lesson_content_blocks')
-        .insert(contentBlocks);
-
-      if (blocksError) throw blocksError;
-    }
 
     console.log('Lesson plan created successfully:', lessonPlan.id);
 
@@ -230,8 +199,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       JSON.stringify({ 
         lessonPlanId: lessonPlan.id,
         objectives: planData.objectives,
-        stepsCount: planData.steps.length,
-        contentBlocksCount: contentBlocks.length
+        stepsCount: planData.steps.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
