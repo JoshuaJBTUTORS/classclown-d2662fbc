@@ -60,6 +60,18 @@ Deno.serve(async (req) => {
     const conversationId = url.searchParams.get("conversationId");
     const topic = url.searchParams.get("topic");
     const yearGroup = url.searchParams.get("yearGroup");
+    const lessonPlanParam = url.searchParams.get("lessonPlan");
+    let lessonPlan = null;
+    
+    if (lessonPlanParam) {
+      try {
+        lessonPlan = JSON.parse(decodeURIComponent(lessonPlanParam));
+        console.log("Lesson plan received:", lessonPlan);
+      } catch (e) {
+        console.error("Failed to parse lesson plan:", e);
+      }
+    }
+    
     let conversation;
 
     if (conversationId) {
@@ -167,13 +179,47 @@ Deno.serve(async (req) => {
 
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
-        const systemPrompt = conversation.topic && conversation.year_group
-          ? `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
+        let systemPrompt = '';
+        
+        if (lessonPlan) {
+          // Authoritative teaching mode with lesson plan
+          const objectivesList = lessonPlan.learning_objectives.map((obj: string, i: number) => `${i+1}. ${obj}`).join('\n');
+          const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => `Step ${i+1}: ${step.title} (${step.duration_minutes}min)`).join('\n');
+          
+          systemPrompt = `You are Cleo, an expert AI tutor teaching ${lessonPlan.topic} to a ${lessonPlan.year_group} student.
 
-        You have access to visual content tools that let you display information to the student:
-        - show_table: Display tabular data with headers and rows
-        - show_definition: Show a definition card for key terms
-        - ask_question: Present interactive multiple-choice questions
+LESSON PLAN:
+Objectives:
+${objectivesList}
+
+Teaching Sequence:
+${sequenceList}
+
+YOUR TEACHING APPROACH:
+- YOU lead the lesson following the teaching sequence in order
+- Start with: "Welcome! Today we're learning ${lessonPlan.topic}. Here's what we'll cover: [briefly list 2-3 main objectives]. Let's begin with ${lessonPlan.teaching_sequence[0].title}."
+- For each step: STATE what you're teaching, SHOW the content using tools, EXPLAIN clearly, then CHECK understanding
+- Use directive language: "Let me show you...", "Here's how...", "Now we'll look at...", "Next, I want you to understand..."
+- Be warm but authoritative: "Great! Now let's move to...", "Perfect. Here's the next concept..."
+- Don't ask "What would you like to learn?" - YOU decide the flow based on the lesson plan
+- Keep students on track: if they go off-topic, acknowledge briefly then redirect: "That's interesting, but let's focus on [current step] first."
+- Progress through steps systematically - only move forward when student demonstrates understanding
+
+VISUAL CONTENT TOOLS:
+- show_table: Display data tables
+- show_definition: Show key term definitions  
+- ask_question: Present multiple-choice questions to check understanding
+
+Always use tools to display visual content instead of just describing it verbally.
+Keep spoken responses clear and under 3 sentences unless explaining a complex concept.`;
+        } else if (conversation.topic && conversation.year_group) {
+          // Friendly exploration mode (no lesson plan)
+          systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
+
+You have access to visual content tools that let you display information to the student:
+- show_table: Display tabular data with headers and rows
+- show_definition: Show a definition card for key terms
+- ask_question: Present interactive multiple-choice questions
 
 Teaching style:
 - Start by introducing the lesson naturally
@@ -185,8 +231,10 @@ Teaching style:
 - Break down complex topics into simple steps
 - Be patient and supportive
 
-Keep spoken responses conversational and under 3 sentences unless explaining something complex.`
-          : `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
+Keep spoken responses conversational and under 3 sentences unless explaining something complex.`;
+        } else {
+          systemPrompt = `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
+        }
 
         openAISocket.send(JSON.stringify({
           type: 'session.update',
@@ -286,9 +334,16 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         console.log("Session configured");
 
         // Send initial greeting message
-        const greetingText = lessonTitle 
-          ? `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`
-          : `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
+        let greetingText = '';
+        if (lessonPlan) {
+          const mainObjectives = lessonPlan.learning_objectives.slice(0, 2).join(', and ');
+          const firstStep = lessonPlan.teaching_sequence[0]?.title || 'the basics';
+          greetingText = `Hi ${userName}! Welcome! I'm Cleo, and I'll be guiding you through ${lessonPlan.topic} today. We have ${lessonPlan.learning_objectives.length} main objectives: ${mainObjectives}. Let's get started with ${firstStep}. Are you ready?`;
+        } else if (lessonTitle) {
+          greetingText = `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`;
+        } else {
+          greetingText = `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
+        }
 
         console.log("Sending initial greeting:", greetingText);
 

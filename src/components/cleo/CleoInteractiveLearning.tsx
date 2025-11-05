@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ContentDisplay } from './ContentDisplay';
 import { VoiceControls } from './VoiceControls';
 import { CleoVoiceChat } from './CleoVoiceChat';
+import { LessonPlanSidebar } from './LessonPlanSidebar';
 import { useContentSync } from '@/hooks/useContentSync';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { Button } from '@/components/ui/button';
@@ -10,11 +11,22 @@ import { Play } from 'lucide-react';
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
   conversationId?: string;
+  lessonPlan?: {
+    topic: string;
+    year_group: string;
+    learning_objectives: string[];
+    teaching_sequence: Array<{
+      id: string;
+      title: string;
+      duration_minutes?: number;
+    }>;
+  };
 }
 
 export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = ({
   lessonData,
   conversationId,
+  lessonPlan,
 }) => {
   const {
     activeStep,
@@ -30,6 +42,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void } | null>(null);
 
   const handleAnswerQuestion = (
@@ -181,12 +194,24 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         </div>
       </div>
 
+      {/* Lesson Plan Sidebar */}
+      {lessonPlan && connectionState === 'connected' && (
+        <LessonPlanSidebar
+          lessonPlan={lessonPlan}
+          currentStepId={activeStep?.toString()}
+          completedSteps={completedSteps}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+      )}
+
       {/* Hidden Voice Chat Component */}
       <div className="hidden">
         <CleoVoiceChat
           conversationId={conversationId}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
+          lessonPlan={lessonPlan}
           onContentEvent={handleContentEventWithUpsert}
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}

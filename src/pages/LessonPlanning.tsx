@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LessonPlanningScreen } from '@/components/cleo/LessonPlanningScreen';
+import { LessonPlanDisplay } from '@/components/cleo/LessonPlanDisplay';
 import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
 import { useLessonPlan } from '@/hooks/useLessonPlan';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +11,7 @@ const LessonPlanning: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [lessonPlanId, setLessonPlanId] = useState<string | null>(null);
+  const [showPlanDisplay, setShowPlanDisplay] = useState(false);
   const [showLearning, setShowLearning] = useState(false);
 
   const topic = searchParams.get('topic') || 'General Topic';
@@ -22,6 +24,11 @@ const LessonPlanning: React.FC = () => {
   const handlePlanningComplete = (planId: string) => {
     console.log('Lesson plan generated:', planId);
     setLessonPlanId(planId);
+    setShowPlanDisplay(true);
+  };
+
+  const handleStartLesson = () => {
+    setShowPlanDisplay(false);
     setShowLearning(true);
   };
 
@@ -55,6 +62,23 @@ const LessonPlanning: React.FC = () => {
     }
   };
 
+  // Show lesson plan display after generation
+  if (showPlanDisplay && lessonPlan && !loading) {
+    const contentCounts = {
+      tables: contentBlocks.filter(b => b.type === 'table').length,
+      questions: contentBlocks.filter(b => b.type === 'question').length,
+      definitions: contentBlocks.filter(b => b.type === 'definition').length,
+    };
+
+    return (
+      <LessonPlanDisplay
+        lessonPlan={lessonPlan}
+        contentCounts={contentCounts}
+        onStartLesson={handleStartLesson}
+      />
+    );
+  }
+
   if (showLearning) {
     // If we have a lesson plan, use it
     if (lessonPlan && contentBlocks.length > 0 && !loading) {
@@ -73,6 +97,7 @@ const LessonPlanning: React.FC = () => {
             })),
             content: contentBlocks
           }}
+          lessonPlan={lessonPlan}
         />
       );
     }
