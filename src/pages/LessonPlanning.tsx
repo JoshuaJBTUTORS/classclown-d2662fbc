@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import { LessonPlanningScreen } from '@/components/cleo/LessonPlanningScreen';
 import { LessonPlanDisplay } from '@/components/cleo/LessonPlanDisplay';
 import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
@@ -18,6 +19,13 @@ const LessonPlanning: React.FC = () => {
   const yearGroup = searchParams.get('yearGroup') || 'GCSE';
   const lessonId = searchParams.get('lessonId') || undefined;
   const moduleId = searchParams.get('moduleId') || undefined;
+
+  // Generate or retrieve conversation ID to prevent duplicate lesson plans
+  const [conversationId] = useState(() => {
+    const urlConvId = searchParams.get('conversationId');
+    if (urlConvId) return urlConvId;
+    return uuidv4();
+  });
 
   const { lessonPlan, contentBlocks, loading } = useLessonPlan(lessonPlanId);
 
@@ -125,6 +133,7 @@ const LessonPlanning: React.FC = () => {
       topic={topic}
       yearGroup={yearGroup}
       lessonId={lessonId}
+      conversationId={conversationId}
       learningGoal={searchParams.get('goal') || undefined}
       onComplete={handlePlanningComplete}
       onError={handlePlanningError}
