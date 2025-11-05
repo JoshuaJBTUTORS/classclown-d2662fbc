@@ -230,7 +230,7 @@ export default function EditProposal() {
       if (resendData?.whatsappSent && formData.recipientPhone) {
         successMessage += `\n📱 WhatsApp sent to ${formData.recipientPhone}`;
       } else if (formData.recipientPhone) {
-        successMessage += '\n⚠️ WhatsApp notification failed';
+        successMessage += `\n❌ WhatsApp failed: ${resendData?.whatsappError || 'Unknown error'}`;
       }
 
       toast({

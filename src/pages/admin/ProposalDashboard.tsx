@@ -103,7 +103,7 @@ export default function ProposalDashboard() {
       if (data?.whatsappSent && proposal.recipient_phone) {
         successMessage += `\n📱 WhatsApp sent to ${proposal.recipient_phone}`;
       } else if (proposal.recipient_phone) {
-        successMessage += '\n⚠️ WhatsApp notification failed';
+        successMessage += `\n❌ WhatsApp failed: ${data?.whatsappError || 'Unknown error'}`;
       }
 
       toast({

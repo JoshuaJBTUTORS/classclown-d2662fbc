@@ -83,6 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send WhatsApp message if phone number is available
     let whatsappSuccess = false;
+    let whatsappError = null;
     if (recipientPhone) {
       console.log('Sending WhatsApp notification to:', recipientPhone);
       
@@ -102,7 +103,8 @@ const handler = async (req: Request): Promise<Response> => {
         console.log('WhatsApp message sent successfully:', whatsappResponse.messageId);
         whatsappSuccess = true;
       } else {
-        console.error('WhatsApp message failed:', whatsappResponse.error);
+        whatsappError = whatsappResponse.error;
+        console.error('WhatsApp message failed:', whatsappError);
       }
     }
 
@@ -111,7 +113,8 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         message: 'Notifications sent successfully',
         emailSent: true,
-        whatsappSent: whatsappSuccess
+        whatsappSent: whatsappSuccess,
+        whatsappError: whatsappError
       }),
       {
         status: 200,
