@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
     const conversationId = url.searchParams.get("conversationId");
     const topic = url.searchParams.get("topic");
     const yearGroup = url.searchParams.get("yearGroup");
-    const lessonPlanId = url.searchParams.get("lessonPlanId");
     let conversation;
 
     if (conversationId) {
@@ -92,8 +91,25 @@ Deno.serve(async (req) => {
       conversation = data;
     }
 
-    // Lesson plan integration removed for debugging
     console.log("Conversation ready:", conversation.id);
+
+    // Fetch lesson details if this is a lesson-based conversation
+    let lessonTitle = conversation.topic;
+    let lessonDescription = '';
+
+    if (conversation.lesson_id) {
+      const { data: lessonData } = await supabase
+        .from('course_lessons')
+        .select('title, description')
+        .eq('id', conversation.lesson_id)
+        .single();
+      
+      if (lessonData) {
+        lessonTitle = lessonData.title;
+        lessonDescription = lessonData.description || '';
+        console.log("Lesson details:", { lessonTitle, hasDescription: !!lessonDescription });
+      }
+    }
 
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
@@ -118,13 +134,8 @@ Deno.serve(async (req) => {
     };
 
     let isSessionConfigured = false;
-    let isResponseActive = false;  // Track if AI is speaking
-    let hasAudioStarted = false;   // Track if audio generation started
-    let isInitialGreeting = true;  // Protect the initial greeting
     let currentTranscript = '';
     let currentAssistantMessage = '';
-    let pendingGreetingText: string | null = null;
-    let audioChunkCount = 0;  // Track audio chunks for diagnostics
 
     // Handle OpenAI socket events
     openAISocket.onopen = () => {
@@ -156,33 +167,43 @@ Deno.serve(async (req) => {
 
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
-        // Simplified system prompt without lesson integration
-        const systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. Help students learn through interactive conversations.
+        const systemPrompt = conversation.topic && conversation.year_group
+          ? `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
+
+        You have access to visual content tools that let you display information to the student:
+        - show_table: Display tabular data with headers and rows
+        - show_definition: Show a definition card for key terms
+        - ask_question: Present interactive multiple-choice questions
 
 Teaching style:
-- Keep responses brief and conversational (2-3 sentences)
-- Be warm and supportive
-- Ask questions to check understanding
-- Use simple, clear language
+- Start by introducing the lesson naturally
+- USE YOUR TOOLS to show visual content instead of just describing it
+- Example: Instead of saying "let me explain atoms", call show_definition with term="Atom" and definition="..."
+- Example: Instead of saying "here's a comparison", call show_table with the comparison data
+- After showing a question, wait for the student's answer before continuing
+- Provide clear explanations with visual aids
+- Break down complex topics into simple steps
+- Be patient and supportive
 
-You have visual content tools available:
-- show_table: Display structured data
-- show_definition: Show key terms
-- ask_question: Present interactive questions`;
+Keep spoken responses conversational and under 3 sentences unless explaining something complex.`
+          : `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
 
         openAISocket.send(JSON.stringify({
           type: 'session.update',
           session: {
             modalities: ['text', 'audio'],
             instructions: systemPrompt,
-            voice: 'alloy',
+            voice: 'ballad',
             input_audio_format: 'pcm16',
             output_audio_format: 'pcm16',
+            input_audio_transcription: {
+              model: 'whisper-1'
+            },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.65,
+              threshold: 0.5,
               prefix_padding_ms: 300,
-              silence_duration_ms: 1000
+              silence_duration_ms: 700
             },
             tools: [
               {
@@ -261,21 +282,15 @@ You have visual content tools available:
           }
         }));
         
-        console.log("Session configured, waiting for session.updated");
-
-        // Simplified greeting without lesson context
-        pendingGreetingText = `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to explore today?`;
-      }
-
-      // Send greeting AFTER session.updated is confirmed
-      if (message.type === 'session.updated' && !isSessionConfigured && pendingGreetingText) {
         isSessionConfigured = true;
-        console.log("✅ Session updated confirmed");
-        
-        // Reset audio counter for greeting
-        audioChunkCount = 0;
+        console.log("Session configured");
 
-        console.log("🎤 Sending initial greeting:", pendingGreetingText);
+        // Send initial greeting message
+        const greetingText = lessonTitle 
+          ? `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`
+          : `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
+
+        console.log("Sending initial greeting:", greetingText);
 
         // Create a conversation item with the greeting prompt
         openAISocket.send(JSON.stringify({
@@ -286,64 +301,33 @@ You have visual content tools available:
             content: [
               {
                 type: 'input_text',
-                text: pendingGreetingText
+                text: greetingText
               }
             ]
           }
         }));
 
-        // Force audio output for greeting
+        // Immediately trigger a response so Cleo speaks the greeting
         openAISocket.send(JSON.stringify({
-          type: 'response.create',
-          response: {
-            modalities: ['audio', 'text']
-          }
+          type: 'response.create'
         }));
-        
-        console.log("🎤 Greeting response.create sent, expecting audio...");
 
         // Save the greeting prompt to database as a system message
         await supabase.from('cleo_messages').insert({
           conversation_id: conversation.id,
           role: 'system',
-          content: `Initial greeting prompt: ${pendingGreetingText}`
+          content: `Initial greeting prompt: ${greetingText}`
         });
 
-        console.log("Initial greeting sent after session.updated");
-        pendingGreetingText = null;
+        console.log("Initial greeting sent to OpenAI");
       }
 
-      // Track when audio response starts
-      if (message.type === 'response.audio.delta') {
-        isResponseActive = true;
-        hasAudioStarted = true;
-        audioChunkCount++;
-        console.log(`🔊 Audio chunk #${audioChunkCount} from OpenAI, size: ${message.delta?.length || 0}`);
-      }
-
-      // Cancel AI response when user starts speaking (only if response is active)
+      // Cancel AI response when user starts speaking (interruption)
       if (message.type === 'input_audio_buffer.speech_started') {
-        // Don't cancel the initial greeting
-        if (isInitialGreeting) {
-          console.log("Speech detected during initial greeting - ignoring");
-          // Forward to client but don't cancel
-          if (clientSocket.readyState === WebSocket.OPEN) {
-            clientSocket.send(event.data);
-          }
-          return;
-        }
-
-        // Only cancel if we're actually generating audio
-        if (isResponseActive && hasAudioStarted) {
-          console.log("User interrupted - cancelling AI response");
-          openAISocket.send(JSON.stringify({
-            type: 'response.cancel'
-          }));
-          isResponseActive = false;
-          hasAudioStarted = false;
-        } else {
-          console.log("Speech detected but no active response to cancel");
-        }
+        console.log("User started speaking - cancelling AI response");
+        openAISocket.send(JSON.stringify({
+          type: 'response.cancel'
+        }));
       }
 
       // Save student transcript to database
@@ -507,31 +491,6 @@ You have visual content tools available:
             content: currentAssistantMessage
           });
           currentAssistantMessage = '';
-        }
-      }
-
-      // Track when response completes
-      if (message.type === 'response.done') {
-        isResponseActive = false;
-        hasAudioStarted = false;
-        
-        // Diagnostic: Check if any audio was generated
-        if (audioChunkCount === 0) {
-          console.log("⚠️ WARNING: response.done but NO audio chunks received!");
-          if (clientSocket.readyState === WebSocket.OPEN) {
-            clientSocket.send(JSON.stringify({
-              type: 'debug.no_audio',
-              message: 'Response completed but no audio was generated'
-            }));
-          }
-        } else {
-          console.log(`✅ Response complete with ${audioChunkCount} audio chunks`);
-        }
-        
-        // Clear initial greeting flag after first response
-        if (isInitialGreeting) {
-          isInitialGreeting = false;
-          console.log("Initial greeting completed - interruptions now allowed");
         }
       }
 

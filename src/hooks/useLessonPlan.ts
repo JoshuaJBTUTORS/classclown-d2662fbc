@@ -44,48 +44,44 @@ export function useLessonPlan(lessonPlanId: string | null) {
   const loadLessonPlan = async () => {
     try {
       setLoading(true);
-      console.log('Loading lesson plan with ID:', lessonPlanId);
 
-      // Load lesson plan by its ID (not lesson_id)
-      const { data: planData, error: planError } = await supabase
-        .from('cleo_lesson_plans')
-        .select('*')
-        .eq('id', lessonPlanId)
-        .maybeSingle();
+      // Use direct REST API calls since types aren't generated yet
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      if (planError) throw planError;
-      if (!planData) {
-        console.error('Lesson plan not found for ID:', lessonPlanId);
-        throw new Error('Lesson plan not found');
-      }
+      // Load lesson plan
+      const planResponse = await fetch(
+        `${supabaseUrl}/rest/v1/lesson_plans?id=eq.${lessonPlanId}&select=*`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+          }
+        }
+      );
 
-      console.log('Loaded lesson plan:', planData);
+      if (!planResponse.ok) throw new Error('Failed to load lesson plan');
+      const plans = await planResponse.json();
+      if (!plans || plans.length === 0) throw new Error('Lesson plan not found');
 
-      // Parse the JSONB fields properly
-      const lessonPlan: LessonPlan = {
-        id: planData.id,
-        topic: planData.topic,
-        year_group: planData.year_group,
-        learning_objectives: (planData.learning_objectives as any) || [],
-        teaching_sequence: (planData.teaching_sequence as any) || [],
-        status: planData.status
-      };
-
-      setLessonPlan(lessonPlan);
+      setLessonPlan(plans[0] as LessonPlan);
 
       // Load content blocks
-      const { data: blocksData, error: blocksError } = await supabase
-        .from('lesson_content_blocks')
-        .select('*')
-        .eq('lesson_plan_id', lessonPlanId)
-        .order('sequence_order', { ascending: true });
+      const blocksResponse = await fetch(
+        `${supabaseUrl}/rest/v1/lesson_content_blocks?lesson_plan_id=eq.${lessonPlanId}&select=*&order=sequence_order.asc`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+          }
+        }
+      );
 
-      if (blocksError) throw blocksError;
-
-      console.log(`Loaded ${blocksData?.length || 0} content blocks`);
+      if (!blocksResponse.ok) throw new Error('Failed to load content blocks');
+      const blocks = await blocksResponse.json();
 
       // Convert to ContentBlock format
-      const convertedBlocks: ContentBlock[] = (blocksData as ContentBlockData[]).map((block: ContentBlockData) => ({
+      const convertedBlocks: ContentBlock[] = (blocks as ContentBlockData[]).map((block: ContentBlockData) => ({
         id: block.id,
         stepId: block.step_id,
         type: block.block_type as any,

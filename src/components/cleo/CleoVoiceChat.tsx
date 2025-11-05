@@ -13,40 +13,29 @@ interface CleoVoiceChatProps {
   conversationId?: string;
   topic?: string;
   yearGroup?: string;
-  lessonPlanId?: string;
-  inputDeviceId?: string;
-  outputDeviceId?: string;
   onConversationCreated?: (id: string) => void;
   onContentEvent?: (event: ContentEvent) => void;
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
-  onPausedChange?: (isPaused: boolean) => void;
-  onTranscriptChange?: (transcript: string) => void;
-  onProvideControls?: (controls: { connect: () => void; disconnect: () => void; pause: () => void; resume: () => void }) => void;
+  onProvideControls?: (controls: { connect: () => void; disconnect: () => void }) => void;
 }
 
 export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
   conversationId,
   topic,
   yearGroup,
-  lessonPlanId,
-  inputDeviceId,
-  outputDeviceId,
   onConversationCreated,
   onContentEvent,
   onConnectionStateChange,
   onListeningChange,
   onSpeakingChange,
-  onPausedChange,
-  onTranscriptChange,
   onProvideControls
 }) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [audioContextState, setAudioContextState] = useState<string>('unknown');
@@ -70,13 +59,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     onSpeakingChange?.(isSpeaking);
   }, [isSpeaking, onSpeakingChange]);
 
+  // Provide connect/disconnect controls to parent
   useEffect(() => {
-    onPausedChange?.(isPaused);
-  }, [isPaused, onPausedChange]);
-
-  // Provide connect/disconnect/pause/resume controls to parent
-  useEffect(() => {
-    onProvideControls?.({ connect, disconnect, pause, resume });
+    onProvideControls?.({ connect, disconnect });
   }, [onProvideControls]);
 
   useEffect(() => {
@@ -95,13 +80,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         throw new Error('Not authenticated');
       }
 
-    // Create audio player with output device
-    playerRef.current = new AudioStreamPlayer(outputDeviceId);
+    // Create audio player
+    playerRef.current = new AudioStreamPlayer();
     
     // Resume AudioContext immediately (user gesture)
     await playerRef.current.resume();
     setAudioContextState('running');
-    console.log('🔊 Audio player initialized with output device:', outputDeviceId);
 
       // Connect WebSocket
       let wsUrl = `wss://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/cleo-realtime-voice?token=${session.access_token}`;
@@ -114,18 +98,17 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       if (yearGroup) {
         wsUrl += `&yearGroup=${encodeURIComponent(yearGroup)}`;
       }
-      if (lessonPlanId) {
-        wsUrl += `&lessonPlanId=${encodeURIComponent(lessonPlanId)}`;
-      }
       
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket to edge function connected');
+        console.log('WebSocket connected');
+        setConnectionState('connected');
         toast({
-          title: "Connecting to Cleo...",
-          description: "Setting up voice connection",
+          title: "Connected",
+          description: "Start speaking to Cleo!",
         });
+        startRecording();
       };
 
       wsRef.current.onmessage = async (event) => {
@@ -141,17 +124,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'session.created':
-            console.log('Session created, waiting for session.updated');
-            break;
-
-          case 'session.updated':
-            console.log('✅ OpenAI session updated, starting recording');
+            console.log('Session created:', data);
             setConnectionState('connected');
-            startRecording();
-            toast({
-              title: 'Connected',
-              description: 'Start speaking to Cleo!',
-            });
             break;
 
           case 'content.marker':
@@ -184,12 +158,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
           case 'conversation.item.input_audio_transcription.completed':
             setCurrentTranscript('');
-            onTranscriptChange?.('');
             setMessages(prev => [...prev, { role: 'user', content: data.transcript }]);
             break;
 
           case 'response.audio.delta':
-            console.log('🔊 Audio chunk received, size:', data.delta?.length || 0);
             setIsSpeaking(true);
             if (playerRef.current && data.delta) {
               await playerRef.current.playChunk(data.delta);
@@ -197,9 +169,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'response.audio_transcript.delta':
-            const newTranscript = currentTranscript + data.delta;
-            setCurrentTranscript(newTranscript);
-            onTranscriptChange?.(newTranscript);
+            setCurrentTranscript(prev => prev + data.delta);
             break;
 
           case 'response.audio_transcript.done':
@@ -207,23 +177,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               setMessages(prev => [...prev, { role: 'assistant', content: data.transcript }]);
             }
             setCurrentTranscript('');
-            onTranscriptChange?.('');
             break;
 
           case 'response.done':
-            console.log('✅ Response complete');
             setIsSpeaking(false);
             break;
 
           case 'server_error':
-            const errorCode = data.details?.error?.code;
-            
-            // Don't show toast for cancellation errors (they're not critical)
-            if (errorCode === 'response_cancel_not_active') {
-              console.log('ℹ️ Cancellation attempted on inactive response (harmless)');
-              break;
-            }
-            
             console.error('🚨 Detailed Server Error:', data.details);
             toast({
               title: "OpenAI Error",
@@ -281,9 +241,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         }
       });
 
-      await recorderRef.current.start(inputDeviceId);
+      await recorderRef.current.start();
       setMicrophoneActive(true);
-      console.log('🎤 Recording started with input device:', inputDeviceId);
+      console.log('🎤 Recording started');
     } catch (error) {
       console.error('Error starting recorder:', error);
       setMicrophoneActive(false);
@@ -302,29 +262,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     console.log('🎤 Recording stopped');
   };
 
-  const pause = () => {
-    console.log('Pausing lesson...');
-    recorderRef.current?.pause();
-    playerRef.current?.pause();
-    setIsPaused(true);
-    setIsListening(false);
-    setIsSpeaking(false);
-    toast({
-      title: "Lesson Paused",
-      description: "Recording and playback paused",
-    });
-  };
-
-  const resume = () => {
-    console.log('Resuming lesson...');
-    recorderRef.current?.resume();
-    setIsPaused(false);
-    toast({
-      title: "Lesson Resumed",
-      description: "Continue speaking to Cleo",
-    });
-  };
-
   const disconnect = () => {
     console.log('Disconnecting...');
     stopRecording();
@@ -336,7 +273,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
-    setIsPaused(false);
   };
 
   // This component renders nothing - it's just for voice logic

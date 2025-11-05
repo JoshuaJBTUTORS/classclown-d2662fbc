@@ -20,7 +20,7 @@ const LessonPlanning: React.FC = () => {
   const { lessonPlan, contentBlocks, loading } = useLessonPlan(lessonPlanId);
 
   const handlePlanningComplete = (planId: string) => {
-    console.log('Lesson plan generation complete. Plan ID:', planId);
+    console.log('Lesson plan generated:', planId);
     setLessonPlanId(planId);
     setShowLearning(true);
   };
@@ -56,20 +56,8 @@ const LessonPlanning: React.FC = () => {
   };
 
   if (showLearning) {
-    // Show loading state while fetching lesson plan data
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-background/95">
-          <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="text-muted-foreground">Loading your lesson plan...</p>
-          </div>
-        </div>
-      );
-    }
-
     // If we have a lesson plan, use it
-    if (lessonPlan && contentBlocks.length > 0) {
+    if (lessonPlan && contentBlocks.length > 0 && !loading) {
       return (
         <CleoInteractiveLearning
           lessonData={{
@@ -85,12 +73,11 @@ const LessonPlanning: React.FC = () => {
             })),
             content: contentBlocks
           }}
-          lessonPlanId={lessonPlanId}
         />
       );
     }
 
-    // Fallback to simple mode if no plan loaded
+    // Fallback to simple mode if no plan
     return (
       <CleoInteractiveLearning
         lessonData={{

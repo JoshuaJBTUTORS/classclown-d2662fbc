@@ -38,7 +38,6 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
   ]);
 
   useEffect(() => {
-    // Edge function handles checking for existing plans, so just generate directly
     generateLessonPlan();
   }, []);
 
@@ -79,31 +78,15 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
       if (error) {
         throw new Error(error.message || 'Failed to generate lesson plan');
       }
+      
+      // Complete all steps
+      setSteps(prev => prev.map(s => ({ ...s, completed: true })));
+      setCurrentStep(steps.length);
 
-      // Handle different response types
-      if (data.isExisting) {
-        // Existing plan found - skip animation and go directly
-        console.log('📚 Using existing universal lesson plan:', data.lessonPlanId);
-        setSteps(prev => prev.map(s => ({ ...s, completed: true })));
-        setCurrentStep(steps.length);
+      // Wait a moment before completing
+      setTimeout(() => {
         onComplete(data.lessonPlanId);
-      } else if (data.isGenerating) {
-        // Another instance is generating - wait a moment
-        console.log('⏳ Another request is generating this plan, loading...');
-        setSteps(prev => prev.map(s => ({ ...s, completed: true })));
-        setCurrentStep(steps.length);
-        setTimeout(() => {
-          onComplete(data.lessonPlanId);
-        }, 1500);
-      } else {
-        // New plan generated - show full animation
-        console.log('✨ New lesson plan generated:', data.lessonPlanId);
-        setSteps(prev => prev.map(s => ({ ...s, completed: true })));
-        setCurrentStep(steps.length);
-        setTimeout(() => {
-          onComplete(data.lessonPlanId);
-        }, 500);
-      }
+      }, 500);
 
     } catch (error) {
       console.error('Error generating lesson plan:', error);
