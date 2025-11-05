@@ -33,22 +33,48 @@ serve(async (req) => {
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal });
 
-    // Upsert lesson plan record (update if exists, insert if not)
-    const { data: lessonPlan, error: planError } = await supabase
+    // Check if a lesson plan already exists for this conversation and topic
+    const { data: existingPlan } = await supabase
       .from('cleo_lesson_plans')
-      .upsert({
-        conversation_id: conversationId,
-        topic,
-        year_group: yearGroup,
-        status: 'generating',
-        learning_objectives: [],
-        teaching_sequence: []
-      }, {
-        onConflict: 'conversation_id,topic',
-        ignoreDuplicates: false
-      })
       .select()
-      .single();
+      .eq('conversation_id', conversationId)
+      .eq('topic', topic)
+      .maybeSingle();
+
+    let lessonPlan;
+    let planError;
+
+    if (existingPlan) {
+      // Update existing plan
+      const result = await supabase
+        .from('cleo_lesson_plans')
+        .update({
+          status: 'generating',
+          year_group: yearGroup,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingPlan.id)
+        .select()
+        .single();
+      
+      lessonPlan = result.data;
+      planError = result.error;
+    } else {
+      // Create new lesson plan
+      const result = await supabase
+        .from('cleo_lesson_plans')
+        .insert({
+          conversation_id: conversationId,
+          topic,
+          year_group: yearGroup,
+          status: 'generating'
+        })
+        .select()
+        .single();
+      
+      lessonPlan = result.data;
+      planError = result.error;
+    }
 
     if (planError) throw planError;
 
