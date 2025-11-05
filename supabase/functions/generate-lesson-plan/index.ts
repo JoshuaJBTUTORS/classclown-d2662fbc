@@ -74,29 +74,27 @@ serve(async (req) => {
     let planError;
 
     if (existingPlan) {
-      // Update existing plan
-      const updatePayload: Record<string, any> = {
-        status: 'generating',
-        year_group: yearGroup,
-        updated_at: new Date().toISOString(),
-      };
-      if (conversationId && !existingPlan.conversation_id) updatePayload.conversation_id = conversationId;
-      if (lessonId && !existingPlan.lesson_id) updatePayload.lesson_id = lessonId;
-
-      const result = await supabase
-        .from('cleo_lesson_plans')
-        .update(updatePayload)
-        .eq('id', existingPlan.id)
-        .select()
-        .single();
+      // If plan is complete and ready, return it immediately without any updates
+      if (existingPlan.status === 'ready' && existingPlan.learning_objectives && existingPlan.teaching_sequence) {
+        console.log('Found complete existing plan, returning immediately');
+        return new Response(
+          JSON.stringify({
+            lessonPlanId: existingPlan.id,
+            objectives: existingPlan.learning_objectives,
+            stepsCount: existingPlan.teaching_sequence.length
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
-      lessonPlan = result.data;
-      planError = result.error;
+      // Plan exists but is incomplete, use it for generation without updating
+      console.log('Found incomplete existing plan, will complete it');
+      lessonPlan = existingPlan;
+      planError = null;
     } else {
-      // Create new lesson plan (ensure we set lesson_id when available to avoid standalone unique conflict)
-      const insertPayload: Record<string, any> = {
+      // Create new lesson plan (standalone, no lesson_id to avoid foreign key issues)
+      const insertPayload = {
         conversation_id: conversationId || null,
-        lesson_id: lessonId || null,
         topic,
         year_group: yearGroup,
         status: 'generating'
