@@ -31,28 +31,61 @@ serve(async (req) => {
 
     const { lessonId, topic, yearGroup, learningGoal, conversationId } = await req.json();
 
-    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal });
+    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId });
 
-    // Check if a lesson plan already exists for this conversation and topic
-    const { data: existingPlan } = await supabase
-      .from('cleo_lesson_plans')
-      .select()
-      .eq('conversation_id', conversationId)
-      .eq('topic', topic)
-      .maybeSingle();
+    // Find an existing plan using a robust strategy to respect unique indexes
+    // Priority: lesson_id -> conversation_id+topic -> standalone (topic+year_group, lesson_id IS NULL)
+    let existingPlan = null as any;
+
+    if (lessonId) {
+      const { data } = await supabase
+        .from('cleo_lesson_plans')
+        .select()
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+      existingPlan = data;
+      console.log('Lookup by lesson_id result:', !!existingPlan);
+    }
+
+    if (!existingPlan && conversationId) {
+      const { data } = await supabase
+        .from('cleo_lesson_plans')
+        .select()
+        .eq('conversation_id', conversationId)
+        .eq('topic', topic)
+        .maybeSingle();
+      existingPlan = data;
+      console.log('Lookup by conversation_id+topic result:', !!existingPlan);
+    }
+
+    if (!existingPlan) {
+      const { data } = await supabase
+        .from('cleo_lesson_plans')
+        .select()
+        .eq('topic', topic)
+        .eq('year_group', yearGroup)
+        .is('lesson_id', null)
+        .maybeSingle();
+      existingPlan = data;
+      console.log('Lookup standalone (topic+year_group, lesson_id IS NULL) result:', !!existingPlan);
+    }
 
     let lessonPlan;
     let planError;
 
     if (existingPlan) {
       // Update existing plan
+      const updatePayload: Record<string, any> = {
+        status: 'generating',
+        year_group: yearGroup,
+        updated_at: new Date().toISOString(),
+      };
+      if (conversationId && !existingPlan.conversation_id) updatePayload.conversation_id = conversationId;
+      if (lessonId && !existingPlan.lesson_id) updatePayload.lesson_id = lessonId;
+
       const result = await supabase
         .from('cleo_lesson_plans')
-        .update({
-          status: 'generating',
-          year_group: yearGroup,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', existingPlan.id)
         .select()
         .single();
@@ -60,15 +93,17 @@ serve(async (req) => {
       lessonPlan = result.data;
       planError = result.error;
     } else {
-      // Create new lesson plan
+      // Create new lesson plan (ensure we set lesson_id when available to avoid standalone unique conflict)
+      const insertPayload: Record<string, any> = {
+        conversation_id: conversationId || null,
+        lesson_id: lessonId || null,
+        topic,
+        year_group: yearGroup,
+        status: 'generating'
+      };
       const result = await supabase
         .from('cleo_lesson_plans')
-        .insert({
-          conversation_id: conversationId,
-          topic,
-          year_group: yearGroup,
-          status: 'generating'
-        })
+        .insert(insertPayload)
         .select()
         .single();
       
