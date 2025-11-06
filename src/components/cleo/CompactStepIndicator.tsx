@@ -1,37 +1,43 @@
 import React from 'react';
-import { LessonStep } from '@/types/lessonContent';
 import { Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+interface TeachingStep {
+  id: string;
+  title: string;
+  duration_minutes?: number;
+}
+
 interface CompactStepIndicatorProps {
-  steps: LessonStep[];
-  currentStep: number;
+  teachingSequence: TeachingStep[];
+  currentStepId?: string;
   completedSteps: string[];
 }
 
 export const CompactStepIndicator: React.FC<CompactStepIndicatorProps> = ({
-  steps,
-  currentStep,
+  teachingSequence,
+  currentStepId,
   completedSteps,
 }) => {
-  const totalSteps = steps.length;
-  const currentStepData = steps[currentStep];
+  const totalSteps = teachingSequence.length;
+  const currentStepIndex = teachingSequence.findIndex(s => s.id === currentStepId);
+  const currentStepData = teachingSequence[currentStepIndex] || teachingSequence[0];
 
   return (
     <div className="flex items-center gap-3">
       {/* Mobile: Just numbers */}
       <div className="md:hidden text-sm font-medium text-muted-foreground">
-        {currentStep + 1}/{totalSteps}
+        {currentStepIndex >= 0 ? currentStepIndex + 1 : 1}/{totalSteps}
       </div>
 
       {/* Desktop: Full display */}
       <div className="hidden md:flex items-center gap-3">
         {/* Step indicators */}
         <div className="flex items-center gap-1.5">
-          {steps.map((step, index) => {
+          {teachingSequence.map((step, index) => {
             const isCompleted = completedSteps.includes(step.id);
-            const isCurrent = index === currentStep;
-            const isPast = index < currentStep;
+            const isCurrent = step.id === currentStepId;
+            const isPast = currentStepIndex >= 0 && index < currentStepIndex;
 
             return (
               <motion.div
@@ -62,7 +68,7 @@ export const CompactStepIndicator: React.FC<CompactStepIndicatorProps> = ({
                   {isCompleted ? (
                     <Check className="w-4 h-4" />
                   ) : (
-                    <span>{step.order}</span>
+                    <span>{index + 1}</span>
                   )}
                 </div>
               </motion.div>
@@ -73,10 +79,10 @@ export const CompactStepIndicator: React.FC<CompactStepIndicatorProps> = ({
         {/* Current step info */}
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">
-            Step {currentStep + 1} of {totalSteps}
+            Step {currentStepIndex >= 0 ? currentStepIndex + 1 : 1} of {totalSteps}
           </span>
           {currentStepData && (
-            <span className="text-sm font-medium text-foreground line-clamp-1">
+            <span className="text-sm font-medium text-foreground line-clamp-1 max-w-[200px]">
               {currentStepData.title}
             </span>
           )}

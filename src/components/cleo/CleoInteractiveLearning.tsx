@@ -226,11 +226,13 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               Back to Lessons
             </Button>
 
-            <CompactStepIndicator
-              steps={lessonData.steps}
-              currentStep={activeStep}
-              completedSteps={completedSteps}
-            />
+            {lessonPlan && (
+              <CompactStepIndicator
+                teachingSequence={lessonPlan.teaching_sequence}
+                currentStepId={activeStep?.toString()}
+                completedSteps={completedSteps}
+              />
+            )}
           </div>
 
           <div className="mb-4">
