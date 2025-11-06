@@ -37,11 +37,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data, onContentActio
       </div>
       
       {hasUrl ? (
-        <div className="w-full rounded-lg overflow-hidden border border-border bg-card">
+        <div className="max-w-md mx-auto rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <img 
             src={data.url} 
             alt={data.alt || data.caption || 'Diagram'} 
-            className="w-full h-auto"
+            className="w-full h-auto object-contain p-6"
             loading="lazy"
           />
         </div>
@@ -57,7 +57,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data, onContentActio
       )}
       
       {data.caption && (
-        <p className="text-sm text-muted-foreground mt-2 text-center">
+        <p className="text-xs text-muted-foreground/80 mt-3 text-center font-medium px-4">
           {data.caption}
         </p>
       )}

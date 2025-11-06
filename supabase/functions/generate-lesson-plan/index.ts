@@ -396,7 +396,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
           if (block.type === 'diagram' && block.data?.description) {
             try {
               const elements = block.data.elements || [];
-              const prompt = `Educational diagram: ${block.data.description}. Must clearly show: ${elements.join(', ')}. Style: simple scientific illustration with clear labels, white background, clean and educational, suitable for ${yearGroup} students.`;
+              const prompt = `Small compact educational diagram: ${block.data.description}. Must clearly show: ${elements.join(', ')}. Style: minimalist icon-style illustration, simple and clean, white background, suitable for ${yearGroup} students. Size: small thumbnail format, 400x300 pixels maximum.`;
               
               console.log(`Generating image for diagram: ${block.title || 'Untitled'}`);
               
