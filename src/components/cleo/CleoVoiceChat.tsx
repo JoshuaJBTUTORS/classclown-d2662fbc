@@ -14,6 +14,7 @@ interface CleoVoiceChatProps {
   topic?: string;
   yearGroup?: string;
   lessonPlan?: {
+    id?: string;
     topic: string;
     year_group: string;
     learning_objectives: string[];
@@ -117,8 +118,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       if (yearGroup) {
         wsUrl += `&yearGroup=${encodeURIComponent(yearGroup)}`;
       }
-      if (lessonPlan) {
-        wsUrl += `&lessonPlan=${encodeURIComponent(JSON.stringify(lessonPlan))}`;
+      if (lessonPlan?.id) {
+        wsUrl += `&lessonPlanId=${encodeURIComponent(lessonPlan.id)}`;
       }
       
       wsRef.current = new WebSocket(wsUrl);

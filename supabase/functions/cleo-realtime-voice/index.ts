@@ -60,15 +60,30 @@ Deno.serve(async (req) => {
     const conversationId = url.searchParams.get("conversationId");
     const topic = url.searchParams.get("topic");
     const yearGroup = url.searchParams.get("yearGroup");
-    const lessonPlanParam = url.searchParams.get("lessonPlan");
+    const lessonPlanId = url.searchParams.get("lessonPlanId");
     let lessonPlan = null;
     
-    if (lessonPlanParam) {
+    // Fetch lesson plan by ID if provided
+    if (lessonPlanId) {
       try {
-        lessonPlan = JSON.parse(decodeURIComponent(lessonPlanParam));
-        console.log("Lesson plan received:", lessonPlan);
+        const { data: plan, error } = await supabase
+          .from('cleo_lesson_plans')
+          .select('*')
+          .eq('id', lessonPlanId)
+          .single();
+        
+        if (error) {
+          console.error("❌ Failed to fetch lesson plan:", error);
+        } else {
+          lessonPlan = plan;
+          console.log("✅ Loaded lesson plan:", { 
+            id: plan.id, 
+            topic: plan.topic,
+            steps: plan.teaching_sequence?.length || 0 
+          });
+        }
       } catch (e) {
-        console.error("Failed to parse lesson plan:", e);
+        console.error("❌ Error fetching lesson plan:", e);
       }
     }
     
@@ -187,7 +202,7 @@ Deno.serve(async (req) => {
         lessonPlan.teaching_sequence.forEach((step: any, stepIndex: number) => {
           if (!step.content_blocks || step.content_blocks.length === 0) return;
           
-          contentLibrary += `\n📚 ${step.title} (step-${stepIndex}):\n`;
+          contentLibrary += `\n📚 ${step.title} [ID: ${step.id}]:\n`;
           
           step.content_blocks.forEach((block: any) => {
             contentLibrary += formatSingleBlock(block);
@@ -254,7 +269,7 @@ Deno.serve(async (req) => {
         if (lessonPlan) {
           // Authoritative teaching mode with lesson plan
           const objectivesList = lessonPlan.learning_objectives.map((obj: string, i: number) => `${i+1}. ${obj}`).join('\n');
-          const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => `Step ${i+1}: ${step.title} (${step.duration_minutes}min)`).join('\n');
+          const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => `Step ${i+1}: ${step.title} (${step.duration_minutes}min) [ID: ${step.id}]`).join('\n');
           
           // NEW: Format pre-generated content
           const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
@@ -276,10 +291,10 @@ CRITICAL INSTRUCTIONS:
 
 YOUR TEACHING FLOW:
 1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
-2. Call move_to_step("step-0", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting
+2. Call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting
 3. After the content appears, reference it naturally in your explanation
 4. When you see a question in the content, present it and wait for the student's answer
-5. Move through all steps in order, calling move_to_step before each new section
+5. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
 
 TEACHING STYLE:
 - Be warm and engaging
@@ -347,7 +362,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
                   properties: {
                     stepId: { 
                       type: "string", 
-                      description: "The ID of the step (e.g., 'step-0', 'step-1'). See the content library for step IDs." 
+                      description: "The exact step ID shown in brackets [ID: ...] in the content library. This is the step.id, NOT 'step-0' or 'step-1'." 
                     },
                     stepTitle: {
                       type: "string",
@@ -434,7 +449,24 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         }));
         
         isSessionConfigured = true;
-        console.log("Session configured");
+        console.log("✅ Session configured");
+        
+        // Auto-display first step content if lesson plan exists
+        if (lessonPlan?.teaching_sequence?.[0]) {
+          const firstStep = lessonPlan.teaching_sequence[0];
+          console.log(`📚 Auto-displaying first step: ${firstStep.title} [ID: ${firstStep.id}]`);
+          
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(JSON.stringify({
+              type: 'content.marker',
+              data: {
+                type: 'move_to_step',
+                stepId: firstStep.id,
+                stepTitle: firstStep.title
+              }
+            }));
+          }
+        }
 
         // Send initial greeting message
         let greetingText = '';

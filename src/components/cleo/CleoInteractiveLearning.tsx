@@ -21,6 +21,7 @@ interface CleoInteractiveLearningProps {
   moduleId?: string;
   courseId?: string;
   lessonPlan?: {
+    id?: string;
     topic: string;
     year_group: string;
     learning_objectives: string[];

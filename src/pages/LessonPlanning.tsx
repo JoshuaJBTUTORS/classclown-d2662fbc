@@ -170,6 +170,7 @@ const LessonPlanning: React.FC = () => {
           content: []
         }}
         lessonPlan={{
+          id: 'fallback-lesson',
           topic: topic,
           year_group: yearGroup,
           learning_objectives: [],
