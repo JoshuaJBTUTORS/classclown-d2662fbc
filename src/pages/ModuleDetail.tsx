@@ -8,8 +8,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { usePersonalizedLearningPath } from '@/hooks/usePersonalizedLearningPath';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
-import ContentViewer from '@/components/learningHub/ContentViewer';
-import NotesSection from '@/components/learningHub/NotesSection';
 import AssessmentNavigation from '@/components/learningHub/AssessmentNavigation';
 import ModuleAssessmentDialog from '@/components/learningHub/ModuleAssessmentDialog';
 import AssessmentTimeScreen from '@/components/learningHub/AssessmentTimeScreen';
@@ -39,8 +37,7 @@ const ModuleDetail = () => {
   const { toast } = useToast();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [showAssessmentDialog, setShowAssessmentDialog] = useState(false);
-  const [learningMode, setLearningMode] = useState<'elearning' | 'cleo' | null>('cleo');
-  const [showModeDialog, setShowModeDialog] = useState(false);
+  const learningMode = 'cleo'; // Always use Voice Tutor mode
 
   const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -361,167 +358,38 @@ const ModuleDetail = () => {
               </CardHeader>
             </Card>
 
-            {/* Mode Toggle - allows switching between Cleo and E-Learning */}
-            {learningMode !== null && (
-              <div className="flex justify-end mb-4">
-                <div className="flex gap-2 bg-muted/50 p-1 rounded-lg">
-                  <Button
-                    size="sm"
-                    variant={learningMode === 'cleo' ? 'default' : 'ghost'}
-                    onClick={() => setLearningMode('cleo')}
-                    className="gap-2"
-                  >
-                    <Mic className="h-4 w-4" />
-                    Voice Tutor
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={learningMode === 'elearning' ? 'default' : 'ghost'}
-                    onClick={() => setLearningMode('elearning')}
-                    className="gap-2"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    E-Learning
-                  </Button>
-                </div>
-              </div>
-            )}
 
-            {learningMode !== null && lessons.length > 0 && (currentLesson || showAssessmentTimeScreen) ? (
-              <div className="space-y-6">
-                {learningMode === 'cleo' ? (
-                  <Card className="overflow-hidden">
-                    <CardContent className="p-0 min-h-[60vh]">
-                      {currentLesson ? (
-                        <Button
-                          onClick={() => {
-                            navigate(`/lesson-planning?topic=${encodeURIComponent(currentLesson.title)}&yearGroup=${encodeURIComponent(course.subject || 'GCSE')}&lessonId=${currentLesson.id}&moduleId=${moduleId}`);
-                          }}
-                          className="w-full h-full min-h-[60vh] bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 flex flex-col items-center justify-center gap-4"
-                          variant="ghost"
-                        >
-                          <Bot className="w-16 h-16 text-primary" />
-                          <div className="text-center">
-                            <h3 className="text-2xl font-bold text-foreground mb-2">
-                              Start Learning with Cleo
-                            </h3>
-                            <p className="text-muted-foreground">
-                              Cleo will prepare a personalized lesson just for you
-                            </p>
-                          </div>
-                        </Button>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-muted-foreground">
-                          <p>Select a lesson to begin learning with Cleo</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ) : showAssessmentTimeScreen ? (
-                  <AssessmentTimeScreen 
-                    onBeginAssessment={handleBeginAssessment}
-                    moduleTitle={currentModule.title}
-                  />
-                ) : (
-                  <>
-                    {/* Lesson Navigation */}
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h3 className="font-semibold text-lg">
-                              Lesson {currentLessonIndex + 1}: {currentLesson?.title}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {currentLessonIndex + 1} of {lessons.length} lessons
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {currentLesson && isLessonCompleted(currentLesson.id) && (
-                              <Badge variant="default" className="bg-green-100 text-green-800">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Completed
-                              </Badge>
-                            )}
-                            {currentLesson?.duration_minutes && (
-                              <div className="flex items-center gap-1 text-sm text-gray-500">
-                                <Clock className="h-4 w-4" />
-                                <span>{currentLesson.duration_minutes} min</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Progress bar */}
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                          <div 
-                            className="bg-primary h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${((currentLessonIndex + 1) / lessons.length) * 100}%` }}
-                          />
-                        </div>
-
-                        {/* Navigation buttons */}
-                        <div className="flex justify-between">
-                          <Button
-                            variant="outline"
-                            onClick={handlePreviousLesson}
-                            disabled={currentLessonIndex === 0}
-                            className="flex items-center gap-2"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                            Previous
-                          </Button>
-                          
-                          <Button
-                            onClick={currentLesson && isLessonCompleted(currentLesson.id) ? handleNextLesson : handleCompleteLesson}
-                            className="flex items-center gap-2"
-                          >
-                            {currentLesson && isLessonCompleted(currentLesson.id) ? (
-                              <>
-                                Next
-                                <ChevronRight className="h-4 w-4" />
-                              </>
-                            ) : (
-                              <>
-                                Complete & Continue
-                                <CheckCircle className="h-4 w-4" />
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Lesson Content */}
-                    {currentLesson && (
-                      <Card>
-                        <CardContent className="p-0">
-                          <ContentViewer lesson={currentLesson} />
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Notes Section */}
-                    {currentLesson && (
-                      <Card>
-                        <CardContent className="p-6">
-                          <NotesSection 
-                            courseId={courseId!}
-                            lessonId={currentLesson.id}
-                            lessonTitle={currentLesson.title}
-                            contentType={currentLesson.content_type}
-                          />
-                        </CardContent>
-                      </Card>
-                    )}
-                  </>
-                )}
-              </div>
-            ) : learningMode === null ? (
-              <Card>
-                <CardContent className="p-12 text-center text-muted-foreground">
-                  <Bot className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <p>Please select your learning mode to begin</p>
+            {lessons.length > 0 && (currentLesson || showAssessmentTimeScreen) ? (
+              <Card className="overflow-hidden">
+                <CardContent className="p-0 min-h-[60vh]">
+                  {currentLesson ? (
+                    <Button
+                      onClick={() => {
+                        navigate(`/lesson-planning?topic=${encodeURIComponent(currentLesson.title)}&yearGroup=${encodeURIComponent(course.subject || 'GCSE')}&lessonId=${currentLesson.id}&moduleId=${moduleId}`);
+                      }}
+                      className="w-full h-full min-h-[60vh] bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 flex flex-col items-center justify-center gap-4"
+                      variant="ghost"
+                    >
+                      <Bot className="w-16 h-16 text-primary" />
+                      <div className="text-center">
+                        <h3 className="text-2xl font-bold text-foreground mb-2">
+                          Start Learning with Cleo
+                        </h3>
+                        <p className="text-muted-foreground">
+                          Cleo will prepare a personalized lesson just for you
+                        </p>
+                      </div>
+                    </Button>
+                  ) : showAssessmentTimeScreen ? (
+                    <AssessmentTimeScreen 
+                      onBeginAssessment={handleBeginAssessment}
+                      moduleTitle={currentModule.title}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      <p>Select a lesson to begin learning with Cleo</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : (
