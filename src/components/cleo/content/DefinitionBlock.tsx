@@ -15,10 +15,10 @@ export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data }) => {
       transition={{ duration: 0.4 }}
       className="w-full"
     >
-      <div className="bg-primary/5 border-l-4 border-primary rounded-r-lg p-6">
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-l-4 border-purple-300 dark:border-purple-700 rounded-r-lg p-6">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0 mt-1">
-            <BookOpen className="w-6 h-6 text-primary" />
+            <BookOpen className="w-6 h-6 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1">
             <h4 className="text-lg font-bold text-foreground mb-2">{data.term}</h4>

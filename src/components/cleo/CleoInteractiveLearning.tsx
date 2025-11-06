@@ -7,6 +7,7 @@ import { useContentSync } from '@/hooks/useContentSync';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
+import { getSubjectTheme } from '@/utils/subjectTheming';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -28,6 +29,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   conversationId,
   lessonPlan,
 }) => {
+  const subjectTheme = getSubjectTheme(lessonData.topic, lessonData.yearGroup);
+  
   const {
     activeStep,
     visibleContent,
@@ -124,7 +127,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           )}
           {/* Lesson Title */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+              <span className="text-4xl">{subjectTheme.emoji}</span>
               {lessonData.title}
             </h1>
             <p className="text-muted-foreground">
@@ -162,6 +166,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   size="lg"
                   className="gap-2 px-6 py-6 text-base font-semibold shadow-xl"
                 >
+                  <span className="text-xl">🎯</span>
                   <Play className="w-5 h-5" />
                   Start Learning
                 </Button>

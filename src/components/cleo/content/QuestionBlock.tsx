@@ -44,11 +44,14 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
       transition={{ duration: 0.4 }}
       className="w-full"
     >
-      <div className="bg-card border-2 border-primary/20 rounded-lg p-6 shadow-lg">
+      <div className="bg-gradient-to-br from-indigo-50/30 to-purple-50/30 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-100 dark:border-indigo-900 rounded-lg p-6 shadow-lg">
         <div className="mb-6">
-          <h3 className="text-xl font-semibold text-foreground mb-4">
-            {data.question}
-          </h3>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">❓</span>
+            <h3 className="text-xl font-semibold text-foreground">
+              {data.question}
+            </h3>
+          </div>
         </div>
 
         <div className="space-y-3">

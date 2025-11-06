@@ -40,9 +40,11 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data }) => {
       transition={{ duration: 0.4 }}
       className="prose prose-lg max-w-none"
     >
-      <p className="text-lg text-foreground leading-relaxed">
-        {renderText(getText())}
-      </p>
+      <div className="border-l-4 border-indigo-200 dark:border-indigo-800 pl-6 py-2 bg-indigo-50/30 dark:bg-indigo-950/20 rounded-r-lg">
+        <p className="text-lg text-foreground leading-relaxed">
+          {renderText(getText())}
+        </p>
+      </div>
     </motion.div>
   );
 };

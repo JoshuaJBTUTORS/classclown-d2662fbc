@@ -18,7 +18,12 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data }) => {
       transition={{ duration: 0.4 }}
       className="my-6"
     >
-      <div className="w-full aspect-video rounded-lg border-2 border-dashed border-muted flex items-center justify-center bg-muted/20">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">📈</span>
+        <span className="text-sm font-medium text-muted-foreground">Diagram</span>
+      </div>
+      
+      <div className="w-full aspect-video rounded-lg border-2 border-dashed border-cyan-200 dark:border-cyan-800 flex items-center justify-center bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20">
         <span className="text-muted-foreground text-sm">Visual content not available</span>
       </div>
       {data.caption && (
