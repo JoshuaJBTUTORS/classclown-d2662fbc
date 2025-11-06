@@ -555,8 +555,8 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               definition: args.definition,
               example: args.example
             },
-          visible: false
-        };
+            visible: false
+          };
       } else if (functionName === 'ask_question') {
           contentBlock = {
             id: args.id,
