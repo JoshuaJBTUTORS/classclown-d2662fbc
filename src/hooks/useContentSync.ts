@@ -51,9 +51,35 @@ export const useContentSync = (lessonData: LessonData) => {
             showContent(event.questionId);
           }
           break;
+        case 'move_to_step':
+          if (event.stepId) {
+            console.log('📚 Showing all content for step:', event.stepId);
+            // Find all content blocks for this step
+            const stepContent = lessonData.content
+              .filter(block => block.stepId === event.stepId)
+              .map(block => block.id);
+            
+            // Show all content for this step
+            setVisibleContent(prev => {
+              const newVisible = [...prev];
+              stepContent.forEach(id => {
+                if (!newVisible.includes(id)) {
+                  newVisible.push(id);
+                }
+              });
+              return newVisible;
+            });
+            
+            // Mark step as active
+            const stepIndex = lessonData.steps.findIndex(s => s.id === event.stepId);
+            if (stepIndex >= 0) {
+              setActiveStep(stepIndex);
+            }
+          }
+          break;
       }
     },
-    [showContent, moveToNextStep, completeStep]
+    [showContent, moveToNextStep, completeStep, lessonData]
   );
 
   // Auto-show first visible content block on mount

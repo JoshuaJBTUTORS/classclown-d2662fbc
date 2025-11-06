@@ -188,30 +188,34 @@ Deno.serve(async (req) => {
           
           systemPrompt = `You are Cleo, an expert AI tutor teaching ${lessonPlan.topic} to a ${lessonPlan.year_group} student.
 
-LESSON PLAN:
-Objectives:
-${objectivesList}
-
-Teaching Sequence:
+LESSON STRUCTURE:
+The lesson is organized into these steps:
 ${sequenceList}
 
-YOUR TEACHING APPROACH:
-- YOU lead the lesson following the teaching sequence in order
-- Start with: "Welcome! Today we're learning ${lessonPlan.topic}. Here's what we'll cover: [briefly list 2-3 main objectives]. Let's begin with ${lessonPlan.teaching_sequence[0].title}."
-- For each step: STATE what you're teaching, SHOW the content using tools, EXPLAIN clearly, then CHECK understanding
-- Use directive language: "Let me show you...", "Here's how...", "Now we'll look at...", "Next, I want you to understand..."
-- Be warm but authoritative: "Great! Now let's move to...", "Perfect. Here's the next concept..."
-- Don't ask "What would you like to learn?" - YOU decide the flow based on the lesson plan
-- Keep students on track: if they go off-topic, acknowledge briefly then redirect: "That's interesting, but let's focus on [current step] first."
-- Progress through steps systematically - only move forward when student demonstrates understanding
+CRITICAL: Before you start teaching each step, you MUST call move_to_step with the step's ID and title.
+This displays all visual content for that step at the perfect moment.
 
-VISUAL CONTENT TOOLS:
-- show_table: Display data tables
-- show_definition: Show key term definitions  
-- ask_question: Present multiple-choice questions to check understanding
+YOUR TEACHING FLOW:
+1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
+2. Call move_to_step with the first step's ID before teaching it
+3. Begin teaching that step naturally
+4. When ready for the next step: call move_to_step with the next step's ID, then continue teaching
+5. Progress through all steps in order
 
-Always use tools to display visual content instead of just describing it verbally.
-Keep spoken responses clear and under 3 sentences unless explaining a complex concept.`;
+TEACHING STYLE:
+- Be warm and engaging
+- Explain concepts clearly in 2-3 sentences
+- After visual content appears, reference it: "As you can see in the diagram..."
+- Check understanding with ask_question when appropriate
+- Move at a comfortable pace - wait for student responses
+
+TOOLS AVAILABLE:
+- move_to_step: Call BEFORE starting each new step (displays all that step's content)
+- show_table: Display additional tables during teaching (optional)
+- show_definition: Show extra definitions during teaching (optional)  
+- ask_question: Check understanding with a question
+
+Remember: Call move_to_step at the START of each section, not after explaining it.`;
         } else if (conversation.topic && conversation.year_group) {
           // Friendly exploration mode (no lesson plan)
           systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
@@ -254,6 +258,25 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               silence_duration_ms: 700
             },
             tools: [
+              {
+                type: "function",
+                name: "move_to_step",
+                description: "Call this BEFORE you start teaching a new step/section of the lesson. This will display all visual content associated with that step to the student.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    stepId: { 
+                      type: "string", 
+                      description: "The ID of the lesson step you are moving to (e.g., 'step-1', 'intro', 'practice')" 
+                    },
+                    stepTitle: {
+                      type: "string",
+                      description: "The title of this step (e.g., 'Introduction to Vectors')"
+                    }
+                  },
+                  required: ["stepId", "stepTitle"]
+                }
+              },
               {
                 type: "function",
                 name: "show_table",
@@ -469,6 +492,44 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         const args = JSON.parse(message.arguments);
         
         console.log(`🎨 Function called: ${functionName}`, args);
+        
+        // Handle move_to_step
+        if (functionName === 'move_to_step') {
+          const { stepId, stepTitle } = args;
+          
+          console.log(`📚 Cleo moving to step: ${stepId} - ${stepTitle}`);
+          
+          // Send step change event to frontend
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(JSON.stringify({
+              type: 'content.marker',
+              data: {
+                type: 'move_to_step',
+                stepId: stepId,
+                stepTitle: stepTitle
+              }
+            }));
+          }
+          
+          // Confirm to OpenAI
+          openAISocket.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'function_call_output',
+              call_id: message.call_id,
+              output: JSON.stringify({ 
+                success: true, 
+                message: `Moved to step: ${stepTitle}. All content for this step is now visible to the student.` 
+              })
+            }
+          }));
+          
+          openAISocket.send(JSON.stringify({
+            type: 'response.create'
+          }));
+          
+          return;
+        }
         
         // Map function calls to content blocks
         let contentBlock: any = null;
