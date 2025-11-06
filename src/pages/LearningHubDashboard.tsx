@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import CourseCard from '@/components/learningHub/CourseCard';
 import SubscriptionManager from '@/components/learningHub/SubscriptionManager';
 import LiveTutoringUpgradeModal from '@/components/learningHub/LiveTutoringUpgradeModal';
+import { EnrolledCoursesSection } from '@/components/learningHub/EnrolledCoursesSection';
 import { BookOpen, Brain, Calendar, TrendingUp, Video, Sparkles, Bot } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,9 @@ const LearningHubDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Enrolled Courses */}
+      <EnrolledCoursesSection />
 
       {/* Subscription Management */}
       <SubscriptionManager />
