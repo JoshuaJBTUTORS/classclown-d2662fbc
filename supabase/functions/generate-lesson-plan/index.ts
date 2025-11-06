@@ -123,20 +123,24 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert curriculum designer creating detailed lesson plans for students.
+            content: `You are an expert curriculum designer creating concise, focused lesson plans for students.
 
-Your task: Create a comprehensive, engaging lesson plan that pre-generates ALL teaching materials.
+Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each containing rich, pre-generated content.
 
 LESSON PLAN STRUCTURE:
 1. Learning Objectives (3-5 clear, measurable goals)
-2. Teaching Sequence (10-15 micro-steps, each 2-3 minutes)
+2. Teaching Sequence (3-5 FOCUSED steps, each 5-8 minutes)
 3. Content Blocks (tables, definitions, questions, diagrams)
+
+IMPORTANT: Create FEWER, RICHER steps instead of many micro-steps.
+Each step should be substantial with multiple content blocks.
 
 CONTENT BLOCK TYPES:
 - TABLE: Comparisons, data, organized information
 - DEFINITION: Key terms with examples
 - QUESTION: Check understanding (multiple choice or open-ended)
 - DIAGRAM: Visual representations (describe what should be shown)
+- TEXT: Explanatory content or instructions
 
 For each teaching step, specify:
 - What content blocks to display
@@ -144,7 +148,8 @@ For each teaching step, specify:
 - How to present them (teaching notes)
 - Prerequisites (what must be shown first)
 
-Make content rich, engaging, and age-appropriate for ${yearGroup}.`
+Make content rich, engaging, and age-appropriate for ${yearGroup}.
+Focus on depth rather than breaking content into too many small pieces.`
           },
           {
             role: 'user',
@@ -166,10 +171,15 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                 objectives: {
                   type: 'array',
                   items: { type: 'string' },
-                  description: '3-5 clear learning objectives'
+                  minItems: 3,
+                  maxItems: 5,
+                  description: '3-5 clear, measurable learning objectives'
                 },
                 steps: {
                   type: 'array',
+                  minItems: 3,
+                  maxItems: 5,
+                  description: 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
                   items: {
                     type: 'object',
                     properties: {
