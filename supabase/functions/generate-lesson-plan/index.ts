@@ -388,6 +388,39 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       }
     });
 
+    // Generate images for diagram blocks
+    console.log('Generating images for diagram blocks...');
+    for (const step of planData.steps) {
+      if (step.content_blocks) {
+        for (const block of step.content_blocks) {
+          if (block.type === 'diagram' && block.data?.description) {
+            try {
+              const elements = block.data.elements || [];
+              const prompt = `Educational diagram: ${block.data.description}. Must clearly show: ${elements.join(', ')}. Style: simple scientific illustration with clear labels, white background, clean and educational, suitable for ${yearGroup} students.`;
+              
+              console.log(`Generating image for diagram: ${block.title || 'Untitled'}`);
+              
+              const imageResponse = await supabase.functions.invoke('generate-diagram-image', {
+                body: { prompt }
+              });
+              
+              if (imageResponse.data?.imageUrl) {
+                block.data.url = imageResponse.data.imageUrl;
+                block.data.caption = block.data.description;
+                block.data.alt = `Diagram showing ${elements.join(', ')}`;
+                console.log(`✓ Image generated for diagram: ${block.title || 'Untitled'}`);
+              } else {
+                console.warn(`Failed to generate image for diagram: ${block.title}`, imageResponse.error);
+              }
+            } catch (error) {
+              console.error(`Error generating diagram image for ${block.title}:`, error);
+              // Continue without image - DiagramBlock will show placeholder
+            }
+          }
+        }
+      }
+    }
+
     // Update lesson plan with objectives and full teaching sequence (including content blocks)
     const { error: updateError } = await supabase
       .from('cleo_lesson_plans')

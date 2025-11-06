@@ -99,11 +99,8 @@ verify_jwt = false
 [functions.generate-lesson-plan]
 verify_jwt = true
 
-[functions.backfill-participant-urls]
+[functions.generate-diagram-image]
 verify_jwt = false
-
-[functions.cleo-text-chat]
-verify_jwt = true
 
 [edge_runtime]
 enabled = true
