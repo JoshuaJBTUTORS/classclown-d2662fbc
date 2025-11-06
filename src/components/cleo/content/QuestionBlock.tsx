@@ -55,23 +55,27 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
         </div>
 
         <div className="space-y-3">
-          {data.options.map((option) => (
-            <Button
-              key={option.id}
-              onClick={() => handleAnswerClick(option.id, option.isCorrect)}
-              disabled={showFeedback}
-              variant="outline"
-              className={`w-full justify-start text-left h-auto py-4 px-5 transition-all ${getOptionClassName(
-                option.id,
-                option.isCorrect
-              )}`}
-            >
-              <div className="flex items-center gap-3 w-full">
-                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-sm">
-                  {option.id.toUpperCase()}
-                </span>
+          {data.options.map((option, index) => {
+            const optionId = option.id || `option-${index}`;
+            const optionLabel = optionId.toUpperCase().charAt(0);
+            
+            return (
+              <Button
+                key={optionId}
+                onClick={() => handleAnswerClick(optionId, option.isCorrect)}
+                disabled={showFeedback}
+                variant="outline"
+                className={`w-full justify-start text-left h-auto py-4 px-5 transition-all ${getOptionClassName(
+                  optionId,
+                  option.isCorrect
+                )}`}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-sm">
+                    {optionLabel}
+                  </span>
                 <span className="flex-1 text-base">{option.text}</span>
-                {showFeedback && selectedAnswer === option.id && (
+                {showFeedback && selectedAnswer === optionId && (
                   <span className="flex-shrink-0">
                     {option.isCorrect ? (
                       <Check className="w-6 h-6 text-green-600" />
@@ -80,14 +84,15 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
                     )}
                   </span>
                 )}
-                {showFeedback && option.isCorrect && selectedAnswer !== option.id && (
+                {showFeedback && option.isCorrect && selectedAnswer !== optionId && (
                   <span className="flex-shrink-0">
                     <Check className="w-6 h-6 text-green-600" />
                   </span>
                 )}
               </div>
             </Button>
-          ))}
+            );
+          })}
         </div>
 
         {showFeedback && data.explanation && (
