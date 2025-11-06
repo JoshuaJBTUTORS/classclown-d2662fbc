@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ContentActionButtons } from './ContentActionButtons';
 
 interface DiagramBlockProps {
   data: {
@@ -8,9 +9,10 @@ interface DiagramBlockProps {
     caption?: string;
     alt?: string;
   };
+  onContentAction?: (action: string, message: string) => void;
 }
 
-export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data }) => {
+export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data, onContentAction }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -30,6 +32,13 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data }) => {
         <p className="text-sm text-muted-foreground mt-2 text-center">
           {data.caption}
         </p>
+      )}
+      {onContentAction && (
+        <ContentActionButtons
+          contentId={`diagram-${(data.caption || data.alt || 'visual').toLowerCase().replace(/\s+/g, '-')}`}
+          contentTitle={data.caption || data.alt || 'Diagram'}
+          onActionClick={onContentAction}
+        />
       )}
     </motion.div>
   );

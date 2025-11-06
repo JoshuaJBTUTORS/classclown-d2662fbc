@@ -594,6 +594,40 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         const msg = JSON.parse(event.data);
         console.log('📤 Client -> OpenAI:', msg.type);
         
+        // Handle user_message type - inject text into conversation
+        if (msg.type === 'user_message') {
+          console.log('💬 Injecting user text message:', msg.text);
+          
+          // Save message to database
+          supabase.from('cleo_messages').insert({
+            conversation_id: session.conversationId,
+            role: 'user',
+            content: msg.text
+          }).then(() => console.log('Message saved to database'));
+          
+          // Create conversation item
+          openAISocket.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'user',
+              content: [
+                {
+                  type: 'input_text',
+                  text: msg.text
+                }
+              ]
+            }
+          }));
+          
+          // Trigger response
+          openAISocket.send(JSON.stringify({
+            type: 'response.create'
+          }));
+          
+          return;
+        }
+        
         if (openAISocket.readyState === WebSocket.OPEN) {
           openAISocket.send(event.data);
         } else {

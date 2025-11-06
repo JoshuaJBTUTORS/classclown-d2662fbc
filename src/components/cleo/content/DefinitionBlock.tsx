@@ -2,12 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { DefinitionContent } from '@/types/lessonContent';
 import { BookOpen } from 'lucide-react';
+import { ContentActionButtons } from './ContentActionButtons';
 
 interface DefinitionBlockProps {
   data: DefinitionContent;
+  onContentAction?: (action: string, message: string) => void;
 }
 
-export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data }) => {
+export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data, onContentAction }) => {
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -30,6 +32,13 @@ export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data }) => {
                 <p className="text-sm font-medium text-primary mb-1">Example:</p>
                 <p className="text-sm text-muted-foreground italic">{data.example}</p>
               </div>
+            )}
+            {onContentAction && (
+              <ContentActionButtons
+                contentId={`def-${data.term.toLowerCase().replace(/\s+/g, '-')}`}
+                contentTitle={data.term}
+                onActionClick={onContentAction}
+              />
             )}
           </div>
         </div>

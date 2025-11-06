@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ContentActionButtons } from './ContentActionButtons';
 
 interface TextBlockProps {
   data: string | any;
+  onContentAction?: (action: string, message: string) => void;
 }
 
-export const TextBlock: React.FC<TextBlockProps> = ({ data }) => {
+export const TextBlock: React.FC<TextBlockProps> = ({ data, onContentAction }) => {
   // Ensure data is a string
   const getText = (): string => {
     if (typeof data === 'string') {
@@ -48,6 +50,13 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data }) => {
         <p className="text-lg text-foreground leading-relaxed">
           {renderText(getText())}
         </p>
+        {onContentAction && (
+          <ContentActionButtons
+            contentId={`text-${getText().substring(0, 20).toLowerCase().replace(/\s+/g, '-')}`}
+            contentTitle={getText().substring(0, 50) + (getText().length > 50 ? '...' : '')}
+            onActionClick={onContentAction}
+          />
+        )}
       </div>
     </motion.div>
   );

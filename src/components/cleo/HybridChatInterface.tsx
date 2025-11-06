@@ -28,6 +28,7 @@ interface HybridChatInterfaceProps {
   contentBlocks?: ContentBlock[];
   visibleContentIds?: string[];
   onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean) => void;
+  onContentAction?: (contentId: string, action: string, message: string) => void;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -47,6 +48,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   contentBlocks,
   visibleContentIds,
   onAnswerQuestion,
+  onContentAction,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -140,6 +142,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
             content={contentBlocks}
             visibleContent={visibleContentIds}
             onAnswerQuestion={onAnswerQuestion || (() => {})}
+            onContentAction={onContentAction}
           />
         )}
         

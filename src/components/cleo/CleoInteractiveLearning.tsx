@@ -63,7 +63,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
   
-  const controlsRef = useRef<{ connect: () => void; disconnect: () => void } | null>(null);
+  const controlsRef = useRef<{ connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void } | null>(null);
   const modeSwitchCountRef = useRef(0);
 
   // Load messages on mount and add initial welcome message in voice mode
@@ -255,6 +255,15 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           visibleContentIds={visibleContent}
           onAnswerQuestion={(qId, aId, correct) => {
             console.log('Question answered:', { qId, aId, correct });
+            // Send answer feedback to Cleo
+            const option = correct ? 'the correct answer' : 'an incorrect answer';
+            const feedbackMessage = `I just answered question "${qId}" by selecting option "${aId}", which was ${option}.`;
+            controlsRef.current?.sendUserMessage(feedbackMessage);
+          }}
+          onContentAction={(contentId, action, message) => {
+            console.log('Content action:', { contentId, action, message });
+            // Send the action message to Cleo
+            controlsRef.current?.sendUserMessage(message);
           }}
         />
         </div>

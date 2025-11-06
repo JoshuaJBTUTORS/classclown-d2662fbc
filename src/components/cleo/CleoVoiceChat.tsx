@@ -28,7 +28,7 @@ interface CleoVoiceChatProps {
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
-  onProvideControls?: (controls: { connect: () => void; disconnect: () => void }) => void;
+  onProvideControls?: (controls: { connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void }) => void;
   voiceTimer?: {
     start: () => void;
     pause: () => void;
@@ -80,7 +80,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   // Provide connect/disconnect controls to parent
   useEffect(() => {
-    onProvideControls?.({ connect, disconnect });
+    onProvideControls?.({ connect, disconnect, sendUserMessage });
   }, [onProvideControls]);
 
   useEffect(() => {
@@ -304,6 +304,18 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
+  };
+
+  const sendUserMessage = (text: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('📤 Sending user text message:', text);
+      wsRef.current.send(JSON.stringify({
+        type: 'user_message',
+        text: text
+      }));
+    } else {
+      console.warn('Cannot send message: WebSocket not connected');
+    }
   };
 
   // This component renders nothing - it's just for voice logic

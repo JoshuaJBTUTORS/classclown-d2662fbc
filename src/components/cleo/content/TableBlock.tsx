@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TableContent } from '@/types/lessonContent';
+import { ContentActionButtons } from './ContentActionButtons';
 
 interface TableBlockProps {
   data: TableContent;
+  onContentAction?: (action: string, message: string) => void;
 }
 
-export const TableBlock: React.FC<TableBlockProps> = ({ data }) => {
+export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -55,6 +57,13 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data }) => {
           </table>
         </div>
       </div>
+      {onContentAction && (
+        <ContentActionButtons
+          contentId={`table-${data.headers.join('-').toLowerCase().replace(/\s+/g, '-')}`}
+          contentTitle={data.headers.length > 0 ? data.headers[0] : 'Table'}
+          onActionClick={onContentAction}
+        />
+      )}
     </motion.div>
   );
 };

@@ -10,12 +10,14 @@ interface ContentDisplayProps {
   content: ContentBlock[];
   visibleContent: string[];
   onAnswerQuestion: (questionId: string, answerId: string, isCorrect: boolean) => void;
+  onContentAction?: (contentId: string, action: string, message: string) => void;
 }
 
 export const ContentDisplay: React.FC<ContentDisplayProps> = ({
   content,
   visibleContent,
   onAnswerQuestion,
+  onContentAction,
 }) => {
   const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const lastVisibleRef = useRef<string | null>(null);
@@ -47,17 +49,21 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
       return null;
     }
 
+    const handleContentAction = (action: string, message: string) => {
+      onContentAction?.(block.id, action, message);
+    };
+
     switch (block.type) {
       case 'text':
-        return <TextBlock data={block.data as string} />;
+        return <TextBlock data={block.data as string} onContentAction={handleContentAction} />;
       case 'table':
-        return <TableBlock data={block.data} />;
+        return <TableBlock data={block.data} onContentAction={handleContentAction} />;
       case 'question':
         return <QuestionBlock data={block.data} onAnswer={onAnswerQuestion} />;
       case 'definition':
-        return <DefinitionBlock data={block.data} />;
+        return <DefinitionBlock data={block.data} onContentAction={handleContentAction} />;
       case 'diagram':
-        return <DiagramBlock data={block.data} />;
+        return <DiagramBlock data={block.data} onContentAction={handleContentAction} />;
       default:
         return null;
     }
