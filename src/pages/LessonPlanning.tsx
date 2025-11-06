@@ -31,18 +31,36 @@ const LessonPlanning: React.FC = () => {
 
   const { lessonPlan, contentBlocks, loading } = useLessonPlan(lessonPlanId);
 
-  // Attempt to recover existing lesson plan by lessonId on mount
+  // Attempt to recover existing lesson plan by lessonId or topic+yearGroup on mount
   useEffect(() => {
     const loadExistingPlan = async () => {
-      if (!lessonId || lessonPlanId) return;
+      if (lessonPlanId) return;
 
-      const { data, error } = await supabase
-        .from('cleo_lesson_plans')
-        .select('id')
-        .eq('lesson_id', lessonId)
-        .maybeSingle();
+      let data = null;
 
-      if (data && !error) {
+      // First try by lessonId
+      if (lessonId) {
+        const result = await supabase
+          .from('cleo_lesson_plans')
+          .select('id')
+          .eq('lesson_id', lessonId)
+          .maybeSingle();
+        data = result.data;
+      }
+
+      // Fallback: try by topic + year_group
+      if (!data) {
+        const result = await supabase
+          .from('cleo_lesson_plans')
+          .select('id')
+          .eq('topic', topic)
+          .eq('year_group', yearGroup)
+          .eq('status', 'ready')
+          .maybeSingle();
+        data = result.data;
+      }
+
+      if (data) {
         console.log('Recovered existing lesson plan:', data.id);
         setLessonPlanId(data.id);
         setShowLearning(true);
@@ -50,7 +68,7 @@ const LessonPlanning: React.FC = () => {
     };
 
     loadExistingPlan();
-  }, [lessonId, lessonPlanId]);
+  }, [lessonId, lessonPlanId, topic, yearGroup]);
 
   const handlePlanningComplete = (planId: string) => {
     console.log('Lesson plan generated:', planId);
@@ -150,6 +168,15 @@ const LessonPlanning: React.FC = () => {
             { id: 'main', order: 2, title: 'Main Content', completed: false },
           ],
           content: []
+        }}
+        lessonPlan={{
+          topic: topic,
+          year_group: yearGroup,
+          learning_objectives: [],
+          teaching_sequence: [
+            { id: 'intro', title: 'Introduction', duration_minutes: 10 },
+            { id: 'main', title: 'Main Content', duration_minutes: 20 },
+          ]
         }}
         moduleId={moduleId}
         courseId={courseId}

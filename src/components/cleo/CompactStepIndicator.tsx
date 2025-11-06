@@ -19,6 +19,17 @@ export const CompactStepIndicator: React.FC<CompactStepIndicatorProps> = ({
   currentStepId,
   completedSteps,
 }) => {
+  // Handle empty or invalid teaching sequence
+  if (!teachingSequence || teachingSequence.length === 0) {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="text-sm font-medium text-muted-foreground">
+          Step 1 of 1
+        </div>
+      </div>
+    );
+  }
+
   const totalSteps = teachingSequence.length;
   const currentStepIndex = teachingSequence.findIndex(s => s.id === currentStepId);
   const currentStepData = teachingSequence[currentStepIndex] || teachingSequence[0];
