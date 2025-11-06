@@ -66,10 +66,21 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void } | null>(null);
   const modeSwitchCountRef = useRef(0);
 
-  // Load messages on mount
+  // Load messages on mount and add initial welcome message in voice mode
   useEffect(() => {
     if (conversationId) {
       textChat.loadMessages();
+    } else if (mode === 'voice') {
+      // Add initial welcome message for voice mode
+      const welcomeMessage: CleoMessage = {
+        id: crypto.randomUUID(),
+        conversation_id: conversationId || '',
+        role: 'assistant',
+        content: `Welcome! 🎓 Click 'Start Learning' below to begin your voice lesson on ${lessonData.topic}.`,
+        mode: 'voice',
+        created_at: new Date().toISOString(),
+      };
+      setAllMessages([welcomeMessage]);
     }
   }, [conversationId]);
 
