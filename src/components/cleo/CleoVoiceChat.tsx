@@ -151,9 +151,18 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'content.marker':
-            console.log('📍 Content marker received:', data);
+            console.log('📍 ========== CONTENT MARKER RECEIVED ==========');
+            console.log('📍 Full data:', JSON.stringify(data, null, 2));
+            console.log('📍 Marker type:', data.data?.type);
+            if (data.data?.type === 'move_to_step') {
+              console.log('📍 Move to step ID:', data.data.stepId);
+              console.log('📍 Move to step title:', data.data.stepTitle);
+            }
             if (onContentEvent) {
+              console.log('📍 Calling onContentEvent with:', data.data);
               onContentEvent(data.data as ContentEvent);
+            } else {
+              console.warn('📍 ⚠️ No onContentEvent handler registered!');
             }
             break;
 

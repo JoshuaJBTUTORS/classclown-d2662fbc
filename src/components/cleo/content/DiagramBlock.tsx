@@ -13,6 +13,14 @@ interface DiagramBlockProps {
 }
 
 export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data, onContentAction }) => {
+  console.log('🖼️ DiagramBlock rendered with data:', {
+    hasUrl: !!data?.url,
+    hasSvg: !!data?.svg,
+    caption: data?.caption,
+    alt: data?.alt,
+    fullData: data
+  });
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

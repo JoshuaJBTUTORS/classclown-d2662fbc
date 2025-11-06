@@ -493,23 +493,31 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         
         console.log(`🎨 Function called: ${functionName}`, args);
         
-        // Handle move_to_step
-        if (functionName === 'move_to_step') {
-          const { stepId, stepTitle } = args;
-          
-          console.log(`📚 Cleo moving to step: ${stepId} - ${stepTitle}`);
-          
-          // Send step change event to frontend
-          if (clientSocket.readyState === WebSocket.OPEN) {
-            clientSocket.send(JSON.stringify({
-              type: 'content.marker',
-              data: {
-                type: 'move_to_step',
-                stepId: stepId,
-                stepTitle: stepTitle
+            // Handle move_to_step
+            if (functionName === 'move_to_step') {
+              const { stepId, stepTitle } = args;
+              
+              console.log(`📚 ========== MOVE_TO_STEP CALLED ==========`);
+              console.log(`📚 Step ID: ${stepId}`);
+              console.log(`📚 Step Title: ${stepTitle}`);
+              console.log(`📚 Call ID: ${message.call_id}`);
+              
+              // Send step change event to frontend
+              if (clientSocket.readyState === WebSocket.OPEN) {
+                const payload = {
+                  type: 'content.marker',
+                  data: {
+                    type: 'move_to_step',
+                    stepId: stepId,
+                    stepTitle: stepTitle
+                  }
+                };
+                console.log(`📤 Sending to frontend:`, JSON.stringify(payload));
+                clientSocket.send(JSON.stringify(payload));
+                console.log(`✅ Message sent to client successfully`);
+              } else {
+                console.error(`❌ Client socket not ready! State: ${clientSocket.readyState}`);
               }
-            }));
-          }
           
           // Confirm to OpenAI
           openAISocket.send(JSON.stringify({

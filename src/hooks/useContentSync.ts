@@ -53,28 +53,54 @@ export const useContentSync = (lessonData: LessonData) => {
           break;
         case 'move_to_step':
           if (event.stepId) {
-            console.log('📚 Showing all content for step:', event.stepId);
+            console.log('📚 ========== PROCESSING MOVE_TO_STEP ==========');
+            console.log('📚 Target step ID:', event.stepId);
+            console.log('📚 All available content blocks:', lessonData.content.map(b => ({
+              id: b.id,
+              type: b.type,
+              stepId: b.stepId
+            })));
+            
             // Find all content blocks for this step
             const stepContent = lessonData.content
               .filter(block => block.stepId === event.stepId)
               .map(block => block.id);
             
+            console.log('📚 Content blocks found for this step:', stepContent);
+            console.log('📚 Number of blocks to show:', stepContent.length);
+            
+            if (stepContent.length === 0) {
+              console.warn('⚠️ No content blocks found for step:', event.stepId);
+              console.warn('⚠️ Available step IDs:', [...new Set(lessonData.content.map(b => b.stepId))]);
+            }
+            
             // Show all content for this step
             setVisibleContent(prev => {
+              console.log('📚 Previous visible content:', prev);
               const newVisible = [...prev];
               stepContent.forEach(id => {
                 if (!newVisible.includes(id)) {
                   newVisible.push(id);
+                  console.log('📚 ➕ Adding to visible:', id);
+                } else {
+                  console.log('📚 ⏭️ Already visible:', id);
                 }
               });
+              console.log('📚 New visible content:', newVisible);
               return newVisible;
             });
             
             // Mark step as active
             const stepIndex = lessonData.steps.findIndex(s => s.id === event.stepId);
+            console.log('📚 Step index:', stepIndex);
             if (stepIndex >= 0) {
               setActiveStep(stepIndex);
+              console.log('📚 ✅ Active step set to:', stepIndex);
+            } else {
+              console.warn('📚 ⚠️ Step not found in lesson steps!');
             }
+          } else {
+            console.error('❌ move_to_step event missing stepId!');
           }
           break;
       }
