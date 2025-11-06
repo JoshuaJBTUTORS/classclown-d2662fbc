@@ -8,15 +8,17 @@ export const onboardingService = {
   async completeOnboarding(userId: string, data: OnboardingData): Promise<void> {
     const { error } = await supabase
       .from('profiles')
-      .update({
+      .upsert({
+        id: userId,
         region: data.region,
         curriculum: data.curriculum,
         year_group_id: data.yearGroupId,
         preferred_subjects: data.subjects,
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
-      })
-      .eq('id', userId);
+      }, { onConflict: 'id' })
+      .select('id')
+      .single();
 
     if (error) {
       console.error('Error completing onboarding:', error);

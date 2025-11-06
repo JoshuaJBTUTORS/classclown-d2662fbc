@@ -93,6 +93,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileError) throw profileError;
 
+      // Auto-provision profile if missing
+      if (!profileData) {
+        const defaultProfile = {
+          id: userId,
+          first_name: user?.user_metadata?.first_name || null,
+          last_name: user?.user_metadata?.last_name || null,
+          avatar_url: null,
+          onboarding_completed: false,
+        };
+
+        try {
+          const { data: insertedProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert(defaultProfile)
+            .select('*')
+            .single();
+
+          if (!insertError && insertedProfile) {
+            setProfile(insertedProfile);
+          } else {
+            // Fallback: set local state to avoid indefinite spinner
+            setProfile(defaultProfile as any);
+          }
+        } catch (err) {
+          console.error('Failed to auto-provision profile:', err);
+          setProfile(defaultProfile as any);
+        }
+      }
+
       // Fetch primary role
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
