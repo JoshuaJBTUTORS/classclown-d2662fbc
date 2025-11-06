@@ -8,6 +8,7 @@ import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
+import { OnboardingGuard } from '@/components/routing/OnboardingGuard';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 
@@ -70,6 +71,7 @@ import ProposalDashboard from './pages/admin/ProposalDashboard';
 import EditProposal from './pages/admin/EditProposal';
 import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
+import OnboardingWizard from './pages/OnboardingWizard';
 
 
 function App() {
@@ -385,12 +387,24 @@ function App() {
                 />
 
 
-                {/* Learning Hub routes */}
+                {/* Onboarding route - no guard */}
+                <Route
+                  path="/learning-hub/onboarding"
+                  element={
+                    <ProtectedRoute>
+                      <OnboardingWizard />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Learning Hub routes - with onboarding guard */}
                 <Route
                   path="/learning-hub"
                   element={
                     <ProtectedRoute>
-                      <LearningHubLayout />
+                      <OnboardingGuard>
+                        <LearningHubLayout />
+                      </OnboardingGuard>
                     </ProtectedRoute>
                   }
                 >

@@ -1472,9 +1472,12 @@ export type Database = {
         Row: {
           cover_image_url: string | null
           created_at: string | null
+          curriculum: string | null
           description: string | null
           difficulty_level: string | null
+          generation_status: string | null
           id: string
+          is_ai_generated: boolean | null
           path_position: number | null
           prerequisites: Json | null
           price: number | null
@@ -1484,13 +1487,17 @@ export type Database = {
           title: string
           unlock_requirements: Json | null
           updated_at: string | null
+          year_group_id: string | null
         }
         Insert: {
           cover_image_url?: string | null
           created_at?: string | null
+          curriculum?: string | null
           description?: string | null
           difficulty_level?: string | null
+          generation_status?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           path_position?: number | null
           prerequisites?: Json | null
           price?: number | null
@@ -1500,13 +1507,17 @@ export type Database = {
           title: string
           unlock_requirements?: Json | null
           updated_at?: string | null
+          year_group_id?: string | null
         }
         Update: {
           cover_image_url?: string | null
           created_at?: string | null
+          curriculum?: string | null
           description?: string | null
           difficulty_level?: string | null
+          generation_status?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           path_position?: number | null
           prerequisites?: Json | null
           price?: number | null
@@ -1516,8 +1527,55 @@ export type Database = {
           title?: string
           unlock_requirements?: Json | null
           updated_at?: string | null
+          year_group_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_year_group_id_fkey"
+            columns: ["year_group_id"]
+            isOneToOne: false
+            referencedRelation: "year_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curriculum_year_groups: {
+        Row: {
+          age_range: string | null
+          created_at: string | null
+          curriculum: string
+          display_name: string
+          id: string
+          national_curriculum_level: string | null
+          year_group_id: string | null
+        }
+        Insert: {
+          age_range?: string | null
+          created_at?: string | null
+          curriculum: string
+          display_name: string
+          id?: string
+          national_curriculum_level?: string | null
+          year_group_id?: string | null
+        }
+        Update: {
+          age_range?: string | null
+          created_at?: string | null
+          curriculum?: string
+          display_name?: string
+          id?: string
+          national_curriculum_level?: string | null
+          year_group_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_year_groups_year_group_id_fkey"
+            columns: ["year_group_id"]
+            isOneToOne: false
+            referencedRelation: "year_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_processing_logs: {
         Row: {
@@ -2654,31 +2712,57 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          curriculum: string | null
           first_name: string | null
           id: string
           last_name: string | null
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
           phone_number: string | null
+          preferred_subjects: string[] | null
+          region: string | null
           updated_at: string | null
+          year_group_id: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          curriculum?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           phone_number?: string | null
+          preferred_subjects?: string[] | null
+          region?: string | null
           updated_at?: string | null
+          year_group_id?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          curriculum?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           phone_number?: string | null
+          preferred_subjects?: string[] | null
+          region?: string | null
           updated_at?: string | null
+          year_group_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_year_group_id_fkey"
+            columns: ["year_group_id"]
+            isOneToOne: false
+            referencedRelation: "year_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recurring_lesson_groups: {
         Row: {
@@ -3753,6 +3837,50 @@ export type Database = {
           title?: string | null
         }
         Relationships: []
+      }
+      user_courses: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          enrolled_at: string | null
+          id: string
+          is_auto_generated: boolean | null
+          last_accessed_at: string | null
+          progress_percentage: number | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          is_auto_generated?: boolean | null
+          last_accessed_at?: string | null
+          progress_percentage?: number | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          is_auto_generated?: boolean | null
+          last_accessed_at?: string | null
+          progress_percentage?: number | null
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

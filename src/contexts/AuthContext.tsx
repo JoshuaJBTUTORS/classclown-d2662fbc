@@ -13,6 +13,12 @@ interface UserProfile {
   avatar_url: string | null;
   phone?: string;
   organization_id?: string;
+  region?: string;
+  curriculum?: string;
+  year_group_id?: string;
+  preferred_subjects?: string[];
+  onboarding_completed?: boolean;
+  onboarding_completed_at?: string;
 }
 
 interface ParentProfile {
