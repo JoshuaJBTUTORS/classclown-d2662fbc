@@ -13,6 +13,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getSubjectTheme } from '@/utils/subjectTheming';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { CompactStepIndicator } from './CompactStepIndicator';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -215,14 +216,22 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="px-4 md:px-8 lg:px-12 py-6 border-b border-border">
-          <Button
-            variant="ghost"
-            onClick={handleBackToModule}
-            className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Lessons
-          </Button>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <Button
+              variant="ghost"
+              onClick={handleBackToModule}
+              className="-ml-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Lessons
+            </Button>
+
+            <CompactStepIndicator
+              steps={lessonData.steps}
+              currentStep={activeStep}
+              completedSteps={completedSteps}
+            />
+          </div>
 
           <div className="mb-4">
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
