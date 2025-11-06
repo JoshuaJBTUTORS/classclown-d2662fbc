@@ -92,13 +92,19 @@ serve(async (req) => {
       lessonPlan = existingPlan;
       planError = null;
     } else {
-      // Create new lesson plan (standalone, no lesson_id to avoid foreign key issues)
-      const insertPayload = {
+      // Create new lesson plan with lesson_id if provided
+      const insertPayload: any = {
         conversation_id: conversationId || null,
         topic,
         year_group: yearGroup,
         status: 'generating'
       };
+      
+      // Include lesson_id if provided
+      if (lessonId) {
+        insertPayload.lesson_id = lessonId;
+      }
+      
       const result = await supabase
         .from('cleo_lesson_plans')
         .insert(insertPayload)

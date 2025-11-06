@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { LessonPlanningScreen } from '@/components/cleo/LessonPlanningScreen';
@@ -6,6 +6,7 @@ import { LessonPlanDisplay } from '@/components/cleo/LessonPlanDisplay';
 import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
 import { useLessonPlan } from '@/hooks/useLessonPlan';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const LessonPlanning: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -29,6 +30,27 @@ const LessonPlanning: React.FC = () => {
   });
 
   const { lessonPlan, contentBlocks, loading } = useLessonPlan(lessonPlanId);
+
+  // Attempt to recover existing lesson plan by lessonId on mount
+  useEffect(() => {
+    const loadExistingPlan = async () => {
+      if (!lessonId || lessonPlanId) return;
+
+      const { data, error } = await supabase
+        .from('cleo_lesson_plans')
+        .select('id')
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+
+      if (data && !error) {
+        console.log('Recovered existing lesson plan:', data.id);
+        setLessonPlanId(data.id);
+        setShowLearning(true);
+      }
+    };
+
+    loadExistingPlan();
+  }, [lessonId, lessonPlanId]);
 
   const handlePlanningComplete = (planId: string) => {
     console.log('Lesson plan generated:', planId);
