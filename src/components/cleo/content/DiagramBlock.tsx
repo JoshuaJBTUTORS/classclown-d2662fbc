@@ -13,6 +13,12 @@ interface DiagramBlockProps {
 }
 
 export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data, onContentAction }) => {
+  // Defensive check for undefined data
+  if (!data || typeof data !== 'object') {
+    console.error('DiagramBlock received invalid data:', data);
+    return null;
+  }
+
   console.log('🖼️ DiagramBlock rendered with data:', {
     hasUrl: !!data?.url,
     hasSvg: !!data?.svg,

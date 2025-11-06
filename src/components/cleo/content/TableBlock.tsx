@@ -9,6 +9,12 @@ interface TableBlockProps {
 }
 
 export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction }) => {
+  // Defensive check for undefined data
+  if (!data || !data.headers || !Array.isArray(data.headers) || !data.rows || !Array.isArray(data.rows)) {
+    console.error('TableBlock received invalid data:', data);
+    return null;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

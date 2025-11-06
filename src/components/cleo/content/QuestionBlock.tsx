@@ -13,6 +13,12 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
+  // Defensive check for undefined data
+  if (!data || !data.question || !data.options || !Array.isArray(data.options)) {
+    console.error('QuestionBlock received invalid data:', data);
+    return null;
+  }
+
   const handleAnswerClick = (optionId: string, isCorrect: boolean) => {
     setSelectedAnswer(optionId);
     setShowFeedback(true);
