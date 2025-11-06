@@ -62,9 +62,87 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [contentGenerated, setContentGenerated] = useState(false);
   
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void } | null>(null);
   const modeSwitchCountRef = useRef(0);
+
+  // Generate content when lesson starts
+  useEffect(() => {
+    const generateContent = async () => {
+      // Only generate if we have empty content and haven't generated yet
+      if (contentGenerated || isGeneratingContent) return;
+      
+      const hasEmptyContent = content.length === 0 || 
+        content.every(block => !block.data || (typeof block.data === 'object' && Object.keys(block.data).length === 0));
+      
+      if (!hasEmptyContent) {
+        setContentGenerated(true);
+        return;
+      }
+
+      // Check if we have a lesson plan ID to generate content from
+      const lessonPlanId = lessonData.id;
+      if (!lessonPlanId) {
+        console.log('No lesson plan ID available');
+        return;
+      }
+
+      setIsGeneratingContent(true);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-lesson-content', {
+          body: { 
+            lessonPlanId,
+            conversationId: conversationId || null
+          }
+        });
+
+        if (error) throw error;
+
+        if (data?.success) {
+          // Reload the lesson data to get the newly generated content
+          const { data: contentBlocks, error: fetchError } = await supabase
+            .from('cleo_content_blocks' as any)
+            .select('*')
+            .eq('lesson_plan_id', lessonPlanId)
+            .order('order_index');
+
+          if (fetchError) throw fetchError;
+
+          if (contentBlocks && contentBlocks.length > 0) {
+            setContent(contentBlocks.map((block: any) => ({
+              id: block.id,
+              stepId: block.step_id,
+              type: block.type as any,
+              data: block.data,
+              visible: true,
+              title: block.title,
+              teachingNotes: block.teaching_notes
+            })));
+            setContentGenerated(true);
+            
+            toast({
+              title: '✨ Content Ready',
+              description: 'Your lesson materials have been prepared!',
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error generating content:', error);
+        toast({
+          title: 'Content Generation Error',
+          description: 'Could not generate lesson content. You can still chat with Cleo.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsGeneratingContent(false);
+      }
+    };
+
+    generateContent();
+  }, [lessonData.id, conversationId, content.length, contentGenerated, isGeneratingContent]);
 
   // Load messages on mount and add initial welcome message in voice mode
   useEffect(() => {
@@ -265,6 +343,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             // Send the action message to Cleo
             controlsRef.current?.sendUserMessage(message);
           }}
+          isGeneratingContent={isGeneratingContent}
         />
         </div>
       </div>

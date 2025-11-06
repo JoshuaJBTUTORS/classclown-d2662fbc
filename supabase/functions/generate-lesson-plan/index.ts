@@ -129,33 +129,24 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert curriculum designer creating concise, focused lesson plans for students.
+            content: `You are an expert curriculum designer creating lesson plan structures.
 
-Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each containing rich, pre-generated content.
+Your task: Create a lesson plan STRUCTURE with 3-5 main teaching steps.
 
 LESSON PLAN STRUCTURE:
 1. Learning Objectives (3-5 clear, measurable goals)
-2. Teaching Sequence (3-5 FOCUSED steps, each 5-8 minutes)
-3. Content Blocks (tables, definitions, questions, diagrams)
+2. Teaching Steps (3-5 focused steps, titles only)
 
-IMPORTANT: Create FEWER, RICHER steps instead of many micro-steps.
-Each step should be substantial with multiple content blocks.
+Each step should be substantial - Cleo will generate the detailed content later.
+Just provide clear step titles that outline what will be taught.
 
-CONTENT BLOCK TYPES:
-- TABLE: Comparisons, data, organized information
-- DEFINITION: Key terms with examples
-- QUESTION: Check understanding (multiple choice or open-ended)
-- DIAGRAM: Visual representations (describe what should be shown)
-- TEXT: Explanatory content or instructions
+Example step titles:
+- "Introduction to Contact and Non-Contact Forces"
+- "Exploring Different Types of Forces"
+- "Calculating Force Magnitudes"
+- "Real-World Applications"
 
-For each teaching step, specify:
-- What content blocks to display
-- When to show them (sequence order)
-- How to present them (teaching notes)
-- Prerequisites (what must be shown first)
-
-Make content rich, engaging, and age-appropriate for ${yearGroup}.
-Focus on depth rather than breaking content into too many small pieces.`
+Make step titles clear and age-appropriate for ${yearGroup}.`
           },
           {
             role: 'user',
@@ -170,7 +161,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
           type: 'function',
           function: {
             name: 'create_lesson_plan',
-            description: 'Create a structured lesson plan with pre-generated content',
+            description: 'Create a lesson plan structure with steps',
             parameters: {
               type: 'object',
               properties: {
@@ -185,35 +176,15 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                   type: 'array',
                   minItems: 3,
                   maxItems: 5,
-                  description: 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
+                  description: '3-5 teaching step titles (content will be generated separately)',
                   items: {
                     type: 'object',
                     properties: {
                       id: { type: 'string' },
                       title: { type: 'string' },
-                      duration_minutes: { type: 'number' },
-                      content_blocks: {
-                        type: 'array',
-                        items: {
-                          type: 'object',
-                          properties: {
-                            type: { 
-                              type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text']
-                            },
-                            title: { type: 'string' },
-                            data: { type: 'object' },
-                            teaching_notes: { type: 'string' },
-                            prerequisites: {
-                              type: 'array',
-                              items: { type: 'string' }
-                            }
-                          },
-                          required: ['type', 'data']
-                        }
-                      }
+                      duration_minutes: { type: 'number' }
                     },
-                    required: ['id', 'title', 'content_blocks']
+                    required: ['id', 'title']
                   }
                 }
               },

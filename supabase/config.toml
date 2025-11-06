@@ -99,6 +99,9 @@ verify_jwt = false
 [functions.generate-lesson-plan]
 verify_jwt = true
 
+[functions.generate-lesson-content]
+verify_jwt = true
+
 [functions.backfill-participant-urls]
 verify_jwt = false
 

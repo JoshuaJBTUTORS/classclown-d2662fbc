@@ -29,6 +29,7 @@ interface HybridChatInterfaceProps {
   visibleContentIds?: string[];
   onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean) => void;
   onContentAction?: (contentId: string, action: string, message: string) => void;
+  isGeneratingContent?: boolean;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -49,6 +50,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   visibleContentIds,
   onAnswerQuestion,
   onContentAction,
+  isGeneratingContent = false,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -137,7 +139,15 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
         </AnimatePresence>
         
         {/* Content Blocks */}
-        {contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
+        {isGeneratingContent ? (
+          <Card className="p-8 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-lg font-medium">Generating lesson content...</p>
+              <p className="text-sm text-muted-foreground">Cleo is preparing your teaching materials</p>
+            </div>
+          </Card>
+        ) : contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
           <ContentDisplay
             content={contentBlocks}
             visibleContent={visibleContentIds}
