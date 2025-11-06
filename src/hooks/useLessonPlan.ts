@@ -89,24 +89,16 @@ export function useLessonPlan(lessonPlanId: string | null) {
             step.content_blocks.forEach((block: any, blockIndex: number) => {
               // Validate block has required fields
               if (!block || !block.type || block.data === undefined || block.data === null) {
-                console.warn('⚠️ Skipping invalid content block in step:', step.id, 'Block:', block);
+                console.warn('Skipping invalid content block in step:', step.id, block);
                 return;
               }
-              
-              console.log('✅ Adding content block:', {
-                stepId: step.id,
-                blockType: block.type,
-                hasData: !!block.data,
-                dataType: typeof block.data,
-                dataKeys: block.data ? Object.keys(block.data) : [],
-              });
               
               allContentBlocks.push({
                 id: `${step.id}-block-${blockIndex}`,
                 stepId: step.id,
                 type: block.type as any,
                 data: block.data,
-                visible: true, // Show all content immediately
+                visible: false, // All blocks start hidden
                 title: block.title || undefined,
                 teachingNotes: block.teaching_notes || undefined,
                 prerequisites: block.prerequisites || []

@@ -10,12 +10,6 @@ interface DefinitionBlockProps {
 }
 
 export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data, onContentAction }) => {
-  // Defensive check for undefined data
-  if (!data || !data.term || !data.definition) {
-    console.error('DefinitionBlock received invalid data:', data);
-    return null;
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}

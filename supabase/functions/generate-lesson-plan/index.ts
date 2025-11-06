@@ -92,29 +92,13 @@ serve(async (req) => {
       lessonPlan = existingPlan;
       planError = null;
     } else {
-      // Create new lesson plan, only include lesson_id if it exists
-      const insertPayload: any = {
+      // Create new lesson plan (standalone, no lesson_id to avoid foreign key issues)
+      const insertPayload = {
         conversation_id: conversationId || null,
         topic,
         year_group: yearGroup,
         status: 'generating'
       };
-      
-      // Only include lesson_id if it exists in the database
-      if (lessonId) {
-        const { data: lessonExists } = await supabase
-          .from('lessons' as any)
-          .select('id')
-          .eq('id', lessonId)
-          .single();
-        
-        if (lessonExists) {
-          insertPayload.lesson_id = lessonId;
-        } else {
-          console.log('Lesson ID provided but does not exist, creating plan without lesson reference');
-        }
-      }
-      
       const result = await supabase
         .from('cleo_lesson_plans')
         .insert(insertPayload)
@@ -139,24 +123,33 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert curriculum designer creating lesson plan structures.
+            content: `You are an expert curriculum designer creating concise, focused lesson plans for students.
 
-Your task: Create a lesson plan STRUCTURE with 3-5 main teaching steps.
+Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each containing rich, pre-generated content.
 
 LESSON PLAN STRUCTURE:
 1. Learning Objectives (3-5 clear, measurable goals)
-2. Teaching Steps (3-5 focused steps, titles only)
+2. Teaching Sequence (3-5 FOCUSED steps, each 5-8 minutes)
+3. Content Blocks (tables, definitions, questions, diagrams)
 
-Each step should be substantial - Cleo will generate the detailed content later.
-Just provide clear step titles that outline what will be taught.
+IMPORTANT: Create FEWER, RICHER steps instead of many micro-steps.
+Each step should be substantial with multiple content blocks.
 
-Example step titles:
-- "Introduction to Contact and Non-Contact Forces"
-- "Exploring Different Types of Forces"
-- "Calculating Force Magnitudes"
-- "Real-World Applications"
+CONTENT BLOCK TYPES:
+- TABLE: Comparisons, data, organized information
+- DEFINITION: Key terms with examples
+- QUESTION: Check understanding (multiple choice or open-ended)
+- DIAGRAM: Visual representations (describe what should be shown)
+- TEXT: Explanatory content or instructions
 
-Make step titles clear and age-appropriate for ${yearGroup}.`
+For each teaching step, specify:
+- What content blocks to display
+- When to show them (sequence order)
+- How to present them (teaching notes)
+- Prerequisites (what must be shown first)
+
+Make content rich, engaging, and age-appropriate for ${yearGroup}.
+Focus on depth rather than breaking content into too many small pieces.`
           },
           {
             role: 'user',
@@ -171,7 +164,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
           type: 'function',
           function: {
             name: 'create_lesson_plan',
-            description: 'Create a lesson plan structure with steps',
+            description: 'Create a structured lesson plan with pre-generated content',
             parameters: {
               type: 'object',
               properties: {
@@ -186,15 +179,35 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                   type: 'array',
                   minItems: 3,
                   maxItems: 5,
-                  description: '3-5 teaching step titles (content will be generated separately)',
+                  description: 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
                   items: {
                     type: 'object',
                     properties: {
                       id: { type: 'string' },
                       title: { type: 'string' },
-                      duration_minutes: { type: 'number' }
+                      duration_minutes: { type: 'number' },
+                      content_blocks: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            type: { 
+                              type: 'string',
+                              enum: ['table', 'definition', 'question', 'diagram', 'text']
+                            },
+                            title: { type: 'string' },
+                            data: { type: 'object' },
+                            teaching_notes: { type: 'string' },
+                            prerequisites: {
+                              type: 'array',
+                              items: { type: 'string' }
+                            }
+                          },
+                          required: ['type', 'data']
+                        }
+                      }
                     },
-                    required: ['id', 'title']
+                    required: ['id', 'title', 'content_blocks']
                   }
                 }
               },
