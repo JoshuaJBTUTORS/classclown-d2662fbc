@@ -83,6 +83,7 @@ const LessonPlanning: React.FC = () => {
         lessonPlan={lessonPlan}
         contentCounts={contentCounts}
         onStartLesson={handleStartLesson}
+        moduleId={moduleId}
       />
     );
   }

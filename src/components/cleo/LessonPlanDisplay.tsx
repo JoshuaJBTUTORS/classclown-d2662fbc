@@ -1,7 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Target, Clock, CheckCircle } from 'lucide-react';
+import { BookOpen, Target, Clock, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface LessonPlanDisplayProps {
   lessonPlan: {
@@ -20,17 +21,38 @@ interface LessonPlanDisplayProps {
     definitions: number;
   };
   onStartLesson: () => void;
+  moduleId?: string;
 }
 
 export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
   lessonPlan,
   contentCounts,
-  onStartLesson
+  onStartLesson,
+  moduleId
 }) => {
+  const navigate = useNavigate();
+
+  const handleBackToModule = () => {
+    if (moduleId) {
+      navigate(`/module/${moduleId}`);
+    } else {
+      navigate(-1);
+    }
+  };
+
   return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30 p-8">
       <Card className="max-w-3xl w-full p-8 shadow-xl">
         <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={handleBackToModule}
+            className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Lessons
+          </Button>
+          
           <div className="flex items-center gap-2 text-primary mb-4">
             <BookOpen className="w-6 h-6" />
             <span className="text-sm font-medium">Lesson Plan Generated</span>
