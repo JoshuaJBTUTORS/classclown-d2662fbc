@@ -52,7 +52,14 @@ export function useLessonPlan(lessonPlanId: string | null) {
     try {
       setLoading(true);
 
-      // Load lesson plan from cleo_lesson_plans using direct fetch
+      // Get user's session token for authenticated request
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
+
+      // Load lesson plan using authenticated fetch
       const supabaseUrl = 'https://sjxbxkpegcnnfjbsxazo.supabase.co';
       const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqeGJ4a3BlZ2NubmZqYnN4YXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MTE2NzIsImV4cCI6MjA2MzI4NzY3Mn0.QFNyi5omwRMPiL_nJlUOHo5ATwXd14PdQHfoG7oTnwA';
       
@@ -61,7 +68,7 @@ export function useLessonPlan(lessonPlanId: string | null) {
         {
           headers: {
             'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
+            'Authorization': `Bearer ${session.access_token}`, // Use user's JWT token
           }
         }
       );
