@@ -680,13 +680,16 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_paused_at: string | null
           learning_goal: string | null
           lesson_id: string | null
           mode_switches: number | null
           module_id: string | null
+          resume_count: number
           status: string
           text_message_count: number | null
           topic: string | null
+          total_pauses: number
           updated_at: string
           user_id: string
           voice_duration_seconds: number | null
@@ -695,13 +698,16 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_paused_at?: string | null
           learning_goal?: string | null
           lesson_id?: string | null
           mode_switches?: number | null
           module_id?: string | null
+          resume_count?: number
           status?: string
           text_message_count?: number | null
           topic?: string | null
+          total_pauses?: number
           updated_at?: string
           user_id: string
           voice_duration_seconds?: number | null
@@ -710,13 +716,16 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_paused_at?: string | null
           learning_goal?: string | null
           lesson_id?: string | null
           mode_switches?: number | null
           module_id?: string | null
+          resume_count?: number
           status?: string
           text_message_count?: number | null
           topic?: string | null
+          total_pauses?: number
           updated_at?: string
           user_id?: string
           voice_duration_seconds?: number | null
@@ -827,6 +836,66 @@ export type Database = {
           },
         ]
       }
+      cleo_lesson_state: {
+        Row: {
+          active_step: number
+          completed_at: string | null
+          completed_steps: Json
+          completion_percentage: number
+          conversation_id: string
+          created_at: string
+          id: string
+          lesson_plan_id: string | null
+          paused_at: string | null
+          updated_at: string
+          user_id: string
+          visible_content_ids: Json
+        }
+        Insert: {
+          active_step?: number
+          completed_at?: string | null
+          completed_steps?: Json
+          completion_percentage?: number
+          conversation_id: string
+          created_at?: string
+          id?: string
+          lesson_plan_id?: string | null
+          paused_at?: string | null
+          updated_at?: string
+          user_id: string
+          visible_content_ids?: Json
+        }
+        Update: {
+          active_step?: number
+          completed_at?: string | null
+          completed_steps?: Json
+          completion_percentage?: number
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          lesson_plan_id?: string | null
+          paused_at?: string | null
+          updated_at?: string
+          user_id?: string
+          visible_content_ids?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleo_lesson_state_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "cleo_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleo_lesson_state_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cleo_messages: {
         Row: {
           content: string
@@ -858,6 +927,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cleo_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleo_question_answers: {
+        Row: {
+          answer_id: string
+          answer_text: string
+          answered_at: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          question_text: string
+          step_id: string
+          time_taken_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          answer_id: string
+          answer_text: string
+          answered_at?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_correct: boolean
+          question_id: string
+          question_text: string
+          step_id: string
+          time_taken_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          answer_id?: string
+          answer_text?: string
+          answered_at?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          question_text?: string
+          step_id?: string
+          time_taken_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleo_question_answers_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cleo_conversations"

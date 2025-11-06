@@ -3,17 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { HybridChatInterface } from './HybridChatInterface';
 import { CleoVoiceChat } from './CleoVoiceChat';
 import { LessonPlanSidebar } from './LessonPlanSidebar';
+import { LessonResumeDialog } from './LessonResumeDialog';
+import { LessonCompleteDialog } from './LessonCompleteDialog';
 import { useContentSync } from '@/hooks/useContentSync';
 import { useVoiceTimer } from '@/hooks/useVoiceTimer';
 import { useTextChat } from '@/hooks/useTextChat';
+import { useCleoLessonState } from '@/hooks/useCleoLessonState';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Pause, CheckCircle } from 'lucide-react';
 import { getSubjectTheme } from '@/utils/subjectTheming';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CompactStepIndicator } from './CompactStepIndicator';
+import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -44,16 +48,43 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const { toast } = useToast();
   const subjectTheme = getSubjectTheme(lessonData.topic, lessonData.yearGroup);
   
+  const lessonState = useCleoLessonState(conversationId || null);
+  
   const {
     activeStep,
     visibleContent,
     completedSteps,
     showContent,
     handleContentEvent,
-  } = useContentSync(lessonData);
+    setActiveStep,
+    setVisibleContent,
+    setCompletedSteps,
+  } = useContentSync(lessonData, (state) => {
+    // Auto-save state changes
+    if (conversationId && connectionState === 'connected') {
+      const totalSteps = lessonData.steps.length;
+      const completionPercentage = totalSteps > 0 
+        ? Math.round((state.completedSteps.length / totalSteps) * 100)
+        : 0;
+      
+      lessonState.debouncedSave({
+        conversation_id: conversationId,
+        lesson_plan_id: lessonPlan?.id,
+        active_step: state.activeStep,
+        visible_content_ids: state.visibleContent,
+        completed_steps: state.completedSteps,
+        completion_percentage: completionPercentage,
+      });
+    }
+  });
 
   const voiceTimer = useVoiceTimer(conversationId || null);
   const textChat = useTextChat(conversationId || null);
+  
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [questionStats, setQuestionStats] = useState<any>(null);
+  const [sessionStartTime] = useState(Date.now());
 
   const [mode, setMode] = useState<ChatMode>('voice');
   const [connectionState, setConnectionState] = useState<
@@ -67,6 +98,24 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void } | null>(null);
   const modeSwitchCountRef = useRef(0);
+
+  // Check for saved state and show resume dialog
+  useEffect(() => {
+    const checkSavedState = async () => {
+      if (conversationId && lessonState.savedState) {
+        const state = lessonState.savedState;
+        if (state.paused_at && !state.completed_at) {
+          setShowResumeDialog(true);
+        } else if (state.active_step || state.visible_content_ids.length > 0) {
+          // Auto-resume if not explicitly paused
+          setActiveStep(state.active_step);
+          setVisibleContent(state.visible_content_ids);
+          setCompletedSteps(state.completed_steps);
+        }
+      }
+    };
+    checkSavedState();
+  }, [conversationId, lessonState.savedState]);
 
   // Load messages on mount and add initial welcome message in voice mode
   useEffect(() => {
@@ -212,6 +261,67 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     handleModeSwitch('text', true);
   };
 
+  const handleResumeLesson = async () => {
+    const state = await lessonState.resumeLesson();
+    if (state) {
+      setActiveStep(state.active_step);
+      setVisibleContent(state.visible_content_ids);
+      setCompletedSteps(state.completed_steps);
+    }
+    setShowResumeDialog(false);
+  };
+
+  const handleRestartLesson = async () => {
+    await lessonState.clearState();
+    setActiveStep(0);
+    setVisibleContent([]);
+    setCompletedSteps([]);
+    setShowResumeDialog(false);
+  };
+
+  const handlePauseLesson = async () => {
+    if (!conversationId) return;
+    
+    const totalSteps = lessonData.steps.length;
+    const completionPercentage = totalSteps > 0 
+      ? Math.round((completedSteps.length / totalSteps) * 100)
+      : 0;
+    
+    await lessonState.pauseLesson({
+      conversation_id: conversationId,
+      lesson_plan_id: lessonPlan?.id,
+      active_step: activeStep,
+      visible_content_ids: visibleContent,
+      completed_steps: completedSteps,
+      completion_percentage: completionPercentage,
+    });
+    
+    handleBackToModule();
+  };
+
+  const handleCompleteLesson = async () => {
+    if (!conversationId) return;
+    
+    const totalSteps = lessonData.steps.length;
+    
+    await lessonState.completeLesson({
+      conversation_id: conversationId,
+      lesson_plan_id: lessonPlan?.id,
+      active_step: activeStep,
+      visible_content_ids: visibleContent,
+      completed_steps: completedSteps,
+      completion_percentage: 100,
+    });
+    
+    // Get question stats
+    const stats = await cleoQuestionTrackingService.getQuestionStats(conversationId);
+    setQuestionStats(stats);
+    setShowCompleteDialog(true);
+  };
+
+  const allStepsCompleted = completedSteps.length === lessonData.steps.length;
+  const sessionTimeMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
+
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
       <div className="flex-1 flex flex-col">
@@ -227,13 +337,36 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               Back to Lessons
             </Button>
 
-            {lessonPlan && (
-              <CompactStepIndicator
-                teachingSequence={lessonPlan.teaching_sequence}
-                currentStepId={activeStep?.toString()}
-                completedSteps={completedSteps}
-              />
-            )}
+            <div className="flex items-center gap-2">
+              {lessonPlan && (
+                <CompactStepIndicator
+                  teachingSequence={lessonPlan.teaching_sequence}
+                  currentStepId={activeStep?.toString()}
+                  completedSteps={completedSteps}
+                />
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePauseLesson}
+                disabled={connectionState !== 'connected'}
+              >
+                <Pause className="w-4 h-4 mr-2" />
+                Pause
+              </Button>
+
+              {allStepsCompleted && (
+                <Button
+                  onClick={handleCompleteLesson}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  size="sm"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Complete Lesson
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="mb-4">
@@ -267,11 +400,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           visibleContentIds={visibleContent}
           onAnswerQuestion={(qId, aId, correct) => {
             console.log('Question answered:', { qId, aId, correct });
-            // Send answer feedback to Cleo
-            const option = correct ? 'the correct answer' : 'an incorrect answer';
-            const feedbackMessage = `I just answered question "${qId}" by selecting option "${aId}", which was ${option}.`;
-            controlsRef.current?.sendUserMessage(feedbackMessage);
           }}
+          conversationId={conversationId || null}
           onContentAction={(contentId, action, message) => {
             console.log('Content action:', { contentId, action, message });
             // Send the action message to Cleo
@@ -310,6 +440,25 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onVoiceLimitReached={handleVoiceLimitReached}
         />
       </div>
+
+      {/* Resume Dialog */}
+      <LessonResumeDialog
+        isOpen={showResumeDialog}
+        onClose={() => setShowResumeDialog(false)}
+        onResume={handleResumeLesson}
+        onRestart={handleRestartLesson}
+        savedState={lessonState.savedState}
+      />
+
+      {/* Complete Dialog */}
+      <LessonCompleteDialog
+        isOpen={showCompleteDialog}
+        onClose={() => setShowCompleteDialog(false)}
+        onReturnToCourse={handleBackToModule}
+        questionStats={questionStats}
+        totalTimeMinutes={sessionTimeMinutes}
+        lessonTitle={lessonData.title}
+      />
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { LessonData, ContentEvent } from '@/types/lessonContent';
 
-export const useContentSync = (lessonData: LessonData) => {
+export const useContentSync = (lessonData: LessonData, onStateChange?: (state: { activeStep: number; visibleContent: string[]; completedSteps: string[] }) => void) => {
   const [activeStep, setActiveStep] = useState(0);
   const [visibleContent, setVisibleContent] = useState<string[]>([]);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
@@ -128,6 +128,15 @@ export const useContentSync = (lessonData: LessonData) => {
     return () => clearTimeout(timer);
   }, [visibleContent, lessonData.content, showContent]);
 
+  // Notify parent of state changes
+  useEffect(() => {
+    onStateChange?.({
+      activeStep,
+      visibleContent,
+      completedSteps,
+    });
+  }, [activeStep, visibleContent, completedSteps, onStateChange]);
+
   return {
     activeStep,
     visibleContent,
@@ -136,5 +145,8 @@ export const useContentSync = (lessonData: LessonData) => {
     completeStep,
     moveToNextStep,
     handleContentEvent,
+    setActiveStep,
+    setVisibleContent,
+    setCompletedSteps,
   };
 };

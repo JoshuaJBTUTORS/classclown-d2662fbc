@@ -10,6 +10,7 @@ import { Mic, MessageSquare, Send } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { ContentBlock } from '@/types/lessonContent';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
 
 interface HybridChatInterfaceProps {
   mode: ChatMode;
@@ -29,6 +30,7 @@ interface HybridChatInterfaceProps {
   visibleContentIds?: string[];
   onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean) => void;
   onContentAction?: (contentId: string, action: string, message: string) => void;
+  conversationId?: string | null;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -49,13 +51,59 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   visibleContentIds,
   onAnswerQuestion,
   onContentAction,
+  conversationId,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [questionStartTimes, setQuestionStartTimes] = useState<Record<string, number>>({});
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Track when questions become visible
+  useEffect(() => {
+    if (!contentBlocks || !visibleContentIds) return;
+
+    const newQuestions = visibleContentIds.filter(id => {
+      const block = contentBlocks.find(b => b.id === id && b.type === 'question');
+      return block && !questionStartTimes[id];
+    });
+
+    if (newQuestions.length > 0) {
+      setQuestionStartTimes(prev => {
+        const updated = { ...prev };
+        newQuestions.forEach(qId => {
+          updated[qId] = Date.now();
+        });
+        return updated;
+      });
+    }
+  }, [visibleContentIds, contentBlocks]);
+
+  const handleAnswerQuestion = async (questionId: string, answerId: string, isCorrect: boolean) => {
+    const timeTaken = questionStartTimes[questionId] 
+      ? Math.floor((Date.now() - questionStartTimes[questionId]) / 1000)
+      : undefined;
+
+    const questionBlock = contentBlocks?.find(b => b.id === questionId);
+    const questionData = questionBlock?.data as any;
+
+    if (conversationId && questionBlock) {
+      await cleoQuestionTrackingService.recordQuestionAnswer({
+        conversation_id: conversationId,
+        question_id: questionId,
+        question_text: questionData?.question || '',
+        answer_id: answerId,
+        answer_text: questionData?.options?.find((o: any) => o.id === answerId)?.text || '',
+        is_correct: isCorrect,
+        time_taken_seconds: timeTaken,
+        step_id: questionBlock.stepId || '',
+      });
+    }
+
+    onAnswerQuestion?.(questionId, answerId, isCorrect);
+  };
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +189,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
           <ContentDisplay
             content={contentBlocks}
             visibleContent={visibleContentIds}
-            onAnswerQuestion={onAnswerQuestion || (() => {})}
+            onAnswerQuestion={handleAnswerQuestion}
             onContentAction={onContentAction}
           />
         )}
