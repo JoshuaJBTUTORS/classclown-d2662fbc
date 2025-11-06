@@ -3,15 +3,14 @@ import { LessonData, ContentEvent } from '@/types/lessonContent';
 
 export const useContentSync = (lessonData: LessonData) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [visibleContent, setVisibleContent] = useState<string[]>([]);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  
+  // Show all content immediately
+  const visibleContent = lessonData.content.map(block => block.id);
 
   const showContent = useCallback((contentId: string) => {
-    console.log('📚 Showing content:', contentId);
-    setVisibleContent((prev) => {
-      if (prev.includes(contentId)) return prev;
-      return [...prev, contentId];
-    });
+    console.log('📚 Content already visible:', contentId);
+    // All content is already visible, this is a no-op
   }, []);
 
   const completeStep = useCallback((stepId: string) => {
@@ -26,39 +25,6 @@ export const useContentSync = (lessonData: LessonData) => {
     console.log('➡️ Moving to next step');
     setActiveStep((prev) => Math.min(prev + 1, lessonData.steps.length - 1));
   }, [lessonData.steps.length]);
-
-  const moveToStep = useCallback((stepId: string) => {
-    const stepIndex = lessonData.steps.findIndex(s => s.id === stepId);
-    if (stepIndex < 0) {
-      console.warn('Step not found:', stepId);
-      return null;
-    }
-    
-    console.log('📍 Moving to step:', stepId, 'Index:', stepIndex);
-    setActiveStep(stepIndex);
-    
-    // Show all content for this step
-    const stepContent = lessonData.content.filter(block => block.stepId === stepId);
-    console.log('📍 Found', stepContent.length, 'content blocks for step');
-    
-    setVisibleContent(prev => {
-      const newVisible = [...prev];
-      stepContent.forEach(block => {
-        if (!newVisible.includes(block.id)) {
-          newVisible.push(block.id);
-        }
-      });
-      return newVisible;
-    });
-    
-    return {
-      stepId,
-      stepIndex,
-      stepTitle: lessonData.steps[stepIndex].title,
-      contentCount: stepContent.length,
-      contentTypes: stepContent.map(c => c.type)
-    };
-  }, [lessonData]);
 
   const handleContentEvent = useCallback(
     (event: ContentEvent) => {
@@ -86,69 +52,17 @@ export const useContentSync = (lessonData: LessonData) => {
           break;
         case 'move_to_step':
           if (event.stepId) {
-            console.log('📚 ========== PROCESSING MOVE_TO_STEP ==========');
-            console.log('📚 Target step ID:', event.stepId);
-            console.log('📚 All available content blocks:', lessonData.content.map(b => ({
-              id: b.id,
-              type: b.type,
-              stepId: b.stepId
-            })));
-            
-            // Find all content blocks for this step
-            const stepContent = lessonData.content
-              .filter(block => block.stepId === event.stepId)
-              .map(block => block.id);
-            
-            console.log('📚 Content blocks found for this step:', stepContent);
-            console.log('📚 Number of blocks to show:', stepContent.length);
-            
-            if (stepContent.length === 0) {
-              console.warn('⚠️ No content blocks found for step:', event.stepId);
-              console.warn('⚠️ Available step IDs:', [...new Set(lessonData.content.map(b => b.stepId))]);
-            }
-            
-            // Show all content for this step
-            setVisibleContent(prev => {
-              console.log('📚 Previous visible content:', prev);
-              const newVisible = [...prev];
-              stepContent.forEach(id => {
-                if (!newVisible.includes(id)) {
-                  newVisible.push(id);
-                  console.log('📚 ➕ Adding to visible:', id);
-                } else {
-                  console.log('📚 ⏭️ Already visible:', id);
-                }
-              });
-              console.log('📚 New visible content:', newVisible);
-              return newVisible;
-            });
-            
-            // Mark step as active
             const stepIndex = lessonData.steps.findIndex(s => s.id === event.stepId);
-            console.log('📚 Step index:', stepIndex);
             if (stepIndex >= 0) {
               setActiveStep(stepIndex);
-              console.log('📚 ✅ Active step set to:', stepIndex);
-            } else {
-              console.warn('📚 ⚠️ Step not found in lesson steps!');
+              console.log('📚 Active step set to:', stepIndex);
             }
-          } else {
-            console.error('❌ move_to_step event missing stepId!');
           }
           break;
       }
     },
     [showContent, moveToNextStep, completeStep, lessonData]
   );
-
-  // Auto-show first step on mount
-  useEffect(() => {
-    if (lessonData.steps.length > 0 && activeStep === 0 && visibleContent.length === 0) {
-      console.log('🎬 Auto-showing first step on mount');
-      const firstStep = lessonData.steps[0];
-      moveToStep(firstStep.id);
-    }
-  }, [lessonData.steps, activeStep, visibleContent.length, moveToStep]);
 
   return {
     activeStep,
@@ -157,7 +71,6 @@ export const useContentSync = (lessonData: LessonData) => {
     showContent,
     completeStep,
     moveToNextStep,
-    moveToStep,
     handleContentEvent,
   };
 };

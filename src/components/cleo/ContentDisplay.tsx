@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { ContentBlock } from '@/types/lessonContent';
 import { TableBlock } from './content/TableBlock';
 import { TextBlock } from './content/TextBlock';
@@ -19,28 +19,6 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
   onAnswerQuestion,
   onContentAction,
 }) => {
-  const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const lastVisibleRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (visibleContent.length > 0) {
-      const latestContent = visibleContent[visibleContent.length - 1];
-      
-      // Only scroll if this is a new content block
-      if (latestContent !== lastVisibleRef.current) {
-        const element = contentRefs.current[latestContent];
-        if (element) {
-          setTimeout(() => {
-            element.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center',
-            });
-          }, 100);
-        }
-        lastVisibleRef.current = latestContent;
-      }
-    }
-  }, [visibleContent]);
 
   const renderContent = (block: ContentBlock) => {
     // Validate block has required data
@@ -73,20 +51,11 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
     <div className="space-y-8">
       {content
         .filter(block => block && block.id && block.type && block.data !== undefined && block.data !== null)
-        .map((block) => {
-          const isVisible = visibleContent.includes(block.id);
-          if (!isVisible) return null;
-
-          return (
-            <div
-              key={block.id}
-              ref={(el) => (contentRefs.current[block.id] = el)}
-              className="scroll-mt-24"
-            >
-              {renderContent(block)}
-            </div>
-          );
-        })}
+        .map((block) => (
+          <div key={block.id} className="scroll-mt-24">
+            {renderContent(block)}
+          </div>
+        ))}
     </div>
   );
 };

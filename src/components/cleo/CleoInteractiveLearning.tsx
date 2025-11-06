@@ -47,7 +47,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     visibleContent,
     completedSteps,
     showContent,
-    moveToStep,
     handleContentEvent,
   } = useContentSync(lessonData);
 
@@ -211,56 +210,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     handleModeSwitch('text', true);
   };
 
-  const handleNextStep = () => {
-    const nextStepIndex = activeStep + 1;
-    if (nextStepIndex >= lessonData.steps.length) return;
-    
-    const nextStep = lessonData.steps[nextStepIndex];
-    const stepInfo = moveToStep(nextStep.id);
-    
-    if (stepInfo) {
-      console.log('➡️ User navigated to next step:', stepInfo);
-      informCleoAboutStep(stepInfo);
-    }
-  };
-
-  const handlePreviousStep = () => {
-    const prevStepIndex = activeStep - 1;
-    if (prevStepIndex < 0) return;
-    
-    const prevStep = lessonData.steps[prevStepIndex];
-    const stepInfo = moveToStep(prevStep.id);
-    
-    if (stepInfo) {
-      console.log('⬅️ User navigated to previous step:', stepInfo);
-      informCleoAboutStep(stepInfo);
-    }
-  };
-
-  const informCleoAboutStep = (stepInfo: any) => {
-    const contextMessage = `I'm now viewing Step ${stepInfo.stepIndex + 1}: "${stepInfo.stepTitle}". This step contains ${stepInfo.contentCount} items: ${stepInfo.contentTypes.join(', ')}. Please help me understand this content.`;
-    
-    console.log('📢 Informing Cleo about step change:', contextMessage);
-    
-    if (mode === 'voice') {
-      // For voice mode, send as a user message
-      const navMessage: CleoMessage = {
-        id: `nav-${Date.now()}`,
-        conversation_id: conversationId || '',
-        role: 'user',
-        content: contextMessage,
-        mode: 'voice',
-        created_at: new Date().toISOString(),
-      };
-      setAllMessages(prev => [...prev, navMessage]);
-      // Also send to Cleo via WebSocket
-      controlsRef.current?.sendUserMessage(contextMessage);
-    } else {
-      // For text mode, send via text chat
-      textChat.sendMessage(contextMessage);
-    }
-  };
-
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
       <div className="flex-1 flex flex-col">
@@ -304,11 +253,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           canUseVoice={!voiceTimer.hasReachedLimit}
           contentBlocks={content}
           visibleContentIds={visibleContent}
-          currentStep={activeStep}
-          totalSteps={lessonData.steps.length}
-          stepTitle={lessonData.steps[activeStep]?.title}
-          onNextStep={handleNextStep}
-          onPreviousStep={handlePreviousStep}
           onAnswerQuestion={(qId, aId, correct) => {
             console.log('Question answered:', { qId, aId, correct });
             // Send answer feedback to Cleo
