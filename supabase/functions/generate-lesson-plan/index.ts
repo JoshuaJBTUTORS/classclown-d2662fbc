@@ -351,6 +351,21 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
 
     const planData = JSON.parse(toolCall.function.arguments);
     
+    // Parse the data field of each content block (it comes as a JSON string)
+    planData.steps.forEach((step: any) => {
+      if (step.content_blocks) {
+        step.content_blocks.forEach((block: any) => {
+          if (block.data && typeof block.data === 'string') {
+            try {
+              block.data = JSON.parse(block.data);
+            } catch (e) {
+              console.warn('Failed to parse content block data:', block.type, e);
+            }
+          }
+        });
+      }
+    });
+    
     // Validate content blocks were generated
     const totalContentBlocks = planData.steps.reduce((sum: number, step: any) => 
       sum + (step.content_blocks?.length || 0), 0
