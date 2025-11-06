@@ -25,6 +25,18 @@ export const OnboardingGuard = ({ children }: OnboardingGuardProps) => {
     return <Navigate to="/login" replace />;
   }
 
+  // If profile hasn't loaded yet but user exists, show loader
+  if (user && profile === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!profile?.onboarding_completed) {
     return <Navigate to="/learning-hub/onboarding" replace />;
   }

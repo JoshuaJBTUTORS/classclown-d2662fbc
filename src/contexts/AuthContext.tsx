@@ -52,6 +52,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -295,6 +296,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isParent = userRole === 'parent';
   const isLearningHubOnly = userRole === 'learning_hub_only';
 
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchUserData(user.id);
+    }
+  };
+
   const value = {
     user,
     session,
@@ -310,7 +317,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signIn,
     signOut,
-    loading
+    loading,
+    refreshProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

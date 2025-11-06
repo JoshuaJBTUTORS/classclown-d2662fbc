@@ -5,6 +5,7 @@ import { courseMatchingService } from "@/services/courseMatchingService";
 import { onboardingService } from "@/services/onboardingService";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import type { OnboardingData } from "@/types/onboarding";
 
 interface CourseMatchingStepProps {
@@ -24,6 +25,7 @@ export const CourseMatchingStep = ({ data, userId }: CourseMatchingStepProps) =>
   const [currentIndex, setCurrentIndex] = useState(0);
   const [allComplete, setAllComplete] = useState(false);
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
 
   useEffect(() => {
     // Initialize subject statuses
@@ -92,8 +94,15 @@ export const CourseMatchingStep = ({ data, userId }: CourseMatchingStepProps) =>
     }
   };
 
-  const handleContinue = () => {
-    navigate('/learning-hub');
+  const handleContinue = async () => {
+    try {
+      await refreshProfile();
+      setTimeout(() => {
+        navigate('/learning-hub');
+      }, 50);
+    } catch {
+      window.location.href = '/learning-hub';
+    }
   };
 
   if (allComplete) {
