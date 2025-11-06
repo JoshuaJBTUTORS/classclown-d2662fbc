@@ -136,26 +136,34 @@ Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each c
 LESSON PLAN STRUCTURE:
 1. Learning Objectives (3-5 clear, measurable goals)
 2. Teaching Sequence (3-5 FOCUSED steps, each 5-8 minutes)
-3. Content Blocks (tables, definitions, questions, diagrams)
+3. Content Blocks (tables, definitions, questions, diagrams, text)
 
-IMPORTANT: Create FEWER, RICHER steps instead of many micro-steps.
-Each step should be substantial with multiple content blocks.
+⚠️ CRITICAL: Each step MUST have 2-4 content blocks minimum. This is non-negotiable!
 
-CONTENT BLOCK TYPES:
-- TABLE: Comparisons, data, organized information
-- DEFINITION: Key terms with examples
-- QUESTION: Check understanding (multiple choice or open-ended)
-- DIAGRAM: Visual representations (describe what should be shown)
-- TEXT: Explanatory content or instructions
+CONTENT BLOCK TYPES (with detailed examples):
 
-For each teaching step, specify:
-- What content blocks to display
-- When to show them (sequence order)
-- How to present them (teaching notes)
-- Prerequisites (what must be shown first)
+1. TEXT: Explanatory content or instructions
+   Example: { type: "text", title: "Understanding Photosynthesis", data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy..." } }
 
-Make content rich, engaging, and age-appropriate for ${yearGroup}.
-Focus on depth rather than breaking content into too many small pieces.`
+2. TABLE: Comparisons, data, organized information
+   Example: { type: "table", title: "Plant vs Animal Cells", data: { headers: ["Feature", "Plant Cell", "Animal Cell"], rows: [["Cell Wall", "Yes", "No"], ["Chloroplasts", "Yes", "No"]] } }
+
+3. DEFINITION: Key terms with examples
+   Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
+
+4. QUESTION: Check understanding (multiple choice)
+   Example: { type: "question", title: "Check Understanding", data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" } }
+
+5. DIAGRAM: Visual representations
+   Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
+
+IMPORTANT RULES:
+- Each step MUST contain AT LEAST 2 content blocks
+- Mix different content types for variety
+- Include teaching_notes to guide how to present each block
+- Use prerequisites to ensure blocks are shown in the right order
+- Make content age-appropriate for ${yearGroup}
+- Focus on depth and engagement, not quantity of steps`
           },
           {
             role: 'user',
@@ -194,6 +202,8 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                       duration_minutes: { type: 'number' },
                       content_blocks: {
                         type: 'array',
+                        minItems: 2,
+                        description: 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
                         items: {
                           type: 'object',
                           properties: {
@@ -202,7 +212,66 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                               enum: ['table', 'definition', 'question', 'diagram', 'text']
                             },
                             title: { type: 'string' },
-                            data: { type: 'object' },
+                            data: {
+                              oneOf: [
+                                {
+                                  type: 'object',
+                                  description: 'Text content',
+                                  properties: {
+                                    content: { type: 'string' }
+                                  },
+                                  required: ['content']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Table data',
+                                  properties: {
+                                    headers: { type: 'array', items: { type: 'string' } },
+                                    rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } }
+                                  },
+                                  required: ['headers', 'rows']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Definition',
+                                  properties: {
+                                    term: { type: 'string' },
+                                    definition: { type: 'string' },
+                                    example: { type: 'string' }
+                                  },
+                                  required: ['term', 'definition']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Question',
+                                  properties: {
+                                    question: { type: 'string' },
+                                    options: {
+                                      type: 'array',
+                                      items: {
+                                        type: 'object',
+                                        properties: {
+                                          text: { type: 'string' },
+                                          isCorrect: { type: 'boolean' }
+                                        },
+                                        required: ['text', 'isCorrect']
+                                      }
+                                    },
+                                    explanation: { type: 'string' }
+                                  },
+                                  required: ['question', 'options']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Diagram',
+                                  properties: {
+                                    description: { type: 'string' },
+                                    elements: { type: 'array', items: { type: 'string' } }
+                                  },
+                                  required: ['description', 'elements']
+                                }
+                              ]
+                            },
                             teaching_notes: { type: 'string' },
                             prerequisites: {
                               type: 'array',
@@ -213,7 +282,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                         }
                       }
                     },
-                    required: ['id', 'title', 'content_blocks']
+                    required: ['id', 'title', 'duration_minutes', 'content_blocks']
                   }
                 }
               },
@@ -255,9 +324,27 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
     }
 
     const planData = JSON.parse(toolCall.function.arguments);
+    
+    // Validate content blocks were generated
+    const totalContentBlocks = planData.steps.reduce((sum: number, step: any) => 
+      sum + (step.content_blocks?.length || 0), 0
+    );
+    
     console.log('Parsed plan data:', { 
       objectives: planData.objectives.length,
-      steps: planData.steps.length 
+      steps: planData.steps.length,
+      totalContentBlocks,
+      contentBlocksPerStep: planData.steps.map((s: any) => ({
+        stepId: s.id,
+        blocks: s.content_blocks?.length || 0
+      }))
+    });
+    
+    // Log warning if any step has no content blocks
+    planData.steps.forEach((step: any, idx: number) => {
+      if (!step.content_blocks || step.content_blocks.length === 0) {
+        console.warn(`⚠️ Step ${idx + 1} (${step.id}) has ZERO content blocks!`);
+      }
     });
 
     // Update lesson plan with objectives and full teaching sequence (including content blocks)
