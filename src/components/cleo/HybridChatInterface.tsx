@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { VoiceControls } from './VoiceControls';
+import { ContentDisplay } from './ContentDisplay';
 import { Mic, MessageSquare, Send } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
+import { ContentBlock } from '@/types/lessonContent';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HybridChatInterfaceProps {
@@ -23,6 +25,9 @@ interface HybridChatInterfaceProps {
   onVoiceDisconnect: () => void;
   onTextSend: (message: string) => void;
   canUseVoice: boolean;
+  contentBlocks?: ContentBlock[];
+  visibleContentIds?: string[];
+  onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean) => void;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -39,6 +44,9 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   onVoiceDisconnect,
   onTextSend,
   canUseVoice,
+  contentBlocks,
+  visibleContentIds,
+  onAnswerQuestion,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -96,8 +104,9 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
         <Progress value={voiceTimePercent} className="h-2" />
       </Card>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-4">
+      {/* Messages and Content Area */}
+      <div className="flex-1 overflow-y-auto space-y-6 mb-4 px-4">
+        {/* Chat Messages */}
         <AnimatePresence>
           {messages.map((msg) => (
             <motion.div
@@ -124,6 +133,16 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
             </motion.div>
           ))}
         </AnimatePresence>
+        
+        {/* Content Blocks */}
+        {contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
+          <ContentDisplay
+            content={contentBlocks}
+            visibleContent={visibleContentIds}
+            onAnswerQuestion={onAnswerQuestion || (() => {})}
+          />
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 

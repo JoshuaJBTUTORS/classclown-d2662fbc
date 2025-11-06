@@ -237,21 +237,26 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
         {/* Hybrid Chat Interface */}
         <div className="flex-1">
-          <HybridChatInterface
-            mode={mode}
-            messages={allMessages}
-            isVoiceConnected={connectionState === 'connected'}
-            isVoiceListening={isListening}
-            isVoiceSpeaking={isSpeaking}
-            isTextLoading={textChat.isLoading}
-            voiceTimePercent={voiceTimer.percentUsed}
-            voiceTimeRemaining={voiceTimer.remainingSeconds}
-            onModeSwitch={(newMode) => handleModeSwitch(newMode, false)}
-            onVoiceConnect={handleVoiceConnect}
-            onVoiceDisconnect={handleVoiceDisconnect}
-            onTextSend={textChat.sendMessage}
-            canUseVoice={!voiceTimer.hasReachedLimit}
-          />
+        <HybridChatInterface
+          mode={mode}
+          messages={allMessages}
+          isVoiceConnected={connectionState === 'connected'}
+          isVoiceListening={isListening}
+          isVoiceSpeaking={isSpeaking}
+          isTextLoading={textChat.isLoading}
+          voiceTimePercent={voiceTimer.percentUsed}
+          voiceTimeRemaining={voiceTimer.remainingSeconds}
+          onModeSwitch={(newMode) => handleModeSwitch(newMode, false)}
+          onVoiceConnect={handleVoiceConnect}
+          onVoiceDisconnect={handleVoiceDisconnect}
+          onTextSend={textChat.sendMessage}
+          canUseVoice={!voiceTimer.hasReachedLimit}
+          contentBlocks={content}
+          visibleContentIds={visibleContent}
+          onAnswerQuestion={(qId, aId, correct) => {
+            console.log('Question answered:', { qId, aId, correct });
+          }}
+        />
         </div>
       </div>
 
