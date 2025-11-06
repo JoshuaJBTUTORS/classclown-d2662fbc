@@ -102,18 +102,18 @@ serve(async (req) => {
       
       // Validate and include lesson_id if provided
       if (lessonId) {
-        // Check if the lesson exists in course_lessons table
+        // Check if the lesson exists in lessons table (FK target)
         const { data: lessonExists } = await supabase
-          .from('course_lessons')
+          .from('lessons')
           .select('id')
           .eq('id', lessonId)
           .maybeSingle();
         
         if (lessonExists) {
           insertPayload.lesson_id = lessonId;
-          console.log('Linking to lesson:', lessonId);
+          console.log('Linking to lessons.id:', lessonId);
         } else {
-          console.warn('Lesson ID provided but does not exist:', lessonId);
+          console.warn('Provided lessonId does not exist in lessons; skipping link:', lessonId);
           // Continue without lesson_id rather than failing
         }
       }
@@ -124,8 +124,21 @@ serve(async (req) => {
         .select()
         .single();
       
-      lessonPlan = result.data;
-      planError = result.error;
+      if (result.error && (result.error.code === '23503' || (result.error.message || '').includes('cleo_lesson_plans_lesson_id_fkey'))) {
+        console.warn('FK violation on lesson_id when inserting cleo_lesson_plans. Retrying without lesson_id.', { lessonId });
+        const retryPayload = { ...insertPayload };
+        delete retryPayload.lesson_id;
+        const retry = await supabase
+          .from('cleo_lesson_plans')
+          .insert(retryPayload)
+          .select()
+          .single();
+        lessonPlan = retry.data;
+        planError = retry.error;
+      } else {
+        lessonPlan = result.data;
+        planError = result.error;
+      }
     }
 
     if (planError) throw planError;
