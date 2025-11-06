@@ -130,6 +130,8 @@ const LessonPlanning: React.FC = () => {
             })),
             content: contentBlocks
           }}
+          lessonPlanId={lessonPlanId || undefined}
+          conversationId={conversationId}
           lessonPlan={lessonPlan}
           moduleId={moduleId}
           courseId={courseId}
@@ -151,6 +153,8 @@ const LessonPlanning: React.FC = () => {
           ],
           content: []
         }}
+        lessonPlanId={lessonPlanId || undefined}
+        conversationId={conversationId}
         moduleId={moduleId}
         courseId={courseId}
       />

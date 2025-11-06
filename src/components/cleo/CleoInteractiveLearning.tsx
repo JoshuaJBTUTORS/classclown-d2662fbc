@@ -19,6 +19,7 @@ interface CleoInteractiveLearningProps {
   conversationId?: string;
   moduleId?: string;
   courseId?: string;
+  lessonPlanId?: string;
   lessonPlan?: {
     topic: string;
     year_group: string;
@@ -36,6 +37,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   conversationId,
   moduleId,
   courseId,
+  lessonPlanId,
   lessonPlan,
 }) => {
   const navigate = useNavigate();
@@ -83,7 +85,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       }
 
       // Check if we have a lesson plan ID to generate content from
-      const lessonPlanId = lessonData.id;
       if (!lessonPlanId) {
         console.log('No lesson plan ID available');
         return;
@@ -142,7 +143,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     };
 
     generateContent();
-  }, [lessonData.id, conversationId, content.length, contentGenerated, isGeneratingContent]);
+  }, [lessonPlanId, conversationId, content.length, contentGenerated, isGeneratingContent]);
 
   // Load messages on mount and add initial welcome message in voice mode
   useEffect(() => {
