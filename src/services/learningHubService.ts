@@ -835,20 +835,59 @@ export const learningHubService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
 
-      const { data, error } = await supabase.rpc('can_progress_to_module', {
-        current_module_id: moduleId,
-        user_id_param: user.id
-      });
+      // Get the current module's position and course
+      const { data: currentModule, error: moduleError } = await supabase
+        .from('course_modules')
+        .select('position, course_id')
+        .eq('id', moduleId)
+        .single();
 
-      if (error) {
-        console.error('Error checking module progression:', error);
+      if (moduleError || !currentModule) return false;
+
+      // If this is the first module, allow access
+      if (currentModule.position <= 1) return true;
+
+      // Get the previous module
+      const { data: previousModule, error: prevError } = await supabase
+        .from('course_modules')
+        .select('id')
+        .eq('course_id', currentModule.course_id)
+        .eq('position', currentModule.position - 1)
+        .single();
+
+      if (prevError || !previousModule) return true; // No previous module
+
+      // Check if previous module has required assessments
+      const { data: assessmentLessons, error: assessmentError } = await supabase
+        .from('course_lessons')
+        .select('id')
+        .eq('module_id', previousModule.id)
+        .eq('content_type', 'ai-assessment');
+
+      if (assessmentError || !assessmentLessons || assessmentLessons.length === 0) {
+        return true; // No required assessments, allow progression
+      }
+
+      // Check if user completed any assessment in the previous module
+      const assessmentLessonIds = assessmentLessons.map(l => l.id);
+      
+      const { data: completedProgress, error: progressError } = await supabase
+        .from('student_progress')
+        .select('assessment_completed')
+        .eq('user_id', user.id)
+        .in('lesson_id', assessmentLessonIds)
+        .eq('assessment_completed', true)
+        .limit(1);
+
+      if (progressError) {
+        console.error('Error checking assessment completion:', progressError);
         return false;
       }
 
-      return data;
+      return completedProgress && completedProgress.length > 0;
     } catch (error) {
       console.error('Error checking module progression:', error);
-      return false;
+      return false; // Fail safe - allow progression on error
     }
   },
 

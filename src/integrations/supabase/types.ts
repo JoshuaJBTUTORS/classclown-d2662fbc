@@ -682,11 +682,14 @@ export type Database = {
           id: string
           learning_goal: string | null
           lesson_id: string | null
+          mode_switches: number | null
           module_id: string | null
           status: string
+          text_message_count: number | null
           topic: string | null
           updated_at: string
           user_id: string
+          voice_duration_seconds: number | null
           year_group: string | null
         }
         Insert: {
@@ -694,11 +697,14 @@ export type Database = {
           id?: string
           learning_goal?: string | null
           lesson_id?: string | null
+          mode_switches?: number | null
           module_id?: string | null
           status?: string
+          text_message_count?: number | null
           topic?: string | null
           updated_at?: string
           user_id: string
+          voice_duration_seconds?: number | null
           year_group?: string | null
         }
         Update: {
@@ -706,11 +712,14 @@ export type Database = {
           id?: string
           learning_goal?: string | null
           lesson_id?: string | null
+          mode_switches?: number | null
           module_id?: string | null
           status?: string
+          text_message_count?: number | null
           topic?: string | null
           updated_at?: string
           user_id?: string
+          voice_duration_seconds?: number | null
           year_group?: string | null
         }
         Relationships: [
@@ -771,26 +780,79 @@ export type Database = {
           },
         ]
       }
+      cleo_lesson_plans: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          learning_objectives: Json | null
+          lesson_id: string | null
+          status: string
+          teaching_sequence: Json | null
+          topic: string
+          updated_at: string | null
+          year_group: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          learning_objectives?: Json | null
+          lesson_id?: string | null
+          status?: string
+          teaching_sequence?: Json | null
+          topic: string
+          updated_at?: string | null
+          year_group: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          learning_objectives?: Json | null
+          lesson_id?: string | null
+          status?: string
+          teaching_sequence?: Json | null
+          topic?: string
+          updated_at?: string | null
+          year_group?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleo_lesson_plans_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cleo_messages: {
         Row: {
           content: string
           conversation_id: string
           created_at: string
+          duration_seconds: number | null
           id: string
+          mode: string | null
           role: string
         }
         Insert: {
           content: string
           conversation_id: string
           created_at?: string
+          duration_seconds?: number | null
           id?: string
+          mode?: string | null
           role: string
         }
         Update: {
           content?: string
           conversation_id?: string
           created_at?: string
+          duration_seconds?: number | null
           id?: string
+          mode?: string | null
           role?: string
         }
         Relationships: [
@@ -1635,6 +1697,53 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_content_blocks: {
+        Row: {
+          block_type: string
+          created_at: string | null
+          data: Json
+          id: string
+          lesson_plan_id: string
+          prerequisites: Json | null
+          sequence_order: number
+          step_id: string
+          teaching_notes: string | null
+          title: string | null
+        }
+        Insert: {
+          block_type: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          lesson_plan_id: string
+          prerequisites?: Json | null
+          sequence_order: number
+          step_id: string
+          teaching_notes?: string | null
+          title?: string | null
+        }
+        Update: {
+          block_type?: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          lesson_plan_id?: string
+          prerequisites?: Json | null
+          sequence_order?: number
+          step_id?: string
+          teaching_notes?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_content_blocks_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_lesson_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -3817,10 +3926,6 @@ export type Database = {
       }
       can_access_homework_submission: {
         Args: { submission_homework_id: string; submission_student_id: number }
-        Returns: boolean
-      }
-      can_progress_to_module: {
-        Args: { current_module_id: string; user_id_param: string }
         Returns: boolean
       }
       check_learning_hub_access: {
