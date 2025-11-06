@@ -83,6 +83,9 @@ export function useLessonPlan(lessonPlanId: string | null) {
       // Extract content blocks from teaching_sequence
       const allContentBlocks: ContentBlock[] = [];
       
+      // Find first step ID for initial visibility
+      const firstStepId = planData.teaching_sequence?.[0]?.id;
+      
       if (planData.teaching_sequence && Array.isArray(planData.teaching_sequence)) {
         planData.teaching_sequence.forEach((step: any, stepIndex: number) => {
           if (step.content_blocks && Array.isArray(step.content_blocks)) {
@@ -98,7 +101,7 @@ export function useLessonPlan(lessonPlanId: string | null) {
                 stepId: step.id,
                 type: block.type as any,
                 data: block.data,
-                visible: false, // All blocks start hidden
+                visible: step.id === firstStepId, // First step visible by default
                 title: block.title || undefined,
                 teachingNotes: block.teaching_notes || undefined,
                 prerequisites: block.prerequisites || []

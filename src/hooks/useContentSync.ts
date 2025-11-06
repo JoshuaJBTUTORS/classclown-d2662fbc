@@ -27,6 +27,39 @@ export const useContentSync = (lessonData: LessonData) => {
     setActiveStep((prev) => Math.min(prev + 1, lessonData.steps.length - 1));
   }, [lessonData.steps.length]);
 
+  const moveToStep = useCallback((stepId: string) => {
+    const stepIndex = lessonData.steps.findIndex(s => s.id === stepId);
+    if (stepIndex < 0) {
+      console.warn('Step not found:', stepId);
+      return null;
+    }
+    
+    console.log('📍 Moving to step:', stepId, 'Index:', stepIndex);
+    setActiveStep(stepIndex);
+    
+    // Show all content for this step
+    const stepContent = lessonData.content.filter(block => block.stepId === stepId);
+    console.log('📍 Found', stepContent.length, 'content blocks for step');
+    
+    setVisibleContent(prev => {
+      const newVisible = [...prev];
+      stepContent.forEach(block => {
+        if (!newVisible.includes(block.id)) {
+          newVisible.push(block.id);
+        }
+      });
+      return newVisible;
+    });
+    
+    return {
+      stepId,
+      stepIndex,
+      stepTitle: lessonData.steps[stepIndex].title,
+      contentCount: stepContent.length,
+      contentTypes: stepContent.map(c => c.type)
+    };
+  }, [lessonData]);
+
   const handleContentEvent = useCallback(
     (event: ContentEvent) => {
       console.log('📢 Content event received:', event);
@@ -108,25 +141,14 @@ export const useContentSync = (lessonData: LessonData) => {
     [showContent, moveToNextStep, completeStep, lessonData]
   );
 
-  // Auto-show first visible content block on mount
+  // Auto-show first step on mount
   useEffect(() => {
-    const firstVisible = lessonData.content?.find(c => c.visible);
-    if (firstVisible && !visibleContent.includes(firstVisible.id)) {
-      showContent(firstVisible.id);
+    if (lessonData.steps.length > 0 && activeStep === 0 && visibleContent.length === 0) {
+      console.log('🎬 Auto-showing first step on mount');
+      const firstStep = lessonData.steps[0];
+      moveToStep(firstStep.id);
     }
-  }, [lessonData, showContent, visibleContent]);
-
-  // Safety net: ensure first content shows after 300ms if nothing is visible
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (visibleContent.length === 0 && lessonData.content?.[0]) {
-        console.log('⚠️ Safety fallback: showing first content');
-        showContent(lessonData.content[0].id);
-      }
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [visibleContent, lessonData.content, showContent]);
+  }, [lessonData.steps, activeStep, visibleContent.length, moveToStep]);
 
   return {
     activeStep,
@@ -135,6 +157,7 @@ export const useContentSync = (lessonData: LessonData) => {
     showContent,
     completeStep,
     moveToNextStep,
+    moveToStep,
     handleContentEvent,
   };
 };

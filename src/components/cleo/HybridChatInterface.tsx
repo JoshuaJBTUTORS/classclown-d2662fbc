@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { VoiceControls } from './VoiceControls';
 import { ContentDisplay } from './ContentDisplay';
+import { StepNavigation } from './StepNavigation';
 import { Mic, MessageSquare, Send } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { ContentBlock } from '@/types/lessonContent';
@@ -29,6 +30,11 @@ interface HybridChatInterfaceProps {
   visibleContentIds?: string[];
   onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean) => void;
   onContentAction?: (contentId: string, action: string, message: string) => void;
+  currentStep?: number;
+  totalSteps?: number;
+  stepTitle?: string;
+  onNextStep?: () => void;
+  onPreviousStep?: () => void;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -49,6 +55,11 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   visibleContentIds,
   onAnswerQuestion,
   onContentAction,
+  currentStep,
+  totalSteps,
+  stepTitle,
+  onNextStep,
+  onPreviousStep,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -148,6 +159,17 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
         
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Step Navigation */}
+      {totalSteps && totalSteps > 1 && (
+        <StepNavigation
+          currentStep={currentStep || 0}
+          totalSteps={totalSteps}
+          stepTitle={stepTitle}
+          onPrevious={onPreviousStep || (() => {})}
+          onNext={onNextStep || (() => {})}
+        />
+      )}
 
       {/* Input Area */}
       <div className="border-t border-border p-4">
