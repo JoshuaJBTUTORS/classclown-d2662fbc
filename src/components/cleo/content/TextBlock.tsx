@@ -2,10 +2,22 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface TextBlockProps {
-  data: string;
+  data: string | any;
 }
 
 export const TextBlock: React.FC<TextBlockProps> = ({ data }) => {
+  // Ensure data is a string
+  const getText = (): string => {
+    if (typeof data === 'string') {
+      return data;
+    }
+    if (data && typeof data === 'object') {
+      // Handle object data - try common text properties
+      return data.text || data.content || data.value || JSON.stringify(data);
+    }
+    return String(data || '');
+  };
+
   // Simple markdown-like rendering for bold text
   const renderText = (text: string) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -29,7 +41,7 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data }) => {
       className="prose prose-lg max-w-none"
     >
       <p className="text-lg text-foreground leading-relaxed">
-        {renderText(data)}
+        {renderText(getText())}
       </p>
     </motion.div>
   );
