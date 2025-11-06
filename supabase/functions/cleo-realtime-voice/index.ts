@@ -177,6 +177,76 @@ Deno.serve(async (req) => {
         return;
       }
 
+      // Helper function to format content blocks for system prompt
+      function formatContentBlocksForPrompt(lessonPlan: any): string {
+        if (!lessonPlan?.teaching_sequence) return '';
+        
+        let contentLibrary = '\n\nPRE-GENERATED CONTENT AVAILABLE:\n';
+        contentLibrary += 'When you call move_to_step, the following content will be displayed automatically:\n\n';
+        
+        lessonPlan.teaching_sequence.forEach((step: any, stepIndex: number) => {
+          if (!step.content_blocks || step.content_blocks.length === 0) return;
+          
+          contentLibrary += `\n📚 ${step.title} (step-${stepIndex}):\n`;
+          
+          step.content_blocks.forEach((block: any) => {
+            contentLibrary += formatSingleBlock(block);
+          });
+        });
+        
+        return contentLibrary;
+      }
+
+      // Helper to format individual content blocks
+      function formatSingleBlock(block: any): string {
+        const { id, type, data, title, teaching_notes } = block;
+        let description = '';
+        
+        switch (type) {
+          case 'text':
+            const textPreview = (data?.content || '').substring(0, 100);
+            description = `   • Text Block: "${textPreview}${textPreview.length >= 100 ? '...' : ''}"`;
+            break;
+            
+          case 'definition':
+            description = `   • Definition: "${data?.term || 'Unknown'}" - ${(data?.definition || '').substring(0, 60)}...`;
+            if (data?.example) description += `\n      Example: ${data.example.substring(0, 60)}...`;
+            break;
+            
+          case 'question':
+            description = `   • Question: "${(data?.question || '').substring(0, 80)}..."`;
+            if (data?.options) {
+              description += `\n      Options: ${data.options.map((o: any) => o.text).slice(0, 2).join(', ')}...`;
+            }
+            break;
+            
+          case 'table':
+            const headers = data?.headers || [];
+            const rowCount = data?.rows?.length || 0;
+            description = `   • Table: ${headers.join(', ')} (${rowCount} rows)`;
+            break;
+            
+          case 'diagram':
+            description = `   • Diagram: ${title || data?.title || 'Visual diagram'}`;
+            break;
+            
+          default:
+            description = `   • ${type}: ${title || id}`;
+        }
+        
+        if (title && type !== 'diagram') {
+          description = `   • ${title} (${type})\n      ${description.substring(5)}`;
+        }
+        
+        if (teaching_notes) {
+          description += `\n      💡 Teaching Note: ${teaching_notes}`;
+        }
+        
+        description += `\n      [ID: ${id}]\n`;
+        
+        return description;
+      }
+
       // Configure session after connection
       if (message.type === 'session.created' && !isSessionConfigured) {
         let systemPrompt = '';
@@ -186,36 +256,46 @@ Deno.serve(async (req) => {
           const objectivesList = lessonPlan.learning_objectives.map((obj: string, i: number) => `${i+1}. ${obj}`).join('\n');
           const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => `Step ${i+1}: ${step.title} (${step.duration_minutes}min)`).join('\n');
           
+          // NEW: Format pre-generated content
+          const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
+          
           systemPrompt = `You are Cleo, an expert AI tutor teaching ${lessonPlan.topic} to a ${lessonPlan.year_group} student.
 
 LESSON STRUCTURE:
 The lesson is organized into these steps:
 ${sequenceList}
 
-CRITICAL: Before you start teaching each step, you MUST call move_to_step with the step's ID and title.
-This displays all visual content for that step at the perfect moment.
+${contentLibrary}
+
+CRITICAL INSTRUCTIONS:
+1. Before teaching each step, you MUST call move_to_step with the step's ID and title
+2. This displays ALL the pre-generated content listed above for that step
+3. After calling move_to_step, reference the content that appears: "As you can see in the table..." or "Looking at this definition..."
+4. DO NOT recreate content that already exists - use what's been generated
+5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
 
 YOUR TEACHING FLOW:
 1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
-2. Call move_to_step with the first step's ID before teaching it
-3. Begin teaching that step naturally
-4. When ready for the next step: call move_to_step with the next step's ID, then continue teaching
-5. Progress through all steps in order
+2. Call move_to_step("step-0", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting
+3. After the content appears, reference it naturally in your explanation
+4. When you see a question in the content, present it and wait for the student's answer
+5. Move through all steps in order, calling move_to_step before each new section
 
 TEACHING STYLE:
 - Be warm and engaging
 - Explain concepts clearly in 2-3 sentences
-- After visual content appears, reference it: "As you can see in the diagram..."
-- Check understanding with ask_question when appropriate
-- Move at a comfortable pace - wait for student responses
+- ALWAYS reference visual content after it appears: "As you can see...", "Looking at this diagram..."
+- For pre-generated questions, ask them and wait for answers
+- Use teaching notes to guide your explanations
+- Move at a comfortable pace
 
 TOOLS AVAILABLE:
-- move_to_step: Call BEFORE starting each new step (displays all that step's content)
-- show_table: Display additional tables during teaching (optional)
-- show_definition: Show extra definitions during teaching (optional)  
-- ask_question: Check understanding with a question
+- move_to_step: Call BEFORE starting each step (displays all that step's pre-generated content)
+- show_table: Only use if you need an ADDITIONAL table beyond what's pre-generated
+- show_definition: Only use for EXTRA definitions not in the pre-generated content
+- ask_question: Only use for ADDITIONAL practice beyond pre-generated questions
 
-Remember: Call move_to_step at the START of each section, not after explaining it.`;
+Remember: The content library above shows what's ALREADY created. Use it! Don't recreate it.`;
         } else if (conversation.topic && conversation.year_group) {
           // Friendly exploration mode (no lesson plan)
           systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
@@ -261,17 +341,17 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               {
                 type: "function",
                 name: "move_to_step",
-                description: "Call this BEFORE you start teaching a new step/section of the lesson. This will display all visual content associated with that step to the student.",
+                description: "Call this BEFORE you start teaching a new step. This displays all pre-generated visual content for that step (tables, definitions, questions, diagrams). Check the 'PRE-GENERATED CONTENT AVAILABLE' section in your instructions to see what will appear. Reference this content in your teaching after calling this function.",
                 parameters: {
                   type: "object",
                   properties: {
                     stepId: { 
                       type: "string", 
-                      description: "The ID of the lesson step you are moving to (e.g., 'step-1', 'intro', 'practice')" 
+                      description: "The ID of the step (e.g., 'step-0', 'step-1'). See the content library for step IDs." 
                     },
                     stepTitle: {
                       type: "string",
-                      description: "The title of this step (e.g., 'Introduction to Vectors')"
+                      description: "The title of this step from the lesson plan"
                     }
                   },
                   required: ["stepId", "stepTitle"]
@@ -280,13 +360,13 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               {
                 type: "function",
                 name: "show_table",
-                description: "Display a table with headers and rows of data. Use this when you want to present structured information visually.",
+                description: "Display an ADDITIONAL table beyond the pre-generated content. Only use this if you need to show a table that wasn't included in the lesson plan content library. Check the content library first to avoid duplicates.",
                 parameters: {
                   type: "object",
                   properties: {
                     id: { 
                       type: "string", 
-                      description: "Unique ID for this table (e.g., 'periodic-table-basics')" 
+                      description: "Unique ID for this table (e.g., 'extra-comparison-table')" 
                     },
                     headers: {
                       type: "array",
@@ -308,7 +388,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               {
                 type: "function",
                 name: "show_definition",
-                description: "Display a definition card for a key term or concept.",
+                description: "Display an ADDITIONAL definition card. Only use this if you need to define a term that wasn't included in the pre-generated content. Check the content library first.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -323,7 +403,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               {
                 type: "function",
                 name: "ask_question",
-                description: "Present an interactive multiple-choice question to the student.",
+                description: "Present an ADDITIONAL practice question. Only use this if you want to check understanding beyond the pre-generated questions in the content library. Pre-generated questions appear automatically with move_to_step.",
                 parameters: {
                   type: "object",
                   properties: {
