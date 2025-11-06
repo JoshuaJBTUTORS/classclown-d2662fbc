@@ -92,7 +92,7 @@ serve(async (req) => {
       lessonPlan = existingPlan;
       planError = null;
     } else {
-      // Create new lesson plan with lesson_id if provided
+      // Create new lesson plan with lesson_id if provided and valid
       const insertPayload: any = {
         conversation_id: conversationId || null,
         topic,
@@ -100,9 +100,22 @@ serve(async (req) => {
         status: 'generating'
       };
       
-      // Include lesson_id if provided
+      // Validate and include lesson_id if provided
       if (lessonId) {
-        insertPayload.lesson_id = lessonId;
+        // Check if the lesson exists in course_lessons table
+        const { data: lessonExists } = await supabase
+          .from('course_lessons')
+          .select('id')
+          .eq('id', lessonId)
+          .maybeSingle();
+        
+        if (lessonExists) {
+          insertPayload.lesson_id = lessonId;
+          console.log('Linking to lesson:', lessonId);
+        } else {
+          console.warn('Lesson ID provided but does not exist:', lessonId);
+          // Continue without lesson_id rather than failing
+        }
       }
       
       const result = await supabase
