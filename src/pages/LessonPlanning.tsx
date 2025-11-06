@@ -19,6 +19,7 @@ const LessonPlanning: React.FC = () => {
   const yearGroup = searchParams.get('yearGroup') || 'GCSE';
   const lessonId = searchParams.get('lessonId') || undefined;
   const moduleId = searchParams.get('moduleId') || undefined;
+  const courseId = searchParams.get('courseId') || undefined;
 
   // Generate or retrieve conversation ID to prevent duplicate lesson plans
   const [conversationId] = useState(() => {
@@ -84,6 +85,7 @@ const LessonPlanning: React.FC = () => {
         contentCounts={contentCounts}
         onStartLesson={handleStartLesson}
         moduleId={moduleId}
+        courseId={courseId}
       />
     );
   }
@@ -108,6 +110,7 @@ const LessonPlanning: React.FC = () => {
           }}
           lessonPlan={lessonPlan}
           moduleId={moduleId}
+          courseId={courseId}
         />
       );
     }
@@ -127,6 +130,7 @@ const LessonPlanning: React.FC = () => {
           content: []
         }}
         moduleId={moduleId}
+        courseId={courseId}
       />
     );
   }

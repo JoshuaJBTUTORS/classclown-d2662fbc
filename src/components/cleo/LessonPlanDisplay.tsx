@@ -22,18 +22,22 @@ interface LessonPlanDisplayProps {
   };
   onStartLesson: () => void;
   moduleId?: string;
+  courseId?: string;
 }
 
 export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
   lessonPlan,
   contentCounts,
   onStartLesson,
-  moduleId
+  moduleId,
+  courseId
 }) => {
   const navigate = useNavigate();
 
   const handleBackToModule = () => {
-    if (moduleId) {
+    if (courseId && moduleId) {
+      navigate(`/course/${courseId}/module/${moduleId}`);
+    } else if (moduleId) {
       navigate(`/module/${moduleId}`);
     } else {
       navigate(-1);

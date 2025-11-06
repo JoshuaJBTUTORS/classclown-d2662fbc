@@ -428,7 +428,7 @@ const ModuleDetail = () => {
                     {currentLesson ? (
                       <Button
                         onClick={() => {
-                          navigate(`/lesson-planning?topic=${encodeURIComponent(currentLesson.title)}&yearGroup=${encodeURIComponent(course.subject || 'GCSE')}&lessonId=${currentLesson.id}&moduleId=${moduleId}`);
+                          navigate(`/lesson-planning?topic=${encodeURIComponent(currentLesson.title)}&yearGroup=${encodeURIComponent(course.subject || 'GCSE')}&lessonId=${currentLesson.id}&moduleId=${moduleId}&courseId=${courseId}`);
                         }}
                         className="w-full h-full min-h-[60vh] bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 flex flex-col items-center justify-center gap-4"
                         variant="ghost"

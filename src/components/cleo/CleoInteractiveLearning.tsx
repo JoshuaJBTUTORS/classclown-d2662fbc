@@ -18,6 +18,7 @@ interface CleoInteractiveLearningProps {
   lessonData: LessonData;
   conversationId?: string;
   moduleId?: string;
+  courseId?: string;
   lessonPlan?: {
     topic: string;
     year_group: string;
@@ -34,6 +35,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   lessonData,
   conversationId,
   moduleId,
+  courseId,
   lessonPlan,
 }) => {
   const navigate = useNavigate();
@@ -99,7 +101,9 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   }, [voiceTimer.shouldShowWarning]);
 
   const handleBackToModule = () => {
-    if (moduleId) {
+    if (courseId && moduleId) {
+      navigate(`/course/${courseId}/module/${moduleId}`);
+    } else if (moduleId) {
       navigate(`/module/${moduleId}`);
     } else {
       navigate(-1);
