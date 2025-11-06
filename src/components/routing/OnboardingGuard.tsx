@@ -8,7 +8,7 @@ interface OnboardingGuardProps {
 }
 
 export const OnboardingGuard = ({ children }: OnboardingGuardProps) => {
-  const { user, profile, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -21,13 +21,6 @@ export const OnboardingGuard = ({ children }: OnboardingGuardProps) => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!profile || !profile.onboarding_completed) {
-    return <Navigate to="/learning-hub/onboarding" replace />;
-  }
-
+  // No redirect — onboarding is storage-only
   return <>{children}</>;
 };
