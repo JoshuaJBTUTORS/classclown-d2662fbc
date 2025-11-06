@@ -92,7 +92,7 @@ serve(async (req) => {
       lessonPlan = existingPlan;
       planError = null;
     } else {
-      // Create new lesson plan with lesson_id if provided
+      // Create new lesson plan, only include lesson_id if it exists
       const insertPayload: any = {
         conversation_id: conversationId || null,
         topic,
@@ -100,9 +100,19 @@ serve(async (req) => {
         status: 'generating'
       };
       
-      // Include lesson_id if provided
+      // Only include lesson_id if it exists in the database
       if (lessonId) {
-        insertPayload.lesson_id = lessonId;
+        const { data: lessonExists } = await supabase
+          .from('lessons' as any)
+          .select('id')
+          .eq('id', lessonId)
+          .single();
+        
+        if (lessonExists) {
+          insertPayload.lesson_id = lessonId;
+        } else {
+          console.log('Lesson ID provided but does not exist, creating plan without lesson reference');
+        }
       }
       
       const result = await supabase
