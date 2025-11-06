@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ContentDisplay } from './ContentDisplay';
-import { VoiceControls } from './VoiceControls';
+import { HybridChatInterface } from './HybridChatInterface';
 import { CleoVoiceChat } from './CleoVoiceChat';
 import { LessonPlanSidebar } from './LessonPlanSidebar';
 import { useContentSync } from '@/hooks/useContentSync';
+import { useVoiceTimer } from '@/hooks/useVoiceTimer';
+import { useTextChat } from '@/hooks/useTextChat';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
+import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { Button } from '@/components/ui/button';
-import { Play, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { getSubjectTheme } from '@/utils/subjectTheming';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -33,6 +37,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   lessonPlan,
 }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const subjectTheme = getSubjectTheme(lessonData.topic, lessonData.yearGroup);
   
   const {
@@ -43,6 +48,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     handleContentEvent,
   } = useContentSync(lessonData);
 
+  const voiceTimer = useVoiceTimer(conversationId || null);
+  const textChat = useTextChat(conversationId || null);
+
+  const [mode, setMode] = useState<ChatMode>('voice');
   const [connectionState, setConnectionState] = useState<
     'idle' | 'connecting' | 'connected' | 'disconnected'
   >('idle');
@@ -50,7 +59,44 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
+  
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void } | null>(null);
+  const modeSwitchCountRef = useRef(0);
+
+  // Load messages on mount
+  useEffect(() => {
+    if (conversationId) {
+      textChat.loadMessages();
+    }
+  }, [conversationId]);
+
+  // Sync messages from text chat
+  useEffect(() => {
+    setAllMessages(textChat.messages);
+  }, [textChat.messages]);
+
+  // Auto-switch to text when voice limit reached
+  useEffect(() => {
+    if (voiceTimer.hasReachedLimit && mode === 'voice') {
+      handleModeSwitch('text', true);
+      toast({
+        title: '✅ Switched to Text Mode',
+        description: 'Voice time limit reached. Continue learning with text!',
+      });
+    }
+  }, [voiceTimer.hasReachedLimit, mode]);
+
+  // Show warning at 80%
+  useEffect(() => {
+    if (voiceTimer.shouldShowWarning && mode === 'voice') {
+      toast({
+        title: '⚠️ Voice Time Warning',
+        description: `${voiceTimer.formatTime(voiceTimer.remainingSeconds)} remaining`,
+        variant: 'default',
+      });
+    }
+  }, [voiceTimer.shouldShowWarning]);
 
   const handleBackToModule = () => {
     if (moduleId) {
@@ -60,13 +106,59 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
   };
 
-  const handleAnswerQuestion = (
-    questionId: string,
-    answerId: string,
-    isCorrect: boolean
-  ) => {
-    console.log('📝 Answer submitted:', { questionId, answerId, isCorrect });
-    // The answer will be sent via the voice chat component
+  const handleModeSwitch = async (newMode: ChatMode, isAuto: boolean = false) => {
+    if (newMode === mode) return;
+    
+    // Don't allow switching to voice if limit reached
+    if (newMode === 'voice' && voiceTimer.hasReachedLimit) {
+      toast({
+        title: 'Voice Limit Reached',
+        description: 'You have used all 15 minutes of voice time for this lesson.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Disconnect voice if switching away
+    if (mode === 'voice' && connectionState === 'connected') {
+      controlsRef.current?.disconnect();
+    }
+
+    setMode(newMode);
+    modeSwitchCountRef.current += 1;
+
+    // Update conversation mode switches count (will work after types refresh)
+    if (conversationId) {
+      await supabase
+        .from('cleo_conversations')
+        .update({ mode_switches: modeSwitchCountRef.current } as any)
+        .eq('id', conversationId);
+    }
+
+    // Show transition message
+    const transitionMessage: CleoMessage = {
+      id: crypto.randomUUID(),
+      conversation_id: conversationId || '',
+      role: 'assistant',
+      content: isAuto
+        ? newMode === 'text'
+          ? "We've switched to text mode since we've used up our voice time. Let's continue learning!"
+          : "Let's switch back to voice for this next part!"
+        : newMode === 'text'
+        ? "Great! Let's practice with some questions. Type your answers below."
+        : "Perfect! Let me explain this next part with voice.",
+      mode: newMode,
+      created_at: new Date().toISOString(),
+    };
+
+    setAllMessages(prev => [...prev, transitionMessage]);
+
+    toast({
+      title: `Switched to ${newMode === 'voice' ? 'Voice' : 'Text'} Mode`,
+      description: newMode === 'voice' 
+        ? 'Voice conversation activated' 
+        : 'Type your messages below',
+    });
   };
 
   const handleContentEventWithUpsert = (event: ContentEvent) => {
@@ -89,56 +181,25 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
   };
 
-  // Dev fallback: inject demo table after 2s if no dynamic content
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' && connectionState === 'connected') {
-      const timer = setTimeout(() => {
-        const nonIntroVisible = visibleContent.filter(id => id !== content[0]?.id);
-        if (nonIntroVisible.length === 0) {
-          const demoTable: ContentBlock = {
-            id: 'demo-table',
-            stepId: lessonData.steps?.[1]?.id || lessonData.steps?.[0]?.id || 'main',
-            type: 'table',
-            data: { 
-              headers: ['Concept', 'Meaning'], 
-              rows: [
-                ['Atom', 'Smallest unit of matter'], 
-                ['Molecule', 'Two or more atoms bonded']
-              ] 
-            },
-            visible: false,
-          };
-          setContent(prev => prev.some(b => b.id === demoTable.id) ? prev : [...prev, demoTable]);
-          showContent('demo-table');
-          console.log('📦 Demo table injected for testing');
-        }
-      }, 2000);
-      return () => clearTimeout(timer);
+  const handleVoiceConnect = () => {
+    if (mode === 'voice') {
+      controlsRef.current?.connect();
     }
-  }, [connectionState, visibleContent, content, lessonData.steps, showContent]);
+  };
 
-  // Check if we have content and if any is visible
-  const hasContent = lessonData.content && lessonData.content.length > 0;
-  const hasVisibleContent = visibleContent.length > 0;
-  
-  // Ensure first content is always shown (fallback if markers don't fire)
-  const derivedVisible = hasVisibleContent 
-    ? visibleContent 
-    : (lessonData.content?.[0] ? [lessonData.content[0].id] : []);
+  const handleVoiceDisconnect = () => {
+    controlsRef.current?.disconnect();
+  };
+
+  const handleVoiceLimitReached = () => {
+    handleModeSwitch('text', true);
+  };
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="w-full px-4 md:px-8 lg:px-12 py-6">
-          {/* Debug info (development only) */}
-          {process.env.NODE_ENV !== 'production' && (
-            <div className="text-xs text-muted-foreground mb-2 opacity-50">
-              Content: {hasContent ? '✓' : '✗'} | Visible: {visibleContent.length} | Derived: {derivedVisible.length}
-            </div>
-          )}
-          
-          {/* Back Button */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="px-4 md:px-8 lg:px-12 py-6 border-b border-border">
           <Button
             variant="ghost"
             onClick={handleBackToModule}
@@ -148,8 +209,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             Back to Lessons
           </Button>
 
-          {/* Lesson Title */}
-          <div className="mb-8">
+          <div className="mb-4">
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
               <span className="text-4xl">{subjectTheme.emoji}</span>
               {lessonData.title}
@@ -158,67 +218,25 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               {lessonData.topic} • {lessonData.yearGroup}
             </p>
           </div>
+        </div>
 
-          {/* Content Display */}
-          {hasContent && (
-            <ContentDisplay
-              content={content}
-              visibleContent={derivedVisible}
-              onAnswerQuestion={handleAnswerQuestion}
-            />
-          )}
-
-          {/* Getting Started Message */}
-          {connectionState !== 'connected' && (
-            <div className="text-center py-12">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Ready to Learn with Cleo
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                  Begin your voice conversation with Cleo about {lessonData.topic}.
-                  Visual content will appear here as you learn.
-                </p>
-                <Button
-                  onClick={() => controlsRef.current?.connect()}
-                  size="lg"
-                  className="gap-2 px-6 py-6 text-base font-semibold shadow-xl"
-                >
-                  <span className="text-xl">🎯</span>
-                  <Play className="w-5 h-5" />
-                  Start Learning
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* No Content Fallback */}
-          {!hasContent && (
-            <div className="text-center py-12">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Ready to Learn with Cleo
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Click the Start Learning button below to start your voice conversation with Cleo about {lessonData.topic}.
-                  Visual content will appear here as you learn.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Spacer for floating controls */}
-          <div className="h-32" />
+        {/* Hybrid Chat Interface */}
+        <div className="flex-1">
+          <HybridChatInterface
+            mode={mode}
+            messages={allMessages}
+            isVoiceConnected={connectionState === 'connected'}
+            isVoiceListening={isListening}
+            isVoiceSpeaking={isSpeaking}
+            isTextLoading={textChat.isLoading}
+            voiceTimePercent={voiceTimer.percentUsed}
+            voiceTimeRemaining={voiceTimer.remainingSeconds}
+            onModeSwitch={(newMode) => handleModeSwitch(newMode, false)}
+            onVoiceConnect={handleVoiceConnect}
+            onVoiceDisconnect={handleVoiceDisconnect}
+            onTextSend={textChat.sendMessage}
+            canUseVoice={!voiceTimer.hasReachedLimit}
+          />
         </div>
       </div>
 
@@ -247,21 +265,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onProvideControls={(controls) => {
             controlsRef.current = controls;
           }}
-        />
-      </div>
-
-      {/* Floating Voice Controls */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999]">
-        <VoiceControls
-          isConnected={connectionState === 'connected'}
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          onConnect={() => {
-            controlsRef.current?.connect();
-          }}
-          onDisconnect={() => {
-            controlsRef.current?.disconnect();
-          }}
+          voiceTimer={voiceTimer}
+          onVoiceLimitReached={handleVoiceLimitReached}
         />
       </div>
     </div>

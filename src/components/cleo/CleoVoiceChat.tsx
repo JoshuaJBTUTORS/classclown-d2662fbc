@@ -29,6 +29,12 @@ interface CleoVoiceChatProps {
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
   onProvideControls?: (controls: { connect: () => void; disconnect: () => void }) => void;
+  voiceTimer?: {
+    start: () => void;
+    pause: () => void;
+    hasReachedLimit: boolean;
+  };
+  onVoiceLimitReached?: () => void;
 }
 
 export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
@@ -41,7 +47,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onConnectionStateChange,
   onListeningChange,
   onSpeakingChange,
-  onProvideControls
+  onProvideControls,
+  voiceTimer,
+  onVoiceLimitReached
 }) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
@@ -245,6 +253,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   };
 
   const startRecording = async () => {
+    // Check voice limit before starting
+    if (voiceTimer?.hasReachedLimit) {
+      console.log('⏱️ Voice limit reached, cannot start recording');
+      onVoiceLimitReached?.();
+      return;
+    }
+
     try {
       recorderRef.current = new AudioStreamRecorder((base64Audio) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -257,6 +272,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
       await recorderRef.current.start();
       setMicrophoneActive(true);
+      voiceTimer?.start();
       console.log('🎤 Recording started');
     } catch (error) {
       console.error('Error starting recorder:', error);
@@ -273,6 +289,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     recorderRef.current?.stop();
     recorderRef.current = null;
     setMicrophoneActive(false);
+    voiceTimer?.pause();
     console.log('🎤 Recording stopped');
   };
 

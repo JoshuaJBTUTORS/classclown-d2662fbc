@@ -102,6 +102,9 @@ verify_jwt = true
 [functions.backfill-participant-urls]
 verify_jwt = false
 
+[functions.cleo-text-chat]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328
