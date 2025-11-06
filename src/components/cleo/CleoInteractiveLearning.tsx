@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ContentDisplay } from './ContentDisplay';
 import { VoiceControls } from './VoiceControls';
 import { CleoVoiceChat } from './CleoVoiceChat';
@@ -6,12 +7,13 @@ import { LessonPlanSidebar } from './LessonPlanSidebar';
 import { useContentSync } from '@/hooks/useContentSync';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { Button } from '@/components/ui/button';
-import { Play } from 'lucide-react';
+import { Play, ArrowLeft } from 'lucide-react';
 import { getSubjectTheme } from '@/utils/subjectTheming';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
   conversationId?: string;
+  moduleId?: string;
   lessonPlan?: {
     topic: string;
     year_group: string;
@@ -27,8 +29,10 @@ interface CleoInteractiveLearningProps {
 export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = ({
   lessonData,
   conversationId,
+  moduleId,
   lessonPlan,
 }) => {
+  const navigate = useNavigate();
   const subjectTheme = getSubjectTheme(lessonData.topic, lessonData.yearGroup);
   
   const {
@@ -47,6 +51,14 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void } | null>(null);
+
+  const handleBackToModule = () => {
+    if (moduleId) {
+      navigate(`/module/${moduleId}`);
+    } else {
+      navigate(-1);
+    }
+  };
 
   const handleAnswerQuestion = (
     questionId: string,
@@ -125,6 +137,17 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               Content: {hasContent ? '✓' : '✗'} | Visible: {visibleContent.length} | Derived: {derivedVisible.length}
             </div>
           )}
+          
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={handleBackToModule}
+            className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Lessons
+          </Button>
+
           {/* Lesson Title */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">

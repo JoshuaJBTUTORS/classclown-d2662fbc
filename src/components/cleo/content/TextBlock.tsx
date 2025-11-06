@@ -13,7 +13,11 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data }) => {
     }
     if (data && typeof data === 'object') {
       // Handle object data - try common text properties
-      return data.text || data.content || data.value || JSON.stringify(data);
+      const text = data.text || data.content || data.value;
+      if (text) return text;
+      // Don't render empty objects
+      console.warn('TextBlock received empty object data:', data);
+      return '';
     }
     return String(data || '');
   };

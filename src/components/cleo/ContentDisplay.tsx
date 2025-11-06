@@ -41,6 +41,12 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
   }, [visibleContent]);
 
   const renderContent = (block: ContentBlock) => {
+    // Validate block has required data
+    if (!block || !block.type || block.data === undefined || block.data === null) {
+      console.warn('Invalid content block:', block);
+      return null;
+    }
+
     switch (block.type) {
       case 'text':
         return <TextBlock data={block.data as string} />;
@@ -59,20 +65,22 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
 
   return (
     <div className="space-y-8">
-      {content.map((block) => {
-        const isVisible = visibleContent.includes(block.id);
-        if (!isVisible) return null;
+      {content
+        .filter(block => block && block.id && block.type && block.data !== undefined && block.data !== null)
+        .map((block) => {
+          const isVisible = visibleContent.includes(block.id);
+          if (!isVisible) return null;
 
-        return (
-          <div
-            key={block.id}
-            ref={(el) => (contentRefs.current[block.id] = el)}
-            className="scroll-mt-24"
-          >
-            {renderContent(block)}
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={block.id}
+              ref={(el) => (contentRefs.current[block.id] = el)}
+              className="scroll-mt-24"
+            >
+              {renderContent(block)}
+            </div>
+          );
+        })}
     </div>
   );
 };

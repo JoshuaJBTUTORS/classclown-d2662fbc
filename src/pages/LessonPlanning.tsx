@@ -107,6 +107,7 @@ const LessonPlanning: React.FC = () => {
             content: contentBlocks
           }}
           lessonPlan={lessonPlan}
+          moduleId={moduleId}
         />
       );
     }
@@ -125,6 +126,7 @@ const LessonPlanning: React.FC = () => {
           ],
           content: []
         }}
+        moduleId={moduleId}
       />
     );
   }

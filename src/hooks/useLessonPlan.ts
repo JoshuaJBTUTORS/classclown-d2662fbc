@@ -87,6 +87,12 @@ export function useLessonPlan(lessonPlanId: string | null) {
         planData.teaching_sequence.forEach((step: any, stepIndex: number) => {
           if (step.content_blocks && Array.isArray(step.content_blocks)) {
             step.content_blocks.forEach((block: any, blockIndex: number) => {
+              // Validate block has required fields
+              if (!block || !block.type || block.data === undefined || block.data === null) {
+                console.warn('Skipping invalid content block in step:', step.id, block);
+                return;
+              }
+              
               allContentBlocks.push({
                 id: `${step.id}-block-${blockIndex}`,
                 stepId: step.id,
