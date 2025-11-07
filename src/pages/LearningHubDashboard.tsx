@@ -58,7 +58,7 @@ const LearningHubDashboard = () => {
         <div className="flex flex-col md:flex-row gap-4 justify-center max-w-md mx-auto">
           <Button
             onClick={handleAccessLiveTutoring}
-            className="cleo-btn-primary w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-50 border-2 border-gray-200 shadow-lg rounded-full font-semibold"
           >
             🎥 Access Live Tutoring
           </Button>
