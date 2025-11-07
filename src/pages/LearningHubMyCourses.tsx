@@ -33,7 +33,8 @@ const LearningHubMyCourses = () => {
     queryKey: ['free-courses'],
     queryFn: async () => {
       const courses = await learningHubService.getCourses();
-      return courses?.filter(c => c.is_free_for_all && c.status === 'published') || [];
+      // Filter for free courses (using type assertion until types are regenerated)
+      return courses?.filter((c: any) => c.is_free_for_all && c.status === 'published') || [];
     },
     enabled: !!user,
   });
