@@ -305,9 +305,9 @@
 /* Cleo Sidebar Styles */
 .cleo-sidebar {
   width: 260px;
-  background: radial-gradient(circle at top left, #e7ffef, #f7fff9);
+  background: white;
   box-shadow: 8px 0 32px rgba(12, 78, 52, 0.08);
-  border-right: none;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* Override shadcn sidebar height constraints */
