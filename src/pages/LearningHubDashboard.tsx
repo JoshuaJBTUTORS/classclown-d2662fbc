@@ -42,9 +42,9 @@ const LearningHubDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 flex items-center justify-center" style={{ background: '#eceff1', minHeight: '100vh' }}>
+    <div className="w-full min-h-screen flex items-center justify-center px-4" style={{ background: '#eceff1' }}>
       {/* Welcome Hero - Cleo Style */}
-      <div className="cleo-screen text-center max-w-md">
+      <div className="cleo-screen text-center max-w-xl w-full mx-4">
         <div className="cleo-avatar-circle mx-auto mb-4" style={{ fontSize: '46px' }}>
           {user?.user_metadata?.avatar || '😊'}
         </div>
@@ -56,7 +56,7 @@ const LearningHubDashboard = () => {
           Let's pick up where your focus left off 💚
         </p>
         
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 max-w-md mx-auto">
           <Button
             onClick={handleAccessLiveTutoring}
             className="w-full flex items-center justify-center gap-2 text-lg py-6 font-bold"
