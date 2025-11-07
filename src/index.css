@@ -300,6 +300,87 @@
     justify-content: center;
     font-size: 40px;
   }
+
+  /* Cleo Sidebar Styles */
+  .cleo-sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background: radial-gradient(circle at top left, #e7ffef, #f7fff9);
+    border-right: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 8px 0 32px rgba(12, 78, 52, 0.08);
+  }
+
+  .cleo-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 18px;
+    margin-bottom: 24px;
+  }
+
+  .cleo-logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: hsl(var(--cleo-green));
+  }
+
+  .cleo-smiley {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #f4c542;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    font-size: 16px;
+  }
+
+  .cleo-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 0 18px;
+    margin-top: 6px;
+  }
+
+  .cleo-nav-button {
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 18px;
+    text-align: left;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: hsl(var(--cleo-text-dark));
+    background: #ffffff;
+    box-shadow: 0 10px 26px rgba(15, 80, 60, 0.12);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cleo-nav-button:hover {
+    transform: translateY(-1px);
+    background: #f2fff8;
+    box-shadow: 0 14px 34px rgba(15, 80, 60, 0.16);
+  }
+
+  .cleo-nav-button.is-active {
+    background: linear-gradient(135deg, hsl(var(--cleo-green)), hsl(145 70% 50%));
+    color: #ffffff;
+    box-shadow: 0 16px 38px rgba(22, 160, 90, 0.45);
+  }
+
+  .cleo-sidebar-footer {
+    margin-top: auto;
+    font-size: 0.78rem;
+    opacity: 0.7;
+    padding: 24px 18px 24px;
+    color: hsl(var(--cleo-text-dark));
+  }
 }
 
 /* Calendar Styling - Solid headers, semi-transparent events */

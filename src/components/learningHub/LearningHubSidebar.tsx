@@ -20,30 +20,19 @@ import {
 
 const navigationItems = [
   {
-    title: 'Dashboard',
-    href: '/learning-hub',
-    emoji: '📊',
-    exact: true
-  },
-  {
     title: 'My Courses',
     href: '/learning-hub/my-courses',
     emoji: '📚'
   },
   {
-    title: 'Browse Courses',
-    href: '/learning-hub/courses',
-    emoji: '🔍'
-  },
-  {
-    title: 'My Cleo',
+    title: "Cleo's Corner",
     href: '/learning-hub/assessments',
     emoji: '🤖'
   },
   {
-    title: 'Settings',
+    title: 'My Cleo ID',
     href: '/learning-hub/settings',
-    emoji: '⚙️'
+    emoji: '👤'
   }
 ];
 
@@ -61,75 +50,69 @@ const LearningHubSidebar = () => {
     }
   };
 
+  const isActive = (href: string) => {
+    if (href === '/learning-hub/my-courses') {
+      return location.pathname === href;
+    }
+    return location.pathname.startsWith(href);
+  };
+
   return (
     <>
-    <Sidebar collapsible="offcanvas">
-      <SidebarContent className="bg-white border-r border-gray-200 shadow-lg z-20 min-h-screen md:min-h-0">
-        {/* Header */}
-        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
-          <img 
-            src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
-            alt="ClassClown Logo" 
-            className="h-8 w-8 object-contain"
-          />
-          <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--cleo-green))' }}>Cleo</h2>
-        </div>
+      <Sidebar collapsible="offcanvas" className="cleo-sidebar">
+        <SidebarContent className="bg-transparent border-none shadow-none">
+          {/* Header */}
+          <div className="cleo-sidebar-header">
+            <div className="cleo-logo">Cleo</div>
+            <div className="cleo-smiley">☺️</div>
+          </div>
 
-        {/* Navigation */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="sr-only">Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-2 p-4">
-              {navigationItems.map(item => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={item.exact ? location.pathname === item.href : location.pathname.startsWith(item.href)}
-                    className="py-3 px-4 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Link to={item.href} className="flex items-center gap-3 text-base">
-                      <span className="text-2xl">{item.emoji}</span>
-                      <span className="font-medium">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+          {/* Navigation */}
+          <nav className="cleo-nav">
+            {navigationItems.map(item => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={`cleo-nav-button ${isActive(item.href) ? 'is-active' : ''}`}
+              >
+                <span className="text-xl">{item.emoji}</span>
+                <span>{item.title}</span>
+              </Link>
+            ))}
 
-              {/* Live Tutoring Menu Item */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild={hasLiveTutoringAccess}
-                  onClick={handleLiveTutoringClick}
-                  className={`py-3 px-4 hover:bg-gray-100 rounded-lg transition-colors ${!hasLiveTutoringAccess ? 'cursor-pointer' : ''}`}
-                >
-                  {hasLiveTutoringAccess ? (
-                    <Link to="/calendar" className="flex items-center gap-3 text-base">
-                      <span className="text-2xl">🎥</span>
-                      <span className="font-medium">Live Tutoring</span>
-                    </Link>
-                  ) : (
-                    <div className="flex items-center gap-3 text-base">
-                      <span className="text-2xl">🎥</span>
-                      <span className="font-medium">Live Tutoring</span>
-                      <Lock className="h-4 w-4 ml-auto text-yellow-600" />
-                    </div>
-                  )}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <Separator className="my-2" />
+            {/* Live Tutoring Button */}
+            {hasLiveTutoringAccess ? (
+              <Link
+                to="/calendar"
+                className="cleo-nav-button"
+              >
+                <span className="text-xl">🎥</span>
+                <span>Live Tutoring</span>
+              </Link>
+            ) : (
+              <button
+                onClick={handleLiveTutoringClick}
+                className="cleo-nav-button relative"
+              >
+                <span className="text-xl">🎥</span>
+                <span>Live Tutoring</span>
+                <Lock className="h-4 w-4 ml-auto text-yellow-600" />
+              </button>
+            )}
+          </nav>
 
-        {/* Footer */}
-      </SidebarContent>
+          {/* Footer */}
+          <div className="cleo-sidebar-footer">
+            Cleo says: Small steps, every day 💚
+          </div>
+        </SidebarContent>
+      </Sidebar>
 
       {/* Upgrade Modal */}
       <LiveTutoringUpgradeModal 
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
-    </Sidebar>
     </>
   );
 };
