@@ -44,7 +44,7 @@ const LearningHubDashboard = () => {
   return (
     <div className="w-full min-h-screen flex items-center justify-center px-4" style={{ background: '#eceff1' }}>
       {/* Welcome Hero - Cleo Style */}
-      <div className="cleo-screen text-center max-w-xl w-full mx-4">
+      <div className="text-center w-full px-4 sm:px-8 md:px-16 lg:px-24 py-12">
         <div className="cleo-avatar-circle mx-auto mb-4" style={{ fontSize: '46px' }}>
           {user?.user_metadata?.avatar || '😊'}
         </div>
