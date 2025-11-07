@@ -111,7 +111,7 @@ const LearningHubSidebar = () => {
 
           {/* Footer */}
           <div className="cleo-sidebar-footer">
-            Cleo says: Small steps, every day 💚
+            Cleo says: Strategist mode is your superpower 🧠💚
           </div>
         </SidebarContent>
       </Sidebar>
