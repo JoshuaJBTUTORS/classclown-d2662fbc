@@ -20,6 +20,11 @@ import {
 
 const navigationItems = [
   {
+    title: 'Dashboard',
+    href: '/learning-hub',
+    emoji: '🏠'
+  },
+  {
     title: 'My Courses',
     href: '/learning-hub/my-courses',
     emoji: '📖'
@@ -51,6 +56,9 @@ const LearningHubSidebar = () => {
   };
 
   const isActive = (href: string) => {
+    if (href === '/learning-hub') {
+      return location.pathname === href;
+    }
     if (href === '/learning-hub/my-courses') {
       return location.pathname === href;
     }
