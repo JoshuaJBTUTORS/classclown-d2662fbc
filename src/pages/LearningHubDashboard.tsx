@@ -42,85 +42,74 @@ const LearningHubDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 space-y-8">
-      {/* Hero Section with Live Tutoring CTA */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-200 via-blue-200 to-indigo-200 p-8 md:p-12 text-gray-800 shadow-2xl">
-        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,transparent)]" />
-        <div className="relative z-10 text-center max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">
-            Welcome to Your Learning Hub, {user?.user_metadata?.first_name || 'Learner'}! 🎓
-          </h1>
-          <p className="text-lg md:text-xl mb-8 text-purple-800">
-            Explore self-paced courses, track your progress, and unlock your potential
-          </p>
-          
+    <div className="container mx-auto py-8 px-4 space-y-8" style={{ background: '#eceff1', minHeight: '100vh' }}>
+      {/* Welcome Hero - Cleo Style */}
+      <div className="cleo-screen text-center">
+        <div className="cleo-avatar-circle mx-auto mb-4" style={{ fontSize: '46px' }}>
+          {user?.user_metadata?.avatar || '😊'}
+        </div>
+        <h2 className="text-3xl font-bold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
+          Welcome back, {user?.user_metadata?.first_name || 'Learner'} 🦊
+        </h2>
+        <p className="text-gray-600 mb-6">
+          Let's pick up where your focus left off 💚
+        </p>
+        
+        <div className="flex flex-col md:flex-row gap-4 justify-center max-w-md mx-auto">
           <Button
             onClick={handleAccessLiveTutoring}
-            size="lg"
-            className="bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-700 text-lg px-8 py-6 rounded-xl shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 font-bold"
+            className="cleo-btn-primary w-full flex items-center justify-center gap-2"
           >
-            <Video className="h-5 w-5 mr-2" />
-            Access Live Tutoring
-            <Sparkles className="h-5 w-5 ml-2" />
+            🎥 Access Live Tutoring
           </Button>
-          
-          {userRole === 'learning_hub_only' && (
-            <p className="mt-4 text-sm text-purple-800">
-              🌟 Upgrade to unlock 1-on-1 tutoring from £9.99/month
-            </p>
-          )}
+          <Button
+            asChild
+            className="cleo-btn-outline w-full"
+          >
+            <Link to="/learning-hub/my-courses">
+              🧠 Continue Learning
+            </Link>
+          </Button>
         </div>
+        
+        <p className="mt-6 text-sm text-gray-600">
+          <strong>Cleo says:</strong> Your focus is your greatest strategy. 💚
+        </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <BookOpen className="h-8 w-8 text-primary" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Available Courses</p>
-                <p className="text-2xl font-bold">{courses?.filter(c => c.status === 'published').length || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold">{userProgress?.completedCourses || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Week</p>
-                <p className="text-2xl font-bold">{userProgress?.thisWeekHours || 0}h</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <Brain className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Assessments</p>
-                <p className="text-2xl font-bold">{userProgress?.assessmentsCompleted || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Quick Stats - Cleo Style */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="cleo-card-white text-center">
+          <div className="text-3xl mb-2">📚</div>
+          <div className="text-2xl font-bold mb-1" style={{ color: 'hsl(var(--cleo-green))' }}>
+            {courses?.filter(c => c.status === 'published').length || 0}
+          </div>
+          <div className="text-sm text-gray-600">Available Courses</div>
+        </div>
+        
+        <div className="cleo-card-white text-center">
+          <div className="text-3xl mb-2">🔥</div>
+          <div className="text-2xl font-bold mb-1" style={{ color: 'hsl(var(--cleo-green))' }}>
+            {userProgress?.completedCourses || 0}
+          </div>
+          <div className="text-sm text-gray-600">Completed</div>
+        </div>
+        
+        <div className="cleo-card-white text-center">
+          <div className="text-3xl mb-2">⚡</div>
+          <div className="text-2xl font-bold mb-1" style={{ color: 'hsl(var(--cleo-green))' }}>
+            {userProgress?.thisWeekHours || 0}h
+          </div>
+          <div className="text-sm text-gray-600">This Week</div>
+        </div>
+        
+        <div className="cleo-card-white text-center">
+          <div className="text-3xl mb-2">🎯</div>
+          <div className="text-2xl font-bold mb-1" style={{ color: 'hsl(var(--cleo-green))' }}>
+            87%
+          </div>
+          <div className="text-sm text-gray-600">Focus Score</div>
+        </div>
       </div>
 
       {/* Enrolled Courses */}
@@ -128,85 +117,6 @@ const LearningHubDashboard = () => {
 
       {/* Subscription Management */}
       <SubscriptionManager />
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
-              AI Tutor (Cleo)
-            </CardTitle>
-            <CardDescription>
-              Learn anything with personalized AI tutoring
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link to="/learning-hub/cleo">
-                Start Learning
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-green-600" />
-              My Courses
-            </CardTitle>
-            <CardDescription>
-              Continue learning with your enrolled courses
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/learning-hub/my-courses">
-                View My Courses
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-orange-600" />
-              Browse Courses
-            </CardTitle>
-            <CardDescription>
-              Explore our complete course catalog
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/learning-hub/courses">
-                Browse All
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-purple-600" />
-              Personal Growth
-            </CardTitle>
-            <CardDescription>
-              Take assessments and track your knowledge
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/learning-hub/assessments">
-                Start Assessment
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Featured Courses */}
       <div className="space-y-6">

@@ -2,19 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  LayoutDashboard, 
-  BookOpen, 
-  Brain, 
-  Library,
-  GraduationCap,
-  Home,
-  Calendar,
-  Settings,
-  Video,
-  Lock,
-  Bot,
-} from 'lucide-react';
+import { Lock, Video } from 'lucide-react';
 import LiveTutoringUpgradeModal from './LiveTutoringUpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -34,38 +22,28 @@ const navigationItems = [
   {
     title: 'Dashboard',
     href: '/learning-hub',
-    icon: LayoutDashboard,
+    emoji: '📊',
     exact: true
-  },
-  {
-    title: 'AI Tutor (Cleo)',
-    href: '/learning-hub/cleo',
-    icon: Bot
   },
   {
     title: 'My Courses',
     href: '/learning-hub/my-courses',
-    icon: BookOpen
+    emoji: '📚'
   },
   {
     title: 'Browse Courses',
     href: '/learning-hub/courses',
-    icon: Library
+    emoji: '🔍'
   },
   {
-    title: 'Personal Growth',
+    title: 'My Cleo',
     href: '/learning-hub/assessments',
-    icon: Brain
-  },
-  {
-    title: 'Revision Calendar',
-    href: '/learning-hub/revision',
-    icon: Calendar
+    emoji: '🤖'
   },
   {
     title: 'Settings',
     href: '/learning-hub/settings',
-    icon: Settings
+    emoji: '⚙️'
   }
 ];
 
@@ -88,34 +66,30 @@ const LearningHubSidebar = () => {
     <Sidebar collapsible="offcanvas">
       <SidebarContent className="bg-white border-r border-gray-200 shadow-lg z-20 min-h-screen md:min-h-0">
         {/* Header */}
-        <div className="flex items-center gap-3 p-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 via-white to-white">
-          <div className="p-2 bg-gradient-to-r from-primary/20 to-primary/30 rounded-lg">
-            <img 
-              src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
-              alt="ClassClown Logo" 
-              className="h-6 w-6 object-contain"
-            />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">Learning Hub</h2>
-            <p className="text-sm text-gray-600">Your Education Portal</p>
-          </div>
+        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
+          <img 
+            src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png" 
+            alt="ClassClown Logo" 
+            className="h-8 w-8 object-contain"
+          />
+          <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--cleo-green))' }}>Cleo</h2>
         </div>
 
         {/* Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel className="sr-only">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-2 p-4">
               {navigationItems.map(item => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
                     isActive={item.exact ? location.pathname === item.href : location.pathname.startsWith(item.href)}
+                    className="py-3 px-4 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <Link to={item.href}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                    <Link to={item.href} className="flex items-center gap-3 text-base">
+                      <span className="text-2xl">{item.emoji}</span>
+                      <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -126,18 +100,18 @@ const LearningHubSidebar = () => {
                 <SidebarMenuButton
                   asChild={hasLiveTutoringAccess}
                   onClick={handleLiveTutoringClick}
-                  className={!hasLiveTutoringAccess ? 'cursor-pointer' : ''}
+                  className={`py-3 px-4 hover:bg-gray-100 rounded-lg transition-colors ${!hasLiveTutoringAccess ? 'cursor-pointer' : ''}`}
                 >
                   {hasLiveTutoringAccess ? (
-                    <Link to="/calendar">
-                      <Video className="h-4 w-4" />
-                      <span>Live Tutoring</span>
+                    <Link to="/calendar" className="flex items-center gap-3 text-base">
+                      <span className="text-2xl">🎥</span>
+                      <span className="font-medium">Live Tutoring</span>
                     </Link>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Video className="h-4 w-4" />
-                      <span>Live Tutoring</span>
-                      <Lock className="h-3 w-3 ml-auto text-yellow-600" />
+                    <div className="flex items-center gap-3 text-base">
+                      <span className="text-2xl">🎥</span>
+                      <span className="font-medium">Live Tutoring</span>
+                      <Lock className="h-4 w-4 ml-auto text-yellow-600" />
                     </div>
                   )}
                 </SidebarMenuButton>

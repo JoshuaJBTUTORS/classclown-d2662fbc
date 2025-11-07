@@ -36,34 +36,34 @@ export const EnrolledCoursesSection = () => {
 
   if (!enrolledCourses || enrolledCourses.length === 0) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">My Enrolled Courses</h2>
-        <Card>
-          <CardContent className="pt-6 text-center py-12">
-            <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Enrolled Courses Yet</h3>
-            <p className="text-gray-600 mb-6">Start your learning journey by enrolling in a course</p>
-            <Button asChild>
-              <Link to="/learning-hub/courses">
-                Browse Courses
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="cleo-screen">
+        <h2 className="text-2xl font-bold mb-4" style={{ color: 'hsl(var(--cleo-text-dark))' }}>My Courses</h2>
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📚</div>
+          <h3 className="text-lg font-semibold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
+            No Enrolled Courses Yet
+          </h3>
+          <p className="text-gray-600 mb-6">Start your learning journey by enrolling in a course</p>
+          <Button asChild className="cleo-btn-primary">
+            <Link to="/learning-hub/courses">
+              Browse Courses
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="cleo-screen space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">
-          My Enrolled Courses
-          <span className="ml-3 text-sm font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+        <h2 className="text-2xl font-bold" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
+          My Courses
+          <span className="ml-3 text-sm font-normal px-3 py-1 rounded-full" style={{ background: 'linear-gradient(90deg, hsl(var(--cleo-green-soft)), hsl(195 80% 90%))' }}>
             {enrolledCourses.length}
           </span>
         </h2>
-        <Button asChild variant="outline">
+        <Button asChild className="cleo-btn-outline">
           <Link to="/learning-hub/my-courses">
             View All
           </Link>
