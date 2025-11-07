@@ -212,6 +212,18 @@ export const paymentService = {
 
     console.log('Checking course purchase for user:', user.id, 'course:', courseId);
 
+    // Check if course is free for all users
+    const { data: courseData } = await supabase
+      .from('courses')
+      .select('is_free_for_all')
+      .eq('id', courseId)
+      .single();
+
+    if (courseData?.is_free_for_all) {
+      console.log('Course is free for all users, granting access');
+      return true;
+    }
+
     // Check if user is owner first
     const { data: roles } = await supabase
       .from('user_roles')

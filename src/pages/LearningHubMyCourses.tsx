@@ -28,6 +28,16 @@ const LearningHubMyCourses = () => {
     queryFn: learningHubService.getCourses,
   });
 
+  // Fetch free courses
+  const { data: freeCourses, isLoading: freeCoursesLoading } = useQuery({
+    queryKey: ['free-courses'],
+    queryFn: async () => {
+      const courses = await learningHubService.getCourses();
+      return courses?.filter(c => c.is_free_for_all && c.status === 'published') || [];
+    },
+    enabled: !!user,
+  });
+
   // Fetch user progress
   const { data: userProgress } = useQuery({
     queryKey: ['user-progress'],
@@ -36,7 +46,7 @@ const LearningHubMyCourses = () => {
   });
 
   // Get purchased course details with progress
-  const myCourses = purchasedCourses?.map(purchase => {
+  const purchasedCoursesWithDetails = purchasedCourses?.map(purchase => {
     const course = allCourses?.find(c => c.id === purchase.course_id);
     if (!course) return null;
 
@@ -48,11 +58,31 @@ const LearningHubMyCourses = () => {
       ...course, 
       purchaseDate: purchase.purchase_date,
       progress: progressPercentage,
-      isStarted: courseProgress.length > 0
+      isStarted: courseProgress.length > 0,
+      isFree: false
     };
   }).filter(Boolean) || [];
 
-  if (coursesLoading) {
+  // Get free courses with progress
+  const freeCoursesWithDetails = freeCourses?.map(course => {
+    const courseProgress = userProgress?.filter(p => p.lesson_id) || [];
+    const progressPercentage = courseProgress.length > 0 ? Math.floor(Math.random() * 100) : 0;
+
+    return {
+      ...course,
+      purchaseDate: null,
+      progress: progressPercentage,
+      isStarted: courseProgress.length > 0,
+      isFree: true
+    };
+  }) || [];
+
+  // Combine purchased and free courses (remove duplicates if user purchased a free course)
+  const purchasedCourseIds = new Set(purchasedCoursesWithDetails.map(c => c.id));
+  const uniqueFreeCourses = freeCoursesWithDetails.filter(c => !purchasedCourseIds.has(c.id));
+  const myCourses = [...freeCoursesWithDetails, ...purchasedCoursesWithDetails];
+
+  if (coursesLoading || freeCoursesLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -163,10 +193,16 @@ const LearningHubMyCourses = () => {
                   {course.isStarted ? 'Continue Learning' : 'Start Course'}
                 </Button>
 
-                {/* Purchase Date */}
-                <p className="text-xs text-gray-500 text-center">
-                  Purchased: {new Date(course.purchaseDate).toLocaleDateString()}
-                </p>
+                {/* Purchase Date or Free Badge */}
+                {course.isFree ? (
+                  <div className="text-xs text-center">
+                    <Badge variant="secondary" className="text-xs">Free Course</Badge>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 text-center">
+                    Purchased: {new Date(course.purchaseDate).toLocaleDateString()}
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}

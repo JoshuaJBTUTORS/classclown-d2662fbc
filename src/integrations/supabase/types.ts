@@ -1478,6 +1478,7 @@ export type Database = {
           generation_status: string | null
           id: string
           is_ai_generated: boolean | null
+          is_free_for_all: boolean | null
           path_position: number | null
           prerequisites: Json | null
           price: number | null
@@ -1498,6 +1499,7 @@ export type Database = {
           generation_status?: string | null
           id?: string
           is_ai_generated?: boolean | null
+          is_free_for_all?: boolean | null
           path_position?: number | null
           prerequisites?: Json | null
           price?: number | null
@@ -1518,6 +1520,7 @@ export type Database = {
           generation_status?: string | null
           id?: string
           is_ai_generated?: boolean | null
+          is_free_for_all?: boolean | null
           path_position?: number | null
           prerequisites?: Json | null
           price?: number | null
