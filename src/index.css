@@ -304,9 +304,19 @@
 /* Cleo Sidebar Styles */
 .cleo-sidebar {
   width: 260px;
-  background: radial-gradient(circle at top left, #e7ffef, #f7fff9);
-  border-right: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 8px 0 32px rgba(12, 78, 52, 0.08);
+  background: white;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.04);
+}
+
+/* Override shadcn sidebar height constraints */
+.cleo-sidebar [data-sidebar="sidebar"] {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.cleo-sidebar .flex.h-full {
+  height: auto !important;
 }
 
   .cleo-sidebar-header {
@@ -346,31 +356,35 @@
   .cleo-nav-button {
     width: 100%;
     border: none;
-    border-radius: 999px;
-    padding: 14px 18px;
+    border-radius: 16px;
+    padding: 20px 20px;
     text-align: left;
-    font-size: 0.98rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: hsl(var(--cleo-text-dark));
     background: #ffffff;
-    box-shadow: 0 10px 26px rgba(15, 80, 60, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     cursor: pointer;
     transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
+  }
+  
+  .cleo-nav-button .text-xl {
+    font-size: 28px;
   }
 
   .cleo-nav-button:hover {
-    transform: translateY(-1px);
-    background: #f2fff8;
-    box-shadow: 0 14px 34px rgba(15, 80, 60, 0.16);
+    transform: translateY(-2px);
+    background: hsl(var(--muted));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
   .cleo-nav-button.is-active {
-    background: linear-gradient(135deg, hsl(var(--cleo-green)), hsl(145 70% 50%));
-    color: #ffffff;
-    box-shadow: 0 16px 38px rgba(22, 160, 90, 0.45);
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 4px 16px hsla(var(--primary), 0.3);
   }
 
   .cleo-sidebar-footer {

@@ -22,17 +22,17 @@ const navigationItems = [
   {
     title: 'My Courses',
     href: '/learning-hub/my-courses',
-    emoji: '📚'
+    emoji: '📖'
   },
   {
     title: "Cleo's Corner",
     href: '/learning-hub/assessments',
-    emoji: '🤖'
+    emoji: '✨'
   },
   {
     title: 'My Cleo ID',
     href: '/learning-hub/settings',
-    emoji: '👤'
+    emoji: '👨‍🎓'
   }
 ];
 
@@ -86,7 +86,7 @@ const LearningHubSidebar = () => {
                 to="/calendar"
                 className="cleo-nav-button"
               >
-                <span className="text-xl">🎥</span>
+                <span className="text-xl">💬</span>
                 <span>Live Tutoring</span>
               </Link>
             ) : (
@@ -94,7 +94,7 @@ const LearningHubSidebar = () => {
                 onClick={handleLiveTutoringClick}
                 className="cleo-nav-button relative"
               >
-                <span className="text-xl">🎥</span>
+                <span className="text-xl">💬</span>
                 <span>Live Tutoring</span>
                 <Lock className="h-4 w-4 ml-auto text-yellow-600" />
               </button>
