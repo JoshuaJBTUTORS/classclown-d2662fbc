@@ -391,23 +391,18 @@
     color: hsl(var(--cleo-text-dark));
   }
 
-  /* Screen wrapper - single card layout */
+  /* Screen wrapper - full screen layout */
   .cleo-screen-wrapper {
-    background: #eceff1;
-    padding: 32px;
+    background: hsl(var(--cleo-bg-light));
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    padding: 0;
   }
 
   .cleo-screen-courses {
     background: hsl(var(--cleo-bg-light));
-    border-radius: var(--card-radius);
-    padding: 24px 24px 28px;
-    box-shadow: var(--card-shadow);
-    max-width: 420px;
+    padding: 32px 48px;
     width: 100%;
+    min-height: 100vh;
   }
 
   /* Header section with fox icon */
