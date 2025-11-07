@@ -4,17 +4,43 @@ import { useNavigate } from 'react-router-dom';
 import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
-// Course emoji mapping for 11+ subjects
+// Course emoji mapping for 11+ subjects - updated to match design
 const courseEmojiMap: Record<string, string> = {
-  '11 Plus Maths': '🧮',
-  '11 Plus English': '📘',
+  '11 Plus Maths': '🔢',
+  '11 Plus English': '✏️',
   '11 Plus VR': '🧬',
-  '11 Plus NVR': '⚡',
+  '11 Plus NVR': '⚛️',
 };
 
 const getCourseEmoji = (title: string): string => {
   return courseEmojiMap[title] || '📚';
+};
+
+// Helper functions for streak calculation
+const getDaysSinceLastAccess = (lastAccessedAt: string | null): number => {
+  if (!lastAccessedAt) return 999;
+  const lastAccess = new Date(lastAccessedAt);
+  const today = new Date();
+  const diffTime = today.getTime() - lastAccess.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+const hasStreak = (lastAccessedAt: string | null): boolean => {
+  const days = getDaysSinceLastAccess(lastAccessedAt);
+  return days <= 1; // Accessed today or yesterday
+};
+
+const getStreakText = (lastAccessedAt: string | null): string => {
+  const days = getDaysSinceLastAccess(lastAccessedAt);
+  
+  if (days === 0) return '1-day streak';
+  if (days === 1) return '2-day streak';
+  if (days <= 7) return `${Math.max(1, 7 - days)}-day streak`;
+  
+  return 'Start your streak!';
 };
 
 const LearningHubMyCourses = () => {
@@ -29,7 +55,7 @@ const LearningHubMyCourses = () => {
   });
 
   // Fetch all courses for details
-  const { data: allCourses } = useQuery({
+  const { data: allCoursesData } = useQuery({
     queryKey: ['courses'],
     queryFn: learningHubService.getCourses,
   });
@@ -44,9 +70,24 @@ const LearningHubMyCourses = () => {
     enabled: !!user,
   });
 
+  // Fetch user_courses to get progress data
+  const { data: userCoursesData } = useQuery({
+    queryKey: ['user-courses', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_courses')
+        .select('course_id, progress_percentage, last_accessed_at')
+        .eq('user_id', user!.id);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   // Get purchased course details
   const purchasedCoursesWithDetails = purchasedCourses?.map(purchase => {
-    const course = allCourses?.find(c => c.id === purchase.course_id);
+    const course = allCoursesData?.find(c => c.id === purchase.course_id);
     if (!course) return null;
     return { ...course, isFree: false };
   }).filter(Boolean) || [];
@@ -60,23 +101,42 @@ const LearningHubMyCourses = () => {
   // Combine purchased and free courses (remove duplicates)
   const purchasedCourseIds = new Set(purchasedCoursesWithDetails.map(c => c.id));
   const uniqueFreeCourses = freeCoursesWithDetails.filter(c => !purchasedCourseIds.has(c.id));
-  const myCourses = [...freeCoursesWithDetails, ...purchasedCoursesWithDetails];
+  const allCourses = [...freeCoursesWithDetails, ...purchasedCoursesWithDetails];
+
+  // Merge progress data with course details
+  const myCourses = allCourses.map(course => {
+    const userCourse = userCoursesData?.find(uc => uc.course_id === course.id);
+    return {
+      ...course,
+      progress: userCourse?.progress_percentage || 0,
+      last_accessed: userCourse?.last_accessed_at || null,
+    };
+  });
 
   // Loading state
   if (coursesLoading || freeCoursesLoading) {
     return (
-      <div className="p-10" style={{ background: 'hsl(var(--cleo-bg-light))' }}>
-        <div className="strategist-banner">
-          ⚡ Strategist Mode: <span>ON</span>
-        </div>
-        <div className="courses-grid">
+      <div className="cleo-screen-wrapper">
+        <section className="cleo-screen-courses">
+          <div className="strategist-header">
+            <div className="fox-avatar">🦊</div>
+            <div className="strategist-info">
+              <h2>Strategist Mode: ON</h2>
+              <p className="small-label">
+                Cleo says: "Choose your next challenge. Let's play smart."
+              </p>
+            </div>
+          </div>
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="course-card animate-pulse">
-              <div className="h-8 w-8 bg-gray-200 rounded-full mb-2" />
-              <div className="h-4 w-24 bg-gray-200 rounded" />
+            <div key={i} className="course-pill animate-pulse">
+              <div className="h-4 w-32 bg-gray-200 rounded" />
+              <div className="h-3 w-24 bg-gray-200 rounded" />
+              <div className="progress-bar-thin">
+                <div className="h-full w-1/3 bg-gray-200 rounded" />
+              </div>
             </div>
           ))}
-        </div>
+        </section>
       </div>
     );
   }
@@ -84,43 +144,75 @@ const LearningHubMyCourses = () => {
   // Empty state
   if (myCourses.length === 0) {
     return (
-      <div className="p-10" style={{ background: 'hsl(var(--cleo-bg-light))' }}>
-        <div className="strategist-banner">
-          ⚡ Strategist Mode: <span>ON</span>
-        </div>
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">📚</div>
-          <h3 className="text-xl font-semibold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
-            No courses yet
-          </h3>
-          <p className="text-gray-600">Start your 11+ journey today!</p>
-        </div>
+      <div className="cleo-screen-wrapper">
+        <section className="cleo-screen-courses">
+          <div className="strategist-header">
+            <div className="fox-avatar">🦊</div>
+            <div className="strategist-info">
+              <h2>Strategist Mode: ON</h2>
+              <p className="small-label">
+                Cleo says: "Choose your next challenge. Let's play smart."
+              </p>
+            </div>
+          </div>
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">📚</div>
+            <h3 className="text-xl font-semibold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
+              No courses yet
+            </h3>
+            <p className="text-gray-600">Start your 11+ journey today!</p>
+          </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="p-10" style={{ background: 'hsl(var(--cleo-bg-light))' }}>
-      {/* Strategist Mode Banner */}
-      <div className="strategist-banner">
-        ⚡ Strategist Mode: <span>ON</span>
-      </div>
+    <div className="cleo-screen-wrapper">
+      <section className="cleo-screen-courses">
+        {/* Header with fox emoji */}
+        <div className="strategist-header">
+          <div className="fox-avatar">🦊</div>
+          <div className="strategist-info">
+            <h2>Strategist Mode: ON</h2>
+            <p className="small-label">
+              Cleo says: "Choose your next challenge. Let's play smart."
+            </p>
+          </div>
+        </div>
 
-      {/* Courses Grid */}
-      <div className="courses-grid">
+        {/* Course pills list */}
         {myCourses.map((course) => (
           <div
             key={course.id}
-            className="course-card"
+            className="course-pill"
             onClick={() => navigate(`/course/${course.id}`)}
           >
-            <div className="course-icon">
-              {getCourseEmoji(course.title)}
+            <div className="course-pill-title">
+              {getCourseEmoji(course.title)} {course.title}
             </div>
-            <div className="course-title">{course.title}</div>
+            <div className="course-pill-meta">
+              <span>{getStreakText(course.last_accessed)}</span>
+              <span>{course.progress || 0}%</span>
+            </div>
+            <div className="progress-bar-thin">
+              <div
+                className="progress-bar-thin-fill"
+                style={{ width: `${course.progress || 0}%` }}
+              />
+            </div>
+            {/* Show flame only if there's a streak */}
+            {hasStreak(course.last_accessed) && (
+              <div className="flame-soft-right" />
+            )}
           </div>
         ))}
-      </div>
+
+        {/* Footer tip */}
+        <p className="footer-note">
+          💡 Tip from Cleo: Strategy beats speed — small steps, daily.
+        </p>
+      </section>
     </div>
   );
 };

@@ -391,64 +391,139 @@
     color: hsl(var(--cleo-text-dark));
   }
 
-  /* Strategist Banner */
-  .strategist-banner {
-    background: linear-gradient(90deg, hsl(var(--cleo-green)), hsl(145 70% 50%));
-    color: white;
-    font-weight: 600;
-    border-radius: 16px;
-    padding: 16px 24px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1rem;
-    box-shadow: 0 8px 28px rgba(37, 184, 107, 0.3);
-    margin-bottom: 40px;
-  }
-
-  .strategist-banner span {
-    background: white;
-    color: hsl(var(--cleo-green));
-    padding: 4px 10px;
-    border-radius: 10px;
-    font-weight: 700;
-  }
-
-  /* Simple Course Cards */
-  .courses-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 24px;
-  }
-
-  .course-card {
-    background: white;
-    border-radius: 18px;
-    padding: 22px;
-    box-shadow: 0 8px 28px rgba(15, 80, 60, 0.1);
+  /* Screen wrapper - single card layout */
+  .cleo-screen-wrapper {
+    background: #eceff1;
+    padding: 32px;
+    min-height: 100vh;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .cleo-screen-courses {
+    background: hsl(var(--cleo-bg-light));
+    border-radius: var(--card-radius);
+    padding: 24px 24px 28px;
+    box-shadow: var(--card-shadow);
+    max-width: 420px;
+    width: 100%;
+  }
+
+  /* Header section with fox icon */
+  .strategist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .fox-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid rgba(37, 184, 107, 0.4);
+    display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    min-height: 160px;
+    font-size: 1.4rem;
+    color: hsl(var(--cleo-green));
+    background: #f2fff8;
+    flex-shrink: 0;
   }
 
-  .course-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 14px 40px rgba(15, 80, 60, 0.16);
+  .strategist-info {
+    flex: 1;
+    margin-left: 10px;
   }
 
-  .course-icon {
-    font-size: 2rem;
-    margin-bottom: 10px;
-  }
-
-  .course-title {
+  .strategist-info h2 {
+    margin: 0;
+    font-size: 1.25rem;
     font-weight: 600;
-    font-size: 1.1rem;
+    color: hsl(var(--cleo-text-dark));
+  }
+
+  .strategist-info .small-label {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    margin: 2px 0 0;
+    color: hsl(var(--cleo-text-dark));
+  }
+
+  /* Course pill - list style */
+  .course-pill {
+    margin-top: 12px;
+    border-radius: 20px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #e9fff3, #e1fced);
+    border: 1px solid rgba(37, 184, 107, 0.3);
+    box-shadow: 0 8px 24px rgba(15, 80, 60, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .course-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(15, 80, 60, 0.2);
+  }
+
+  .course-pill-title {
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: hsl(var(--cleo-text-dark));
+  }
+
+  .course-pill-meta {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: hsl(var(--cleo-text-dark));
+  }
+
+  /* Progress bar */
+  .progress-bar-thin {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+
+  .progress-bar-thin-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1fb86b, #7def9e);
+    transition: width 0.3s ease;
+  }
+
+  /* Flame streak indicator */
+  .flame-soft-right {
+    position: absolute;
+    right: 14px;
+    top: 16px;
+    width: 20px;
+    height: 26px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 20%, #ffe9c2, #ff9e42);
+    box-shadow: 0 0 12px rgba(255, 158, 66, 0.7);
+  }
+
+  /* Footer note */
+  .footer-note {
+    margin-top: 20px;
+    font-size: 0.8rem;
     text-align: center;
+    opacity: 0.8;
     color: hsl(var(--cleo-text-dark));
   }
 }
