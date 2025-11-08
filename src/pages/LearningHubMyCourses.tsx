@@ -5,13 +5,22 @@ import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-// Course emoji mapping for 11+ subjects - updated to match design
+// Course emoji mapping for both 11+ and GCSE subjects
 const courseEmojiMap: Record<string, string> = {
+  // 11 Plus subjects
   '11 Plus Maths': '🔢',
   '11 Plus English': '✏️',
   '11 Plus VR': '🧬',
   '11 Plus NVR': '⚛️',
+  
+  // GCSE subjects
+  'GCSE Maths': '📐',
+  'GCSE English': '📝',
+  'GCSE Biology': '🧬',
+  'GCSE Chemistry': '⚗️',
+  'GCSE Physics': '⚛️',
 };
 
 const getCourseEmoji = (title: string): string => {
@@ -113,6 +122,19 @@ const LearningHubMyCourses = () => {
     };
   });
 
+  // Filter courses by category
+  const is11PlusCourse = (course: any) => {
+    return course.title?.includes('11 Plus') || course.subject?.includes('11 Plus');
+  };
+
+  const isGCSECourse = (course: any) => {
+    return course.title?.includes('GCSE') || course.subject?.includes('GCSE');
+  };
+
+  // Separate courses into categories
+  const elevenPlusCourses = myCourses.filter(is11PlusCourse);
+  const gcseCourses = myCourses.filter(isGCSECourse);
+
   // Loading state
   if (coursesLoading || freeCoursesLoading) {
     return (
@@ -181,32 +203,85 @@ const LearningHubMyCourses = () => {
           </div>
         </div>
 
-        {/* Course pills list */}
-        {myCourses.map((course) => (
-          <div
-            key={course.id}
-            className="course-pill"
-            onClick={() => navigate(`/course/${course.id}`)}
-          >
-            <div className="course-pill-title">
-              {getCourseEmoji(course.title)} {course.title}
-            </div>
-            <div className="course-pill-meta">
-              <span>{getStreakText(course.last_accessed)}</span>
-              <span>{course.progress || 0}%</span>
-            </div>
-            <div className="progress-bar-thin">
-              <div
-                className="progress-bar-thin-fill"
-                style={{ width: `${course.progress || 0}%` }}
-              />
-            </div>
-            {/* Show flame only if there's a streak */}
-            {hasStreak(course.last_accessed) && (
-              <div className="flame-soft-right" />
+        {/* Tabs for course categories */}
+        <Tabs defaultValue="11plus" className="cleo-tabs">
+          <TabsList className="cleo-tabs-list">
+            <TabsTrigger value="11plus" className="cleo-tabs-trigger">
+              11 Plus
+            </TabsTrigger>
+            <TabsTrigger value="gcse" className="cleo-tabs-trigger">
+              GCSE
+            </TabsTrigger>
+          </TabsList>
+
+          {/* 11 Plus courses */}
+          <TabsContent value="11plus" className="cleo-tabs-content">
+            {elevenPlusCourses.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">No 11 Plus courses yet</p>
+              </div>
+            ) : (
+              elevenPlusCourses.map((course) => (
+                <div
+                  key={course.id}
+                  className="course-pill"
+                  onClick={() => navigate(`/course/${course.id}`)}
+                >
+                  <div className="course-pill-title">
+                    {getCourseEmoji(course.title)} {course.title}
+                  </div>
+                  <div className="course-pill-meta">
+                    <span>{getStreakText(course.last_accessed)}</span>
+                    <span>{course.progress || 0}%</span>
+                  </div>
+                  <div className="progress-bar-thin">
+                    <div
+                      className="progress-bar-thin-fill"
+                      style={{ width: `${course.progress || 0}%` }}
+                    />
+                  </div>
+                  {hasStreak(course.last_accessed) && (
+                    <div className="flame-soft-right" />
+                  )}
+                </div>
+              ))
             )}
-          </div>
-        ))}
+          </TabsContent>
+
+          {/* GCSE courses */}
+          <TabsContent value="gcse" className="cleo-tabs-content">
+            {gcseCourses.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">No GCSE courses yet</p>
+              </div>
+            ) : (
+              gcseCourses.map((course) => (
+                <div
+                  key={course.id}
+                  className="course-pill"
+                  onClick={() => navigate(`/course/${course.id}`)}
+                >
+                  <div className="course-pill-title">
+                    {getCourseEmoji(course.title)} {course.title}
+                  </div>
+                  <div className="course-pill-meta">
+                    <span>{getStreakText(course.last_accessed)}</span>
+                    <span>{course.progress || 0}%</span>
+                  </div>
+                  <div className="progress-bar-thin">
+                    <div
+                      className="progress-bar-thin-fill"
+                      style={{ width: `${course.progress || 0}%` }}
+                    />
+                  </div>
+                  {hasStreak(course.last_accessed) && (
+                    <div className="flame-soft-right" />
+                  )}
+                </div>
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Footer tip */}
         <p className="footer-note">
