@@ -115,9 +115,8 @@ const ModuleDetail = () => {
   const currentModule = orderedModules?.find(m => m.id === moduleId);
   const allLessons = currentModule?.lessons || [];
   
-  // Filter out AI assessment lessons from regular lesson flow
-  const lessons = allLessons.filter(lesson => lesson.content_type !== 'ai-assessment');
-  const aiAssessmentLessons = allLessons.filter(lesson => lesson.content_type === 'ai-assessment');
+  // All lessons are now for Cleo (ai-assessment type)
+  const lessons = allLessons;
   
   const currentLesson = lessons[currentLessonIndex];
   const hasAccess = isOwner || hasPurchased;
@@ -155,10 +154,8 @@ const ModuleDetail = () => {
     if (currentLessonIndex < lessons.length - 1) {
       setCurrentLessonIndex(currentLessonIndex + 1);
     } else {
-      // At the end of regular lessons - check for assessments first
-      const hasAIAssessments = allLessons.filter(lesson => lesson.content_type === 'ai-assessment').length > 0;
-      
-      if (hasAIAssessments || (hasRequiredAssessment && !isAssessmentCompleted)) {
+      // At the end of lessons - check for module assessments
+      if (hasRequiredAssessment && !isAssessmentCompleted) {
         // Show assessment time screen instead of navigating
         setCurrentLessonIndex(lessons.length);
         return;
@@ -224,14 +221,12 @@ const ModuleDetail = () => {
   const needsAssessment = isLastLessonInModule && hasRequiredAssessment && allLessonsCompleted && !isAssessmentCompleted;
   
   // Check if we should show assessment time screen
-  const showAssessmentTimeScreen = currentLessonIndex >= lessons.length && (aiAssessmentLessons.length > 0 || needsAssessment);
+  const showAssessmentTimeScreen = currentLessonIndex >= lessons.length && needsAssessment;
   
   // Handle beginning assessment from the assessment time screen
   const handleBeginAssessment = () => {
     console.log('Beginning assessment:', {
-      aiAssessmentLessons,
       moduleAssessments,
-      aiAssessmentId: aiAssessmentLessons.length > 0 ? aiAssessmentLessons[0]?.content_url : null,
       moduleAssessmentId: moduleAssessments?.[0]?.id
     });
     setShowAssessmentDialog(true);
@@ -247,10 +242,8 @@ const ModuleDetail = () => {
         if (currentLessonIndex < lessons.length - 1) {
           setCurrentLessonIndex(currentLessonIndex + 1);
         } else {
-          // Last regular lesson completed - check for assessments using original module data
-          const hasAIAssessments = allLessons.filter(lesson => lesson.content_type === 'ai-assessment').length > 0;
-          
-          if (hasAIAssessments || (hasRequiredAssessment && !isAssessmentCompleted)) {
+          // Last lesson completed - check for module assessments
+          if (hasRequiredAssessment && !isAssessmentCompleted) {
             // Show assessment time screen
             setCurrentLessonIndex(lessons.length);
           } else {
@@ -467,15 +460,11 @@ const ModuleDetail = () => {
         </div>
 
         {/* Assessment Dialog */}
-        {(moduleAssessments?.length > 0 || aiAssessmentLessons.length > 0) && (
+        {moduleAssessments?.length > 0 && (
           <ModuleAssessmentDialog
             isOpen={showAssessmentDialog}
             onClose={() => setShowAssessmentDialog(false)}
-            assessmentId={
-              aiAssessmentLessons.length > 0 && aiAssessmentLessons[0]?.content_url
-                ? aiAssessmentLessons[0].content_url
-                : moduleAssessments?.[0]?.id || ''
-            }
+            assessmentId={moduleAssessments?.[0]?.id || ''}
             onAssessmentComplete={handleAssessmentComplete}
           />
         )}
