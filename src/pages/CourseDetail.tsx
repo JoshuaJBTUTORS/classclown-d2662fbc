@@ -23,7 +23,8 @@ import {
   Lock,
   Gift,
   Crown,
-  ArrowLeft
+  ArrowLeft,
+  Pencil
 } from 'lucide-react';
 
 const CourseDetail = () => {
@@ -31,7 +32,7 @@ const CourseDetail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isOwner } = useAuth();
+  const { isOwner, isAdmin, isTutor } = useAuth();
   const isMobile = useIsMobile();
 
   const { data: course, isLoading } = useQuery({
@@ -129,6 +130,7 @@ const CourseDetail = () => {
   }
 
   const hasAccess = isOwner || hasPurchased;
+  const canEdit = isOwner || isAdmin || isTutor;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -158,6 +160,17 @@ const CourseDetail = () => {
                       <Crown className="h-3 w-3 mr-1" />
                       Admin Access
                     </Badge>
+                  )}
+                  {canEdit && (
+                    <Button
+                      onClick={() => navigate(`/course/${id}/edit`)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit Course
+                    </Button>
                   )}
                 </div>
                 
