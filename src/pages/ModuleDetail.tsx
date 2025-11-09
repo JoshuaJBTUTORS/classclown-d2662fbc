@@ -312,130 +312,147 @@ const ModuleDetail = () => {
 
   return (
     <CourseAccessControl courseId={courseId!}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--cleo-page-bg))' }}>
         {/* Back Button */}
-        <div className="fixed top-4 left-4 z-30">
-          <Button
+        <div className="fixed top-6 left-6 z-30">
+          <button
             onClick={handleBackToCourse}
-            variant="ghost"
-            className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary shadow-sm"
+            className="cleo-back-link"
           >
-            <ArrowLeft className="h-5 w-5 mr-2" />
+            <ArrowLeft className="h-4 w-4" />
             Back to Course
-          </Button>
+          </button>
         </div>
 
-        <div className="pt-16 px-2 sm:px-4 lg:px-8">
-          <div className="w-full max-w-none py-8">
+        <div className="pt-20 px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1100px] mx-auto py-6">
             {/* Module Header */}
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline">{course.subject}</Badge>
-                  <Badge variant="secondary">Module {orderedModules?.findIndex(m => m.id === moduleId)! + 1}</Badge>
+            <div className="cleo-card mb-6 p-5 md:p-6">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="cleo-chip">{course.subject}</span>
+                <span className="cleo-chip cleo-chip-green">
+                  Module {orderedModules?.findIndex(m => m.id === moduleId)! + 1}
+                </span>
+              </div>
+              
+              <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#26374b' }}>
+                {currentModule.title}
+              </h1>
+              
+              {currentModule.description && (
+                <p className="text-gray-700 text-base max-w-[650px] mb-3 opacity-90">
+                  {currentModule.description}
+                </p>
+              )}
+              
+              <div className="flex items-center gap-4 text-sm opacity-85">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  <span>{lessons.length} lessons</span>
                 </div>
-                <CardTitle className="text-2xl md:text-3xl">{currentModule.title}</CardTitle>
-                {currentModule.description && (
-                  <p className="text-gray-600 mt-2">{currentModule.description}</p>
-                )}
-                <div className="flex items-center gap-4 mt-4">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">{lessons.length} lessons</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-primary" />
-                    <span className="text-sm text-gray-600">{getModuleProgress()}% complete</span>
-                  </div>
+                <div className="w-1 h-1 rounded-full bg-gray-400 opacity-30"></div>
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-[hsl(var(--cleo-green))]" />
+                  <span>{getModuleProgress()}% complete</span>
                 </div>
-              </CardHeader>
-            </Card>
+              </div>
+            </div>
 
 
             {lessons.length > 0 && (currentLesson || showAssessmentTimeScreen) ? (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* Lesson Navigation Card */}
                 {currentLesson && (
-                  <Card>
-                    <CardContent className="p-6">
-                      {/* Lesson Info Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold text-lg text-foreground">
-                            Lesson {currentLessonIndex + 1}: {currentLesson.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {currentLessonIndex + 1} of {lessons.length} lessons
-                          </p>
-                        </div>
-                        {isLessonCompleted(currentLesson.id) && (
-                          <Badge className="bg-green-100 text-green-800 border-green-200">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Completed
-                          </Badge>
-                        )}
+                  <div className="cleo-card p-5 md:p-6">
+                    {/* Lesson Info Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                      <div>
+                        <h3 className="font-semibold text-lg">
+                          Lesson {currentLessonIndex + 1}: {currentLesson.title}
+                        </h3>
+                        <p className="text-sm opacity-80">
+                          {currentLessonIndex + 1} of {lessons.length} lessons
+                        </p>
                       </div>
+                      {isLessonCompleted(currentLesson.id) && (
+                        <Badge className="bg-green-100 text-green-800 border-green-200 self-start sm:self-auto">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Completed
+                        </Badge>
+                      )}
+                    </div>
 
-                      {/* Progress Bar */}
-                      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-                        <div 
-                          className="bg-primary h-2.5 rounded-full transition-all duration-300"
-                          style={{ 
-                            width: `${((currentLessonIndex + 1) / lessons.length) * 100}%` 
-                          }}
-                        />
-                      </div>
+                    {/* Progress Bar */}
+                    <div className="cleo-progress-track mb-6">
+                      <div 
+                        className="cleo-progress-fill"
+                        style={{ 
+                          width: `${((currentLessonIndex + 1) / lessons.length) * 100}%` 
+                        }}
+                      />
+                    </div>
 
-                      {/* Navigation Buttons */}
-                      <div className="flex justify-between items-center">
-                        <Button
-                          variant="outline"
-                          onClick={handlePreviousLesson}
-                          disabled={currentLessonIndex === 0}
-                          className="flex items-center gap-2"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          Previous
-                        </Button>
-                        
-                        <span className="text-sm text-muted-foreground">
-                          Navigate lessons
-                        </span>
-                        
-                        <Button
-                          onClick={handleNextLesson}
-                          disabled={currentLessonIndex >= lessons.length - 1 && !showAssessmentTimeScreen}
-                          className="flex items-center gap-2"
-                        >
-                          Next
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    {/* Navigation Buttons */}
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                      <button
+                        onClick={handlePreviousLesson}
+                        disabled={currentLessonIndex === 0}
+                        className="cleo-btn-outline flex items-center gap-2 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                        <span>Previous</span>
+                      </button>
+                      
+                      <span className="text-sm opacity-70 order-first sm:order-none">
+                        Navigate lessons
+                      </span>
+                      
+                      <button
+                        onClick={handleNextLesson}
+                        disabled={currentLessonIndex >= lessons.length - 1 && !showAssessmentTimeScreen}
+                        className="cleo-btn-primary text-white flex items-center gap-2 w-full sm:w-auto font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span>Next</span>
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {/* Main Cleo Content Card */}
-                <Card className="overflow-hidden">
-                  <CardContent className="p-0 min-h-[60vh]">
+                <div className="cleo-card overflow-hidden relative cursor-pointer" 
+                  onClick={() => {
+                    if (currentLesson) {
+                      navigate(`/lesson-planning?topic=${encodeURIComponent(currentLesson.title)}&yearGroup=${encodeURIComponent(course.subject || 'GCSE')}&lessonId=${currentLesson.id}&moduleId=${moduleId}&courseId=${courseId}`);
+                    }
+                  }}
+                >
+                  <div className="p-0 min-h-[60vh] relative">
                     {currentLesson ? (
-                      <Button
-                        onClick={() => {
-                          navigate(`/lesson-planning?topic=${encodeURIComponent(currentLesson.title)}&yearGroup=${encodeURIComponent(course.subject || 'GCSE')}&lessonId=${currentLesson.id}&moduleId=${moduleId}&courseId=${courseId}`);
-                        }}
-                        className="w-full h-full min-h-[60vh] bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 flex flex-col items-center justify-center gap-4"
-                        variant="ghost"
-                      >
-                        <Bot className="w-16 h-16 text-primary" />
-                        <div className="text-center">
-                          <h3 className="text-2xl font-bold text-foreground mb-2">
+                      <div className="w-full h-full min-h-[60vh] flex flex-col items-center justify-center gap-4 relative">
+                        {/* Radial gradient background */}
+                        <div 
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            background: 'radial-gradient(circle at top, #eaf0ff, #f8fbff)',
+                            opacity: 0.95,
+                            top: '-40%',
+                            bottom: 'auto',
+                            borderRadius: '50%'
+                          }}
+                        />
+                        
+                        {/* Content */}
+                        <div className="relative z-10 text-center px-6">
+                          <div className="text-6xl mb-4">🦊</div>
+                          <h3 className="text-2xl font-bold mb-2">
                             Start Learning with Cleo
                           </h3>
-                          <p className="text-muted-foreground">
+                          <p className="text-base opacity-85">
                             Cleo will prepare a personalized lesson just for you
                           </p>
                         </div>
-                      </Button>
+                      </div>
                     ) : showAssessmentTimeScreen ? (
                       <AssessmentTimeScreen 
                         onBeginAssessment={handleBeginAssessment}
@@ -446,8 +463,8 @@ const ModuleDetail = () => {
                         <p>Select a lesson to begin learning with Cleo</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
             ) : (
               <Card>
