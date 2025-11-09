@@ -18,9 +18,12 @@ const courseEmojiMap: Record<string, string> = {
   // GCSE subjects
   'GCSE Maths': '📐',
   'GCSE English': '📝',
+  'GCSE English Language': '📖',
+  'GCSE English Literature': '📚',
   'GCSE Biology': '🧬',
   'GCSE Chemistry': '⚗️',
   'GCSE Physics': '⚛️',
+  'GCSE Computer Science': '💻',
 };
 
 const getCourseEmoji = (title: string): string => {
