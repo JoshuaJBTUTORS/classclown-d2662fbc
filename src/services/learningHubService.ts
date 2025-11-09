@@ -571,6 +571,55 @@ export const learningHubService = {
     }
   },
 
+  // Bulk import curriculum from CSV
+  bulkCreateModulesAndLessons: async (
+    courseId: string,
+    parsedData: { modules: Array<{ title: string; description: string; order: number; lessons: Array<{ title: string; description: string; order: number; objectives: string[] }> }> }
+  ): Promise<{ modulesCreated: number; lessonsCreated: number }> => {
+    let modulesCreated = 0;
+    let lessonsCreated = 0;
+
+    try {
+      // Process each module
+      for (const moduleData of parsedData.modules) {
+        // Create the module
+        const createdModule = await learningHubService.createModule({
+          course_id: courseId,
+          title: moduleData.title,
+          description: moduleData.description,
+          position: moduleData.order - 1 // Convert 1-based to 0-based index
+        });
+
+        modulesCreated++;
+
+        // Create lessons for this module
+        for (const lessonData of moduleData.lessons) {
+          // Store learning objectives as JSON in content_text for Cleo to use
+          const contentText = JSON.stringify({
+            objectives: lessonData.objectives
+          });
+
+          await learningHubService.createLesson({
+            module_id: createdModule.id,
+            title: lessonData.title,
+            description: lessonData.description,
+            content_type: 'ai-assessment', // All lessons are for Cleo
+            content_text: contentText,
+            position: lessonData.order - 1, // Convert 1-based to 0-based index
+            is_preview: false
+          });
+
+          lessonsCreated++;
+        }
+      }
+
+      return { modulesCreated, lessonsCreated };
+    } catch (error) {
+      console.error('Error in bulkCreateModulesAndLessons:', error);
+      throw new Error(`Failed to import curriculum: ${error instanceof Error ? error.message : 'Unknown error'}. Created ${modulesCreated} modules and ${lessonsCreated} lessons before failure.`);
+    }
+  },
+
   // Module access control
   checkModuleAccess: async (moduleId: string): Promise<boolean> => {
     try {

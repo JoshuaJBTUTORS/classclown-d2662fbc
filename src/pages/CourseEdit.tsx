@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
 import { Course } from '@/types/course';
 import ModuleManager from '@/components/learningHub/ModuleManager';
+import { CurriculumImporter } from '@/components/learningHub/CurriculumImporter';
 import { LESSON_SUBJECTS, isValidLessonSubject, LessonSubject } from '@/constants/subjects';
 import CourseImageUploadField from '@/components/learningHub/CourseImageUploadField';
 
@@ -227,6 +228,7 @@ const CourseEdit: React.FC = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="details">Course Details</TabsTrigger>
           <TabsTrigger value="modules">Modules & Lessons</TabsTrigger>
+          <TabsTrigger value="import">Import Curriculum</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
@@ -339,6 +341,17 @@ const CourseEdit: React.FC = () => {
             </CardHeader>
             <CardContent>
               <ModuleManager courseId={courseId!} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="import">
+          <Card>
+            <CardHeader>
+              <CardTitle>Import Curriculum from CSV</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CurriculumImporter courseId={courseId!} />
             </CardContent>
           </Card>
         </TabsContent>
