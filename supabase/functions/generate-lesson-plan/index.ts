@@ -33,6 +33,28 @@ serve(async (req) => {
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId });
 
+    // Fetch learning objectives from the lesson if lessonId is provided
+    let learningObjectives: string[] = [];
+    if (lessonId) {
+      const { data: lessonData } = await supabase
+        .from('course_lessons')
+        .select('content_text')
+        .eq('id', lessonId)
+        .single();
+      
+      if (lessonData?.content_text) {
+        try {
+          const parsedContent = JSON.parse(lessonData.content_text);
+          if (parsedContent.objectives && Array.isArray(parsedContent.objectives)) {
+            learningObjectives = parsedContent.objectives;
+            console.log('Loaded learning objectives from CSV:', learningObjectives);
+          }
+        } catch (e) {
+          console.warn('Failed to parse lesson content_text:', e);
+        }
+      }
+    }
+
     // Find an existing plan using a robust strategy to respect unique indexes
     // Priority: lesson_id -> conversation_id+topic -> standalone (topic+year_group, lesson_id IS NULL)
     let existingPlan = null as any;
@@ -196,8 +218,9 @@ IMPORTANT RULES:
             content: `Create a lesson plan for teaching: ${topic}
 Year Group: ${yearGroup}
 ${learningGoal ? `Learning Goal: ${learningGoal}` : ''}
+${learningObjectives.length > 0 ? `\nPredefined Learning Objectives (MUST use these exactly):\n${learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}` : ''}
 
-Generate a complete lesson with all necessary tables, definitions, diagrams, and questions.`
+Generate a complete lesson with all necessary tables, definitions, diagrams, and questions.${learningObjectives.length > 0 ? ' Make sure to use the predefined learning objectives listed above.' : ''}`
           }
         ],
         tools: [{

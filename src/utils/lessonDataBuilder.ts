@@ -5,6 +5,7 @@ interface Lesson {
   title: string;
   description?: string;
   content?: string;
+  content_text?: string;
   objectives?: string[];
 }
 
@@ -36,9 +37,22 @@ export function buildLessonDataFromLesson(
     ? 'A-Level' 
     : course.subject || 'General';
 
+  // Parse objectives from content_text if available (CSV imported lessons)
+  let objectives = lesson.objectives || [];
+  if (lesson.content_text && objectives.length === 0) {
+    try {
+      const parsedContent = JSON.parse(lesson.content_text);
+      if (parsedContent.objectives && Array.isArray(parsedContent.objectives)) {
+        objectives = parsedContent.objectives;
+      }
+    } catch (e) {
+      console.warn('Failed to parse lesson content_text for objectives:', e);
+    }
+  }
+
   // Create steps based on lesson objectives or use default structure
-  const steps: LessonStep[] = lesson.objectives && lesson.objectives.length > 0
-    ? lesson.objectives.map((objective, index) => ({
+  const steps: LessonStep[] = objectives.length > 0
+    ? objectives.map((objective, index) => ({
         id: `step-${index}`,
         order: index + 1,
         title: objective,
