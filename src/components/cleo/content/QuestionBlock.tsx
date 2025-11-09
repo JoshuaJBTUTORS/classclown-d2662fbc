@@ -13,6 +13,15 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
+  // Defensive check for undefined data
+  if (!data || !data.question || !data.options || !Array.isArray(data.options)) {
+    return (
+      <div className="bg-muted/50 border border-border rounded-lg p-4">
+        <p className="text-sm text-muted-foreground">Question content not available</p>
+      </div>
+    );
+  }
+
   const handleAnswerClick = (optionId: string, isCorrect: boolean) => {
     setSelectedAnswer(optionId);
     setShowFeedback(true);

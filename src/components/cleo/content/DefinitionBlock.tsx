@@ -10,6 +10,15 @@ interface DefinitionBlockProps {
 }
 
 export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data, onContentAction }) => {
+  // Defensive check for undefined data
+  if (!data || !data.term || !data.definition) {
+    return (
+      <div className="bg-muted/50 border border-border rounded-lg p-4">
+        <p className="text-sm text-muted-foreground">Definition content not available</p>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
