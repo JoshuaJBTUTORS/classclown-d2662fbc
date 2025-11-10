@@ -31,8 +31,6 @@ import {
 import { CleoChat } from '@/components/cleo/CleoChat';
 import { TopicSelectionScreen } from '@/components/cleo/TopicSelectionScreen';
 import { useCourseTopics } from '@/hooks/useCourseTopics';
-import CourseSidebar from '@/components/learningHub/CourseSidebar';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 const ModuleDetail = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
@@ -308,55 +306,25 @@ const ModuleDetail = () => {
     );
   }
 
-  const handleSelectLesson = (lesson: CourseLesson) => {
-    // Find the lesson and navigate if needed
-    const lessonIndex = lessons.findIndex(l => l.id === lesson.id);
-    if (lessonIndex !== -1) {
-      setCurrentLessonIndex(lessonIndex);
-    }
-  };
-
   return (
     <CourseAccessControl courseId={courseId!}>
-      <SidebarProvider defaultOpen={!isMobile}>
-        <div className="min-h-screen flex w-full">
-          {/* Course Sidebar */}
-          <CourseSidebar
-            modules={orderedModules || []}
-            studentProgress={userProgress || []}
-            onSelectLesson={handleSelectLesson}
-            currentLessonId={currentLesson?.id}
-            isAdmin={isOwner}
-            isPurchased={hasPurchased || false}
-          />
+      <TopicSelectionScreen
+        courseId={courseId!}
+        moduleId={moduleId!}
+        userName={user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
+        topics={availableTopics}
+        yearGroup={course.subject || 'GCSE'}
+      />
 
-          {/* Main Content Area */}
-          <main className="flex-1 relative">
-            {/* Mobile Sidebar Trigger */}
-            <div className="fixed top-4 left-4 z-30 md:hidden">
-              <SidebarTrigger />
-            </div>
-
-            <TopicSelectionScreen
-              courseId={courseId!}
-              moduleId={moduleId!}
-              userName={user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
-              topics={availableTopics}
-              yearGroup={course.subject || 'GCSE'}
-            />
-          </main>
-        </div>
-
-        {/* Module Assessment Dialog */}
-        {moduleAssessments && moduleAssessments.length > 0 && showAssessmentDialog && (
-          <ModuleAssessmentDialog
-            isOpen={showAssessmentDialog}
-            onClose={() => setShowAssessmentDialog(false)}
-            assessmentId={moduleAssessments[0].id}
-            onAssessmentComplete={handleAssessmentComplete}
-          />
-        )}
-      </SidebarProvider>
+      {/* Module Assessment Dialog */}
+      {moduleAssessments && moduleAssessments.length > 0 && showAssessmentDialog && (
+        <ModuleAssessmentDialog
+          isOpen={showAssessmentDialog}
+          onClose={() => setShowAssessmentDialog(false)}
+          assessmentId={moduleAssessments[0].id}
+          onAssessmentComplete={handleAssessmentComplete}
+        />
+      )}
     </CourseAccessControl>
   );
 };

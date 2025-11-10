@@ -5,6 +5,7 @@ interface TopicOption {
   id: string;
   name: string;
   icon: string;
+  position?: number;
 }
 
 interface TopicSelectionScreenProps {
@@ -56,7 +57,7 @@ export const TopicSelectionScreen = ({
             onClick={() => handleTopicSelect(topic)}
           >
             <span className="cleo-icon">{topic.icon}</span>
-            <span>{topic.name}</span>
+            <span>{topic.position ? `${topic.position}) ` : ''}{topic.name}</span>
           </div>
         ))}
       </div>

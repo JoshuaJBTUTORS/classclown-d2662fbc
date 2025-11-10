@@ -5,6 +5,7 @@ interface TopicOption {
   id: string;
   name: string;
   icon: string;
+  position?: number;
 }
 
 const TOPIC_ICONS: Record<string, string> = {
@@ -48,8 +49,9 @@ export function useCourseTopics(courseId: string, moduleId?: string) {
         // Fetch lessons for specific module
         const { data, error } = await supabase
           .from('course_lessons')
-          .select('id, title')
-          .eq('module_id', moduleId);
+          .select('id, title, position')
+          .eq('module_id', moduleId)
+          .order('position', { ascending: true });
 
         if (error) throw error;
         lessons = data || [];
@@ -67,8 +69,9 @@ export function useCourseTopics(courseId: string, moduleId?: string) {
 
         const { data, error: lessonsError } = await supabase
           .from('course_lessons')
-          .select('id, title')
-          .in('module_id', moduleIds);
+          .select('id, title, position')
+          .in('module_id', moduleIds)
+          .order('position', { ascending: true });
 
         if (lessonsError) throw lessonsError;
         lessons = data || [];
@@ -76,32 +79,13 @@ export function useCourseTopics(courseId: string, moduleId?: string) {
 
       if (!lessons || lessons.length === 0) return [];
 
-      // Extract unique topics
-      const topicsMap = new Map<string, TopicOption>();
-
-      lessons.forEach(lesson => {
-        let topicName: string;
-
-        // Extract topic from title (e.g., "Motion: Newton's Laws" -> "Motion")
-        const colonIndex = lesson.title.indexOf(':');
-        if (colonIndex > 0) {
-          topicName = lesson.title.substring(0, colonIndex).trim();
-        } else {
-          // Use the full title if no colon
-          topicName = lesson.title;
-        }
-
-        // Only add if we don't already have this topic
-        if (!topicsMap.has(topicName)) {
-          topicsMap.set(topicName, {
-            id: topicName.toLowerCase().replace(/\s+/g, '-'),
-            name: topicName,
-            icon: getIconForTopic(topicName)
-          });
-        }
-      });
-
-      return Array.from(topicsMap.values());
+      // Return lessons as topics with their positions
+      return lessons.map(lesson => ({
+        id: lesson.id,
+        name: lesson.title,
+        icon: getIconForTopic(lesson.title),
+        position: lesson.position
+      }));
     },
     enabled: !!courseId
   });
