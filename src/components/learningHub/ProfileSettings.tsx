@@ -13,9 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 
 const profileSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Please enter a valid email'),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  email: z.union([
+    z.string().email('Please enter a valid email'),
+    z.literal(''),
+  ]).optional(),
   phone_number: z.string().optional(),
   education_level: z.enum(['11_plus', 'gcse']).optional(),
   gcse_subject_ids: z.array(z.string()).optional(),
@@ -112,32 +115,37 @@ const ProfileSettings = () => {
 
     setIsLoading(true);
     try {
-      // Update email if changed
-      if (data.email !== user.email) {
+      // Update email if changed and not empty
+      if (data.email && data.email !== user.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: data.email,
         });
         if (emailError) throw emailError;
       }
 
+      // Prepare update object with only provided fields
+      const updates: any = {};
+      
+      if (data.first_name !== undefined && data.first_name !== '') updates.first_name = data.first_name;
+      if (data.last_name !== undefined && data.last_name !== '') updates.last_name = data.last_name;
+      if (data.phone_number !== undefined) updates.phone_number = data.phone_number || null;
+      if (data.education_level !== undefined) updates.education_level = data.education_level || null;
+      
+      // Always update these as they might be cleared
+      updates.gcse_subject_ids = data.gcse_subject_ids || [];
+      updates.exam_boards = data.exam_boards || {};
+
       // Update profile
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone_number: data.phone_number || null,
-          education_level: data.education_level || null,
-          gcse_subject_ids: data.gcse_subject_ids || [],
-          exam_boards: data.exam_boards || {},
-        })
+        .update(updates)
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
       toast({
         title: 'Profile updated',
-        description: 'Your profile has been successfully updated.',
+        description: 'Your settings have been successfully saved.',
       });
     } catch (error: any) {
       console.error('Error updating profile:', error);
