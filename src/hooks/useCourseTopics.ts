@@ -38,27 +38,42 @@ function getIconForTopic(topic: string): string {
   return TOPIC_ICONS.default;
 }
 
-export function useCourseTopics(courseId: string) {
+export function useCourseTopics(courseId: string, moduleId?: string) {
   return useQuery({
-    queryKey: ['course-topics', courseId],
+    queryKey: ['course-topics', courseId, moduleId],
     queryFn: async () => {
-      // Fetch all lessons for this course
-      const { data: modules, error: modulesError } = await supabase
-        .from('course_modules')
-        .select('id')
-        .eq('course_id', courseId);
+      let lessons;
+      
+      if (moduleId) {
+        // Fetch lessons for specific module
+        const { data, error } = await supabase
+          .from('course_lessons')
+          .select('id, title')
+          .eq('module_id', moduleId);
 
-      if (modulesError) throw modulesError;
-      if (!modules || modules.length === 0) return [];
+        if (error) throw error;
+        lessons = data || [];
+      } else {
+        // Fetch all lessons for the course
+        const { data: modules, error: modulesError } = await supabase
+          .from('course_modules')
+          .select('id')
+          .eq('course_id', courseId);
 
-      const moduleIds = modules.map(m => m.id);
+        if (modulesError) throw modulesError;
+        if (!modules || modules.length === 0) return [];
 
-      const { data: lessons, error: lessonsError } = await supabase
-        .from('course_lessons')
-        .select('id, title')
-        .in('module_id', moduleIds);
+        const moduleIds = modules.map(m => m.id);
 
-      if (lessonsError) throw lessonsError;
+        const { data, error: lessonsError } = await supabase
+          .from('course_lessons')
+          .select('id, title')
+          .in('module_id', moduleIds);
+
+        if (lessonsError) throw lessonsError;
+        lessons = data || [];
+      }
+
       if (!lessons || lessons.length === 0) return [];
 
       // Extract unique topics
