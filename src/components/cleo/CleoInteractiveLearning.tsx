@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CompactStepIndicator } from './CompactStepIndicator';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
+import { useAudioDevices } from '@/hooks/useAudioDevices';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -47,6 +48,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const navigate = useNavigate();
   const { toast } = useToast();
   const subjectTheme = getSubjectTheme(lessonData.topic, lessonData.yearGroup);
+  const { selectedMicrophone, selectedSpeaker } = useAudioDevices();
   
   const lessonState = useCleoLessonState(conversationId || null);
   
@@ -454,6 +456,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           }}
           voiceTimer={voiceTimer}
           onVoiceLimitReached={handleVoiceLimitReached}
+          selectedMicrophoneId={selectedMicrophone?.deviceId}
+          selectedSpeakerId={selectedSpeaker?.deviceId}
         />
       </div>
 

@@ -36,6 +36,8 @@ interface CleoVoiceChatProps {
     hasReachedLimit: boolean;
   };
   onVoiceLimitReached?: () => void;
+  selectedMicrophoneId?: string;
+  selectedSpeakerId?: string;
 }
 
 export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({ 
@@ -50,7 +52,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onSpeakingChange,
   onProvideControls,
   voiceTimer,
-  onVoiceLimitReached
+  onVoiceLimitReached,
+  selectedMicrophoneId,
+  selectedSpeakerId
 }) => {
   const { toast } = useToast();
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
@@ -100,8 +104,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         throw new Error('Not authenticated');
       }
 
-    // Create audio player
-    playerRef.current = new AudioStreamPlayer();
+    // Create audio player with selected output device
+    playerRef.current = new AudioStreamPlayer(selectedSpeakerId);
     
     // Resume AudioContext immediately (user gesture)
     await playerRef.current.resume();
@@ -271,14 +275,17 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     }
 
     try {
-      recorderRef.current = new AudioStreamRecorder((base64Audio) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: base64Audio
-          }));
-        }
-      });
+      recorderRef.current = new AudioStreamRecorder(
+        (base64Audio) => {
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: base64Audio
+            }));
+          }
+        },
+        selectedMicrophoneId
+      );
 
       await recorderRef.current.start();
       setMicrophoneActive(true);

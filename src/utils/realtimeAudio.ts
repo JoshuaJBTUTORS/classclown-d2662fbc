@@ -10,20 +10,26 @@ export class AudioStreamRecorder {
   private source: MediaStreamAudioSourceNode | null = null;
   private isRecording = false;
 
-  constructor(private onAudioChunk: (base64Audio: string) => void) {}
+  constructor(
+    private onAudioChunk: (base64Audio: string) => void,
+    private deviceId?: string
+  ) {}
 
   async start() {
     try {
-      // Request microphone access
-      this.stream = await navigator.mediaDevices.getUserMedia({
+      // Request microphone access with optional device ID
+      const constraints: MediaStreamConstraints = {
         audio: {
+          deviceId: this.deviceId ? { exact: this.deviceId } : undefined,
           sampleRate: 24000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         }
-      });
+      };
+      
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       // Create audio context at 24kHz
       this.audioContext = new AudioContext({ sampleRate: 24000 });
@@ -112,15 +118,24 @@ export class AudioStreamPlayer {
   private audioContext: AudioContext;
   private audioQueue: Uint8Array[] = [];
   private isPlaying = false;
+  private outputDeviceId?: string;
 
-  constructor() {
+  constructor(outputDeviceId?: string) {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
+    this.outputDeviceId = outputDeviceId;
     
     this.audioContext.onstatechange = () => {
       console.log('🔊 AudioContext state changed:', this.audioContext.state);
     };
     
     console.log('🔊 AudioContext created with state:', this.audioContext.state);
+    
+    // Set output device if supported (Chrome/Edge only)
+    if (this.outputDeviceId && 'setSinkId' in this.audioContext) {
+      (this.audioContext as any).setSinkId(this.outputDeviceId)
+        .then(() => console.log('🔊 Audio output set to:', this.outputDeviceId))
+        .catch((err: Error) => console.error('Failed to set audio output:', err));
+    }
   }
 
   async playChunk(base64Audio: string) {

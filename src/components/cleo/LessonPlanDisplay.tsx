@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BookOpen, Target, Clock, CheckCircle, ArrowLeft } from 'lucide-react';
+import { useAudioDevices } from '@/hooks/useAudioDevices';
+import { AudioDeviceSelector } from './AudioDeviceSelector';
 
 interface LessonPlanDisplayProps {
   lessonPlan: {
@@ -33,6 +36,14 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
   courseId
 }) => {
   const navigate = useNavigate();
+  const { 
+    audioInputs, 
+    audioOutputs, 
+    selectedMicrophone, 
+    selectedSpeaker, 
+    setMicrophone, 
+    setSpeaker 
+  } = useAudioDevices();
 
   const handleBackToModule = () => {
     if (courseId && moduleId) {
@@ -58,14 +69,49 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
           <div className="cleo-avatar mx-0">🧑🏻‍🔬</div>
           
           <div className="flex gap-2">
-            <button className="cleo-back-btn">
-              <span className="text-lg">🔈</span>
-              <span>Select speaker</span>
-            </button>
-            <button className="cleo-back-btn">
-              <span className="text-lg">🎙️</span>
-              <span>Select microphone</span>
-            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="cleo-back-btn">
+                  <span className="text-lg">🔈</span>
+                  <span className="truncate max-w-[120px]">
+                    {selectedSpeaker?.label || 'Select speaker'}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="mb-2 font-semibold text-sm" style={{ color: 'hsl(var(--cleo-text-main))' }}>
+                  Select Speaker
+                </div>
+                <AudioDeviceSelector
+                  devices={audioOutputs}
+                  selectedDeviceId={selectedSpeaker?.deviceId}
+                  onSelect={setSpeaker}
+                  type="output"
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="cleo-back-btn">
+                  <span className="text-lg">🎙️</span>
+                  <span className="truncate max-w-[120px]">
+                    {selectedMicrophone?.label || 'Select microphone'}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="mb-2 font-semibold text-sm" style={{ color: 'hsl(var(--cleo-text-main))' }}>
+                  Select Microphone
+                </div>
+                <AudioDeviceSelector
+                  devices={audioInputs}
+                  selectedDeviceId={selectedMicrophone?.deviceId}
+                  onSelect={setMicrophone}
+                  type="input"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
