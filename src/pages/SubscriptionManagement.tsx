@@ -1,0 +1,308 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, Zap, CreditCard, Calendar, ArrowRight } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+
+interface Subscription {
+  plan_name: string;
+  billing_interval: string;
+  status: string;
+  current_period_end: string;
+  voice_sessions_per_month: number;
+}
+
+interface Quota {
+  sessions_remaining: number;
+  bonus_sessions: number;
+  sessions_used: number;
+  total_sessions_allowed: number;
+  period_end: string;
+}
+
+export default function SubscriptionManagement() {
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [quota, setQuota] = useState<Quota | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showPackPurchase, setShowPackPurchase] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchSubscriptionData();
+  }, []);
+
+  const fetchSubscriptionData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/');
+        return;
+      }
+
+      // Fetch subscription
+      const { data: subData } = await supabase
+        .from('user_platform_subscriptions')
+        .select(`
+          *,
+          plan:platform_subscription_plans(*)
+        `)
+        .eq('user_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (subData) {
+        setSubscription({
+          plan_name: subData.plan.name,
+          billing_interval: subData.billing_interval,
+          status: subData.status,
+          current_period_end: subData.current_period_end,
+          voice_sessions_per_month: subData.plan.voice_sessions_per_month
+        });
+      }
+
+      // Fetch current quota
+      const now = new Date().toISOString();
+      const { data: quotaData } = await supabase
+        .from('voice_session_quotas')
+        .select('*')
+        .eq('user_id', user.id)
+        .lte('period_start', now)
+        .gte('period_end', now)
+        .single();
+
+      if (quotaData) {
+        setQuota(quotaData);
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load subscription details',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-customer-portal');
+      if (error) throw error;
+      window.open(data.url, '_blank');
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to open customer portal',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-mint-600" />
+      </div>
+    );
+  }
+
+  if (!subscription) {
+    return (
+      <div className="container max-w-2xl mx-auto p-6 space-y-6">
+        <Card className="p-8 text-center space-y-4">
+          <h2 className="text-2xl font-bold">No Active Subscription</h2>
+          <p className="text-muted-foreground">
+            Subscribe to start learning with Cleo's voice sessions
+          </p>
+          <Button onClick={() => navigate('/signup')}>
+            View Plans
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const totalRemaining = (quota?.sessions_remaining || 0) + (quota?.bonus_sessions || 0);
+  const percentUsed = quota 
+    ? ((quota.sessions_used / quota.total_sessions_allowed) * 100)
+    : 0;
+
+  return (
+    <div className="container max-w-4xl mx-auto p-6 space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">Subscription Management</h1>
+        <p className="text-muted-foreground">Manage your Cleo voice sessions and billing</p>
+      </div>
+
+      {/* Current Plan Card */}
+      <Card className="p-6 space-y-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              {subscription.plan_name} Plan
+              <Badge variant={subscription.status === 'active' ? 'default' : 'secondary'}>
+                {subscription.status}
+              </Badge>
+            </h2>
+            <p className="text-muted-foreground capitalize">
+              {subscription.billing_interval} billing
+            </p>
+          </div>
+          <Button variant="outline" onClick={handleManageSubscription}>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Manage
+          </Button>
+        </div>
+
+        {/* Usage Stats */}
+        {quota && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Voice Sessions This Period</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold">{totalRemaining}</span>
+                  <span className="text-muted-foreground">/ {quota.total_sessions_allowed} remaining</span>
+                </div>
+              </div>
+              <Zap className="h-8 w-8 text-mint-600" />
+            </div>
+
+            <Progress value={100 - percentUsed} className="h-3" />
+
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-2xl font-bold text-mint-600">{quota.sessions_used}</p>
+                <p className="text-xs text-muted-foreground">Used</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{quota.sessions_remaining}</p>
+                <p className="text-xs text-muted-foreground">Regular</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-yellow-600">{quota.bonus_sessions}</p>
+                <p className="text-xs text-muted-foreground">Bonus</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>Resets on {new Date(quota.period_end).toLocaleDateString()}</span>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Buy More Sessions */}
+      {totalRemaining < 10 && (
+        <Card className="p-6 space-y-4">
+          <div>
+            <h3 className="text-xl font-bold">Running Low on Sessions?</h3>
+            <p className="text-sm text-muted-foreground">
+              Purchase additional session packs - they never expire!
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <SessionPackCard size={5} price={1000} />
+            <SessionPackCard size={10} price={1800} recommended />
+            <SessionPackCard size={20} price={3200} />
+          </div>
+        </Card>
+      )}
+
+      {/* Quick Actions */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+        <div className="space-y-3">
+          <Button variant="outline" className="w-full justify-between" onClick={() => navigate('/learning-hub')}>
+            Back to Learning Hub
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" className="w-full justify-between" onClick={handleManageSubscription}>
+            View Billing History
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+interface SessionPackCardProps {
+  size: 5 | 10 | 20;
+  price: number;
+  recommended?: boolean;
+}
+
+const SessionPackCard = ({ size, price, recommended }: SessionPackCardProps) => {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handlePurchase = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('purchase-session-pack', {
+        body: { packSize: size }
+      });
+
+      if (error) throw error;
+
+      // Open Stripe checkout with client secret
+      const stripe = await stripePromise;
+      if (!stripe) throw new Error('Stripe not loaded');
+
+      // Here you would integrate Stripe's Payment Element
+      // For now, show success
+      toast({
+        title: 'Purchase Initiated',
+        description: `Processing your ${size}-session pack purchase...`
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to purchase session pack',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className={`p-4 space-y-3 ${recommended ? 'border-mint-500 border-2' : ''}`}>
+      {recommended && (
+        <Badge className="bg-mint-500">Best Value</Badge>
+      )}
+      <div className="space-y-1">
+        <p className="text-2xl font-bold">{size} Sessions</p>
+        <p className="text-xl text-mint-600">£{(price / 100).toFixed(2)}</p>
+        <p className="text-xs text-muted-foreground">
+          £{((price / size) / 100).toFixed(2)} per session
+        </p>
+      </div>
+      <Button 
+        onClick={handlePurchase} 
+        disabled={loading}
+        size="sm"
+        className="w-full"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buy Now'}
+      </Button>
+    </Card>
+  );
+};

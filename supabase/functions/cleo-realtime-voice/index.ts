@@ -46,6 +46,31 @@ Deno.serve(async (req) => {
 
     console.log("User authenticated:", user.id);
 
+    // Check voice quota BEFORE starting session
+    const supabaseAnonClient = createClient(
+      SUPABASE_URL,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    const quotaCheckResponse = await supabaseAnonClient.functions.invoke('check-voice-quota', {
+      body: { conversationId: url.searchParams.get("conversationId") }
+    });
+
+    if (quotaCheckResponse.error || !quotaCheckResponse.data?.canStart) {
+      console.error("Quota check failed:", quotaCheckResponse.error || quotaCheckResponse.data?.message);
+      return new Response(
+        JSON.stringify({
+          error: 'No voice sessions remaining',
+          message: quotaCheckResponse.data?.message || 'Please purchase more sessions or upgrade your plan.'
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log("✅ Quota check passed:", quotaCheckResponse.data.sessionsRemaining, "sessions remaining");
+    const quotaId = quotaCheckResponse.data.quotaId;
+
     // Fetch user profile for personalized greeting
     const { data: userProfile } = await supabase
       .from('user_profiles')
@@ -163,6 +188,54 @@ Deno.serve(async (req) => {
     let isSessionConfigured = false;
     let currentTranscript = '';
     let currentAssistantMessage = '';
+    
+    // Track session timing for quota management
+    const sessionStartTime = new Date().toISOString();
+    const sessionStartTimestamp = Date.now();
+    const MAX_SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+    let sessionEndTimer: number | null = null;
+    let sessionLogged = false;
+
+    // Auto-disconnect at 5 minutes
+    sessionEndTimer = setTimeout(() => {
+      console.log("⏰ Session time limit reached (5 minutes) - disconnecting");
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.send(JSON.stringify({
+          type: 'session.limit_reached',
+          message: 'Your 5-minute voice session has ended. Start a new session to continue!'
+        }));
+      }
+      openAISocket.close();
+      clientSocket.close();
+    }, MAX_SESSION_DURATION_MS);
+    
+    // Function to log session usage
+    async function logSessionUsage(wasInterrupted = false) {
+      if (sessionLogged) return;
+      sessionLogged = true;
+
+      const durationSeconds = Math.floor((Date.now() - sessionStartTimestamp) / 1000);
+      console.log(`📊 Logging voice session: ${durationSeconds} seconds`);
+
+      try {
+        const logResponse = await supabaseAnonClient.functions.invoke('log-voice-session', {
+          body: {
+            conversationId: conversation.id,
+            sessionStart: sessionStartTime,
+            durationSeconds: Math.min(durationSeconds, 300), // Cap at 5 minutes
+            wasInterrupted
+          }
+        });
+
+        if (logResponse.error) {
+          console.error("Error logging session:", logResponse.error);
+        } else {
+          console.log("✅ Session logged successfully:", logResponse.data);
+        }
+      } catch (error) {
+        console.error("Failed to log session:", error);
+      }
+    }
 
     // Handle OpenAI socket events
     openAISocket.onopen = () => {
@@ -761,6 +834,8 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
 
     openAISocket.onclose = () => {
       console.log("OpenAI socket closed");
+      if (sessionEndTimer) clearTimeout(sessionEndTimer);
+      logSessionUsage(false);
       clientSocket.close();
     };
 
@@ -821,11 +896,15 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
 
     clientSocket.onclose = () => {
       console.log("Client disconnected");
+      if (sessionEndTimer) clearTimeout(sessionEndTimer);
+      logSessionUsage(true); // Mark as interrupted if client closes
       openAISocket.close();
     };
 
     clientSocket.onerror = (error) => {
       console.error("Client socket error:", error);
+      if (sessionEndTimer) clearTimeout(sessionEndTimer);
+      logSessionUsage(true);
       openAISocket.close();
     };
 

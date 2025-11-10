@@ -2735,6 +2735,54 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_subscription_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_annual_pence: number
+          price_monthly_pence: number
+          stripe_annual_price_id: string | null
+          stripe_monthly_price_id: string | null
+          updated_at: string | null
+          voice_sessions_per_month: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_annual_pence: number
+          price_monthly_pence: number
+          stripe_annual_price_id?: string | null
+          stripe_monthly_price_id?: string | null
+          updated_at?: string | null
+          voice_sessions_per_month: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_annual_pence?: number
+          price_monthly_pence?: number
+          stripe_annual_price_id?: string | null
+          stripe_monthly_price_id?: string | null
+          updated_at?: string | null
+          voice_sessions_per_month?: number
+        }
+        Relationships: []
+      }
       platform_subscriptions: {
         Row: {
           created_at: string
@@ -2801,6 +2849,7 @@ export type Database = {
           exam_boards: Json | null
           first_name: string | null
           gcse_subject_ids: string[] | null
+          has_completed_trial: boolean | null
           id: string
           last_name: string | null
           onboarding_completed: boolean | null
@@ -2808,6 +2857,7 @@ export type Database = {
           phone_number: string | null
           preferred_subjects: string[] | null
           region: string | null
+          trial_completed_at: string | null
           updated_at: string | null
           year_group_id: string | null
         }
@@ -2819,6 +2869,7 @@ export type Database = {
           exam_boards?: Json | null
           first_name?: string | null
           gcse_subject_ids?: string[] | null
+          has_completed_trial?: boolean | null
           id: string
           last_name?: string | null
           onboarding_completed?: boolean | null
@@ -2826,6 +2877,7 @@ export type Database = {
           phone_number?: string | null
           preferred_subjects?: string[] | null
           region?: string | null
+          trial_completed_at?: string | null
           updated_at?: string | null
           year_group_id?: string | null
         }
@@ -2837,6 +2889,7 @@ export type Database = {
           exam_boards?: Json | null
           first_name?: string | null
           gcse_subject_ids?: string[] | null
+          has_completed_trial?: boolean | null
           id?: string
           last_name?: string | null
           onboarding_completed?: boolean | null
@@ -2844,6 +2897,7 @@ export type Database = {
           phone_number?: string | null
           preferred_subjects?: string[] | null
           region?: string | null
+          trial_completed_at?: string | null
           updated_at?: string | null
           year_group_id?: string | null
         }
@@ -3195,6 +3249,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      session_pack_purchases: {
+        Row: {
+          created_at: string | null
+          id: string
+          pack_size: number
+          price_paid_pence: number
+          purchased_at: string | null
+          sessions_granted: number
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          pack_size: number
+          price_paid_pence: number
+          purchased_at?: string | null
+          sessions_granted: number
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          pack_size?: number
+          price_paid_pence?: number
+          purchased_at?: string | null
+          sessions_granted?: number
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       student_progress: {
         Row: {
@@ -4077,6 +4164,68 @@ export type Database = {
         }
         Relationships: []
       }
+      user_platform_subscriptions: {
+        Row: {
+          billing_interval: string
+          cancel_at_period_end: boolean | null
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          billing_interval: string
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end: string
+          current_period_start: string
+          id?: string
+          plan_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          billing_interval?: string
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_platform_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "platform_subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -4220,6 +4369,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      voice_session_logs: {
+        Row: {
+          ai_cost_estimate_usd: number | null
+          conversation_id: string | null
+          created_at: string | null
+          deducted_from_quota: boolean | null
+          duration_seconds: number | null
+          id: string
+          quota_id: string | null
+          session_end: string | null
+          session_start: string
+          user_id: string
+          was_interrupted: boolean | null
+        }
+        Insert: {
+          ai_cost_estimate_usd?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          deducted_from_quota?: boolean | null
+          duration_seconds?: number | null
+          id?: string
+          quota_id?: string | null
+          session_end?: string | null
+          session_start: string
+          user_id: string
+          was_interrupted?: boolean | null
+        }
+        Update: {
+          ai_cost_estimate_usd?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          deducted_from_quota?: boolean | null
+          duration_seconds?: number | null
+          id?: string
+          quota_id?: string | null
+          session_end?: string | null
+          session_start?: string
+          user_id?: string
+          was_interrupted?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_session_logs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_session_logs_quota_id_fkey"
+            columns: ["quota_id"]
+            isOneToOne: false
+            referencedRelation: "voice_session_quotas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_session_quotas: {
+        Row: {
+          bonus_sessions: number | null
+          created_at: string | null
+          id: string
+          period_end: string
+          period_start: string
+          sessions_remaining: number
+          sessions_used: number | null
+          total_sessions_allowed: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bonus_sessions?: number | null
+          created_at?: string | null
+          id?: string
+          period_end: string
+          period_start: string
+          sessions_remaining: number
+          sessions_used?: number | null
+          total_sessions_allowed: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bonus_sessions?: number | null
+          created_at?: string | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          sessions_remaining?: number
+          sessions_used?: number | null
+          total_sessions_allowed?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       weekly_release_schedules: {
         Row: {

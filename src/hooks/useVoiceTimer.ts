@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const VOICE_LIMIT_SECONDS = 15 * 60; // 15 minutes
-const WARNING_THRESHOLD = 0.8; // 80% = 12 minutes
+const VOICE_LIMIT_SECONDS = 5 * 60; // 5 minutes
+const WARNING_THRESHOLD = 0.8; // 80% = 4 minutes
 
 interface VoiceTimerState {
   elapsedSeconds: number;
