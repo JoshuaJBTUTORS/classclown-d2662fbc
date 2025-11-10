@@ -127,7 +127,7 @@ const UploadExamBoardSpecDialog: React.FC<UploadExamBoardSpecDialogProps> = ({
           specification_year: data.specification_year || null,
           version: data.version || null,
           document_url: publicUrl,
-          file_name: selectedFile.name,
+          file_name: fileName, // Store the timestamped filename that was actually uploaded
           file_size_bytes: selectedFile.size,
           mime_type: selectedFile.type,
           status: 'draft',
