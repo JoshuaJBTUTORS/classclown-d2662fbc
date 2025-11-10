@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CourseAccessControl from '@/components/learningHub/CourseAccessControl';
 import LearningPathContainer from '@/components/learningHub/LearningPath/LearningPathContainer';
-import { CacheClearButton } from '@/components/learningHub/CacheClearButton';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -192,25 +192,45 @@ const CourseDetail = () => {
     };
   };
 
+  const getFactEmoji = (index: number, subject?: string): string => {
+    const emojiMap: Record<string, string[]> = {
+      'Biology': ['🟠', '🟠', '🌱'],
+      'Physics': ['⚡', '🌍', '🌌'],
+      'Chemistry': ['💧', '🧪', '💎'],
+      'Maths': ['🔢', '∞', '📐'],
+      'English': ['📚', '✍️', '📖'],
+      'Computer Science': ['🐛', '💻', '🌐']
+    };
+
+    if (subject) {
+      for (const [key, emojis] of Object.entries(emojiMap)) {
+        if (subject.includes(key)) {
+          return emojis[index] || '🟠';
+        }
+      }
+    }
+
+    return '🟠';
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--cleo-course-bg)' }}>
       <div className="w-full max-w-[1040px] mx-auto px-4 py-8">
         {/* Cleo Header */}
-        <header className="cleo-course-header">
-          <div className="cleo-logo">
-            <span>Cleo</span>
-            <div className="cleo-dna-icon" aria-hidden="true"></div>
-          </div>
+      <header className="cleo-course-header">
+        <div className="cleo-top-left">
+          <div className="cleo-logo">Cleo</div>
+          <div className="cleo-dna-emoji" aria-hidden="true">🧬</div>
+        </div>
 
-          <div className="cleo-avatar" aria-hidden="true">
-            <div className="cleo-avatar-hair"></div>
-            <div className="cleo-avatar-face">
-              <div className="cleo-avatar-glasses"></div>
-            </div>
-          </div>
+        <div className="cleo-top-center">
+          <div className="cleo-avatar" aria-hidden="true">👩‍🔬</div>
+        </div>
 
-          <div className="cleo-sprout-icon" aria-hidden="true"></div>
-        </header>
+        <div className="cleo-top-right">
+          <div className="cleo-plant-emoji" aria-hidden="true">🌱</div>
+        </div>
+      </header>
 
         {/* Admin controls */}
         {canEdit && (
@@ -230,7 +250,7 @@ const CourseDetail = () => {
                 Admin Access
               </Badge>
             )}
-            <CacheClearButton courseId={course.id} variant="outline" />
+            
           </div>
         )}
 
@@ -259,10 +279,8 @@ const CourseDetail = () => {
                       {isLocked ? '🔒' : index + 1}
                     </div>
                     <div className="cleo-step-label">
-                      <span className="cleo-step-main">{titleParts.main}</span>
-                      {titleParts.sub && (
-                        <span className="cleo-step-sub">{titleParts.sub}</span>
-                      )}
+                      <strong>{titleParts.main}</strong>
+                      {titleParts.sub && titleParts.sub}
                     </div>
                     {isActive && (
                       <button 
@@ -290,8 +308,8 @@ const CourseDetail = () => {
           <div className="cleo-facts" aria-label="Course facts">
             {getCourseSpecificFacts(course.subject).map((fact, index) => (
               <article key={index} className="cleo-fact-card">
-                <div className="cleo-fact-icon-wrap">
-                  <div className="cleo-fact-icon-inner" aria-hidden="true"></div>
+                <div className="cleo-fact-icon-wrap" aria-hidden="true">
+                  {getFactEmoji(index, course.subject)}
                 </div>
                 <p className="cleo-fact-text" dangerouslySetInnerHTML={{ __html: fact }} />
               </article>
