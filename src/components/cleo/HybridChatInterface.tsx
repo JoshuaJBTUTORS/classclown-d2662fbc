@@ -4,10 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { VoiceControls } from './VoiceControls';
 import { ContentDisplay } from './ContentDisplay';
-import { Mic, MessageSquare, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { ContentBlock } from '@/types/lessonContent';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
 
 interface HybridChatInterfaceProps {
@@ -105,36 +104,8 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Messages and Content Area */}
+      {/* Content Area */}
       <div className="flex-1 overflow-y-auto space-y-6 mb-4 px-4">
-        {/* Chat Messages */}
-        <AnimatePresence>
-          {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <Card
-                className={`max-w-[80%] p-3 ${
-                  msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card'
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  {msg.mode === 'voice' ? (
-                    <Mic className="w-4 h-4 mt-1 flex-shrink-0" />
-                  ) : (
-                    <MessageSquare className="w-4 h-4 mt-1 flex-shrink-0" />
-                  )}
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        
         {/* Content Blocks */}
         {contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
           <ContentDisplay

@@ -19,6 +19,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { CompactStepIndicator } from './CompactStepIndicator';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
 import { useAudioDevices } from '@/hooks/useAudioDevices';
+import { TranscriptPanel } from './TranscriptPanel';
+import { QuickChatInput } from './QuickChatInput';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { MessageSquare } from 'lucide-react';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -343,11 +347,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Main Content Area - Two Column Grid */}
-        <div className="flex-1 flex flex-col md:grid md:grid-cols-[minmax(0,3fr)_minmax(0,2.2fr)] gap-7 px-8 pb-8">
-          {/* Left Column - Lesson Content */}
-          <div className="flex flex-col">
+      <div className="flex-1 flex flex-col lg:flex-row">
+        {/* Main Content Area - 80/20 Split on Desktop */}
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] gap-4 lg:gap-7 px-4 lg:px-8 pb-4 lg:pb-8">
+          {/* Left Column - Lesson Content (80%) */}
+          <div className="flex flex-col order-1">
 
             {/* Main Lesson Card */}
             <div className="cleo-card flex-1">
@@ -394,47 +398,107 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             </div>
           </div>
 
-          {/* Right Column - Cleo Sidebar */}
-          <aside className="cleo-card flex flex-col items-center gap-5 p-6">
-            <div className="cleo-avatar-small">
-              <span>🧑🏻‍🔬</span>
+          {/* Right Column - Transcript & Chat (20%) - Hidden on mobile */}
+          <aside className="hidden lg:flex cleo-card flex-col p-4 order-2">
+            {/* Compact Cleo Avatar */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="cleo-avatar-tiny">🧑🏻‍🔬</div>
+              <span className="text-sm font-semibold" style={{ color: 'hsl(var(--cleo-green))' }}>
+                Cleo
+              </span>
             </div>
 
-            <div className="cleo-side-text text-left w-full">
-              <strong>Hey there!</strong> Strategist mode is engaged 🦊. Let's explore
-              this lesson together. I'll be guiding you through each question.
-              Can you guess which answer is correct here? Choose your option, or
-              ask me to explain it a different way.
+            {/* Transcript Section - Scrollable */}
+            <div className="flex-1 overflow-y-auto mb-3 min-h-0">
+              <h4 className="text-xs font-semibold mb-2 text-gray-500 uppercase tracking-wide">Transcript</h4>
+              <TranscriptPanel 
+                messages={allMessages}
+                isVoiceSpeaking={isSpeaking}
+              />
             </div>
 
-            <div className="cleo-input-bar w-full">
-              <span>Ask Cleo anything…</span>
-              <span className="text-xl">🎙️</span>
+            {/* Quick Chat Input */}
+            <div className="border-t pt-3">
+              <QuickChatInput 
+                onSend={(msg) => {
+                  if (mode === 'text') {
+                    textChat.sendMessage(msg);
+                  } else {
+                    controlsRef.current?.sendUserMessage(msg);
+                  }
+                }}
+                disabled={connectionState !== 'connected' && mode !== 'text'}
+                placeholder="Ask Cleo..."
+              />
             </div>
 
-            <div className="flex gap-2 mt-4">
+            {/* Action Buttons */}
+            <div className="flex gap-2 mt-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handlePauseLesson}
-                disabled={connectionState !== 'connected'}
+                disabled={connectionState !== 'connected' && mode !== 'text'}
+                className="flex-1"
               >
-                <Pause className="w-4 h-4 mr-2" />
+                <Pause className="w-3 h-3 mr-1" />
                 Pause
               </Button>
 
               {allStepsCompleted && (
                 <Button
                   onClick={handleCompleteLesson}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white flex-1"
                   size="sm"
                 >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Complete
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Done
                 </Button>
               )}
             </div>
           </aside>
+
+          {/* Mobile: Floating Transcript Button */}
+          <Sheet>
+            <SheetTrigger asChild className="lg:hidden fixed bottom-20 right-4 z-50">
+              <Button 
+                size="icon" 
+                className="rounded-full shadow-lg h-14 w-14"
+                style={{ background: 'hsl(var(--cleo-green))' }}
+              >
+                <MessageSquare className="w-6 h-6 text-white" />
+                {allMessages.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-semibold">
+                    {allMessages.length}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[70vh]">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <div className="cleo-avatar-tiny">🧑🏻‍🔬</div>
+                  Conversation with Cleo
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 h-[calc(100%-120px)] overflow-y-auto">
+                <TranscriptPanel messages={allMessages} isVoiceSpeaking={isSpeaking} />
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 bg-white pt-4 border-t">
+                <QuickChatInput 
+                  onSend={(msg) => {
+                    if (mode === 'text') {
+                      textChat.sendMessage(msg);
+                    } else {
+                      controlsRef.current?.sendUserMessage(msg);
+                    }
+                  }}
+                  disabled={connectionState !== 'connected' && mode !== 'text'}
+                  placeholder="Ask Cleo anything..."
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
