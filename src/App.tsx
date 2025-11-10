@@ -44,6 +44,7 @@ import LearningHubMyCourses from './pages/LearningHubMyCourses';
 import LearningHubSettings from './pages/LearningHubSettings';
 import LearningHubRevision from './pages/LearningHubRevision';
 import LearningHubAssessments from './pages/LearningHubAssessments';
+import LearningHubCleoID from './pages/LearningHubCleoID';
 import CourseDetail from './pages/CourseDetail';
 import ModuleDetail from './pages/ModuleDetail';
 import LessonPlanning from './pages/LessonPlanning';
@@ -424,6 +425,7 @@ function App() {
                   <Route path="my-courses" element={<LearningHubMyCourses />} />
                   <Route path="assessments" element={<LearningHubAssessments />} />
                   <Route path="revision" element={<LearningHubRevision />} />
+                  <Route path="cleo-id" element={<LearningHubCleoID />} />
                   <Route path="settings" element={<LearningHubSettings />} />
                 </Route>
 

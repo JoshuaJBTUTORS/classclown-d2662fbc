@@ -36,8 +36,13 @@ const navigationItems = [
   },
   {
     title: 'My Cleo ID',
-    href: '/learning-hub/settings',
+    href: '/learning-hub/cleo-id',
     emoji: '👨‍🎓'
+  },
+  {
+    title: 'Settings',
+    href: '/learning-hub/settings',
+    emoji: '⚙️'
   }
 ];
 

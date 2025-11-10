@@ -3931,6 +3931,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_log: {
+        Row: {
+          activity_date: string
+          activity_type: string
+          created_at: string
+          id: string
+          user_id: string
+          xp_earned: number | null
+        }
+        Insert: {
+          activity_date?: string
+          activity_type: string
+          created_at?: string
+          id?: string
+          user_id: string
+          xp_earned?: number | null
+        }
+        Update: {
+          activity_date?: string
+          activity_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          xp_earned?: number | null
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_emoji: string
+          badge_name: string
+          badge_type: string
+          earned_at: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          badge_emoji: string
+          badge_name: string
+          badge_type: string
+          earned_at?: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          badge_emoji?: string
+          badge_name?: string
+          badge_type?: string
+          earned_at?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_courses: {
         Row: {
           course_id: string
@@ -3974,6 +4031,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_gamification_stats: {
+        Row: {
+          created_at: string
+          current_streak_days: number | null
+          energy_percentage: number | null
+          focus_score: number | null
+          id: string
+          last_activity_date: string | null
+          learning_persona: string | null
+          level: number | null
+          longest_streak_days: number | null
+          total_xp: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak_days?: number | null
+          energy_percentage?: number | null
+          focus_score?: number | null
+          id?: string
+          last_activity_date?: string | null
+          learning_persona?: string | null
+          level?: number | null
+          longest_streak_days?: number | null
+          total_xp?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak_days?: number | null
+          energy_percentage?: number | null
+          focus_score?: number | null
+          id?: string
+          last_activity_date?: string | null
+          learning_persona?: string | null
+          level?: number | null
+          longest_streak_days?: number | null
+          total_xp?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
