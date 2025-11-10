@@ -48,6 +48,13 @@ const subjectEmojis: Record<string, string> = {
   '11 Plus NVR': '🔍',
 };
 
+const EXCLUDED_GCSE_SUBJECTS = [
+  'GCSE Business',
+  'GCSE Combined Science',
+  'GCSE Economics',
+  'GCSE Geography',
+];
+
 const SubjectStep: React.FC<SubjectStepProps> = ({
   data,
   updateData,
@@ -74,7 +81,13 @@ const SubjectStep: React.FC<SubjectStepProps> = ({
         .order('name');
 
       if (error) throw error;
-      setSubjects(subjectsData || []);
+      
+      // Filter out excluded subjects for GCSE
+      const filteredSubjects = data.educationLevel === 'gcse' 
+        ? (subjectsData || []).filter(s => !EXCLUDED_GCSE_SUBJECTS.includes(s.name))
+        : (subjectsData || []);
+      
+      setSubjects(filteredSubjects);
     } catch (error) {
       console.error('Error loading subjects:', error);
     } finally {
