@@ -30,12 +30,28 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
   onError
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [steps, setSteps] = useState<PlanningStep[]>([
-    { id: 'objectives', label: 'Creating learning objectives', icon: <Lightbulb className="w-5 h-5" />, completed: false },
-    { id: 'structure', label: 'Structuring teaching sequence', icon: <BookOpen className="w-5 h-5" />, completed: false },
-    { id: 'tables', label: 'Designing tables and diagrams', icon: <Table className="w-5 h-5" />, completed: false },
-    { id: 'questions', label: 'Preparing practice questions', icon: <HelpCircle className="w-5 h-5" />, completed: false },
-  ]);
+  
+  // Detect if this is exam practice mode
+  const topicLower = topic.toLowerCase();
+  const yearGroupLower = yearGroup?.toLowerCase() || '';
+  const isExamPractice = topicLower.includes('11 plus') || 
+                        topicLower.includes('11plus') || 
+                        yearGroupLower.includes('11+') ||
+                        yearGroupLower.includes('11 plus');
+  
+  const [steps, setSteps] = useState<PlanningStep[]>(
+    isExamPractice ? [
+      { id: 'example', label: 'Creating worked example', icon: <Lightbulb className="w-5 h-5" />, completed: false },
+      { id: 'questions', label: 'Generating 20 practice questions', icon: <HelpCircle className="w-5 h-5" />, completed: false },
+      { id: 'difficulty', label: 'Calibrating difficulty levels', icon: <Table className="w-5 h-5" />, completed: false },
+      { id: 'hints', label: 'Preparing hints and explanations', icon: <BookOpen className="w-5 h-5" />, completed: false },
+    ] : [
+      { id: 'objectives', label: 'Creating learning objectives', icon: <Lightbulb className="w-5 h-5" />, completed: false },
+      { id: 'structure', label: 'Structuring teaching sequence', icon: <BookOpen className="w-5 h-5" />, completed: false },
+      { id: 'tables', label: 'Designing tables and diagrams', icon: <Table className="w-5 h-5" />, completed: false },
+      { id: 'questions', label: 'Preparing practice questions', icon: <HelpCircle className="w-5 h-5" />, completed: false },
+    ]
+  );
 
   useEffect(() => {
     generateLessonPlan();

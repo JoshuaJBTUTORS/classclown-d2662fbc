@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HybridChatInterface } from './HybridChatInterface';
 import { CleoVoiceChat } from './CleoVoiceChat';
@@ -12,7 +12,7 @@ import { useCleoLessonState } from '@/hooks/useCleoLessonState';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pause, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Pause, CheckCircle, Trophy } from 'lucide-react';
 import { getSubjectTheme } from '@/utils/subjectTheming';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,7 @@ import { TranscriptPanel } from './TranscriptPanel';
 import { QuickChatInput } from './QuickChatInput';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MessageSquare } from 'lucide-react';
+import { detectTeachingMode } from '@/utils/teachingModeDetection';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -55,6 +56,16 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const { selectedMicrophone, selectedSpeaker } = useAudioDevices();
   
   const lessonState = useCleoLessonState(conversationId || null);
+  
+  // Detect teaching mode
+  const teachingMode = useMemo(() => {
+    const subject = lessonData.topic || lessonPlan?.topic || '';
+    const yearGrp = lessonData.yearGroup || lessonPlan?.year_group || '';
+    return detectTeachingMode(subject, yearGrp);
+  }, [lessonData, lessonPlan]);
+
+  const isExamPractice = teachingMode === 'exam_practice';
+  const sessionDuration = isExamPractice ? 30 : 15; // minutes
   
   const {
     activeStep,
@@ -339,7 +350,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       {/* Top Header Bar */}
       <div className="flex items-center justify-between px-8 pt-6 pb-4">
         <div className="text-3xl font-bold" style={{ color: 'hsl(var(--cleo-green))' }}>
-          Cleo
+          Cleo {isExamPractice ? '📝' : '🧑🏻‍🔬'}
         </div>
         <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
           <span>⏱️</span>
@@ -355,9 +366,23 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
             {/* Main Lesson Card */}
             <div className="cleo-card flex-1">
-              <h2 className="text-2xl font-semibold mb-4">
-                {lessonData.title}
-              </h2>
+              <div className="mb-3">
+                <h2 className="text-2xl font-semibold mb-2">
+                  {lessonData.title}
+                </h2>
+                {isExamPractice && (
+                  <div className="flex items-center gap-2 text-sm mb-2" 
+                       style={{ color: 'hsl(var(--cleo-green))' }}>
+                    <Trophy className="w-4 h-4" />
+                    <span className="font-medium">Exam Practice Mode</span>
+                  </div>
+                )}
+                <p className="text-sm" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+                  {isExamPractice 
+                    ? 'Work through the example, then practice with exam-style questions. Ask Cleo for help anytime!'
+                    : 'Interactive lesson with Cleo'}
+                </p>
+              </div>
               
               <h3 className="text-base mb-3" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
                 {lessonData.topic} – Learning Objectives
@@ -388,6 +413,15 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   onAnswerQuestion={(qId, aId, correct) => {
                     console.log('Question answered:', { qId, aId, correct });
                   }}
+                  onAskHelp={(qId, questionText) => {
+                    const helpMessage = `Can you help me with this question: "${questionText}"`;
+                    controlsRef.current?.sendUserMessage(helpMessage);
+                    toast({
+                      title: "Asked Cleo for help",
+                      description: "Cleo will guide you through the question",
+                    });
+                  }}
+                  isExamPractice={isExamPractice}
                   conversationId={conversationId || null}
                   onContentAction={(contentId, action, message) => {
                     console.log('Content action:', { contentId, action, message });

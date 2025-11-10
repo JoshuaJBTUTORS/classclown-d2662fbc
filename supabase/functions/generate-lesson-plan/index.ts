@@ -32,6 +32,16 @@ serve(async (req) => {
     const { lessonId, topic, yearGroup, learningGoal, conversationId } = await req.json();
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId });
+    
+    // Detect teaching mode
+    const subjectLower = topic.toLowerCase();
+    const yearGroupLower = yearGroup?.toLowerCase() || '';
+    const isExamPractice = subjectLower.includes('11 plus') || 
+                          subjectLower.includes('11plus') || 
+                          yearGroupLower.includes('11+') ||
+                          yearGroupLower.includes('11 plus');
+    
+    console.log('Teaching mode:', isExamPractice ? 'exam_practice' : 'continuous_teaching');
 
     // Fetch learning objectives from the lesson if lessonId is provided
     let learningObjectives: string[] = [];
@@ -177,7 +187,39 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert curriculum designer creating concise, focused lesson plans for students.
+            content: isExamPractice 
+              ? `You are an expert 11+ exam preparation tutor creating practice-focused lesson plans.
+
+Your task: Create a lesson plan optimized for EXAM PRACTICE with one worked example followed by 20 practice questions.
+
+LESSON PLAN STRUCTURE FOR 11+:
+1. Learning Objectives (3-4 clear exam skills to master)
+2. Teaching Sequence with TWO main steps:
+   - Step 1: "Worked Example" - One detailed example showing method/technique
+   - Step 2: "Practice Questions" - 20 exam-style questions
+
+⚠️ CRITICAL REQUIREMENTS:
+- Step 1 MUST have 1-2 content blocks showing a worked example with explanation
+- Step 2 MUST have 20 question blocks (type: "question")
+- Each question should be exam-style with multiple choice options
+- Questions should gradually increase in difficulty
+- Include clear explanations for each answer
+
+CONTENT BLOCKS FOR STEP 1 (Worked Example):
+- Use "text" blocks for explanation of method
+- Use "definition" blocks for key concepts/formulas
+- Keep it concise - focus on ONE clear example
+
+CONTENT BLOCKS FOR STEP 2 (Practice):
+- ALL blocks must be type "question"
+- Format: { type: "question", data: { question: "...", options: [...], explanation: "..." } }
+- Questions 1-7: Basic application
+- Questions 8-14: Intermediate difficulty  
+- Questions 15-20: Advanced/challenging
+
+Make all content appropriate for 11+ entrance exam level (ages 10-11).`
+              
+              : `You are an expert curriculum designer creating concise, focused lesson plans for students.
 
 Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each containing rich, pre-generated content.
 
@@ -227,22 +269,28 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
           type: 'function',
           function: {
             name: 'create_lesson_plan',
-            description: 'Create a structured lesson plan with pre-generated content',
+            description: isExamPractice 
+              ? 'Create an exam practice lesson plan with worked example and practice questions'
+              : 'Create a structured lesson plan with pre-generated content',
             parameters: {
               type: 'object',
               properties: {
                 objectives: {
                   type: 'array',
                   items: { type: 'string' },
-                  minItems: 3,
-                  maxItems: 5,
-                  description: '3-5 clear, measurable learning objectives'
+                  minItems: isExamPractice ? 3 : 3,
+                  maxItems: isExamPractice ? 4 : 5,
+                  description: isExamPractice 
+                    ? '3-4 exam skills to master' 
+                    : '3-5 clear, measurable learning objectives'
                 },
                 steps: {
                   type: 'array',
-                  minItems: 3,
-                  maxItems: 5,
-                  description: 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
+                  minItems: isExamPractice ? 2 : 3,
+                  maxItems: isExamPractice ? 2 : 5,
+                  description: isExamPractice
+                    ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
+                    : 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
                   items: {
                     type: 'object',
                     properties: {
@@ -251,8 +299,10 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                       duration_minutes: { type: 'number' },
                       content_blocks: {
                         type: 'array',
-                        minItems: 2,
-                        description: 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
+                        minItems: isExamPractice ? 1 : 2,
+                        description: isExamPractice
+                          ? 'Step 1: 1-2 explanation blocks. Step 2: EXACTLY 20 question blocks'
+                          : 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
                         items: {
                           type: 'object',
                           properties: {
@@ -410,6 +460,25 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
         console.warn(`⚠️ Step ${idx + 1} (${step.id}) has ZERO content blocks!`);
       }
     });
+    
+    // Validate exam practice structure
+    if (isExamPractice) {
+      const practiceStep = planData.steps.find((s: any) => 
+        s.title.toLowerCase().includes('practice')
+      );
+      
+      if (practiceStep) {
+        const questionCount = practiceStep.content_blocks?.filter(
+          (b: any) => b.type === 'question'
+        ).length || 0;
+        
+        console.log(`Exam practice validation: ${questionCount} questions generated (target: 20)`);
+        
+        if (questionCount < 15) {
+          console.warn(`⚠️ Only ${questionCount} questions generated for 11+ practice (expected 20)`);
+        }
+      }
+    }
 
     // Generate images for diagram blocks
     console.log('Generating images for diagram blocks...');

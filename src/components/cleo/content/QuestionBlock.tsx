@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { QuestionContent } from '@/types/lessonContent';
-import { Check, X } from 'lucide-react';
+import { Check, X, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface QuestionBlockProps {
   data: QuestionContent;
   onAnswer: (questionId: string, answerId: string, isCorrect: boolean) => void;
+  onAskHelp?: (questionId: string, questionText: string) => void;
+  isExamPractice?: boolean;
 }
 
-export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) => {
+export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp, isExamPractice }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -103,6 +105,24 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer }) 
             );
           })}
         </div>
+
+        {!selectedAnswer && isExamPractice && onAskHelp && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4"
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAskHelp(data.id, data.question)}
+              className="w-full"
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Ask Cleo for Help
+            </Button>
+          </motion.div>
+        )}
 
         {showFeedback && data.explanation && (
           <motion.div
