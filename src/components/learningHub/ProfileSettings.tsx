@@ -101,6 +101,13 @@ const ProfileSettings = () => {
         
         if (insertError) {
           console.error('Error creating profile:', insertError);
+          if (insertError.code === '42501') {
+            toast({
+              title: 'Profile Creation Failed',
+              description: 'Unable to create profile due to permissions. Please contact support.',
+              variant: 'destructive',
+            });
+          }
         } else {
           // Initialize with empty values
           reset({

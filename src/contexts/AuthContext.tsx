@@ -113,6 +113,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!insertError && insertedProfile) {
             setProfile(insertedProfile);
           } else {
+            if (insertError?.code === '42501') {
+              console.error('RLS policy prevented profile creation:', insertError);
+              toast({
+                title: 'Profile Creation Failed',
+                description: 'Unable to create your profile. Please try signing in again.',
+                variant: 'destructive',
+              });
+            }
             // Fallback: set local state to avoid indefinite spinner
             setProfile(defaultProfile as any);
           }
