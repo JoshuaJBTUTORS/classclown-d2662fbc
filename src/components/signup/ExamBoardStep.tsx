@@ -43,7 +43,7 @@ const subjectEmojis: Record<string, string> = {
   'GCSE Religious Studies': '✝️',
 };
 
-const examBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'Other'];
+const examBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'IGCSE', 'Other'];
 
 const ExamBoardStep: React.FC<ExamBoardStepProps> = ({
   data,
