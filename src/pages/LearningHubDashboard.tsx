@@ -58,7 +58,7 @@ const LearningHubDashboard = () => {
         
         <div className="flex flex-col gap-4 max-w-md mx-auto">
           <Button
-            onClick={handleAccessLiveTutoring}
+            asChild
             className="w-full flex items-center justify-center gap-2 text-lg py-6 font-bold"
             style={{
               background: 'linear-gradient(135deg, #1fb86b, #35d086)',
@@ -67,10 +67,12 @@ const LearningHubDashboard = () => {
               boxShadow: '0 12px 26px rgba(22, 160, 90, 0.35)'
             }}
           >
-            Learn with Cleo
+            <Link to="/learning-hub/my-courses" className="flex items-center justify-center gap-2">
+              🔥 Learn with Cleo
+            </Link>
           </Button>
           <Button
-            asChild
+            onClick={handleAccessLiveTutoring}
             className="w-full flex items-center justify-center gap-2 text-lg py-6 font-bold"
             style={{
               border: '2px solid rgba(37, 184, 107, 0.5)',
@@ -79,9 +81,7 @@ const LearningHubDashboard = () => {
               borderRadius: '999px'
             }}
           >
-            <Link to="/learning-hub/my-courses" className="flex items-center justify-center gap-2">
-              🧠 Warm Me Up First
-            </Link>
+            🎓 Access Live Tutoring
           </Button>
         </div>
         
