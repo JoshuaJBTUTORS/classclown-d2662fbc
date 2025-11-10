@@ -87,15 +87,16 @@
     --shadow-elevated: 0 8px 24px -4px hsl(var(--cyan-blue) / 0.15);
     --shadow-focus: 0 0 0 3px hsl(var(--cyan-blue) / 0.15);
     
-    /* Cleo Design System Variables - Direct Colors */
-    --cleo-green: #15803d;
-    --cleo-green-dark: #14532d;
-    --cleo-mint-bg: #f3fff7;
-    --cleo-mint-card: #e7f8ee;
-    --cleo-card-bg: #ffffff;
-    --cleo-border-soft: #e5ebe7;
-    --cleo-text-main: #02130a;
-    --cleo-text-muted: #63706b;
+    /* Cleo Design System Variables - HSL Colors */
+    --cleo-green: 142 65% 29%;  /* #15803d converted to HSL */
+    --cleo-green-dark: 143 63% 15%;  /* #14532d converted to HSL */
+    --cleo-mint-bg: 140 100% 97%;  /* #f3fff7 converted to HSL */
+    --cleo-mint-card: 140 39% 93%;  /* #e7f8ee converted to HSL */
+    --cleo-card-bg: 0 0% 100%;  /* #ffffff - white */
+    --cleo-border-soft: 140 8% 91%;  /* #e5ebe7 converted to HSL */
+    --cleo-text-main: 156 80% 4%;  /* #02130a converted to HSL */
+    --cleo-text-muted: 156 10% 42%;  /* #63706b converted to HSL */
+    --cleo-text-dark: 156 80% 20%;  /* Dark green for text */
     --cleo-shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.08);
     --cleo-radius-xl: 24px;
     --cleo-radius-lg: 18px;
@@ -242,7 +243,7 @@
     transition: all 0.2s ease;
     margin-bottom: 24px;
     font-size: 14px;
-    color: var(--cleo-text-main);
+    color: hsl(var(--cleo-text-main));
     font-weight: normal;
   }
 
@@ -255,7 +256,7 @@
   .cleo-logo {
     font-size: 28px;
     font-weight: 700;
-    color: var(--cleo-green);
+    color: hsl(var(--cleo-green));
     margin-bottom: 28px;
   }
 
@@ -277,7 +278,7 @@
     font-size: 34px;
     font-weight: 700;
     margin-bottom: 36px;
-    color: var(--cleo-text-main);
+    color: hsl(var(--cleo-text-main));
     letter-spacing: -0.02em;
   }
 
@@ -305,7 +306,7 @@
     font-size: 18px;
     font-weight: 600;
     justify-content: center;
-    color: var(--cleo-text-main);
+    color: hsl(var(--cleo-text-main));
   }
 
   .cleo-topic:hover {
