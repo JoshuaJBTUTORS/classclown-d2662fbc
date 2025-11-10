@@ -324,17 +324,30 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const allStepsCompleted = completedSteps.length === lessonData.steps.length;
   const sessionTimeMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
 
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="h-full flex flex-col bg-white">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between px-8 pt-6 pb-4">
+        <div className="text-3xl font-bold" style={{ color: 'hsl(var(--cleo-green))' }}>
+          Cleo
+        </div>
+        <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+          <span>⏱️</span>
+          <span>{formatTime(voiceTimer.remainingSeconds)} remaining</span>
+        </div>
+      </div>
+
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Main Content Area - Two Column Grid */}
-        <div className="flex-1 flex flex-col md:grid md:grid-cols-[minmax(0,3fr)_minmax(0,2.2fr)] gap-7 p-8">
+        <div className="flex-1 flex flex-col md:grid md:grid-cols-[minmax(0,3fr)_minmax(0,2.2fr)] gap-7 px-8 pb-8">
           {/* Left Column - Lesson Content */}
           <div className="flex flex-col">
-            {/* Cleo Logo */}
-            <div className="text-3xl font-bold mb-6" style={{ color: 'hsl(var(--cleo-green))' }}>
-              Cleo
-            </div>
 
             {/* Main Lesson Card */}
             <div className="cleo-card flex-1">
@@ -363,13 +376,9 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   isVoiceListening={isListening}
                   isVoiceSpeaking={isSpeaking}
                   isTextLoading={textChat.isLoading}
-                  voiceTimePercent={voiceTimer.percentUsed}
-                  voiceTimeRemaining={voiceTimer.remainingSeconds}
-                  onModeSwitch={(newMode) => handleModeSwitch(newMode, false)}
                   onVoiceConnect={handleVoiceConnect}
                   onVoiceDisconnect={handleVoiceDisconnect}
                   onTextSend={textChat.sendMessage}
-                  canUseVoice={!voiceTimer.hasReachedLimit}
                   contentBlocks={content}
                   visibleContentIds={visibleContent}
                   onAnswerQuestion={(qId, aId, correct) => {

@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { VoiceControls } from './VoiceControls';
 import { ContentDisplay } from './ContentDisplay';
 import { Mic, MessageSquare, Send } from 'lucide-react';
@@ -19,13 +17,9 @@ interface HybridChatInterfaceProps {
   isVoiceListening: boolean;
   isVoiceSpeaking: boolean;
   isTextLoading: boolean;
-  voiceTimePercent: number;
-  voiceTimeRemaining: number;
-  onModeSwitch: (mode: ChatMode) => void;
   onVoiceConnect: () => void;
   onVoiceDisconnect: () => void;
   onTextSend: (message: string) => void;
-  canUseVoice: boolean;
   contentBlocks?: ContentBlock[];
   visibleContentIds?: string[];
   onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean) => void;
@@ -40,13 +34,9 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   isVoiceListening,
   isVoiceSpeaking,
   isTextLoading,
-  voiceTimePercent,
-  voiceTimeRemaining,
-  onModeSwitch,
   onVoiceConnect,
   onVoiceDisconnect,
   onTextSend,
-  canUseVoice,
   contentBlocks,
   visibleContentIds,
   onAnswerQuestion,
@@ -113,47 +103,8 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className="flex flex-col h-full">
-      {/* Voice Timer Header */}
-      <Card className="p-4 mb-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant={mode === 'voice' ? 'default' : 'secondary'}>
-              {mode === 'voice' ? (
-                <>
-                  <Mic className="w-3 h-3 mr-1" />
-                  Voice Mode
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-3 h-3 mr-1" />
-                  Text Mode
-                </>
-              )}
-            </Badge>
-            <span className="text-sm text-muted-foreground">
-              Voice time: {formatTime(voiceTimeRemaining)} remaining
-            </span>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onModeSwitch(mode === 'voice' ? 'text' : 'voice')}
-            disabled={mode === 'text' && !canUseVoice}
-          >
-            Switch to {mode === 'voice' ? 'Text' : 'Voice'}
-          </Button>
-        </div>
-        <Progress value={voiceTimePercent} className="h-2" />
-      </Card>
-
       {/* Messages and Content Area */}
       <div className="flex-1 overflow-y-auto space-y-6 mb-4 px-4">
         {/* Chat Messages */}
