@@ -43,10 +43,17 @@ serve(async (req) => {
 
     if (downloadError) throw downloadError;
 
-    // Convert to base64 for AI processing
+    // Convert to base64 for AI processing (process in chunks to avoid stack overflow)
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    const base64 = btoa(String.fromCharCode(...bytes));
+    
+    let binary = '';
+    const chunkSize = 8192; // Process 8KB at a time
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64 = btoa(binary);
 
     // Create data URI for the PDF
     const dataUri = `data:${spec.mime_type};base64,${base64}`;
