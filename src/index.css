@@ -1181,13 +1181,13 @@
 }
 
 .cleo-dna-emoji {
-  font-size: 40px;
+  font-size: 56px;
   padding-left: 6px;
 }
 
 .cleo-avatar {
-  width: 130px;
-  height: 130px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
   background: #ffe9c9;
   border: 6px solid #fdf2e2;
@@ -1195,11 +1195,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 64px;
+  font-size: 80px;
 }
 
 .cleo-plant-emoji {
-  font-size: 54px;
+  font-size: 70px;
   padding-right: 4px;
 }
 
@@ -1400,15 +1400,15 @@
 }
 
 .cleo-fact-icon-wrap {
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   background: #fff7e6;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 30px;
+  font-size: 38px;
 }
 
 .cleo-fact-text {
