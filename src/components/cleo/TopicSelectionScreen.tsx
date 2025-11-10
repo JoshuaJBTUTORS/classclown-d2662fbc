@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 interface TopicOption {
   id: string;
@@ -31,6 +32,14 @@ export const TopicSelectionScreen = ({
 
   return (
     <div className="container mx-auto max-w-[720px] text-center py-10">
+      <button
+        onClick={() => navigate(`/course/${courseId}`)}
+        className="cleo-btn-outline mb-6 inline-flex items-center gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Course
+      </button>
+
       <div className="text-[28px] font-bold mb-7" style={{ color: 'var(--cleo-green)' }}>
         Cleo
       </div>
