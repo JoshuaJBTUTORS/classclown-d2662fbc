@@ -5,7 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import WelcomePage from '@/components/signup/WelcomePage';
 import ParentInfoStep from '@/components/signup/ParentInfoStep';
 import StudentInfoStep from '@/components/signup/StudentInfoStep';
-import AccountCreationStep from '@/components/signup/AccountCreationStep';
+import PasswordStep from '@/components/signup/PasswordStep';
+import RegionStep from '@/components/signup/RegionStep';
+import YearGroupStep from '@/components/signup/YearGroupStep';
+import SubjectStep from '@/components/signup/SubjectStep';
+import ExamBoardStep from '@/components/signup/ExamBoardStep';
+import SuccessStep from '@/components/signup/SuccessStep';
 
 export interface SignupData {
   parentFirstName: string;
@@ -16,6 +21,12 @@ export interface SignupData {
   studentLastName: string;
   password: string;
   confirmPassword: string;
+  // Onboarding fields
+  region?: 'england' | 'scotland' | 'wales';
+  curriculum?: 'english' | 'scottish' | 'welsh';
+  yearGroupId?: string;
+  selectedSubjects?: string[];
+  examBoards?: Record<string, string>;
 }
 
 const InteractiveSignup = () => {
@@ -30,12 +41,22 @@ const InteractiveSignup = () => {
     studentLastName: '',
     password: '',
     confirmPassword: '',
+    region: undefined,
+    curriculum: undefined,
+    yearGroupId: undefined,
+    selectedSubjects: [],
+    examBoards: {},
   });
 
   const steps = [
     { title: "Parent Info", component: ParentInfoStep },
     { title: "Student Details", component: StudentInfoStep },
-    { title: "Complete", component: AccountCreationStep },
+    { title: "Password", component: PasswordStep },
+    { title: "Region", component: RegionStep },
+    { title: "Year Group", component: YearGroupStep },
+    { title: "Subjects", component: SubjectStep },
+    { title: "Exam Boards", component: ExamBoardStep },
+    { title: "Complete", component: SuccessStep },
   ];
 
   const updateSignupData = (data: Partial<SignupData>) => {
@@ -73,7 +94,7 @@ const InteractiveSignup = () => {
         <div className="max-w-4xl mx-auto mb-6 sm:mb-8">
           <div className="text-center mb-4 sm:mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Join JB Tutors Learning Hub
+              Create Your Cleo Account
             </h1>
             <p className="text-sm sm:text-base text-gray-600">
               Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
