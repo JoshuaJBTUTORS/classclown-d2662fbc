@@ -55,6 +55,34 @@ const getStreakText = (lastAccessedAt: string | null): string => {
   return 'Start your streak!';
 };
 
+// Helper to extract core subject name from a subject string
+const extractCoreSubject = (subjectName: string): string => {
+  // Remove prefixes like "GCSE", "11 Plus", "A-Level"
+  return subjectName
+    .replace(/^GCSE\s+/i, '')
+    .replace(/^11 Plus\s+/i, '')
+    .replace(/^A-Level\s+/i, '')
+    .trim()
+    .toLowerCase();
+};
+
+// Check if a course matches the selected subjects
+const courseMatchesSelectedSubjects = (course: any, selectedSubjectNames: string[]): boolean => {
+  if (!selectedSubjectNames || selectedSubjectNames.length === 0) {
+    return true; // No filter applied if no subjects selected
+  }
+  
+  const courseSubject = course.subject || '';
+  const courseTitle = course.title || '';
+  const coreSubjects = selectedSubjectNames.map(extractCoreSubject);
+  
+  // Check if course subject or title contains any of the selected core subjects
+  return coreSubjects.some(coreSubject => {
+    return courseSubject.toLowerCase().includes(coreSubject) ||
+           courseTitle.toLowerCase().includes(coreSubject);
+  });
+};
+
 const LearningHubMyCourses = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -97,6 +125,41 @@ const LearningHubMyCourses = () => {
     enabled: !!user,
   });
 
+  // Fetch user profile preferences
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('education_level, gcse_subject_ids')
+        .eq('id', user!.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch selected subject names if GCSE subjects are selected
+  const { data: selectedSubjects } = useQuery({
+    queryKey: ['selected-subjects', userProfile?.gcse_subject_ids],
+    queryFn: async () => {
+      if (!userProfile?.gcse_subject_ids || userProfile.gcse_subject_ids.length === 0) {
+        return [];
+      }
+      
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('id, name')
+        .in('id', userProfile.gcse_subject_ids);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userProfile?.gcse_subject_ids && userProfile.gcse_subject_ids.length > 0,
+  });
+
   // Get purchased course details
   const purchasedCoursesWithDetails = purchasedCourses?.map(purchase => {
     const course = allCoursesData?.find(c => c.id === purchase.course_id);
@@ -134,9 +197,40 @@ const LearningHubMyCourses = () => {
     return course.title?.includes('GCSE') || course.subject?.includes('GCSE');
   };
 
-  // Separate courses into categories
-  const elevenPlusCourses = myCourses.filter(is11PlusCourse);
-  const gcseCourses = myCourses.filter(isGCSECourse);
+  // Apply user preference filtering
+  const filteredCourses = myCourses.filter(course => {
+    // If no education level selected, show all courses
+    if (!userProfile?.education_level) {
+      return true;
+    }
+    
+    // Filter by education level
+    if (userProfile.education_level === '11_plus') {
+      // Show only 11 Plus courses
+      return is11PlusCourse(course);
+    }
+    
+    if (userProfile.education_level === 'gcse') {
+      // Show only GCSE courses that match selected subjects
+      const isGCSE = isGCSECourse(course);
+      if (!isGCSE) return false;
+      
+      // If no subjects selected yet, show all GCSE courses
+      if (!selectedSubjects || selectedSubjects.length === 0) {
+        return true;
+      }
+      
+      // Filter by selected subjects
+      const subjectNames = selectedSubjects.map(s => s.name);
+      return courseMatchesSelectedSubjects(course, subjectNames);
+    }
+    
+    return true;
+  });
+
+  // Separate filtered courses into categories for display
+  const elevenPlusCourses = filteredCourses.filter(is11PlusCourse);
+  const gcseCourses = filteredCourses.filter(isGCSECourse);
 
   // Loading state
   if (coursesLoading || freeCoursesLoading) {
@@ -167,7 +261,17 @@ const LearningHubMyCourses = () => {
   }
 
   // Empty state
-  if (myCourses.length === 0) {
+  if (filteredCourses.length === 0) {
+    const emptyMessage = userProfile?.education_level === '11_plus' 
+      ? 'No 11 Plus courses found'
+      : userProfile?.education_level === 'gcse'
+      ? 'No GCSE courses found for your selected subjects'
+      : 'No courses yet';
+    
+    const emptyDescription = userProfile?.education_level
+      ? 'Update your settings to see more courses.'
+      : 'Start your 11+ journey today!';
+    
     return (
       <div className="cleo-screen-wrapper">
         <section className="cleo-screen-courses">
@@ -183,9 +287,17 @@ const LearningHubMyCourses = () => {
           <div className="text-center py-16">
             <div className="text-6xl mb-4">📚</div>
             <h3 className="text-xl font-semibold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
-              No courses yet
+              {emptyMessage}
             </h3>
-            <p className="text-gray-600">Start your 11+ journey today!</p>
+            <p className="text-gray-600 mb-4">{emptyDescription}</p>
+            {userProfile?.education_level && (
+              <button 
+                onClick={() => navigate('/learning-hub/settings')}
+                className="px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+              >
+                Go to Settings
+              </button>
+            )}
           </div>
         </section>
       </div>
