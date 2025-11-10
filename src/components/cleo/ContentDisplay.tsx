@@ -59,7 +59,11 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
 
     switch (block.type) {
       case 'text':
-        return <TextBlock data={block.data as string} onContentAction={handleContentAction} />;
+        // Handle both string data and object data with content property
+        const textData = typeof block.data === 'string' 
+          ? block.data 
+          : (block.data as any)?.content || block.data;
+        return <TextBlock data={textData} onContentAction={handleContentAction} />;
       case 'table':
         return <TableBlock data={block.data} onContentAction={handleContentAction} />;
       case 'question':
