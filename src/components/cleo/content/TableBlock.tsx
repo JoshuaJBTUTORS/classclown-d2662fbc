@@ -9,6 +9,26 @@ interface TableBlockProps {
 }
 
 export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction }) => {
+  // Safety check: ensure headers and rows exist
+  const headers = data?.headers || [];
+  const rows = data?.rows || [];
+
+  if (headers.length === 0 && rows.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full p-4 border border-border rounded-lg bg-muted/50"
+      >
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <span className="text-xl">📊</span>
+          <span className="text-sm">Table data is loading...</span>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -26,7 +46,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction })
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
               <tr>
-                {data.headers.map((header, index) => (
+                {headers.map((header, index) => (
                   <th
                     key={index}
                     scope="col"
@@ -38,12 +58,12 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction })
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-background">
-              {data.rows.map((row, rowIndex) => (
+              {rows.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
                   className="hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
                 >
-                  {row.map((cell, cellIndex) => (
+                  {(row || []).map((cell, cellIndex) => (
                     <td
                       key={cellIndex}
                       className="px-6 py-4 text-sm text-muted-foreground whitespace-normal"
@@ -57,10 +77,10 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction })
           </table>
         </div>
       </div>
-      {onContentAction && (
+      {onContentAction && headers.length > 0 && (
         <ContentActionButtons
-          contentId={`table-${data.headers.join('-').toLowerCase().replace(/\s+/g, '-')}`}
-          contentTitle={data.headers.length > 0 ? data.headers[0] : 'Table'}
+          contentId={`table-${headers.join('-').toLowerCase().replace(/\s+/g, '-')}`}
+          contentTitle={headers.length > 0 ? headers[0] : 'Table'}
           onActionClick={onContentAction}
         />
       )}
