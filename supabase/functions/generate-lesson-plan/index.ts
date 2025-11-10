@@ -106,17 +106,51 @@ serve(async (req) => {
     let planError;
 
     if (existingPlan) {
-      // If plan is complete and ready, return it immediately without any updates
+      // If plan is complete and ready, check compliance before reusing
       if (existingPlan.status === 'ready' && existingPlan.learning_objectives && existingPlan.teaching_sequence) {
-        console.log('Found complete existing plan, returning immediately');
-        return new Response(
-          JSON.stringify({
-            lessonPlanId: existingPlan.id,
-            objectives: existingPlan.learning_objectives,
-            stepsCount: existingPlan.teaching_sequence.length
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        // For exam practice mode, validate compliance
+        if (isExamPractice) {
+          const steps = existingPlan.teaching_sequence || [];
+          const hasTwoSteps = steps.length === 2;
+          const practiceStep = steps.find((s: any) => 
+            (s.title || '').toLowerCase().includes('practice')
+          );
+          const questionCount = practiceStep?.content_blocks?.filter(
+            (b: any) => b.type === 'question'
+          ).length || 0;
+          
+          if (hasTwoSteps && questionCount >= 20) {
+            console.log('Found compliant exam practice plan, returning immediately');
+            return new Response(
+              JSON.stringify({
+                lessonPlanId: existingPlan.id,
+                objectives: existingPlan.learning_objectives,
+                stepsCount: existingPlan.teaching_sequence.length
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          } else {
+            console.log(`Existing plan is not exam-practice compliant (steps: ${steps.length}, questions: ${questionCount}), regenerating...`);
+            // Fall through to regeneration - mark as generating and overwrite
+            await supabase
+              .from('cleo_lesson_plans')
+              .update({ status: 'generating' })
+              .eq('id', existingPlan.id);
+            lessonPlan = existingPlan;
+            planError = null;
+          }
+        } else {
+          // Non-exam practice: return existing plan as before
+          console.log('Found complete existing plan, returning immediately');
+          return new Response(
+            JSON.stringify({
+              lessonPlanId: existingPlan.id,
+              objectives: existingPlan.learning_objectives,
+              stepsCount: existingPlan.teaching_sequence.length
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
       
       // Plan exists but is incomplete, use it for generation without updating
@@ -461,8 +495,9 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       }
     });
     
-    // Validate exam practice structure
+    // Validate exam practice structure - enforce strict compliance
     if (isExamPractice) {
+      const hasTwoSteps = planData.steps.length === 2;
       const practiceStep = planData.steps.find((s: any) => 
         s.title.toLowerCase().includes('practice')
       );
@@ -472,11 +507,15 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
           (b: any) => b.type === 'question'
         ).length || 0;
         
-        console.log(`Exam practice validation: ${questionCount} questions generated (target: 20)`);
+        console.log(`Exam practice validation: ${questionCount} questions generated (target: 20, steps: ${planData.steps.length})`);
         
-        if (questionCount < 15) {
-          console.warn(`⚠️ Only ${questionCount} questions generated for 11+ practice (expected 20)`);
+        if (!hasTwoSteps || questionCount < 20) {
+          console.error(`❌ Exam practice plan is non-compliant: steps=${planData.steps.length}, questions=${questionCount}`);
+          throw new Error(`Invalid exam practice plan: Must have exactly 2 steps and 20 questions. Got ${planData.steps.length} steps and ${questionCount} questions.`);
         }
+      } else {
+        console.error(`❌ Exam practice plan missing 'Practice' step`);
+        throw new Error('Invalid exam practice plan: Missing practice questions step');
       }
     }
 
