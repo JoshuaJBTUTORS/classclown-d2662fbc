@@ -307,78 +307,80 @@ const ModuleDetail = () => {
       <div className="min-h-screen bg-white">
         <div className="max-w-[1120px] mx-auto px-4 py-8 md:py-12">
           {/* Cleo Logo */}
-          <div className="text-3xl font-bold mb-6" style={{ color: 'hsl(var(--cleo-green))' }}>
-            Cleo
-          </div>
+          {lessons.length > 0 ? (
+            <>
+              <div className="text-3xl font-bold mb-6" style={{ color: 'hsl(var(--cleo-green))' }}>
+                Cleo
+              </div>
 
-          {/* Avatar */}
-          <div className="cleo-avatar-large mb-6">
-            <span>🧑🏻‍🔬</span>
-          </div>
+              {/* Avatar */}
+              <div className="cleo-avatar-large mb-6">
+                <span>🧑🏻‍🔬</span>
+              </div>
 
-          {/* Course Title */}
-          <h1 className="text-4xl font-bold text-center mb-4" style={{ letterSpacing: '-0.02em' }}>
-            {course.subject} - {course.title}
-          </h1>
+              {/* Course Title */}
+              <h1 className="text-4xl font-bold text-center mb-4" style={{ letterSpacing: '-0.02em' }}>
+                {course.subject} - {course.title}
+              </h1>
 
-          {/* Journey Card */}
-          <div className="cleo-card mt-8">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-semibold mb-1">Your Learning Journey</h2>
-            </div>
+              {/* Journey Card */}
+              <div className="cleo-card mt-8">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-semibold mb-1">Your Learning Journey</h2>
+                </div>
 
-            {/* Journey Modules */}
-            <div className="flex gap-6 justify-between flex-wrap mb-6">
-              {orderedModules?.map((module, index) => {
-                const isActive = module.id === moduleId;
-                const isLocked = false;
-                
-                return (
-                  <div key={module.id} className="flex-1 min-w-[150px] text-center">
-                    <div className={`cleo-module-circle ${isActive ? 'active' : isLocked ? 'locked' : 'locked'}`}>
-                      {isLocked && !isActive ? '🔒' : index + 1}
-                    </div>
-                    <div className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--cleo-text-main))' }}>
-                      {module.title}
-                    </div>
-                    <div className="text-xs" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
-                      {module.lessons?.length || 0} lessons
-                    </div>
-                    {isActive && (
-                      <div className="text-xs mt-1" style={{ color: 'hsl(var(--cleo-green))' }}>
-                        Click to start
+                {/* Journey Modules */}
+                <div className="flex gap-6 justify-between flex-wrap mb-6">
+                  {orderedModules?.map((module, index) => {
+                    const isActive = module.id === moduleId;
+                    const isLocked = false;
+                    
+                    return (
+                      <div key={module.id} className="flex-1 min-w-[150px] text-center">
+                        <div className={`cleo-module-circle ${isActive ? 'active' : isLocked ? 'locked' : 'locked'}`}>
+                          {isLocked && !isActive ? '🔒' : index + 1}
+                        </div>
+                        <div className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--cleo-text-main))' }}>
+                          {module.title}
+                        </div>
+                        <div className="text-xs" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+                          {module.lessons?.length || 0} lessons
+                        </div>
+                        {isActive && (
+                          <div className="text-xs mt-1" style={{ color: 'hsl(var(--cleo-green))' }}>
+                            Click to start
+                          </div>
+                        )}
                       </div>
-                    )}
+                    );
+                  })}
+                </div>
+
+                {/* Fact Cards */}
+                <div className="flex gap-4 flex-wrap">
+                  <div className="cleo-fact-card">
+                    <div className="cleo-fact-emoji">🧫</div>
+                    <div className="cleo-fact-text">
+                      Human bodies contain about <strong>37 trillion cells</strong>.
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="cleo-fact-card">
+                    <div className="cleo-fact-emoji">🧬</div>
+                    <div className="cleo-fact-text">
+                      If uncoiled, DNA in one cell would be about <strong>2 m long</strong>.
+                    </div>
+                  </div>
+                  <div className="cleo-fact-card">
+                    <div className="cleo-fact-emoji">🌱</div>
+                    <div className="cleo-fact-text">
+                      The study of plants is called <strong>botany</strong>.
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            {/* Fact Cards */}
-            <div className="flex gap-4 flex-wrap">
-              <div className="cleo-fact-card">
-                <div className="cleo-fact-emoji">🧫</div>
-                <div className="cleo-fact-text">
-                  Human bodies contain about <strong>37 trillion cells</strong>.
-                </div>
-              </div>
-              <div className="cleo-fact-card">
-                <div className="cleo-fact-emoji">🧬</div>
-                <div className="cleo-fact-text">
-                  If uncoiled, DNA in one cell would be about <strong>2 m long</strong>.
-                </div>
-              </div>
-              <div className="cleo-fact-card">
-                <div className="cleo-fact-emoji">🌱</div>
-                <div className="cleo-fact-text">
-                  The study of plants is called <strong>botany</strong>.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Lessons Section */}
-          {lessons.length > 0 && (currentLesson || showAssessmentTimeScreen) ? (
+              {/* Lessons Section */}
+              {(currentLesson || showAssessmentTimeScreen) ? (
             <div className="space-y-5 mt-8">
               {/* Lesson Navigation Card */}
               {currentLesson && (
@@ -484,7 +486,9 @@ const ModuleDetail = () => {
                   )}
                 </div>
               </div>
-            </div>
+              </div>
+            ) : null}
+            </>
           ) : (
             <TopicSelectionScreen
               courseId={courseId!}
