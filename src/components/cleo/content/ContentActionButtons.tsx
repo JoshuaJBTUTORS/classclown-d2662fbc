@@ -26,34 +26,28 @@ export const ContentActionButtons: React.FC<ContentActionButtonsProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border/50">
-      <Button
+    <div className="cleo-lesson-actions">
+      <button
         onClick={handleTestMe}
-        variant="outline"
-        size="sm"
-        className="text-xs gap-1.5"
+        className="cleo-pill-btn"
       >
         <ListChecks className="w-3.5 h-3.5" />
-        Test me
-      </Button>
-      <Button
+        <span>Test me</span>
+      </button>
+      <button
         onClick={handleExplainSimple}
-        variant="outline"
-        size="sm"
-        className="text-xs gap-1.5"
+        className="cleo-pill-btn"
       >
         <Brain className="w-3.5 h-3.5" />
-        Explain like I'm a potato
-      </Button>
-      <Button
+        <span>Explain like I'm a potato</span>
+      </button>
+      <button
         onClick={handleGiveExample}
-        variant="outline"
-        size="sm"
-        className="text-xs gap-1.5"
+        className="cleo-pill-btn"
       >
         <Lightbulb className="w-3.5 h-3.5" />
-        Give an example
-      </Button>
+        <span>Give an example</span>
+      </button>
     </div>
   );
 };

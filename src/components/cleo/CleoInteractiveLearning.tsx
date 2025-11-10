@@ -346,10 +346,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="min-h-screen bg-white">
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-8 pt-6 pb-4">
-        <div className="text-3xl font-bold" style={{ color: 'hsl(var(--cleo-green))' }}>
+      <div className="flex items-center justify-between px-8 pt-6 pb-4 max-w-[1120px] mx-auto">
+        <div className="cleo-logo">
           Cleo {isExamPractice ? '📝' : '🧑🏻‍🔬'}
         </div>
         <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
@@ -358,116 +358,93 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Main Content Area - 80/20 Split on Desktop */}
-        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] gap-4 lg:gap-7 px-4 lg:px-8 pb-4 lg:pb-8">
-          {/* Left Column - Lesson Content (80%) */}
-          <div className="flex flex-col order-1">
+      {/* Main Content Wrapper */}
+      <div className="cleo-interactive-wrapper">
+        <div className="cleo-layout">
+          
+          {/* Left Column - Lesson Content */}
+          <section className="cleo-lesson-card">
+            <div className="cleo-lesson-title">{lessonData.title}</div>
+            <div className="cleo-lesson-subtitle">{lessonData.topic}</div>
 
-            {/* Main Lesson Card */}
-            <div className="cleo-card flex-1">
-              <div className="mb-3">
-                <h2 className="text-2xl font-semibold mb-2">
-                  {lessonData.title}
-                </h2>
-                {isExamPractice && (
-                  <div className="flex items-center gap-2 text-sm mb-2" 
-                       style={{ color: 'hsl(var(--cleo-green))' }}>
-                    <Trophy className="w-4 h-4" />
-                    <span className="font-medium">Exam Practice Mode</span>
-                  </div>
-                )}
-                <p className="text-sm" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
-                  {isExamPractice 
-                    ? 'Work through the example, then practice with exam-style questions. Ask Cleo for help anytime!'
-                    : 'Interactive lesson with Cleo'}
-                </p>
+            {lessonPlan && lessonPlan.learning_objectives.length > 0 && (
+              <div className="cleo-lesson-body">
+                {lessonPlan.learning_objectives[0]}
               </div>
-              
-              <h3 className="text-base mb-3" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
-                {lessonData.topic} – Learning Objectives
-              </h3>
-              
-              {lessonPlan && (
-                <ul className="mb-6 space-y-1 text-[15px]" style={{ lineHeight: '1.5' }}>
-                  {lessonPlan.learning_objectives.map((objective, index) => (
-                    <li key={index}>• {objective}</li>
-                  ))}
-                </ul>
-              )}
+            )}
 
-              {/* Hybrid Chat Interface */}
-              <div className="mt-6">
-                <HybridChatInterface
-                  mode={mode}
-                  messages={allMessages}
-                  isVoiceConnected={connectionState === 'connected'}
-                  isVoiceListening={isListening}
-                  isVoiceSpeaking={isSpeaking}
-                  isTextLoading={textChat.isLoading}
-                  onVoiceConnect={handleVoiceConnect}
-                  onVoiceDisconnect={handleVoiceDisconnect}
-                  onTextSend={textChat.sendMessage}
-                  contentBlocks={content}
-                  visibleContentIds={visibleContent}
-                  onAnswerQuestion={(qId, aId, correct) => {
-                    console.log('Question answered:', { qId, aId, correct });
-                  }}
-                  onAskHelp={(qId, questionText) => {
-                    const helpMessage = `Can you help me with this question: "${questionText}"`;
-                    controlsRef.current?.sendUserMessage(helpMessage);
-                    toast({
-                      title: "Asked Cleo for help",
-                      description: "Cleo will guide you through the question",
-                    });
-                  }}
-                  isExamPractice={isExamPractice}
-                  conversationId={conversationId || null}
-                  onContentAction={(contentId, action, message) => {
-                    console.log('Content action:', { contentId, action, message });
-                    controlsRef.current?.sendUserMessage(message);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Transcript & Chat (20%) - Hidden on mobile */}
-          <aside className="hidden lg:flex cleo-card flex-col p-4 order-2">
-            {/* Compact Cleo Avatar */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="cleo-avatar-tiny">🧑🏻‍🔬</div>
-              <span className="text-sm font-semibold" style={{ color: 'hsl(var(--cleo-green))' }}>
-                Cleo
-              </span>
-            </div>
-
-            {/* Transcript Section - Scrollable */}
-            <div className="flex-1 overflow-y-auto mb-3 min-h-0">
-              <h4 className="text-xs font-semibold mb-2 text-gray-500 uppercase tracking-wide">Transcript</h4>
-              <TranscriptPanel 
+            {/* Content Display Area */}
+            <div className="mt-6">
+              <HybridChatInterface
+                mode={mode}
                 messages={allMessages}
+                isVoiceConnected={connectionState === 'connected'}
+                isVoiceListening={isListening}
                 isVoiceSpeaking={isSpeaking}
+                isTextLoading={textChat.isLoading}
+                onVoiceConnect={handleVoiceConnect}
+                onVoiceDisconnect={handleVoiceDisconnect}
+                onTextSend={textChat.sendMessage}
+                contentBlocks={content}
+                visibleContentIds={visibleContent}
+                onAnswerQuestion={(qId, aId, correct) => {
+                  console.log('Question answered:', { qId, aId, correct });
+                }}
+                onAskHelp={(qId, questionText) => {
+                  const helpMessage = `Can you help me with this question: "${questionText}"`;
+                  controlsRef.current?.sendUserMessage(helpMessage);
+                  toast({
+                    title: "Asked Cleo for help",
+                    description: "Cleo will guide you through the question",
+                  });
+                }}
+                isExamPractice={isExamPractice}
+                conversationId={conversationId || null}
+                onContentAction={(contentId, action, message) => {
+                  console.log('Content action:', { contentId, action, message });
+                  controlsRef.current?.sendUserMessage(message);
+                }}
               />
             </div>
+          </section>
 
-            {/* Quick Chat Input */}
-            <div className="border-t pt-3">
-              <QuickChatInput 
-                onSend={(msg) => {
-                  if (mode === 'text') {
-                    textChat.sendMessage(msg);
-                  } else {
-                    controlsRef.current?.sendUserMessage(msg);
-                  }
-                }}
-                disabled={connectionState !== 'connected' && mode !== 'text'}
-                placeholder="Ask Cleo..."
-              />
+          {/* Right Column - Cleo Panel */}
+          <aside className="cleo-panel">
+            <div>
+              <div className="cleo-avatar-large-new">🧑🏻‍🔬</div>
+              <div className="cleo-status-pill">
+                <span className="cleo-status-dot"></span>
+                <span>{isSpeaking ? 'Cleo is speaking…' : 'Ready to help'}</span>
+              </div>
+            </div>
+
+            {allMessages.length > 0 && allMessages[allMessages.length - 1].role === 'assistant' && (
+              <div className="cleo-panel-text">
+                {allMessages[allMessages.length - 1].content}
+              </div>
+            )}
+
+            {/* Progress Card */}
+            {lessonPlan && lessonPlan.teaching_sequence && (
+              <div className="cleo-progress-card-new">
+                <div className="cleo-progress-title">Lesson Progress</div>
+                {lessonPlan.teaching_sequence.map((step, index) => (
+                  <div key={step.id || index} className="cleo-progress-item">
+                    <span className={`cleo-progress-dot-new ${completedSteps.includes(step.id) ? 'done' : ''}`}></span>
+                    <span>{step.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Voice Input Bar */}
+            <div className="cleo-voice-bar">
+              <span>Ask Cleo anything…</span>
+              <span className="mic">🎙️</span>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"

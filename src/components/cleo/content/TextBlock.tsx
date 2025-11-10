@@ -44,18 +44,36 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data, onContentAction }) =
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="prose prose-lg max-w-none"
+      className="w-full"
     >
-      <div className="border-l-4 border-indigo-200 dark:border-indigo-800 pl-6 py-2 bg-indigo-50/30 dark:bg-indigo-950/20 rounded-r-lg">
-        <p className="text-lg text-foreground leading-relaxed">
+      <div className="cleo-text-block">
+        <div className="cleo-text-content">
           {renderText(getText())}
-        </p>
+        </div>
         {onContentAction && (
-          <ContentActionButtons
-            contentId={`text-${getText().substring(0, 20).toLowerCase().replace(/\s+/g, '-')}`}
-            contentTitle={getText().substring(0, 50) + (getText().length > 50 ? '...' : '')}
-            onActionClick={onContentAction}
-          />
+          <div className="cleo-lesson-actions mt-4">
+            <button 
+              onClick={() => onContentAction('test', `Please test me on "${getText().substring(0, 50)}" with a question.`)}
+              className="cleo-pill-btn"
+            >
+              <span className="icon">✅</span>
+              <span>Test me</span>
+            </button>
+            <button 
+              onClick={() => onContentAction('explain', `Please explain "${getText().substring(0, 50)}" in the simplest way possible.`)}
+              className="cleo-pill-btn"
+            >
+              <span className="icon">🧠</span>
+              <span>Explain like I'm a potato</span>
+            </button>
+            <button 
+              onClick={() => onContentAction('example', `Please give me a concrete example of "${getText().substring(0, 50)}".`)}
+              className="cleo-pill-btn"
+            >
+              <span className="icon">💡</span>
+              <span>Give an example</span>
+            </button>
+          </div>
         )}
       </div>
     </motion.div>

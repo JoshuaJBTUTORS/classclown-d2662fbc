@@ -55,53 +55,28 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
       transition={{ duration: 0.4 }}
       className="w-full"
     >
-      <div className="bg-gradient-to-br from-indigo-50/30 to-purple-50/30 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-100 dark:border-indigo-900 rounded-lg p-6 shadow-lg">
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">❓</span>
-            <h3 className="text-xl font-semibold text-foreground">
-              {data.question}
-            </h3>
-          </div>
-        </div>
+      <div className="cleo-question-card">
+        <div className="cleo-question-text">{data.question}</div>
 
-        <div className="space-y-3">
+        <div className="cleo-answers">
           {data.options.map((option, index) => {
             const optionId = option.id || `option-${index}`;
-            const optionLabel = optionId.toUpperCase().charAt(0);
+            const isSelected = selectedAnswer === optionId;
+            const className = showFeedback && isSelected
+              ? option.isCorrect
+                ? 'cleo-answer-btn selected-correct'
+                : 'cleo-answer-btn selected-incorrect'
+              : 'cleo-answer-btn';
             
             return (
-              <Button
+              <button
                 key={optionId}
                 onClick={() => handleAnswerClick(optionId, option.isCorrect)}
                 disabled={showFeedback}
-                variant="outline"
-                className={`w-full justify-start text-left h-auto py-4 px-5 transition-all ${getOptionClassName(
-                  optionId,
-                  option.isCorrect
-                )}`}
+                className={className}
               >
-                <div className="flex items-center gap-3 w-full">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-sm">
-                    {optionLabel}
-                  </span>
-                <span className="flex-1 text-base">{option.text}</span>
-                {showFeedback && selectedAnswer === optionId && (
-                  <span className="flex-shrink-0">
-                    {option.isCorrect ? (
-                      <Check className="w-6 h-6 text-green-600" />
-                    ) : (
-                      <X className="w-6 h-6 text-red-600" />
-                    )}
-                  </span>
-                )}
-                {showFeedback && option.isCorrect && selectedAnswer !== optionId && (
-                  <span className="flex-shrink-0">
-                    <Check className="w-6 h-6 text-green-600" />
-                  </span>
-                )}
-              </div>
-            </Button>
+                {option.text}
+              </button>
             );
           })}
         </div>
@@ -112,15 +87,13 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
             animate={{ opacity: 1, y: 0 }}
             className="mt-4"
           >
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={() => onAskHelp(data.id, data.question)}
-              className="w-full"
+              className="cleo-pill-btn w-full justify-center"
             >
-              <HelpCircle className="w-4 h-4 mr-2" />
-              Ask Cleo for Help
-            </Button>
+              <HelpCircle className="w-4 h-4" />
+              <span>Ask Cleo for Help</span>
+            </button>
           </motion.div>
         )}
 
@@ -129,10 +102,12 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            className="mt-6 p-4 bg-muted rounded-lg"
+            className="mt-4 p-4 bg-white rounded-lg"
           >
-            <p className="text-sm font-medium text-primary mb-2">Explanation:</p>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm font-medium mb-2" style={{ color: 'hsl(var(--cleo-green))' }}>
+              Explanation:
+            </p>
+            <p className="text-sm" style={{ color: 'hsl(var(--cleo-text-main))' }}>
               {data.explanation}
             </p>
           </motion.div>

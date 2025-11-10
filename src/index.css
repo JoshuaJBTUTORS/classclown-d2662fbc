@@ -499,6 +499,286 @@
     max-width: 100%;
   }
 
+  /* ========== Enhanced Cleo Interactive Learning UI ========== */
+
+  /* Main Layout Wrapper */
+  .cleo-interactive-wrapper {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 16px 64px;
+  }
+
+  /* Two-Column Grid Layout */
+  .cleo-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2.1fr);
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  @media (max-width: 880px) {
+    .cleo-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Left: Enhanced Lesson Card */
+  .cleo-lesson-card {
+    border-radius: 32px;
+    background: #ffffff;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    padding: 26px 28px 30px;
+  }
+
+  .cleo-lesson-title {
+    font-size: 24px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: hsl(var(--cleo-text-main));
+  }
+
+  .cleo-lesson-subtitle {
+    font-size: 15px;
+    color: hsl(var(--cleo-text-muted));
+    margin-bottom: 18px;
+  }
+
+  .cleo-lesson-body {
+    font-size: 15px;
+    color: hsl(var(--cleo-text-main));
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+
+  /* Action Buttons */
+  .cleo-lesson-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .cleo-pill-btn {
+    border-radius: var(--cleo-radius-pill);
+    border: 1px solid hsl(var(--cleo-border-soft));
+    padding: 8px 16px;
+    font-size: 14px;
+    background: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: hsl(var(--cleo-text-main));
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .cleo-pill-btn:hover {
+    border-color: #c8edd4;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    transform: translateY(-1px);
+  }
+
+  .cleo-pill-btn .icon {
+    font-size: 16px;
+  }
+
+  /* Enhanced Question Card */
+  .cleo-question-card {
+    border-radius: 22px;
+    background: hsl(var(--cleo-mint-card));
+    padding: 18px 20px 20px;
+  }
+
+  .cleo-shapes-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .cleo-shape-box {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 14px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: hsl(var(--cleo-text-main));
+  }
+
+  .cleo-question-text {
+    font-size: 17px;
+    margin-bottom: 14px;
+    font-weight: 500;
+    color: hsl(var(--cleo-text-main));
+  }
+
+  .cleo-answers {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .cleo-answer-btn {
+    flex: 0 0 auto;
+    min-width: 72px;
+    height: 44px;
+    border-radius: var(--cleo-radius-pill);
+    border: 1px solid #cdebd8;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    cursor: pointer;
+    padding: 0 20px;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    color: hsl(var(--cleo-text-main));
+    font-weight: 500;
+  }
+
+  .cleo-answer-btn:hover:not(:disabled) {
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    border-color: hsl(var(--cleo-green));
+    transform: translateY(-1px);
+  }
+
+  .cleo-answer-btn.selected-correct {
+    border-color: hsl(var(--cleo-green));
+    background: #d1f4e0;
+  }
+
+  .cleo-answer-btn.selected-incorrect {
+    border-color: #ef4444;
+    background: #fee2e2;
+  }
+
+  .cleo-answer-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Right: Enhanced Cleo Panel */
+  .cleo-panel {
+    padding-left: 30px;
+    border-left: 1px solid #f1f3f2;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  @media (max-width: 880px) {
+    .cleo-panel {
+      padding-left: 0;
+      border-left: none;
+    }
+  }
+
+  .cleo-avatar-large-new {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 20%, #ffffff, #cdeedd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    margin-bottom: 4px;
+  }
+
+  .cleo-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: var(--cleo-radius-pill);
+    background: hsl(var(--cleo-mint-card));
+    font-size: 13px;
+    color: hsl(var(--cleo-text-main));
+  }
+
+  .cleo-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: hsl(var(--cleo-green));
+  }
+
+  .cleo-panel-text {
+    font-size: 15px;
+    color: hsl(var(--cleo-text-main));
+    line-height: 1.6;
+  }
+
+  .cleo-progress-card-new {
+    margin-top: 6px;
+    border-radius: 18px;
+    border: 1px solid hsl(var(--cleo-border-soft));
+    padding: 14px 16px;
+    background: #ffffff;
+    font-size: 13px;
+  }
+
+  .cleo-progress-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: hsl(var(--cleo-text-main));
+  }
+
+  .cleo-progress-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    color: hsl(var(--cleo-text-muted));
+  }
+
+  .cleo-progress-dot-new {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #d1d5db;
+    flex-shrink: 0;
+  }
+
+  .cleo-progress-dot-new.done {
+    background: hsl(var(--cleo-green));
+  }
+
+  .cleo-voice-bar {
+    margin-top: 10px;
+    border-radius: var(--cleo-radius-pill);
+    border: 1px solid hsl(var(--cleo-border-soft));
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    color: hsl(var(--cleo-text-muted));
+    background: #ffffff;
+  }
+
+  .cleo-voice-bar .mic {
+    font-size: 20px;
+    color: hsl(var(--cleo-green));
+  }
+
+  /* Text Content Block - Simplified */
+  .cleo-text-block {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+
+  .cleo-text-content {
+    font-size: 15px;
+    color: hsl(var(--cleo-text-main));
+    line-height: 1.6;
+  }
+
   .cleo-topic-card {
     display: flex;
     align-items: center;
