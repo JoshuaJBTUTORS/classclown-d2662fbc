@@ -96,71 +96,62 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
 
   return (
     <div className="h-screen flex items-center justify-center bg-white p-8">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="cleo-card max-w-[480px] w-full"
-      >
-        <div className="text-center mb-8">
+      <div className="cleo-lesson-container">
+        <div className="cleo-logo">Cleo</div>
+        
+        <div className="cleo-avatar">🧑🏻‍🔬</div>
+
+        <h1 className="cleo-heading">Preparing Your Lesson</h1>
+        
+        <p className="text-base mb-8" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+          Cleo is creating a personalized learning experience...
+        </p>
+
+        <div className="cleo-planning-card">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="inline-block mb-4"
+            className="inline-block mb-6"
           >
             <Loader2 className="w-12 h-12" style={{ color: 'hsl(var(--cleo-green))' }} />
           </motion.div>
-          <h2 className="text-2xl font-bold mb-2" style={{ color: 'hsl(var(--cleo-text-main))' }}>
-            Preparing Your Lesson
-          </h2>
-          <p style={{ color: 'hsl(var(--cleo-text-muted))' }}>
-            Cleo is creating a personalized learning experience...
-          </p>
-        </div>
 
-        <div className="space-y-3">
-          {steps.map((step, index) => (
-            <motion.div
-              key={step.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                step.completed 
-                  ? 'bg-[#cdefd7] border border-[#a0dbb5]' 
-                  : currentStep === index
-                  ? 'bg-[#f2f4f4] border border-[#e5ebe7]'
-                  : 'bg-[#f8f9f9]'
-              }`}
-            >
-              <div className={`flex-shrink-0 ${
-                step.completed ? 'text-[hsl(var(--cleo-green))]' : 'text-[hsl(var(--cleo-text-muted))]'
-              }`}>
-                {step.completed ? (
-                  <Check className="w-5 h-5" />
-                ) : (
-                  step.icon
+          <div className="cleo-planning-steps">
+            {steps.map((step, index) => (
+              <motion.div
+                key={step.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`cleo-planning-step ${
+                  step.completed ? 'completed' : currentStep === index ? 'active' : ''
+                }`}
+              >
+                <div className="flex-shrink-0" style={{ 
+                  color: step.completed ? 'hsl(var(--cleo-green))' : 'hsl(var(--cleo-text-muted))' 
+                }}>
+                  {step.completed ? <Check className="w-5 h-5" /> : step.icon}
+                </div>
+                <span className={`flex-1 text-sm ${step.completed ? 'font-medium' : ''}`} 
+                  style={{ color: 'hsl(var(--cleo-text-main))' }}>
+                  {step.label}
+                </span>
+                {currentStep === index && !step.completed && (
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'hsl(var(--cleo-green))' }} />
                 )}
-              </div>
-              <span className={`flex-1 text-sm ${
-                step.completed ? 'font-medium' : ''
-              }`} style={{ color: 'hsl(var(--cleo-text-main))' }}>
-                {step.label}
-              </span>
-              {currentStep === index && !step.completed && (
-                <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'hsl(var(--cleo-green))' }} />
-              )}
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
 
-        <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: '#f8f9f9' }}>
-          <p className="text-xs text-center" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
-            <span className="font-semibold" style={{ color: 'hsl(var(--cleo-text-main))' }}>{topic}</span>
-            <br />
-            {yearGroup}
-          </p>
+          <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: '#f8f9f9' }}>
+            <p className="text-xs text-center" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+              <span className="font-semibold" style={{ color: 'hsl(var(--cleo-text-main))' }}>{topic}</span>
+              <br />
+              {yearGroup}
+            </p>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

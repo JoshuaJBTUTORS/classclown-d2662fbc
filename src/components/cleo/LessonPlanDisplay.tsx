@@ -46,51 +46,47 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
 
   return (
     <div className="h-screen bg-white p-8">
-      <div className="max-w-[1120px] mx-auto">
-        {/* Cleo Logo */}
-        <div className="text-3xl font-bold mb-6" style={{ color: 'hsl(var(--cleo-green))' }}>
-          Cleo
-        </div>
+      <div className="cleo-lesson-container" style={{ maxWidth: '800px' }}>
+        <button onClick={handleBackToModule} className="cleo-back-btn">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Module
+        </button>
 
-        {/* Header with Avatar and Audio Selectors */}
+        <div className="cleo-logo">Cleo</div>
+
         <div className="flex justify-between items-center mb-8">
-          <div className="cleo-avatar-large">
-            <span>🧑🏻‍🔬</span>
-          </div>
+          <div className="cleo-avatar mx-0">🧑🏻‍🔬</div>
           
           <div className="flex gap-2">
-            <button className="cleo-btn-outline">
+            <button className="cleo-back-btn">
               <span className="text-lg">🔈</span>
               <span>Select speaker</span>
             </button>
-            <button className="cleo-btn-outline">
+            <button className="cleo-back-btn">
               <span className="text-lg">🎙️</span>
               <span>Select microphone</span>
             </button>
           </div>
         </div>
 
-        {/* Title */}
-        <h1 className="text-4xl font-bold text-center mb-8" style={{ letterSpacing: '-0.02em' }}>
+        <h1 className="cleo-heading">
           Here's your lesson plan, {lessonPlan.year_group} 🦊
         </h1>
 
-        {/* Lesson Plan Card */}
-        <div className="cleo-card">
-          <h2 className="text-2xl font-semibold text-center mb-3">
+        <div className="cleo-planning-card" style={{ maxWidth: '100%' }}>
+          <h2 className="text-2xl font-semibold text-center mb-3" style={{ color: 'hsl(var(--cleo-text-main))' }}>
             {lessonPlan.topic}
           </h2>
           <h3 className="text-lg text-center mb-4" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
             Learning Objectives
           </h3>
           
-          <ul className="mb-6 space-y-2 text-[15px]" style={{ color: 'hsl(var(--cleo-text-main))', lineHeight: '1.5' }}>
+          <ul className="mb-6 space-y-2 text-[15px] text-left" style={{ color: 'hsl(var(--cleo-text-main))', lineHeight: '1.5' }}>
             {lessonPlan.learning_objectives.map((objective, index) => (
               <li key={index}>• {objective}</li>
             ))}
           </ul>
 
-          {/* Teaching Sequence as Pills */}
           <div className="flex gap-3 flex-wrap mt-6 mb-6">
             {lessonPlan.teaching_sequence.map((step, index) => (
               <div key={step.id} className="cleo-step-pill">
@@ -100,7 +96,6 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
             ))}
           </div>
 
-          {/* Start Button */}
           <button onClick={onStartLesson} className="cleo-btn-primary w-full mt-5">
             <span className="text-lg">▶️</span>
             Start Lesson with Cleo

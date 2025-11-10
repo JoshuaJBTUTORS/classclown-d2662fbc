@@ -219,7 +219,143 @@
     }
   }
   
-  /* Cleo Button Styles (Updated) */
+  /* ========== Cleo Lesson Pages - Standardized Design ========== */
+  
+  /* Container */
+  .cleo-lesson-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 16px;
+    text-align: center;
+  }
+
+  /* Back Button */
+  .cleo-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid hsl(var(--cleo-border-soft));
+    border-radius: var(--cleo-radius-pill);
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 24px;
+    font-size: 14px;
+    color: hsl(var(--cleo-text-main));
+    font-weight: normal;
+  }
+
+  .cleo-back-btn:hover {
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+  }
+
+  /* Logo */
+  .cleo-logo {
+    font-size: 28px;
+    font-weight: 700;
+    color: hsl(var(--cleo-green));
+    margin-bottom: 28px;
+  }
+
+  /* Avatar */
+  .cleo-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 20%, #ffffff, #cdeedd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 52px;
+  }
+
+  /* Heading */
+  .cleo-heading {
+    font-size: 34px;
+    font-weight: 700;
+    margin-bottom: 36px;
+    color: hsl(var(--cleo-text-main));
+    letter-spacing: -0.02em;
+  }
+
+  /* Topics Grid */
+  .cleo-topics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 18px;
+    justify-items: center;
+  }
+
+  /* Topic Card */
+  .cleo-topic {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid hsl(var(--cleo-border-soft));
+    border-radius: var(--cleo-radius-lg);
+    padding: 18px 24px;
+    width: 100%;
+    max-width: 280px;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.2s ease;
+    font-size: 18px;
+    font-weight: 600;
+    justify-content: center;
+    color: hsl(var(--cleo-text-main));
+  }
+
+  .cleo-topic:hover {
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+    border-color: #b6eac6;
+  }
+
+  .cleo-icon {
+    font-size: 26px;
+  }
+
+  /* Planning Card */
+  .cleo-planning-card {
+    background: #fff;
+    border-radius: var(--cleo-radius-xl);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+    padding: 32px;
+    max-width: 480px;
+    width: 100%;
+  }
+
+  .cleo-planning-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .cleo-planning-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--cleo-radius-lg);
+    transition: all 0.2s ease;
+    background: #f8f9f9;
+  }
+
+  .cleo-planning-step.active {
+    background: #f2f4f4;
+    border: 1px solid hsl(var(--cleo-border-soft));
+  }
+
+  .cleo-planning-step.completed {
+    background: #cdefd7;
+    border: 1px solid #a0dbb5;
+  }
+
+  /* Legacy Button Styles (kept for backward compatibility) */
   .cleo-btn-primary {
     border-radius: var(--cleo-radius-pill);
     padding: 14px 36px;

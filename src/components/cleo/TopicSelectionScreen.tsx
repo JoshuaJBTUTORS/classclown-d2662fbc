@@ -31,36 +31,32 @@ export const TopicSelectionScreen = ({
   };
 
   return (
-    <div className="container mx-auto max-w-[720px] text-center py-10">
+    <div className="cleo-lesson-container">
       <button
         onClick={() => navigate(`/course/${courseId}`)}
-        className="cleo-btn-outline mb-6 inline-flex items-center gap-2"
+        className="cleo-back-btn"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Course
       </button>
 
-      <div className="text-[28px] font-bold mb-7" style={{ color: 'var(--cleo-green)' }}>
-        Cleo
-      </div>
+      <div className="cleo-logo">Cleo</div>
       
-      <div className="cleo-avatar-large">
-        🧑🏻‍🔬
-      </div>
+      <div className="cleo-avatar">🧑🏻‍🔬</div>
 
-      <h1 className="text-[34px] font-bold mb-9">
+      <h1 className="cleo-heading">
         What do you want to focus on today, {userName}?
       </h1>
 
-      <div className="cleo-topic-grid">
+      <div className="cleo-topics">
         {topics.map((topic) => (
           <div
             key={topic.id}
-            className="cleo-topic-card"
+            className="cleo-topic"
             onClick={() => handleTopicSelect(topic)}
           >
-            <span className="text-[26px]">{topic.icon}</span>
-            <span className="font-semibold text-[18px]">{topic.name}</span>
+            <span className="cleo-icon">{topic.icon}</span>
+            <span>{topic.name}</span>
           </div>
         ))}
       </div>
