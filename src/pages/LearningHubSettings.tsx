@@ -30,7 +30,7 @@ const LearningHubSettings = () => {
           </TabsList>
           
           <TabsContent value="profile" className="cleo-tabs-content">
-            <div className="course-pill" style={{ marginTop: '16px' }}>
+            <div className="course-pill" style={{ marginTop: '16px', background: 'white' }}>
               <div className="course-pill-title">
                 👤 Profile Information
               </div>
