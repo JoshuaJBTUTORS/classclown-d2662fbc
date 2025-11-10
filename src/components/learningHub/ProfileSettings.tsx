@@ -111,6 +111,7 @@ const ProfileSettings = () => {
   }, [user, reset]);
 
   const onSubmit = async (data: ProfileFormData) => {
+    console.log('Form data being submitted:', data);
     if (!user) return;
 
     setIsLoading(true);
@@ -143,9 +144,35 @@ const ProfileSettings = () => {
 
       if (updateError) throw updateError;
 
+      // Refetch profile to ensure UI is synced
+      const { data: updatedProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards')
+        .eq('id', user.id)
+        .single();
+
+      if (updatedProfile) {
+        const subjectIds = updatedProfile.gcse_subject_ids || [];
+        const boards = (updatedProfile.exam_boards as Record<string, string>) || {};
+        
+        setSelectedSubjects(subjectIds);
+        setExamBoards(boards);
+        
+        reset({
+          first_name: updatedProfile.first_name || '',
+          last_name: updatedProfile.last_name || '',
+          email: user.email || '',
+          phone_number: updatedProfile.phone_number || '',
+          education_level: updatedProfile.education_level as '11_plus' | 'gcse' | undefined,
+          gcse_subject_ids: subjectIds,
+          exam_boards: boards,
+        });
+      }
+
       toast({
-        title: 'Profile updated',
-        description: 'Your settings have been successfully saved.',
+        title: '✅ Settings Saved!',
+        description: 'Your settings have been successfully updated.',
+        duration: 3000,
       });
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -161,6 +188,7 @@ const ProfileSettings = () => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className={isLoading ? 'opacity-50 pointer-events-none' : ''}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="first_name">First Name</Label>
@@ -317,6 +345,7 @@ const ProfileSettings = () => {
           )}
         </div>
       )}
+      </div>
 
       <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
         {isLoading ? 'Saving...' : 'Save Changes'}
