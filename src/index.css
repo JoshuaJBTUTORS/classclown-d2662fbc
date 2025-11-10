@@ -87,22 +87,19 @@
     --shadow-elevated: 0 8px 24px -4px hsl(var(--cyan-blue) / 0.15);
     --shadow-focus: 0 0 0 3px hsl(var(--cyan-blue) / 0.15);
     
-    /* Cleo Design System Variables */
-    --cleo-green: 145 60% 43%;
-    --cleo-green-soft: 145 75% 93%;
-    --cleo-bg-light: 145 30% 97%;
-    --cleo-text-dark: 180 50% 15%;
-    --cleo-accent-blue: 220 100% 63%;
-    --cleo-accent-gold: 45 90% 62%;
-    --cleo-danger: 10 90% 65%;
-    --cleo-card-radius: 24px;
-    --cleo-shadow-card: 0 18px 45px rgba(15, 80, 60, 0.12);
-    --cleo-shadow-sm: 0 8px 20px rgba(15, 80, 60, 0.08);
-    --cleo-shadow-button: 0 6px 16px rgba(15, 80, 60, 0.14);
-    --cleo-shadow-button-hover: 0 10px 24px rgba(15, 80, 60, 0.18);
-    --cleo-shadow-primary: 0 10px 26px rgba(22, 160, 90, 0.35);
-    --cleo-shadow-primary-hover: 0 14px 34px rgba(22, 160, 90, 0.45);
-    --cleo-page-bg: 236 10% 93%;
+    /* Cleo Design System Variables (Updated) */
+    --cleo-green: 143 64% 29%; /* #15803d */
+    --cleo-green-dark: 144 61% 20%; /* #14532d */
+    --cleo-mint-bg: 140 100% 97%; /* #f3fff7 */
+    --cleo-mint-card: 138 52% 95%; /* #e7f8ee */
+    --cleo-card-bg: 0 0% 100%; /* #ffffff */
+    --cleo-border-soft: 140 13% 91%; /* #e5ebe7 */
+    --cleo-text-main: 150 83% 4%; /* #02130a */
+    --cleo-text-muted: 150 9% 41%; /* #63706b */
+    --cleo-shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
+    --cleo-radius-xl: 24px;
+    --cleo-radius-lg: 18px;
+    --cleo-radius-pill: 999px;
   }
 
   .dark {
@@ -222,63 +219,186 @@
     }
   }
   
-  /* Cleo Button Styles */
+  /* Cleo Button Styles (Updated) */
   .cleo-btn-primary {
-    border-radius: 999px;
-    padding: 14px 22px;
+    border-radius: var(--cleo-radius-pill);
+    padding: 14px 36px;
     border: none;
-    background: linear-gradient(135deg, hsl(var(--cleo-green)), hsl(145 70% 50%));
-    color: #fff;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #ffffff;
     font-weight: 600;
-    font-size: 1rem;
-    box-shadow: 0 12px 26px rgba(22, 160, 90, 0.35);
-    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    font-size: 17px;
+    cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
   }
 
   .cleo-btn-primary:hover {
     transform: translateY(-1px);
     filter: brightness(1.05);
-    box-shadow: 0 16px 42px rgba(22, 160, 90, 0.4);
+  }
+
+  .cleo-btn-primary:active {
+    transform: translateY(1px);
   }
 
   .cleo-btn-outline {
-    border-radius: 999px;
-    padding: 14px 22px;
-    border: 2px solid hsl(var(--cleo-green) / 0.5);
-    background: rgba(255, 255, 255, 0.8);
-    color: hsl(var(--cleo-text-dark));
-    font-weight: 600;
-    font-size: 1rem;
-    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+    border-radius: var(--cleo-radius-pill);
+    padding: 8px 14px;
+    border: 1px solid hsl(var(--cleo-border-soft));
+    background: #ffffff;
+    color: hsl(var(--cleo-text-main));
+    font-weight: normal;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .cleo-btn-outline:hover {
-    background: hsl(var(--cleo-green-soft) / 0.9);
-    border-color: hsl(var(--cleo-green));
-    transform: translateY(-1px);
-  }
-
-  /* Cleo Card Styles */
-  .cleo-screen {
-    background: hsl(var(--cleo-bg-light));
-    border-radius: var(--card-radius);
-    padding: 24px;
-    box-shadow: var(--card-shadow);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .cleo-card-white {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 16px;
-    box-shadow: 0 10px 24px rgba(19, 101, 60, 0.12);
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
-  }
-
-  .cleo-card-white:hover {
+    box-shadow: var(--cleo-shadow-soft);
     transform: translateY(-2px);
-    box-shadow: 0 14px 32px rgba(19, 101, 60, 0.18);
+    border-color: hsl(var(--cleo-mint-card));
+  }
+
+  /* Cleo Card Styles (Updated) */
+  .cleo-card {
+    background: hsl(var(--cleo-card-bg));
+    border-radius: var(--cleo-radius-xl);
+    box-shadow: var(--cleo-shadow-soft);
+    padding: 28px 32px 30px;
+  }
+
+  .cleo-avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 20%, #ffffff, #cdeedd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 54px;
+    margin: 0 auto 20px;
+  }
+
+  .cleo-avatar-small {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 20%, #ffffff, #cdeedd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+
+  .cleo-fact-card {
+    flex: 1 1 0;
+    min-width: 220px;
+    padding: 18px;
+    border-radius: var(--cleo-radius-lg);
+    background: #ffffff;
+    border: 1px solid hsl(var(--cleo-border-soft));
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .cleo-fact-emoji {
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .cleo-fact-text {
+    font-size: 15px;
+    color: hsl(var(--cleo-text-main));
+    line-height: 1.4;
+  }
+
+  .cleo-module-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 22px;
+    margin: 0 auto 8px;
+  }
+
+  .cleo-module-circle.active {
+    background: #cdefd7;
+    color: hsl(var(--cleo-text-main));
+  }
+
+  .cleo-module-circle.locked {
+    background: #f2f4f4;
+    color: #a0aba7;
+  }
+
+  .cleo-topic-card {
+    flex: 1 1 calc(50% - 12px);
+    min-width: 220px;
+    padding: 20px 24px;
+    border-radius: var(--cleo-radius-lg);
+    border: 1px solid hsl(var(--cleo-border-soft));
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .cleo-topic-card:hover {
+    box-shadow: var(--cleo-shadow-soft);
+    transform: translateY(-2px);
+    border-color: #cdefd7;
+  }
+
+  .cleo-step-pill {
+    flex: 1 1 0;
+    min-width: 190px;
+    border-radius: 16px;
+    background: hsl(var(--cleo-mint-card));
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .cleo-step-number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #cdefd7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: hsl(var(--cleo-text-main));
+    flex-shrink: 0;
+  }
+
+  .cleo-input-bar {
+    border-radius: var(--cleo-radius-pill);
+    border: 1px solid hsl(var(--cleo-border-soft));
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 14px;
+    color: hsl(var(--cleo-text-muted));
+    background: #ffffff;
   }
 
   /* Cleo Progress Bar */

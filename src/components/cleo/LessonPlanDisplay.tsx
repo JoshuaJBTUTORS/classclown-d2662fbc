@@ -45,94 +45,68 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30 p-8">
-      <Card className="max-w-3xl w-full p-8 shadow-xl">
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={handleBackToModule}
-            className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Lessons
-          </Button>
+    <div className="h-screen bg-white p-8">
+      <div className="max-w-[1120px] mx-auto">
+        {/* Cleo Logo */}
+        <div className="text-3xl font-bold mb-6" style={{ color: 'hsl(var(--cleo-green))' }}>
+          Cleo
+        </div>
+
+        {/* Header with Avatar and Audio Selectors */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="cleo-avatar-large">
+            <span>🧑🏻‍🔬</span>
+          </div>
           
-          <div className="flex items-center gap-2 text-primary mb-4">
-            <BookOpen className="w-6 h-6" />
-            <span className="text-sm font-medium">Lesson Plan Generated</span>
+          <div className="flex gap-2">
+            <button className="cleo-btn-outline">
+              <span className="text-lg">🔈</span>
+              <span>Select speaker</span>
+            </button>
+            <button className="cleo-btn-outline">
+              <span className="text-lg">🎙️</span>
+              <span>Select microphone</span>
+            </button>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+        </div>
+
+        {/* Title */}
+        <h1 className="text-4xl font-bold text-center mb-8" style={{ letterSpacing: '-0.02em' }}>
+          Here's your lesson plan, {lessonPlan.year_group} 🦊
+        </h1>
+
+        {/* Lesson Plan Card */}
+        <div className="cleo-card">
+          <h2 className="text-2xl font-semibold text-center mb-3">
             {lessonPlan.topic}
-          </h1>
-          <p className="text-muted-foreground">
-            {lessonPlan.year_group}
-          </p>
+          </h2>
+          <h3 className="text-lg text-center mb-4" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+            Learning Objectives
+          </h3>
+          
+          <ul className="mb-6 space-y-2 text-[15px]" style={{ color: 'hsl(var(--cleo-text-main))', lineHeight: '1.5' }}>
+            {lessonPlan.learning_objectives.map((objective, index) => (
+              <li key={index}>• {objective}</li>
+            ))}
+          </ul>
+
+          {/* Teaching Sequence as Pills */}
+          <div className="flex gap-3 flex-wrap mt-6 mb-6">
+            {lessonPlan.teaching_sequence.map((step, index) => (
+              <div key={step.id} className="cleo-step-pill">
+                <div className="cleo-step-number">{index + 1}</div>
+                <div>{step.title}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Start Button */}
+          <button onClick={onStartLesson} className="cleo-btn-primary w-full mt-5">
+            <span className="text-lg">▶️</span>
+            Start Lesson with Cleo
+          </button>
         </div>
-
-        <div className="space-y-6 mb-8">
-          {/* Learning Objectives */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Target className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">Learning Objectives</h2>
-            </div>
-            <ul className="space-y-2">
-              {lessonPlan.learning_objectives.map((objective, index) => (
-                <li key={index} className="flex items-start gap-2 text-foreground">
-                  <CheckCircle className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
-                  <span>{objective}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Teaching Sequence */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">Teaching Sequence</h2>
-            </div>
-            <div className="space-y-2">
-              {lessonPlan.teaching_sequence.map((step, index) => (
-                <div
-                  key={step.id}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
-                      {index + 1}
-                    </div>
-                  <span className="text-foreground font-medium">{step.title}</span>
-                  </div>
-                  {step.duration_minutes && (
-                    <span className="text-sm text-muted-foreground">
-                      {step.duration_minutes} min
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Content Overview */}
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-            <h3 className="font-semibold text-foreground mb-2">Interactive Content</h3>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <span>{contentCounts.tables} Tables</span>
-              <span>{contentCounts.questions} Questions</span>
-              <span>{contentCounts.definitions} Definitions</span>
-            </div>
-          </div>
-        </div>
-
-        <Button
-          onClick={onStartLesson}
-          size="lg"
-          className="w-full text-base font-semibold py-6"
-        >
-          Start Lesson with Cleo
-        </Button>
-      </Card>
+      </div>
     </div>
   );
 };

@@ -323,29 +323,85 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const sessionTimeMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="px-4 md:px-8 lg:px-12 py-6 border-b border-border">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <Button
-              variant="ghost"
-              onClick={handleBackToModule}
-              className="-ml-2 text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Lessons
-            </Button>
+    <div className="h-full flex flex-col bg-white">
+      <div className="flex-1 flex flex-col md:flex-row">
+        {/* Main Content Area - Two Column Grid */}
+        <div className="flex-1 flex flex-col md:grid md:grid-cols-[minmax(0,3fr)_minmax(0,2.2fr)] gap-7 p-8">
+          {/* Left Column - Lesson Content */}
+          <div className="flex flex-col">
+            {/* Cleo Logo */}
+            <div className="text-3xl font-bold mb-6" style={{ color: 'hsl(var(--cleo-green))' }}>
+              Cleo
+            </div>
 
-            <div className="flex items-center gap-2">
-              {lessonPlan && (
-                <CompactStepIndicator
-                  teachingSequence={lessonPlan.teaching_sequence}
-                  currentStepId={activeStep?.toString()}
-                  completedSteps={completedSteps}
-                />
-              )}
+            {/* Main Lesson Card */}
+            <div className="cleo-card flex-1">
+              <h2 className="text-2xl font-semibold mb-4">
+                {lessonData.title}
+              </h2>
               
+              <h3 className="text-base mb-3" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+                {lessonData.topic} – Learning Objectives
+              </h3>
+              
+              {lessonPlan && (
+                <ul className="mb-6 space-y-1 text-[15px]" style={{ lineHeight: '1.5' }}>
+                  {lessonPlan.learning_objectives.map((objective, index) => (
+                    <li key={index}>• {objective}</li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Hybrid Chat Interface */}
+              <div className="mt-6">
+                <HybridChatInterface
+                  mode={mode}
+                  messages={allMessages}
+                  isVoiceConnected={connectionState === 'connected'}
+                  isVoiceListening={isListening}
+                  isVoiceSpeaking={isSpeaking}
+                  isTextLoading={textChat.isLoading}
+                  voiceTimePercent={voiceTimer.percentUsed}
+                  voiceTimeRemaining={voiceTimer.remainingSeconds}
+                  onModeSwitch={(newMode) => handleModeSwitch(newMode, false)}
+                  onVoiceConnect={handleVoiceConnect}
+                  onVoiceDisconnect={handleVoiceDisconnect}
+                  onTextSend={textChat.sendMessage}
+                  canUseVoice={!voiceTimer.hasReachedLimit}
+                  contentBlocks={content}
+                  visibleContentIds={visibleContent}
+                  onAnswerQuestion={(qId, aId, correct) => {
+                    console.log('Question answered:', { qId, aId, correct });
+                  }}
+                  conversationId={conversationId || null}
+                  onContentAction={(contentId, action, message) => {
+                    console.log('Content action:', { contentId, action, message });
+                    controlsRef.current?.sendUserMessage(message);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Cleo Sidebar */}
+          <aside className="cleo-card flex flex-col items-center gap-5 p-6">
+            <div className="cleo-avatar-small">
+              <span>🧑🏻‍🔬</span>
+            </div>
+
+            <div className="cleo-side-text text-left w-full">
+              <strong>Hey there!</strong> Strategist mode is engaged 🦊. Let's explore
+              this lesson together. I'll be guiding you through each question.
+              Can you guess which answer is correct here? Choose your option, or
+              ask me to explain it a different way.
+            </div>
+
+            <div className="cleo-input-bar w-full">
+              <span>Ask Cleo anything…</span>
+              <span className="text-xl">🎙️</span>
+            </div>
+
+            <div className="flex gap-2 mt-4">
               <Button
                 variant="outline"
                 size="sm"
@@ -363,51 +419,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   size="sm"
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Complete Lesson
+                  Complete
                 </Button>
               )}
             </div>
-          </div>
-
-          <div className="mb-4">
-            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <span className="text-4xl">{subjectTheme.emoji}</span>
-              {lessonData.title}
-            </h1>
-            <p className="text-muted-foreground">
-              {lessonData.topic} • {lessonData.yearGroup}
-            </p>
-          </div>
-        </div>
-
-        {/* Hybrid Chat Interface */}
-        <div className="flex-1">
-        <HybridChatInterface
-          mode={mode}
-          messages={allMessages}
-          isVoiceConnected={connectionState === 'connected'}
-          isVoiceListening={isListening}
-          isVoiceSpeaking={isSpeaking}
-          isTextLoading={textChat.isLoading}
-          voiceTimePercent={voiceTimer.percentUsed}
-          voiceTimeRemaining={voiceTimer.remainingSeconds}
-          onModeSwitch={(newMode) => handleModeSwitch(newMode, false)}
-          onVoiceConnect={handleVoiceConnect}
-          onVoiceDisconnect={handleVoiceDisconnect}
-          onTextSend={textChat.sendMessage}
-          canUseVoice={!voiceTimer.hasReachedLimit}
-          contentBlocks={content}
-          visibleContentIds={visibleContent}
-          onAnswerQuestion={(qId, aId, correct) => {
-            console.log('Question answered:', { qId, aId, correct });
-          }}
-          conversationId={conversationId || null}
-          onContentAction={(contentId, action, message) => {
-            console.log('Content action:', { contentId, action, message });
-            // Send the action message to Cleo
-            controlsRef.current?.sendUserMessage(message);
-          }}
-        />
+          </aside>
         </div>
       </div>
 
