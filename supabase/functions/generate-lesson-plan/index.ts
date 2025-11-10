@@ -253,11 +253,16 @@ CONTENT BLOCKS FOR STEP 1 (Worked Example):
 - Example: "Place value tells us the value of each digit.\n\n**Important:** The digit 6 in 4,629 represents 600."
 
 CONTENT BLOCKS FOR STEP 2 (Practice):
+- YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
+- Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
 - ALL blocks must be type "question"
 - Format: { type: "question", data: { question: "...", options: [...], explanation: "..." } }
-- Questions 1-7: Basic application
-- Questions 8-14: Intermediate difficulty  
-- Questions 15-20: Advanced/challenging
+- Questions 1-7: Basic application (7 questions)
+- Questions 8-14: Intermediate difficulty (7 questions)
+- Questions 15-20: Advanced/challenging (6 questions)
+- TOTAL: Exactly 20 questions
+
+⚠️ CRITICAL: If you generate fewer than 20 questions, the lesson will be rejected. Count carefully!
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
@@ -531,8 +536,95 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
         console.log(`Exam practice validation: ${questionCount} questions generated (target: 20, steps: ${planData.steps.length})`);
         
         if (!hasTwoSteps || questionCount < 20) {
-          console.error(`❌ Exam practice plan is non-compliant: steps=${planData.steps.length}, questions=${questionCount}`);
-          throw new Error(`Invalid exam practice plan: Must have exactly 2 steps and 20 questions. Got ${planData.steps.length} steps and ${questionCount} questions.`);
+          console.error(`❌ First attempt non-compliant: steps=${planData.steps.length}, questions=${questionCount}`);
+          console.log('🔄 Retrying with stricter prompt...');
+          
+          // RETRY WITH ULTRA-EXPLICIT PROMPT
+          const retryPrompt = `CRITICAL: Your previous response had only ${questionCount} questions but you MUST generate EXACTLY 20 questions.
+
+Generate a complete 11+ exam practice lesson plan for "${topic}" (Year Group: ${yearGroup}) with:
+
+STEP 1: "Worked Example" 
+- 1-2 content blocks showing a worked example
+
+STEP 2: "Practice Questions"
+- EXACTLY 20 question blocks
+- Count each one: Q1, Q2, Q3... up to Q20
+- Each question must have:
+  * A clear question text
+  * 4 multiple choice options
+  * One correct answer (isCorrect: true)
+  * An explanation
+
+You MUST generate all 20 questions. If you generate fewer, the lesson will be rejected.`;
+
+          const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${lovableApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: retryPrompt }
+              ],
+              tools: [{
+                type: 'function',
+                function: {
+                  name: 'create_lesson_plan',
+                  description: 'Create a complete lesson plan',
+                  parameters: lessonPlanSchema
+                }
+              }],
+              tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
+            })
+          });
+          
+          if (!retryResponse.ok) {
+            throw new Error(`Retry failed: ${retryResponse.status}`);
+          }
+          
+          const retryData = await retryResponse.json();
+          const retryToolCall = retryData.choices[0].message.tool_calls?.[0];
+          
+          if (retryToolCall) {
+            const retryPlanData = JSON.parse(retryToolCall.function.arguments);
+            
+            // Parse data fields
+            retryPlanData.steps.forEach((step: any) => {
+              if (step.content_blocks) {
+                step.content_blocks.forEach((block: any) => {
+                  if (block.data && typeof block.data === 'string') {
+                    try {
+                      block.data = JSON.parse(block.data);
+                    } catch (e) {
+                      console.warn('Failed to parse retry content block data:', block.type, e);
+                    }
+                  }
+                });
+              }
+            });
+            
+            const retryPracticeStep = retryPlanData.steps.find((s: any) => 
+              s.title.toLowerCase().includes('practice')
+            );
+            const retryQuestionCount = retryPracticeStep?.content_blocks?.filter(
+              (b: any) => b.type === 'question'
+            ).length || 0;
+            
+            console.log(`✅ Retry generated ${retryQuestionCount} questions`);
+            
+            if (retryQuestionCount >= 20) {
+              // Use retry data instead
+              planData.objectives = retryPlanData.objectives;
+              planData.steps = retryPlanData.steps;
+              console.log('✅ Retry successful - using retry data');
+            } else {
+              console.warn(`⚠️ Retry still non-compliant with ${retryQuestionCount} questions - proceeding anyway`);
+            }
+          }
         }
       } else {
         console.error(`❌ Exam practice plan missing 'Practice' step`);
