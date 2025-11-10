@@ -81,30 +81,56 @@ const ProfileSettings = () => {
         .from('profiles')
         .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
 
-      if (data) {
-        const subjectIds = data.gcse_subject_ids || [];
-        const boards = (data.exam_boards as Record<string, string>) || {};
+      // If no profile exists, create one
+      if (!data) {
+        console.log('No profile found, creating one...');
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            first_name: '',
+            last_name: '',
+          });
         
-        setSelectedSubjects(subjectIds);
-        setExamBoards(boards);
-        
-        reset({
-          first_name: data.first_name || '',
-          last_name: data.last_name || '',
-          email: user.email || '',
-          phone_number: data.phone_number || '',
-          education_level: data.education_level as '11_plus' | 'gcse' | undefined,
-          gcse_subject_ids: subjectIds,
-          exam_boards: boards,
-        });
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        } else {
+          // Initialize with empty values
+          reset({
+            first_name: '',
+            last_name: '',
+            email: user.email || '',
+            phone_number: '',
+            education_level: undefined,
+            gcse_subject_ids: [],
+            exam_boards: {},
+          });
+        }
+        return;
       }
+
+      const subjectIds = data.gcse_subject_ids || [];
+      const boards = (data.exam_boards as Record<string, string>) || {};
+      
+      setSelectedSubjects(subjectIds);
+      setExamBoards(boards);
+      
+      reset({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        email: user.email || '',
+        phone_number: data.phone_number || '',
+        education_level: data.education_level as '11_plus' | 'gcse' | undefined,
+        gcse_subject_ids: subjectIds,
+        exam_boards: boards,
+      });
     };
 
     fetchProfile();
@@ -149,7 +175,7 @@ const ProfileSettings = () => {
         .from('profiles')
         .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (updatedProfile) {
         const subjectIds = updatedProfile.gcse_subject_ids || [];
