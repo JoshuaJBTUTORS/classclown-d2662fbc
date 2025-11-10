@@ -84,6 +84,7 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
           .update({
             region: data.region || 'england',
             curriculum: data.curriculum || 'english',
+            education_level: data.educationLevel,
             year_group_id: data.yearGroupId,
             gcse_subject_ids: data.selectedSubjects || [],
             exam_boards: data.educationLevel === 'gcse' ? (data.examBoards || {}) : null,
