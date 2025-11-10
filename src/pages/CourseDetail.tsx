@@ -132,210 +132,208 @@ const CourseDetail = () => {
   const hasAccess = isOwner || hasPurchased;
   const canEdit = isOwner || isAdmin || isTutor;
 
+  // Get course-specific facts based on subject
+  const getCourseSpecificFacts = (subject?: string): string[] => {
+    const factsMap: Record<string, string[]> = {
+      'Biology': [
+        'Human bodies contain about <strong>37 trillion cells</strong>.',
+        'If uncoiled, DNA in one cell would be about <strong>2&nbsp;m</strong>.',
+        'The study of plants is called <strong>botany</strong>.'
+      ],
+      'Physics': [
+        'Light travels at <strong>299,792 km/s</strong> in a vacuum.',
+        'Gravity on Earth is <strong>9.8 m/s²</strong>.',
+        'The universe is approximately <strong>13.8 billion years</strong> old.'
+      ],
+      'Chemistry': [
+        'Water is made of <strong>H₂O</strong> molecules.',
+        'The periodic table has <strong>118 elements</strong>.',
+        'Diamond and graphite are both forms of <strong>carbon</strong>.'
+      ],
+      'Maths': [
+        'Pi (π) is approximately <strong>3.14159</strong>.',
+        'There are <strong>infinite prime numbers</strong>.',
+        'The Fibonacci sequence appears in <strong>nature</strong>.'
+      ],
+      'English': [
+        'English has over <strong>170,000 words</strong> in use.',
+        'Shakespeare invented over <strong>1,700 words</strong>.',
+        'The longest English word has <strong>45 letters</strong>.'
+      ],
+      'Computer Science': [
+        'The first computer bug was an actual <strong>moth</strong>.',
+        'Binary uses only <strong>0s and 1s</strong>.',
+        'There are <strong>700+ programming languages</strong>.'
+      ]
+    };
+
+    // Try to match subject
+    if (subject) {
+      for (const [key, facts] of Object.entries(factsMap)) {
+        if (subject.includes(key)) {
+          return facts;
+        }
+      }
+    }
+
+    // Default facts
+    return [
+      'Learning is a journey of <strong>continuous growth</strong>.',
+      'Practice makes <strong>progress</strong>.',
+      'Every expert was once a <strong>beginner</strong>.'
+    ];
+  };
+
+  const parseModuleTitle = (title: string) => {
+    const parts = title.split(':');
+    return {
+      main: parts[0]?.trim() || title,
+      sub: parts[1]?.trim() || ''
+    };
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back Button - Always visible */}
-      <div className="fixed top-4 left-4 z-30">
-        <Button
-          onClick={handleBackToLearningHub}
-          variant="ghost"
-          className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary shadow-sm"
-        >
-          <ArrowLeft className="h-5 w-5 mr-2" />
-          Back to Learning Hub
-        </Button>
-      </div>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--cleo-course-bg)' }}>
+      <div className="w-full max-w-[1040px] mx-auto px-4 py-8">
+        {/* Cleo Header */}
+        <header className="cleo-course-header">
+          <div className="cleo-logo">
+            <span>Cleo</span>
+            <div className="cleo-dna-icon" aria-hidden="true"></div>
+          </div>
 
-      <div className="pt-16 px-4">
-        <div className="container mx-auto py-8">
-          {/* Course Header - Responsive layout */}
-          <div className="bg-white rounded-lg shadow-sm border p-4 md:p-8 mb-8">
-            <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
-              <div>
-                <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <Badge variant="blue">{course.subject}</Badge>
-                  <Badge variant="outline">{course.difficulty_level}</Badge>
-                  {isOwner && (
-                    <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                      <Crown className="h-3 w-3 mr-1" />
-                      Admin Access
-                    </Badge>
-                  )}
-                  {canEdit && (
-                    <Button
-                      onClick={() => navigate(`/course/${id}/edit`)}
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit Course
-                    </Button>
-                  )}
-                </div>
-                
-                <h1 className={`font-bold text-gray-900 mb-4 ${isMobile ? 'text-3xl' : 'text-4xl'}`}>
-                  {course.title}
-                </h1>
-                
-                <p className={`text-gray-600 mb-6 ${isMobile ? 'text-base' : 'text-lg'}`}>
-                  {course.description}
-                </p>
-                
-                <div className={`flex items-center gap-6 text-sm text-gray-500 mb-6 ${isMobile ? 'flex-wrap gap-4' : ''}`}>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>1,200+ students</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-current text-yellow-400" />
-                    <span>4.8 rating</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>Self-paced</span>
-                  </div>
-                </div>
-
-                {hasAccess ? (
-                  <div className="flex gap-3 flex-wrap">
-                    <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90 flex-1 md:flex-none">
-                      <Play className="h-5 w-5 mr-2" />
-                      {isOwner ? 'Access Course (Admin)' : 'Continue Learning'}
-                    </Button>
-                    <CacheClearButton courseId={course.id} variant="outline" />
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className={`flex items-center gap-3 ${isMobile ? 'flex-col items-start' : ''}`}>
-                      <div className="text-3xl font-bold text-primary">
-                        {formatPrice(course.price || 899)}<span className="text-base font-normal text-gray-600">/month</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-green-600">
-                        <Gift className="h-4 w-4" />
-                        <span className="text-sm font-medium">3-day free trial</span>
-                      </div>
-                    </div>
-                    
-                    <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90 w-full md:w-auto">
-                      <Gift className="h-5 w-5 mr-2" />
-                      Start Free Trial
-                    </Button>
-                    
-                    <p className="text-sm text-gray-500">
-                      Cancel anytime during your trial period. No charges until trial ends.
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              {/* Benefits section - Stack on mobile */}
-              <div className="bg-gray-50 rounded-lg p-4 md:p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">What you'll learn</h3>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">Master core concepts and fundamentals</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">Apply knowledge through practical exercises</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">Track progress with assessments</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">Earn completion certificates</span>
-                  </div>
-                </div>
-              </div>
+          <div className="cleo-avatar" aria-hidden="true">
+            <div className="cleo-avatar-hair"></div>
+            <div className="cleo-avatar-face">
+              <div className="cleo-avatar-glasses"></div>
             </div>
           </div>
 
-          {/* Learning Path */}
-          {hasAccess && modules && modules.length > 0 ? (
-            <CourseAccessControl courseId={course.id}>
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
-                    Learning Path
-                  </CardTitle>
-                  <CardDescription>
-                    Follow the structured path through {modules.length} modules
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <LearningPathContainer
-                    modules={modules}
-                    courseId={course.id}
-                    onModuleClick={handleModuleSelect}
-                  />
-                </CardContent>
-              </Card>
-            </CourseAccessControl>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Course Content Preview
-                </CardTitle>
-                <CardDescription>
-                  {modules?.length || 0} modules • {modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0} lessons
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {modules && modules.length > 0 ? (
-                  <div className="space-y-4">
-                    {modules.map((module, index) => (
-                      <div key={module.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold">
-                            Module {index + 1}: {module.title}
-                          </h4>
-                          <span className="text-sm text-gray-500">
-                            {module.lessons?.length || 0} lessons
-                          </span>
-                        </div>
-                        {module.description && (
-                          <p className="text-sm text-gray-600 mb-3">{module.description}</p>
-                        )}
-                        <div className="space-y-2">
-                          {module.lessons?.slice(0, 3).map((lesson) => (
-                            <div key={lesson.id} className="flex items-center gap-3 text-sm">
-                              {lesson.is_preview || isOwner ? (
-                                <Play className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <Lock className="h-4 w-4 text-gray-400" />
-                              )}
-                              <span className={lesson.is_preview || isOwner ? "text-green-700" : "text-gray-600"}>
-                                {lesson.title}
-                                {(lesson.is_preview || isOwner) && (
-                                  <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                    {isOwner ? 'Admin' : 'Preview'}
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                          ))}
-                          {(module.lessons?.length || 0) > 3 && (
-                            <p className="text-sm text-gray-500 ml-7">
-                              +{(module.lessons?.length || 0) - 3} more lessons
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+          <div className="cleo-sprout-icon" aria-hidden="true"></div>
+        </header>
+
+        {/* Admin controls */}
+        {canEdit && (
+          <div className="mb-4 flex gap-2 justify-center flex-wrap">
+            <Button
+              onClick={() => navigate(`/course/${id}/edit`)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit Course
+            </Button>
+            {isOwner && (
+              <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                <Crown className="h-3 w-3 mr-1" />
+                Admin Access
+              </Badge>
+            )}
+            <CacheClearButton courseId={course.id} variant="outline" />
+          </div>
+        )}
+
+        {/* Course Title */}
+        <h1 className="cleo-course-title">{course.title}</h1>
+
+        {/* Journey Card */}
+        <section className="cleo-journey-card" aria-label="Your Learning Journey">
+          <h2 className="cleo-journey-title">Your Learning Journey</h2>
+
+          {/* Module Steps */}
+          <div className="cleo-steps">
+            {modules && modules.length > 0 ? (
+              modules.map((module, index) => {
+                const isActive = hasAccess || index === 0;
+                const isLocked = !isActive;
+                const titleParts = parseModuleTitle(module.title);
+                
+                return (
+                  <div 
+                    key={module.id}
+                    className={`cleo-step ${isActive ? 'cleo-step--active' : 'cleo-step--locked'}`}
+                    onClick={() => !isLocked && handleModuleSelect(module.id)}
+                  >
+                    <div className="cleo-step-circle">
+                      {isLocked ? '🔒' : index + 1}
+                    </div>
+                    <div className="cleo-step-label">
+                      <span className="cleo-step-main">{titleParts.main}</span>
+                      {titleParts.sub && (
+                        <span className="cleo-step-sub">{titleParts.sub}</span>
+                      )}
+                    </div>
+                    {isActive && (
+                      <button 
+                        className="cleo-start-btn" 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleModuleSelect(module.id);
+                        }}
+                      >
+                        Start
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-gray-600">Course content is being prepared.</p>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                );
+              })
+            ) : (
+              <div className="col-span-full text-center text-gray-500 py-8">
+                Course content is being prepared.
+              </div>
+            )}
+          </div>
+
+          {/* Facts Row */}
+          <div className="cleo-facts" aria-label="Course facts">
+            {getCourseSpecificFacts(course.subject).map((fact, index) => (
+              <article key={index} className="cleo-fact-card">
+                <div className="cleo-fact-icon-wrap">
+                  <div className="cleo-fact-icon-inner" aria-hidden="true"></div>
+                </div>
+                <p className="cleo-fact-text" dangerouslySetInnerHTML={{ __html: fact }} />
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* Access Gate for Non-Purchased Courses */}
+        {!hasAccess && (
+          <div className="mt-8 p-8 bg-white rounded-lg shadow-sm text-center">
+            <Lock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-xl font-semibold mb-2">Unlock Full Access</h3>
+            <p className="text-gray-600 mb-4">
+              Get instant access to all {modules?.length || 0} modules with a 3-day free trial
+            </p>
+            <div className="mb-4">
+              <div className="text-3xl font-bold text-primary mb-2">
+                {formatPrice(course.price || 899)}
+                <span className="text-base font-normal text-gray-600">/month</span>
+              </div>
+              <div className="flex items-center justify-center gap-1 text-green-600">
+                <Gift className="h-4 w-4" />
+                <span className="text-sm font-medium">3-day free trial • Cancel anytime</span>
+              </div>
+            </div>
+            <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90">
+              <Gift className="h-5 w-5 mr-2" />
+              Start Free Trial
+            </Button>
+          </div>
+        )}
+
+        {/* Back to Learning Hub - Bottom */}
+        <div className="mt-8 text-center">
+          <Button
+            onClick={handleBackToLearningHub}
+            variant="ghost"
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Learning Hub
+          </Button>
         </div>
       </div>
     </div>
