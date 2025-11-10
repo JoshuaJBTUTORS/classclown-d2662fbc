@@ -222,13 +222,14 @@ const ProfileSettings = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className={isLoading ? 'opacity-50 pointer-events-none' : ''}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginBottom: '1rem' }}>
         <div className="space-y-2">
-          <Label htmlFor="first_name">First Name</Label>
+          <Label htmlFor="first_name" style={{ color: 'hsl(var(--cleo-text-dark))' }}>First Name</Label>
           <Input
             id="first_name"
             {...register('first_name')}
             placeholder="Enter your first name"
+            className="bg-white/60 border-green-200 focus:border-green-400"
           />
           {errors.first_name && (
             <p className="text-sm text-destructive">{errors.first_name.message}</p>
@@ -236,11 +237,12 @@ const ProfileSettings = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="last_name">Last Name</Label>
+          <Label htmlFor="last_name" style={{ color: 'hsl(var(--cleo-text-dark))' }}>Last Name</Label>
           <Input
             id="last_name"
             {...register('last_name')}
             placeholder="Enter your last name"
+            className="bg-white/60 border-green-200 focus:border-green-400"
           />
           {errors.last_name && (
             <p className="text-sm text-destructive">{errors.last_name.message}</p>
@@ -249,12 +251,13 @@ const ProfileSettings = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" style={{ color: 'hsl(var(--cleo-text-dark))' }}>Email</Label>
         <Input
           id="email"
           type="email"
           {...register('email')}
           placeholder="Enter your email"
+          className="bg-white/60 border-green-200 focus:border-green-400"
         />
         {errors.email && (
           <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -262,17 +265,18 @@ const ProfileSettings = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone_number">Phone Number</Label>
+        <Label htmlFor="phone_number" style={{ color: 'hsl(var(--cleo-text-dark))' }}>Phone Number</Label>
         <Input
           id="phone_number"
           {...register('phone_number')}
           placeholder="Enter your phone number (optional)"
+          className="bg-white/60 border-green-200 focus:border-green-400"
         />
       </div>
 
       {/* Education Level */}
       <div className="space-y-2">
-        <Label>Education Level</Label>
+        <Label style={{ color: 'hsl(var(--cleo-text-dark))' }}>Education Level</Label>
         <RadioGroup
           value={educationLevel || ''}
           onValueChange={(value) => {
@@ -304,8 +308,8 @@ const ProfileSettings = () => {
       {educationLevel === 'gcse' && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>GCSE Subjects</Label>
-            <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-muted/30">
+            <Label style={{ color: 'hsl(var(--cleo-text-dark))' }}>GCSE Subjects</Label>
+            <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-white/40 border-green-200">
               {availableSubjects.map((subject) => (
                 <div key={subject.id} className="flex items-center space-x-2">
                   <Checkbox
@@ -342,8 +346,8 @@ const ProfileSettings = () => {
           {/* Exam Boards */}
           {selectedSubjects.length > 0 && (
             <div className="space-y-3">
-              <Label>Exam Boards</Label>
-              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <Label style={{ color: 'hsl(var(--cleo-text-dark))' }}>Exam Boards</Label>
+              <div className="space-y-3 p-4 border rounded-lg bg-white/40 border-green-200">
                 {selectedSubjects.map((subjectId) => {
                   const subject = availableSubjects.find((s) => s.id === subjectId);
                   if (!subject) return null;
@@ -380,7 +384,11 @@ const ProfileSettings = () => {
       )}
       </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+      <Button 
+        type="submit" 
+        disabled={isLoading} 
+        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+      >
         {isLoading ? 'Saving...' : 'Save Changes'}
       </Button>
     </form>

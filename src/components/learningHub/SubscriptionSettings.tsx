@@ -87,7 +87,7 @@ const SubscriptionSettings = () => {
     <div className="space-y-6">
       {/* Grace Period Alert */}
       {subscriptionStatus?.gracePeriodInfo?.isInGracePeriod && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="border-red-300 bg-red-50">
           <Clock className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-2">
@@ -104,7 +104,7 @@ const SubscriptionSettings = () => {
                 onClick={handleManageSubscription}
                 disabled={isLoading}
                 size="sm"
-                className="mt-2"
+                className="mt-2 bg-green-600 hover:bg-green-700"
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Update Payment Method Now
@@ -115,10 +115,10 @@ const SubscriptionSettings = () => {
       )}
 
       {/* Current Subscription Status */}
-      <Card>
-        <CardHeader className="pb-3">
+      <div className="p-4 rounded-2xl bg-white/40 border border-green-200" style={{ boxShadow: '0 4px 12px rgba(15, 80, 60, 0.1)' }}>
+        <div className="pb-3 mb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Current Subscription</CardTitle>
+            <h3 className="text-lg font-semibold" style={{ color: 'hsl(var(--cleo-text-dark))' }}>Current Subscription</h3>
             {subscriptionStatus && (
               <Badge variant={getStatusBadgeVariant(
                 subscriptionStatus.hasActiveSubscription,
@@ -133,17 +133,17 @@ const SubscriptionSettings = () => {
               </Badge>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="space-y-4">
           {subscriptionStatus?.hasActiveSubscription ? (
             <div className="space-y-3">
               {subscriptionStatus.subscriptions.map((subscription: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-green-100">
                   <div className="flex items-center gap-3">
-                    <CreditCard className="h-4 w-4 text-gray-600" />
+                    <CreditCard className="h-4 w-4" style={{ color: 'hsl(var(--cleo-text-dark))' }} />
                     <div>
-                      <p className="font-medium">Course Subscription</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium" style={{ color: 'hsl(var(--cleo-text-dark))' }}>Course Subscription</p>
+                      <p className="text-sm" style={{ color: 'hsl(var(--cleo-text-dark))', opacity: 0.7 }}>
                         Status: {subscription.status}
                         {subscription.status === 'grace_period' && subscription.grace_period_end && (
                           <span className="text-red-600 font-medium ml-2">
@@ -155,8 +155,8 @@ const SubscriptionSettings = () => {
                   </div>
                   {subscription.trial_end && (
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">Trial ends</p>
-                      <p className="text-sm font-medium">
+                      <p className="text-sm" style={{ color: 'hsl(var(--cleo-text-dark))', opacity: 0.7 }}>Trial ends</p>
+                      <p className="text-sm font-medium" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
                         {new Date(subscription.trial_end).toLocaleDateString()}
                       </p>
                     </div>
@@ -166,16 +166,16 @@ const SubscriptionSettings = () => {
             </div>
           ) : (
             <div className="text-center py-6">
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600">No active subscription found</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <AlertCircle className="h-12 w-12 mx-auto mb-3" style={{ color: 'hsl(var(--cleo-text-dark))', opacity: 0.4 }} />
+              <p style={{ color: 'hsl(var(--cleo-text-dark))' }}>No active subscription found</p>
+              <p className="text-sm mt-1" style={{ color: 'hsl(var(--cleo-text-dark))', opacity: 0.6 }}>
                 Subscribe to courses to access premium content
               </p>
             </div>
           )}
 
           {subscriptionStatus?.needsPaymentUpdate && !subscriptionStatus?.gracePeriodInfo?.isInGracePeriod && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="p-3 bg-red-50/80 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-800">
                 <AlertCircle className="h-4 w-4" />
                 <p className="text-sm font-medium">Payment Update Required</p>
@@ -185,20 +185,20 @@ const SubscriptionSettings = () => {
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Separator />
 
       {/* Management Actions */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Subscription Management</h3>
+        <h3 className="text-lg font-semibold" style={{ color: 'hsl(var(--cleo-text-dark))' }}>Subscription Management</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Button
             onClick={handleManageSubscription}
             disabled={isLoading}
-            className="h-auto p-4 flex items-center justify-center gap-3"
+            className="h-auto p-4 flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white"
           >
             <ExternalLink className="h-4 w-4" />
             <div className="text-left">
@@ -211,7 +211,7 @@ const SubscriptionSettings = () => {
             variant="outline"
             onClick={handleRefreshStatus}
             disabled={isLoading}
-            className="h-auto p-4 flex items-center justify-center gap-3"
+            className="h-auto p-4 flex items-center justify-center gap-3 border-green-300 hover:bg-green-50"
           >
             <Calendar className="h-4 w-4" />
             <div className="text-left">
@@ -221,7 +221,7 @@ const SubscriptionSettings = () => {
           </Button>
         </div>
 
-        <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+        <div className="text-sm p-3 rounded-lg bg-white/40 border border-green-200" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
           <p className="font-medium mb-1">About Subscription Management:</p>
           <ul className="space-y-1 text-xs">
             <li>• Use "Manage Subscription" to update payment methods, pause, or cancel your subscription</li>
