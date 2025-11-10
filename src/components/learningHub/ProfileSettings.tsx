@@ -66,7 +66,11 @@ const ProfileSettings = () => {
         .order('name');
       
       if (!error && data) {
-        setAvailableSubjects(data);
+        // Filter out Economics, Maths Foundation, and Geography
+        const filteredSubjects = data.filter(subject => 
+          !['Economics', 'Maths Foundation', 'Geography'].includes(subject.name)
+        );
+        setAvailableSubjects(filteredSubjects);
       }
     };
     fetchSubjects();
