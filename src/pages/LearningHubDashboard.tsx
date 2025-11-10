@@ -67,7 +67,7 @@ const LearningHubDashboard = () => {
               boxShadow: '0 12px 26px rgba(22, 160, 90, 0.35)'
             }}
           >
-            🔥 Let's Go!
+            Learn with Cleo
           </Button>
           <Button
             asChild
