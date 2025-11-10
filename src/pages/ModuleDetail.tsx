@@ -28,11 +28,13 @@ import {
   Mic
 } from 'lucide-react';
 import { CleoChat } from '@/components/cleo/CleoChat';
+import { TopicSelectionScreen } from '@/components/cleo/TopicSelectionScreen';
+import { getTopicsForSubject } from '@/constants/cleoTopics';
 
 const ModuleDetail = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
   const navigate = useNavigate();
-  const { isOwner } = useAuth();
+  const { isOwner, user } = useAuth();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
@@ -484,11 +486,13 @@ const ModuleDetail = () => {
               </div>
             </div>
           ) : (
-            <Card className="mt-8">
-              <CardContent className="pt-6 text-center">
-                <p className="text-gray-600">No lessons available in this module yet.</p>
-              </CardContent>
-            </Card>
+            <TopicSelectionScreen
+              courseId={courseId!}
+              moduleId={moduleId!}
+              userName={user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
+              topics={getTopicsForSubject(course.subject || 'General')}
+              yearGroup={course.subject || 'GCSE'}
+            />
           )}
         </div>
       </div>
