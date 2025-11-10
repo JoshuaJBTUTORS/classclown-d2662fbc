@@ -21,20 +21,31 @@ interface Subject {
 }
 
 const subjectEmojis: Record<string, string> = {
-  'Biology': '🧬',
-  'Chemistry': '⚗️',
-  'Physics': '⚛️',
-  'Maths': '📐',
-  'Mathematics': '📐',
-  'English': '📚',
-  'English Language': '📚',
-  'English Literature': '📖',
-  'Computer Science': '💻',
-  'History': '📜',
-  'Geography': '🌍',
-  'French': '🇫🇷',
-  'Spanish': '🇪🇸',
-  'German': '🇩🇪',
+  // GCSE subjects
+  'GCSE Biology': '🧬',
+  'GCSE Chemistry': '⚗️',
+  'GCSE Physics': '⚛️',
+  'GCSE Mathematics': '🔢',
+  'GCSE Maths': '🔢',
+  'GCSE English Language': '📖',
+  'GCSE English Literature': '📚',
+  'GCSE History': '📜',
+  'GCSE Geography': '🌍',
+  'GCSE Computer Science': '💻',
+  'GCSE Spanish': '🇪🇸',
+  'GCSE French': '🇫🇷',
+  'GCSE German': '🇩🇪',
+  'GCSE Art': '🎨',
+  'GCSE Drama': '🎭',
+  'GCSE Music': '🎵',
+  'GCSE PE': '⚽',
+  'GCSE Business': '💼',
+  'GCSE Religious Studies': '✝️',
+  // 11+ subjects
+  '11 Plus English': '📚',
+  '11 Plus Maths': '🔢',
+  '11 Plus VR': '🧠',
+  '11 Plus NVR': '🔍',
 };
 
 const SubjectStep: React.FC<SubjectStepProps> = ({
@@ -48,15 +59,18 @@ const SubjectStep: React.FC<SubjectStepProps> = ({
 
   useEffect(() => {
     loadSubjects();
-  }, []);
+  }, [data.educationLevel]);
 
   const loadSubjects = async () => {
     setLoading(true);
     try {
+      // Determine category based on education level
+      const category = data.educationLevel === 'gcse' ? 'gcse' : 'entrance';
+      
       const { data: subjectsData, error } = await supabase
         .from('subjects')
         .select('id, name')
-        .eq('category', 'GCSE')
+        .eq('category', category)
         .order('name');
 
       if (error) throw error;
@@ -112,7 +126,9 @@ const SubjectStep: React.FC<SubjectStepProps> = ({
         className="text-center"
       >
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-          What subjects do you want to study? 📖
+          {data.educationLevel === 'gcse' 
+            ? 'What subjects do you want to study? 📖' 
+            : 'What areas do you want to focus on? 🎯'}
         </h2>
         <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto mb-4">
           Select all the subjects Cleo should help you with

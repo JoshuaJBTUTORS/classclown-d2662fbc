@@ -82,11 +82,11 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
-            region: data.region,
-            curriculum: data.curriculum,
+            region: data.region || 'england',
+            curriculum: data.curriculum || 'english',
             year_group_id: data.yearGroupId,
-            gcse_subject_ids: data.selectedSubjects,
-            exam_boards: data.examBoards,
+            gcse_subject_ids: data.selectedSubjects || [],
+            exam_boards: data.educationLevel === 'gcse' ? (data.examBoards || {}) : null,
             onboarding_completed: true,
             onboarding_completed_at: new Date().toISOString(),
             phone_number: data.parentPhone

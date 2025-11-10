@@ -6,8 +6,7 @@ import WelcomePage from '@/components/signup/WelcomePage';
 import ParentInfoStep from '@/components/signup/ParentInfoStep';
 import StudentInfoStep from '@/components/signup/StudentInfoStep';
 import PasswordStep from '@/components/signup/PasswordStep';
-import RegionStep from '@/components/signup/RegionStep';
-import YearGroupStep from '@/components/signup/YearGroupStep';
+import EducationLevelStep from '@/components/signup/EducationLevelStep';
 import SubjectStep from '@/components/signup/SubjectStep';
 import ExamBoardStep from '@/components/signup/ExamBoardStep';
 import SuccessStep from '@/components/signup/SuccessStep';
@@ -21,7 +20,8 @@ export interface SignupData {
   studentLastName: string;
   password: string;
   confirmPassword: string;
-  // Onboarding fields
+  // Simplified onboarding fields for GCSE & 11+
+  educationLevel?: 'gcse' | '11plus';
   region?: 'england' | 'scotland' | 'wales';
   curriculum?: 'english' | 'scottish' | 'welsh';
   yearGroupId?: string;
@@ -41,22 +41,30 @@ const InteractiveSignup = () => {
     studentLastName: '',
     password: '',
     confirmPassword: '',
-    region: undefined,
-    curriculum: undefined,
+    educationLevel: undefined,
+    region: 'england',
+    curriculum: 'english',
     yearGroupId: undefined,
     selectedSubjects: [],
     examBoards: {},
   });
 
-  const steps = [
+  // Build steps array dynamically - skip exam boards for 11+ students
+  const baseSteps = [
     { title: "Parent Info", component: ParentInfoStep },
     { title: "Student Details", component: StudentInfoStep },
     { title: "Password", component: PasswordStep },
-    { title: "Region", component: RegionStep },
-    { title: "Year Group", component: YearGroupStep },
+    { title: "Education Level", component: EducationLevelStep },
     { title: "Subjects", component: SubjectStep },
-    { title: "Exam Boards", component: ExamBoardStep },
-    { title: "Complete", component: SuccessStep },
+  ];
+
+  const examBoardStep = { title: "Exam Boards", component: ExamBoardStep };
+  const successStep = { title: "Complete", component: SuccessStep };
+
+  const steps = [
+    ...baseSteps,
+    ...(signupData.educationLevel === 'gcse' ? [examBoardStep] : []),
+    successStep,
   ];
 
   const updateSignupData = (data: Partial<SignupData>) => {

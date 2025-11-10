@@ -21,20 +21,26 @@ interface Subject {
 }
 
 const subjectEmojis: Record<string, string> = {
-  'Biology': '🧬',
-  'Chemistry': '⚗️',
-  'Physics': '⚛️',
-  'Maths': '📐',
-  'Mathematics': '📐',
-  'English': '📚',
-  'English Language': '📚',
-  'English Literature': '📖',
-  'Computer Science': '💻',
-  'History': '📜',
-  'Geography': '🌍',
-  'French': '🇫🇷',
-  'Spanish': '🇪🇸',
-  'German': '🇩🇪',
+  // GCSE subjects
+  'GCSE Biology': '🧬',
+  'GCSE Chemistry': '⚗️',
+  'GCSE Physics': '⚛️',
+  'GCSE Mathematics': '🔢',
+  'GCSE Maths': '🔢',
+  'GCSE English Language': '📖',
+  'GCSE English Literature': '📚',
+  'GCSE History': '📜',
+  'GCSE Geography': '🌍',
+  'GCSE Computer Science': '💻',
+  'GCSE Spanish': '🇪🇸',
+  'GCSE French': '🇫🇷',
+  'GCSE German': '🇩🇪',
+  'GCSE Art': '🎨',
+  'GCSE Drama': '🎭',
+  'GCSE Music': '🎵',
+  'GCSE PE': '⚽',
+  'GCSE Business': '💼',
+  'GCSE Religious Studies': '✝️',
 };
 
 const examBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'Other'];
@@ -47,6 +53,14 @@ const ExamBoardStep: React.FC<ExamBoardStepProps> = ({
 }) => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // If 11+ student, skip this step automatically
+  useEffect(() => {
+    if (data.educationLevel === '11plus') {
+      onNext();
+      return;
+    }
+  }, [data.educationLevel, onNext]);
 
   useEffect(() => {
     loadSelectedSubjects();
