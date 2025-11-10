@@ -687,6 +687,7 @@ export type Database = {
           module_id: string | null
           resume_count: number
           status: string
+          subject_id: string | null
           text_message_count: number | null
           topic: string | null
           total_pauses: number
@@ -705,6 +706,7 @@ export type Database = {
           module_id?: string | null
           resume_count?: number
           status?: string
+          subject_id?: string | null
           text_message_count?: number | null
           topic?: string | null
           total_pauses?: number
@@ -723,6 +725,7 @@ export type Database = {
           module_id?: string | null
           resume_count?: number
           status?: string
+          subject_id?: string | null
           text_message_count?: number | null
           topic?: string | null
           total_pauses?: number
@@ -744,6 +747,13 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleo_conversations_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -1618,6 +1628,77 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      exam_board_specifications: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          document_url: string
+          exam_board: string
+          extracted_text: string | null
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          key_topics: Json | null
+          mime_type: string | null
+          specification_year: number | null
+          status: string | null
+          subject_id: string | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_url: string
+          exam_board: string
+          extracted_text?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          key_topics?: Json | null
+          mime_type?: string | null
+          specification_year?: number | null
+          status?: string | null
+          subject_id?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_url?: string
+          exam_board?: string
+          extracted_text?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          key_topics?: Json | null
+          mime_type?: string | null
+          specification_year?: number | null
+          status?: string | null
+          subject_id?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_board_specifications_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       failed_room_creations: {
         Row: {
@@ -2716,7 +2797,10 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           curriculum: string | null
+          education_level: string | null
+          exam_boards: Json | null
           first_name: string | null
+          gcse_subject_ids: string[] | null
           id: string
           last_name: string | null
           onboarding_completed: boolean | null
@@ -2731,7 +2815,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           curriculum?: string | null
+          education_level?: string | null
+          exam_boards?: Json | null
           first_name?: string | null
+          gcse_subject_ids?: string[] | null
           id: string
           last_name?: string | null
           onboarding_completed?: boolean | null
@@ -2746,7 +2833,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           curriculum?: string | null
+          education_level?: string | null
+          exam_boards?: Json | null
           first_name?: string | null
+          gcse_subject_ids?: string[] | null
           id?: string
           last_name?: string | null
           onboarding_completed?: boolean | null

@@ -1,70 +1,106 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect } from 'react';
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Please enter a valid email'),
   phone_number: z.string().optional(),
+  education_level: z.enum(['11_plus', 'gcse']).optional(),
+  gcse_subject_ids: z.array(z.string()).optional(),
+  exam_boards: z.record(z.string()).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-interface ProfileData {
+interface Subject {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  phone_number: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
+  name: string;
+  category: string;
 }
+
+const EXAM_BOARDS = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Cambridge', 'CCEA', 'Eduqas'];
 
 const ProfileSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [examBoards, setExamBoards] = useState<Record<string, string>>({});
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
     reset,
+    watch,
+    setValue,
+    formState: { errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
   });
 
+  const educationLevel = watch('education_level');
+
+  // Fetch GCSE subjects
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('category', 'gcse')
+        .order('name');
+      
+      if (!error && data) {
+        setAvailableSubjects(data);
+      }
+    };
+    fetchSubjects();
+  }, []);
+
+  // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) return;
+      if (!user?.id) return;
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards')
         .eq('id', user.id)
         .single();
 
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
       if (data) {
-        setProfile(data);
+        const subjectIds = data.gcse_subject_ids || [];
+        const boards = (data.exam_boards as Record<string, string>) || {};
+        
+        setSelectedSubjects(subjectIds);
+        setExamBoards(boards);
+        
         reset({
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           email: user.email || '',
           phone_number: data.phone_number || '',
+          education_level: data.education_level as '11_plus' | 'gcse' | undefined,
+          gcse_subject_ids: subjectIds,
+          exam_boards: boards,
         });
-      } else if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
       }
     };
 
@@ -76,7 +112,7 @@ const ProfileSettings = () => {
 
     setIsLoading(true);
     try {
-      // Update email in auth if changed
+      // Update email if changed
       if (data.email !== user.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: data.email,
@@ -84,28 +120,30 @@ const ProfileSettings = () => {
         if (emailError) throw emailError;
       }
 
-      // Update profile in profiles table
-      const { error: profileError } = await supabase
+      // Update profile
+      const { error: updateError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
+        .update({
           first_name: data.first_name,
           last_name: data.last_name,
-          phone_number: data.phone_number,
-          updated_at: new Date().toISOString(),
-        });
+          phone_number: data.phone_number || null,
+          education_level: data.education_level || null,
+          gcse_subject_ids: data.gcse_subject_ids || [],
+          exam_boards: data.exam_boards || {},
+        })
+        .eq('id', user.id);
 
-      if (profileError) throw profileError;
+      if (updateError) throw updateError;
 
       toast({
         title: 'Profile updated',
         description: 'Your profile has been successfully updated.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        description: error.message || 'Failed to update profile',
         variant: 'destructive',
       });
     } finally {
@@ -124,7 +162,7 @@ const ProfileSettings = () => {
             placeholder="Enter your first name"
           />
           {errors.first_name && (
-            <p className="text-sm text-red-600">{errors.first_name.message}</p>
+            <p className="text-sm text-destructive">{errors.first_name.message}</p>
           )}
         </div>
 
@@ -136,7 +174,7 @@ const ProfileSettings = () => {
             placeholder="Enter your last name"
           />
           {errors.last_name && (
-            <p className="text-sm text-red-600">{errors.last_name.message}</p>
+            <p className="text-sm text-destructive">{errors.last_name.message}</p>
           )}
         </div>
       </div>
@@ -150,7 +188,7 @@ const ProfileSettings = () => {
           placeholder="Enter your email"
         />
         {errors.email && (
-          <p className="text-sm text-red-600">{errors.email.message}</p>
+          <p className="text-sm text-destructive">{errors.email.message}</p>
         )}
       </div>
 
@@ -161,13 +199,119 @@ const ProfileSettings = () => {
           {...register('phone_number')}
           placeholder="Enter your phone number (optional)"
         />
-        {errors.phone_number && (
-          <p className="text-sm text-red-600">{errors.phone_number.message}</p>
-        )}
       </div>
 
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? 'Updating...' : 'Update Profile'}
+      {/* Education Level */}
+      <div className="space-y-2">
+        <Label>Education Level</Label>
+        <RadioGroup
+          value={educationLevel || ''}
+          onValueChange={(value) => {
+            setValue('education_level', value as '11_plus' | 'gcse');
+            if (value !== 'gcse') {
+              setSelectedSubjects([]);
+              setExamBoards({});
+              setValue('gcse_subject_ids', []);
+              setValue('exam_boards', {});
+            }
+          }}
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="11_plus" id="11_plus" />
+            <Label htmlFor="11_plus" className="font-normal cursor-pointer">
+              11 Plus
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="gcse" id="gcse" />
+            <Label htmlFor="gcse" className="font-normal cursor-pointer">
+              GCSE
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {/* GCSE Subjects */}
+      {educationLevel === 'gcse' && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>GCSE Subjects</Label>
+            <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-muted/30">
+              {availableSubjects.map((subject) => (
+                <div key={subject.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={subject.id}
+                    checked={selectedSubjects.includes(subject.id)}
+                    onCheckedChange={(checked) => {
+                      let newSubjects: string[];
+                      let newBoards = { ...examBoards };
+                      
+                      if (checked) {
+                        newSubjects = [...selectedSubjects, subject.id];
+                      } else {
+                        newSubjects = selectedSubjects.filter((id) => id !== subject.id);
+                        delete newBoards[subject.id];
+                      }
+                      
+                      setSelectedSubjects(newSubjects);
+                      setExamBoards(newBoards);
+                      setValue('gcse_subject_ids', newSubjects);
+                      setValue('exam_boards', newBoards);
+                    }}
+                  />
+                  <Label
+                    htmlFor={subject.id}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {subject.name}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Exam Boards */}
+          {selectedSubjects.length > 0 && (
+            <div className="space-y-3">
+              <Label>Exam Boards</Label>
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                {selectedSubjects.map((subjectId) => {
+                  const subject = availableSubjects.find((s) => s.id === subjectId);
+                  if (!subject) return null;
+
+                  return (
+                    <div key={subjectId} className="flex items-center gap-3">
+                      <Label className="w-32 text-sm">{subject.name}:</Label>
+                      <Select
+                        value={examBoards[subjectId] || ''}
+                        onValueChange={(value) => {
+                          const newBoards = { ...examBoards, [subjectId]: value };
+                          setExamBoards(newBoards);
+                          setValue('exam_boards', newBoards);
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select exam board" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXAM_BOARDS.map((board) => (
+                            <SelectItem key={board} value={board}>
+                              {board}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+        {isLoading ? 'Saving...' : 'Save Changes'}
       </Button>
     </form>
   );

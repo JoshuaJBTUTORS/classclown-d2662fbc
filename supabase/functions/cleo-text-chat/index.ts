@@ -27,7 +27,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get conversation details
+    // Get conversation details with subject_id
     const { data: conversation, error: convError } = await supabase
       .from('cleo_conversations')
       .select('*, cleo_lesson_plans(*)')
@@ -35,6 +35,13 @@ serve(async (req) => {
       .single();
 
     if (convError) throw convError;
+
+    // Get user profile with exam board info
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('first_name, education_level, gcse_subject_ids, exam_boards')
+      .eq('id', conversation.user_id)
+      .single();
 
     // Get recent message history
     const { data: history, error: historyError } = await supabase
@@ -46,20 +53,50 @@ serve(async (req) => {
 
     if (historyError) throw historyError;
 
-    // Build context
+    // Build exam board context
+    let examBoardContext = '';
     const lessonPlan = conversation.cleo_lesson_plans;
+    
+    if (userProfile?.education_level === 'gcse' && userProfile?.exam_boards && conversation.subject_id) {
+      const examBoard = userProfile.exam_boards[conversation.subject_id];
+      
+      if (examBoard) {
+        // Fetch specification summary if available
+        const { data: spec } = await supabase
+          .from('exam_board_specifications')
+          .select('summary, key_topics')
+          .eq('subject_id', conversation.subject_id)
+          .eq('exam_board', examBoard)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        examBoardContext = `\n\nExam Board: ${examBoard}`;
+        if (spec?.summary) {
+          examBoardContext += `\nSpecification Context: ${spec.summary}`;
+        }
+        if (spec?.key_topics) {
+          const topics = Array.isArray(spec.key_topics) ? spec.key_topics : [];
+          if (topics.length > 0) {
+            examBoardContext += `\nKey Topics: ${topics.join(', ')}`;
+          }
+        }
+        examBoardContext += `\n\nIMPORTANT: All teaching must align with ${examBoard} ${conversation.topic} specification. Use ${examBoard}-specific terminology, examples, and question styles.`;
+      }
+    }
+
+    // Build system prompt
     const systemPrompt = `You are Cleo, an AI tutor helping students learn.
 
 Current lesson: ${lessonPlan?.topic || 'General learning'}
 Year group: ${lessonPlan?.year_group || 'Not specified'}
-Learning objectives: ${lessonPlan?.learning_objectives?.join(', ') || 'Practice and understanding'}
+Learning objectives: ${lessonPlan?.learning_objectives?.join(', ') || 'Practice and understanding'}${examBoardContext}
 
 Guidelines:
 - Keep responses concise and clear (text mode)
 - Ask follow-up questions to check understanding
 - Provide hints rather than direct answers for practice
 - Encourage critical thinking
-- Be supportive and patient`;
+- Be supportive and patient${examBoardContext ? `\n- Follow ${userProfile?.exam_boards?.[conversation.subject_id]} specification requirements` : ''}`;
 
     // Prepare messages
     const messages = [
@@ -117,9 +154,8 @@ Guidelines:
       table_name: 'cleo_conversations',
       id_value: conversationId,
       column_name: 'text_message_count',
-      increment_by: 2, // user + assistant
+      increment_by: 2,
     }).catch(() => {
-      // Fallback if RPC doesn't exist
       supabase.from('cleo_conversations')
         .update({ text_message_count: (conversation.text_message_count || 0) + 2 })
         .eq('id', conversationId);
