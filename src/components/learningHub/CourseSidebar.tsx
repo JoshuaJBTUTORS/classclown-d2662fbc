@@ -72,6 +72,20 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
     return null;
   };
 
+  const getLessonNumber = (lesson: CourseLesson) => {
+    const status = getLessonStatus(lesson.id);
+    return (
+      <div className={cn(
+        "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
+        status === 'completed' 
+          ? "bg-emerald-500 text-white" 
+          : "bg-gray-200 text-gray-700"
+      )}>
+        {lesson.position}
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col bg-white">
       <div className="px-4 py-3 sm:py-4 font-medium text-lg bg-gray-50 border-b border-gray-200">
@@ -94,11 +108,22 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
               )}
               <div className="ml-2 flex-1 min-w-0">
                 <h3 className="font-medium text-gray-800 truncate">{module.title}</h3>
-                {module.lessons && (
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {module.lessons.length} {module.lessons.length === 1 ? 'lesson' : 'lessons'}
-                  </p>
-                )}
+                {module.lessons && (() => {
+                  const completedCount = module.lessons.filter(l => 
+                    getLessonStatus(l.id) === 'completed'
+                  ).length;
+                  
+                  return (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {module.lessons.length} {module.lessons.length === 1 ? 'lesson' : 'lessons'}
+                      {completedCount > 0 && (
+                        <span className="text-emerald-600 font-medium ml-1">
+                          • {completedCount} completed
+                        </span>
+                      )}
+                    </p>
+                  );
+                })()}
               </div>
             </button>
             
@@ -117,12 +142,14 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                       disabled={!canAccess}
                       className={cn(
                         "w-full flex items-start py-2.5 px-3 rounded-lg text-left mb-1 transition-colors group",
+                        status === 'completed' ? "bg-emerald-50 hover:bg-emerald-100 border border-emerald-200" :
                         isActive ? "bg-primary/10 text-primary" : 
                         canAccess ? "hover:bg-gray-50" : "opacity-60",
                         "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-gray-50"
                       )}
                     >
-                      <div className="flex-shrink-0 mt-0.5">
+                      <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                        {getLessonNumber(lesson)}
                         {getLessonIcon(lesson)}
                       </div>
                       
@@ -130,7 +157,9 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
                         <div className="flex items-center justify-between mb-1">
                           <p className={cn(
                             "text-sm font-medium truncate flex-1",
-                            isActive ? "text-primary" : canAccess ? "text-gray-800" : "text-gray-500"
+                            status === 'completed' ? "text-emerald-700" :
+                            isActive ? "text-primary" : 
+                            canAccess ? "text-gray-800" : "text-gray-500"
                           )}>
                             {lesson.title}
                           </p>
