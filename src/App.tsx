@@ -72,6 +72,7 @@ import EditProposal from './pages/admin/EditProposal';
 import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OnboardingWizard from './pages/OnboardingWizard';
+import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
 
 
 function App() {
@@ -301,6 +302,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['owner']}>
                         <ContentEngine />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin/exam-board-specifications" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <AdminExamBoardSpecifications />
                       </ProtectedRoute>
                     } 
                   />
