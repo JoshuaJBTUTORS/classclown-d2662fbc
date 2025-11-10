@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { CleoChat } from '@/components/cleo/CleoChat';
 import { TopicSelectionScreen } from '@/components/cleo/TopicSelectionScreen';
-import { getTopicsForSubject } from '@/constants/cleoTopics';
+import { useCourseTopics } from '@/hooks/useCourseTopics';
 
 const ModuleDetail = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
@@ -95,6 +95,9 @@ const ModuleDetail = () => {
     queryFn: () => learningHubService.isModuleAssessmentCompleted(moduleId!),
     enabled: !!moduleId,
   });
+
+  // Fetch available topics from actual course lessons
+  const { data: availableTopics = [] } = useCourseTopics(courseId!);
 
   // All modules always accessible - sequential access removed
   const { data: hasModuleAccess, isLoading: accessLoading } = useQuery({
@@ -490,13 +493,23 @@ const ModuleDetail = () => {
             ) : null}
             </>
           ) : (
-            <TopicSelectionScreen
-              courseId={courseId!}
-              moduleId={moduleId!}
-              userName={user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
-              topics={getTopicsForSubject(course.subject || 'General')}
-              yearGroup={course.subject || 'GCSE'}
-            />
+            <>
+              {availableTopics.length > 0 ? (
+                <TopicSelectionScreen
+                  courseId={courseId!}
+                  moduleId={moduleId!}
+                  userName={user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
+                  topics={availableTopics}
+                  yearGroup={course.subject || 'GCSE'}
+                />
+              ) : (
+                <div className="cleo-card text-center py-12">
+                  <p className="text-lg text-muted-foreground">
+                    No lessons available yet. Please check back later.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

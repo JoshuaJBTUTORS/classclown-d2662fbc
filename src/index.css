@@ -355,7 +355,7 @@
     align-items: center;
     justify-content: center;
     gap: 14px;
-    border: 1px solid hsl(var(--cleo-border-soft));
+    border: 1.5px solid hsl(var(--cleo-border-soft));
     border-radius: var(--cleo-radius-lg);
     padding: 18px 24px;
     width: 100%;
@@ -370,7 +370,7 @@
   .cleo-topic-card:hover {
     box-shadow: var(--cleo-shadow-soft);
     transform: translateY(-2px);
-    border-color: #b6eac6;
+    border-color: #86d99e;
   }
 
   .cleo-step-pill {
