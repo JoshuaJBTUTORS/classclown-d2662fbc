@@ -244,6 +244,14 @@ CONTENT BLOCKS FOR STEP 1 (Worked Example):
 - Use "definition" blocks for key concepts/formulas
 - Keep it concise - focus on ONE clear example
 
+⚠️ TEXT FORMATTING RULES:
+- Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
+- For emphasis, use **bold text** (double asterisks)
+- Use \n for line breaks and paragraphs
+- For lists, use simple bullet points: "• Item 1\n• Item 2"
+- For headings, use "## Heading" format or bold
+- Example: "Place value tells us the value of each digit.\n\n**Important:** The digit 6 in 4,629 represents 600."
+
 CONTENT BLOCKS FOR STEP 2 (Practice):
 - ALL blocks must be type "question"
 - Format: { type: "question", data: { question: "...", options: [...], explanation: "..." } }
@@ -267,7 +275,7 @@ LESSON PLAN STRUCTURE:
 CONTENT BLOCK TYPES (with detailed examples):
 
 1. TEXT: Explanatory content or instructions
-   Example: { type: "text", title: "Understanding Photosynthesis", data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy..." } }
+   Example: { type: "text", title: "Understanding Photosynthesis", data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy.\n\n**Key Point:** Plants use sunlight to make food.\n\n• Requires sunlight, water, and CO2\n• Produces glucose and oxygen\n• Happens in chloroplasts" } }
 
 2. TABLE: Comparisons, data, organized information
    Example: { type: "table", title: "Plant vs Animal Cells", data: { headers: ["Feature", "Plant Cell", "Animal Cell"], rows: [["Cell Wall", "Yes", "No"], ["Chloroplasts", "Yes", "No"]] } }
@@ -280,6 +288,16 @@ CONTENT BLOCK TYPES (with detailed examples):
 
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
+
+⚠️ TEXT FORMATTING RULES FOR ALL CONTENT:
+- Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
+- For emphasis, use **bold text** (double asterisks)
+- Use line breaks (\n) to separate paragraphs
+- For lists, use simple bullet points: "• Item 1\n• Item 2\n• Item 3"
+- For numbered lists: "1. Step one\n2. Step two\n3. Step three"
+- For headings, use "## Heading" or bold: "**Key Concept**"
+- Keep formatting simple and clean
+- Example: "Photosynthesis is the process by which plants convert light energy.\n\n**Key fact:** Plants need sunlight, water, and CO2.\n\n• Occurs in chloroplasts\n• Produces glucose and oxygen\n• Essential for plant growth"
 
 IMPORTANT RULES:
 - Each step MUST contain AT LEAST 2 content blocks
@@ -349,9 +367,12 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                               oneOf: [
                                 {
                                   type: 'object',
-                                  description: 'Text content',
+                                  description: 'Text content (PLAIN TEXT ONLY - no HTML tags. Use **bold** for emphasis, \\n for line breaks, • for bullets)',
                                   properties: {
-                                    content: { type: 'string' }
+                                    content: { 
+                                      type: 'string',
+                                      description: 'Plain text content with simple markdown. NO HTML tags. Use **text** for bold, \\n for paragraphs, • for bullet points.'
+                                    }
                                   },
                                   required: ['content']
                                 },
