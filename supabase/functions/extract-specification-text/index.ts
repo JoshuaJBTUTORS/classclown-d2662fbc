@@ -43,11 +43,17 @@ serve(async (req) => {
 
     if (downloadError) throw downloadError;
 
-    // Convert to base64 for text extraction (simplified - in production use proper PDF parsing)
+    // Convert to base64 for AI processing
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    const base64 = btoa(String.fromCharCode(...bytes));
 
-    // Use AI to extract and summarize text
+    // Create data URI for the PDF
+    const dataUri = `data:${spec.mime_type};base64,${base64}`;
+
+    console.log(`Processing PDF: ${spec.title} (${spec.exam_board}) - Size: ${bytes.length} bytes`);
+
+    // Use AI to extract and summarize text from the actual PDF
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -59,52 +65,102 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert in UK exam specifications. Extract key information from this ${spec.exam_board} specification document and provide:
-1. A concise summary (200-300 words) covering the main topics, assessment objectives, and key requirements
-2. A list of 8-12 key topics/themes as a JSON array
-3. Important command words and assessment criteria
+            content: `You are an expert in UK exam specifications. Carefully read and analyze the provided specification document.
 
-Format your response as JSON:
+Extract the following information:
+1. A comprehensive summary (200-300 words) covering:
+   - Main topics and content areas
+   - Assessment objectives (AO1, AO2, etc.)
+   - Key skills and knowledge required
+   - Assessment format and structure
+   - Any unique features or requirements
+
+2. A list of 8-12 key topics/themes covered in the specification
+
+3. Important command words used (e.g., "explain", "evaluate", "analyse")
+
+4. Assessment objectives with their descriptions
+
+5. Any important notes about exam structure, marks, or time allocations
+
+Format your response ONLY as valid JSON (no markdown, no code blocks):
 {
   "summary": "...",
   "key_topics": ["topic1", "topic2", ...],
   "command_words": ["explain", "evaluate", ...],
-  "assessment_objectives": ["AO1: ...", "AO2: ..."]
+  "assessment_objectives": ["AO1: ...", "AO2: ..."],
+  "notes": "..."
 }`
           },
           {
             role: 'user',
-            content: `Please analyze this ${spec.exam_board} ${spec.title} specification document. Note: This is a ${spec.mime_type} file. Extract the key information as specified.`
+            content: [
+              {
+                type: 'text',
+                text: `Please analyze this ${spec.exam_board} ${spec.title} specification document. Extract all the key information as specified.`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: dataUri
+                }
+              }
+            ]
           }
         ],
       }),
     });
 
     if (!aiResponse.ok) {
-      throw new Error('AI processing failed');
+      const errorText = await aiResponse.text();
+      console.error('AI processing failed:', aiResponse.status, errorText);
+      throw new Error(`AI processing failed: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices[0].message.content;
 
-    // Parse AI response
+    console.log('AI response received, parsing JSON...');
+
+    // Parse AI response - expect pure JSON
     let extractedData;
     try {
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        extractedData = JSON.parse(jsonMatch[0]);
-      } else {
+      // First try to parse as direct JSON
+      extractedData = JSON.parse(aiContent);
+    } catch (firstError) {
+      // If that fails, try to extract JSON from markdown code blocks or other wrapping
+      try {
+        const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          extractedData = JSON.parse(jsonMatch[0]);
+        } else {
+          console.error('No JSON found in response:', aiContent.slice(0, 200));
+          extractedData = {
+            summary: aiContent.slice(0, 500),
+            key_topics: [],
+            command_words: [],
+            assessment_objectives: [],
+            notes: 'Failed to parse structured data from AI response'
+          };
+        }
+      } catch (secondError) {
+        console.error('Failed to parse AI response:', secondError);
         extractedData = {
           summary: aiContent.slice(0, 500),
           key_topics: [],
+          command_words: [],
+          assessment_objectives: [],
+          notes: 'Failed to parse structured data from AI response'
         };
       }
-    } catch {
-      extractedData = {
-        summary: aiContent.slice(0, 500),
-        key_topics: [],
-      };
     }
+
+    console.log('Extracted data:', {
+      summaryLength: extractedData.summary?.length,
+      topicsCount: extractedData.key_topics?.length,
+      commandWordsCount: extractedData.command_words?.length,
+      aoCount: extractedData.assessment_objectives?.length
+    });
 
     // Update specification with extracted data
     const { error: updateError } = await supabase
