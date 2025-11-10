@@ -17,12 +17,8 @@ export const calculateWaypointStatus = (
     return 'in_progress';
   }
   
-  // Check if course is unlocked (prerequisites met)
-  if (isWaypointUnlocked(course, completedCourses, userProgress)) {
-    return 'available';
-  }
-  
-  return 'locked';
+  // All courses are always available
+  return 'available';
 };
 
 export const isWaypointUnlocked = (
@@ -30,44 +26,7 @@ export const isWaypointUnlocked = (
   completedCourses: string[],
   userProgress: Record<string, number>
 ): boolean => {
-  // Always unlock the first course
-  if (course.path_position <= 100) {
-    return true;
-  }
-  
-  // Check prerequisite courses
-  if (course.prerequisites && course.prerequisites.length > 0) {
-    const prerequisitesMet = course.prerequisites.every(prereqId => 
-      completedCourses.includes(prereqId)
-    );
-    if (!prerequisitesMet) {
-      return false;
-    }
-  }
-  
-  // Check unlock requirements
-  if (course.unlock_requirements) {
-    const { minProgress, requiredCourses } = course.unlock_requirements;
-    
-    // Check minimum progress requirement
-    if (minProgress && typeof minProgress === 'number') {
-      const overallProgress = calculateOverallProgress(userProgress, completedCourses);
-      if (overallProgress < minProgress) {
-        return false;
-      }
-    }
-    
-    // Check required courses
-    if (requiredCourses && requiredCourses.length > 0) {
-      const requiredCoursesMet = requiredCourses.every(courseId => 
-        completedCourses.includes(courseId)
-      );
-      if (!requiredCoursesMet) {
-        return false;
-      }
-    }
-  }
-  
+  // All courses are always unlocked
   return true;
 };
 

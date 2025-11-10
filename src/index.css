@@ -1297,7 +1297,7 @@
 }
 
 .cleo-step--active {
-  background: var(--cleo-green-light);
+  /* Green background removed - all modules now accessible */
 }
 
 .cleo-step--locked {

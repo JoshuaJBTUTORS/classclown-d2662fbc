@@ -36,23 +36,7 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
     enabled: orderedModules.length > 0,
   });
   
-  // Add assessment status query with personalized path support
-  const { data: moduleAccessList } = useQuery({
-    queryKey: ['module-access-list', orderedModules.map(m => m.id), personalizedOrder?.isPersonalized],
-    queryFn: async () => {
-      if (!orderedModules.length) return {};
-      const accessPromises = orderedModules.map(async (module) => {
-        // Use personalized path access control if available
-        const hasAccess = personalizedOrder?.isPersonalized 
-          ? await learningHubService.checkModuleAccessWithPersonalizedPath(module.id, orderedModules)
-          : await learningHubService.checkModuleAccess(module.id);
-        return [module.id, hasAccess];
-      });
-      const results = await Promise.all(accessPromises);
-      return Object.fromEntries(results);
-    },
-    enabled: orderedModules.length > 0,
-  });
+  // Module access removed - all modules are now accessible
 
   // Fixed learning path stops from modules
   const learningStops = React.useMemo(() => {
@@ -66,29 +50,23 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
         return module.lessons?.some((lesson: any) => lesson.id === progress.lesson_id);
       }) || [];
 
-      // Determine status based on progress and access control
-      let status: WaypointStatus = 'locked';
+      // All modules always accessible - status based only on completion
+      let status: WaypointStatus = 'available';
       let progress = 0;
 
       const totalLessons = module.lessons?.length || 0;
       const completedLessons = moduleProgress.filter(p => p.status === 'completed').length;
-      const hasAccess = moduleAccessList?.[module.id] ?? (index === 0); // First module always accessible by default
 
-      if (!hasAccess) {
-        status = 'locked';
-        progress = 0;
+      // Module is accessible - determine status based on completion
+      if (completedLessons === totalLessons && totalLessons > 0) {
+        status = 'completed';
+        progress = 100;
+      } else if (completedLessons > 0) {
+        status = 'in_progress';
+        progress = Math.round((completedLessons / totalLessons) * 100);
       } else {
-        // Module is accessible
-        if (completedLessons === totalLessons && totalLessons > 0) {
-          status = 'completed';
-          progress = 100;
-        } else if (completedLessons > 0) {
-          status = 'in_progress';
-          progress = Math.round((completedLessons / totalLessons) * 100);
-        } else {
-          status = 'available';
-          progress = 0;
-        }
+        status = 'available';
+        progress = 0;
       }
 
       return {
@@ -101,19 +79,13 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
         isPersonalized: personalizedOrder?.isPersonalized && index > 0 // Don't mark first module as personalized
       };
     });
-  }, [orderedModules, userProgress, moduleAccessList, personalizedOrder]);
+  }, [orderedModules, userProgress, personalizedOrder]);
   
   // Event handlers
   const handleStopClick = (stopId: string) => {
     const stop = learningStops.find(s => s.id === stopId);
-    if (stop && stop.status !== 'locked') {
+    if (stop) {
       onModuleClick(stopId);
-    } else if (stop && stop.status === 'locked') {
-      toast({
-        title: "Module Locked",
-        description: "Complete the previous module's assessment to unlock this module.",
-        variant: "destructive",
-      });
     }
   };
   
@@ -155,7 +127,7 @@ const LearningPathContainer: React.FC<LearningPathContainerProps> = ({ modules, 
           <p className="text-muted-foreground">
             {personalizedOrder?.isPersonalized 
               ? "Customized based on your assessment performance" 
-              : "Complete each step to unlock the next level"
+              : "Choose any module to begin your learning journey"
             }
           </p>
           

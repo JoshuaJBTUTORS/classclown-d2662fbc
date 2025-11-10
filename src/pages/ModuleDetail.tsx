@@ -79,18 +79,11 @@ const ModuleDetail = () => {
     enabled: !!moduleId,
   });
 
+  // All modules always accessible - sequential access removed
   const { data: canProgressToNext } = useQuery({
-    queryKey: ['can-progress', moduleId, personalizedOrder?.isPersonalized],
+    queryKey: ['can-progress', moduleId],
     queryFn: async () => {
-      if (!orderedModules || !moduleId) return true;
-      const currentModuleIndex = orderedModules.findIndex(m => m.id === moduleId);
-      const nextModule = orderedModules[currentModuleIndex + 1];
-      if (!nextModule) return true; // No next module, can always progress
-      
-      // Use personalized path access control if available
-      return personalizedOrder?.isPersonalized 
-        ? await learningHubService.checkModuleAccessWithPersonalizedPath(nextModule.id, orderedModules)
-        : await learningHubService.canProgressToModule(nextModule.id);
+      return true; // All modules always accessible
     },
     enabled: !!orderedModules && !!moduleId,
   });
@@ -101,15 +94,13 @@ const ModuleDetail = () => {
     enabled: !!moduleId,
   });
 
+  // All modules always accessible - sequential access removed
   const { data: hasModuleAccess, isLoading: accessLoading } = useQuery({
-    queryKey: ['module-access', moduleId, personalizedOrder?.isPersonalized],
+    queryKey: ['module-access', moduleId],
     queryFn: () => {
-      // Use personalized path access control if available
-      return personalizedOrder?.isPersonalized 
-        ? learningHubService.checkModuleAccessWithPersonalizedPath(moduleId!, orderedModules || [])
-        : learningHubService.checkModuleAccess(moduleId!);
+      return true; // All modules always accessible
     },
-    enabled: !!moduleId && !!orderedModules,
+    enabled: !!moduleId,
   });
 
   const currentModule = orderedModules?.find(m => m.id === moduleId);

@@ -265,8 +265,8 @@ const CourseDetail = () => {
           <div className="cleo-steps">
             {modules && modules.length > 0 ? (
               modules.map((module, index) => {
-                const isActive = hasAccess || index === 0;
-                const isLocked = !isActive;
+            const isActive = hasAccess; // All modules available if user has access
+            const isLocked = !hasAccess;
                 const titleParts = parseModuleTitle(module.title);
                 
                 return (
@@ -291,7 +291,7 @@ const CourseDetail = () => {
                           handleModuleSelect(module.id);
                         }}
                       >
-                        Start
+                    Select
                       </button>
                     )}
                   </div>
