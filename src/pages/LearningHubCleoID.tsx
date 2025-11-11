@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 
 export default function LearningHubCleoID() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { stats, badges, isLoading } = useGamification();
   const navigate = useNavigate();
 
@@ -40,6 +40,15 @@ export default function LearningHubCleoID() {
 
   // Sample subjects - in real implementation, fetch from user's GCSE subjects
   const subjects = ['Maths', 'English', 'Science'];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-background via-background/95 to-muted/20">
@@ -171,6 +180,15 @@ export default function LearningHubCleoID() {
             View Achievements
           </Button>
         </div>
+
+        {/* Sign Out Button */}
+        <Button
+          variant="outline"
+          className="w-full rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive mb-5"
+          onClick={handleSignOut}
+        >
+          Sign Out
+        </Button>
 
         {/* Footer */}
         <p className="text-center text-sm text-muted-foreground">
