@@ -419,7 +419,28 @@ export const paymentService = {
       return { hasAccess: true, subscription };
     }
 
-    console.log('No active platform subscription found');
-    return { hasAccess: false, reason: 'No active subscription' };
+    // Check for available voice session quotas (including free sessions)
+    const now = new Date().toISOString();
+    const { data: quota } = await supabase
+      .from('voice_session_quotas')
+      .select('sessions_remaining, bonus_sessions')
+      .eq('user_id', user.id)
+      .lte('period_start', now)
+      .gte('period_end', now)
+      .maybeSingle();
+
+    if (quota) {
+      const totalRemaining = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
+      if (totalRemaining > 0) {
+        console.log('User has available free sessions:', totalRemaining);
+        return { 
+          hasAccess: true, 
+          reason: `${totalRemaining} free session${totalRemaining > 1 ? 's' : ''} available` 
+        };
+      }
+    }
+
+    console.log('No active platform subscription or free sessions found');
+    return { hasAccess: false, reason: 'No active subscription or free sessions' };
   },
 };

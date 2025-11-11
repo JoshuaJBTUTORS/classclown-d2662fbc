@@ -6,6 +6,7 @@ import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 
 // Course emoji mapping for both 11+ and GCSE subjects
 const courseEmojiMap: Record<string, string> = {
@@ -338,6 +339,7 @@ const LearningHubMyCourses = () => {
               Cleo says: "Choose your next challenge. Let's play smart."
             </p>
           </div>
+          <VoiceSessionIndicator />
         </div>
 
         {/* Tabs for course categories */}
