@@ -230,10 +230,10 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
           </p>
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 inline-block max-w-full">
             <p className="text-sm sm:text-base text-green-800 font-medium">
-              Cleo account created for {data.studentFirstName} {data.studentLastName}
+              🎉 3 FREE voice lessons included!
             </p>
             <p className="text-xs sm:text-sm text-green-600">
-              Ready to start your AI-powered learning journey!
+              No credit card required • Start learning immediately
             </p>
           </div>
         </motion.div>

@@ -159,7 +159,7 @@ const PricingPage = () => {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
           <p className="text-xl text-muted-foreground mb-6">
-            Get unlimited access to all courses with flexible voice learning sessions
+            Already used your 3 free lessons? Subscribe to continue learning with Cleo!
           </p>
           
           {/* Billing Toggle */}
@@ -181,10 +181,10 @@ const PricingPage = () => {
             </p>
           )}
           
-          {/* Free Trial Banner */}
-          <div className="mt-6 inline-block bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-3 rounded-full">
-            <p className="text-sm font-medium">
-              🎁 Get your first 5-minute voice lesson FREE with card on file
+          {/* Free Sessions Info */}
+          <div className="mt-6 inline-block bg-gradient-to-r from-mint-500/20 to-mint-600/20 px-6 py-3 rounded-full border border-mint-300">
+            <p className="text-sm font-medium text-foreground">
+              🎁 New users get 3 FREE lessons • No credit card required
             </p>
           </div>
         </div>

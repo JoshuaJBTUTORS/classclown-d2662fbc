@@ -104,7 +104,6 @@ serve(async (req) => {
           sessions_quota: planConfig.sessions.toString(),
           billing_interval: billingInterval,
         },
-        trial_period_days: hasUsedTrial ? undefined : 7,
       },
       success_url: `${req.headers.get('origin')}/learning-hub/subscription?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get('origin')}/pricing`,

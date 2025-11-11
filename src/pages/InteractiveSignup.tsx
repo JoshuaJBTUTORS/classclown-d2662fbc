@@ -10,7 +10,6 @@ import EducationLevelStep from '@/components/signup/EducationLevelStep';
 import SubjectStep from '@/components/signup/SubjectStep';
 import ExamBoardStep from '@/components/signup/ExamBoardStep';
 import SuccessStep from '@/components/signup/SuccessStep';
-import { PaymentSetupStep } from '@/components/signup/PaymentSetupStep';
 
 export interface SignupData {
   parentFirstName: string;
@@ -61,13 +60,11 @@ const InteractiveSignup = () => {
 
   const examBoardStep = { title: "Exam Boards", component: ExamBoardStep };
   const successStep = { title: "Complete", component: SuccessStep };
-  const paymentStep = { title: "Payment", component: PaymentSetupStep };
 
   const steps = [
     ...baseSteps,
     ...(signupData.educationLevel === 'gcse' ? [examBoardStep] : []),
     successStep,
-    paymentStep,
   ];
 
   const updateSignupData = (data: Partial<SignupData>) => {
