@@ -98,7 +98,13 @@ serve(async (req) => {
         // Generate next batch of instances (20 at a time)
         const instances = [];
         const lastGeneratedDate = new Date(group.instances_generated_until);
-        const lessonDuration = new Date(templateLesson.end_time).getTime() - new Date(templateLesson.start_time).getTime();
+        
+        // Extract time components from template lesson (respects schedule changes)
+        const templateStartTime = new Date(templateLesson.start_time);
+        const templateEndTime = new Date(templateLesson.end_time);
+        const startHour = templateStartTime.getUTCHours();
+        const startMinute = templateStartTime.getUTCMinutes();
+        const lessonDuration = templateEndTime.getTime() - templateStartTime.getTime();
 
         let currentDate = new Date(lastGeneratedDate);
         let instanceCount = 0;
@@ -127,7 +133,15 @@ serve(async (req) => {
           }
 
           if (currentDate <= endDate) {
-            const instanceStartTime = new Date(currentDate);
+            // Apply template lesson's time-of-day to the calculated date
+            const instanceStartTime = new Date(Date.UTC(
+              currentDate.getUTCFullYear(),
+              currentDate.getUTCMonth(),
+              currentDate.getUTCDate(),
+              startHour,
+              startMinute,
+              0
+            ));
             const instanceEndTime = new Date(instanceStartTime.getTime() + lessonDuration);
 
             instances.push({

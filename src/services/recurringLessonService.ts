@@ -47,6 +47,10 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
   const instances = [];
   const lessonDuration = endTime.getTime() - startTime.getTime();
   
+  // Extract time components from original lesson
+  const startHour = startTime.getUTCHours();
+  const startMinute = startTime.getUTCMinutes();
+  
   // Generate first 20 instances or until end date (whichever comes first)
   let currentDate = new Date(startTime);
   let instanceCount = 0;
@@ -75,8 +79,16 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
     }
 
     if (currentDate <= (effectiveEndDate || new Date())) {
-      const instanceStartTime = new Date(currentDate);
-      const instanceEndTime = new Date(currentDate.getTime() + lessonDuration);
+      // Apply the original lesson's time-of-day to the new date
+      const instanceStartTime = new Date(Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth(),
+        currentDate.getUTCDate(),
+        startHour,
+        startMinute,
+        0
+      ));
+      const instanceEndTime = new Date(instanceStartTime.getTime() + lessonDuration);
       
       instances.push({
         title,
@@ -172,18 +184,7 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
 };
 
 export const generateNextBatchOfInstances = async (originalLessonId: string, batchSize: number = 20) => {
-  // Get the original lesson and recurring group info
-  const { data: originalLesson, error: lessonError } = await supabase
-    .from('lessons')
-    .select('*')
-    .eq('id', originalLessonId)
-    .eq('is_recurring', true)
-    .single();
-
-  if (lessonError || !originalLesson) {
-    throw new Error('Original lesson not found');
-  }
-
+  // Get the recurring group info
   const { data: recurringGroup, error: groupError } = await supabase
     .from('recurring_lesson_groups')
     .select('*')
@@ -194,11 +195,25 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
     throw new Error('Recurring group not found');
   }
 
-  // Get students for the original lesson
+  // Get the LAST INSTANCE to use as template (never the original)
+  const { data: lastInstance, error: lastInstanceError } = await supabase
+    .from('lessons')
+    .select('*')
+    .eq('parent_lesson_id', originalLessonId)
+    .eq('is_recurring_instance', true)
+    .order('instance_date', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (lastInstanceError || !lastInstance) {
+    throw new Error('No last instance found - cannot generate next batch');
+  }
+
+  // Get students from the last instance (reflects current enrollment)
   const { data: lessonStudents, error: studentsError } = await supabase
     .from('lesson_students')
     .select('student_id')
-    .eq('lesson_id', originalLessonId);
+    .eq('lesson_id', lastInstance.id);
 
   if (studentsError) {
     throw new Error('Failed to get lesson students');
@@ -206,20 +221,24 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
 
   const selectedStudents = lessonStudents.map(ls => ls.student_id);
 
-  // Generate next batch starting from last generated date
+  // Generate next batch starting from last generated date, using last instance's schedule
   const lastGeneratedDate = new Date(recurringGroup.instances_generated_until);
   const recurrencePattern = recurringGroup.recurrence_pattern as any;
   
+  // Extract time-of-day from last instance
+  const lastInstanceStart = new Date(lastInstance.start_time);
+  const lastInstanceEnd = new Date(lastInstance.end_time);
+  
   const data: RecurringLessonData = {
     originalLessonId,
-    title: originalLesson.title,
-    description: originalLesson.description,
-    subject: originalLesson.subject,
-    tutorId: originalLesson.tutor_id,
+    title: lastInstance.title,
+    description: lastInstance.description,
+    subject: lastInstance.subject,
+    tutorId: lastInstance.tutor_id,
     startTime: lastGeneratedDate,
-    endTime: new Date(lastGeneratedDate.getTime() + (new Date(originalLesson.end_time).getTime() - new Date(originalLesson.start_time).getTime())),
-    isGroup: originalLesson.is_group,
-    recurrenceInterval: originalLesson.recurrence_interval as any,
+    endTime: new Date(lastGeneratedDate.getTime() + (lastInstanceEnd.getTime() - lastInstanceStart.getTime())),
+    isGroup: lastInstance.is_group,
+    recurrenceInterval: lastInstance.recurrence_interval as any,
     recurrenceEndDate: recurrencePattern.endDate ? new Date(recurrencePattern.endDate) : undefined,
     isInfinite: recurrencePattern.isInfinite,
     selectedStudents
