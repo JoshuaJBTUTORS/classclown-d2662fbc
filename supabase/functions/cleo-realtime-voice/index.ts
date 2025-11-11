@@ -933,7 +933,9 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
             conversation_id: session.conversationId,
             role: 'user',
             content: msg.text
-          }).then(() => console.log('Message saved to database'));
+          })
+            .then(() => console.log('Message saved to database'))
+            .catch(err => console.error('Failed to save user message:', err));
           
           // Create conversation item
           openAISocket.send(JSON.stringify({
