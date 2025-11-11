@@ -11,9 +11,9 @@ interface PurchasePackRequest {
 }
 
 const PACK_PRICING = {
-  5: { price: 1000, sessions: 5 },   // £10
-  10: { price: 1800, sessions: 10 }, // £18
-  20: { price: 3200, sessions: 20 }, // £32
+  5: { price: 1000, sessions: 5, stripePriceId: 'price_1SSDt7JYNQBAYpmiKgfZ8Ob5' },   // £10 - Small Pack
+  10: { price: 1800, sessions: 10, stripePriceId: 'price_1SSDtmJYNQBAYpmiXbuIUdOM' }, // £18 - Medium Pack
+  20: { price: 3200, sessions: 20, stripePriceId: 'price_1SSDuRJYNQBAYpmigl9lS3aG' }, // £32 - Large Pack
 };
 
 Deno.serve(async (req) => {
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       throw new Error('No customer found. Please subscribe first.');
     }
 
-    const { price, sessions } = PACK_PRICING[packSize];
+    const { price, sessions, stripePriceId } = PACK_PRICING[packSize];
 
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
         supabase_user_id: user.id,
         pack_size: packSize,
         sessions_granted: sessions,
+        stripe_price_id: stripePriceId,
       },
       automatic_payment_methods: {
         enabled: true,
