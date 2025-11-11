@@ -112,6 +112,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const [pauseTimestamp, setPauseTimestamp] = useState<number | null>(null);
   
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void } | null>(null);
   const modeSwitchCountRef = useRef(0);
@@ -274,6 +276,26 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     controlsRef.current?.disconnect();
   };
 
+  const handlePauseVoice = () => {
+    controlsRef.current?.disconnect();
+    setIsPaused(true);
+    setPauseTimestamp(Date.now());
+    toast({
+      title: "⏸️ Voice Paused",
+      description: "Your voice time is paused. Click Resume to continue.",
+    });
+  };
+
+  const handleResumeVoice = () => {
+    setIsPaused(false);
+    setPauseTimestamp(null);
+    controlsRef.current?.connect();
+    toast({
+      title: "▶️ Voice Resumed",
+      description: "Let's continue learning!",
+    });
+  };
+
   const handleVoiceLimitReached = () => {
     handleModeSwitch('text', true);
   };
@@ -382,8 +404,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 isVoiceListening={isListening}
                 isVoiceSpeaking={isSpeaking}
                 isTextLoading={textChat.isLoading}
+                isPaused={isPaused}
                 onVoiceConnect={handleVoiceConnect}
                 onVoiceDisconnect={handleVoiceDisconnect}
+                onVoicePause={handlePauseVoice}
+                onVoiceResume={handleResumeVoice}
                 onTextSend={textChat.sendMessage}
                 contentBlocks={content}
                 visibleContentIds={visibleContent}

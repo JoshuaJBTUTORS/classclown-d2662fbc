@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Square, Volume2 } from 'lucide-react';
+import { Play, Square, Volume2, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,8 +11,11 @@ interface VoiceControlsProps {
   isConnected: boolean;
   isListening: boolean;
   isSpeaking: boolean;
+  isPaused?: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
+  onPause?: () => void;
+  onResume?: () => void;
   conversationId?: string;
 }
 
@@ -20,8 +23,11 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   isConnected,
   isListening,
   isSpeaking,
+  isPaused,
   onConnect,
   onDisconnect,
+  onPause,
+  onResume,
   conversationId,
 }) => {
   const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
@@ -99,7 +105,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         <VoiceSessionIndicator />
       )}
 
-      {!isConnected ? (
+      {!isConnected && !isPaused ? (
         /* Connect Button */
         <div className="flex flex-col items-center gap-3">
           <motion.div
@@ -129,8 +135,41 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
             </div>
           )}
         </div>
+      ) : isPaused ? (
+        /* Paused State: Show Resume Button */
+        <div className="flex flex-col items-center gap-3">
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full border bg-amber-100 text-amber-700 border-amber-400 text-sm font-medium"
+          >
+            <span>⏸️</span>
+            <span>Paused</span>
+          </motion.div>
+
+          <div className="flex gap-2">
+            <Button
+              onClick={onResume}
+              className="rounded-full px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+              size="sm"
+            >
+              <Play className="w-4 h-4 mr-1" />
+              Resume Learning
+            </Button>
+
+            <Button
+              onClick={onDisconnect}
+              variant="outline"
+              size="sm"
+              className="rounded-full px-6 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Square className="w-4 h-4 mr-1" />
+              Stop
+            </Button>
+          </div>
+        </div>
       ) : (
-        /* Status Indicator & Stop Button */
+        /* Connected State: Show Status, Pause & Stop Buttons */
         <div className="flex flex-col items-center gap-3">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -153,15 +192,27 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
             {isSpeaking && <Volume2 className="w-4 h-4 text-green-500" />}
           </motion.div>
           
-          <Button
-            onClick={onDisconnect}
-            variant="outline"
-            size="sm"
-            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            <Square className="w-4 h-4 mr-2" />
-            Stop
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={onPause}
+              variant="outline"
+              size="sm"
+              className="rounded-full px-4 hover:border-amber-400 hover:text-amber-600"
+            >
+              <Pause className="w-4 h-4 mr-1" />
+              Pause
+            </Button>
+
+            <Button
+              onClick={onDisconnect}
+              variant="outline"
+              size="sm"
+              className="rounded-full px-4 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Square className="w-4 h-4 mr-1" />
+              Stop
+            </Button>
+          </div>
         </div>
       )}
     </div>
