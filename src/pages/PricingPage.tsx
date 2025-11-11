@@ -102,12 +102,25 @@ const PricingPage = () => {
       if (error) throw error;
 
       if (data?.url) {
-        // Use window.top to break out of iframe (Lovable preview context)
-        if (window.top) {
-          window.top.location.href = data.url;
-        } else {
-          window.location.href = data.url;
+        // Open in new tab/window - works in both sandboxed iframes and production
+        const checkoutWindow = window.open(data.url, '_blank');
+        
+        if (!checkoutWindow) {
+          // Popup blocked - show user-friendly message
+          toast.error('Please allow popups to complete checkout', {
+            description: 'Click the button again and allow popups in your browser'
+          });
+          setLoadingPlan(null);
+          return;
         }
+        
+        // Reset loading state after opening checkout
+        setLoadingPlan(null);
+        
+        // Show helpful message
+        toast.info('Redirecting to secure checkout...', {
+          description: 'Complete your payment in the new tab'
+        });
       } else {
         throw new Error('No checkout URL returned');
       }
