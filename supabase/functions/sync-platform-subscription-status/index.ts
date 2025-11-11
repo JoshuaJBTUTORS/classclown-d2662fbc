@@ -43,8 +43,19 @@ Deno.serve(async (req) => {
       .limit(1)
       .single();
 
+    // If no subscription found, return success (user may have free sessions)
     if (!dbSubscription?.stripe_subscription_id) {
-      throw new Error('No subscription found');
+      console.log('No subscription to sync - user may be using free sessions');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'No subscription to sync',
+          hasSubscription: false
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // Fetch from Stripe
