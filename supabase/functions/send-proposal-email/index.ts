@@ -63,6 +63,8 @@ const handler = async (req: Request): Promise<Response> => {
         recipientName,
         proposalUrl,
         subject: proposal.subject,
+        discountExtendedUntil: proposal.discount_extended_until,
+        createdAt: proposal.created_at,
       })
     );
 
