@@ -195,6 +195,30 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
     throw new Error('Recurring group not found');
   }
 
+  // Check if this recurring series is still active (has instances in last 3 weeks)
+  const threeWeeksAgo = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
+  const lastGenerated = new Date(recurringGroup.instances_generated_until);
+
+  // If last generation point is recent, check for instances
+  if (lastGenerated >= threeWeeksAgo) {
+    const { data: recentInstances, error: recentError } = await supabase
+      .from('lessons')
+      .select('id')
+      .eq('parent_lesson_id', originalLessonId)
+      .eq('is_recurring_instance', true)
+      .gte('instance_date', threeWeeksAgo.toISOString())
+      .limit(1);
+
+    if (!recentError && (!recentInstances || recentInstances.length === 0)) {
+      console.log('No instances in last 3 weeks - series appears cancelled, skipping generation');
+      throw new Error('Recurring series appears to be cancelled - no recent instances found');
+    }
+
+    console.log('Series is active (found recent instances) - proceeding with generation');
+  } else {
+    console.log('Last generation was >3 weeks ago - assuming we\'re just behind on generation');
+  }
+
   // Get the LAST INSTANCE to use as template (never the original)
   const { data: lastInstance, error: lastInstanceError } = await supabase
     .from('lessons')

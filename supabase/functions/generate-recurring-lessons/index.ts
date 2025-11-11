@@ -58,6 +58,30 @@ serve(async (req) => {
           continue;
         }
 
+        // Check if this recurring series is still active (has instances in last 3 weeks)
+        const threeWeeksAgo = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
+        const lastGenerated = new Date(group.instances_generated_until);
+
+        // If last generation point is recent, check for instances
+        if (lastGenerated >= threeWeeksAgo) {
+          const { data: recentInstances, error: recentError } = await supabase
+            .from('lessons')
+            .select('id')
+            .eq('parent_lesson_id', originalLesson.id)
+            .eq('is_recurring_instance', true)
+            .gte('instance_date', threeWeeksAgo.toISOString())
+            .limit(1);
+
+          if (!recentError && (!recentInstances || recentInstances.length === 0)) {
+            console.log(`No instances in last 3 weeks for ${group.group_name} - series appears cancelled, skipping generation`);
+            continue;
+          }
+
+          console.log(`Series is active (found recent instances) - proceeding with generation for ${group.group_name}`);
+        } else {
+          console.log(`Last generation was >3 weeks ago - assuming we're just behind on generation for ${group.group_name}`);
+        }
+
         // Get the most recent lesson instance to use as template (reflects current tutor/student changes)
         const { data: mostRecentInstance, error: recentInstanceError } = await supabase
           .from('lessons')
