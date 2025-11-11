@@ -383,4 +383,43 @@ export const paymentService = {
       throw error;
     }
   },
+
+  // Check if user has platform subscription access
+  checkPlatformSubscriptionAccess: async (): Promise<{
+    hasAccess: boolean;
+    subscription?: any;
+    reason?: string;
+  }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { hasAccess: false, reason: 'Not authenticated' };
+
+    console.log('Checking platform subscription access for user:', user.id);
+
+    // Check if user is owner
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    if (roles?.some(r => r.role === 'owner')) {
+      console.log('User is owner, granting access');
+      return { hasAccess: true, reason: 'Owner access' };
+    }
+
+    // Check for active platform subscription
+    const { data: subscription } = await supabase
+      .from('user_platform_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing'])
+      .maybeSingle();
+
+    if (subscription) {
+      console.log('User has active platform subscription:', subscription.status);
+      return { hasAccess: true, subscription };
+    }
+
+    console.log('No active platform subscription found');
+    return { hasAccess: false, reason: 'No active subscription' };
+  },
 };

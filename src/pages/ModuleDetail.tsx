@@ -64,9 +64,9 @@ const ModuleDetail = () => {
   // Use personalized modules for navigation or fallback to original
   const orderedModules = personalizedOrder?.modules || modules;
 
-  const { data: hasPurchased } = useQuery({
-    queryKey: ['course-purchase', courseId],
-    queryFn: () => paymentService.checkCoursePurchase(courseId!),
+  const { data: subscriptionAccess } = useQuery({
+    queryKey: ['platform-subscription-access', user?.id],
+    queryFn: () => paymentService.checkPlatformSubscriptionAccess(),
     enabled: !!courseId && !isOwner,
   });
 
@@ -116,7 +116,7 @@ const ModuleDetail = () => {
   const lessons = allLessons;
   
   const currentLesson = lessons[currentLessonIndex];
-  const hasAccess = isOwner || hasPurchased;
+  const hasAccess = isOwner || subscriptionAccess?.hasAccess;
 
   // Add class to root for full-width
   useEffect(() => {

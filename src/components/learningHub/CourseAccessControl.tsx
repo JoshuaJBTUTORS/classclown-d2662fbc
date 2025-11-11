@@ -27,22 +27,23 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
     enabled: !!courseId,
   });
 
-  const { data: hasPurchased, isLoading } = useQuery({
-    queryKey: ['course-purchase', courseId, user?.id],
-    queryFn: () => paymentService.checkCoursePurchase(courseId),
+  const { data: subscriptionAccess, isLoading } = useQuery({
+    queryKey: ['platform-subscription-access', user?.id],
+    queryFn: () => paymentService.checkPlatformSubscriptionAccess(),
     enabled: !!user && !!courseId && !isOwner,
   });
 
-  const { data: subscriptionStatus } = useQuery({
-    queryKey: ['subscription-status', user?.id],
-    queryFn: paymentService.getSubscriptionStatus,
-    enabled: !!user && !isOwner,
-  });
-
-  // Sync subscription status on mount
+  // Sync platform subscription status on mount
   React.useEffect(() => {
     if (user && !isOwner) {
-      paymentService.syncSubscriptionStatus().catch(console.error);
+      const syncStatus = async () => {
+        try {
+          await supabase.functions.invoke('sync-platform-subscription-status');
+        } catch (error) {
+          console.error('Error syncing platform subscription status:', error);
+        }
+      };
+      syncStatus();
     }
   }, [user, isOwner]);
 
@@ -92,97 +93,24 @@ const CourseAccessControl: React.FC<CourseAccessControlProps> = ({
     );
   }
 
-  if (!hasPurchased) {
+  if (!subscriptionAccess?.hasAccess) {
     return (
       <Card className="max-w-md mx-auto mt-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            Course Locked
+            Subscription Required
           </CardTitle>
           <CardDescription>
-            Subscribe to access this course content
+            Subscribe to unlock all courses and voice sessions with Cleo
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button className="w-full" onClick={() => window.location.href = `/course/${courseId}`}>
-            View Course Details
+          <Button className="w-full" onClick={() => window.location.href = `/pricing`}>
+            View Subscription Plans
           </Button>
         </CardContent>
       </Card>
-    );
-  }
-
-  // Show grace period warning if applicable
-  if (subscriptionStatus?.gracePeriodInfo?.isInGracePeriod) {
-    const { daysRemaining, gracePeriodEnd } = subscriptionStatus.gracePeriodInfo;
-    
-    return (
-      <div className="space-y-4">
-        <Alert variant="destructive">
-          <Clock className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-2">
-              <p className="font-medium">Payment Issue - Limited Access</p>
-              <p>
-                Your payment failed, but you still have access for <strong>{daysRemaining} more days</strong>.
-                {gracePeriodEnd && (
-                  <span className="block text-sm mt-1">
-                    Access expires: {new Date(gracePeriodEnd).toLocaleDateString()}
-                  </span>
-                )}
-              </p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="mt-2"
-                onClick={async () => {
-                  try {
-                    const { url } = await paymentService.createCustomerPortal();
-                    window.open(url, '_blank');
-                  } catch (error) {
-                    console.error('Error opening customer portal:', error);
-                  }
-                }}
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Update Payment Method
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-        {children}
-      </div>
-    );
-  }
-
-  // Check if payment needs updating (past due status)
-  if (subscriptionStatus?.needsPaymentUpdate) {
-    return (
-      <div className="space-y-4">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Your payment method needs updating to continue accessing this course.
-            <Button 
-              variant="link" 
-              className="ml-2 p-0 h-auto"
-              onClick={async () => {
-                try {
-                  const { url } = await paymentService.createCustomerPortal();
-                  window.open(url, '_blank');
-                } catch (error) {
-                  console.error('Error opening customer portal:', error);
-                }
-              }}
-            >
-              <CreditCard className="h-4 w-4 mr-1" />
-              Update Payment Method
-            </Button>
-          </AlertDescription>
-        </Alert>
-        {children}
-      </div>
     );
   }
 

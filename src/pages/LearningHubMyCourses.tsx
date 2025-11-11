@@ -87,10 +87,10 @@ const LearningHubMyCourses = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Fetch purchased courses
-  const { data: purchasedCourses, isLoading: coursesLoading } = useQuery({
-    queryKey: ['purchased-courses'],
-    queryFn: paymentService.getUserPurchases,
+  // Check platform subscription access
+  const { data: subscriptionAccess, isLoading: coursesLoading } = useQuery({
+    queryKey: ['platform-subscription-access', user?.id],
+    queryFn: paymentService.checkPlatformSubscriptionAccess,
     enabled: !!user,
   });
 
@@ -100,14 +100,15 @@ const LearningHubMyCourses = () => {
     queryFn: learningHubService.getCourses,
   });
 
-  // Fetch free courses
-  const { data: freeCourses, isLoading: freeCoursesLoading } = useQuery({
-    queryKey: ['free-courses'],
+  // Fetch published courses (all courses if user has subscription)
+  const { data: availableCourses, isLoading: freeCoursesLoading } = useQuery({
+    queryKey: ['available-courses', subscriptionAccess?.hasAccess],
     queryFn: async () => {
+      if (!subscriptionAccess?.hasAccess) return [];
       const courses = await learningHubService.getCourses();
-      return courses?.filter((c: any) => c.is_free_for_all && c.status === 'published') || [];
+      return courses?.filter((c: any) => c.status === 'published') || [];
     },
-    enabled: !!user,
+    enabled: !!user && subscriptionAccess !== undefined,
   });
 
   // Fetch user_courses to get progress data
@@ -160,23 +161,13 @@ const LearningHubMyCourses = () => {
     enabled: !!userProfile?.gcse_subject_ids && userProfile.gcse_subject_ids.length > 0,
   });
 
-  // Get purchased course details
-  const purchasedCoursesWithDetails = purchasedCourses?.map(purchase => {
-    const course = allCoursesData?.find(c => c.id === purchase.course_id);
-    if (!course) return null;
-    return { ...course, isFree: false };
-  }).filter(Boolean) || [];
-
-  // Get free courses
-  const freeCoursesWithDetails = freeCourses?.map(course => ({
-    ...course,
-    isFree: true
-  })) || [];
-
-  // Combine purchased and free courses (remove duplicates)
-  const purchasedCourseIds = new Set(purchasedCoursesWithDetails.map(c => c.id));
-  const uniqueFreeCourses = freeCoursesWithDetails.filter(c => !purchasedCourseIds.has(c.id));
-  const allCourses = [...freeCoursesWithDetails, ...purchasedCoursesWithDetails];
+  // If no subscription access, show empty array
+  if (!subscriptionAccess?.hasAccess) {
+    var allCourses: any[] = [];
+  } else {
+    // User has subscription - show all published courses
+    var allCourses = availableCourses || [];
+  }
 
   // Merge progress data with course details
   const myCourses = allCourses.map(course => {
@@ -260,7 +251,41 @@ const LearningHubMyCourses = () => {
     );
   }
 
-  // Empty state
+  // Empty state - no subscription
+  if (!subscriptionAccess?.hasAccess) {
+    return (
+      <div className="cleo-screen-wrapper">
+        <section className="cleo-screen-courses">
+          <div className="strategist-header">
+            <div className="fox-avatar">🦊</div>
+            <div className="strategist-info">
+              <h2>Strategist Mode: ON</h2>
+              <p className="small-label">
+                Cleo says: "Let's unlock your learning journey!"
+              </p>
+            </div>
+          </div>
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">🔒</div>
+            <h3 className="text-xl font-semibold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
+              Subscription Required
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Subscribe to unlock all courses and voice sessions with Cleo
+            </p>
+            <button 
+              onClick={() => navigate('/pricing')}
+              className="px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+            >
+              View Subscription Plans
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  // Empty state - has subscription but filtered courses are empty
   if (filteredCourses.length === 0) {
     const emptyMessage = userProfile?.education_level === '11_plus' 
       ? 'No 11 Plus courses found'
@@ -270,7 +295,7 @@ const LearningHubMyCourses = () => {
     
     const emptyDescription = userProfile?.education_level
       ? 'Update your settings to see more courses.'
-      : 'Start your 11+ journey today!';
+      : 'Start your learning journey today!';
     
     return (
       <div className="cleo-screen-wrapper">
