@@ -256,13 +256,33 @@ CONTENT BLOCKS FOR STEP 2 (Practice):
 - YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
 - Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
 - ALL blocks must be type "question"
-- Format: { type: "question", data: { question: "...", options: [...], explanation: "..." } }
+- Each question MUST be a complete JSON object with required fields
+
+⚠️ REQUIRED FORMAT (this is CRITICAL):
+  {
+    type: "question",
+    data: {
+      question: "What is 347 rounded to the nearest 10?",
+      options: [
+        { text: "340", isCorrect: false },
+        { text: "350", isCorrect: true },
+        { text: "300", isCorrect: false },
+        { text: "400", isCorrect: false }
+      ],
+      explanation: "347 is closer to 350 than 340 when rounding to the nearest 10"
+    }
+  }
+
+❌ WRONG FORMAT (DO NOT USE): 
+  { type: "question", data: "What is 347 rounded to the nearest 10?" }
+
+- The data field MUST be an object with question, options (array of 4), and explanation properties
 - Questions 1-7: Basic application (7 questions)
 - Questions 8-14: Intermediate difficulty (7 questions)
 - Questions 15-20: Advanced/challenging (6 questions)
 - TOTAL: Exactly 20 questions
 
-⚠️ CRITICAL: If you generate fewer than 20 questions, the lesson will be rejected. Count carefully!
+⚠️ CRITICAL: If you generate fewer than 20 questions OR use wrong format, the lesson will be rejected!
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
@@ -499,6 +519,47 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       }
     });
     
+    // Validate and detect malformed question blocks
+    planData.steps.forEach((step: any) => {
+      if (step.content_blocks) {
+        step.content_blocks = step.content_blocks.map((block: any) => {
+          if (block.type === 'question') {
+            // Check if data is a string instead of object
+            if (typeof block.data === 'string') {
+              console.warn('⚠️ Malformed question detected - data is string instead of object:', block.data);
+              block.needsRepair = true;
+              block.originalQuestion = block.data;
+            }
+            // Check if data is object but missing required fields
+            else if (typeof block.data === 'object') {
+              if (!block.data.question || !block.data.options || !Array.isArray(block.data.options)) {
+                console.warn('⚠️ Malformed question detected - missing required fields:', {
+                  hasQuestion: !!block.data.question,
+                  hasOptions: !!block.data.options,
+                  isOptionsArray: Array.isArray(block.data.options)
+                });
+                block.needsRepair = true;
+              } else if (block.data.options.length < 2) {
+                console.warn('⚠️ Malformed question - insufficient options:', block.data.options.length);
+                block.needsRepair = true;
+              }
+            }
+          }
+          return block;
+        });
+      }
+    });
+
+    // Count questions needing repair
+    const questionsNeedingRepair = planData.steps.flatMap((s: any) => 
+      s.content_blocks?.filter((b: any) => b.type === 'question' && b.needsRepair) || []
+    );
+
+    if (questionsNeedingRepair.length > 0) {
+      console.error(`❌ ${questionsNeedingRepair.length} questions are malformed and need repair`);
+      throw new Error(`AI generated malformed questions. ${questionsNeedingRepair.length} questions missing proper structure with options.`);
+    }
+    
     // Validate content blocks were generated
     const totalContentBlocks = planData.steps.reduce((sum: number, step: any) => 
       sum + (step.content_blocks?.length || 0), 0
@@ -535,12 +596,22 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
         
         console.log(`Exam practice validation: ${questionCount} questions generated (target: 20, steps: ${planData.steps.length})`);
         
-        if (!hasTwoSteps || questionCount < 20) {
-          console.error(`❌ First attempt non-compliant: steps=${planData.steps.length}, questions=${questionCount}`);
+        // Check for malformed questions
+        const allQuestions = practiceStep.content_blocks?.filter((b: any) => b.type === 'question') || [];
+        const malformedQuestions = allQuestions.filter((q: any) => 
+          typeof q.data === 'string' || !q.data?.question || !q.data?.options || !Array.isArray(q.data.options)
+        );
+        
+        if (!hasTwoSteps || questionCount < 20 || malformedQuestions.length > 0) {
+          console.error(`❌ First attempt non-compliant: steps=${planData.steps.length}, questions=${questionCount}, malformed=${malformedQuestions.length}`);
           console.log('🔄 Retrying with stricter prompt...');
           
           // RETRY WITH ULTRA-EXPLICIT PROMPT
-          const retryPrompt = `CRITICAL: Your previous response had only ${questionCount} questions but you MUST generate EXACTLY 20 questions.
+          const retryPrompt = `CRITICAL: Your previous response had problems:
+- Question count: ${questionCount} (need exactly 20)
+- Malformed questions: ${malformedQuestions.length} (need 0)
+
+${malformedQuestions.length > 0 ? '⚠️ FORMATTING ERROR: Some questions had data as a plain string instead of an object!' : ''}
 
 Generate a complete 11+ exam practice lesson plan for "${topic}" (Year Group: ${yearGroup}) with:
 
@@ -550,13 +621,30 @@ STEP 1: "Worked Example"
 STEP 2: "Practice Questions"
 - EXACTLY 20 question blocks
 - Count each one: Q1, Q2, Q3... up to Q20
-- Each question must have:
-  * A clear question text
-  * 4 multiple choice options
-  * One correct answer (isCorrect: true)
-  * An explanation
 
-You MUST generate all 20 questions. If you generate fewer, the lesson will be rejected.`;
+EXAMPLE OF CORRECT QUESTION FORMAT (USE THIS EXACT STRUCTURE):
+{
+  "type": "question",
+  "data": {
+    "question": "What is 347 rounded to the nearest 10?",
+    "options": [
+      { "text": "340", "isCorrect": false },
+      { "text": "350", "isCorrect": true },
+      { "text": "300", "isCorrect": false },
+      { "text": "400", "isCorrect": false }
+    ],
+    "explanation": "347 is closer to 350 because the ones digit (7) is 5 or more"
+  }
+}
+
+Each question MUST have:
+- question: string (the question text)
+- options: array of 4 objects with "text" and "isCorrect" properties
+- explanation: string
+
+DO NOT generate questions with data as a plain string! The data field MUST be an object.
+
+You MUST generate all 20 questions. If you generate fewer or use wrong format, the lesson will be rejected.`;
 
           const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',
@@ -631,6 +719,28 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
         throw new Error('Invalid exam practice plan: Missing practice questions step');
       }
     }
+    
+    // Final validation before saving - ensure no malformed questions
+    const finalValidation = planData.steps.flatMap((step: any) => 
+      step.content_blocks?.filter((b: any) => {
+        if (b.type === 'question') {
+          return typeof b.data === 'string' || 
+                 !b.data?.question || 
+                 !b.data?.options || 
+                 !Array.isArray(b.data.options) ||
+                 b.data.options.length < 2 ||
+                 !b.data.options.some((o: any) => o.isCorrect);
+        }
+        return false;
+      }) || []
+    );
+
+    if (finalValidation.length > 0) {
+      console.error('❌ Final validation failed:', finalValidation.length, 'invalid questions');
+      throw new Error(`Cannot save lesson plan: ${finalValidation.length} questions have invalid structure. Please regenerate.`);
+    }
+    
+    console.log('✅ All questions validated successfully');
 
     // Generate images for diagram blocks
     console.log('Generating images for diagram blocks...');
