@@ -47,10 +47,10 @@ const CourseDetail = () => {
     enabled: !!id,
   });
 
-  const { data: hasPurchased } = useQuery({
-    queryKey: ['course-purchase', id],
-    queryFn: () => paymentService.checkCoursePurchase(id!),
-    enabled: !!id && !isOwner,
+  const { data: subscriptionAccess } = useQuery({
+    queryKey: ['platform-subscription-access'],
+    queryFn: () => paymentService.checkPlatformSubscriptionAccess(),
+    enabled: !isOwner,
   });
 
   // Handle payment success/cancellation from URL params
@@ -74,7 +74,7 @@ const CourseDetail = () => {
       await paymentService.verifyCoursePayment(sessionId);
       toast({
         title: "Welcome aboard! 🎉",
-        description: "Your subscription is now active. Enjoy your 3-day free trial!",
+        description: "Your subscription is now active. Start learning with Cleo!",
       });
       window.location.reload();
     } catch (error) {
@@ -92,7 +92,7 @@ const CourseDetail = () => {
   };
 
   const handleStartLearning = () => {
-    if (isOwner || hasPurchased) {
+    if (isOwner || subscriptionAccess?.hasAccess) {
       if (modules && modules.length > 0) {
         // Navigate to first module
         navigate(`/course/${course.id}/module/${modules[0].id}`);
@@ -129,7 +129,7 @@ const CourseDetail = () => {
     );
   }
 
-  const hasAccess = isOwner || hasPurchased;
+  const hasAccess = isOwner || subscriptionAccess?.hasAccess;
   const canEdit = isOwner || isAdmin || isTutor;
 
   // Get course-specific facts based on subject
@@ -317,28 +317,33 @@ const CourseDetail = () => {
           </div>
         </section>
 
-        {/* Access Gate for Non-Purchased Courses */}
+        {/* Access Gate for Non-Subscribed Users */}
         {!hasAccess && (
-          <div className="mt-8 p-8 bg-white rounded-lg shadow-sm text-center">
-            <Lock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-xl font-semibold mb-2">Unlock Full Access</h3>
-            <p className="text-gray-600 mb-4">
-              Get instant access to all {modules?.length || 0} modules with a 3-day free trial
+          <div className="mt-8 p-8 bg-gradient-to-br from-white to-primary/5 rounded-lg shadow-sm text-center border border-primary/20">
+            <Lock className="h-12 w-12 mx-auto mb-4 text-primary/60" />
+            <h3 className="text-2xl font-semibold mb-2 text-gray-900">Subscribe to Access All Courses</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Get unlimited access to all {modules?.length || 0} modules and personalized voice tutoring sessions with Cleo AI
             </p>
-            <div className="mb-4">
-              <div className="text-3xl font-bold text-primary mb-2">
-                {formatPrice(course.price || 899)}
-                <span className="text-base font-normal text-gray-600">/month</span>
-              </div>
-              <div className="flex items-center justify-center gap-1 text-green-600">
-                <Gift className="h-4 w-4" />
-                <span className="text-sm font-medium">3-day free trial • Cancel anytime</span>
+            
+            <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200 max-w-sm mx-auto">
+              <div className="flex items-center justify-center gap-2 text-green-700">
+                <Gift className="h-5 w-5" />
+                <span className="font-semibold">Start with 3 free lessons - no card required!</span>
               </div>
             </div>
-            <Button onClick={handleStartLearning} size="lg" className="bg-primary hover:bg-primary/90">
-              <Gift className="h-5 w-5 mr-2" />
-              Start Free Trial
+
+            <Button 
+              onClick={() => navigate('/pricing')} 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white px-8"
+            >
+              View Subscription Plans
             </Button>
+            
+            <p className="text-sm text-gray-500 mt-4">
+              Plans start from £18/month for 15 voice sessions
+            </p>
           </div>
         )}
 
