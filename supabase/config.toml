@@ -105,6 +105,33 @@ verify_jwt = false
 [functions.extract-specification-text]
 verify_jwt = false
 
+[functions.check-voice-quota]
+verify_jwt = true
+
+[functions.log-voice-session]
+verify_jwt = true
+
+[functions.create-platform-subscription]
+verify_jwt = true
+
+[functions.purchase-session-pack]
+verify_jwt = true
+
+[functions.confirm-pack-purchase]
+verify_jwt = true
+
+[functions.sync-platform-subscription-status]
+verify_jwt = true
+
+[functions.platform-subscription-webhook]
+verify_jwt = false
+
+[functions.create-setup-intent]
+verify_jwt = true
+
+[functions.platform-customer-portal]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328

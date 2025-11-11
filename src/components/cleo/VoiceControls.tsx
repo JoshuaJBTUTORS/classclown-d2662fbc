@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Square, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 interface VoiceControlsProps {
   isConnected: boolean;
@@ -9,6 +13,7 @@ interface VoiceControlsProps {
   isSpeaking: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
+  conversationId?: string;
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
@@ -17,7 +22,62 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   isSpeaking,
   onConnect,
   onDisconnect,
+  conversationId,
 }) => {
+  const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    checkQuota();
+  }, []);
+
+  const checkQuota = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('voice_session_quotas')
+        .select('sessions_remaining, bonus_sessions')
+        .eq('user_id', user.id)
+        .lte('period_start', now)
+        .gte('period_end', now)
+        .single();
+
+      if (error) {
+        console.error('Error fetching quota:', error);
+        return;
+      }
+
+      const total = (data?.sessions_remaining || 0) + (data?.bonus_sessions || 0);
+      setSessionsRemaining(total);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    if (sessionsRemaining === 0) {
+      toast({
+        title: "No sessions available",
+        description: "You've used all your voice sessions. Buy more to continue learning!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onConnect();
+  };
+
+  useEffect(() => {
+    if (!isConnected && sessionsRemaining !== null) {
+      checkQuota();
+    }
+  }, [isConnected]);
   const getStatusColor = () => {
     if (!isConnected) return 'bg-muted';
     if (isListening) return 'bg-blue-500';
@@ -33,23 +93,42 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-4">
+      {/* Quota Indicator */}
+      {!loading && sessionsRemaining !== null && (
+        <VoiceSessionIndicator />
+      )}
+
       {!isConnected ? (
         /* Connect Button */
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Button
-            onClick={onConnect}
-            size="lg"
-            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-lg font-semibold rounded-full"
+        <div className="flex flex-col items-center gap-3">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3 }}
           >
-            <Play className="w-6 h-6 mr-2" />
-            Start Learning
-          </Button>
-        </motion.div>
+            <Button
+              onClick={handleConnect}
+              disabled={sessionsRemaining === 0 || loading}
+              size="lg"
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-lg font-semibold rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play className="w-6 h-6 mr-2" />
+              Start Learning
+            </Button>
+          </motion.div>
+          
+          {sessionsRemaining === 0 && !loading && (
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">No sessions left</p>
+              <Link to="/learning-hub/subscription">
+                <Button variant="outline" size="sm">
+                  Buy More Sessions
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
       ) : (
         /* Status Indicator & Stop Button */
         <div className="flex flex-col items-center gap-3">

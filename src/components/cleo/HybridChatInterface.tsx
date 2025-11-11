@@ -135,6 +135,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
               isSpeaking={isVoiceSpeaking}
               onConnect={onVoiceConnect}
               onDisconnect={onVoiceDisconnect}
+              conversationId={conversationId || undefined}
             />
           </div>
         ) : (

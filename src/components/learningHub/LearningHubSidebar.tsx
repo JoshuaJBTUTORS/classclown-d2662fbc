@@ -40,6 +40,11 @@ const navigationItems = [
     emoji: '👨‍🎓'
   },
   {
+    title: 'Subscription',
+    href: '/learning-hub/subscription',
+    emoji: '💳'
+  },
+  {
     title: 'Settings',
     href: '/learning-hub/settings',
     emoji: '⚙️'

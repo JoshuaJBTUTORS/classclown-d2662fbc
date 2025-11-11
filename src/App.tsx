@@ -42,6 +42,7 @@ import LearningHubDashboard from './pages/LearningHubDashboard';
 import LearningHubCleo from './pages/LearningHubCleo';
 import LearningHubMyCourses from './pages/LearningHubMyCourses';
 import LearningHubSettings from './pages/LearningHubSettings';
+import SubscriptionManagement from './pages/SubscriptionManagement';
 import LearningHubRevision from './pages/LearningHubRevision';
 import LearningHubAssessments from './pages/LearningHubAssessments';
 import LearningHubCleoID from './pages/LearningHubCleoID';
@@ -426,6 +427,7 @@ function App() {
                   <Route path="assessments" element={<LearningHubAssessments />} />
                   <Route path="revision" element={<LearningHubRevision />} />
                   <Route path="cleo-id" element={<LearningHubCleoID />} />
+                  <Route path="subscription" element={<SubscriptionManagement />} />
                   <Route path="settings" element={<LearningHubSettings />} />
                 </Route>
 

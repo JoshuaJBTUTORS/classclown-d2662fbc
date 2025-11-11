@@ -98,7 +98,7 @@ export default function SubscriptionManagement() {
 
   const handleManageSubscription = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('create-customer-portal');
+      const { data, error } = await supabase.functions.invoke('platform-customer-portal');
       if (error) throw error;
       window.open(data.url, '_blank');
     } catch (error) {
@@ -141,31 +141,36 @@ export default function SubscriptionManagement() {
     : 0;
 
   return (
-    <div className="container max-w-4xl mx-auto p-6 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Subscription Management</h1>
-        <p className="text-muted-foreground">Manage your Cleo voice sessions and billing</p>
-      </div>
-
-      {/* Current Plan Card */}
-      <Card className="p-6 space-y-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              {subscription.plan_name} Plan
-              <Badge variant={subscription.status === 'active' ? 'default' : 'secondary'}>
-                {subscription.status}
-              </Badge>
-            </h2>
-            <p className="text-muted-foreground capitalize">
-              {subscription.billing_interval} billing
-            </p>
-          </div>
-          <Button variant="outline" onClick={handleManageSubscription}>
-            <CreditCard className="mr-2 h-4 w-4" />
-            Manage
-          </Button>
+    <div className="min-h-screen bg-background-cream">
+      <div className="container max-w-4xl mx-auto p-6 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Subscription Management</h1>
+          <p className="text-muted-foreground">Manage your Cleo voice sessions and billing</p>
         </div>
+
+        {/* Current Plan Card */}
+        <Card className="p-6 space-y-6 bg-gradient-to-br from-mint-50 to-white border-mint-200 shadow-lg">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold flex items-center gap-2 text-mint-700">
+                {subscription.plan_name} Plan
+                <Badge variant={subscription.status === 'active' ? 'default' : 'secondary'}>
+                  {subscription.status}
+                </Badge>
+              </h2>
+              <p className="text-muted-foreground capitalize">
+                {subscription.billing_interval} billing
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleManageSubscription}
+              className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white border-none"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Manage
+            </Button>
+          </div>
 
         {/* Usage Stats */}
         {quota && (
@@ -203,41 +208,43 @@ export default function SubscriptionManagement() {
               <span>Resets on {new Date(quota.period_end).toLocaleDateString()}</span>
             </div>
           </div>
-        )}
-      </Card>
+          )}
+        </Card>
 
-      {/* Buy More Sessions */}
-      {totalRemaining < 10 && (
-        <Card className="p-6 space-y-4">
-          <div>
-            <h3 className="text-xl font-bold">Running Low on Sessions?</h3>
+        {/* Buy More Sessions */}
+        {totalRemaining < 10 && (
+          <Card className="p-6 space-y-4 bg-gradient-to-br from-yellow-50 to-white border-yellow-200">
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-yellow-600" />
+              <h3 className="text-xl font-bold">Running Low on Sessions?</h3>
+            </div>
             <p className="text-sm text-muted-foreground">
               Purchase additional session packs - they never expire!
             </p>
-          </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <SessionPackCard size={5} price={1000} />
-            <SessionPackCard size={10} price={1800} recommended />
-            <SessionPackCard size={20} price={3200} />
+            <div className="grid md:grid-cols-3 gap-4">
+              <SessionPackCard size={5} price={1000} />
+              <SessionPackCard size={10} price={1800} recommended />
+              <SessionPackCard size={20} price={3200} />
+            </div>
+          </Card>
+        )}
+
+        {/* Quick Actions */}
+        <Card className="p-6 bg-white">
+          <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+          <div className="space-y-3">
+            <Button variant="outline" className="w-full justify-between" onClick={() => navigate('/learning-hub')}>
+              Back to Learning Hub
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="w-full justify-between" onClick={handleManageSubscription}>
+              View Billing History
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </Card>
-      )}
-
-      {/* Quick Actions */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div className="space-y-3">
-          <Button variant="outline" className="w-full justify-between" onClick={() => navigate('/learning-hub')}>
-            Back to Learning Hub
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" className="w-full justify-between" onClick={handleManageSubscription}>
-            View Billing History
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -284,13 +291,16 @@ const SessionPackCard = ({ size, price, recommended }: SessionPackCardProps) => 
   };
 
   return (
-    <Card className={`p-4 space-y-3 ${recommended ? 'border-mint-500 border-2' : ''}`}>
+    <Card className={`p-4 space-y-3 hover:shadow-xl transition-all ${recommended ? 'border-mint-500 border-2 relative' : ''}`}>
       {recommended && (
-        <Badge className="bg-mint-500">Best Value</Badge>
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-mint-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+          BEST VALUE
+        </div>
       )}
-      <div className="space-y-1">
-        <p className="text-2xl font-bold">{size} Sessions</p>
-        <p className="text-xl text-mint-600">£{(price / 100).toFixed(2)}</p>
+      <div className="space-y-1 text-center">
+        <p className="text-3xl font-bold text-mint-700">{size}</p>
+        <p className="text-sm text-muted-foreground">Sessions</p>
+        <p className="text-2xl font-bold">£{(price / 100).toFixed(2)}</p>
         <p className="text-xs text-muted-foreground">
           £{((price / size) / 100).toFixed(2)} per session
         </p>
@@ -299,7 +309,7 @@ const SessionPackCard = ({ size, price, recommended }: SessionPackCardProps) => 
         onClick={handlePurchase} 
         disabled={loading}
         size="sm"
-        className="w-full"
+        className={`w-full ${recommended ? 'bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700' : ''}`}
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buy Now'}
       </Button>
