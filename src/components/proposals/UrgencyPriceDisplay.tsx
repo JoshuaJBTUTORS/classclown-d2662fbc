@@ -4,9 +4,10 @@ import { Clock, Zap } from 'lucide-react';
 interface UrgencyPriceDisplayProps {
   price: number;
   createdAt: string;
+  discountExtendedUntil?: string | null;
 }
 
-export default function UrgencyPriceDisplay({ price, createdAt }: UrgencyPriceDisplayProps) {
+export default function UrgencyPriceDisplay({ price, createdAt, discountExtendedUntil }: UrgencyPriceDisplayProps) {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -14,8 +15,16 @@ export default function UrgencyPriceDisplay({ price, createdAt }: UrgencyPriceDi
     const calculateTimeRemaining = () => {
       const createdTime = new Date(createdAt).getTime();
       const now = new Date().getTime();
-      const twentyFourHours = 24 * 60 * 60 * 1000;
-      const deadline = createdTime + twentyFourHours;
+      
+      // Use extended deadline if available, otherwise use 24 hours from creation
+      let deadline: number;
+      if (discountExtendedUntil) {
+        deadline = new Date(discountExtendedUntil).getTime();
+      } else {
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        deadline = createdTime + twentyFourHours;
+      }
+      
       const remaining = deadline - now;
 
       if (remaining <= 0) {
@@ -31,7 +40,7 @@ export default function UrgencyPriceDisplay({ price, createdAt }: UrgencyPriceDi
     const interval = setInterval(calculateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [createdAt]);
+  }, [createdAt, discountExtendedUntil]);
 
   const formatTime = (ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -66,7 +75,7 @@ export default function UrgencyPriceDisplay({ price, createdAt }: UrgencyPriceDi
         <div className="flex items-baseline gap-2">
           <p className="text-2xl font-bold text-primary">£{price.toFixed(2)}</p>
           <span className="text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
-            24HR SPECIAL
+            {discountExtendedUntil ? 'EXTENDED OFFER' : '24HR SPECIAL'}
           </span>
         </div>
       </div>

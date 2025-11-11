@@ -2235,6 +2235,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          discount_extended_until: string | null
           id: string
           lesson_times: Json
           lesson_type: string
@@ -2257,6 +2258,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          discount_extended_until?: string | null
           id?: string
           lesson_times?: Json
           lesson_type: string
@@ -2279,6 +2281,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          discount_extended_until?: string | null
           id?: string
           lesson_times?: Json
           lesson_type?: string
