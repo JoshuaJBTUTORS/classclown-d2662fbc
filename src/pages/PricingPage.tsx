@@ -212,16 +212,33 @@ const PricingPage = () => {
 
                 <div className="mb-6">
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  
+                  {/* Price Display with Strikethrough for Annual */}
                   <div className="mb-2">
-                    <span className="text-4xl font-bold">£{pricing.perMonth}</span>
-                    <span className="text-muted-foreground">/month</span>
+                    {isAnnual && (
+                      <div className="text-lg text-muted-foreground line-through mb-1">
+                        £{plan.monthlyPrice}/month
+                      </div>
+                    )}
+                    <div className="transition-all duration-300">
+                      <span className="text-4xl font-bold">£{pricing.perMonth}</span>
+                      <span className="text-muted-foreground">/month</span>
+                    </div>
                   </div>
+                  
+                  {/* Annual Billing Info & Savings Badge */}
                   {isAnnual && (
-                    <p className="text-sm text-muted-foreground">
-                      £{pricing.total} billed annually
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        £{pricing.total} billed annually
+                      </p>
+                      <div className="inline-block bg-green-500/10 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-semibold border border-green-500/20">
+                        💰 Save £{Math.round(plan.monthlyPrice * 12 * 0.15)}/year
+                      </div>
+                    </div>
                   )}
-                  <div className="mt-2 text-sm text-muted-foreground">
+                  
+                  <div className="mt-3 text-sm text-muted-foreground">
                     {plan.sessions} sessions • £{costPerSession} per session
                   </div>
                 </div>
