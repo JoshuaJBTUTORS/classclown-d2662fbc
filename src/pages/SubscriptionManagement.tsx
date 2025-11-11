@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Zap, CreditCard, Calendar, ArrowRight } from 'lucide-react';
+import { Loader2, Zap, CreditCard, Calendar, ArrowRight, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -33,12 +33,36 @@ export default function SubscriptionManagement() {
   const [quota, setQuota] = useState<Quota | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPackPurchase, setShowPackPurchase] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSubscriptionData();
   }, []);
+
+  // Handle successful subscription from Stripe
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      setShowSuccess(true);
+      toast({
+        title: 'Success!',
+        description: 'Subscription activated successfully!',
+      });
+      
+      // Refresh data after a short delay
+      setTimeout(() => {
+        fetchSubscriptionData();
+      }, 2000);
+
+      // Redirect to courses after showing success
+      setTimeout(() => {
+        navigate('/learning-hub/my-courses');
+      }, 3000);
+    }
+  }, [searchParams, navigate, toast]);
 
   const fetchSubscriptionData = async () => {
     try {
@@ -115,6 +139,24 @@ export default function SubscriptionManagement() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-mint-600" />
+      </div>
+    );
+  }
+
+  // Show success message after subscription
+  if (showSuccess) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Card className="p-8 max-w-md text-center">
+            <CheckCircle className="w-16 h-16 text-mint-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Subscription Activated!</h2>
+            <p className="text-muted-foreground mb-4">
+              Your subscription is now active. Redirecting you to courses...
+            </p>
+            <Loader2 className="w-6 h-6 animate-spin text-mint-600 mx-auto" />
+          </Card>
+        </div>
       </div>
     );
   }

@@ -75,6 +75,7 @@ import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OnboardingWizard from './pages/OnboardingWizard';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
+import PricingPage from './pages/PricingPage';
 
 
 function App() {
@@ -102,6 +103,7 @@ function App() {
                 <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 <Route path="/p/:proposalId/:token" element={<ProposalView />} />
                 
