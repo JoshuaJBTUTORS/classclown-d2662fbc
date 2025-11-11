@@ -102,7 +102,12 @@ const PricingPage = () => {
       if (error) throw error;
 
       if (data?.url) {
-        window.location.href = data.url;
+        // Use window.top to break out of iframe (Lovable preview context)
+        if (window.top) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
       } else {
         throw new Error('No checkout URL returned');
       }
