@@ -37,30 +37,7 @@ Deno.serve(async (req) => {
 
     console.log('Checking voice quota for user:', user.id);
 
-    // Get user's active subscription
-    const { data: subscription } = await supabase
-      .from('user_platform_subscriptions')
-      .select('*, plan:platform_subscription_plans(*)')
-      .eq('user_id', user.id)
-      .in('status', ['trialing', 'active'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!subscription) {
-      const response: QuotaResponse = {
-        canStart: false,
-        sessionsRemaining: 0,
-        quotaId: null,
-        message: 'No active subscription found. Please subscribe to continue.'
-      };
-      return new Response(JSON.stringify(response), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 403
-      });
-    }
-
-    // Get current period quota
+    // Get current period quota first
     const now = new Date().toISOString();
     const { data: quota, error: quotaError } = await supabase
       .from('voice_session_quotas')
@@ -75,7 +52,62 @@ Deno.serve(async (req) => {
       throw quotaError;
     }
 
-    // If no quota exists for current period, create one
+    // Get user's active subscription
+    const { data: subscription } = await supabase
+      .from('user_platform_subscriptions')
+      .select('*, plan:platform_subscription_plans(*)')
+      .eq('user_id', user.id)
+      .in('status', ['trialing', 'active'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Check if user has free sessions (quota exists but no subscription)
+    if (quota && !subscription) {
+      const totalRemaining = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
+      
+      if (totalRemaining > 0) {
+        console.log('User has free sessions:', totalRemaining);
+        const response: QuotaResponse = {
+          canStart: true,
+          sessionsRemaining: totalRemaining,
+          quotaId: quota.id,
+          message: `You have ${totalRemaining} free session${totalRemaining !== 1 ? 's' : ''} remaining`,
+          periodEnd: quota.period_end
+        };
+        return new Response(JSON.stringify(response), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } else {
+        console.log('Free sessions exhausted, no subscription');
+        const response: QuotaResponse = {
+          canStart: false,
+          sessionsRemaining: 0,
+          quotaId: null,
+          message: 'Free sessions used. Subscribe to continue learning!'
+        };
+        return new Response(JSON.stringify(response), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403
+        });
+      }
+    }
+
+    // No subscription and no quota - user needs to subscribe
+    if (!subscription && !quota) {
+      const response: QuotaResponse = {
+        canStart: false,
+        sessionsRemaining: 0,
+        quotaId: null,
+        message: 'No active subscription found. Please subscribe to continue.'
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403
+      });
+    }
+
+    // If no quota exists for current period but subscription exists, create one
     if (!quota) {
       console.log('Creating new quota period for user:', user.id);
       
