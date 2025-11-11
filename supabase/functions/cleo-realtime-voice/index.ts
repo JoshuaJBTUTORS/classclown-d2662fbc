@@ -188,6 +188,7 @@ Deno.serve(async (req) => {
     let isSessionConfigured = false;
     let currentTranscript = '';
     let currentAssistantMessage = '';
+    let isAIResponding = false; // Track if AI is currently generating a response
     
     // Track session timing for quota management
     const sessionStartTime = new Date().toISOString();
@@ -587,10 +588,15 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
 
       // Cancel AI response when user starts speaking (interruption)
       if (message.type === 'input_audio_buffer.speech_started') {
-        console.log("User started speaking - cancelling AI response");
-        openAISocket.send(JSON.stringify({
-          type: 'response.cancel'
-        }));
+        if (isAIResponding) {
+          console.log("User started speaking - cancelling active AI response");
+          openAISocket.send(JSON.stringify({
+            type: 'response.cancel'
+          }));
+          isAIResponding = false; // Reset state
+        } else {
+          console.log("User started speaking - no active AI response to cancel");
+        }
       }
 
       // Save student transcript to database
@@ -801,6 +807,22 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
           });
           currentAssistantMessage = '';
         }
+      }
+
+      // Track AI response state
+      if (message.type === 'response.created') {
+        isAIResponding = true;
+        console.log("AI response started");
+      }
+
+      if (message.type === 'response.done') {
+        isAIResponding = false;
+        console.log("AI response completed");
+      }
+
+      if (message.type === 'response.cancelled') {
+        isAIResponding = false;
+        console.log("AI response successfully cancelled");
       }
 
       // Forward all events to client
