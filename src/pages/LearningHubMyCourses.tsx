@@ -161,13 +161,10 @@ const LearningHubMyCourses = () => {
     enabled: !!userProfile?.gcse_subject_ids && userProfile.gcse_subject_ids.length > 0,
   });
 
-  // If no subscription access, show empty array
-  if (!subscriptionAccess?.hasAccess) {
-    var allCourses: any[] = [];
-  } else {
-    // User has subscription - show all published courses
-    var allCourses = availableCourses || [];
-  }
+  // Determine courses to show based on subscription
+  const allCourses = !subscriptionAccess?.hasAccess 
+    ? [] 
+    : (availableCourses || []);
 
   // Merge progress data with course details
   const myCourses = allCourses.map(course => {

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { paymentService } from '@/services/paymentService';
 import { learningHubService } from '@/services/learningHubService';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, Lock, CreditCard, Clock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
