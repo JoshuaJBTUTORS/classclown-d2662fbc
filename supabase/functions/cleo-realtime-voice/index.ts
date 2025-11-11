@@ -810,11 +810,30 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         console.log('🔊 Sending audio chunk to client');
       }
       
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(event.data);
-      }
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(event.data);
+        }
       } catch (error) {
-        console.error("Error processing OpenAI message:", error);
+        // Detailed error logging
+        console.error("🚨 CRITICAL ERROR processing OpenAI message:", error);
+        console.error("Error name:", error?.name);
+        console.error("Error message:", error?.message);
+        console.error("Error stack:", error?.stack);
+        console.error("Message type that caused error:", event?.data ? JSON.parse(event.data).type : 'unknown');
+        
+        // Send detailed error to client
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'connection.error',
+            error: 'Message processing failed',
+            details: error instanceof Error ? error.message : 'Unknown error',
+            fatal: false,
+            message: 'An error occurred while processing the AI response. The connection may be unstable.'
+          }));
+        }
+        
+        // Don't close connection - try to recover
+        console.log("Attempting to continue despite error...");
       }
     };
 
@@ -822,20 +841,53 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       console.error("🚨 OpenAI WebSocket ERROR:", error);
       console.error("Error type:", error?.type);
       console.error("Error target:", error?.target);
+      console.error("Error timestamp:", new Date().toISOString());
+      console.error("Session ID:", session.conversationId);
+      console.error("User ID:", session.userId);
       console.error("Full error object:", JSON.stringify(error, null, 2));
       
       if (clientSocket.readyState === WebSocket.OPEN) {
         clientSocket.send(JSON.stringify({
-          type: 'error',
-          error: 'Connection to AI service failed - check Edge Function logs for details'
+          type: 'connection.error',
+          error: 'OpenAI connection failed',
+          details: 'The connection to OpenAI\'s service was lost or failed to establish',
+          fatal: true,
+          message: 'Connection to AI service lost. Please try starting a new session.'
         }));
       }
+      
+      // Log to database for monitoring
+      supabase.from('cleo_messages').insert({
+        conversation_id: session.conversationId,
+        role: 'system',
+        content: `ERROR: OpenAI WebSocket error - ${JSON.stringify(error)}`
+      }).catch(err => console.error("Failed to log error:", err));
     };
 
-    openAISocket.onclose = () => {
-      console.log("OpenAI socket closed");
+    openAISocket.onclose = (event) => {
+      console.log("🔌 OpenAI socket closed");
+      console.log("Close code:", event.code);
+      console.log("Close reason:", event.reason);
+      console.log("Was clean:", event.wasClean);
+      console.log("Timestamp:", new Date().toISOString());
+      
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
       logSessionUsage(false);
+      
+      // Send close reason to client
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        const closeReason = event.reason || (event.wasClean ? 'Connection closed normally' : 'Connection closed unexpectedly');
+        clientSocket.send(JSON.stringify({
+          type: 'connection.closed',
+          reason: closeReason,
+          code: event.code,
+          wasClean: event.wasClean,
+          message: event.wasClean 
+            ? 'Session ended successfully' 
+            : 'Connection lost unexpectedly. Please try again.'
+        }));
+      }
+      
       clientSocket.close();
     };
 
@@ -902,10 +954,18 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
     };
 
     clientSocket.onerror = (error) => {
-      console.error("Client socket error:", error);
+      console.error("🚨 Client socket error:", error);
+      console.error("Error type:", error?.type);
+      console.error("Timestamp:", new Date().toISOString());
+      console.error("Session ID:", session.conversationId);
+      
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
       logSessionUsage(true);
-      openAISocket.close();
+      
+      // Gracefully close OpenAI connection
+      if (openAISocket.readyState === WebSocket.OPEN) {
+        openAISocket.close(1000, 'Client error');
+      }
     };
 
     return response;

@@ -228,6 +228,32 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             });
             break;
 
+          case 'connection.error':
+            console.error('🚨 Connection Error:', data);
+            toast({
+              title: data.fatal ? "Connection Lost" : "Connection Issue",
+              description: data.message || data.error,
+              variant: "destructive",
+              duration: data.fatal ? 8000 : 5000,
+            });
+            if (data.fatal) {
+              // Clean disconnect on fatal errors
+              setTimeout(() => disconnect(), 2000);
+            }
+            break;
+
+          case 'connection.closed':
+            console.log('🔌 Connection closed:', data);
+            if (!data.wasClean) {
+              toast({
+                title: "Connection Interrupted",
+                description: data.message || "The connection was lost unexpectedly. Please start a new session.",
+                variant: "destructive",
+                duration: 6000,
+              });
+            }
+            break;
+
           case 'error':
             console.error('Server error:', data.error);
             toast({
@@ -249,10 +275,23 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         });
       };
 
-      wsRef.current.onclose = () => {
-        console.log('WebSocket closed');
+      wsRef.current.onclose = (event) => {
+        console.log('🔌 WebSocket closed');
+        console.log('Close code:', event.code);
+        console.log('Close reason:', event.reason);
+        console.log('Was clean:', event.wasClean);
+        
         setConnectionState('disconnected');
         stopRecording();
+        
+        // Only show toast if it wasn't a clean close (user-initiated)
+        if (!event.wasClean && event.code !== 1000) {
+          toast({
+            title: "Session Ended",
+            description: event.reason || "Your voice session ended unexpectedly. You can start a new session when ready.",
+            duration: 5000,
+          });
+        }
       };
 
     } catch (error) {
