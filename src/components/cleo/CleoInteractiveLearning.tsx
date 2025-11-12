@@ -313,8 +313,29 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const handleUnexpectedDisconnection = (info: any) => {
     console.log('🚨 Unexpected disconnection:', info);
     setDisconnectionInfo(info);
-    setShowReconnectDialog(true);
     voiceTimer.pause();
+    
+    // For first reconnection attempt, show only a toast (silent retry)
+    if (info.autoReconnecting && info.attemptCount === 0) {
+      toast({
+        title: "🔄 Reconnecting...",
+        description: "Connection lost, attempting to reconnect",
+        duration: 3000,
+      });
+    } else {
+      // Show full dialog on subsequent attempts
+      setShowReconnectDialog(true);
+    }
+  };
+
+  const handleReconnectAttemptUpdate = (attemptCount: number) => {
+    console.log('🔄 Reconnect attempt:', attemptCount);
+    setCurrentAttemptCount(attemptCount);
+    
+    // Show dialog starting from 2nd attempt
+    if (attemptCount >= 2) {
+      setShowReconnectDialog(true);
+    }
   };
 
   const handleReconnectAttempt = async () => {
@@ -623,10 +644,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             controlsRef.current = controls;
           }}
           voiceTimer={voiceTimer}
-          onVoiceLimitReached={handleVoiceLimitReached}
-          onUnexpectedDisconnection={handleUnexpectedDisconnection}
-          onReconnectSuccess={handleReconnectSuccess}
-          onReconnectFailed={handleReconnectFailed}
+            onVoiceLimitReached={handleVoiceLimitReached}
+            onUnexpectedDisconnection={handleUnexpectedDisconnection}
+            onReconnectAttempt={handleReconnectAttemptUpdate}
+            onReconnectSuccess={handleReconnectSuccess}
+            onReconnectFailed={handleReconnectFailed}
           selectedMicrophoneId={selectedMicrophone?.deviceId}
           selectedSpeakerId={selectedSpeaker?.deviceId}
         />

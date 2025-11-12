@@ -128,6 +128,21 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   const connect = async () => {
     try {
+      // Close any existing connection first
+      if (wsRef.current) {
+        console.log('🔌 Closing existing connection before reconnect');
+        wsRef.current.close();
+        wsRef.current = null;
+        await new Promise(resolve => setTimeout(resolve, 300)); // Brief delay to ensure clean closure
+      }
+
+      // Clean up any previous audio state before connecting
+      if (playerRef.current) {
+        playerRef.current.clearQueue();
+        playerRef.current.pause();
+        console.log('🔊 Audio cleaned up before reconnect');
+      }
+
       setConnectionState('connecting');
 
       // Get auth token
@@ -136,8 +151,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         throw new Error('Not authenticated');
       }
 
-    // Create audio player with selected output device
-    playerRef.current = new AudioStreamPlayer(selectedSpeakerId);
+    // Create audio player with selected output device (reuse if exists, or create new)
+    if (!playerRef.current) {
+      playerRef.current = new AudioStreamPlayer(selectedSpeakerId);
+    }
     
     // Resume AudioContext immediately (user gesture)
     await playerRef.current.resume();
@@ -366,6 +383,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         setConnectionState('disconnected');
         stopRecording();
         
+        // Clean up audio immediately to prevent overlap
+        if (playerRef.current) {
+          playerRef.current.clearQueue();
+          playerRef.current.pause();
+          console.log('🔊 Audio playback stopped due to disconnect');
+        }
+        
         // Detect unexpected disconnections - now includes 1005
         const unexpectedCodes = [1001, 1005, 1006, 1011, 1012, 1013, 1014, 1015];
         const isUnexpected = unexpectedCodes.includes(event.code) || !event.wasClean;
@@ -485,7 +509,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     setConnectionState('reconnecting');
     setReconnectAttempts(currentAttempt);
     
-    // Notify parent of current attempt
+    // Notify parent of current attempt (for silent retry logic)
     onReconnectAttempt?.(currentAttempt);
 
     // Exponential backoff: 2s, 4s, 8s
