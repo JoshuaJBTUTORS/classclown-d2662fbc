@@ -824,29 +824,28 @@ If you generate questions with incorrect format, the lesson will be rejected.`;
         });
         
         // POST-RETRY VALIDATION: Check if retry actually fixed the empty data issue
-        const retryEmptyDataBlocks = retryPlanData.steps.flatMap((step: any, stepIndex: number) =>
-          step.content_blocks?.filter((block: any, blockIndex: number) => {
+        let retryEmptyDataCount = 0;
+        retryPlanData.steps.forEach((step: any, stepIdx: number) => {
+          step.content_blocks?.forEach((block: any, blockIdx: number) => {
             if (block.type === 'question') {
               const dataKeys = Object.keys(block.data || {});
               if (dataKeys.length === 0) {
-                console.error(`❌ POST-RETRY: Still empty data at Step ${stepIndex + 1}, Block ${blockIndex}`);
+                console.error(`❌ POST-RETRY: Still empty data at Step ${stepIdx + 1}, Block ${blockIdx}`);
                 console.error(`   Block title: ${block.title}`);
-                return true;
-              }
-              if (!block.data.question || !block.data.options) {
-                console.error(`❌ POST-RETRY: Missing fields at Step ${stepIndex + 1}, Block ${blockIndex}`);
+                retryEmptyDataCount++;
+              } else if (!block.data.question || !block.data.options) {
+                console.error(`❌ POST-RETRY: Missing fields at Step ${stepIdx + 1}, Block ${blockIdx}`);
                 console.error(`   Has question: ${!!block.data.question}, Has options: ${!!block.data.options}`);
-                return true;
+                retryEmptyDataCount++;
               }
             }
-            return false;
-          }) || []
-        );
+          });
+        });
         
-        if (retryEmptyDataBlocks.length > 0) {
-          console.error(`❌ RETRY FAILED: ${retryEmptyDataBlocks.length} question blocks still invalid after retry!`);
+        if (retryEmptyDataCount > 0) {
+          console.error(`❌ RETRY FAILED: ${retryEmptyDataCount} question blocks still invalid after retry!`);
           console.error('The AI model cannot generate proper question structures despite explicit instructions.');
-          throw new Error(`AI model failed after retry. ${retryEmptyDataBlocks.length} questions still invalid. Try a different topic or contact support.`);
+          throw new Error(`AI model failed after retry. ${retryEmptyDataCount} questions still invalid. Try a different topic or contact support.`);
         }
         
         // Validate retry result
