@@ -42,6 +42,7 @@ interface CleoVoiceChatProps {
     hasReachedLimit: boolean;
   };
   onVoiceLimitReached?: () => void;
+  onLessonComplete?: () => void;
   onUnexpectedDisconnection?: (info: { code: number; reason: string; conversationId?: string; attemptCount?: number; autoReconnecting?: boolean }) => void;
   onReconnectAttempt?: (attemptCount: number) => void;
   onReconnectSuccess?: () => void;
@@ -64,6 +65,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onProvideControls,
   voiceTimer,
   onVoiceLimitReached,
+  onLessonComplete,
   onUnexpectedDisconnection,
   onReconnectAttempt,
   onReconnectSuccess,
@@ -329,6 +331,16 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               // Clean disconnect on fatal errors
               setTimeout(() => disconnect(), 2000);
             }
+            break;
+
+          case 'lesson.complete':
+            console.log('🎓 Lesson complete event received');
+            toast({
+              title: "🎉 Lesson Complete!",
+              description: data.message || "Great work! All steps completed.",
+            });
+            // Trigger parent completion handler
+            onLessonComplete?.();
             break;
 
           case 'connection.closed':
