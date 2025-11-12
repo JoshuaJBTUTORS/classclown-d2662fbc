@@ -114,6 +114,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [pauseTimestamp, setPauseTimestamp] = useState<number | null>(null);
+  const [currentModel, setCurrentModel] = useState<'mini' | 'full'>('mini');
   
   const controlsRef = useRef<{ connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void } | null>(null);
   const modeSwitchCountRef = useRef(0);
@@ -405,6 +406,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 isVoiceSpeaking={isSpeaking}
                 isTextLoading={textChat.isLoading}
                 isPaused={isPaused}
+                currentModel={currentModel}
                 onVoiceConnect={handleVoiceConnect}
                 onVoiceDisconnect={handleVoiceDisconnect}
                 onVoicePause={handlePauseVoice}
@@ -560,6 +562,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
+          onModelChange={setCurrentModel}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
           }}

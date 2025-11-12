@@ -18,7 +18,7 @@ export const ContentActionButtons: React.FC<ContentActionButtonsProps> = ({
   };
 
   const handleExplainSimple = () => {
-    onActionClick('explain', `Please explain "${contentTitle}" in the simplest way possible, like I'm 5 years old.`);
+    onActionClick('explain_potato', `Explain like I'm a potato: Please explain "${contentTitle}" in the absolute simplest way possible, with lots of examples and analogies.`);
   };
 
   const handleGiveExample = () => {

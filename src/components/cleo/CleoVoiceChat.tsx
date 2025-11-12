@@ -29,6 +29,7 @@ interface CleoVoiceChatProps {
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
+  onModelChange?: (model: 'mini' | 'full') => void;
   onProvideControls?: (controls: { connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void }) => void;
   voiceTimer?: {
     start: () => void;
@@ -50,6 +51,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onConnectionStateChange,
   onListeningChange,
   onSpeakingChange,
+  onModelChange,
   onProvideControls,
   voiceTimer,
   onVoiceLimitReached,
@@ -62,6 +64,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentModel, setCurrentModel] = useState<'mini' | 'full'>('mini');
   const [audioContextState, setAudioContextState] = useState<string>('unknown');
   const [microphoneActive, setMicrophoneActive] = useState(false);
 
@@ -82,6 +85,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   useEffect(() => {
     onSpeakingChange?.(isSpeaking);
   }, [isSpeaking, onSpeakingChange]);
+  
+  // Notify parent of model changes
+  useEffect(() => {
+    onModelChange?.(currentModel);
+  }, [currentModel, onModelChange]);
 
   // Provide connect/disconnect controls to parent
   useEffect(() => {
@@ -226,6 +234,38 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               description: data.error || "Unknown error from AI service",
               variant: "destructive",
             });
+            break;
+            
+          case 'content.marker':
+            console.log('📍 Content marker received:', data.data);
+            onContentEvent?.(data.data);
+            break;
+            
+          case 'model.switching':
+            console.log('🧠 Model switching:', data);
+            toast({
+              title: "Switching to Deep Explanation Mode",
+              description: "Using advanced AI for detailed explanations...",
+            });
+            break;
+            
+          case 'model.switched':
+            console.log('✅ Model switched to:', data.model);
+            setCurrentModel(data.model);
+            toast({
+              title: data.model === 'full' ? "Deep Explanation Mode Active" : "Efficient Mode Active",
+              description: data.model === 'full' 
+                ? "🧠 Now using GPT-4 for thorough explanations" 
+                : "Now using efficient teaching mode",
+            });
+            break;
+            
+          case 'confusion.detected':
+            console.log('❓ Confusion detected:', data.transcript);
+            break;
+            
+          case 'explanation.complete':
+            console.log('✅ Explanation complete');
             break;
 
           case 'connection.error':

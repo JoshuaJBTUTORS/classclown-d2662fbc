@@ -17,6 +17,51 @@ interface RealtimeSession {
   userId: string;
   openAISocket: WebSocket;
   clientSocket: WebSocket;
+  currentModel: 'mini' | 'full';
+  modelSwitchCount: number;
+  lastSwitchTimestamp: number;
+  miniSecondsUsed: number;
+  fullSecondsUsed: number;
+}
+
+// Model configuration
+const MODELS = {
+  mini: 'gpt-4o-mini-realtime-preview-2024-12-17',
+  full: 'gpt-4o-realtime-preview-2024-10-01'
+};
+
+// Confusion trigger phrases
+const CONFUSION_TRIGGERS = [
+  'explain like i\'m a potato',
+  'explain like i\'m 5',
+  'i don\'t understand',
+  'can you explain that',
+  'what does that mean',
+  'confused',
+  'help me understand',
+  'break it down',
+  'explain further',
+  'explain more',
+  'clarify',
+  'can you elaborate',
+  'make it simpler'
+];
+
+// Cost calculation (in GBP)
+const COST_PER_MINUTE = {
+  mini: 0.11,
+  full: 0.36
+};
+
+function detectConfusion(userMessage: string): boolean {
+  const lowerMessage = userMessage.toLowerCase();
+  return CONFUSION_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+}
+
+function calculateSessionCost(miniSeconds: number, fullSeconds: number): number {
+  const miniCost = (miniSeconds / 60) * COST_PER_MINUTE.mini;
+  const fullCost = (fullSeconds / 60) * COST_PER_MINUTE.full;
+  return miniCost + fullCost;
 }
 
 Deno.serve(async (req) => {
@@ -166,10 +211,13 @@ Deno.serve(async (req) => {
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
+    // Get requested model from query params (default to mini)
+    const requestedModel = url.searchParams.get("model") === 'full' ? 'full' : 'mini';
+    
     // Connect to OpenAI Realtime API using subprotocol authentication
-    console.log("Connecting to OpenAI Realtime API...");
+    console.log(`Connecting to OpenAI Realtime API with ${requestedModel} model...`);
     const openAISocket = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+      `wss://api.openai.com/v1/realtime?model=${MODELS[requestedModel]}`,
       [
         'realtime',
         `openai-insecure-api-key.${OPENAI_API_KEY}`,
@@ -182,7 +230,12 @@ Deno.serve(async (req) => {
       conversationId: conversation.id,
       userId: user.id,
       openAISocket,
-      clientSocket
+      clientSocket,
+      currentModel: requestedModel,
+      modelSwitchCount: 0,
+      lastSwitchTimestamp: Date.now(),
+      miniSecondsUsed: 0,
+      fullSecondsUsed: 0
     };
 
     let isSessionConfigured = false;
@@ -210,21 +263,28 @@ Deno.serve(async (req) => {
       clientSocket.close();
     }, MAX_SESSION_DURATION_MS);
     
-    // Function to log session usage
+    // Function to log session usage with model costs
     async function logSessionUsage(wasInterrupted = false) {
       if (sessionLogged) return;
       sessionLogged = true;
 
       const durationSeconds = Math.floor((Date.now() - sessionStartTimestamp) / 1000);
+      const estimatedCost = calculateSessionCost(session.miniSecondsUsed, session.fullSecondsUsed);
+      
       console.log(`📊 Logging voice session: ${durationSeconds} seconds`);
+      console.log(`💰 Model usage: ${session.miniSecondsUsed}s mini, ${session.fullSecondsUsed}s full`);
+      console.log(`💷 Estimated cost: £${estimatedCost.toFixed(4)}`);
 
       try {
         const logResponse = await supabaseAnonClient.functions.invoke('log-voice-session', {
           body: {
             conversationId: conversation.id,
             sessionStart: sessionStartTime,
-            durationSeconds: Math.min(durationSeconds, 300), // Cap at 5 minutes
-            wasInterrupted
+            durationSeconds: Math.min(durationSeconds, 300),
+            wasInterrupted,
+            miniSecondsUsed: session.miniSecondsUsed,
+            fullSecondsUsed: session.fullSecondsUsed,
+            estimatedCostGbp: estimatedCost
           }
         });
 
@@ -236,6 +296,16 @@ Deno.serve(async (req) => {
       } catch (error) {
         console.error("Failed to log session:", error);
       }
+      
+      // Update conversation with final model usage
+      await supabase
+        .from('cleo_conversations')
+        .update({
+          mini_seconds_used: session.miniSecondsUsed,
+          full_seconds_used: session.fullSecondsUsed,
+          model_switches: session.modelSwitchCount
+        })
+        .eq('id', conversation.id);
     }
 
     // Handle OpenAI socket events
@@ -604,11 +674,29 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         currentTranscript = message.transcript;
         console.log("Student said:", currentTranscript);
         
+        // Check for confusion in audio transcripts
+        const isConfused = detectConfusion(currentTranscript);
+        
         await supabase.from('cleo_messages').insert({
           conversation_id: session.conversationId,
           role: 'user',
-          content: currentTranscript
+          content: currentTranscript,
+          model_used: session.currentModel
         });
+        
+        // Auto-switch on confusion (with cooldown)
+        const cooldownPeriod = 30000;
+        const timeSinceLastSwitch = Date.now() - session.lastSwitchTimestamp;
+        
+        if (isConfused && session.currentModel === 'mini' && timeSinceLastSwitch > cooldownPeriod) {
+          console.log('🧠 Confusion detected in audio - flagging for potential model switch');
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            clientSocket.send(JSON.stringify({
+              type: 'confusion.detected',
+              transcript: currentTranscript
+            }));
+          }
+        }
       }
 
       // Accumulate assistant response and detect content markers
@@ -803,8 +891,26 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
           await supabase.from('cleo_messages').insert({
             conversation_id: session.conversationId,
             role: 'assistant',
-            content: currentAssistantMessage
+            content: currentAssistantMessage,
+            model_used: session.currentModel
           });
+          
+          // Check for switch-back trigger if using full model
+          const switchBackPhrases = ['does that make sense', 'is that clearer', 'do you understand now'];
+          const hasCheckPhrase = switchBackPhrases.some(phrase => 
+            currentAssistantMessage.toLowerCase().includes(phrase)
+          );
+          
+          if (session.currentModel === 'full' && hasCheckPhrase) {
+            console.log('🔄 Deep explanation complete - ready to switch back to mini on positive response');
+            if (clientSocket.readyState === WebSocket.OPEN) {
+              clientSocket.send(JSON.stringify({
+                type: 'explanation.complete',
+                message: 'Ready to switch back to efficient mode'
+              }));
+            }
+          }
+          
           currentAssistantMessage = '';
         }
       }
@@ -928,11 +1034,135 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         if (msg.type === 'user_message') {
           console.log('💬 Injecting user text message:', msg.text);
           
+          // Detect confusion and potentially switch models
+          const isConfused = detectConfusion(msg.text);
+          const shouldSwitch = isConfused && session.currentModel === 'mini';
+          const cooldownPeriod = 30000; // 30 seconds between switches
+          const timeSinceLastSwitch = Date.now() - session.lastSwitchTimestamp;
+          
+          if (shouldSwitch && timeSinceLastSwitch > cooldownPeriod) {
+            console.log('🧠 Confusion detected - switching to full model');
+            
+            // Update model usage time before switching
+            const elapsedSeconds = Math.floor((Date.now() - session.lastSwitchTimestamp) / 1000);
+            if (session.currentModel === 'mini') {
+              session.miniSecondsUsed += elapsedSeconds;
+            } else {
+              session.fullSecondsUsed += elapsedSeconds;
+            }
+            
+            // Notify client of model switch
+            if (clientSocket.readyState === WebSocket.OPEN) {
+              clientSocket.send(JSON.stringify({
+                type: 'model.switching',
+                fromModel: 'mini',
+                toModel: 'full',
+                reason: 'confusion_detected'
+              }));
+            }
+            
+            // Fetch recent conversation context
+            const { data: recentMessages } = await supabase
+              .from('cleo_messages')
+              .select('role, content')
+              .eq('conversation_id', session.conversationId)
+              .order('created_at', { ascending: false })
+              .limit(10);
+            
+            // Close current connection
+            openAISocket.close(1000, 'Model switch');
+            
+            // Open new connection with full model
+            const newSocket = new WebSocket(
+              `wss://api.openai.com/v1/realtime?model=${MODELS.full}`,
+              [
+                'realtime',
+                `openai-insecure-api-key.${OPENAI_API_KEY}`,
+                'openai-beta.realtime-v1'
+              ]
+            );
+            
+            session.openAISocket = newSocket;
+            session.currentModel = 'full';
+            session.modelSwitchCount++;
+            session.lastSwitchTimestamp = Date.now();
+            
+            // Update database
+            await supabase
+              .from('cleo_conversations')
+              .update({
+                current_model: 'full',
+                model_switches: session.modelSwitchCount
+              })
+              .eq('id', session.conversationId);
+            
+            // Wait for connection and configure with context
+            newSocket.onopen = () => {
+              console.log('✅ Switched to full model');
+              
+              // Configure with deep explanation prompt
+              const contextHistory = recentMessages?.reverse().map(m => 
+                `${m.role === 'user' ? 'Student' : 'Cleo'}: ${m.content}`
+              ).join('\n') || '';
+              
+              newSocket.send(JSON.stringify({
+                type: 'session.update',
+                session: {
+                  modalities: ['text', 'audio'],
+                  instructions: `You are Cleo in DEEP EXPLANATION MODE. The student just asked for help because they were confused: "${msg.text}"
+
+Previous conversation:
+${contextHistory}
+
+Provide a thorough, detailed explanation using:
+- Analogies and real-world examples
+- Step-by-step breakdowns
+- Multiple perspectives
+- Visual descriptions
+
+After your explanation, ask "Does that make sense now?" to gauge understanding.`,
+                  voice: 'ballad',
+                  input_audio_format: 'pcm16',
+                  output_audio_format: 'pcm16',
+                  turn_detection: {
+                    type: 'server_vad',
+                    threshold: 0.5,
+                    prefix_padding_ms: 300,
+                    silence_duration_ms: 700
+                  },
+                  temperature: 0.8
+                }
+              }));
+              
+              // Send the user's message
+              newSocket.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'message',
+                  role: 'user',
+                  content: [{ type: 'input_text', text: msg.text }]
+                }
+              }));
+              
+              newSocket.send(JSON.stringify({ type: 'response.create' }));
+              
+              if (clientSocket.readyState === WebSocket.OPEN) {
+                clientSocket.send(JSON.stringify({
+                  type: 'model.switched',
+                  model: 'full'
+                }));
+              }
+            };
+            
+            return;
+          }
+          
           // Save message to database
           supabase.from('cleo_messages').insert({
             conversation_id: session.conversationId,
             role: 'user',
-            content: msg.text
+            content: msg.text,
+            model_used: session.currentModel
           })
             .then(() => console.log('Message saved to database'))
             .catch(err => console.error('Failed to save user message:', err));

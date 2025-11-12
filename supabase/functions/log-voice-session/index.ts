@@ -10,6 +10,9 @@ interface LogSessionRequest {
   durationSeconds: number;
   wasInterrupted?: boolean;
   sessionStart: string;
+  miniSecondsUsed?: number;
+  fullSecondsUsed?: number;
+  estimatedCostGbp?: number;
 }
 
 Deno.serve(async (req) => {
@@ -34,9 +37,24 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { conversationId, durationSeconds, wasInterrupted = false, sessionStart }: LogSessionRequest = await req.json();
+    const { 
+      conversationId, 
+      durationSeconds, 
+      wasInterrupted = false, 
+      sessionStart,
+      miniSecondsUsed = 0,
+      fullSecondsUsed = 0,
+      estimatedCostGbp = 0
+    }: LogSessionRequest = await req.json();
 
-    console.log('Logging voice session:', { userId: user.id, conversationId, durationSeconds });
+    console.log('Logging voice session:', { 
+      userId: user.id, 
+      conversationId, 
+      durationSeconds,
+      miniSeconds: miniSecondsUsed,
+      fullSeconds: fullSecondsUsed,
+      cost: estimatedCostGbp
+    });
 
     // Get current quota
     const now = new Date().toISOString();
@@ -52,12 +70,12 @@ Deno.serve(async (req) => {
       throw new Error('No active quota found');
     }
 
-    // Calculate AI cost estimate (£0.61 per 5-minute session)
-    const costPer5Min = 0.61;
-    const costPerSecond = costPer5Min / 300;
-    const aiCostEstimate = (durationSeconds * costPerSecond).toFixed(4);
+    // Use the provided cost estimate or fallback to old calculation
+    const aiCostEstimate = estimatedCostGbp > 0 
+      ? estimatedCostGbp.toFixed(4)
+      : ((durationSeconds * (0.61 / 300))).toFixed(4);
 
-    // Insert session log
+    // Insert session log with model usage data
     const { data: sessionLog, error: logError } = await supabase
       .from('voice_session_logs')
       .insert({
@@ -69,7 +87,10 @@ Deno.serve(async (req) => {
         duration_seconds: durationSeconds,
         was_interrupted: wasInterrupted,
         deducted_from_quota: true,
-        ai_cost_estimate_usd: aiCostEstimate
+        ai_cost_estimate_usd: aiCostEstimate,
+        mini_seconds_used: miniSecondsUsed,
+        full_seconds_used: fullSecondsUsed,
+        estimated_cost_gbp: parseFloat(aiCostEstimate)
       })
       .select()
       .single();

@@ -6,6 +6,7 @@ import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator'
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { ModelIndicator } from './ModelIndicator';
 
 interface VoiceControlsProps {
   isConnected: boolean;
@@ -17,6 +18,7 @@ interface VoiceControlsProps {
   onPause?: () => void;
   onResume?: () => void;
   conversationId?: string;
+  currentModel?: 'mini' | 'full';
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
@@ -29,6 +31,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   onPause,
   onResume,
   conversationId,
+  currentModel = 'mini',
 }) => {
   const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,6 +106,11 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       {/* Quota Indicator */}
       {!loading && sessionsRemaining !== null && (
         <VoiceSessionIndicator />
+      )}
+      
+      {/* Model Indicator (only when connected) */}
+      {isConnected && !isPaused && (
+        <ModelIndicator currentModel={currentModel} />
       )}
 
       {!isConnected && !isPaused ? (
