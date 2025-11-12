@@ -131,7 +131,14 @@ Deno.serve(async (req) => {
     const topic = url.searchParams.get("topic");
     const yearGroup = url.searchParams.get("yearGroup");
     const lessonPlanId = url.searchParams.get("lessonPlanId");
+    const resumeSession = url.searchParams.get("resume") === 'true';
+    const lastStepId = url.searchParams.get("lastStepId");
+    const lastStepTitle = url.searchParams.get("lastStepTitle");
     let lessonPlan = null;
+    
+    if (resumeSession) {
+      console.log('🔄 Resume mode enabled:', { lastStepId, lastStepTitle });
+    }
     
     // Fetch lesson plan by ID if provided
     if (lessonPlanId) {
@@ -249,6 +256,7 @@ Deno.serve(async (req) => {
     const MAX_SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutes
     let sessionEndTimer: number | null = null;
     let sessionLogged = false;
+    let keepaliveInterval: number | null = null;
 
     // Auto-disconnect at 5 minutes
     sessionEndTimer = setTimeout(() => {
@@ -329,6 +337,14 @@ Deno.serve(async (req) => {
         status: 'connected',
         conversationId: conversation.id
       }));
+      
+      // Start keepalive ping to prevent idle disconnections
+      keepaliveInterval = setInterval(() => {
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({ type: 'server.keepalive' }));
+          console.log('💓 Keepalive ping sent');
+        }
+      }, 20000); // Every 20 seconds
     };
 
     openAISocket.onmessage = async (event) => {
@@ -447,8 +463,12 @@ CRITICAL INSTRUCTIONS:
 5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
 
 YOUR TEACHING FLOW:
-1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
-2. Call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting
+${resumeSession && lastStepId && lastStepTitle 
+  ? `RESUME MODE: You are resuming from "${lastStepTitle}" [ID: ${lastStepId}]. 
+  Continue from where you left off - don't restart the lesson. 
+  Say something like "Welcome back! Let's continue with ${lastStepTitle}..."` 
+  : `1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
+  2. Call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting`}
 3. After the content appears, reference it naturally in your explanation
 4. When you see a question in the content, present it and wait for the student's answer
 5. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
@@ -627,7 +647,10 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
 
         // Send initial greeting message
         let greetingText = '';
-        if (lessonPlan) {
+        if (resumeSession && lastStepTitle) {
+          // Resume mode greeting
+          greetingText = `Welcome back${userName !== 'there' ? ` ${userName}` : ''}! Let's continue where we left off with ${lastStepTitle}. Ready to keep going?`;
+        } else if (lessonPlan) {
           const mainObjectives = lessonPlan.learning_objectives.slice(0, 2).join(', and ');
           const firstStep = lessonPlan.teaching_sequence[0]?.title || 'the basics';
           greetingText = `Hi ${userName}! Welcome! I'm Cleo, and I'll be guiding you through ${lessonPlan.topic} today. We have ${lessonPlan.learning_objectives.length} main objectives: ${mainObjectives}. Let's get started with ${firstStep}. Are you ready?`;
@@ -638,6 +661,19 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         }
 
         console.log("Sending initial greeting:", greetingText);
+        
+        // If resuming and we have a step, send marker to sync UI first
+        if (resumeSession && lastStepId && lastStepTitle) {
+          console.log('🔄 Sending resume marker to client:', { lastStepId, lastStepTitle });
+          clientSocket.send(JSON.stringify({
+            type: 'content.marker',
+            data: {
+              type: 'move_to_step',
+              stepId: lastStepId,
+              stepTitle: lastStepTitle
+            }
+          }));
+        }
 
         // Create a conversation item with the greeting prompt
         openAISocket.send(JSON.stringify({
@@ -1058,6 +1094,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       console.log("Timestamp:", new Date().toISOString());
       
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
+      if (keepaliveInterval) clearInterval(keepaliveInterval);
       logSessionUsage(false);
       
       // Send close reason to client
@@ -1274,6 +1311,7 @@ After your explanation, ask "Does that make sense now?" to gauge understanding.`
       console.log("🔌 Client disconnected");
       console.log("⏱️ Session duration:", sessionDuration, "seconds");
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
+      if (keepaliveInterval) clearInterval(keepaliveInterval);
       logSessionUsage(true); // Mark as interrupted if client closes
       openAISocket.close();
     };

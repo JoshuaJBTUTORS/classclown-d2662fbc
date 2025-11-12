@@ -89,6 +89,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const playerRef = useRef<AudioStreamPlayer | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastStepIdRef = useRef<string | null>(null);
+  const lastStepTitleRef = useRef<string | null>(null);
 
   // Notify parent of state changes
   useEffect(() => {
@@ -118,6 +120,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     return () => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       disconnect();
     };
@@ -153,6 +156,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       }
       if (lessonPlan?.id) {
         wsUrl += `&lessonPlanId=${encodeURIComponent(lessonPlan.id)}`;
+      }
+      // Add resume parameters if we have last step info
+      if (lastStepIdRef.current && lastStepTitleRef.current) {
+        wsUrl += `&resume=true&lastStepId=${encodeURIComponent(lastStepIdRef.current)}&lastStepTitle=${encodeURIComponent(lastStepTitleRef.current)}`;
+        console.log('🔄 Reconnecting with resume parameters:', { stepId: lastStepIdRef.current, stepTitle: lastStepTitleRef.current });
       }
       
       wsRef.current = new WebSocket(wsUrl);
@@ -191,6 +199,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             if (data.data?.type === 'move_to_step') {
               console.log('📍 Move to step ID:', data.data.stepId);
               console.log('📍 Move to step title:', data.data.stepTitle);
+              // Track for resume functionality
+              lastStepIdRef.current = data.data.stepId;
+              lastStepTitleRef.current = data.data.stepTitle;
             }
             if (onContentEvent) {
               console.log('📍 Calling onContentEvent with:', data.data);
@@ -328,6 +339,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
       wsRef.current.onerror = (error) => {
         console.error('WebSocket error:', error);
+        
+        // If we're in the middle of reconnecting, trigger attemptReconnect instead of permanently disconnecting
+        if (isReconnecting) {
+          console.log('⚠️ Error during reconnect attempt, will retry');
+          return;
+        }
+        
         setConnectionState('disconnected');
         toast({
           title: "Connection Error",
@@ -337,16 +355,19 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('🔌 WebSocket closed');
-        console.log('Close code:', event.code);
-        console.log('Close reason:', event.reason);
-        console.log('Was clean:', event.wasClean);
+        console.log('🔌 WebSocket closed - detailed info:');
+        console.log('  Close code:', event.code);
+        console.log('  Close reason:', event.reason || '(no reason provided)');
+        console.log('  Was clean:', event.wasClean);
+        console.log('  Was user disconnect:', wasUserDisconnect);
+        console.log('  Is reconnecting:', isReconnecting);
+        console.log('  Navigator online:', navigator.onLine);
         
         setConnectionState('disconnected');
         stopRecording();
         
-        // Detect unexpected disconnections
-        const unexpectedCodes = [1001, 1006, 1011, 1012, 1013, 1014, 1015];
+        // Detect unexpected disconnections - now includes 1005
+        const unexpectedCodes = [1001, 1005, 1006, 1011, 1012, 1013, 1014, 1015];
         const isUnexpected = unexpectedCodes.includes(event.code) || !event.wasClean;
         
         if (isUnexpected && !wasUserDisconnect && !isReconnecting) {
