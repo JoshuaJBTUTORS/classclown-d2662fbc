@@ -422,9 +422,9 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.5,
+              threshold: 0.6,
               prefix_padding_ms: 300,
-              silence_duration_ms: 700
+              silence_duration_ms: 500
             },
             tools: [
               {
@@ -545,13 +545,11 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         // Send initial greeting message
         let greetingText = '';
         if (lessonPlan) {
-          const mainObjectives = lessonPlan.learning_objectives.slice(0, 2).join(', and ');
-          const firstStep = lessonPlan.teaching_sequence[0]?.title || 'the basics';
-          greetingText = `Hi ${userName}! Welcome! I'm Cleo, and I'll be guiding you through ${lessonPlan.topic} today. We have ${lessonPlan.learning_objectives.length} main objectives: ${mainObjectives}. Let's get started with ${firstStep}. Are you ready?`;
+          greetingText = `Hello! We are going to go through ${lessonPlan.topic}. While I am explaining and teaching, please feel free to interrupt and ask any questions. This is a live interactive session, so the more questions you ask, the better the session will be. Ready to get started?`;
         } else if (lessonTitle) {
-          greetingText = `Hi ${userName}! I'm Cleo, your AI tutor. I'm excited to help you learn about ${lessonTitle} today!${lessonDescription ? ` ${lessonDescription}` : ''} Let's dive in - what would you like to explore first?`;
+          greetingText = `Hello! We are going to go through ${lessonTitle}. While I am explaining and teaching, please feel free to interrupt and ask any questions. This is a live interactive session, so the more questions you ask, the better the session will be. Ready to get started?`;
         } else {
-          greetingText = `Hi ${userName}! I'm Cleo, your AI tutor. I'm here to help you learn. What would you like to study today?`;
+          greetingText = `Hello! I'm Cleo, your AI tutor. While I am explaining and teaching, please feel free to interrupt and ask any questions. This is a live interactive session, so the more questions you ask, the better. What would you like to study today?`;
         }
 
         console.log("Sending initial greeting:", greetingText);

@@ -69,6 +69,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const recorderRef = useRef<AudioStreamRecorder | null>(null);
   const playerRef = useRef<AudioStreamPlayer | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
+  const reconnectionAttemptsRef = useRef(0);
+  const maxReconnectionAttempts = 5;
+  const isReconnectingRef = useRef(false);
 
   // Notify parent of state changes
   useEffect(() => {
@@ -93,6 +96,66 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       disconnect();
     };
   }, []);
+
+  const attemptReconnection = async () => {
+    if (isReconnectingRef.current) return;
+    if (reconnectionAttemptsRef.current >= maxReconnectionAttempts) {
+      toast({
+        title: "Connection Lost",
+        description: "Unable to reconnect. Please start a new session.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    isReconnectingRef.current = true;
+    reconnectionAttemptsRef.current++;
+    
+    // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+    const delay = Math.min(1000 * Math.pow(2, reconnectionAttemptsRef.current - 1), 16000);
+    console.log(`🔄 Attempting reconnection ${reconnectionAttemptsRef.current}/${maxReconnectionAttempts} after ${delay}ms`);
+    
+    // Show toast only after 3rd attempt
+    if (reconnectionAttemptsRef.current >= 3) {
+      toast({
+        title: "Reconnecting...",
+        description: `Attempt ${reconnectionAttemptsRef.current} of ${maxReconnectionAttempts}`,
+        duration: 3000,
+      });
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    try {
+      // Cleanup old connection
+      if (playerRef.current) {
+        playerRef.current.clearQueue();
+        playerRef.current.pause();
+      }
+      stopRecording();
+      
+      // Wait briefly before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Attempt to reconnect
+      await connect();
+      
+      // Success! Reset attempts
+      reconnectionAttemptsRef.current = 0;
+      isReconnectingRef.current = false;
+      console.log("✅ Reconnection successful");
+      toast({
+        title: "Reconnected",
+        description: "Connection restored successfully",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("❌ Reconnection failed:", error);
+      isReconnectingRef.current = false;
+      // Try again
+      attemptReconnection();
+    }
+  };
 
   const connect = async () => {
     try {
@@ -131,10 +194,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       wsRef.current.onopen = () => {
         console.log('WebSocket connected');
         setConnectionState('connected');
-        toast({
-          title: "Connected",
-          description: "Start speaking to Cleo!",
-        });
+        reconnectionAttemptsRef.current = 0; // Reset reconnection attempts on successful connection
+        if (!isReconnectingRef.current) {
+          toast({
+            title: "Connected",
+            description: "Start speaking to Cleo!",
+          });
+        }
         startRecording();
       };
 
@@ -276,21 +342,24 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('🔌 WebSocket closed');
-        console.log('Close code:', event.code);
-        console.log('Close reason:', event.reason);
-        console.log('Was clean:', event.wasClean);
-        
+        console.log('🔌 WebSocket closed', { code: event.code, wasClean: event.wasClean });
         setConnectionState('disconnected');
+        
+        // Cleanup audio
+        if (playerRef.current) {
+          playerRef.current.clearQueue();
+          playerRef.current.pause();
+        }
         stopRecording();
         
-        // Only show toast if it wasn't a clean close (user-initiated)
+        // Auto-reconnect silently unless it was a clean user-initiated close
         if (!event.wasClean && event.code !== 1000) {
-          toast({
-            title: "Session Ended",
-            description: event.reason || "Your voice session ended unexpectedly. You can start a new session when ready.",
-            duration: 5000,
-          });
+          console.log('🔄 Connection lost unexpectedly, attempting silent reconnection...');
+          attemptReconnection();
+        } else {
+          // Clean close - reset reconnection attempts
+          reconnectionAttemptsRef.current = 0;
+          isReconnectingRef.current = false;
         }
       };
 
