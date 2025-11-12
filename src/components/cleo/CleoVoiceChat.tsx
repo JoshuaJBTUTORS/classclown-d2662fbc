@@ -42,7 +42,8 @@ interface CleoVoiceChatProps {
     hasReachedLimit: boolean;
   };
   onVoiceLimitReached?: () => void;
-  onUnexpectedDisconnection?: (info: { code: number; reason: string; conversationId?: string }) => void;
+  onUnexpectedDisconnection?: (info: { code: number; reason: string; conversationId?: string; attemptCount?: number; autoReconnecting?: boolean }) => void;
+  onReconnectAttempt?: (attemptCount: number) => void;
   onReconnectSuccess?: () => void;
   onReconnectFailed?: () => void;
   selectedMicrophoneId?: string;
@@ -64,6 +65,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   voiceTimer,
   onVoiceLimitReached,
   onUnexpectedDisconnection,
+  onReconnectAttempt,
   onReconnectSuccess,
   onReconnectFailed,
   selectedMicrophoneId,
@@ -348,12 +350,16 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         const isUnexpected = unexpectedCodes.includes(event.code) || !event.wasClean;
         
         if (isUnexpected && !wasUserDisconnect && !isReconnecting) {
-          console.log('⚠️ Unexpected disconnection detected');
+          console.log('⚠️ Unexpected disconnection detected - starting auto-reconnect', { code: event.code, reason: event.reason });
           onUnexpectedDisconnection?.({
             code: event.code,
             reason: event.reason || 'Connection lost',
             conversationId: currentConversationId.current,
+            attemptCount: 0,
+            autoReconnecting: true,
           });
+          // Automatically start reconnection after a brief delay
+          setTimeout(() => attemptReconnect(3), 100);
         } else if (wasUserDisconnect) {
           // Reset flag after user-initiated disconnect
           setWasUserDisconnect(false);
@@ -445,29 +451,36 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     if (reconnectAttempts >= maxAttempts) {
       console.log('❌ Max reconnection attempts reached');
       setIsReconnecting(false);
+      setConnectionState('disconnected');
       onReconnectFailed?.();
       return;
     }
 
+    const currentAttempt = reconnectAttempts + 1;
+    console.log(`🔄 Attempting reconnection ${currentAttempt}/${maxAttempts}`);
+    
+    // Update state immediately
     setIsReconnecting(true);
     setConnectionState('reconnecting');
-    const currentAttempt = reconnectAttempts + 1;
     setReconnectAttempts(currentAttempt);
+    
+    // Notify parent of current attempt
+    onReconnectAttempt?.(currentAttempt);
 
     // Exponential backoff: 2s, 4s, 8s
     const delay = Math.pow(2, reconnectAttempts) * 1000;
-    console.log(`⏳ Reconnecting in ${delay}ms (attempt ${currentAttempt}/${maxAttempts})`);
+    console.log(`⏳ Reconnecting in ${delay}ms`);
 
     reconnectTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log(`🔄 Reconnection attempt ${currentAttempt}/${maxAttempts}`);
         await connect();
         
         // Success!
+        console.log('✅ Reconnection successful');
         setReconnectAttempts(0);
         setIsReconnecting(false);
+        setConnectionState('connected');
         onReconnectSuccess?.();
-        console.log('✅ Reconnection successful');
       } catch (error) {
         console.error(`❌ Reconnection attempt ${currentAttempt} failed:`, error);
         // Try again
@@ -484,7 +497,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       sendUserMessage,
       attemptReconnect: () => attemptReconnect(3)
     } as any);
-  }, [onProvideControls, reconnectAttempts]);
+  }, [onProvideControls, connect, disconnect, sendUserMessage, attemptReconnect]);
 
   // This component renders nothing - it's just for voice logic
   return null;
