@@ -196,6 +196,8 @@ Deno.serve(async (req) => {
     const MAX_SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutes
     let sessionEndTimer: number | null = null;
     let sessionLogged = false;
+    let keepaliveInterval: number | null = null;
+    let clientKeepaliveInterval: number | null = null;
 
     // Auto-disconnect at 5 minutes
     sessionEndTimer = setTimeout(() => {
@@ -246,6 +248,32 @@ Deno.serve(async (req) => {
         status: 'connected',
         conversationId: conversation.id
       }));
+
+      // Send keepalive to prevent Deno Deploy timeout
+      keepaliveInterval = setInterval(() => {
+        if (openAISocket.readyState === WebSocket.OPEN) {
+          console.log("📡 Sending keepalive ping to OpenAI");
+          openAISocket.send(JSON.stringify({
+            type: 'ping',
+            timestamp: Date.now()
+          }));
+        } else {
+          if (keepaliveInterval) clearInterval(keepaliveInterval);
+        }
+      }, 20000); // Every 20 seconds
+
+      // Also send keepalive to client
+      clientKeepaliveInterval = setInterval(() => {
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          console.log("📡 Sending keepalive to client");
+          clientSocket.send(JSON.stringify({
+            type: 'server.keepalive',
+            timestamp: Date.now()
+          }));
+        } else {
+          if (clientKeepaliveInterval) clearInterval(clientKeepaliveInterval);
+        }
+      }, 20000); // Every 20 seconds
     };
 
     openAISocket.onmessage = async (event) => {
@@ -891,7 +919,10 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       console.log("Was clean:", event.wasClean);
       console.log("Timestamp:", new Date().toISOString());
       
+      // Clear all intervals and timers
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
+      if (keepaliveInterval) clearInterval(keepaliveInterval);
+      if (clientKeepaliveInterval) clearInterval(clientKeepaliveInterval);
       logSessionUsage(false);
       
       // Send close reason to client
@@ -968,7 +999,12 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
 
     clientSocket.onclose = () => {
       console.log("Client disconnected");
+      
+      // Clear all intervals and timers
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
+      if (keepaliveInterval) clearInterval(keepaliveInterval);
+      if (clientKeepaliveInterval) clearInterval(clientKeepaliveInterval);
+      
       logSessionUsage(true); // Mark as interrupted if client closes
       openAISocket.close();
     };
