@@ -222,27 +222,29 @@ serve(async (req) => {
           {
             role: 'system',
             content: isExamPractice 
-              ? `You are an expert 11+ exam preparation tutor creating practice-focused lesson plans.
+              ? `You are an expert 11+ exam preparation tutor creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
-Your task: Create a lesson plan optimized for EXAM PRACTICE with one worked example followed by 20 practice questions.
+Your task: Create a highly structured lesson plan (15-min duration) with detailed teaching scripts that minimize complex AI reasoning during delivery.
 
-LESSON PLAN STRUCTURE FOR 11+:
+LESSON PLAN STRUCTURE FOR 11+ (15-minute optimized):
 1. Learning Objectives (3-4 clear exam skills to master)
 2. Teaching Sequence with TWO main steps:
-   - Step 1: "Worked Example" - One detailed example showing method/technique
-   - Step 2: "Practice Questions" - 20 exam-style questions
+   - Step 1 (3 min): "Worked Example" - Scripted demonstration with pre-written narration
+   - Step 2 (12 min): "Practice Questions" - 20 exam-style questions with pre-written hints
 
-⚠️ CRITICAL REQUIREMENTS:
-- Step 1 MUST have 1-2 content blocks showing a worked example with explanation
-- Step 2 MUST have 20 question blocks (type: "question")
-- Each question should be exam-style with multiple choice options
-- Questions should gradually increase in difficulty
-- Include clear explanations for each answer
+⚠️ CRITICAL REQUIREMENTS FOR SCRIPT-BASED OPTIMIZATION:
+- Every content block MUST have detailed teaching_notes with exact phrases Cleo will say
+- Step 1 MUST have 1-2 content blocks with complete teaching script (opening, key points, transitions)
+- Step 2 MUST have 20 question blocks with pre-written hints for common mistakes
+- Each question must include: mark scheme, model answer, anticipated errors
+- teaching_notes must be specific and actionable (not vague guidance)
 
-CONTENT BLOCKS FOR STEP 1 (Worked Example):
-- Use "text" blocks for explanation of method
-- Use "definition" blocks for key concepts/formulas
-- Keep it concise - focus on ONE clear example
+CONTENT BLOCKS FOR STEP 1 (Worked Example) - MUST BE FULLY SCRIPTED:
+- Use "text" blocks with detailed teaching_notes containing exact narration
+- Example teaching_notes: "Start by saying: 'Let me show you the method step by step.' Walk through: Step 1 - Identify the numbers. Step 2 - Apply the rule. Step 3 - Check your answer. Then say: 'Now let's practice together.'"
+- Use "definition" blocks with teaching_notes for how to explain each term
+- Include prerequisites field: what students must know before this (e.g., ['Basic multiplication', 'Place value understanding'])
+- Keep it concise - ONE clear example with complete delivery script
 
 ⚠️ TEXT FORMATTING RULES:
 - Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
@@ -252,10 +254,11 @@ CONTENT BLOCKS FOR STEP 1 (Worked Example):
 - For headings, use "## Heading" format or bold
 - Example: "Place value tells us the value of each digit.\n\n**Important:** The digit 6 in 4,629 represents 600."
 
-CONTENT BLOCKS FOR STEP 2 (Practice):
+CONTENT BLOCKS FOR STEP 2 (Practice) - FULLY SCRIPTED QUESTIONS:
 - YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
 - Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
 - ALL blocks must be type "question"
+- Each question MUST have teaching_notes with pre-written hints (e.g., "If student picks A, say: 'Remember to round UP when the digit is 5 or more.' If student picks C, say: 'Check which place value you're rounding to.'")
 - Each question MUST be a complete JSON object with required fields
 
 ⚠️ REQUIRED FORMAT (this is CRITICAL):
@@ -286,21 +289,37 @@ CONTENT BLOCKS FOR STEP 2 (Practice):
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
-              : `You are an expert curriculum designer creating concise, focused lesson plans for students.
+              : `You are an expert curriculum designer creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
-Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each containing rich, pre-generated content.
+Your task: Create a highly structured 15-minute lesson with detailed teaching scripts that minimize complex AI reasoning during delivery.
 
-LESSON PLAN STRUCTURE:
+LESSON PLAN STRUCTURE (15-minute optimized):
 1. Learning Objectives (3-5 clear, measurable goals)
-2. Teaching Sequence (3-5 FOCUSED steps, each 5-8 minutes)
-3. Content Blocks (tables, definitions, questions, diagrams, text)
+2. Teaching Sequence (4-5 FOCUSED steps):
+   - Step 1 (2 min): Hook & Context - Engaging opener with scripted hook
+   - Step 2 (4 min): Core Concept - Main explanation with pre-written analogies/examples
+   - Step 3 (4 min): Worked Examples - 2-3 examples with complete narration scripts
+   - Step 4 (3 min): Guided Practice - 3-5 questions with pre-written hints
+   - Step 5 (2 min): Quick Check - Recap with scripted key takeaways
+3. Content Blocks (each with detailed teaching_notes and prerequisites)
 
-⚠️ CRITICAL: Each step MUST have 2-4 content blocks minimum. This is non-negotiable!
+⚠️ CRITICAL SCRIPT-BASED REQUIREMENTS:
+- Each content block MUST have teaching_notes with exact phrases/scripts Cleo will use
+- Each content block MUST have prerequisites array (what student needs to know)
+- teaching_notes must include: opening phrase, 3-5 key bullet points, transition phrase
+- Questions must have pre-written hints for wrong answers in teaching_notes
+- Each step MUST have 2-4 content blocks minimum
 
 CONTENT BLOCK TYPES (with detailed examples):
 
-1. TEXT: Explanatory content or instructions
-   Example: { type: "text", title: "Understanding Photosynthesis", data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy.\n\n**Key Point:** Plants use sunlight to make food.\n\n• Requires sunlight, water, and CO2\n• Produces glucose and oxygen\n• Happens in chloroplasts" } }
+1. TEXT: Explanatory content with COMPLETE teaching script
+   Example: { 
+     type: "text", 
+     title: "Understanding Photosynthesis", 
+     data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy.\n\n**Key Point:** Plants use sunlight to make food.\n\n• Requires sunlight, water, and CO2\n• Produces glucose and oxygen\n• Happens in chloroplasts" },
+     teaching_notes: "Start by saying: 'Let me explain photosynthesis in simple terms.' Key points to emphasize: • It's how plants make food • They need three things: sunlight, water, CO2 • The output is glucose and oxygen. Then transition: 'Now let's see this in action with an example.'",
+     prerequisites: ["Basic understanding of plants", "Knowledge that plants need sunlight"]
+   }
 
 2. TABLE: Comparisons, data, organized information
    Example: { type: "table", title: "Plant vs Animal Cells", data: { headers: ["Feature", "Plant Cell", "Animal Cell"], rows: [["Cell Wall", "Yes", "No"], ["Chloroplasts", "Yes", "No"]] } }
@@ -308,8 +327,14 @@ CONTENT BLOCK TYPES (with detailed examples):
 3. DEFINITION: Key terms with examples
    Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
 
-4. QUESTION: Check understanding (multiple choice)
-   Example: { type: "question", title: "Check Understanding", data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" } }
+4. QUESTION: Check understanding with pre-written hints
+   Example: { 
+     type: "question", 
+     title: "Check Understanding", 
+     data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" },
+     teaching_notes: "If student picks 'Oxygen', say: 'Remember, plants PRODUCE oxygen, they don't absorb it. Think about what gas humans breathe out.' If correct, say: 'Excellent! CO2 is essential for making glucose.'",
+     prerequisites: ["Understanding of photosynthesis process"]
+   }
 
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
@@ -451,10 +476,18 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                 }
                               ]
                             },
-                            teaching_notes: { type: 'string' },
+                            teaching_notes: { 
+                              type: 'string',
+                              description: 'REQUIRED: Complete teaching script. Format: "Start by saying: [exact opening phrase]. Key points: • [point 1] • [point 2] • [point 3]. Transition: [exact closing phrase]." For questions, include hints for wrong answers.'
+                            },
                             prerequisites: {
                               type: 'array',
-                              items: { type: 'string' }
+                              items: { type: 'string' },
+                              description: 'REQUIRED: List specific prior knowledge needed. Example: ["Understanding of basic fractions", "Multiplication tables"]. If none: ["None - introductory content"]'
+                            },
+                            delivery_guidance: {
+                              type: 'string',
+                              description: 'Optional: Specific delivery tips. Example: "Pause 3 seconds after question", "Use encouraging tone", "If student struggles with X, offer hint: [specific hint]"'
                             }
                           },
                           required: ['type', 'data']
