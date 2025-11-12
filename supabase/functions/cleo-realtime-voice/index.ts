@@ -1052,7 +1052,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       console.log("🆔 Conversation ID:", session.conversationId);
     };
 
-    clientSocket.onmessage = (event) => {
+    clientSocket.onmessage = async (event) => {
       // Forward client messages to OpenAI
       try {
         const msg = JSON.parse(event.data);
