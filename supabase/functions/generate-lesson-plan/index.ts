@@ -384,6 +384,12 @@ serve(async (req) => {
 
 Your task: Create a highly structured lesson plan (15-min duration) with detailed teaching scripts that minimize complex AI reasoning during delivery.
 
+🚨 CRITICAL DATA STRUCTURE RULE 🚨
+- When block "type" is "question", the "data" field MUST use the question structure (with question, options, explanation)
+- NEVER use text structure (with content field) for question blocks
+- NEVER use definition structure (with term, definition) for question blocks
+- The "type" field determines which data structure to use!
+
 LESSON PLAN STRUCTURE FOR 11+ (15-minute optimized):
 1. Learning Objectives (3-4 clear exam skills to master)
 2. Teaching Sequence with TWO main steps:
@@ -450,6 +456,12 @@ Make all content appropriate for 11+ entrance exam level (ages 10-11).`
       : `You are an expert curriculum designer creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
 Your task: Create a highly structured 15-minute lesson with detailed teaching scripts that minimize complex AI reasoning during delivery.
+
+🚨 CRITICAL DATA STRUCTURE RULE 🚨
+- When block "type" is "question", the "data" field MUST use the question structure (with question, options, explanation)
+- NEVER use text structure (with content field) for question blocks
+- NEVER use definition structure (with term, definition) for question blocks
+- Each block type has a SPECIFIC data structure - match the type to the correct structure!
 
 LESSON PLAN STRUCTURE (15-minute optimized):
 1. Learning Objectives (3-5 clear, measurable goals)
@@ -643,6 +655,30 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                   hasOptions: !!block.data.options,
                   isOptionsArray: Array.isArray(block.data.options)
                 });
+                console.error('❌ Actual data structure:', JSON.stringify(block.data, null, 2));
+                console.error('❌ Block title:', block.title);
+                console.error('❌ Available keys in data:', Object.keys(block.data || {}));
+                
+                // Attempt to repair if data looks like text content
+                if (block.data.content && typeof block.data.content === 'string') {
+                  console.warn('🔧 Detected text content in question block - attempting to extract question format');
+                  const content = block.data.content;
+                  
+                  // Try to parse if it looks like JSON
+                  if (content.includes('{') && content.includes('}')) {
+                    try {
+                      const parsed = JSON.parse(content);
+                      if (parsed.question && parsed.options) {
+                        console.log('✅ Successfully repaired question from text content');
+                        block.data = parsed;
+                        return block; // Skip needsRepair flag
+                      }
+                    } catch (e) {
+                      console.warn('Failed to parse content as JSON:', e);
+                    }
+                  }
+                }
+                
                 block.needsRepair = true;
               } else if (block.data.options.length < 2) {
                 console.warn('⚠️ Malformed question - insufficient options:', block.data.options.length);
@@ -667,9 +703,36 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       
       const retryPrompt = `CRITICAL: Your previous response had ${questionsNeedingRepair.length} malformed questions.
 
-⚠️ FORMATTING ERROR: Some questions had "data" as a plain string instead of a properly structured object!
+⚠️ FORMATTING ERROR: Question blocks are using the WRONG data structure!
 
-Generate a complete lesson plan for "${topic}" (Year Group: ${yearGroup}) with properly formatted questions.
+The questions are missing "question" and "options" fields. You might be using text/content format instead of question format.
+
+❌ WRONG (you did this):
+{
+  "type": "question",
+  "title": "Practice Question",
+  "data": {
+    "content": "What is the answer?"  ← WRONG! This is TEXT format, not QUESTION format!
+  }
+}
+
+✅ CORRECT (do this instead):
+{
+  "type": "question", 
+  "title": "Practice Question",
+  "data": {
+    "question": "What is the capital of France?",
+    "options": [
+      { "text": "London", "isCorrect": false },
+      { "text": "Paris", "isCorrect": true },
+      { "text": "Berlin", "isCorrect": false },
+      { "text": "Madrid", "isCorrect": false }
+    ],
+    "explanation": "Paris is the capital of France"
+  }
+}
+
+Generate a complete lesson plan for "${topic}" (Year Group: ${yearGroup}) with ALL questions using the correct structure above.
 
 EXAMPLE OF CORRECT QUESTION FORMAT (USE THIS EXACT STRUCTURE):
 {
