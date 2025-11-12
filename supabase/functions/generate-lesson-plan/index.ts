@@ -288,70 +288,75 @@ serve(async (req) => {
                     title: { type: 'string' },
                     data: {
                       type: 'object',
-                      description: 'CRITICAL: data MUST be a properly structured object (NOT a string). Never use stringified JSON.',
-                      oneOf: [
-                        {
-                          type: 'object',
-                          description: 'Text content (PLAIN TEXT ONLY - no HTML tags. Use **bold** for emphasis, \\n for line breaks, • for bullets)',
-                          properties: {
-                            content: { 
-                              type: 'string',
-                              description: 'Plain text content with simple markdown. NO HTML tags. Use **text** for bold, \\n for paragraphs, • for bullet points.'
-                            }
-                          },
-                          required: ['content']
+                      description: 'CRITICAL: The structure of "data" MUST match the "type" field. Question blocks MUST have question/options/explanation. NO empty objects allowed.',
+                      additionalProperties: true,
+                      properties: {
+                        // For type='text'
+                        content: { 
+                          type: 'string',
+                          description: 'Plain text content (only for type="text"). Use **bold**, \\n for paragraphs, • for bullets.'
                         },
-                        {
-                          type: 'object',
-                          description: 'Table data',
-                          properties: {
-                            headers: { type: 'array', items: { type: 'string' } },
-                            rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } }
-                          },
-                          required: ['headers', 'rows']
+                        // For type='table'
+                        headers: { 
+                          type: 'array', 
+                          items: { type: 'string' },
+                          description: 'Table headers (only for type="table")'
                         },
-                        {
-                          type: 'object',
-                          description: 'Definition',
-                          properties: {
-                            term: { type: 'string' },
-                            definition: { type: 'string' },
-                            example: { type: 'string' }
-                          },
-                          required: ['term', 'definition']
+                        rows: { 
+                          type: 'array', 
+                          items: { type: 'array', items: { type: 'string' } },
+                          description: 'Table rows (only for type="table")'
                         },
-                        {
-                          type: 'object',
-                          description: 'Question - MUST be a properly structured object with question, options array, and explanation',
-                          properties: {
-                            question: { type: 'string', description: 'The question text' },
-                            options: {
-                              type: 'array',
-                              minItems: 2,
-                              description: 'Array of answer options (minimum 2)',
-                              items: {
-                                type: 'object',
-                                properties: {
-                                  text: { type: 'string' },
-                                  isCorrect: { type: 'boolean' }
-                                },
-                                required: ['text', 'isCorrect']
-                              }
+                        // For type='definition'
+                        term: { 
+                          type: 'string',
+                          description: 'Term to define (only for type="definition")'
+                        },
+                        definition: { 
+                          type: 'string',
+                          description: 'Definition text (only for type="definition")'
+                        },
+                        example: { 
+                          type: 'string',
+                          description: 'Example for definition (optional, only for type="definition")'
+                        },
+                        // For type='question' - THESE ARE REQUIRED WHEN type='question'
+                        question: { 
+                          type: 'string',
+                          minLength: 10,
+                          description: '🚨 REQUIRED when type="question": The actual question text to ask the student'
+                        },
+                        options: {
+                          type: 'array',
+                          minItems: 2,
+                          maxItems: 4,
+                          description: '🚨 REQUIRED when type="question": Array of 2-4 answer options',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              text: { type: 'string', minLength: 1 },
+                              isCorrect: { type: 'boolean' }
                             },
-                            explanation: { type: 'string', description: 'Explanation of the correct answer' }
-                          },
-                          required: ['question', 'options', 'explanation']
+                            required: ['text', 'isCorrect'],
+                            additionalProperties: false
+                          }
                         },
-                        {
-                          type: 'object',
-                          description: 'Diagram',
-                          properties: {
-                            description: { type: 'string' },
-                            elements: { type: 'array', items: { type: 'string' } }
-                          },
-                          required: ['description', 'elements']
+                        explanation: { 
+                          type: 'string',
+                          minLength: 10,
+                          description: '🚨 REQUIRED when type="question": Explanation of why the correct answer is right'
+                        },
+                        // For type='diagram'
+                        description: { 
+                          type: 'string',
+                          description: 'Diagram description (only for type="diagram")'
+                        },
+                        elements: { 
+                          type: 'array', 
+                          items: { type: 'string' },
+                          description: 'Diagram elements (only for type="diagram")'
                         }
-                      ]
+                      }
                     },
                     teaching_notes: { 
                       type: 'string',
@@ -650,36 +655,48 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
             // Check if data is object but missing required fields
             else if (typeof block.data === 'object') {
               if (!block.data.question || !block.data.options || !Array.isArray(block.data.options)) {
-                console.warn('⚠️ Malformed question detected - missing required fields:', {
+      const dataKeys = Object.keys(block.data || {});
+                console.error(`❌ Question validation failed [Step ${stepIndex + 1}, Block ${blockIndex}]:`, {
                   hasQuestion: !!block.data.question,
                   hasOptions: !!block.data.options,
-                  isOptionsArray: Array.isArray(block.data.options)
+                  isOptionsArray: Array.isArray(block.data.options),
+                  dataKeys: dataKeys,
+                  isEmpty: dataKeys.length === 0
                 });
-                console.error('❌ Actual data structure:', JSON.stringify(block.data, null, 2));
-                console.error('❌ Block title:', block.title);
-                console.error('❌ Available keys in data:', Object.keys(block.data || {}));
+                console.error('   Question title:', block.title);
+                console.error('   Data type:', typeof block.data);
                 
-                // Attempt to repair if data looks like text content
-                if (block.data.content && typeof block.data.content === 'string') {
-                  console.warn('🔧 Detected text content in question block - attempting to extract question format');
-                  const content = block.data.content;
+                // Check for EMPTY data object (most critical issue)
+                if (dataKeys.length === 0) {
+                  console.error('   🚨 CRITICAL: EMPTY DATA OBJECT - NO FIELDS AT ALL!');
+                  block.needsRepair = true;
+                  block.repairReason = 'EMPTY_DATA_OBJECT';
+                } else {
+                  console.error('   Data preview:', JSON.stringify(block.data, null, 2).substring(0, 200));
                   
-                  // Try to parse if it looks like JSON
-                  if (content.includes('{') && content.includes('}')) {
-                    try {
-                      const parsed = JSON.parse(content);
-                      if (parsed.question && parsed.options) {
-                        console.log('✅ Successfully repaired question from text content');
-                        block.data = parsed;
-                        return block; // Skip needsRepair flag
+                  // Attempt to repair if data looks like text content
+                  if (block.data.content && typeof block.data.content === 'string') {
+                    console.warn('   🔧 Detected text content in question block - attempting to extract question format');
+                    const content = block.data.content;
+                    
+                    // Try to parse if it looks like JSON
+                    if (content.includes('{') && content.includes('}')) {
+                      try {
+                        const parsed = JSON.parse(content);
+                        if (parsed.question && parsed.options) {
+                          console.log('   ✅ Successfully repaired question from text content');
+                          block.data = parsed;
+                          return block; // Skip needsRepair flag
+                        }
+                      } catch (e) {
+                        console.warn('   Failed to parse content as JSON:', e);
                       }
-                    } catch (e) {
-                      console.warn('Failed to parse content as JSON:', e);
                     }
                   }
+                  
+                  block.needsRepair = true;
+                  block.repairReason = block.data.question ? 'missing options field' : 'missing question field';
                 }
-                
-                block.needsRepair = true;
               } else if (block.data.options.length < 2) {
                 console.warn('⚠️ Malformed question - insufficient options:', block.data.options.length);
                 block.needsRepair = true;
@@ -701,38 +718,55 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       console.warn(`⚠️ ${questionsNeedingRepair.length} questions marked for repair - triggering retry...`);
       console.log('🔄 Retrying with stricter prompt to fix malformed questions...');
       
-      const retryPrompt = `CRITICAL: Your previous response had ${questionsNeedingRepair.length} malformed questions.
+      // Check for empty data objects specifically
+      const emptyDataCount = questionsNeedingRepair.filter((b: any) => b.repairReason === 'EMPTY_DATA_OBJECT').length;
+      if (emptyDataCount > 0) {
+        console.error(`❌ CRITICAL: ${emptyDataCount} question blocks have COMPLETELY EMPTY data objects!`);
+        console.error('This means the AI is generating: { "type": "question", "title": "...", "data": {} }');
+      }
+      
+      const retryPrompt = `🚨 CRITICAL ERROR: Your previous response had ${questionsNeedingRepair.length} malformed question blocks!
 
-⚠️ FORMATTING ERROR: Question blocks are using the WRONG data structure!
+${emptyDataCount > 0 ? `
+❌❌❌ MOST CRITICAL ISSUE: ${emptyDataCount} questions have EMPTY data objects ❌❌❌
 
-The questions are missing "question" and "options" fields. You might be using text/content format instead of question format.
-
-❌ WRONG (you did this):
+YOU GENERATED THIS (COMPLETELY WRONG):
 {
   "type": "question",
-  "title": "Practice Question",
-  "data": {
-    "content": "What is the answer?"  ← WRONG! This is TEXT format, not QUESTION format!
-  }
+  "title": "Practice Question: Starch Test Result",
+  "data": {}  ← EMPTY! NO FIELDS! UNACCEPTABLE!
 }
+` : ''}
 
-✅ CORRECT (do this instead):
+⚠️ The questions are missing required fields: "question", "options", and "explanation"
+
+YOU MUST GENERATE THIS EXACT STRUCTURE FOR EVERY QUESTION BLOCK:
 {
-  "type": "question", 
-  "title": "Practice Question",
+  "type": "question",
+  "title": "Practice Question: Food Test Identification",
   "data": {
-    "question": "What is the capital of France?",
+    "question": "What colour does iodine solution turn in the presence of starch?",
     "options": [
-      { "text": "London", "isCorrect": false },
-      { "text": "Paris", "isCorrect": true },
-      { "text": "Berlin", "isCorrect": false },
-      { "text": "Madrid", "isCorrect": false }
+      { "text": "Blue-black", "isCorrect": true },
+      { "text": "Brick-red", "isCorrect": false },
+      { "text": "Green", "isCorrect": false },
+      { "text": "Stays orange", "isCorrect": false }
     ],
-    "explanation": "Paris is the capital of France"
-  }
+    "explanation": "Iodine solution turns blue-black when starch is present, which is a positive test result for starch."
+  },
+  "teaching_notes": "Ask the question clearly. If student answers incorrectly, say 'Not quite - think about the characteristic colour change.' Praise correct answer."
 }
 
-Generate a complete lesson plan for "${topic}" (Year Group: ${yearGroup}) with ALL questions using the correct structure above.
+🚨 MANDATORY REQUIREMENTS FOR EVERY QUESTION BLOCK:
+✅ "data" MUST be a JSON object with THREE required fields
+✅ "question" must be a string with the actual question text (minimum 10 characters)
+✅ "options" must be an array containing 2-4 answer choices
+✅ Each option object needs "text" (the answer choice) and "isCorrect" (boolean)
+✅ "explanation" must explain why the correct answer is right (minimum 10 characters)
+✅ DO NOT generate empty data objects: {}
+✅ DO NOT use text/content format for questions
+
+NOW: Regenerate the COMPLETE lesson plan for "${topic}" (Year Group: ${yearGroup}) with ALL question blocks following this EXACT structure above.
 
 EXAMPLE OF CORRECT QUESTION FORMAT (USE THIS EXACT STRUCTURE):
 {
@@ -821,6 +855,32 @@ If you generate questions with incorrect format, the lesson will be rejected.`;
             });
           }
         });
+        
+        // POST-RETRY VALIDATION: Check if retry actually fixed the empty data issue
+        const retryEmptyDataBlocks = retryPlanData.steps.flatMap((step: any, stepIndex: number) =>
+          step.content_blocks?.filter((block: any, blockIndex: number) => {
+            if (block.type === 'question') {
+              const dataKeys = Object.keys(block.data || {});
+              if (dataKeys.length === 0) {
+                console.error(`❌ POST-RETRY: Still empty data at Step ${stepIndex + 1}, Block ${blockIndex}`);
+                console.error(`   Block title: ${block.title}`);
+                return true;
+              }
+              if (!block.data.question || !block.data.options) {
+                console.error(`❌ POST-RETRY: Missing fields at Step ${stepIndex + 1}, Block ${blockIndex}`);
+                console.error(`   Has question: ${!!block.data.question}, Has options: ${!!block.data.options}`);
+                return true;
+              }
+            }
+            return false;
+          }) || []
+        );
+        
+        if (retryEmptyDataBlocks.length > 0) {
+          console.error(`❌ RETRY FAILED: ${retryEmptyDataBlocks.length} question blocks still invalid after retry!`);
+          console.error('The AI model cannot generate proper question structures despite explicit instructions.');
+          throw new Error(`AI model failed after retry. ${retryEmptyDataBlocks.length} questions still invalid. Try a different topic or contact support.`);
+        }
         
         // Validate retry result
         const retryMalformed = retryPlanData.steps.flatMap((s: any) => 
