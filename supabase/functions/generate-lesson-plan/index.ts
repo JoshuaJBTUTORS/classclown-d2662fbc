@@ -288,75 +288,7 @@ serve(async (req) => {
                     title: { type: 'string' },
                     data: {
                       type: 'object',
-                      description: 'CRITICAL: The structure of "data" MUST match the "type" field. Question blocks MUST have question/options/explanation. NO empty objects allowed.',
-                      additionalProperties: true,
-                      properties: {
-                        // For type='text'
-                        content: { 
-                          type: 'string',
-                          description: 'Plain text content (only for type="text"). Use **bold**, \\n for paragraphs, • for bullets.'
-                        },
-                        // For type='table'
-                        headers: { 
-                          type: 'array', 
-                          items: { type: 'string' },
-                          description: 'Table headers (only for type="table")'
-                        },
-                        rows: { 
-                          type: 'array', 
-                          items: { type: 'array', items: { type: 'string' } },
-                          description: 'Table rows (only for type="table")'
-                        },
-                        // For type='definition'
-                        term: { 
-                          type: 'string',
-                          description: 'Term to define (only for type="definition")'
-                        },
-                        definition: { 
-                          type: 'string',
-                          description: 'Definition text (only for type="definition")'
-                        },
-                        example: { 
-                          type: 'string',
-                          description: 'Example for definition (optional, only for type="definition")'
-                        },
-                        // For type='question' - THESE ARE REQUIRED WHEN type='question'
-                        question: { 
-                          type: 'string',
-                          minLength: 10,
-                          description: '🚨 REQUIRED when type="question": The actual question text to ask the student'
-                        },
-                        options: {
-                          type: 'array',
-                          minItems: 2,
-                          maxItems: 4,
-                          description: '🚨 REQUIRED when type="question": Array of 2-4 answer options',
-                          items: {
-                            type: 'object',
-                            properties: {
-                              text: { type: 'string', minLength: 1 },
-                              isCorrect: { type: 'boolean' }
-                            },
-                            required: ['text', 'isCorrect'],
-                            additionalProperties: false
-                          }
-                        },
-                        explanation: { 
-                          type: 'string',
-                          minLength: 10,
-                          description: '🚨 REQUIRED when type="question": Explanation of why the correct answer is right'
-                        },
-                        // For type='diagram'
-                        description: { 
-                          type: 'string',
-                          description: 'Diagram description (only for type="diagram")'
-                        },
-                        elements: { 
-                          type: 'array', 
-                          items: { type: 'string' },
-                          description: 'Diagram elements (only for type="diagram")'
-                        }
-                      }
+                      description: '🚨 CRITICAL: For type="question" MUST include: question (string), options (array), explanation (string). For type="text" use content (string). NO empty objects!'
                     },
                     teaching_notes: { 
                       type: 'string',
@@ -390,10 +322,27 @@ serve(async (req) => {
 Your task: Create a highly structured lesson plan (15-min duration) with detailed teaching scripts that minimize complex AI reasoning during delivery.
 
 🚨 CRITICAL DATA STRUCTURE RULE 🚨
-- When block "type" is "question", the "data" field MUST use the question structure (with question, options, explanation)
-- NEVER use text structure (with content field) for question blocks
-- NEVER use definition structure (with term, definition) for question blocks
-- The "type" field determines which data structure to use!
+When "type" is "question", the "data" object MUST have this EXACT structure:
+{
+  "question": "What is 47 + 28?",
+  "options": [
+    { "text": "65", "isCorrect": false },
+    { "text": "75", "isCorrect": true },
+    { "text": "74", "isCorrect": false },
+    { "text": "76", "isCorrect": false }
+  ],
+  "explanation": "47 + 28 = 75. Add the ones: 7+8=15 (carry 1). Add the tens: 4+2+1=7."
+}
+
+DO NOT use: { "content": "question text" } for questions
+DO NOT use: { "term": "...", "definition": "..." } for questions
+DO NOT use: {} (empty object) for ANY block type
+
+Each block "type" requires specific "data" fields:
+- type="text" → data must have "content" (string)
+- type="question" → data must have "question" (string), "options" (array), "explanation" (string)
+- type="table" → data must have "headers" (array), "rows" (array)
+- type="definition" → data must have "term" (string), "definition" (string)
 
 LESSON PLAN STRUCTURE FOR 11+ (15-minute optimized):
 1. Learning Objectives (3-4 clear exam skills to master)
@@ -463,10 +412,28 @@ Make all content appropriate for 11+ entrance exam level (ages 10-11).`
 Your task: Create a highly structured 15-minute lesson with detailed teaching scripts that minimize complex AI reasoning during delivery.
 
 🚨 CRITICAL DATA STRUCTURE RULE 🚨
-- When block "type" is "question", the "data" field MUST use the question structure (with question, options, explanation)
-- NEVER use text structure (with content field) for question blocks
-- NEVER use definition structure (with term, definition) for question blocks
-- Each block type has a SPECIFIC data structure - match the type to the correct structure!
+When "type" is "question", the "data" object MUST have this EXACT structure:
+{
+  "question": "What is the capital of France?",
+  "options": [
+    { "text": "London", "isCorrect": false },
+    { "text": "Paris", "isCorrect": true },
+    { "text": "Berlin", "isCorrect": false },
+    { "text": "Madrid", "isCorrect": false }
+  ],
+  "explanation": "Paris is the capital and largest city of France."
+}
+
+DO NOT use: { "content": "question text" } for questions
+DO NOT use: { "term": "...", "definition": "..." } for questions  
+DO NOT use: {} (empty object) for ANY block type
+
+Each block "type" requires specific "data" fields:
+- type="text" → data must have "content" (string)
+- type="question" → data must have "question" (string), "options" (array), "explanation" (string)
+- type="table" → data must have "headers" (array), "rows" (array)
+- type="definition" → data must have "term" (string), "definition" (string), optional "example"
+- type="diagram" → data must have "description" (string), "elements" (array)
 
 LESSON PLAN STRUCTURE (15-minute optimized):
 1. Learning Objectives (3-5 clear, measurable goals)
