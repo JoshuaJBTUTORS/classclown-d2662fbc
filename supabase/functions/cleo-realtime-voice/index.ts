@@ -954,18 +954,16 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       }
 
       // Forward all events to client
-      if (message.type === 'response.audio.delta') {
-        // Don't log every audio chunk (too noisy)
-      } else {
+      if (message.type !== 'response.audio.delta') {
         console.log('📥 OpenAI -> Client:', message.type);
       }
       
-        if (clientSocket.readyState === WebSocket.OPEN) {
-          clientSocket.send(event.data);
-        } else {
-          console.warn("⚠️ Client socket not ready, cannot forward message");
-        }
-      } catch (error) {
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.send(event.data);
+      } else {
+        console.warn("⚠️ Client socket not ready, cannot forward message");
+      }
+    } catch (error) {
         // Detailed error logging - but don't crash the session
         console.error("🚨 CRITICAL ERROR processing OpenAI message:", error);
         console.error("Error name:", error?.name);
