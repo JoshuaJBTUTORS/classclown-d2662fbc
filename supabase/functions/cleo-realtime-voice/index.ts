@@ -73,13 +73,15 @@ Deno.serve(async (req) => {
 
     // Fetch user profile for personalized greeting
     const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('first_name')
+      .from('profiles')
+      .select('first_name, education_level, exam_boards')
       .eq('id', user.id)
       .single();
 
     const userName = userProfile?.first_name || 'there';
-    console.log("User name:", userName);
+    const educationLevel = userProfile?.education_level || '';
+    const examBoards = userProfile?.exam_boards as Record<string, string> || {};
+    console.log("User profile:", { userName, educationLevel, examBoards });
 
     // Get or create conversation
     const conversationId = url.searchParams.get("conversationId");
@@ -163,13 +165,53 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Determine exam board context for the introduction
+    let examBoardContext = '';
+    let subjectName = '';
+
+    if (lessonPlan?.lesson_id) {
+      // Fetch subject from lesson -> module -> course chain
+      const { data: lessonData } = await supabase
+        .from('course_lessons')
+        .select(`
+          id,
+          module_id,
+          course_modules!inner(
+            course_id,
+            courses!inner(
+              subject
+            )
+          )
+        `)
+        .eq('id', lessonPlan.lesson_id)
+        .single();
+      
+      if (lessonData?.course_modules?.courses?.subject) {
+        subjectName = lessonData.course_modules.courses.subject;
+        console.log("Subject determined:", subjectName);
+      }
+    }
+
+    // Look up exam board for this subject
+    if (subjectName && conversation.subject_id && examBoards[conversation.subject_id]) {
+      const examBoard = examBoards[conversation.subject_id];
+      examBoardContext = ` for ${examBoard} ${subjectName}`;
+      console.log("Exam board context:", examBoardContext);
+    } else if (subjectName && educationLevel) {
+      examBoardContext = ` for ${educationLevel.toUpperCase()} ${subjectName}`;
+      console.log("Education level context:", examBoardContext);
+    } else if (lessonPlan?.topic && lessonPlan?.year_group) {
+      examBoardContext = ` for ${lessonPlan.year_group}`;
+      console.log("Year group context:", examBoardContext);
+    }
+
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
     // Connect to OpenAI Realtime API using subprotocol authentication
-    console.log("Connecting to OpenAI Realtime API (mini model)...");
+    console.log("Connecting to OpenAI Realtime API (full model)...");
     const openAISocket = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview-2024-12-17",
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
       [
         'realtime',
         `openai-insecure-api-key.${OPENAI_API_KEY}`,
@@ -392,11 +434,12 @@ CRITICAL INSTRUCTIONS:
 5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
 
 YOUR TEACHING FLOW:
-1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
-2. Call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting
-3. After the content appears, reference it naturally in your explanation
-4. When you see a question in the content, present it and wait for the student's answer
-5. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
+1. Start with: "Hello ${userName}! Today we're going to learn about ${lessonPlan.topic}${examBoardContext}. This lesson is structured to help you master the key concepts step by step. To get the most from our session, don't hesitate to ask questions or request clarification whenever something isn't clear. Let's dive in!"
+2. CRITICAL: Do NOT begin by saying things like "Absolutely! Let's start with..." or treating the session start as if the student asked a question. You are the teacher leading the lesson, not answering a student's request. Start authoritatively and warmly as described in step 1.
+3. Immediately call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") to begin the lesson
+4. After the content appears, reference it naturally in your explanation
+5. When you see a question in the content, present it and wait for the student's answer
+6. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
 
 TEACHING STYLE:
 - Be warm and engaging
