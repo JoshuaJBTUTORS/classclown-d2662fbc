@@ -209,8 +209,136 @@ serve(async (req) => {
 
     if (planError) throw planError;
 
+    // Build lesson plan schema (reusable for initial call and retries)
+    const lessonPlanSchema = {
+      type: 'object',
+      properties: {
+        objectives: {
+          type: 'array',
+          items: { type: 'string' },
+          minItems: isExamPractice ? 3 : 3,
+          maxItems: isExamPractice ? 4 : 5,
+          description: isExamPractice 
+            ? '3-4 exam skills to master' 
+            : '3-5 clear, measurable learning objectives'
+        },
+        steps: {
+          type: 'array',
+          minItems: isExamPractice ? 2 : 3,
+          maxItems: isExamPractice ? 2 : 5,
+          description: isExamPractice
+            ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
+            : 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              title: { type: 'string' },
+              duration_minutes: { type: 'number' },
+              content_blocks: {
+                type: 'array',
+                minItems: isExamPractice ? 1 : 2,
+                description: isExamPractice
+                  ? 'Step 1: 1-2 explanation blocks. Step 2: EXACTLY 20 question blocks'
+                  : 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    type: { 
+                      type: 'string',
+                      enum: ['table', 'definition', 'question', 'diagram', 'text']
+                    },
+                    title: { type: 'string' },
+                    data: {
+                      oneOf: [
+                        {
+                          type: 'object',
+                          description: 'Text content (PLAIN TEXT ONLY - no HTML tags. Use **bold** for emphasis, \\n for line breaks, • for bullets)',
+                          properties: {
+                            content: { 
+                              type: 'string',
+                              description: 'Plain text content with simple markdown. NO HTML tags. Use **text** for bold, \\n for paragraphs, • for bullet points.'
+                            }
+                          },
+                          required: ['content']
+                        },
+                        {
+                          type: 'object',
+                          description: 'Table data',
+                          properties: {
+                            headers: { type: 'array', items: { type: 'string' } },
+                            rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } }
+                          },
+                          required: ['headers', 'rows']
+                        },
+                        {
+                          type: 'object',
+                          description: 'Definition',
+                          properties: {
+                            term: { type: 'string' },
+                            definition: { type: 'string' },
+                            example: { type: 'string' }
+                          },
+                          required: ['term', 'definition']
+                        },
+                        {
+                          type: 'object',
+                          description: 'Question',
+                          properties: {
+                            question: { type: 'string' },
+                            options: {
+                              type: 'array',
+                              items: {
+                                type: 'object',
+                                properties: {
+                                  text: { type: 'string' },
+                                  isCorrect: { type: 'boolean' }
+                                },
+                                required: ['text', 'isCorrect']
+                              }
+                            },
+                            explanation: { type: 'string' }
+                          },
+                          required: ['question', 'options']
+                        },
+                        {
+                          type: 'object',
+                          description: 'Diagram',
+                          properties: {
+                            description: { type: 'string' },
+                            elements: { type: 'array', items: { type: 'string' } }
+                          },
+                          required: ['description', 'elements']
+                        }
+                      ]
+                    },
+                    teaching_notes: { 
+                      type: 'string',
+                      description: 'REQUIRED: Complete teaching script. Format: "Start by saying: [exact opening phrase]. Key points: • [point 1] • [point 2] • [point 3]. Transition: [exact closing phrase]." For questions, include hints for wrong answers.'
+                    },
+                    prerequisites: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'REQUIRED: List specific prior knowledge needed. Example: ["Understanding of basic fractions", "Multiplication tables"]. If none: ["None - introductory content"]'
+                    },
+                    delivery_guidance: {
+                      type: 'string',
+                      description: 'Optional: Specific delivery tips. Example: "Pause 3 seconds after question", "Use encouraging tone", "If student struggles with X, offer hint: [specific hint]"'
+                    }
+                  },
+                  required: ['type', 'data']
+                }
+              }
+            },
+            required: ['id', 'title', 'duration_minutes', 'content_blocks']
+          }
+        }
+      },
+      required: ['objectives', 'steps']
+    };
+
     // Build system prompt based on teaching mode
-    const systemPrompt = isExamPractice 
+    const systemPrompt = isExamPractice
       ? `You are an expert 11+ exam preparation tutor creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
 Your task: Create a highly structured lesson plan (15-min duration) with detailed teaching scripts that minimize complex AI reasoning during delivery.
@@ -394,132 +522,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
             description: isExamPractice 
               ? 'Create an exam practice lesson plan with worked example and practice questions'
               : 'Create a structured lesson plan with pre-generated content',
-            parameters: {
-              type: 'object',
-              properties: {
-                objectives: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  minItems: isExamPractice ? 3 : 3,
-                  maxItems: isExamPractice ? 4 : 5,
-                  description: isExamPractice 
-                    ? '3-4 exam skills to master' 
-                    : '3-5 clear, measurable learning objectives'
-                },
-                steps: {
-                  type: 'array',
-                  minItems: isExamPractice ? 2 : 3,
-                  maxItems: isExamPractice ? 2 : 5,
-                  description: isExamPractice
-                    ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
-                    : 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string' },
-                      title: { type: 'string' },
-                      duration_minutes: { type: 'number' },
-                      content_blocks: {
-                        type: 'array',
-                        minItems: isExamPractice ? 1 : 2,
-                        description: isExamPractice
-                          ? 'Step 1: 1-2 explanation blocks. Step 2: EXACTLY 20 question blocks'
-                          : 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
-                        items: {
-                          type: 'object',
-                          properties: {
-                            type: { 
-                              type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text']
-                            },
-                            title: { type: 'string' },
-                            data: {
-                              oneOf: [
-                                {
-                                  type: 'object',
-                                  description: 'Text content (PLAIN TEXT ONLY - no HTML tags. Use **bold** for emphasis, \\n for line breaks, • for bullets)',
-                                  properties: {
-                                    content: { 
-                                      type: 'string',
-                                      description: 'Plain text content with simple markdown. NO HTML tags. Use **text** for bold, \\n for paragraphs, • for bullet points.'
-                                    }
-                                  },
-                                  required: ['content']
-                                },
-                                {
-                                  type: 'object',
-                                  description: 'Table data',
-                                  properties: {
-                                    headers: { type: 'array', items: { type: 'string' } },
-                                    rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } }
-                                  },
-                                  required: ['headers', 'rows']
-                                },
-                                {
-                                  type: 'object',
-                                  description: 'Definition',
-                                  properties: {
-                                    term: { type: 'string' },
-                                    definition: { type: 'string' },
-                                    example: { type: 'string' }
-                                  },
-                                  required: ['term', 'definition']
-                                },
-                                {
-                                  type: 'object',
-                                  description: 'Question',
-                                  properties: {
-                                    question: { type: 'string' },
-                                    options: {
-                                      type: 'array',
-                                      items: {
-                                        type: 'object',
-                                        properties: {
-                                          text: { type: 'string' },
-                                          isCorrect: { type: 'boolean' }
-                                        },
-                                        required: ['text', 'isCorrect']
-                                      }
-                                    },
-                                    explanation: { type: 'string' }
-                                  },
-                                  required: ['question', 'options']
-                                },
-                                {
-                                  type: 'object',
-                                  description: 'Diagram',
-                                  properties: {
-                                    description: { type: 'string' },
-                                    elements: { type: 'array', items: { type: 'string' } }
-                                  },
-                                  required: ['description', 'elements']
-                                }
-                              ]
-                            },
-                            teaching_notes: { 
-                              type: 'string',
-                              description: 'REQUIRED: Complete teaching script. Format: "Start by saying: [exact opening phrase]. Key points: • [point 1] • [point 2] • [point 3]. Transition: [exact closing phrase]." For questions, include hints for wrong answers.'
-                            },
-                            prerequisites: {
-                              type: 'array',
-                              items: { type: 'string' },
-                              description: 'REQUIRED: List specific prior knowledge needed. Example: ["Understanding of basic fractions", "Multiplication tables"]. If none: ["None - introductory content"]'
-                            },
-                            delivery_guidance: {
-                              type: 'string',
-                              description: 'Optional: Specific delivery tips. Example: "Pause 3 seconds after question", "Use encouraging tone", "If student struggles with X, offer hint: [specific hint]"'
-                            }
-                          },
-                          required: ['type', 'data']
-                        }
-                      }
-                    },
-                    required: ['id', 'title', 'duration_minutes', 'content_blocks']
-                  }
-                }
-              },
-              required: ['objectives', 'steps']
-            }
+            parameters: lessonPlanSchema
           }
         }],
         tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
