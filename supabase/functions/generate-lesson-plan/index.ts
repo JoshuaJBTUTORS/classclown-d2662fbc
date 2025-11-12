@@ -750,9 +750,32 @@ You MUST generate all 20 questions. If you generate fewer or use wrong format, t
           if (block.type === 'diagram' && block.data?.description) {
             try {
               const elements = block.data.elements || [];
-              const prompt = `Small compact educational diagram: ${block.data.description}. Must clearly show: ${elements.join(', ')}. Style: minimalist icon-style illustration, simple and clean, white background, suitable for ${yearGroup} students. Size: small thumbnail format, 400x300 pixels maximum.`;
+              
+              // Enhance vague descriptions with topic context
+              let enhancedDescription = block.data.description;
+              const topicKeyword = topic.toLowerCase().split(' ')[0];
+              if (enhancedDescription.length < 10 || !enhancedDescription.toLowerCase().includes(topicKeyword)) {
+                enhancedDescription = `${topic}: ${enhancedDescription}`;
+                console.log(`Enhanced vague description: "${block.data.description}" -> "${enhancedDescription}"`);
+              }
+              
+              // Build educational context prompt
+              const prompt = `Educational diagram for ${yearGroup} ${topic} lesson: ${enhancedDescription}
+
+Subject: ${topic}
+Learning context: ${learningGoal || 'General educational content'}
+Must clearly show: ${elements.join(', ')}
+
+Requirements:
+- Directly related to ${topic}
+- Appropriate for ${yearGroup} students
+- Educational and curriculum-focused content only
+- NO generic or lifestyle imagery
+- Style: minimalist icon-style illustration, simple and clean, white background
+- Size: small thumbnail format, 400x300 pixels maximum`;
               
               console.log(`Generating image for diagram: ${block.title || 'Untitled'}`);
+              console.log(`Full image prompt: ${prompt.substring(0, 200)}...`);
               
               const imageResponse = await supabase.functions.invoke('generate-diagram-image', {
                 body: { prompt }
