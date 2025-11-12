@@ -15,6 +15,18 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
+  // Development mode debugging
+  if (import.meta.env.DEV) {
+    console.log('QuestionBlock data:', {
+      dataType: typeof data,
+      hasQuestion: !!data?.question,
+      hasOptions: !!data?.options,
+      optionsCount: Array.isArray(data?.options) ? data.options.length : 0,
+      hasExplanation: !!data?.explanation,
+      rawData: data
+    });
+  }
+
   // Defensive check for undefined data
   if (!data || !data.question || !data.options || !Array.isArray(data.options)) {
     console.error('QuestionBlock: Invalid data structure:', { 

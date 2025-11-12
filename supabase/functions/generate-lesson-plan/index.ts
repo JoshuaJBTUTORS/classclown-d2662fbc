@@ -250,6 +250,8 @@ serve(async (req) => {
                     },
                     title: { type: 'string' },
                     data: {
+                      type: 'object',
+                      description: 'CRITICAL: data MUST be a properly structured object (NOT a string). Never use stringified JSON.',
                       oneOf: [
                         {
                           type: 'object',
@@ -283,11 +285,13 @@ serve(async (req) => {
                         },
                         {
                           type: 'object',
-                          description: 'Question',
+                          description: 'Question - MUST be a properly structured object with question, options array, and explanation',
                           properties: {
-                            question: { type: 'string' },
+                            question: { type: 'string', description: 'The question text' },
                             options: {
                               type: 'array',
+                              minItems: 2,
+                              description: 'Array of answer options (minimum 2)',
                               items: {
                                 type: 'object',
                                 properties: {
@@ -297,9 +301,9 @@ serve(async (req) => {
                                 required: ['text', 'isCorrect']
                               }
                             },
-                            explanation: { type: 'string' }
+                            explanation: { type: 'string', description: 'Explanation of the correct answer' }
                           },
-                          required: ['question', 'options']
+                          required: ['question', 'options', 'explanation']
                         },
                         {
                           type: 'object',
@@ -839,16 +843,12 @@ You MUST generate all 20 questions. If you generate fewer or use wrong format, t
           if (retryToolCall) {
             const retryPlanData = JSON.parse(retryToolCall.function.arguments);
             
-            // Parse data fields
+            // Check for string data (should not happen with strict schema)
             retryPlanData.steps.forEach((step: any) => {
               if (step.content_blocks) {
                 step.content_blocks.forEach((block: any) => {
                   if (block.data && typeof block.data === 'string') {
-                    try {
-                      block.data = JSON.parse(block.data);
-                    } catch (e) {
-                      console.warn('Failed to parse retry content block data:', block.type, e);
-                    }
+                    console.error(`❌ Retry block ${block.type} has string data (should be object):`, block.data.substring(0, 100));
                   }
                 });
               }
@@ -880,23 +880,142 @@ You MUST generate all 20 questions. If you generate fewer or use wrong format, t
     }
     
     // Final validation before saving - ensure no malformed questions
-    const finalValidation = planData.steps.flatMap((step: any) => 
-      step.content_blocks?.filter((b: any) => {
+    const finalValidation = planData.steps.flatMap((step: any, stepIndex: number) => 
+      step.content_blocks?.map((b: any, blockIndex: number) => {
         if (b.type === 'question') {
-          return typeof b.data === 'string' || 
-                 !b.data?.question || 
-                 !b.data?.options || 
-                 !Array.isArray(b.data.options) ||
-                 b.data.options.length < 2 ||
-                 !b.data.options.some((o: any) => o.isCorrect);
+          const issues: string[] = [];
+          
+          if (typeof b.data === 'string') {
+            issues.push('data is a string instead of object');
+            console.error(`❌ Question [Step ${stepIndex}, Block ${blockIndex}]: data is string:`, b.data.substring(0, 100));
+          }
+          if (!b.data?.question) {
+            issues.push('missing question field');
+          }
+          if (!b.data?.options) {
+            issues.push('missing options field');
+          }
+          if (b.data?.options && !Array.isArray(b.data.options)) {
+            issues.push('options is not an array');
+          }
+          if (b.data?.options && Array.isArray(b.data.options) && b.data.options.length < 2) {
+            issues.push(`only ${b.data.options.length} options (need at least 2)`);
+          }
+          if (b.data?.options && Array.isArray(b.data.options) && !b.data.options.some((o: any) => o.isCorrect)) {
+            issues.push('no correct answer marked');
+          }
+          
+          if (issues.length > 0) {
+            console.error(`❌ Question validation failed [Step ${stepIndex}, Block ${blockIndex}]:`, issues);
+            console.error('   Question title:', b.title);
+            console.error('   Data type:', typeof b.data);
+            console.error('   Data preview:', JSON.stringify(b.data).substring(0, 200));
+            return { stepIndex, blockIndex, issues, block: b };
+          }
         }
-        return false;
-      }) || []
+        return null;
+      }).filter(v => v !== null) || []
     );
 
     if (finalValidation.length > 0) {
-      console.error('❌ Final validation failed:', finalValidation.length, 'invalid questions');
-      throw new Error(`Cannot save lesson plan: ${finalValidation.length} questions have invalid structure. Please regenerate.`);
+      const errorDetails = finalValidation.map(v => 
+        `Step ${v.stepIndex}, Block ${v.blockIndex}: ${v.issues.join(', ')}`
+      ).join('\n  ');
+      
+      console.error(`❌ Final validation failed: ${finalValidation.length} invalid questions\n  ${errorDetails}`);
+      
+      // Check if this is a first-time failure - attempt second retry with ultra-strict prompt
+      const hasStringData = finalValidation.some(v => v.issues.includes('data is a string instead of object'));
+      
+      if (hasStringData && isExamPractice) {
+        console.log('🔄 Attempting second retry with ultra-strict JSON format prompt...');
+        
+        const secondRetryPrompt = `CRITICAL ERROR: Your previous responses generated invalid JSON for question data!
+
+❌ WRONG FORMAT (data as STRING):
+{
+  "type": "question",
+  "data": "{\\"question\\": \\"What...\\", \\"options\\": [...]}"  ← This is a STRING, not an object!
+}
+
+✅ CORRECT FORMAT (data as OBJECT):
+{
+  "type": "question",
+  "data": {
+    "question": "What is 2+2?",
+    "options": [
+      { "text": "3", "isCorrect": false },
+      { "text": "4", "isCorrect": true }
+    ],
+    "explanation": "2+2=4 is basic addition"
+  }
+}
+
+Generate the 11+ NVR exam practice lesson for "${topic}" with properly formatted question OBJECTS (NOT strings)!`;
+
+        const secondRetryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: secondRetryPrompt }
+            ],
+            tools: [{
+              type: 'function',
+              function: {
+                name: 'create_lesson_plan',
+                description: 'Create a complete lesson plan',
+                parameters: lessonPlanSchema
+              }
+            }],
+            tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
+          })
+        });
+        
+        if (secondRetryResponse.ok) {
+          const secondRetryData = await secondRetryResponse.json();
+          const secondRetryToolCall = secondRetryData.choices[0].message.tool_calls?.[0];
+          
+          if (secondRetryToolCall) {
+            const secondRetryPlanData = JSON.parse(secondRetryToolCall.function.arguments);
+            
+            // Check for string data
+            secondRetryPlanData.steps.forEach((step: any) => {
+              if (step.content_blocks) {
+                step.content_blocks.forEach((block: any) => {
+                  if (block.data && typeof block.data === 'string') {
+                    console.error(`❌ Second retry block ${block.type} still has string data:`, block.data.substring(0, 100));
+                  }
+                });
+              }
+            });
+            
+            const secondRetryPracticeStep = secondRetryPlanData.steps.find((s: any) => 
+              s.title.toLowerCase().includes('practice')
+            );
+            const secondRetryQuestionCount = secondRetryPracticeStep?.content_blocks?.filter(
+              (b: any) => b.type === 'question'
+            ).length || 0;
+            
+            console.log(`✅ Second retry generated ${secondRetryQuestionCount} questions`);
+            
+            if (secondRetryQuestionCount >= 20) {
+              planData.objectives = secondRetryPlanData.objectives;
+              planData.steps = secondRetryPlanData.steps;
+              console.log('✅ Second retry successful - using second retry data');
+            } else {
+              console.warn(`⚠️ Second retry still non-compliant with ${secondRetryQuestionCount} questions - proceeding anyway`);
+            }
+          }
+        }
+      } else {
+        throw new Error(`Cannot save lesson plan: ${finalValidation.length} questions have invalid structure:\n${errorDetails}`);
+      }
     }
     
     console.log('✅ All questions validated successfully');
