@@ -613,7 +613,14 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
           }
         }
 
-        console.log("Session configured - Cleo will begin with personalized introduction from system prompt");
+        console.log("Session configured - triggering Cleo's personalized introduction");
+        
+        // Trigger Cleo to speak first with the personalized introduction
+        openAISocket.send(JSON.stringify({
+          type: 'response.create'
+        }));
+
+        console.log("Response.create sent - Cleo will now begin speaking");
       }
 
       // Cancel AI response when user starts speaking (interruption)
