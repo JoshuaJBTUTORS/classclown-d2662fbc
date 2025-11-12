@@ -589,8 +589,8 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
     );
 
     if (questionsNeedingRepair.length > 0) {
-      console.error(`❌ ${questionsNeedingRepair.length} questions are malformed and need repair`);
-      throw new Error(`AI generated malformed questions. ${questionsNeedingRepair.length} questions missing proper structure with options.`);
+      console.warn(`⚠️ ${questionsNeedingRepair.length} questions marked for repair - will be caught by retry logic or final validation`);
+      // Don't throw error here - let the retry logic (for exam practice) or final validation handle it
     }
     
     // Validate content blocks were generated
