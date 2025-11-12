@@ -6,43 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Safe helper to extract tool call from AI response
-function getToolCallFromResponse(responseData: any, context: string): any {
-  if (!responseData) {
-    console.error(`${context}: Response data is null/undefined`);
-    return null;
-  }
-  
-  if (!responseData.choices) {
-    console.error(`${context}: Response missing 'choices' field:`, JSON.stringify(responseData).substring(0, 200));
-    return null;
-  }
-  
-  if (!Array.isArray(responseData.choices)) {
-    console.error(`${context}: 'choices' is not an array:`, typeof responseData.choices);
-    return null;
-  }
-  
-  if (responseData.choices.length === 0) {
-    console.error(`${context}: 'choices' array is empty`);
-    return null;
-  }
-  
-  const choice = responseData.choices[0];
-  if (!choice.message) {
-    console.error(`${context}: First choice missing 'message' field`);
-    return null;
-  }
-  
-  const toolCalls = choice.message.tool_calls;
-  if (!toolCalls || toolCalls.length === 0) {
-    console.error(`${context}: No tool calls in response`);
-    return null;
-  }
-  
-  return toolCalls[0];
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -246,103 +209,22 @@ serve(async (req) => {
 
     if (planError) throw planError;
 
-    // Build lesson plan schema (reusable for initial call and retries)
-    const lessonPlanSchema = {
-      type: 'object',
-      properties: {
-        objectives: {
-          type: 'array',
-          items: { type: 'string' },
-          minItems: isExamPractice ? 3 : 3,
-          maxItems: isExamPractice ? 4 : 5,
-          description: isExamPractice 
-            ? '3-4 exam skills to master' 
-            : '3-5 clear, measurable learning objectives'
-        },
-        steps: {
-          type: 'array',
-          minItems: isExamPractice ? 2 : 3,
-          maxItems: isExamPractice ? 2 : 5,
-          description: isExamPractice
-            ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
-            : 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-              duration_minutes: { type: 'number' },
-              content_blocks: {
-                type: 'array',
-                minItems: isExamPractice ? 1 : 2,
-                description: isExamPractice
-                  ? 'Step 1: 1-2 explanation blocks. Step 2: EXACTLY 20 question blocks'
-                  : 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    type: { 
-                      type: 'string',
-                      enum: ['table', 'definition', 'question', 'diagram', 'text']
-                    },
-                    title: { type: 'string' },
-                    data: {
-                      type: 'object',
-                      description: '🚨 CRITICAL: For type="question" MUST include: question (string), options (array), explanation (string). For type="text" use content (string). NO empty objects!'
-                    },
-                    teaching_notes: { 
-                      type: 'string',
-                      description: 'REQUIRED: Complete teaching script. Format: "Start by saying: [exact opening phrase]. Key points: • [point 1] • [point 2] • [point 3]. Transition: [exact closing phrase]." For questions, include hints for wrong answers.'
-                    },
-                    prerequisites: {
-                      type: 'array',
-                      items: { type: 'string' },
-                      description: 'REQUIRED: List specific prior knowledge needed. Example: ["Understanding of basic fractions", "Multiplication tables"]. If none: ["None - introductory content"]'
-                    },
-                    delivery_guidance: {
-                      type: 'string',
-                      description: 'Optional: Specific delivery tips. Example: "Pause 3 seconds after question", "Use encouraging tone", "If student struggles with X, offer hint: [specific hint]"'
-                    }
-                  },
-                  required: ['type', 'data']
-                }
-              }
-            },
-            required: ['id', 'title', 'duration_minutes', 'content_blocks']
-          }
-        }
+    // Generate lesson plan using Lovable AI
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
       },
-      required: ['objectives', 'steps']
-    };
-
-    // Build system prompt based on teaching mode
-    const systemPrompt = isExamPractice
-      ? `You are an expert 11+ exam preparation tutor creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: isExamPractice 
+              ? `You are an expert 11+ exam preparation tutor creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
 Your task: Create a highly structured lesson plan (15-min duration) with detailed teaching scripts that minimize complex AI reasoning during delivery.
-
-🚨 CRITICAL DATA STRUCTURE RULE 🚨
-When "type" is "question", the "data" object MUST have this EXACT structure:
-{
-  "question": "What is 47 + 28?",
-  "options": [
-    { "text": "65", "isCorrect": false },
-    { "text": "75", "isCorrect": true },
-    { "text": "74", "isCorrect": false },
-    { "text": "76", "isCorrect": false }
-  ],
-  "explanation": "47 + 28 = 75. Add the ones: 7+8=15 (carry 1). Add the tens: 4+2+1=7."
-}
-
-DO NOT use: { "content": "question text" } for questions
-DO NOT use: { "term": "...", "definition": "..." } for questions
-DO NOT use: {} (empty object) for ANY block type
-
-Each block "type" requires specific "data" fields:
-- type="text" → data must have "content" (string)
-- type="question" → data must have "question" (string), "options" (array), "explanation" (string)
-- type="table" → data must have "headers" (array), "rows" (array)
-- type="definition" → data must have "term" (string), "definition" (string)
 
 LESSON PLAN STRUCTURE FOR 11+ (15-minute optimized):
 1. Learning Objectives (3-4 clear exam skills to master)
@@ -406,34 +288,10 @@ CONTENT BLOCKS FOR STEP 2 (Practice) - FULLY SCRIPTED QUESTIONS:
 ⚠️ CRITICAL: If you generate fewer than 20 questions OR use wrong format, the lesson will be rejected!
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
-      
-      : `You are an expert curriculum designer creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
+              
+              : `You are an expert curriculum designer creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
 Your task: Create a highly structured 15-minute lesson with detailed teaching scripts that minimize complex AI reasoning during delivery.
-
-🚨 CRITICAL DATA STRUCTURE RULE 🚨
-When "type" is "question", the "data" object MUST have this EXACT structure:
-{
-  "question": "What is the capital of France?",
-  "options": [
-    { "text": "London", "isCorrect": false },
-    { "text": "Paris", "isCorrect": true },
-    { "text": "Berlin", "isCorrect": false },
-    { "text": "Madrid", "isCorrect": false }
-  ],
-  "explanation": "Paris is the capital and largest city of France."
-}
-
-DO NOT use: { "content": "question text" } for questions
-DO NOT use: { "term": "...", "definition": "..." } for questions  
-DO NOT use: {} (empty object) for ANY block type
-
-Each block "type" requires specific "data" fields:
-- type="text" → data must have "content" (string)
-- type="question" → data must have "question" (string), "options" (array), "explanation" (string)
-- type="table" → data must have "headers" (array), "rows" (array)
-- type="definition" → data must have "term" (string), "definition" (string), optional "example"
-- type="diagram" → data must have "description" (string), "elements" (array)
 
 LESSON PLAN STRUCTURE (15-minute optimized):
 1. Learning Objectives (3-5 clear, measurable goals)
@@ -470,30 +328,13 @@ CONTENT BLOCK TYPES (with detailed examples):
    Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
 
 4. QUESTION: Check understanding with pre-written hints
-   ⚠️ CRITICAL FORMAT - The "data" field MUST be an object, NOT a string:
-   
-   ✅ CORRECT FORMAT:
-   { 
+   Example: { 
      type: "question", 
      title: "Check Understanding", 
-     data: {
-       question: "What gas do plants absorb during photosynthesis?",
-       options: [
-         { text: "Carbon dioxide", isCorrect: true },
-         { text: "Oxygen", isCorrect: false },
-         { text: "Nitrogen", isCorrect: false },
-         { text: "Hydrogen", isCorrect: false }
-       ],
-       explanation: "Plants absorb CO2 from the air during photosynthesis to make glucose"
-     },
+     data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" },
      teaching_notes: "If student picks 'Oxygen', say: 'Remember, plants PRODUCE oxygen, they don't absorb it. Think about what gas humans breathe out.' If correct, say: 'Excellent! CO2 is essential for making glucose.'",
      prerequisites: ["Understanding of photosynthesis process"]
    }
-   
-   ❌ WRONG FORMAT (DO NOT USE):
-   { type: "question", data: "What gas do plants absorb?" }
-   
-   The data field MUST be an object with question, options (array of objects), and explanation properties.
 
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
@@ -514,21 +355,7 @@ IMPORTANT RULES:
 - Include teaching_notes to guide how to present each block
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
-- Focus on depth and engagement, not quantity of steps`;
-
-    // Generate lesson plan using Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
+- Focus on depth and engagement, not quantity of steps`
           },
           {
             role: 'user',
@@ -547,7 +374,132 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
             description: isExamPractice 
               ? 'Create an exam practice lesson plan with worked example and practice questions'
               : 'Create a structured lesson plan with pre-generated content',
-            parameters: lessonPlanSchema
+            parameters: {
+              type: 'object',
+              properties: {
+                objectives: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  minItems: isExamPractice ? 3 : 3,
+                  maxItems: isExamPractice ? 4 : 5,
+                  description: isExamPractice 
+                    ? '3-4 exam skills to master' 
+                    : '3-5 clear, measurable learning objectives'
+                },
+                steps: {
+                  type: 'array',
+                  minItems: isExamPractice ? 2 : 3,
+                  maxItems: isExamPractice ? 2 : 5,
+                  description: isExamPractice
+                    ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
+                    : 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      title: { type: 'string' },
+                      duration_minutes: { type: 'number' },
+                      content_blocks: {
+                        type: 'array',
+                        minItems: isExamPractice ? 1 : 2,
+                        description: isExamPractice
+                          ? 'Step 1: 1-2 explanation blocks. Step 2: EXACTLY 20 question blocks'
+                          : 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            type: { 
+                              type: 'string',
+                              enum: ['table', 'definition', 'question', 'diagram', 'text']
+                            },
+                            title: { type: 'string' },
+                            data: {
+                              oneOf: [
+                                {
+                                  type: 'object',
+                                  description: 'Text content (PLAIN TEXT ONLY - no HTML tags. Use **bold** for emphasis, \\n for line breaks, • for bullets)',
+                                  properties: {
+                                    content: { 
+                                      type: 'string',
+                                      description: 'Plain text content with simple markdown. NO HTML tags. Use **text** for bold, \\n for paragraphs, • for bullet points.'
+                                    }
+                                  },
+                                  required: ['content']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Table data',
+                                  properties: {
+                                    headers: { type: 'array', items: { type: 'string' } },
+                                    rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } }
+                                  },
+                                  required: ['headers', 'rows']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Definition',
+                                  properties: {
+                                    term: { type: 'string' },
+                                    definition: { type: 'string' },
+                                    example: { type: 'string' }
+                                  },
+                                  required: ['term', 'definition']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Question',
+                                  properties: {
+                                    question: { type: 'string' },
+                                    options: {
+                                      type: 'array',
+                                      items: {
+                                        type: 'object',
+                                        properties: {
+                                          text: { type: 'string' },
+                                          isCorrect: { type: 'boolean' }
+                                        },
+                                        required: ['text', 'isCorrect']
+                                      }
+                                    },
+                                    explanation: { type: 'string' }
+                                  },
+                                  required: ['question', 'options']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Diagram',
+                                  properties: {
+                                    description: { type: 'string' },
+                                    elements: { type: 'array', items: { type: 'string' } }
+                                  },
+                                  required: ['description', 'elements']
+                                }
+                              ]
+                            },
+                            teaching_notes: { 
+                              type: 'string',
+                              description: 'REQUIRED: Complete teaching script. Format: "Start by saying: [exact opening phrase]. Key points: • [point 1] • [point 2] • [point 3]. Transition: [exact closing phrase]." For questions, include hints for wrong answers.'
+                            },
+                            prerequisites: {
+                              type: 'array',
+                              items: { type: 'string' },
+                              description: 'REQUIRED: List specific prior knowledge needed. Example: ["Understanding of basic fractions", "Multiplication tables"]. If none: ["None - introductory content"]'
+                            },
+                            delivery_guidance: {
+                              type: 'string',
+                              description: 'Optional: Specific delivery tips. Example: "Pause 3 seconds after question", "Use encouraging tone", "If student struggles with X, offer hint: [specific hint]"'
+                            }
+                          },
+                          required: ['type', 'data']
+                        }
+                      }
+                    },
+                    required: ['id', 'title', 'duration_minutes', 'content_blocks']
+                  }
+                }
+              },
+              required: ['objectives', 'steps']
+            }
           }
         }],
         tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
@@ -576,19 +528,11 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI response structure:', {
-      hasChoices: !!aiData.choices,
-      choicesLength: aiData.choices?.length || 0,
-      hasError: !!aiData.error,
-      errorMessage: aiData.error?.message
-    });
+    console.log('AI response received');
 
-    const toolCall = getToolCallFromResponse(aiData, 'Initial AI response');
-    
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
     if (!toolCall) {
-      console.error('❌ Initial AI response did not contain a valid tool call');
-      console.error('Response structure:', JSON.stringify(aiData).substring(0, 500));
-      throw new Error('AI did not generate a lesson plan. Please try again.');
+      throw new Error('No lesson plan generated');
     }
 
     const planData = JSON.parse(toolCall.function.arguments);
@@ -622,48 +566,12 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
             // Check if data is object but missing required fields
             else if (typeof block.data === 'object') {
               if (!block.data.question || !block.data.options || !Array.isArray(block.data.options)) {
-      const dataKeys = Object.keys(block.data || {});
-                console.error(`❌ Question validation failed [Step ${stepIndex + 1}, Block ${blockIndex}]:`, {
+                console.warn('⚠️ Malformed question detected - missing required fields:', {
                   hasQuestion: !!block.data.question,
                   hasOptions: !!block.data.options,
-                  isOptionsArray: Array.isArray(block.data.options),
-                  dataKeys: dataKeys,
-                  isEmpty: dataKeys.length === 0
+                  isOptionsArray: Array.isArray(block.data.options)
                 });
-                console.error('   Question title:', block.title);
-                console.error('   Data type:', typeof block.data);
-                
-                // Check for EMPTY data object (most critical issue)
-                if (dataKeys.length === 0) {
-                  console.error('   🚨 CRITICAL: EMPTY DATA OBJECT - NO FIELDS AT ALL!');
-                  block.needsRepair = true;
-                  block.repairReason = 'EMPTY_DATA_OBJECT';
-                } else {
-                  console.error('   Data preview:', JSON.stringify(block.data, null, 2).substring(0, 200));
-                  
-                  // Attempt to repair if data looks like text content
-                  if (block.data.content && typeof block.data.content === 'string') {
-                    console.warn('   🔧 Detected text content in question block - attempting to extract question format');
-                    const content = block.data.content;
-                    
-                    // Try to parse if it looks like JSON
-                    if (content.includes('{') && content.includes('}')) {
-                      try {
-                        const parsed = JSON.parse(content);
-                        if (parsed.question && parsed.options) {
-                          console.log('   ✅ Successfully repaired question from text content');
-                          block.data = parsed;
-                          return block; // Skip needsRepair flag
-                        }
-                      } catch (e) {
-                        console.warn('   Failed to parse content as JSON:', e);
-                      }
-                    }
-                  }
-                  
-                  block.needsRepair = true;
-                  block.repairReason = block.data.question ? 'missing options field' : 'missing question field';
-                }
+                block.needsRepair = true;
               } else if (block.data.options.length < 2) {
                 console.warn('⚠️ Malformed question - insufficient options:', block.data.options.length);
                 block.needsRepair = true;
@@ -680,192 +588,9 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       s.content_blocks?.filter((b: any) => b.type === 'question' && b.needsRepair) || []
     );
 
-    // RETRY LOGIC FOR MALFORMED QUESTIONS (applies to all teaching modes)
     if (questionsNeedingRepair.length > 0) {
-      console.warn(`⚠️ ${questionsNeedingRepair.length} questions marked for repair - triggering retry...`);
-      console.log('🔄 Retrying with stricter prompt to fix malformed questions...');
-      
-      // Check for empty data objects specifically
-      const emptyDataCount = questionsNeedingRepair.filter((b: any) => b.repairReason === 'EMPTY_DATA_OBJECT').length;
-      if (emptyDataCount > 0) {
-        console.error(`❌ CRITICAL: ${emptyDataCount} question blocks have COMPLETELY EMPTY data objects!`);
-        console.error('This means the AI is generating: { "type": "question", "title": "...", "data": {} }');
-      }
-      
-      const retryPrompt = `🚨 CRITICAL ERROR: Your previous response had ${questionsNeedingRepair.length} malformed question blocks!
-
-${emptyDataCount > 0 ? `
-❌❌❌ MOST CRITICAL ISSUE: ${emptyDataCount} questions have EMPTY data objects ❌❌❌
-
-YOU GENERATED THIS (COMPLETELY WRONG):
-{
-  "type": "question",
-  "title": "Practice Question: Starch Test Result",
-  "data": {}  ← EMPTY! NO FIELDS! UNACCEPTABLE!
-}
-` : ''}
-
-⚠️ The questions are missing required fields: "question", "options", and "explanation"
-
-YOU MUST GENERATE THIS EXACT STRUCTURE FOR EVERY QUESTION BLOCK:
-{
-  "type": "question",
-  "title": "Practice Question: Food Test Identification",
-  "data": {
-    "question": "What colour does iodine solution turn in the presence of starch?",
-    "options": [
-      { "text": "Blue-black", "isCorrect": true },
-      { "text": "Brick-red", "isCorrect": false },
-      { "text": "Green", "isCorrect": false },
-      { "text": "Stays orange", "isCorrect": false }
-    ],
-    "explanation": "Iodine solution turns blue-black when starch is present, which is a positive test result for starch."
-  },
-  "teaching_notes": "Ask the question clearly. If student answers incorrectly, say 'Not quite - think about the characteristic colour change.' Praise correct answer."
-}
-
-🚨 MANDATORY REQUIREMENTS FOR EVERY QUESTION BLOCK:
-✅ "data" MUST be a JSON object with THREE required fields
-✅ "question" must be a string with the actual question text (minimum 10 characters)
-✅ "options" must be an array containing 2-4 answer choices
-✅ Each option object needs "text" (the answer choice) and "isCorrect" (boolean)
-✅ "explanation" must explain why the correct answer is right (minimum 10 characters)
-✅ DO NOT generate empty data objects: {}
-✅ DO NOT use text/content format for questions
-
-NOW: Regenerate the COMPLETE lesson plan for "${topic}" (Year Group: ${yearGroup}) with ALL question blocks following this EXACT structure above.
-
-EXAMPLE OF CORRECT QUESTION FORMAT (USE THIS EXACT STRUCTURE):
-{
-  "type": "question",
-  "title": "Check Understanding",
-  "data": {
-    "question": "What is photosynthesis?",
-    "options": [
-      { "text": "The process plants use to make food", "isCorrect": true },
-      { "text": "The process plants use to breathe", "isCorrect": false },
-      { "text": "The process plants use to grow roots", "isCorrect": false },
-      { "text": "The process plants use to reproduce", "isCorrect": false }
-    ],
-    "explanation": "Photosynthesis is the process by which plants convert light energy into chemical energy to make food"
-  }
-}
-
-CRITICAL RULES:
-1. The "data" field MUST be an object with these properties:
-   - question: string (the question text)
-   - options: array of objects with "text" and "isCorrect" properties
-   - explanation: string
-2. DO NOT use plain strings for the "data" field
-3. Each question MUST have at least 2 options (preferably 4)
-4. At least one option must have "isCorrect": true
-
-If you generate questions with incorrect format, the lesson will be rejected.`;
-
-      const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: isExamPractice ? systemPrompt : systemPrompt },
-            { role: 'user', content: retryPrompt }
-          ],
-          tools: [{
-            type: 'function',
-            function: {
-              name: 'create_lesson_plan',
-              description: 'Create a complete lesson plan with properly formatted questions',
-              parameters: lessonPlanSchema
-            }
-          }],
-          tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
-        })
-      });
-      
-      if (!retryResponse.ok) {
-        console.error(`Retry API call failed: ${retryResponse.status}`);
-        throw new Error(`Retry failed: ${retryResponse.status}`);
-      }
-      
-      const retryData = await retryResponse.json();
-      console.log('First retry response structure:', {
-        hasChoices: !!retryData.choices,
-        choicesLength: retryData.choices?.length || 0,
-        hasError: !!retryData.error
-      });
-      
-      const retryToolCall = getToolCallFromResponse(retryData, 'First retry response');
-      
-      if (!retryToolCall) {
-        console.error('❌ First retry response did not contain a valid tool call');
-        console.error('Continuing with original data despite malformed questions');
-      }
-      
-      if (retryToolCall) {
-        const retryPlanData = JSON.parse(retryToolCall.function.arguments);
-        
-        // Parse data fields in retry
-        retryPlanData.steps.forEach((step: any) => {
-          if (step.content_blocks) {
-            step.content_blocks.forEach((block: any) => {
-              if (block.data && typeof block.data === 'string') {
-                try {
-                  block.data = JSON.parse(block.data);
-                } catch (e) {
-                  console.warn('Failed to parse retry content block data:', block.type, e);
-                }
-              }
-            });
-          }
-        });
-        
-        // POST-RETRY VALIDATION: Check if retry actually fixed the empty data issue
-        let retryEmptyDataCount = 0;
-        retryPlanData.steps.forEach((step: any, stepIdx: number) => {
-          step.content_blocks?.forEach((block: any, blockIdx: number) => {
-            if (block.type === 'question') {
-              const dataKeys = Object.keys(block.data || {});
-              if (dataKeys.length === 0) {
-                console.error(`❌ POST-RETRY: Still empty data at Step ${stepIdx + 1}, Block ${blockIdx}`);
-                console.error(`   Block title: ${block.title}`);
-                retryEmptyDataCount++;
-              } else if (!block.data.question || !block.data.options) {
-                console.error(`❌ POST-RETRY: Missing fields at Step ${stepIdx + 1}, Block ${blockIdx}`);
-                console.error(`   Has question: ${!!block.data.question}, Has options: ${!!block.data.options}`);
-                retryEmptyDataCount++;
-              }
-            }
-          });
-        });
-        
-        if (retryEmptyDataCount > 0) {
-          console.error(`❌ RETRY FAILED: ${retryEmptyDataCount} question blocks still invalid after retry!`);
-          console.error('The AI model cannot generate proper question structures despite explicit instructions.');
-          throw new Error(`AI model failed after retry. ${retryEmptyDataCount} questions still invalid. Try a different topic or contact support.`);
-        }
-        
-        // Validate retry result
-        const retryMalformed = retryPlanData.steps.flatMap((s: any) => 
-          s.content_blocks?.filter((b: any) => 
-            b.type === 'question' && (typeof b.data === 'string' || !b.data?.question)
-          ) || []
-        );
-        
-        if (retryMalformed.length === 0) {
-          console.log('✅ Retry successful - all questions properly formatted');
-          planData.objectives = retryPlanData.objectives;
-          planData.steps = retryPlanData.steps;
-        } else {
-          console.warn(`⚠️ Retry still has ${retryMalformed.length} malformed questions - proceeding with validation`);
-          // Use retry data anyway as it might be better
-          planData.objectives = retryPlanData.objectives;
-          planData.steps = retryPlanData.steps;
-        }
-      }
+      console.warn(`⚠️ ${questionsNeedingRepair.length} questions marked for repair - will be caught by retry logic or final validation`);
+      // Don't throw error here - let the retry logic (for exam practice) or final validation handle it
     }
     
     // Validate content blocks were generated
@@ -988,12 +713,16 @@ You MUST generate all 20 questions. If you generate fewer or use wrong format, t
           if (retryToolCall) {
             const retryPlanData = JSON.parse(retryToolCall.function.arguments);
             
-            // Check for string data (should not happen with strict schema)
+            // Parse data fields
             retryPlanData.steps.forEach((step: any) => {
               if (step.content_blocks) {
                 step.content_blocks.forEach((block: any) => {
                   if (block.data && typeof block.data === 'string') {
-                    console.error(`❌ Retry block ${block.type} has string data (should be object):`, block.data.substring(0, 100));
+                    try {
+                      block.data = JSON.parse(block.data);
+                    } catch (e) {
+                      console.warn('Failed to parse retry content block data:', block.type, e);
+                    }
                   }
                 });
               }
@@ -1025,153 +754,23 @@ You MUST generate all 20 questions. If you generate fewer or use wrong format, t
     }
     
     // Final validation before saving - ensure no malformed questions
-    const finalValidation = planData.steps.flatMap((step: any, stepIndex: number) => 
-      step.content_blocks?.map((b: any, blockIndex: number) => {
+    const finalValidation = planData.steps.flatMap((step: any) => 
+      step.content_blocks?.filter((b: any) => {
         if (b.type === 'question') {
-          const issues: string[] = [];
-          
-          if (typeof b.data === 'string') {
-            issues.push('data is a string instead of object');
-            console.error(`❌ Question [Step ${stepIndex}, Block ${blockIndex}]: data is string:`, b.data.substring(0, 100));
-          }
-          if (!b.data?.question) {
-            issues.push('missing question field');
-          }
-          if (!b.data?.options) {
-            issues.push('missing options field');
-          }
-          if (b.data?.options && !Array.isArray(b.data.options)) {
-            issues.push('options is not an array');
-          }
-          if (b.data?.options && Array.isArray(b.data.options) && b.data.options.length < 2) {
-            issues.push(`only ${b.data.options.length} options (need at least 2)`);
-          }
-          if (b.data?.options && Array.isArray(b.data.options) && !b.data.options.some((o: any) => o.isCorrect)) {
-            issues.push('no correct answer marked');
-          }
-          
-          if (issues.length > 0) {
-            console.error(`❌ Question validation failed [Step ${stepIndex}, Block ${blockIndex}]:`, issues);
-            console.error('   Question title:', b.title);
-            console.error('   Data type:', typeof b.data);
-            console.error('   Data preview:', JSON.stringify(b.data).substring(0, 200));
-            return { stepIndex, blockIndex, issues, block: b };
-          }
+          return typeof b.data === 'string' || 
+                 !b.data?.question || 
+                 !b.data?.options || 
+                 !Array.isArray(b.data.options) ||
+                 b.data.options.length < 2 ||
+                 !b.data.options.some((o: any) => o.isCorrect);
         }
-        return null;
-      }).filter(v => v !== null) || []
+        return false;
+      }) || []
     );
 
     if (finalValidation.length > 0) {
-      const errorDetails = finalValidation.map(v => 
-        `Step ${v.stepIndex}, Block ${v.blockIndex}: ${v.issues.join(', ')}`
-      ).join('\n  ');
-      
-      console.error(`❌ Final validation failed: ${finalValidation.length} invalid questions\n  ${errorDetails}`);
-      
-      // Check if this is a first-time failure - attempt second retry with ultra-strict prompt
-      const hasStringData = finalValidation.some(v => v.issues.includes('data is a string instead of object'));
-      
-      if (hasStringData && isExamPractice) {
-        console.log('🔄 Attempting second retry with ultra-strict JSON format prompt...');
-        
-        const secondRetryPrompt = `CRITICAL ERROR: Your previous responses generated invalid JSON for question data!
-
-❌ WRONG FORMAT (data as STRING):
-{
-  "type": "question",
-  "data": "{\\"question\\": \\"What...\\", \\"options\\": [...]}"  ← This is a STRING, not an object!
-}
-
-✅ CORRECT FORMAT (data as OBJECT):
-{
-  "type": "question",
-  "data": {
-    "question": "What is 2+2?",
-    "options": [
-      { "text": "3", "isCorrect": false },
-      { "text": "4", "isCorrect": true }
-    ],
-    "explanation": "2+2=4 is basic addition"
-  }
-}
-
-Generate the 11+ NVR exam practice lesson for "${topic}" with properly formatted question OBJECTS (NOT strings)!`;
-
-        const secondRetryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: secondRetryPrompt }
-            ],
-            tools: [{
-              type: 'function',
-              function: {
-                name: 'create_lesson_plan',
-                description: 'Create a complete lesson plan',
-                parameters: lessonPlanSchema
-              }
-            }],
-            tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
-          })
-        });
-        
-        if (secondRetryResponse.ok) {
-          const secondRetryData = await secondRetryResponse.json();
-          console.log('Second retry response structure:', {
-            hasChoices: !!secondRetryData.choices,
-            choicesLength: secondRetryData.choices?.length || 0,
-            hasError: !!secondRetryData.error
-          });
-          
-          const secondRetryToolCall = getToolCallFromResponse(secondRetryData, 'Second retry response');
-          
-          if (!secondRetryToolCall) {
-            console.error('❌ Second retry response did not contain a valid tool call');
-            console.error('Final validation will throw error for malformed questions');
-          }
-          
-          if (secondRetryToolCall) {
-            const secondRetryPlanData = JSON.parse(secondRetryToolCall.function.arguments);
-            
-            // Check for string data
-            secondRetryPlanData.steps.forEach((step: any) => {
-              if (step.content_blocks) {
-                step.content_blocks.forEach((block: any) => {
-                  if (block.data && typeof block.data === 'string') {
-                    console.error(`❌ Second retry block ${block.type} still has string data:`, block.data.substring(0, 100));
-                  }
-                });
-              }
-            });
-            
-            const secondRetryPracticeStep = secondRetryPlanData.steps.find((s: any) => 
-              s.title.toLowerCase().includes('practice')
-            );
-            const secondRetryQuestionCount = secondRetryPracticeStep?.content_blocks?.filter(
-              (b: any) => b.type === 'question'
-            ).length || 0;
-            
-            console.log(`✅ Second retry generated ${secondRetryQuestionCount} questions`);
-            
-            if (secondRetryQuestionCount >= 20) {
-              planData.objectives = secondRetryPlanData.objectives;
-              planData.steps = secondRetryPlanData.steps;
-              console.log('✅ Second retry successful - using second retry data');
-            } else {
-              console.warn(`⚠️ Second retry still non-compliant with ${secondRetryQuestionCount} questions - proceeding anyway`);
-            }
-          }
-        }
-      } else {
-        throw new Error(`Cannot save lesson plan: ${finalValidation.length} questions have invalid structure:\n${errorDetails}`);
-      }
+      console.error('❌ Final validation failed:', finalValidation.length, 'invalid questions');
+      throw new Error(`Cannot save lesson plan: ${finalValidation.length} questions have invalid structure. Please regenerate.`);
     }
     
     console.log('✅ All questions validated successfully');

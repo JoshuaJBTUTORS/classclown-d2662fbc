@@ -419,12 +419,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const handleCompleteLesson = async () => {
     if (!conversationId) return;
     
-    // CRITICAL: Disconnect voice session BEFORE showing dialog
-    if (connectionState === 'connected') {
-      console.log('🎓 Lesson complete - disconnecting voice session');
-      controlsRef.current?.disconnect();
-    }
-    
     const totalSteps = lessonData.steps.length;
     
     await lessonState.completeLesson({
@@ -650,12 +644,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             controlsRef.current = controls;
           }}
           voiceTimer={voiceTimer}
-          onVoiceLimitReached={handleVoiceLimitReached}
-          onLessonComplete={handleCompleteLesson}
-          onUnexpectedDisconnection={handleUnexpectedDisconnection}
-          onReconnectAttempt={handleReconnectAttemptUpdate}
-          onReconnectSuccess={handleReconnectSuccess}
-          onReconnectFailed={handleReconnectFailed}
+            onVoiceLimitReached={handleVoiceLimitReached}
+            onUnexpectedDisconnection={handleUnexpectedDisconnection}
+            onReconnectAttempt={handleReconnectAttemptUpdate}
+            onReconnectSuccess={handleReconnectSuccess}
+            onReconnectFailed={handleReconnectFailed}
           selectedMicrophoneId={selectedMicrophone?.deviceId}
           selectedSpeakerId={selectedSpeaker?.deviceId}
         />

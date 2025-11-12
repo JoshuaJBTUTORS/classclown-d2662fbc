@@ -92,9 +92,7 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
       clearInterval(stepInterval);
 
       if (error) {
-        const errorMessage = error.message || 'Failed to generate lesson plan';
-        console.error('Edge function error details:', error);
-        throw new Error(`Lesson planning failed: ${errorMessage}`);
+        throw new Error(error.message || 'Failed to generate lesson plan');
       }
       
       // Complete all steps

@@ -233,9 +233,6 @@ Deno.serve(async (req) => {
     );
     console.log("OpenAI WebSocket connection initiated with subprotocol authentication");
 
-    // Track completed steps for lesson completion detection
-    const completedSteps = new Set<string>();
-
     const session: RealtimeSession = {
       conversationId: conversation.id,
       userId: user.id,
@@ -478,16 +475,6 @@ ${resumeSession && lastStepId && lastStepTitle
 
 TEACHING STYLE:
 - Be warm and engaging
-- Keep explanations clear and concise
-- Ask engaging questions to check understanding
-- Provide encouragement and positive reinforcement
-
-LESSON COMPLETION:
-When you have completed the final step (Step ${lessonPlan.teaching_sequence.length}: ${lessonPlan.teaching_sequence[lessonPlan.teaching_sequence.length - 1]?.title}), conclude with:
-- A brief congratulations (1-2 sentences)
-- Mention key takeaways from the lesson
-- Say "Great job today! You've done brilliantly. I'll wrap up our session now."
-The session will automatically end after your closing remarks.
 - Explain concepts clearly in 2-3 sentences
 - ALWAYS reference visual content after it appears: "As you can see...", "Looking at this diagram..."
 - For pre-generated questions, ask them and wait for answers
@@ -862,10 +849,6 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               console.log(`📚 Step Title: ${stepTitle}`);
               console.log(`📚 Call ID: ${message.call_id}`);
               
-              // Track step completion for lesson end detection
-              completedSteps.add(stepId);
-              console.log(`✅ Step completed: ${stepId} (${completedSteps.size}/${lessonPlan?.teaching_sequence?.length || 0})`);
-              
               // Send step change event to frontend
               if (clientSocket.readyState === WebSocket.OPEN) {
                 const payload = {
@@ -881,30 +864,6 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
                 console.log(`✅ Message sent to client successfully`);
               } else {
                 console.error(`❌ Client socket not ready! State: ${clientSocket.readyState}`);
-              }
-              
-              // Check if all steps are complete
-              if (lessonPlan && completedSteps.size === lessonPlan.teaching_sequence.length) {
-                console.log('🎓 All lesson steps completed! Preparing to end session...');
-                
-                // Send lesson.complete event to client
-                if (clientSocket.readyState === WebSocket.OPEN) {
-                  clientSocket.send(JSON.stringify({
-                    type: 'lesson.complete',
-                    message: 'All lesson steps completed! Great work!'
-                  }));
-                }
-                
-                // Wait 5 seconds for AI closing remarks, then disconnect
-                setTimeout(() => {
-                  console.log('⏰ Closing session after completion delay');
-                  if (openAISocket.readyState === WebSocket.OPEN) {
-                    openAISocket.close();
-                  }
-                  if (clientSocket.readyState === WebSocket.OPEN) {
-                    clientSocket.close();
-                  }
-                }, 5000);
               }
           
           // Confirm to OpenAI
