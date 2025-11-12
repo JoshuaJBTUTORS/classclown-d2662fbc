@@ -17,6 +17,7 @@ interface HybridChatInterfaceProps {
   isVoiceSpeaking: boolean;
   isTextLoading: boolean;
   isPaused?: boolean;
+  currentModel?: 'mini' | 'full';
   onVoiceConnect: () => void;
   onVoiceDisconnect: () => void;
   onVoicePause?: () => void;
@@ -39,6 +40,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   isVoiceSpeaking,
   isTextLoading,
   isPaused,
+  currentModel = 'mini',
   onVoiceConnect,
   onVoiceDisconnect,
   onVoicePause,
@@ -140,6 +142,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
               isListening={isVoiceListening}
               isSpeaking={isVoiceSpeaking}
               isPaused={isPaused}
+              currentModel={currentModel}
               onConnect={onVoiceConnect}
               onDisconnect={onVoiceDisconnect}
               onPause={onVoicePause}
