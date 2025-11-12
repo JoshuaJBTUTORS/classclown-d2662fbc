@@ -6,6 +6,43 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Safe helper to extract tool call from AI response
+function getToolCallFromResponse(responseData: any, context: string): any {
+  if (!responseData) {
+    console.error(`${context}: Response data is null/undefined`);
+    return null;
+  }
+  
+  if (!responseData.choices) {
+    console.error(`${context}: Response missing 'choices' field:`, JSON.stringify(responseData).substring(0, 200));
+    return null;
+  }
+  
+  if (!Array.isArray(responseData.choices)) {
+    console.error(`${context}: 'choices' is not an array:`, typeof responseData.choices);
+    return null;
+  }
+  
+  if (responseData.choices.length === 0) {
+    console.error(`${context}: 'choices' array is empty`);
+    return null;
+  }
+  
+  const choice = responseData.choices[0];
+  if (!choice.message) {
+    console.error(`${context}: First choice missing 'message' field`);
+    return null;
+  }
+  
+  const toolCalls = choice.message.tool_calls;
+  if (!toolCalls || toolCalls.length === 0) {
+    console.error(`${context}: No tool calls in response`);
+    return null;
+  }
+  
+  return toolCalls[0];
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -555,11 +592,19 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI response received');
+    console.log('AI response structure:', {
+      hasChoices: !!aiData.choices,
+      choicesLength: aiData.choices?.length || 0,
+      hasError: !!aiData.error,
+      errorMessage: aiData.error?.message
+    });
 
-    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    const toolCall = getToolCallFromResponse(aiData, 'Initial AI response');
+    
     if (!toolCall) {
-      throw new Error('No lesson plan generated');
+      console.error('❌ Initial AI response did not contain a valid tool call');
+      console.error('Response structure:', JSON.stringify(aiData).substring(0, 500));
+      throw new Error('AI did not generate a lesson plan. Please try again.');
     }
 
     const planData = JSON.parse(toolCall.function.arguments);
@@ -683,7 +728,18 @@ If you generate questions with incorrect format, the lesson will be rejected.`;
       }
       
       const retryData = await retryResponse.json();
-      const retryToolCall = retryData.choices[0].message.tool_calls?.[0];
+      console.log('First retry response structure:', {
+        hasChoices: !!retryData.choices,
+        choicesLength: retryData.choices?.length || 0,
+        hasError: !!retryData.error
+      });
+      
+      const retryToolCall = getToolCallFromResponse(retryData, 'First retry response');
+      
+      if (!retryToolCall) {
+        console.error('❌ First retry response did not contain a valid tool call');
+        console.error('Continuing with original data despite malformed questions');
+      }
       
       if (retryToolCall) {
         const retryPlanData = JSON.parse(retryToolCall.function.arguments);
@@ -979,7 +1035,18 @@ Generate the 11+ NVR exam practice lesson for "${topic}" with properly formatted
         
         if (secondRetryResponse.ok) {
           const secondRetryData = await secondRetryResponse.json();
-          const secondRetryToolCall = secondRetryData.choices[0].message.tool_calls?.[0];
+          console.log('Second retry response structure:', {
+            hasChoices: !!secondRetryData.choices,
+            choicesLength: secondRetryData.choices?.length || 0,
+            hasError: !!secondRetryData.error
+          });
+          
+          const secondRetryToolCall = getToolCallFromResponse(secondRetryData, 'Second retry response');
+          
+          if (!secondRetryToolCall) {
+            console.error('❌ Second retry response did not contain a valid tool call');
+            console.error('Final validation will throw error for malformed questions');
+          }
           
           if (secondRetryToolCall) {
             const secondRetryPlanData = JSON.parse(secondRetryToolCall.function.arguments);
