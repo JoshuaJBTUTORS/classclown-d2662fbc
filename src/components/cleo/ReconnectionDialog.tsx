@@ -40,17 +40,17 @@ export const ReconnectionDialog: React.FC<ReconnectionDialogProps> = ({
           </div>
           <DialogDescription className="text-base pt-2">
             {isReconnecting ? (
-              <div className="flex items-center gap-2">
-                <motion.div
+              <span className="inline-flex items-center gap-2">
+                <motion.span
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
                   <RefreshCw className="w-4 h-4 text-primary" />
-                </motion.div>
+                </motion.span>
                 <span>
                   Attempting to reconnect... (Attempt {attemptCount} of {maxAttempts})
                 </span>
-              </div>
+              </span>
             ) : (
               "Your voice session was interrupted. Would you like to reconnect and continue where you left off?"
             )}

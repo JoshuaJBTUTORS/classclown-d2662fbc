@@ -660,13 +660,20 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         }));
 
         // Save the greeting prompt to database as a system message (with error handling)
-        supabase.from('cleo_messages').insert({
-          conversation_id: conversation.id,
-          role: 'system',
-          content: `Initial greeting prompt: ${greetingText}`
-        }).catch(error => {
-          console.error("❌ Failed to save greeting message:", error);
-        });
+        try {
+          const { error: greetingSaveError } = await supabase
+            .from('cleo_messages')
+            .insert({
+              conversation_id: conversation.id,
+              role: 'system',
+              content: `Initial greeting prompt: ${greetingText}`
+            });
+          if (greetingSaveError) {
+            console.error("❌ Failed to save greeting message:", greetingSaveError);
+          }
+        } catch (e) {
+          console.error("❌ Failed to save greeting message (exception):", e);
+        }
 
         console.log("Initial greeting sent to OpenAI");
       }
@@ -693,14 +700,21 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         const isConfused = detectConfusion(currentTranscript);
         
         // Save with error handling
-        supabase.from('cleo_messages').insert({
-          conversation_id: session.conversationId,
-          role: 'user',
-          content: currentTranscript,
-          model_used: session.currentModel
-        }).catch(error => {
-          console.error("❌ Failed to save user transcript:", error);
-        });
+        try {
+          const { error: transcriptSaveError } = await supabase
+            .from('cleo_messages')
+            .insert({
+              conversation_id: session.conversationId,
+              role: 'user',
+              content: currentTranscript,
+              model_used: session.currentModel
+            });
+          if (transcriptSaveError) {
+            console.error("❌ Failed to save user transcript:", transcriptSaveError);
+          }
+        } catch (e) {
+          console.error("❌ Failed to save user transcript (exception):", e);
+        }
         
         // Auto-switch on confusion (with cooldown)
         const cooldownPeriod = 30000;
@@ -908,14 +922,21 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
           console.log("🤖 Cleo said:", currentAssistantMessage);
           
           // Save with error handling
-          supabase.from('cleo_messages').insert({
-            conversation_id: session.conversationId,
-            role: 'assistant',
-            content: currentAssistantMessage,
-            model_used: session.currentModel
-          }).catch(error => {
-            console.error("❌ Failed to save assistant message:", error);
-          });
+          try {
+            const { error: assistantSaveError } = await supabase
+              .from('cleo_messages')
+              .insert({
+                conversation_id: session.conversationId,
+                role: 'assistant',
+                content: currentAssistantMessage,
+                model_used: session.currentModel
+              });
+            if (assistantSaveError) {
+              console.error("❌ Failed to save assistant message:", assistantSaveError);
+            }
+          } catch (e) {
+            console.error("❌ Failed to save assistant message (exception):", e);
+          }
           
           // Check for switch-back trigger if using full model
           const switchBackPhrases = ['does that make sense', 'is that clearer', 'do you understand now'];
@@ -990,7 +1011,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       }
     };
 
-    openAISocket.onerror = (error) => {
+    openAISocket.onerror = async (error) => {
       console.error("🚨 OpenAI socket error:", error);
       console.error("Error type:", error?.type);
       console.error("Session ID:", session.conversationId);
@@ -1008,11 +1029,22 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       }
       
       // Log to database for monitoring
-      supabase.from('cleo_messages').insert({
-        conversation_id: session.conversationId,
-        role: 'system',
-        content: `ERROR: OpenAI WebSocket error - ${JSON.stringify(error)}`
-      }).catch(err => console.error("Failed to log error:", err));
+      (async () => {
+        try {
+          const { error: logError } = await supabase
+            .from('cleo_messages')
+            .insert({
+              conversation_id: session.conversationId,
+              role: 'system',
+              content: `ERROR: OpenAI WebSocket error - ${JSON.stringify(error)}`
+            });
+          if (logError) {
+            console.error("Failed to log error:", logError);
+          }
+        } catch (err) {
+          console.error("Failed to log error (exception):", err);
+        }
+      })();
     };
 
     openAISocket.onclose = (event) => {
@@ -1186,14 +1218,23 @@ After your explanation, ask "Does that make sense now?" to gauge understanding.`
           }
           
           // Save message to database
-          supabase.from('cleo_messages').insert({
-            conversation_id: session.conversationId,
-            role: 'user',
-            content: msg.text,
-            model_used: session.currentModel
-          })
-            .then(() => console.log('Message saved to database'))
-            .catch(err => console.error('Failed to save user message:', err));
+          try {
+            const { error: saveMsgError } = await supabase
+              .from('cleo_messages')
+              .insert({
+                conversation_id: session.conversationId,
+                role: 'user',
+                content: msg.text,
+                model_used: session.currentModel
+              });
+            if (saveMsgError) {
+              console.error('Failed to save user message:', saveMsgError);
+            } else {
+              console.log('Message saved to database');
+            }
+          } catch (err) {
+            console.error('Failed to save user message (exception):', err);
+          }
           
           // Create conversation item
           openAISocket.send(JSON.stringify({
