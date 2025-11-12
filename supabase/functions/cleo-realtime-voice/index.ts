@@ -613,46 +613,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
           }
         }
 
-        // Send initial greeting message
-        let greetingText = '';
-        if (lessonPlan) {
-          greetingText = `Hello! We are going to go through ${lessonPlan.topic}. While I am explaining and teaching, please feel free to interrupt and ask any questions. This is a live interactive session, so the more questions you ask, the better the session will be. Ready to get started?`;
-        } else if (lessonTitle) {
-          greetingText = `Hello! We are going to go through ${lessonTitle}. While I am explaining and teaching, please feel free to interrupt and ask any questions. This is a live interactive session, so the more questions you ask, the better the session will be. Ready to get started?`;
-        } else {
-          greetingText = `Hello! I'm Cleo, your AI tutor. While I am explaining and teaching, please feel free to interrupt and ask any questions. This is a live interactive session, so the more questions you ask, the better. What would you like to study today?`;
-        }
-
-        console.log("Sending initial greeting:", greetingText);
-
-        // Create a conversation item with the greeting prompt
-        openAISocket.send(JSON.stringify({
-          type: 'conversation.item.create',
-          item: {
-            type: 'message',
-            role: 'user',
-            content: [
-              {
-                type: 'input_text',
-                text: greetingText
-              }
-            ]
-          }
-        }));
-
-        // Immediately trigger a response so Cleo speaks the greeting
-        openAISocket.send(JSON.stringify({
-          type: 'response.create'
-        }));
-
-        // Save the greeting prompt to database as a system message
-        await supabase.from('cleo_messages').insert({
-          conversation_id: conversation.id,
-          role: 'system',
-          content: `Initial greeting prompt: ${greetingText}`
-        });
-
-        console.log("Initial greeting sent to OpenAI");
+        console.log("Session configured - Cleo will begin with personalized introduction from system prompt");
       }
 
       // Cancel AI response when user starts speaking (interruption)
