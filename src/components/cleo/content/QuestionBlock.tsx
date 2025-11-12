@@ -17,27 +17,9 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
 
   // Defensive check for undefined data
   if (!data || !data.question || !data.options || !Array.isArray(data.options)) {
-    console.error('QuestionBlock: Invalid data structure:', { 
-      hasData: !!data,
-      hasQuestion: !!(data?.question),
-      hasOptions: !!(data?.options),
-      isOptionsArray: Array.isArray(data?.options),
-      actualData: data 
-    });
-    
     return (
       <div className="bg-muted/50 border border-border rounded-lg p-4">
         <p className="text-sm text-muted-foreground">Question content not available</p>
-        {process.env.NODE_ENV === 'development' && (
-          <details className="mt-2 text-xs">
-            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-              Debug Info (Development Only)
-            </summary>
-            <pre className="mt-2 p-2 bg-black/5 dark:bg-white/5 rounded overflow-auto text-xs">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </details>
-        )}
       </div>
     );
   }

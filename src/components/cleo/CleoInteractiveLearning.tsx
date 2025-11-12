@@ -5,7 +5,6 @@ import { CleoVoiceChat } from './CleoVoiceChat';
 import { LessonPlanSidebar } from './LessonPlanSidebar';
 import { LessonResumeDialog } from './LessonResumeDialog';
 import { LessonCompleteDialog } from './LessonCompleteDialog';
-import { ReconnectionDialog } from './ReconnectionDialog';
 import { useContentSync } from '@/hooks/useContentSync';
 import { useVoiceTimer } from '@/hooks/useVoiceTimer';
 import { useTextChat } from '@/hooks/useTextChat';
@@ -106,26 +105,15 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   const [mode, setMode] = useState<ChatMode>('voice');
   const [connectionState, setConnectionState] = useState<
-    'idle' | 'connecting' | 'connected' | 'disconnected' | 'reconnecting'
+    'idle' | 'connecting' | 'connected' | 'disconnected'
   >('idle');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
-  const [isPaused, setIsPaused] = useState(false);
-  const [pauseTimestamp, setPauseTimestamp] = useState<number | null>(null);
-  const [currentModel, setCurrentModel] = useState<'mini' | 'full'>('mini');
-  const [showReconnectDialog, setShowReconnectDialog] = useState(false);
-  const [currentAttemptCount, setCurrentAttemptCount] = useState(0);
-  const [disconnectionInfo, setDisconnectionInfo] = useState<any>(null);
   
-  const controlsRef = useRef<{ 
-    connect: () => void; 
-    disconnect: () => void; 
-    sendUserMessage: (text: string) => void;
-    attemptReconnect?: () => void; // Make optional since it's added later
-  } | null>(null);
+  const controlsRef = useRef<{ connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void } | null>(null);
   const modeSwitchCountRef = useRef(0);
 
   // Check for saved state and show resume dialog
@@ -286,96 +274,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     controlsRef.current?.disconnect();
   };
 
-  const handlePauseVoice = () => {
-    controlsRef.current?.disconnect();
-    setIsPaused(true);
-    setPauseTimestamp(Date.now());
-    toast({
-      title: "⏸️ Voice Paused",
-      description: "Your voice time is paused. Click Resume to continue.",
-    });
-  };
-
-  const handleResumeVoice = () => {
-    setIsPaused(false);
-    setPauseTimestamp(null);
-    controlsRef.current?.connect();
-    toast({
-      title: "▶️ Voice Resumed",
-      description: "Let's continue learning!",
-    });
-  };
-
   const handleVoiceLimitReached = () => {
     handleModeSwitch('text', true);
-  };
-
-  const handleUnexpectedDisconnection = (info: any) => {
-    console.log('🚨 Unexpected disconnection:', info);
-    setDisconnectionInfo(info);
-    voiceTimer.pause();
-    
-    // For first reconnection attempt, show only a toast (silent retry)
-    if (info.autoReconnecting && info.attemptCount === 0) {
-      toast({
-        title: "🔄 Reconnecting...",
-        description: "Connection lost, attempting to reconnect",
-        duration: 3000,
-      });
-    } else {
-      // Show full dialog on subsequent attempts
-      setShowReconnectDialog(true);
-    }
-  };
-
-  const handleReconnectAttemptUpdate = (attemptCount: number) => {
-    console.log('🔄 Reconnect attempt:', attemptCount);
-    setCurrentAttemptCount(attemptCount);
-    
-    // Show dialog starting from 2nd attempt
-    if (attemptCount >= 2) {
-      setShowReconnectDialog(true);
-    }
-  };
-
-  const handleReconnectAttempt = async () => {
-    console.log('🔄 Manual reconnection triggered');
-    try {
-      await controlsRef.current?.attemptReconnect?.();
-    } catch (error) {
-      console.error('❌ Reconnection failed:', error);
-      handleReconnectFailed();
-    }
-  };
-
-  const handleReconnectSuccess = () => {
-    console.log('✅ Reconnection successful');
-    setShowReconnectDialog(false);
-    setCurrentAttemptCount(0);
-    voiceTimer.start();
-    toast({
-      title: "✅ Reconnected Successfully",
-      description: "Your session has been restored. Let's continue!",
-    });
-  };
-
-  const handleReconnectFailed = () => {
-    console.log('❌ Reconnection failed - switching to text mode');
-    setShowReconnectDialog(false);
-    setCurrentAttemptCount(0);
-    handleModeSwitch('text', true);
-    toast({
-      title: "⚠️ Switched to Text Mode",
-      description: "Voice connection couldn't be restored. Continue with text chat.",
-      variant: "destructive",
-    });
-  };
-
-  const handleEndSession = () => {
-    console.log('🛑 User ended session from reconnection dialog');
-    setShowReconnectDialog(false);
-    setCurrentAttemptCount(0);
-    handlePauseLesson();
   };
 
   const handleResumeLesson = async () => {
@@ -482,12 +382,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 isVoiceListening={isListening}
                 isVoiceSpeaking={isSpeaking}
                 isTextLoading={textChat.isLoading}
-                isPaused={isPaused}
-                currentModel={currentModel}
                 onVoiceConnect={handleVoiceConnect}
                 onVoiceDisconnect={handleVoiceDisconnect}
-                onVoicePause={handlePauseVoice}
-                onVoiceResume={handleResumeVoice}
                 onTextSend={textChat.sendMessage}
                 contentBlocks={content}
                 visibleContentIds={visibleContent}
@@ -639,16 +535,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
-          onModelChange={setCurrentModel}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
           }}
           voiceTimer={voiceTimer}
-            onVoiceLimitReached={handleVoiceLimitReached}
-            onUnexpectedDisconnection={handleUnexpectedDisconnection}
-            onReconnectAttempt={handleReconnectAttemptUpdate}
-            onReconnectSuccess={handleReconnectSuccess}
-            onReconnectFailed={handleReconnectFailed}
+          onVoiceLimitReached={handleVoiceLimitReached}
           selectedMicrophoneId={selectedMicrophone?.deviceId}
           selectedSpeakerId={selectedSpeaker?.deviceId}
         />
@@ -671,16 +562,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         questionStats={questionStats}
         totalTimeMinutes={sessionTimeMinutes}
         lessonTitle={lessonData.title}
-      />
-
-      {/* Reconnection Dialog */}
-      <ReconnectionDialog
-        open={showReconnectDialog}
-        onReconnect={handleReconnectAttempt}
-        onEndSession={handleEndSession}
-        attemptCount={currentAttemptCount}
-        maxAttempts={3}
-        isReconnecting={connectionState === 'reconnecting' || currentAttemptCount > 0}
       />
     </div>
   );

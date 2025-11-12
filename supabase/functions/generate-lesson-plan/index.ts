@@ -222,29 +222,27 @@ serve(async (req) => {
           {
             role: 'system',
             content: isExamPractice 
-              ? `You are an expert 11+ exam preparation tutor creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
+              ? `You are an expert 11+ exam preparation tutor creating practice-focused lesson plans.
 
-Your task: Create a highly structured lesson plan (15-min duration) with detailed teaching scripts that minimize complex AI reasoning during delivery.
+Your task: Create a lesson plan optimized for EXAM PRACTICE with one worked example followed by 20 practice questions.
 
-LESSON PLAN STRUCTURE FOR 11+ (15-minute optimized):
+LESSON PLAN STRUCTURE FOR 11+:
 1. Learning Objectives (3-4 clear exam skills to master)
 2. Teaching Sequence with TWO main steps:
-   - Step 1 (3 min): "Worked Example" - Scripted demonstration with pre-written narration
-   - Step 2 (12 min): "Practice Questions" - 20 exam-style questions with pre-written hints
+   - Step 1: "Worked Example" - One detailed example showing method/technique
+   - Step 2: "Practice Questions" - 20 exam-style questions
 
-⚠️ CRITICAL REQUIREMENTS FOR SCRIPT-BASED OPTIMIZATION:
-- Every content block MUST have detailed teaching_notes with exact phrases Cleo will say
-- Step 1 MUST have 1-2 content blocks with complete teaching script (opening, key points, transitions)
-- Step 2 MUST have 20 question blocks with pre-written hints for common mistakes
-- Each question must include: mark scheme, model answer, anticipated errors
-- teaching_notes must be specific and actionable (not vague guidance)
+⚠️ CRITICAL REQUIREMENTS:
+- Step 1 MUST have 1-2 content blocks showing a worked example with explanation
+- Step 2 MUST have 20 question blocks (type: "question")
+- Each question should be exam-style with multiple choice options
+- Questions should gradually increase in difficulty
+- Include clear explanations for each answer
 
-CONTENT BLOCKS FOR STEP 1 (Worked Example) - MUST BE FULLY SCRIPTED:
-- Use "text" blocks with detailed teaching_notes containing exact narration
-- Example teaching_notes: "Start by saying: 'Let me show you the method step by step.' Walk through: Step 1 - Identify the numbers. Step 2 - Apply the rule. Step 3 - Check your answer. Then say: 'Now let's practice together.'"
-- Use "definition" blocks with teaching_notes for how to explain each term
-- Include prerequisites field: what students must know before this (e.g., ['Basic multiplication', 'Place value understanding'])
-- Keep it concise - ONE clear example with complete delivery script
+CONTENT BLOCKS FOR STEP 1 (Worked Example):
+- Use "text" blocks for explanation of method
+- Use "definition" blocks for key concepts/formulas
+- Keep it concise - focus on ONE clear example
 
 ⚠️ TEXT FORMATTING RULES:
 - Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
@@ -254,72 +252,35 @@ CONTENT BLOCKS FOR STEP 1 (Worked Example) - MUST BE FULLY SCRIPTED:
 - For headings, use "## Heading" format or bold
 - Example: "Place value tells us the value of each digit.\n\n**Important:** The digit 6 in 4,629 represents 600."
 
-CONTENT BLOCKS FOR STEP 2 (Practice) - FULLY SCRIPTED QUESTIONS:
+CONTENT BLOCKS FOR STEP 2 (Practice):
 - YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
 - Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
 - ALL blocks must be type "question"
-- Each question MUST have teaching_notes with pre-written hints (e.g., "If student picks A, say: 'Remember to round UP when the digit is 5 or more.' If student picks C, say: 'Check which place value you're rounding to.'")
-- Each question MUST be a complete JSON object with required fields
-
-⚠️ REQUIRED FORMAT (this is CRITICAL):
-  {
-    type: "question",
-    data: {
-      question: "What is 347 rounded to the nearest 10?",
-      options: [
-        { text: "340", isCorrect: false },
-        { text: "350", isCorrect: true },
-        { text: "300", isCorrect: false },
-        { text: "400", isCorrect: false }
-      ],
-      explanation: "347 is closer to 350 than 340 when rounding to the nearest 10"
-    }
-  }
-
-❌ WRONG FORMAT (DO NOT USE): 
-  { type: "question", data: "What is 347 rounded to the nearest 10?" }
-
-- The data field MUST be an object with question, options (array of 4), and explanation properties
+- Format: { type: "question", data: { question: "...", options: [...], explanation: "..." } }
 - Questions 1-7: Basic application (7 questions)
 - Questions 8-14: Intermediate difficulty (7 questions)
 - Questions 15-20: Advanced/challenging (6 questions)
 - TOTAL: Exactly 20 questions
 
-⚠️ CRITICAL: If you generate fewer than 20 questions OR use wrong format, the lesson will be rejected!
+⚠️ CRITICAL: If you generate fewer than 20 questions, the lesson will be rejected. Count carefully!
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
-              : `You are an expert curriculum designer creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
+              : `You are an expert curriculum designer creating concise, focused lesson plans for students.
 
-Your task: Create a highly structured 15-minute lesson with detailed teaching scripts that minimize complex AI reasoning during delivery.
+Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each containing rich, pre-generated content.
 
-LESSON PLAN STRUCTURE (15-minute optimized):
+LESSON PLAN STRUCTURE:
 1. Learning Objectives (3-5 clear, measurable goals)
-2. Teaching Sequence (4-5 FOCUSED steps):
-   - Step 1 (2 min): Hook & Context - Engaging opener with scripted hook
-   - Step 2 (4 min): Core Concept - Main explanation with pre-written analogies/examples
-   - Step 3 (4 min): Worked Examples - 2-3 examples with complete narration scripts
-   - Step 4 (3 min): Guided Practice - 3-5 questions with pre-written hints
-   - Step 5 (2 min): Quick Check - Recap with scripted key takeaways
-3. Content Blocks (each with detailed teaching_notes and prerequisites)
+2. Teaching Sequence (3-5 FOCUSED steps, each 5-8 minutes)
+3. Content Blocks (tables, definitions, questions, diagrams, text)
 
-⚠️ CRITICAL SCRIPT-BASED REQUIREMENTS:
-- Each content block MUST have teaching_notes with exact phrases/scripts Cleo will use
-- Each content block MUST have prerequisites array (what student needs to know)
-- teaching_notes must include: opening phrase, 3-5 key bullet points, transition phrase
-- Questions must have pre-written hints for wrong answers in teaching_notes
-- Each step MUST have 2-4 content blocks minimum
+⚠️ CRITICAL: Each step MUST have 2-4 content blocks minimum. This is non-negotiable!
 
 CONTENT BLOCK TYPES (with detailed examples):
 
-1. TEXT: Explanatory content with COMPLETE teaching script
-   Example: { 
-     type: "text", 
-     title: "Understanding Photosynthesis", 
-     data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy.\n\n**Key Point:** Plants use sunlight to make food.\n\n• Requires sunlight, water, and CO2\n• Produces glucose and oxygen\n• Happens in chloroplasts" },
-     teaching_notes: "Start by saying: 'Let me explain photosynthesis in simple terms.' Key points to emphasize: • It's how plants make food • They need three things: sunlight, water, CO2 • The output is glucose and oxygen. Then transition: 'Now let's see this in action with an example.'",
-     prerequisites: ["Basic understanding of plants", "Knowledge that plants need sunlight"]
-   }
+1. TEXT: Explanatory content or instructions
+   Example: { type: "text", title: "Understanding Photosynthesis", data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy.\n\n**Key Point:** Plants use sunlight to make food.\n\n• Requires sunlight, water, and CO2\n• Produces glucose and oxygen\n• Happens in chloroplasts" } }
 
 2. TABLE: Comparisons, data, organized information
    Example: { type: "table", title: "Plant vs Animal Cells", data: { headers: ["Feature", "Plant Cell", "Animal Cell"], rows: [["Cell Wall", "Yes", "No"], ["Chloroplasts", "Yes", "No"]] } }
@@ -327,14 +288,8 @@ CONTENT BLOCK TYPES (with detailed examples):
 3. DEFINITION: Key terms with examples
    Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
 
-4. QUESTION: Check understanding with pre-written hints
-   Example: { 
-     type: "question", 
-     title: "Check Understanding", 
-     data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" },
-     teaching_notes: "If student picks 'Oxygen', say: 'Remember, plants PRODUCE oxygen, they don't absorb it. Think about what gas humans breathe out.' If correct, say: 'Excellent! CO2 is essential for making glucose.'",
-     prerequisites: ["Understanding of photosynthesis process"]
-   }
+4. QUESTION: Check understanding (multiple choice)
+   Example: { type: "question", title: "Check Understanding", data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" } }
 
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
@@ -476,18 +431,10 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                 }
                               ]
                             },
-                            teaching_notes: { 
-                              type: 'string',
-                              description: 'REQUIRED: Complete teaching script. Format: "Start by saying: [exact opening phrase]. Key points: • [point 1] • [point 2] • [point 3]. Transition: [exact closing phrase]." For questions, include hints for wrong answers.'
-                            },
+                            teaching_notes: { type: 'string' },
                             prerequisites: {
                               type: 'array',
-                              items: { type: 'string' },
-                              description: 'REQUIRED: List specific prior knowledge needed. Example: ["Understanding of basic fractions", "Multiplication tables"]. If none: ["None - introductory content"]'
-                            },
-                            delivery_guidance: {
-                              type: 'string',
-                              description: 'Optional: Specific delivery tips. Example: "Pause 3 seconds after question", "Use encouraging tone", "If student struggles with X, offer hint: [specific hint]"'
+                              items: { type: 'string' }
                             }
                           },
                           required: ['type', 'data']
@@ -552,47 +499,6 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       }
     });
     
-    // Validate and detect malformed question blocks
-    planData.steps.forEach((step: any) => {
-      if (step.content_blocks) {
-        step.content_blocks = step.content_blocks.map((block: any) => {
-          if (block.type === 'question') {
-            // Check if data is a string instead of object
-            if (typeof block.data === 'string') {
-              console.warn('⚠️ Malformed question detected - data is string instead of object:', block.data);
-              block.needsRepair = true;
-              block.originalQuestion = block.data;
-            }
-            // Check if data is object but missing required fields
-            else if (typeof block.data === 'object') {
-              if (!block.data.question || !block.data.options || !Array.isArray(block.data.options)) {
-                console.warn('⚠️ Malformed question detected - missing required fields:', {
-                  hasQuestion: !!block.data.question,
-                  hasOptions: !!block.data.options,
-                  isOptionsArray: Array.isArray(block.data.options)
-                });
-                block.needsRepair = true;
-              } else if (block.data.options.length < 2) {
-                console.warn('⚠️ Malformed question - insufficient options:', block.data.options.length);
-                block.needsRepair = true;
-              }
-            }
-          }
-          return block;
-        });
-      }
-    });
-
-    // Count questions needing repair
-    const questionsNeedingRepair = planData.steps.flatMap((s: any) => 
-      s.content_blocks?.filter((b: any) => b.type === 'question' && b.needsRepair) || []
-    );
-
-    if (questionsNeedingRepair.length > 0) {
-      console.warn(`⚠️ ${questionsNeedingRepair.length} questions marked for repair - will be caught by retry logic or final validation`);
-      // Don't throw error here - let the retry logic (for exam practice) or final validation handle it
-    }
-    
     // Validate content blocks were generated
     const totalContentBlocks = planData.steps.reduce((sum: number, step: any) => 
       sum + (step.content_blocks?.length || 0), 0
@@ -629,22 +535,12 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
         
         console.log(`Exam practice validation: ${questionCount} questions generated (target: 20, steps: ${planData.steps.length})`);
         
-        // Check for malformed questions
-        const allQuestions = practiceStep.content_blocks?.filter((b: any) => b.type === 'question') || [];
-        const malformedQuestions = allQuestions.filter((q: any) => 
-          typeof q.data === 'string' || !q.data?.question || !q.data?.options || !Array.isArray(q.data.options)
-        );
-        
-        if (!hasTwoSteps || questionCount < 20 || malformedQuestions.length > 0) {
-          console.error(`❌ First attempt non-compliant: steps=${planData.steps.length}, questions=${questionCount}, malformed=${malformedQuestions.length}`);
+        if (!hasTwoSteps || questionCount < 20) {
+          console.error(`❌ First attempt non-compliant: steps=${planData.steps.length}, questions=${questionCount}`);
           console.log('🔄 Retrying with stricter prompt...');
           
           // RETRY WITH ULTRA-EXPLICIT PROMPT
-          const retryPrompt = `CRITICAL: Your previous response had problems:
-- Question count: ${questionCount} (need exactly 20)
-- Malformed questions: ${malformedQuestions.length} (need 0)
-
-${malformedQuestions.length > 0 ? '⚠️ FORMATTING ERROR: Some questions had data as a plain string instead of an object!' : ''}
+          const retryPrompt = `CRITICAL: Your previous response had only ${questionCount} questions but you MUST generate EXACTLY 20 questions.
 
 Generate a complete 11+ exam practice lesson plan for "${topic}" (Year Group: ${yearGroup}) with:
 
@@ -654,30 +550,13 @@ STEP 1: "Worked Example"
 STEP 2: "Practice Questions"
 - EXACTLY 20 question blocks
 - Count each one: Q1, Q2, Q3... up to Q20
+- Each question must have:
+  * A clear question text
+  * 4 multiple choice options
+  * One correct answer (isCorrect: true)
+  * An explanation
 
-EXAMPLE OF CORRECT QUESTION FORMAT (USE THIS EXACT STRUCTURE):
-{
-  "type": "question",
-  "data": {
-    "question": "What is 347 rounded to the nearest 10?",
-    "options": [
-      { "text": "340", "isCorrect": false },
-      { "text": "350", "isCorrect": true },
-      { "text": "300", "isCorrect": false },
-      { "text": "400", "isCorrect": false }
-    ],
-    "explanation": "347 is closer to 350 because the ones digit (7) is 5 or more"
-  }
-}
-
-Each question MUST have:
-- question: string (the question text)
-- options: array of 4 objects with "text" and "isCorrect" properties
-- explanation: string
-
-DO NOT generate questions with data as a plain string! The data field MUST be an object.
-
-You MUST generate all 20 questions. If you generate fewer or use wrong format, the lesson will be rejected.`;
+You MUST generate all 20 questions. If you generate fewer, the lesson will be rejected.`;
 
           const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',
@@ -752,28 +631,6 @@ You MUST generate all 20 questions. If you generate fewer or use wrong format, t
         throw new Error('Invalid exam practice plan: Missing practice questions step');
       }
     }
-    
-    // Final validation before saving - ensure no malformed questions
-    const finalValidation = planData.steps.flatMap((step: any) => 
-      step.content_blocks?.filter((b: any) => {
-        if (b.type === 'question') {
-          return typeof b.data === 'string' || 
-                 !b.data?.question || 
-                 !b.data?.options || 
-                 !Array.isArray(b.data.options) ||
-                 b.data.options.length < 2 ||
-                 !b.data.options.some((o: any) => o.isCorrect);
-        }
-        return false;
-      }) || []
-    );
-
-    if (finalValidation.length > 0) {
-      console.error('❌ Final validation failed:', finalValidation.length, 'invalid questions');
-      throw new Error(`Cannot save lesson plan: ${finalValidation.length} questions have invalid structure. Please regenerate.`);
-    }
-    
-    console.log('✅ All questions validated successfully');
 
     // Generate images for diagram blocks
     console.log('Generating images for diagram blocks...');
@@ -783,32 +640,9 @@ You MUST generate all 20 questions. If you generate fewer or use wrong format, t
           if (block.type === 'diagram' && block.data?.description) {
             try {
               const elements = block.data.elements || [];
-              
-              // Enhance vague descriptions with topic context
-              let enhancedDescription = block.data.description;
-              const topicKeyword = topic.toLowerCase().split(' ')[0];
-              if (enhancedDescription.length < 10 || !enhancedDescription.toLowerCase().includes(topicKeyword)) {
-                enhancedDescription = `${topic}: ${enhancedDescription}`;
-                console.log(`Enhanced vague description: "${block.data.description}" -> "${enhancedDescription}"`);
-              }
-              
-              // Build educational context prompt
-              const prompt = `Educational diagram for ${yearGroup} ${topic} lesson: ${enhancedDescription}
-
-Subject: ${topic}
-Learning context: ${learningGoal || 'General educational content'}
-Must clearly show: ${elements.join(', ')}
-
-Requirements:
-- Directly related to ${topic}
-- Appropriate for ${yearGroup} students
-- Educational and curriculum-focused content only
-- NO generic or lifestyle imagery
-- Style: minimalist icon-style illustration, simple and clean, white background
-- Size: small thumbnail format, 400x300 pixels maximum`;
+              const prompt = `Small compact educational diagram: ${block.data.description}. Must clearly show: ${elements.join(', ')}. Style: minimalist icon-style illustration, simple and clean, white background, suitable for ${yearGroup} students. Size: small thumbnail format, 400x300 pixels maximum.`;
               
               console.log(`Generating image for diagram: ${block.title || 'Untitled'}`);
-              console.log(`Full image prompt: ${prompt.substring(0, 200)}...`);
               
               const imageResponse = await supabase.functions.invoke('generate-diagram-image', {
                 body: { prompt }

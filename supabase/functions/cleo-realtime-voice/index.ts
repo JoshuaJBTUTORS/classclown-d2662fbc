@@ -17,51 +17,6 @@ interface RealtimeSession {
   userId: string;
   openAISocket: WebSocket;
   clientSocket: WebSocket;
-  currentModel: 'mini' | 'full';
-  modelSwitchCount: number;
-  lastSwitchTimestamp: number;
-  miniSecondsUsed: number;
-  fullSecondsUsed: number;
-}
-
-// Model configuration
-const MODELS = {
-  mini: 'gpt-4o-mini-realtime-preview-2024-12-17',
-  full: 'gpt-4o-realtime-preview-2024-10-01'
-};
-
-// Confusion trigger phrases
-const CONFUSION_TRIGGERS = [
-  'explain like i\'m a potato',
-  'explain like i\'m 5',
-  'i don\'t understand',
-  'can you explain that',
-  'what does that mean',
-  'confused',
-  'help me understand',
-  'break it down',
-  'explain further',
-  'explain more',
-  'clarify',
-  'can you elaborate',
-  'make it simpler'
-];
-
-// Cost calculation (in GBP)
-const COST_PER_MINUTE = {
-  mini: 0.11,
-  full: 0.36
-};
-
-function detectConfusion(userMessage: string): boolean {
-  const lowerMessage = userMessage.toLowerCase();
-  return CONFUSION_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
-}
-
-function calculateSessionCost(miniSeconds: number, fullSeconds: number): number {
-  const miniCost = (miniSeconds / 60) * COST_PER_MINUTE.mini;
-  const fullCost = (fullSeconds / 60) * COST_PER_MINUTE.full;
-  return miniCost + fullCost;
 }
 
 Deno.serve(async (req) => {
@@ -131,14 +86,7 @@ Deno.serve(async (req) => {
     const topic = url.searchParams.get("topic");
     const yearGroup = url.searchParams.get("yearGroup");
     const lessonPlanId = url.searchParams.get("lessonPlanId");
-    const resumeSession = url.searchParams.get("resume") === 'true';
-    const lastStepId = url.searchParams.get("lastStepId");
-    const lastStepTitle = url.searchParams.get("lastStepTitle");
     let lessonPlan = null;
-    
-    if (resumeSession) {
-      console.log('🔄 Resume mode enabled:', { lastStepId, lastStepTitle });
-    }
     
     // Fetch lesson plan by ID if provided
     if (lessonPlanId) {
@@ -218,13 +166,10 @@ Deno.serve(async (req) => {
     // Upgrade client connection
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
-    // Get requested model from query params (default to mini)
-    const requestedModel = url.searchParams.get("model") === 'full' ? 'full' : 'mini';
-    
     // Connect to OpenAI Realtime API using subprotocol authentication
-    console.log(`Connecting to OpenAI Realtime API with ${requestedModel} model...`);
+    console.log("Connecting to OpenAI Realtime API...");
     const openAISocket = new WebSocket(
-      `wss://api.openai.com/v1/realtime?model=${MODELS[requestedModel]}`,
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
       [
         'realtime',
         `openai-insecure-api-key.${OPENAI_API_KEY}`,
@@ -237,12 +182,7 @@ Deno.serve(async (req) => {
       conversationId: conversation.id,
       userId: user.id,
       openAISocket,
-      clientSocket,
-      currentModel: requestedModel,
-      modelSwitchCount: 0,
-      lastSwitchTimestamp: Date.now(),
-      miniSecondsUsed: 0,
-      fullSecondsUsed: 0
+      clientSocket
     };
 
     let isSessionConfigured = false;
@@ -256,7 +196,6 @@ Deno.serve(async (req) => {
     const MAX_SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutes
     let sessionEndTimer: number | null = null;
     let sessionLogged = false;
-    let keepaliveInterval: number | null = null;
 
     // Auto-disconnect at 5 minutes
     sessionEndTimer = setTimeout(() => {
@@ -271,61 +210,31 @@ Deno.serve(async (req) => {
       clientSocket.close();
     }, MAX_SESSION_DURATION_MS);
     
-    // Function to log session usage with model costs
+    // Function to log session usage
     async function logSessionUsage(wasInterrupted = false) {
       if (sessionLogged) return;
       sessionLogged = true;
 
-      // CRITICAL FIX: Calculate final model usage before logging
-      const elapsedSinceLastSwitch = Math.floor((Date.now() - session.lastSwitchTimestamp) / 1000);
-      if (session.currentModel === 'mini') {
-        session.miniSecondsUsed += elapsedSinceLastSwitch;
-      } else {
-        session.fullSecondsUsed += elapsedSinceLastSwitch;
-      }
-
       const durationSeconds = Math.floor((Date.now() - sessionStartTimestamp) / 1000);
-      const estimatedCost = calculateSessionCost(session.miniSecondsUsed, session.fullSecondsUsed);
-      
       console.log(`📊 Logging voice session: ${durationSeconds} seconds`);
-      console.log(`💰 Model usage: ${session.miniSecondsUsed}s mini, ${session.fullSecondsUsed}s full`);
-      console.log(`💷 Estimated cost: £${estimatedCost.toFixed(4)}`);
 
       try {
         const logResponse = await supabaseAnonClient.functions.invoke('log-voice-session', {
           body: {
             conversationId: conversation.id,
             sessionStart: sessionStartTime,
-            durationSeconds: Math.min(durationSeconds, 300),
-            wasInterrupted,
-            miniSecondsUsed: session.miniSecondsUsed,
-            fullSecondsUsed: session.fullSecondsUsed,
-            estimatedCostGbp: estimatedCost
+            durationSeconds: Math.min(durationSeconds, 300), // Cap at 5 minutes
+            wasInterrupted
           }
         });
 
         if (logResponse.error) {
-          console.error("❌ Error logging session:", logResponse.error);
+          console.error("Error logging session:", logResponse.error);
         } else {
           console.log("✅ Session logged successfully:", logResponse.data);
         }
       } catch (error) {
-        console.error("❌ CRITICAL: Failed to log session:", error);
-      }
-      
-      // Update conversation with final model usage (with error handling)
-      try {
-        await supabase
-          .from('cleo_conversations')
-          .update({
-            mini_seconds_used: session.miniSecondsUsed,
-            full_seconds_used: session.fullSecondsUsed,
-            model_switches: session.modelSwitchCount
-          })
-          .eq('id', conversation.id);
-        console.log("✅ Conversation usage updated");
-      } catch (error) {
-        console.error("❌ Failed to update conversation usage:", error);
+        console.error("Failed to log session:", error);
       }
     }
 
@@ -337,14 +246,6 @@ Deno.serve(async (req) => {
         status: 'connected',
         conversationId: conversation.id
       }));
-      
-      // Start keepalive ping to prevent idle disconnections
-      keepaliveInterval = setInterval(() => {
-        if (clientSocket.readyState === WebSocket.OPEN) {
-          clientSocket.send(JSON.stringify({ type: 'server.keepalive' }));
-          console.log('💓 Keepalive ping sent');
-        }
-      }, 20000); // Every 20 seconds
     };
 
     openAISocket.onmessage = async (event) => {
@@ -463,12 +364,8 @@ CRITICAL INSTRUCTIONS:
 5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
 
 YOUR TEACHING FLOW:
-${resumeSession && lastStepId && lastStepTitle 
-  ? `RESUME MODE: You are resuming from "${lastStepTitle}" [ID: ${lastStepId}]. 
-  Continue from where you left off - don't restart the lesson. 
-  Say something like "Welcome back! Let's continue with ${lastStepTitle}..."` 
-  : `1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
-  2. Call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting`}
+1. Start with: "Welcome! Today we're learning ${lessonPlan.topic}."
+2. Call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") before starting
 3. After the content appears, reference it naturally in your explanation
 4. When you see a question in the content, present it and wait for the student's answer
 5. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
@@ -647,10 +544,7 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
 
         // Send initial greeting message
         let greetingText = '';
-        if (resumeSession && lastStepTitle) {
-          // Resume mode greeting
-          greetingText = `Welcome back${userName !== 'there' ? ` ${userName}` : ''}! Let's continue where we left off with ${lastStepTitle}. Ready to keep going?`;
-        } else if (lessonPlan) {
+        if (lessonPlan) {
           const mainObjectives = lessonPlan.learning_objectives.slice(0, 2).join(', and ');
           const firstStep = lessonPlan.teaching_sequence[0]?.title || 'the basics';
           greetingText = `Hi ${userName}! Welcome! I'm Cleo, and I'll be guiding you through ${lessonPlan.topic} today. We have ${lessonPlan.learning_objectives.length} main objectives: ${mainObjectives}. Let's get started with ${firstStep}. Are you ready?`;
@@ -661,19 +555,6 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         }
 
         console.log("Sending initial greeting:", greetingText);
-        
-        // If resuming and we have a step, send marker to sync UI first
-        if (resumeSession && lastStepId && lastStepTitle) {
-          console.log('🔄 Sending resume marker to client:', { lastStepId, lastStepTitle });
-          clientSocket.send(JSON.stringify({
-            type: 'content.marker',
-            data: {
-              type: 'move_to_step',
-              stepId: lastStepId,
-              stepTitle: lastStepTitle
-            }
-          }));
-        }
 
         // Create a conversation item with the greeting prompt
         openAISocket.send(JSON.stringify({
@@ -695,21 +576,12 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
           type: 'response.create'
         }));
 
-        // Save the greeting prompt to database as a system message (with error handling)
-        try {
-          const { error: greetingSaveError } = await supabase
-            .from('cleo_messages')
-            .insert({
-              conversation_id: conversation.id,
-              role: 'system',
-              content: `Initial greeting prompt: ${greetingText}`
-            });
-          if (greetingSaveError) {
-            console.error("❌ Failed to save greeting message:", greetingSaveError);
-          }
-        } catch (e) {
-          console.error("❌ Failed to save greeting message (exception):", e);
-        }
+        // Save the greeting prompt to database as a system message
+        await supabase.from('cleo_messages').insert({
+          conversation_id: conversation.id,
+          role: 'system',
+          content: `Initial greeting prompt: ${greetingText}`
+        });
 
         console.log("Initial greeting sent to OpenAI");
       }
@@ -730,41 +602,13 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       // Save student transcript to database
       if (message.type === 'conversation.item.input_audio_transcription.completed') {
         currentTranscript = message.transcript;
-        console.log("🎤 Student said:", currentTranscript);
+        console.log("Student said:", currentTranscript);
         
-        // Check for confusion in audio transcripts
-        const isConfused = detectConfusion(currentTranscript);
-        
-        // Save with error handling
-        try {
-          const { error: transcriptSaveError } = await supabase
-            .from('cleo_messages')
-            .insert({
-              conversation_id: session.conversationId,
-              role: 'user',
-              content: currentTranscript,
-              model_used: session.currentModel
-            });
-          if (transcriptSaveError) {
-            console.error("❌ Failed to save user transcript:", transcriptSaveError);
-          }
-        } catch (e) {
-          console.error("❌ Failed to save user transcript (exception):", e);
-        }
-        
-        // Auto-switch on confusion (with cooldown)
-        const cooldownPeriod = 30000;
-        const timeSinceLastSwitch = Date.now() - session.lastSwitchTimestamp;
-        
-        if (isConfused && session.currentModel === 'mini' && timeSinceLastSwitch > cooldownPeriod) {
-          console.log('🧠 Confusion detected in audio - flagging for potential model switch');
-          if (clientSocket.readyState === WebSocket.OPEN) {
-            clientSocket.send(JSON.stringify({
-              type: 'confusion.detected',
-              transcript: currentTranscript
-            }));
-          }
-        }
+        await supabase.from('cleo_messages').insert({
+          conversation_id: session.conversationId,
+          role: 'user',
+          content: currentTranscript
+        });
       }
 
       // Accumulate assistant response and detect content markers
@@ -955,41 +799,12 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       // Save assistant message when complete
       if (message.type === 'response.audio_transcript.done') {
         if (currentAssistantMessage) {
-          console.log("🤖 Cleo said:", currentAssistantMessage);
-          
-          // Save with error handling
-          try {
-            const { error: assistantSaveError } = await supabase
-              .from('cleo_messages')
-              .insert({
-                conversation_id: session.conversationId,
-                role: 'assistant',
-                content: currentAssistantMessage,
-                model_used: session.currentModel
-              });
-            if (assistantSaveError) {
-              console.error("❌ Failed to save assistant message:", assistantSaveError);
-            }
-          } catch (e) {
-            console.error("❌ Failed to save assistant message (exception):", e);
-          }
-          
-          // Check for switch-back trigger if using full model
-          const switchBackPhrases = ['does that make sense', 'is that clearer', 'do you understand now'];
-          const hasCheckPhrase = switchBackPhrases.some(phrase => 
-            currentAssistantMessage.toLowerCase().includes(phrase)
-          );
-          
-          if (session.currentModel === 'full' && hasCheckPhrase) {
-            console.log('🔄 Deep explanation complete - ready to switch back to mini on positive response');
-            if (clientSocket.readyState === WebSocket.OPEN) {
-              clientSocket.send(JSON.stringify({
-                type: 'explanation.complete',
-                message: 'Ready to switch back to efficient mode'
-              }));
-            }
-          }
-          
+          console.log("Cleo said:", currentAssistantMessage);
+          await supabase.from('cleo_messages').insert({
+            conversation_id: session.conversationId,
+            role: 'assistant',
+            content: currentAssistantMessage
+          });
           currentAssistantMessage = '';
         }
       }
@@ -997,62 +812,61 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       // Track AI response state
       if (message.type === 'response.created') {
         isAIResponding = true;
-        console.log("✅ AI response started");
+        console.log("AI response started");
       }
 
       if (message.type === 'response.done') {
         isAIResponding = false;
-        console.log("✅ AI response completed");
+        console.log("AI response completed");
       }
 
       if (message.type === 'response.cancelled') {
         isAIResponding = false;
-        console.log("✅ AI response successfully cancelled");
+        console.log("AI response successfully cancelled");
       }
 
       // Forward all events to client
-      if (message.type !== 'response.audio.delta') {
-        console.log('📥 OpenAI -> Client:', message.type);
+      console.log('📥 OpenAI -> Client:', message.type);
+      
+      if (message.type === 'response.audio.delta') {
+        console.log('🔊 Sending audio chunk to client');
       }
       
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(event.data);
-      } else {
-        console.warn("⚠️ Client socket not ready, cannot forward message");
-      }
-    } catch (error) {
-        // Detailed error logging - but don't crash the session
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(event.data);
+        }
+      } catch (error) {
+        // Detailed error logging
         console.error("🚨 CRITICAL ERROR processing OpenAI message:", error);
         console.error("Error name:", error?.name);
         console.error("Error message:", error?.message);
         console.error("Error stack:", error?.stack);
-        console.error("Message type that caused error:", message?.type);
-        console.error("Session ID:", session.conversationId);
-        console.error("Timestamp:", new Date().toISOString());
+        console.error("Message type that caused error:", event?.data ? JSON.parse(event.data).type : 'unknown');
         
-        // Try to notify client of error but don't crash
-        try {
-          if (clientSocket.readyState === WebSocket.OPEN) {
-            clientSocket.send(JSON.stringify({
-              type: 'processing.error',
-              error: 'An error occurred processing the message',
-              timestamp: new Date().toISOString()
-            }));
-          }
-        } catch (sendError) {
-          console.error("❌ Could not send error notification to client:", sendError);
+        // Send detailed error to client
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(JSON.stringify({
+            type: 'connection.error',
+            error: 'Message processing failed',
+            details: error instanceof Error ? error.message : 'Unknown error',
+            fatal: false,
+            message: 'An error occurred while processing the AI response. The connection may be unstable.'
+          }));
         }
         
-        // DO NOT throw - let the session continue
+        // Don't close connection - try to recover
+        console.log("Attempting to continue despite error...");
       }
     };
 
-    openAISocket.onerror = async (error) => {
-      console.error("🚨 OpenAI socket error:", error);
+    openAISocket.onerror = (error) => {
+      console.error("🚨 OpenAI WebSocket ERROR:", error);
       console.error("Error type:", error?.type);
+      console.error("Error target:", error?.target);
+      console.error("Error timestamp:", new Date().toISOString());
       console.error("Session ID:", session.conversationId);
-      console.error("Timestamp:", new Date().toISOString());
-      console.error("⏱️ Session duration so far:", Math.floor((Date.now() - sessionStartTimestamp) / 1000), "seconds");
+      console.error("User ID:", session.userId);
+      console.error("Full error object:", JSON.stringify(error, null, 2));
       
       if (clientSocket.readyState === WebSocket.OPEN) {
         clientSocket.send(JSON.stringify({
@@ -1065,36 +879,21 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
       }
       
       // Log to database for monitoring
-      (async () => {
-        try {
-          const { error: logError } = await supabase
-            .from('cleo_messages')
-            .insert({
-              conversation_id: session.conversationId,
-              role: 'system',
-              content: `ERROR: OpenAI WebSocket error - ${JSON.stringify(error)}`
-            });
-          if (logError) {
-            console.error("Failed to log error:", logError);
-          }
-        } catch (err) {
-          console.error("Failed to log error (exception):", err);
-        }
-      })();
+      supabase.from('cleo_messages').insert({
+        conversation_id: session.conversationId,
+        role: 'system',
+        content: `ERROR: OpenAI WebSocket error - ${JSON.stringify(error)}`
+      }).catch(err => console.error("Failed to log error:", err));
     };
 
     openAISocket.onclose = (event) => {
-      const sessionDuration = Math.floor((Date.now() - sessionStartTimestamp) / 1000);
-      console.log("🔌 OpenAI connection closed");
+      console.log("🔌 OpenAI socket closed");
       console.log("Close code:", event.code);
       console.log("Close reason:", event.reason);
-      console.log("Was clean?:", event.wasClean);
-      console.log("Session ID:", session.conversationId);
-      console.log("⏱️ Session duration:", sessionDuration, "seconds");
+      console.log("Was clean:", event.wasClean);
       console.log("Timestamp:", new Date().toISOString());
       
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
-      if (keepaliveInterval) clearInterval(keepaliveInterval);
       logSessionUsage(false);
       
       // Send close reason to client
@@ -1116,12 +915,10 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
 
     // Handle client socket events
     clientSocket.onopen = () => {
-      console.log("✅ Client connected - session started");
-      console.log("🎯 Model:", session.currentModel);
-      console.log("🆔 Conversation ID:", session.conversationId);
+      console.log("Client connected");
     };
 
-    clientSocket.onmessage = async (event) => {
+    clientSocket.onmessage = (event) => {
       // Forward client messages to OpenAI
       try {
         const msg = JSON.parse(event.data);
@@ -1131,147 +928,12 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
         if (msg.type === 'user_message') {
           console.log('💬 Injecting user text message:', msg.text);
           
-          // Detect confusion and potentially switch models
-          const isConfused = detectConfusion(msg.text);
-          const shouldSwitch = isConfused && session.currentModel === 'mini';
-          const cooldownPeriod = 30000; // 30 seconds between switches
-          const timeSinceLastSwitch = Date.now() - session.lastSwitchTimestamp;
-          
-          if (shouldSwitch && timeSinceLastSwitch > cooldownPeriod) {
-            console.log('🧠 Confusion detected - switching to full model');
-            
-            // Update model usage time before switching
-            const elapsedSeconds = Math.floor((Date.now() - session.lastSwitchTimestamp) / 1000);
-            if (session.currentModel === 'mini') {
-              session.miniSecondsUsed += elapsedSeconds;
-            } else {
-              session.fullSecondsUsed += elapsedSeconds;
-            }
-            
-            // Notify client of model switch
-            if (clientSocket.readyState === WebSocket.OPEN) {
-              clientSocket.send(JSON.stringify({
-                type: 'model.switching',
-                fromModel: 'mini',
-                toModel: 'full',
-                reason: 'confusion_detected'
-              }));
-            }
-            
-            // Fetch recent conversation context
-            const { data: recentMessages } = await supabase
-              .from('cleo_messages')
-              .select('role, content')
-              .eq('conversation_id', session.conversationId)
-              .order('created_at', { ascending: false })
-              .limit(10);
-            
-            // Close current connection
-            openAISocket.close(1000, 'Model switch');
-            
-            // Open new connection with full model
-            const newSocket = new WebSocket(
-              `wss://api.openai.com/v1/realtime?model=${MODELS.full}`,
-              [
-                'realtime',
-                `openai-insecure-api-key.${OPENAI_API_KEY}`,
-                'openai-beta.realtime-v1'
-              ]
-            );
-            
-            session.openAISocket = newSocket;
-            session.currentModel = 'full';
-            session.modelSwitchCount++;
-            session.lastSwitchTimestamp = Date.now();
-            
-            // Update database
-            await supabase
-              .from('cleo_conversations')
-              .update({
-                current_model: 'full',
-                model_switches: session.modelSwitchCount
-              })
-              .eq('id', session.conversationId);
-            
-            // Wait for connection and configure with context
-            newSocket.onopen = () => {
-              console.log('✅ Switched to full model');
-              
-              // Configure with deep explanation prompt
-              const contextHistory = recentMessages?.reverse().map(m => 
-                `${m.role === 'user' ? 'Student' : 'Cleo'}: ${m.content}`
-              ).join('\n') || '';
-              
-              newSocket.send(JSON.stringify({
-                type: 'session.update',
-                session: {
-                  modalities: ['text', 'audio'],
-                  instructions: `You are Cleo in DEEP EXPLANATION MODE. The student just asked for help because they were confused: "${msg.text}"
-
-Previous conversation:
-${contextHistory}
-
-Provide a thorough, detailed explanation using:
-- Analogies and real-world examples
-- Step-by-step breakdowns
-- Multiple perspectives
-- Visual descriptions
-
-After your explanation, ask "Does that make sense now?" to gauge understanding.`,
-                  voice: 'ballad',
-                  input_audio_format: 'pcm16',
-                  output_audio_format: 'pcm16',
-                  turn_detection: {
-                    type: 'server_vad',
-                    threshold: 0.5,
-                    prefix_padding_ms: 300,
-                    silence_duration_ms: 700
-                  },
-                  temperature: 0.8
-                }
-              }));
-              
-              // Send the user's message
-              newSocket.send(JSON.stringify({
-                type: 'conversation.item.create',
-                item: {
-                  type: 'message',
-                  role: 'user',
-                  content: [{ type: 'input_text', text: msg.text }]
-                }
-              }));
-              
-              newSocket.send(JSON.stringify({ type: 'response.create' }));
-              
-              if (clientSocket.readyState === WebSocket.OPEN) {
-                clientSocket.send(JSON.stringify({
-                  type: 'model.switched',
-                  model: 'full'
-                }));
-              }
-            };
-            
-            return;
-          }
-          
           // Save message to database
-          try {
-            const { error: saveMsgError } = await supabase
-              .from('cleo_messages')
-              .insert({
-                conversation_id: session.conversationId,
-                role: 'user',
-                content: msg.text,
-                model_used: session.currentModel
-              });
-            if (saveMsgError) {
-              console.error('Failed to save user message:', saveMsgError);
-            } else {
-              console.log('Message saved to database');
-            }
-          } catch (err) {
-            console.error('Failed to save user message (exception):', err);
-          }
+          supabase.from('cleo_messages').insert({
+            conversation_id: session.conversationId,
+            role: 'user',
+            content: msg.text
+          }).then(() => console.log('Message saved to database'));
           
           // Create conversation item
           openAISocket.send(JSON.stringify({
@@ -1307,22 +969,17 @@ After your explanation, ask "Does that make sense now?" to gauge understanding.`
     };
 
     clientSocket.onclose = () => {
-      const sessionDuration = Math.floor((Date.now() - sessionStartTimestamp) / 1000);
-      console.log("🔌 Client disconnected");
-      console.log("⏱️ Session duration:", sessionDuration, "seconds");
+      console.log("Client disconnected");
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
-      if (keepaliveInterval) clearInterval(keepaliveInterval);
       logSessionUsage(true); // Mark as interrupted if client closes
       openAISocket.close();
     };
 
     clientSocket.onerror = (error) => {
-      const sessionDuration = Math.floor((Date.now() - sessionStartTimestamp) / 1000);
       console.error("🚨 Client socket error:", error);
       console.error("Error type:", error?.type);
       console.error("Timestamp:", new Date().toISOString());
       console.error("Session ID:", session.conversationId);
-      console.error("⏱️ Session duration before error:", sessionDuration, "seconds");
       
       if (sessionEndTimer) clearTimeout(sessionEndTimer);
       logSessionUsage(true);

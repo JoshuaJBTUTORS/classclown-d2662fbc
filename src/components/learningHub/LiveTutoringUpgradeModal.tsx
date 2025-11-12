@@ -55,22 +55,19 @@ const LiveTutoringUpgradeModal: React.FC<LiveTutoringUpgradeModalProps> = ({ isO
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-3xl font-bold text-center mb-2" style={{ color: 'hsl(var(--cleo-text-main))' }}>
-            🦊 Level Up with 1-on-1 Live Tutoring
+          <DialogTitle className="text-3xl font-bold text-center mb-2">
+            Unlock 1-on-1 Live Tutoring 🎓
           </DialogTitle>
-          <DialogDescription className="text-center text-lg" style={{ color: 'hsl(var(--cleo-text-secondary))' }}>
-            Strategist Mode: Personalized tutoring tailored to your learning journey
+          <DialogDescription className="text-center text-lg">
+            Take your learning to the next level with personalized live tutoring
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 mt-6">
           {/* Pricing Highlight */}
-          <Card className="bg-white border border-gray-200" style={{ 
-            boxShadow: 'var(--cleo-shadow-soft)',
-            borderRadius: '16px'
-          }}>
+          <Card className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200">
             <CardContent className="p-6 text-center">
-              <div className="text-4xl font-bold mb-2" style={{ color: 'hsl(var(--cleo-green))' }}>
+              <div className="text-4xl font-bold text-purple-700 mb-2">
                 From £9.99/month
               </div>
               <p className="text-gray-600">
@@ -82,17 +79,15 @@ const LiveTutoringUpgradeModal: React.FC<LiveTutoringUpgradeModalProps> = ({ isO
           {/* Benefits Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {benefits.map((benefit, index) => (
-              <Card key={index} className="bg-white border border-gray-200 hover:shadow-md transition-all" style={{
-                boxShadow: 'var(--cleo-shadow-soft)',
-                borderRadius: '12px'
-              }}>
+              <Card key={index} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4 flex items-start gap-3">
-                  <div className="p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: '#e7f8ee' }}>
-                    <benefit.icon className="h-5 w-5 text-green-600" />
+                  <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                    <benefit.icon className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">
+                    <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
                       {benefit.title}
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     </h4>
                     <p className="text-sm text-gray-600">
                       {benefit.description}
@@ -118,11 +113,7 @@ const LiveTutoringUpgradeModal: React.FC<LiveTutoringUpgradeModalProps> = ({ isO
               <Button
                 onClick={handleBookTrial}
                 size="lg"
-                className="px-8 py-6 text-lg font-semibold rounded-full text-white transition-all hover:translate-y-[-2px]"
-                style={{
-                  background: 'linear-gradient(135deg, #1fb86b, #35d086)',
-                  boxShadow: '0 4px 12px rgba(31, 184, 107, 0.3)'
-                }}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-6 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
               >
                 Book Free Trial Lesson
               </Button>
@@ -130,14 +121,14 @@ const LiveTutoringUpgradeModal: React.FC<LiveTutoringUpgradeModalProps> = ({ isO
                 onClick={onClose}
                 size="lg"
                 variant="outline"
-                className="px-8 py-6 text-lg rounded-full border-gray-300 hover:bg-gray-50"
+                className="px-8 py-6 text-lg rounded-xl"
               >
                 Maybe Later
               </Button>
             </div>
 
             <p className="text-center text-sm text-gray-500">
-              💚 Cleo says: Your learning journey, elevated.
+              No commitment required. Cancel anytime.
             </p>
           </div>
         </div>

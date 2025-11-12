@@ -38,7 +38,6 @@ export interface ContentBlock {
   title?: string;
   teachingNotes?: string;
   prerequisites?: string[];
-  deliveryGuidance?: string;
 }
 
 export interface LessonData {

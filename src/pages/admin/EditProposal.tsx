@@ -43,8 +43,6 @@ export default function EditProposal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isExtending, setIsExtending] = useState(false);
-  const [discountExtendedUntil, setDiscountExtendedUntil] = useState<string | null>(null);
   const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>([
     { day: '', time: '', duration: 60, subject: '' },
   ]);
@@ -250,42 +248,6 @@ export default function EditProposal() {
       });
     } finally {
       setIsResending(false);
-    }
-  };
-
-  const handleExtendDiscount = async () => {
-    setIsExtending(true);
-    try {
-      if (!proposalId) {
-        throw new Error('No proposal ID available');
-      }
-
-      // Calculate 12 hours from now
-      const twelveHoursFromNow = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
-
-      // Update the proposal directly in the database
-      const { error } = await supabase
-        .from('lesson_proposals')
-        .update({ discount_extended_until: twelveHoursFromNow })
-        .eq('id', proposalId);
-
-      if (error) throw error;
-
-      setDiscountExtendedUntil(twelveHoursFromNow);
-
-      toast({
-        title: 'Discount Extended!',
-        description: 'The special offer has been extended by 12 hours.',
-      });
-    } catch (error: any) {
-      console.error('Error extending discount:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to extend discount',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsExtending(false);
     }
   };
 
@@ -526,31 +488,9 @@ export default function EditProposal() {
                 />
               </div>
 
-              {/* Discount Extension Status */}
-              {discountExtendedUntil && (
-                <div className="space-y-2 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    ⏰ Discount Extended
-                  </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Extended deadline: {new Date(discountExtendedUntil).toLocaleString()}
-                  </p>
-                </div>
-              )}
-
               <div className="flex gap-4">
                 <Button type="button" variant="outline" onClick={() => navigate('/admin/proposals')}>
                   Cancel
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={handleExtendDiscount}
-                  disabled={isSubmitting || isResending || isExtending}
-                  variant="outline"
-                  className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                >
-                  {isExtending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Extend Discount +12h
                 </Button>
                 <Button type="submit" disabled={isSubmitting || isResending}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

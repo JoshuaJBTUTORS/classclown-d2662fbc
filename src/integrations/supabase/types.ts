@@ -679,15 +679,11 @@ export type Database = {
       cleo_conversations: {
         Row: {
           created_at: string
-          current_model: string | null
-          full_seconds_used: number | null
           id: string
           last_paused_at: string | null
           learning_goal: string | null
           lesson_id: string | null
-          mini_seconds_used: number | null
           mode_switches: number | null
-          model_switches: number | null
           module_id: string | null
           resume_count: number
           status: string
@@ -702,15 +698,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          current_model?: string | null
-          full_seconds_used?: number | null
           id?: string
           last_paused_at?: string | null
           learning_goal?: string | null
           lesson_id?: string | null
-          mini_seconds_used?: number | null
           mode_switches?: number | null
-          model_switches?: number | null
           module_id?: string | null
           resume_count?: number
           status?: string
@@ -725,15 +717,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          current_model?: string | null
-          full_seconds_used?: number | null
           id?: string
           last_paused_at?: string | null
           learning_goal?: string | null
           lesson_id?: string | null
-          mini_seconds_used?: number | null
           mode_switches?: number | null
-          model_switches?: number | null
           module_id?: string | null
           resume_count?: number
           status?: string
@@ -926,7 +914,6 @@ export type Database = {
           duration_seconds: number | null
           id: string
           mode: string | null
-          model_used: string | null
           role: string
         }
         Insert: {
@@ -936,7 +923,6 @@ export type Database = {
           duration_seconds?: number | null
           id?: string
           mode?: string | null
-          model_used?: string | null
           role: string
         }
         Update: {
@@ -946,7 +932,6 @@ export type Database = {
           duration_seconds?: number | null
           id?: string
           mode?: string | null
-          model_used?: string | null
           role?: string
         }
         Relationships: [
@@ -2250,7 +2235,6 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
-          discount_extended_until: string | null
           id: string
           lesson_times: Json
           lesson_type: string
@@ -2273,7 +2257,6 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
-          discount_extended_until?: string | null
           id?: string
           lesson_times?: Json
           lesson_type: string
@@ -2296,7 +2279,6 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
-          discount_extended_until?: string | null
           id?: string
           lesson_times?: Json
           lesson_type?: string
@@ -4395,10 +4377,7 @@ export type Database = {
           created_at: string | null
           deducted_from_quota: boolean | null
           duration_seconds: number | null
-          estimated_cost_gbp: number | null
-          full_seconds_used: number | null
           id: string
-          mini_seconds_used: number | null
           quota_id: string | null
           session_end: string | null
           session_start: string
@@ -4411,10 +4390,7 @@ export type Database = {
           created_at?: string | null
           deducted_from_quota?: boolean | null
           duration_seconds?: number | null
-          estimated_cost_gbp?: number | null
-          full_seconds_used?: number | null
           id?: string
-          mini_seconds_used?: number | null
           quota_id?: string | null
           session_end?: string | null
           session_start: string
@@ -4427,10 +4403,7 @@ export type Database = {
           created_at?: string | null
           deducted_from_quota?: boolean | null
           duration_seconds?: number | null
-          estimated_cost_gbp?: number | null
-          full_seconds_used?: number | null
           id?: string
-          mini_seconds_used?: number | null
           quota_id?: string | null
           session_end?: string | null
           session_start?: string

@@ -19,7 +19,6 @@ interface Proposal {
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
   status: string;
   created_at: string;
-  discount_extended_until?: string | null;
 }
 
 export default function ProposalView() {
@@ -209,7 +208,6 @@ export default function ProposalView() {
                 <UrgencyPriceDisplay 
                   price={proposal.price_per_lesson} 
                   createdAt={proposal.created_at}
-                  discountExtendedUntil={proposal.discount_extended_until}
                 />
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">📅 Payment Cycle</p>

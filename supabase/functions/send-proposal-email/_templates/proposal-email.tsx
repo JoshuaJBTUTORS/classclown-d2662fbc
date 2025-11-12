@@ -15,33 +15,13 @@ interface ProposalEmailProps {
   recipientName: string;
   proposalUrl: string;
   subject: string;
-  discountExtendedUntil?: string | null;
-  createdAt: string;
 }
 
 export const ProposalEmail = ({
   recipientName,
   proposalUrl,
   subject,
-  discountExtendedUntil,
-  createdAt,
-}: ProposalEmailProps) => {
-  // Calculate if discount is active and time remaining
-  const now = new Date().getTime();
-  let discountDeadline: Date | null = null;
-  let isDiscountActive = false;
-  
-  if (discountExtendedUntil) {
-    discountDeadline = new Date(discountExtendedUntil);
-    isDiscountActive = discountDeadline.getTime() > now;
-  } else {
-    const createdTime = new Date(createdAt).getTime();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    discountDeadline = new Date(createdTime + twentyFourHours);
-    isDiscountActive = discountDeadline.getTime() > now;
-  }
-
-  return (
+}: ProposalEmailProps) => (
   <Html>
     <Head />
     <Preview>Your Personalized Lesson Proposal from Journey Beyond</Preview>
@@ -58,28 +38,6 @@ export const ProposalEmail = ({
         <Text style={text}>
           We've prepared a personalized proposal just for you. Click below to review all the details:
         </Text>
-
-        {isDiscountActive && (
-          <Container style={urgentBox}>
-            <Text style={urgentTitle}>
-              ⏰ {discountExtendedUntil ? 'Extended Offer' : 'Limited Time Offer'}
-            </Text>
-            <Text style={urgentText}>
-              Special 15% discount expires on <strong>{discountDeadline?.toLocaleString('en-GB', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}</strong>
-            </Text>
-            {discountExtendedUntil && (
-              <Text style={extendedBadge}>
-                ✨ DISCOUNT EXTENDED JUST FOR YOU
-              </Text>
-            )}
-          </Container>
-        )}
 
         <Link
           href={proposalUrl}
@@ -102,8 +60,7 @@ export const ProposalEmail = ({
       </Container>
     </Body>
   </Html>
-  );
-};
+);
 
 export default ProposalEmail;
 
@@ -185,44 +142,5 @@ const footer = {
   lineHeight: '20px',
   padding: '0 48px',
   marginTop: '32px',
-  textAlign: 'center' as const,
-};
-
-const urgentBox = {
-  backgroundColor: '#FEF3C7',
-  border: '2px solid #F59E0B',
-  borderRadius: '12px',
-  padding: '24px',
-  margin: '32px 48px',
-  textAlign: 'center' as const,
-};
-
-const urgentTitle = {
-  color: '#92400E',
-  fontSize: '20px',
-  fontWeight: '700',
-  margin: '0 0 12px 0',
-  padding: '0',
-  textAlign: 'center' as const,
-};
-
-const urgentText = {
-  color: '#78350F',
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '8px 0',
-  padding: '0',
-  textAlign: 'center' as const,
-};
-
-const extendedBadge = {
-  backgroundColor: '#F59E0B',
-  color: '#FFFFFF',
-  fontSize: '13px',
-  fontWeight: '700',
-  padding: '8px 16px',
-  borderRadius: '6px',
-  margin: '16px auto 0',
-  display: 'inline-block',
   textAlign: 'center' as const,
 };
