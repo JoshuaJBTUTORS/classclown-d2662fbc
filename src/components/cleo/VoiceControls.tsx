@@ -36,6 +36,9 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Check if we're in a reconnecting state (passed via connection state)
+  const isReconnecting = isConnected === false && isPaused === false;
 
   useEffect(() => {
     checkQuota();

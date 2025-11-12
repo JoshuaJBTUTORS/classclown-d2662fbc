@@ -26,17 +26,25 @@ interface CleoVoiceChatProps {
   };
   onConversationCreated?: (id: string) => void;
   onContentEvent?: (event: ContentEvent) => void;
-  onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
+  onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void;
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
   onModelChange?: (model: 'mini' | 'full') => void;
-  onProvideControls?: (controls: { connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void }) => void;
+  onProvideControls?: (controls: { 
+    connect: () => void; 
+    disconnect: () => void; 
+    sendUserMessage: (text: string) => void;
+    attemptReconnect?: () => void;
+  }) => void;
   voiceTimer?: {
     start: () => void;
     pause: () => void;
     hasReachedLimit: boolean;
   };
   onVoiceLimitReached?: () => void;
+  onUnexpectedDisconnection?: (info: { code: number; reason: string; conversationId?: string }) => void;
+  onReconnectSuccess?: () => void;
+  onReconnectFailed?: () => void;
   selectedMicrophoneId?: string;
   selectedSpeakerId?: string;
 }
@@ -55,11 +63,14 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onProvideControls,
   voiceTimer,
   onVoiceLimitReached,
+  onUnexpectedDisconnection,
+  onReconnectSuccess,
+  onReconnectFailed,
   selectedMicrophoneId,
   selectedSpeakerId
 }) => {
   const { toast } = useToast();
-  const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
+  const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('idle');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
@@ -67,11 +78,15 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [currentModel, setCurrentModel] = useState<'mini' | 'full'>('mini');
   const [audioContextState, setAudioContextState] = useState<string>('unknown');
   const [microphoneActive, setMicrophoneActive] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [wasUserDisconnect, setWasUserDisconnect] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<AudioStreamRecorder | null>(null);
   const playerRef = useRef<AudioStreamPlayer | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Notify parent of state changes
   useEffect(() => {
@@ -96,8 +111,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     onProvideControls?.({ connect, disconnect, sendUserMessage });
   }, [onProvideControls]);
 
+  // Cleanup reconnect timeout on unmount
   useEffect(() => {
     return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       disconnect();
     };
   }, []);
@@ -324,13 +343,20 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         setConnectionState('disconnected');
         stopRecording();
         
-        // Only show toast if it wasn't a clean close (user-initiated)
-        if (!event.wasClean && event.code !== 1000) {
-          toast({
-            title: "Session Ended",
-            description: event.reason || "Your voice session ended unexpectedly. You can start a new session when ready.",
-            duration: 5000,
+        // Detect unexpected disconnections
+        const unexpectedCodes = [1001, 1006, 1011, 1012, 1013, 1014, 1015];
+        const isUnexpected = unexpectedCodes.includes(event.code) || !event.wasClean;
+        
+        if (isUnexpected && !wasUserDisconnect && !isReconnecting) {
+          console.log('⚠️ Unexpected disconnection detected');
+          onUnexpectedDisconnection?.({
+            code: event.code,
+            reason: event.reason || 'Connection lost',
+            conversationId: currentConversationId.current,
           });
+        } else if (wasUserDisconnect) {
+          // Reset flag after user-initiated disconnect
+          setWasUserDisconnect(false);
         }
       };
 
@@ -391,6 +417,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   const disconnect = () => {
     console.log('Disconnecting...');
+    setWasUserDisconnect(true); // Mark as user-initiated
     stopRecording();
     playerRef.current?.stop();
     if (wsRef.current) {
@@ -413,6 +440,51 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       console.warn('Cannot send message: WebSocket not connected');
     }
   };
+
+  const attemptReconnect = async (maxAttempts: number = 3): Promise<void> => {
+    if (reconnectAttempts >= maxAttempts) {
+      console.log('❌ Max reconnection attempts reached');
+      setIsReconnecting(false);
+      onReconnectFailed?.();
+      return;
+    }
+
+    setIsReconnecting(true);
+    setConnectionState('reconnecting');
+    const currentAttempt = reconnectAttempts + 1;
+    setReconnectAttempts(currentAttempt);
+
+    // Exponential backoff: 2s, 4s, 8s
+    const delay = Math.pow(2, reconnectAttempts) * 1000;
+    console.log(`⏳ Reconnecting in ${delay}ms (attempt ${currentAttempt}/${maxAttempts})`);
+
+    reconnectTimeoutRef.current = setTimeout(async () => {
+      try {
+        console.log(`🔄 Reconnection attempt ${currentAttempt}/${maxAttempts}`);
+        await connect();
+        
+        // Success!
+        setReconnectAttempts(0);
+        setIsReconnecting(false);
+        onReconnectSuccess?.();
+        console.log('✅ Reconnection successful');
+      } catch (error) {
+        console.error(`❌ Reconnection attempt ${currentAttempt} failed:`, error);
+        // Try again
+        await attemptReconnect(maxAttempts);
+      }
+    }, delay);
+  };
+
+  // Expose attemptReconnect to parent via onProvideControls
+  useEffect(() => {
+    onProvideControls?.({ 
+      connect, 
+      disconnect, 
+      sendUserMessage,
+      attemptReconnect: () => attemptReconnect(3)
+    } as any);
+  }, [onProvideControls, reconnectAttempts]);
 
   // This component renders nothing - it's just for voice logic
   return null;
