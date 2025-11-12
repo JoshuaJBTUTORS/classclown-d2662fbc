@@ -209,20 +209,9 @@ serve(async (req) => {
 
     if (planError) throw planError;
 
-    // Generate lesson plan using Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: isExamPractice 
-              ? `You are an expert 11+ exam preparation tutor creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
+    // Build system prompt based on teaching mode
+    const systemPrompt = isExamPractice 
+      ? `You are an expert 11+ exam preparation tutor creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
 Your task: Create a highly structured lesson plan (15-min duration) with detailed teaching scripts that minimize complex AI reasoning during delivery.
 
@@ -288,8 +277,8 @@ CONTENT BLOCKS FOR STEP 2 (Practice) - FULLY SCRIPTED QUESTIONS:
 ⚠️ CRITICAL: If you generate fewer than 20 questions OR use wrong format, the lesson will be rejected!
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
-              
-              : `You are an expert curriculum designer creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
+      
+      : `You are an expert curriculum designer creating SCRIPTED, cost-optimized lesson plans for AI voice delivery.
 
 Your task: Create a highly structured 15-minute lesson with detailed teaching scripts that minimize complex AI reasoning during delivery.
 
@@ -328,13 +317,30 @@ CONTENT BLOCK TYPES (with detailed examples):
    Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
 
 4. QUESTION: Check understanding with pre-written hints
-   Example: { 
+   ⚠️ CRITICAL FORMAT - The "data" field MUST be an object, NOT a string:
+   
+   ✅ CORRECT FORMAT:
+   { 
      type: "question", 
      title: "Check Understanding", 
-     data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" },
+     data: {
+       question: "What gas do plants absorb during photosynthesis?",
+       options: [
+         { text: "Carbon dioxide", isCorrect: true },
+         { text: "Oxygen", isCorrect: false },
+         { text: "Nitrogen", isCorrect: false },
+         { text: "Hydrogen", isCorrect: false }
+       ],
+       explanation: "Plants absorb CO2 from the air during photosynthesis to make glucose"
+     },
      teaching_notes: "If student picks 'Oxygen', say: 'Remember, plants PRODUCE oxygen, they don't absorb it. Think about what gas humans breathe out.' If correct, say: 'Excellent! CO2 is essential for making glucose.'",
      prerequisites: ["Understanding of photosynthesis process"]
    }
+   
+   ❌ WRONG FORMAT (DO NOT USE):
+   { type: "question", data: "What gas do plants absorb?" }
+   
+   The data field MUST be an object with question, options (array of objects), and explanation properties.
 
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
@@ -355,7 +361,21 @@ IMPORTANT RULES:
 - Include teaching_notes to guide how to present each block
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
-- Focus on depth and engagement, not quantity of steps`
+- Focus on depth and engagement, not quantity of steps`;
+
+    // Generate lesson plan using Lovable AI
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -588,9 +608,112 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       s.content_blocks?.filter((b: any) => b.type === 'question' && b.needsRepair) || []
     );
 
+    // RETRY LOGIC FOR MALFORMED QUESTIONS (applies to all teaching modes)
     if (questionsNeedingRepair.length > 0) {
-      console.warn(`⚠️ ${questionsNeedingRepair.length} questions marked for repair - will be caught by retry logic or final validation`);
-      // Don't throw error here - let the retry logic (for exam practice) or final validation handle it
+      console.warn(`⚠️ ${questionsNeedingRepair.length} questions marked for repair - triggering retry...`);
+      console.log('🔄 Retrying with stricter prompt to fix malformed questions...');
+      
+      const retryPrompt = `CRITICAL: Your previous response had ${questionsNeedingRepair.length} malformed questions.
+
+⚠️ FORMATTING ERROR: Some questions had "data" as a plain string instead of a properly structured object!
+
+Generate a complete lesson plan for "${topic}" (Year Group: ${yearGroup}) with properly formatted questions.
+
+EXAMPLE OF CORRECT QUESTION FORMAT (USE THIS EXACT STRUCTURE):
+{
+  "type": "question",
+  "title": "Check Understanding",
+  "data": {
+    "question": "What is photosynthesis?",
+    "options": [
+      { "text": "The process plants use to make food", "isCorrect": true },
+      { "text": "The process plants use to breathe", "isCorrect": false },
+      { "text": "The process plants use to grow roots", "isCorrect": false },
+      { "text": "The process plants use to reproduce", "isCorrect": false }
+    ],
+    "explanation": "Photosynthesis is the process by which plants convert light energy into chemical energy to make food"
+  }
+}
+
+CRITICAL RULES:
+1. The "data" field MUST be an object with these properties:
+   - question: string (the question text)
+   - options: array of objects with "text" and "isCorrect" properties
+   - explanation: string
+2. DO NOT use plain strings for the "data" field
+3. Each question MUST have at least 2 options (preferably 4)
+4. At least one option must have "isCorrect": true
+
+If you generate questions with incorrect format, the lesson will be rejected.`;
+
+      const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: isExamPractice ? systemPrompt : systemPrompt },
+            { role: 'user', content: retryPrompt }
+          ],
+          tools: [{
+            type: 'function',
+            function: {
+              name: 'create_lesson_plan',
+              description: 'Create a complete lesson plan with properly formatted questions',
+              parameters: lessonPlanSchema
+            }
+          }],
+          tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
+        })
+      });
+      
+      if (!retryResponse.ok) {
+        console.error(`Retry API call failed: ${retryResponse.status}`);
+        throw new Error(`Retry failed: ${retryResponse.status}`);
+      }
+      
+      const retryData = await retryResponse.json();
+      const retryToolCall = retryData.choices[0].message.tool_calls?.[0];
+      
+      if (retryToolCall) {
+        const retryPlanData = JSON.parse(retryToolCall.function.arguments);
+        
+        // Parse data fields in retry
+        retryPlanData.steps.forEach((step: any) => {
+          if (step.content_blocks) {
+            step.content_blocks.forEach((block: any) => {
+              if (block.data && typeof block.data === 'string') {
+                try {
+                  block.data = JSON.parse(block.data);
+                } catch (e) {
+                  console.warn('Failed to parse retry content block data:', block.type, e);
+                }
+              }
+            });
+          }
+        });
+        
+        // Validate retry result
+        const retryMalformed = retryPlanData.steps.flatMap((s: any) => 
+          s.content_blocks?.filter((b: any) => 
+            b.type === 'question' && (typeof b.data === 'string' || !b.data?.question)
+          ) || []
+        );
+        
+        if (retryMalformed.length === 0) {
+          console.log('✅ Retry successful - all questions properly formatted');
+          planData.objectives = retryPlanData.objectives;
+          planData.steps = retryPlanData.steps;
+        } else {
+          console.warn(`⚠️ Retry still has ${retryMalformed.length} malformed questions - proceeding with validation`);
+          // Use retry data anyway as it might be better
+          planData.objectives = retryPlanData.objectives;
+          planData.steps = retryPlanData.steps;
+        }
+      }
     }
     
     // Validate content blocks were generated
