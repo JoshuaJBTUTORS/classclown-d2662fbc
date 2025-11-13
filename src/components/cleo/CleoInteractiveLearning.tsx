@@ -5,6 +5,7 @@ import { CleoVoiceChat } from './CleoVoiceChat';
 import { LessonPlanSidebar } from './LessonPlanSidebar';
 import { LessonResumeDialog } from './LessonResumeDialog';
 import { LessonCompleteDialog } from './LessonCompleteDialog';
+import { AssignPracticeDialog } from './AssignPracticeDialog';
 import { useContentSync } from '@/hooks/useContentSync';
 import { useTextChat } from '@/hooks/useTextChat';
 import { useCleoLessonState } from '@/hooks/useCleoLessonState';
@@ -101,6 +102,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showPracticeDialog, setShowPracticeDialog] = useState(false);
   const [questionStats, setQuestionStats] = useState<any>(null);
   const [sessionStartTime] = useState(Date.now());
 
@@ -546,10 +548,22 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         isOpen={showCompleteDialog}
         onClose={() => setShowCompleteDialog(false)}
         onReturnToCourse={handleBackToModule}
+        onAssignPractice={() => setShowPracticeDialog(true)}
         questionStats={questionStats}
         totalTimeMinutes={sessionTimeMinutes}
         lessonTitle={lessonData.title}
+        conversationId={conversationId}
       />
+
+      {/* Practice Dialog */}
+      {conversationId && (
+        <AssignPracticeDialog
+          isOpen={showPracticeDialog}
+          onClose={() => setShowPracticeDialog(false)}
+          incorrectTopics={questionStats?.incorrect_answers > 0 ? ['Review incorrect answers'] : []}
+          conversationId={conversationId}
+        />
+      )}
     </div>
   );
 };

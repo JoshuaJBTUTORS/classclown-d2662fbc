@@ -126,14 +126,39 @@ export const cleoLessonStateService = {
     });
 
     // Update conversation status
-    const { error } = await supabase
+    const { error: conversationError } = await supabase
       .from('cleo_conversations')
       .update({
         status: 'completed',
       })
       .eq('id', conversationId);
 
-    if (error) throw error;
+    if (conversationError) throw conversationError;
+
+    // Get lesson_id from conversation
+    const { data: conversation } = await supabase
+      .from('cleo_conversations')
+      .select('lesson_id')
+      .eq('id', conversationId)
+      .single();
+
+    // Update student_progress if lesson_id exists
+    if (conversation?.lesson_id) {
+      const { error: progressError } = await supabase
+        .from('student_progress')
+        .upsert({
+          user_id: user.id,
+          lesson_id: conversation.lesson_id,
+          status: 'completed',
+          completion_percentage: 100,
+          completed_at: new Date().toISOString(),
+          last_accessed_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,lesson_id'
+        });
+
+      if (progressError) console.error('Error updating student progress:', progressError);
+    }
   },
 
   async getLessonProgress(conversationId: string): Promise<number> {
