@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { BookOpen, Target, Clock, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useAudioDevices } from '@/hooks/useAudioDevices';
 import { AudioDeviceSelector } from './AudioDeviceSelector';
+import { lessonDurationEstimator } from '@/services/lessonDurationEstimator';
 
 interface LessonPlanDisplayProps {
   lessonPlan: {
@@ -44,6 +45,10 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
     setMicrophone, 
     setSpeaker 
   } = useAudioDevices();
+
+  const estimatedMinutes = useMemo(() => {
+    return lessonDurationEstimator.estimateDuration(lessonPlan);
+  }, [lessonPlan]);
 
   const handleBackToModule = () => {
     if (courseId && moduleId) {
@@ -132,6 +137,14 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
               <li key={index}>• {objective}</li>
             ))}
           </ul>
+
+          {/* Estimated Duration */}
+          <div className="flex items-center justify-center gap-2 p-3 rounded-full bg-mint-50 border border-mint-200 mb-4">
+            <Clock className="h-4 w-4 text-mint-700" />
+            <span className="text-sm font-medium text-mint-700">
+              Estimated Duration: {estimatedMinutes} minutes
+            </span>
+          </div>
 
           <div className="flex gap-3 flex-wrap mt-6 mb-6">
             {lessonPlan.teaching_sequence.map((step, index) => (

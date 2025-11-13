@@ -24,6 +24,8 @@ import { QuickChatInput } from './QuickChatInput';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MessageSquare } from 'lucide-react';
 import { detectTeachingMode } from '@/utils/teachingModeDetection';
+import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
+import { MinuteUsageTracker } from '@/components/voice/MinuteUsageTracker';
 
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -359,9 +361,14 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         <div className="cleo-logo">
           Cleo {isExamPractice ? '📝' : '🧑🏻‍🔬'}
         </div>
-        <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
-          <span>⏱️</span>
-          <span>{formatTime(voiceTimer.remainingSeconds)} remaining</span>
+        <div className="flex items-center gap-3">
+          {/* Show real-time usage during voice session */}
+          {connectionState === 'connected' && (
+            <MinuteUsageTracker sessionStartTime={new Date(sessionStartTime)} />
+          )}
+          
+          {/* Show available minutes quota */}
+          <VoiceSessionIndicator />
         </div>
       </div>
 
