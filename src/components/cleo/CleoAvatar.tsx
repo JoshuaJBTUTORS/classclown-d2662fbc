@@ -45,8 +45,30 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
   useEffect(() => {
     if (rive) {
       console.log('🎭 Rive instance:', rive);
+      console.log('🔍 Rive object keys:', Object.keys(rive));
       console.log('🎬 Available state machines:', rive.stateMachineNames);
-      console.log('📊 State machine inputs:', {
+      
+      // Try to access state machine inputs
+      try {
+        if (typeof rive.stateMachineInputs === 'function') {
+          const inputs = rive.stateMachineInputs('avatar');
+          console.log('📊 State Machine Inputs (via method):', inputs);
+        }
+      } catch (e) {
+        console.log('⚠️ Could not access stateMachineInputs method:', e);
+      }
+
+      // Log all properties that might contain input info
+      console.log('🔍 Rive properties:', {
+        stateMachineNames: rive.stateMachineNames,
+        animationNames: rive.animationNames,
+        // @ts-ignore - exploring the object
+        stateMachines: rive.stateMachines,
+        // @ts-ignore
+        inputs: rive.inputs,
+      });
+
+      console.log('📊 Current input status:', {
         talk: talk ? 'found' : 'NOT FOUND',
         talk2: talk2 ? 'found' : 'NOT FOUND',
       });
