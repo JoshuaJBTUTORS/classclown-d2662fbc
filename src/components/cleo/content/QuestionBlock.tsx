@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { QuestionContent } from '@/types/lessonContent';
 import { Check, X, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CoinAnimation } from '@/components/cleo/CoinAnimation';
 
 interface QuestionBlockProps {
   data: QuestionContent;
@@ -14,6 +15,7 @@ interface QuestionBlockProps {
 export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp, isExamPractice }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showCoinAnimation, setShowCoinAnimation] = useState(false);
 
   // Defensive check for undefined data
   if (!data || !data.question || !data.options || !Array.isArray(data.options)) {
@@ -27,6 +29,13 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
   const handleAnswerClick = (optionId: string, isCorrect: boolean) => {
     setSelectedAnswer(optionId);
     setShowFeedback(true);
+    
+    // Trigger coin animation for correct answers
+    if (isCorrect) {
+      setShowCoinAnimation(true);
+      setTimeout(() => setShowCoinAnimation(false), 1500);
+    }
+    
     onAnswer(data.id, optionId, isCorrect);
   };
 
@@ -55,7 +64,14 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
       transition={{ duration: 0.4 }}
       className="w-full"
     >
-      <div className="cleo-question-card">
+      <div className="cleo-question-card relative">
+        {/* Coin animation overlay */}
+        {showCoinAnimation && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+            <CoinAnimation show={showCoinAnimation} />
+          </div>
+        )}
+        
         <div className="cleo-question-text">{data.question}</div>
 
         <div className="cleo-answers">
