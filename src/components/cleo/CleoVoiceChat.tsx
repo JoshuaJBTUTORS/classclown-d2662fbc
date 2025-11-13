@@ -90,7 +90,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   // Provide connect/disconnect controls to parent
   useEffect(() => {
-    onProvideControls?.({ connect, disconnect, sendUserMessage, toggleMute, isMuted });
+    onProvideControls?.({ 
+      connect, 
+      disconnect: () => disconnect(false), 
+      sendUserMessage, 
+      toggleMute, 
+      isMuted 
+    });
   }, [onProvideControls, isMuted]);
 
   useEffect(() => {
@@ -102,6 +108,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const attemptReconnection = async () => {
     if (isReconnectingRef.current) return;
     if (reconnectionAttemptsRef.current >= maxReconnectionAttempts) {
+      console.error('❌ Max reconnection attempts reached');
+      await disconnect(true); // Mark as interrupted
       toast({
         title: "Connection Lost",
         description: "Unable to reconnect. Please start a new session.",
@@ -403,11 +411,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     }
   };
 
-  const disconnect = () => {
+  const disconnect = async (wasInterrupted: boolean = false) => {
     console.log('🔌 Disconnecting...');
     
     if (rtcRef.current) {
-      rtcRef.current.disconnect();
+      await rtcRef.current.disconnect(wasInterrupted);
       rtcRef.current = null;
     }
     

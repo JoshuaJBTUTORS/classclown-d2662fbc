@@ -9,6 +9,7 @@ export class RealtimeChat {
   private speakerId?: string;
   private localStream: MediaStream | null = null;
   private isMuted: boolean = false;
+  private sessionStartTime: Date | null = null;
 
   constructor(
     private onMessage: (event: any) => void,
@@ -58,6 +59,7 @@ export class RealtimeChat {
 
       console.log("✅ Ephemeral token received");
       this.conversationId = tokenData.conversationId;
+      this.sessionStartTime = new Date();
       const ephemeralKey = tokenData.client_secret;
 
       // Create RTCPeerConnection
@@ -245,8 +247,45 @@ export class RealtimeChat {
     return this.isMuted;
   }
 
-  disconnect() {
+  private async logSession(wasInterrupted: boolean = false) {
+    if (!this.sessionStartTime || !this.conversationId) {
+      console.warn('⚠️ Cannot log session: missing start time or conversation ID');
+      return;
+    }
+
+    const durationSeconds = Math.floor((Date.now() - this.sessionStartTime.getTime()) / 1000);
+    
+    // Only log if session was at least 1 second
+    if (durationSeconds < 1) {
+      console.log('Session too short to log');
+      return;
+    }
+
+    try {
+      console.log(`📊 Logging voice session: ${durationSeconds}s`);
+      
+      const { data, error } = await supabase.functions.invoke('log-voice-session', {
+        body: {
+          conversationId: this.conversationId,
+          durationSeconds,
+          wasInterrupted,
+          sessionStart: this.sessionStartTime.toISOString()
+        }
+      });
+
+      if (error) {
+        console.error('Failed to log session:', error);
+      } else {
+        console.log('✅ Session logged:', data);
+      }
+    } catch (err) {
+      console.error('Error logging session:', err);
+    }
+  }
+
+  async disconnect(wasInterrupted: boolean = false) {
     console.log("🔌 Disconnecting WebRTC...");
+    await this.logSession(wasInterrupted);
     this.cleanup();
   }
 
@@ -271,6 +310,9 @@ export class RealtimeChat {
       stream.getTracks().forEach(track => track.stop());
       this.audioEl.srcObject = null;
     }
+
+    this.sessionStartTime = null;
+    this.conversationId = null;
 
     console.log("✅ Cleanup complete");
   }
