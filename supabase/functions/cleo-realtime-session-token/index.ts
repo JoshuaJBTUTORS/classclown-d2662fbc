@@ -105,40 +105,185 @@ Deno.serve(async (req) => {
       conversation = data;
     }
 
-    // Build system prompt
-    let systemPrompt = `You are Cleo, a friendly AI tutor. Help students learn by providing clear explanations and using your tools to show visual content.`;
-    
+    // Helper to format content blocks for system prompt
+    const formatContentBlocksForPrompt = (lessonPlan: any): string => {
+      if (!lessonPlan?.teaching_sequence) return '';
+      
+      let contentLibrary = '\n\nPRE-GENERATED CONTENT AVAILABLE:\n';
+      contentLibrary += 'When you call move_to_step, the following content will be displayed automatically:\n\n';
+      
+      lessonPlan.teaching_sequence.forEach((step: any) => {
+        if (!step.content_blocks || step.content_blocks.length === 0) return;
+        
+        contentLibrary += `\n📚 ${step.title} [ID: ${step.id}]:\n`;
+        
+        step.content_blocks.forEach((block: any) => {
+          const { id, type, data, title, teaching_notes } = block;
+          let description = '';
+          
+          switch (type) {
+            case 'text':
+              const textPreview = (data?.content || '').substring(0, 100);
+              description = `   • Text: "${textPreview}${textPreview.length >= 100 ? '...' : ''}"`;
+              break;
+              
+            case 'definition':
+              description = `   • Definition: "${data?.term || 'Unknown'}" - ${(data?.definition || '').substring(0, 60)}...`;
+              if (data?.example) description += `\n      Example: ${data.example.substring(0, 60)}...`;
+              break;
+              
+            case 'question':
+              description = `   • Question: "${(data?.question || '').substring(0, 80)}..."`;
+              if (data?.options) {
+                description += `\n      Options: ${data.options.map((o: any) => o.text).slice(0, 2).join(', ')}...`;
+              }
+              break;
+              
+            case 'table':
+              const headers = data?.headers || [];
+              const rowCount = data?.rows?.length || 0;
+              description = `   • Table: ${headers.join(', ')} (${rowCount} rows)`;
+              break;
+              
+            case 'diagram':
+              description = `   • Diagram: ${title || data?.title || 'Visual diagram'}`;
+              break;
+              
+            default:
+              description = `   • ${type}: ${title || id}`;
+          }
+          
+          if (title && type !== 'diagram') {
+            description = `   • ${title} (${type})\n      ${description.substring(5)}`;
+          }
+          
+          if (teaching_notes) {
+            description += `\n      💡 Teaching Note: ${teaching_notes}`;
+          }
+          
+          description += `\n      [ID: ${id}]\n`;
+          contentLibrary += description;
+        });
+      });
+      
+      return contentLibrary;
+    };
+
+    // Build comprehensive system prompt
+    let systemPrompt = '';
+
     if (lessonPlan) {
-      const stepsList = lessonPlan.teaching_sequence.map((s: any, i: number) => 
-        `${i+1}. ${s.title} [ID: ${s.id}]`
+      // Fetch exam board context
+      let examBoardContext = '';
+      let subjectName = '';
+      
+      if (lessonPlan?.lesson_id) {
+        const { data: lessonData } = await supabase
+          .from('course_lessons')
+          .select(`
+            id,
+            module_id,
+            course_modules!inner(
+              course_id,
+              courses!inner(subject)
+            )
+          `)
+          .eq('id', lessonPlan.lesson_id)
+          .single();
+        
+        if (lessonData?.course_modules?.courses?.subject) {
+          subjectName = lessonData.course_modules.courses.subject;
+        }
+      }
+
+      // Look up exam board
+      if (subjectName && examBoards[subjectName.toLowerCase()]) {
+        const examBoard = examBoards[subjectName.toLowerCase()];
+        examBoardContext = ` for ${examBoard} ${subjectName}`;
+      } else if (lessonPlan?.year_group) {
+        examBoardContext = ` for ${lessonPlan.year_group}`;
+      }
+
+      const objectivesList = lessonPlan.learning_objectives?.map((obj: string, i: number) => 
+        `${i+1}. ${obj}`
+      ).join('\n') || 'Master the key concepts';
+      
+      const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => 
+        `Step ${i+1}: ${step.title} (${step.duration_minutes || 5}min) [ID: ${step.id}]`
       ).join('\n');
       
-      systemPrompt = `You are Cleo teaching ${lessonPlan.topic} to ${lessonPlan.year_group}.
+      const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
+      
+      systemPrompt = `You are Cleo, an expert AI tutor teaching ${lessonPlan.topic} to a ${lessonPlan.year_group} student (approximately 15 years old).
 
-Steps:
-${stepsList}
+LESSON STRUCTURE:
+The lesson is organized into these steps:
+${sequenceList}
 
-Start: "Hello ${userName}! Today we're learning ${lessonPlan.topic}. Let's begin!"
-Then call move_to_step with the first step ID to display content.
+${contentLibrary}
 
-Tools:
-- move_to_step: Display lesson step content
-- show_table: Show additional tables
-- show_definition: Define terms
-- ask_question: Ask practice questions`;
+CRITICAL INSTRUCTIONS:
+1. Before teaching each step, you MUST call move_to_step with the step's ID and title
+2. This displays ALL the pre-generated content listed above for that step
+3. After calling move_to_step, reference the content that appears: "As you can see in the table..." or "Looking at this definition..."
+4. DO NOT recreate content that already exists - use what's been generated
+5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
+
+YOUR TEACHING FLOW:
+1. Start with: "Hello ${userName}! Today we're going to learn about ${lessonPlan.topic}${examBoardContext}. This lesson is structured to help you master the key concepts step by step. To get the most from our session, don't hesitate to ask questions or request clarification whenever something isn't clear. Let's dive in!"
+2. CRITICAL: Do NOT begin by saying things like "Absolutely! Let's start with..." or treating the session start as if the student asked a question. You are the teacher leading the lesson, not answering a student's request. Start authoritatively and warmly as described in step 1.
+3. Immediately call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") to begin the lesson
+4. After the content appears, reference it naturally in your explanation
+5. When you see a question in the content, present it and wait for the student's answer
+6. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
+7. Keep your spoken explanations under 3 sentences between showing content - avoid long monologues
+8. Don't ask "Are you ready to move on?" - just progress naturally through the steps
+
+UK GCSE CONTEXT:
+- This student is preparing for ${examBoardContext.trim() || 'GCSE exams'}
+- Ground explanations in UK curriculum standards
+- Use UK terminology (e.g., "revision" not "studying", "exam" not "test")
+- Reference GCSE exam skills when relevant (e.g., "This is the type of question you'll see in Paper 1")
+
+TEACHING STYLE:
+- Be warm, engaging, and authoritative (you're the teacher, not a peer)
+- Explain concepts clearly in 2-3 sentences maximum before showing content
+- ALWAYS reference visual content after it appears: "As you can see...", "Looking at this diagram..."
+- For pre-generated questions, ask them and wait for answers
+- Use teaching notes to guide your explanations
+- Move at a comfortable pace - don't rush through steps
+- Add light, age-appropriate humor occasionally (safe, educational humor only)
+- Example humor: "Don't worry, mitochondria aren't as scary as they sound - though the name does make them sound like tiny monsters!"
+- Avoid waiting for permission - lead the lesson confidently
+
+TOOLS AVAILABLE:
+- move_to_step: Call BEFORE starting each step (displays all that step's pre-generated content)
+- show_table: Only use if you need an ADDITIONAL table beyond what's pre-generated
+- show_definition: Only use for EXTRA definitions not in the pre-generated content
+- ask_question: Only use for ADDITIONAL practice beyond pre-generated questions
+
+Remember: The content library above shows what's ALREADY created. Use it! Don't recreate it. Be efficient, engaging, and keep things moving.`;
+    } else {
+      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. Help students learn by providing clear explanations and using your tools to show visual content.`;
     }
 
-    // Define tools
+    // Define tools with enhanced descriptions
     const tools = [
       {
         type: "function",
         name: "move_to_step",
-        description: "Display lesson step content",
+        description: "Call this BEFORE you start teaching a new step. This displays all pre-generated visual content for that step (tables, definitions, questions, diagrams). Check the 'PRE-GENERATED CONTENT AVAILABLE' section in your instructions to see what will appear. Reference this content in your teaching after calling this function.",
         parameters: {
           type: "object",
           properties: {
-            stepId: { type: "string" },
-            stepTitle: { type: "string" }
+            stepId: { 
+              type: "string", 
+              description: "The exact step ID shown in brackets [ID: ...] in the content library. This is the step.id, NOT 'step-0' or 'step-1'." 
+            },
+            stepTitle: {
+              type: "string",
+              description: "The title of this step from the lesson plan"
+            }
           },
           required: ["stepId", "stepTitle"]
         }
@@ -146,13 +291,27 @@ Tools:
       {
         type: "function",
         name: "show_table",
-        description: "Display a table",
+        description: "Display an ADDITIONAL table beyond the pre-generated content. Only use this if you need to show a table that wasn't included in the lesson plan content library. Check the content library first to avoid duplicates.",
         parameters: {
           type: "object",
           properties: {
-            id: { type: "string" },
-            headers: { type: "array", items: { type: "string" } },
-            rows: { type: "array", items: { type: "array", items: { type: "string" } } }
+            id: { 
+              type: "string", 
+              description: "Unique ID for this table (e.g., 'extra-comparison-table')" 
+            },
+            headers: {
+              type: "array",
+              items: { type: "string" },
+              description: "Column headers for the table"
+            },
+            rows: {
+              type: "array",
+              items: {
+                type: "array",
+                items: { type: "string" }
+              },
+              description: "Array of rows, each row is an array of cell values"
+            }
           },
           required: ["id", "headers", "rows"]
         }
@@ -160,14 +319,14 @@ Tools:
       {
         type: "function",
         name: "show_definition",
-        description: "Show a definition",
+        description: "Display an ADDITIONAL definition card. Only use this if you need to define a term that wasn't included in the pre-generated content. Check the content library first.",
         parameters: {
           type: "object",
           properties: {
-            id: { type: "string" },
-            term: { type: "string" },
-            definition: { type: "string" },
-            example: { type: "string" }
+            id: { type: "string", description: "Unique ID for this definition" },
+            term: { type: "string", description: "The term being defined" },
+            definition: { type: "string", description: "The definition text" },
+            example: { type: "string", description: "Optional example to illustrate the term" }
           },
           required: ["id", "term", "definition"]
         }
@@ -175,12 +334,12 @@ Tools:
       {
         type: "function",
         name: "ask_question",
-        description: "Ask a question",
+        description: "Present an ADDITIONAL practice question. Only use this if you want to check understanding beyond the pre-generated questions in the content library. Pre-generated questions appear automatically with move_to_step.",
         parameters: {
           type: "object",
           properties: {
             id: { type: "string" },
-            question: { type: "string" },
+            question: { type: "string", description: "The question text" },
             options: {
               type: "array",
               items: {
@@ -193,7 +352,7 @@ Tools:
                 required: ["id", "text", "isCorrect"]
               }
             },
-            explanation: { type: "string" }
+            explanation: { type: "string", description: "Explanation shown after answering" }
           },
           required: ["id", "question", "options"]
         }
