@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { gamificationService } from './gamificationService';
 
 export interface QuestionAnswer {
   id?: string;
@@ -45,6 +46,11 @@ export const cleoQuestionTrackingService = {
       });
 
     if (error) throw error;
+
+    // Award 2 coins for correct answers
+    if (data.is_correct) {
+      await gamificationService.awardCoins(user.id, 2);
+    }
   },
 
   async getQuestionHistory(conversationId: string): Promise<QuestionAnswer[]> {

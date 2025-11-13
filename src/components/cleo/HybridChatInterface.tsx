@@ -8,6 +8,7 @@ import { Send } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { ContentBlock } from '@/types/lessonContent';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
+import { toast } from 'sonner';
 
 interface HybridChatInterfaceProps {
   mode: ChatMode;
@@ -89,16 +90,28 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
     const questionData = questionBlock?.data as any;
 
     if (conversationId && questionBlock) {
-      await cleoQuestionTrackingService.recordQuestionAnswer({
-        conversation_id: conversationId,
-        question_id: questionId,
-        question_text: questionData?.question || '',
-        answer_id: answerId,
-        answer_text: questionData?.options?.find((o: any) => o.id === answerId)?.text || '',
-        is_correct: isCorrect,
-        time_taken_seconds: timeTaken,
-        step_id: questionBlock.stepId || '',
-      });
+      try {
+        await cleoQuestionTrackingService.recordQuestionAnswer({
+          conversation_id: conversationId,
+          question_id: questionId,
+          question_text: questionData?.question || '',
+          answer_id: answerId,
+          answer_text: questionData?.options?.find((o: any) => o.id === answerId)?.text || '',
+          is_correct: isCorrect,
+          time_taken_seconds: timeTaken,
+          step_id: questionBlock.stepId || '',
+        });
+
+        // Show coin notification for correct answers
+        if (isCorrect) {
+          toast.success('🪙 +2 coins earned!', {
+            description: 'Keep going to unlock mastery levels!',
+            duration: 2000,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to record question answer:', error);
+      }
     }
 
     onAnswerQuestion?.(questionId, answerId, isCorrect);

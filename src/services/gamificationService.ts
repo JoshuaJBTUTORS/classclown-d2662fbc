@@ -8,6 +8,7 @@ export interface GamificationStats {
   last_activity_date: string | null;
   level: number;
   total_xp: number;
+  total_coins: number;
   energy_percentage: number;
   focus_score: number;
   learning_persona: string;
@@ -106,20 +107,19 @@ export const gamificationService = {
     badgeEmoji: string,
     metadata?: Record<string, any>
   ): Promise<UserBadge | null> {
-    // Check if user already has this badge type
-    const { data: existing } = await supabase
+    // Check if badge already exists
+    const { data: existingBadge } = await supabase
       .from('user_badges')
-      .select('id')
+      .select('*')
       .eq('user_id', userId)
       .eq('badge_type', badgeType)
       .single();
 
-    if (existing) {
-      console.log('User already has this badge type');
-      return null;
+    if (existingBadge) {
+      return null; // Badge already awarded
     }
 
-    const { data, error } = await supabase
+    const { data: badge, error } = await supabase
       .from('user_badges')
       .insert({
         user_id: userId,
@@ -136,7 +136,47 @@ export const gamificationService = {
       return null;
     }
 
-    return data;
+    return badge;
+  },
+
+  async awardCoins(userId: string, coinsToAdd: number): Promise<void> {
+    const { getMasteryLevel } = await import('./masterySystem');
+    
+    // Get current stats
+    const stats = await this.getUserStats(userId);
+    if (!stats) return;
+
+    const oldCoins = stats.total_coins || 0;
+    const newCoins = oldCoins + coinsToAdd;
+
+    // Update coins
+    const { error } = await supabase
+      .from('user_gamification_stats')
+      .update({ 
+        total_coins: newCoins,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error awarding coins:', error);
+      return;
+    }
+
+    // Check for mastery level progression
+    const oldLevel = getMasteryLevel(oldCoins);
+    const newLevel = getMasteryLevel(newCoins);
+
+    if (oldLevel.id !== newLevel.id) {
+      // Award mastery badge
+      await this.awardBadge(
+        userId,
+        `mastery_${newLevel.id}`,
+        newLevel.name,
+        newLevel.emoji,
+        { coins: newCoins, level: newLevel.name }
+      );
+    }
   },
 
   /**
