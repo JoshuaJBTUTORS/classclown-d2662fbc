@@ -181,7 +181,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
     // Disconnect voice if switching away
     if (mode === 'voice' && connectionState === 'connected') {
-      controlsRef.current?.disconnect();
+      await controlsRef.current?.disconnect();
     }
 
     setMode(newMode);
@@ -247,8 +247,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
   };
 
-  const handleVoiceDisconnect = () => {
-    controlsRef.current?.disconnect();
+  const handleVoiceDisconnect = async () => {
+    await controlsRef.current?.disconnect();
   };
 
   const handleResumeLesson = async () => {
