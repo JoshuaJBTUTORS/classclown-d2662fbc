@@ -24,7 +24,7 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
 
   const { RiveComponent, rive } = useRive({
     src: cleoAvatarRiv,
-    stateMachines: 'State Machine 1',
+    stateMachines: 'avatar',
     autoplay: true,
     onLoadError: (error) => {
       console.error('❌ Rive load error:', error);
@@ -38,9 +38,9 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
   });
 
   // Get state machine inputs
-  const speakingInput = useStateMachineInput(rive, 'State Machine 1', 'talking');
-  const listeningInput = useStateMachineInput(rive, 'State Machine 1', 'listening');
-  const mutedInput = useStateMachineInput(rive, 'State Machine 1', 'muted');
+  const speakingInput = useStateMachineInput(rive, 'avatar', 'isSpeaking');
+  const listeningInput = useStateMachineInput(rive, 'avatar', 'isListening');
+  const mutedInput = useStateMachineInput(rive, 'avatar', 'isMuted');
 
   // Debug: Log Rive instance and state machines
   useEffect(() => {
