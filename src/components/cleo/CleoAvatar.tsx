@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRive, useStateMachineInput } from '@rive-app/react-canvas';
 import cleoAvatarRiv from '@/assets/rive/cleo-avatar.riv';
 
@@ -40,6 +40,9 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
   // Get state machine inputs
   const talk = useStateMachineInput(rive, 'avatar', 'Talk');
   const talk2 = useStateMachineInput(rive, 'avatar', 'Talk2');
+  
+  // Track previous state for trigger inputs
+  const prevStateRef = useRef({ isSpeaking: false, isListening: false });
 
   // Debug: Log Rive instance and state machines
   useEffect(() => {
@@ -85,24 +88,37 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
     }
   }, [rive, talk, talk2]);
 
-  // Update animation states - talk = energetic, talk2 = calm
+  // Update animation states - handle trigger inputs
   useEffect(() => {
-    if (talk && talk2) {
-      if (isSpeaking) {
-        console.log('🗣️ Setting talk (energetic)');
-        talk.value = true;
-        talk2.value = false;
-      } else if (isListening) {
-        console.log('👂 Setting talk2 (calm)');
-        talk.value = false;
-        talk2.value = true;
-      } else {
-        // Idle - calm animation
-        talk.value = false;
-        talk2.value = true;
+    if (!talk || !talk2) {
+      console.warn('⚠️ Rive inputs missing:', { hasTalk: !!talk, hasTalk2: !!talk2 });
+      return;
+    }
+
+    // Detect trigger vs boolean inputs
+    const isTriggerMode = typeof (talk as any).fire === 'function' || talk.value === undefined;
+    
+    if (isTriggerMode) {
+      const prev = prevStateRef.current;
+
+      // Fire only on transitions
+      if (isSpeaking && !prev.isSpeaking) {
+        console.log('🗣️ Firing Talk trigger (speaking start)');
+        (talk as any).fire?.();
+      } else if (!isSpeaking && isListening && (!prev.isListening || prev.isSpeaking)) {
+        console.log('👂 Firing Talk2 trigger (listening start)');
+        (talk2 as any).fire?.();
+      } else if (!isSpeaking && !isListening && (prev.isSpeaking || prev.isListening)) {
+        console.log('😌 Firing Talk2 trigger (return to idle)');
+        (talk2 as any).fire?.();
       }
+
+      prevStateRef.current = { isSpeaking, isListening };
     } else {
-      console.warn('⚠️ Inputs not found:', { talk: !!talk, talk2: !!talk2 });
+      // Boolean/number inputs fallback
+      talk.value = !!isSpeaking;
+      talk2.value = !isSpeaking && (isListening || true);
+      console.log('🎚️ Boolean mode:', { talk: talk.value, talk2: talk2.value });
     }
   }, [isSpeaking, isListening, talk, talk2]);
 
