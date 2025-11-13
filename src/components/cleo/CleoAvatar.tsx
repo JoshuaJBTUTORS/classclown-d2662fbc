@@ -37,9 +37,9 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
     },
   });
 
-  // Get state machine inputs (talk = energetic, talk2 = calm)
-  const talkInput = useStateMachineInput(rive, 'avatar', 'talk');
-  const talk2Input = useStateMachineInput(rive, 'avatar', 'talk2');
+  // Get state machine inputs
+  const talk = useStateMachineInput(rive, 'avatar', 'talk');
+  const talk2 = useStateMachineInput(rive, 'avatar', 'talk2');
 
   // Debug: Log Rive instance and state machines
   useEffect(() => {
@@ -47,33 +47,32 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
       console.log('🎭 Rive instance:', rive);
       console.log('🎬 Available state machines:', rive.stateMachineNames);
       console.log('📊 State machine inputs:', {
-        talkInput: talkInput ? 'found' : 'NOT FOUND',
-        talk2Input: talk2Input ? 'found' : 'NOT FOUND',
+        talk: talk ? 'found' : 'NOT FOUND',
+        talk2: talk2 ? 'found' : 'NOT FOUND',
       });
     }
-  }, [rive, talkInput, talk2Input]);
+  }, [rive, talk, talk2]);
 
-  // Update animation states based on props
-  // talk = energetic (when speaking), talk2 = calm (when listening/idle)
+  // Update animation states - talk = energetic, talk2 = calm
   useEffect(() => {
-    if (talkInput && talk2Input) {
+    if (talk && talk2) {
       if (isSpeaking) {
-        console.log('🗣️ Setting talk (energetic):', true);
-        talkInput.value = true;
-        talk2Input.value = false;
+        console.log('🗣️ Setting talk (energetic)');
+        talk.value = true;
+        talk2.value = false;
       } else if (isListening) {
-        console.log('👂 Setting talk2 (calm/listening):', true);
-        talkInput.value = false;
-        talk2Input.value = true;
+        console.log('👂 Setting talk2 (calm)');
+        talk.value = false;
+        talk2.value = true;
       } else {
-        // Idle/neutral - use calm animation
-        talkInput.value = false;
-        talk2Input.value = true;
+        // Idle - calm animation
+        talk.value = false;
+        talk2.value = true;
       }
     } else {
-      console.warn('⚠️ talk or talk2 input not found');
+      console.warn('⚠️ Inputs not found:', { talk: !!talk, talk2: !!talk2 });
     }
-  }, [isSpeaking, isListening, talkInput, talk2Input]);
+  }, [isSpeaking, isListening, talk, talk2]);
 
   // Size mapping
   const sizeClasses = {
