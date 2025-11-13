@@ -6,7 +6,6 @@ import { LessonPlanSidebar } from './LessonPlanSidebar';
 import { LessonResumeDialog } from './LessonResumeDialog';
 import { LessonCompleteDialog } from './LessonCompleteDialog';
 import { useContentSync } from '@/hooks/useContentSync';
-import { useVoiceTimer } from '@/hooks/useVoiceTimer';
 import { useTextChat } from '@/hooks/useTextChat';
 import { useCleoLessonState } from '@/hooks/useCleoLessonState';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
@@ -97,7 +96,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
   });
 
-  const voiceTimer = useVoiceTimer(conversationId || null);
   const textChat = useTextChat(conversationId || null);
   
   const [showResumeDialog, setShowResumeDialog] = useState(false);
@@ -166,27 +164,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     setAllMessages(textChat.messages);
   }, [textChat.messages]);
 
-  // Auto-switch to text when voice limit reached
-  useEffect(() => {
-    if (voiceTimer.hasReachedLimit && mode === 'voice') {
-      handleModeSwitch('text', true);
-      toast({
-        title: '✅ Switched to Text Mode',
-        description: 'Voice time limit reached. Continue learning with text!',
-      });
-    }
-  }, [voiceTimer.hasReachedLimit, mode]);
-
-  // Show warning at 80%
-  useEffect(() => {
-    if (voiceTimer.shouldShowWarning && mode === 'voice') {
-      toast({
-        title: '⚠️ Voice Time Warning',
-        description: `${voiceTimer.formatTime(voiceTimer.remainingSeconds)} remaining`,
-        variant: 'default',
-      });
-    }
-  }, [voiceTimer.shouldShowWarning]);
 
   const handleBackToModule = () => {
     if (courseId && moduleId) {
@@ -200,16 +177,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   const handleModeSwitch = async (newMode: ChatMode, isAuto: boolean = false) => {
     if (newMode === mode) return;
-    
-    // Don't allow switching to voice if limit reached
-    if (newMode === 'voice' && voiceTimer.hasReachedLimit) {
-      toast({
-        title: 'Voice Limit Reached',
-        description: 'You have used all 15 minutes of voice time for this lesson.',
-        variant: 'destructive',
-      });
-      return;
-    }
 
     // Disconnect voice if switching away
     if (mode === 'voice' && connectionState === 'connected') {
@@ -281,10 +248,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   const handleVoiceDisconnect = () => {
     controlsRef.current?.disconnect();
-  };
-
-  const handleVoiceLimitReached = () => {
-    handleModeSwitch('text', true);
   };
 
   const handleResumeLesson = async () => {
@@ -558,8 +521,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               setIsMuted(controls.isMuted);
             }
           }}
-          voiceTimer={voiceTimer}
-          onVoiceLimitReached={handleVoiceLimitReached}
           selectedMicrophoneId={selectedMicrophone?.deviceId}
           selectedSpeakerId={selectedSpeaker?.deviceId}
         />

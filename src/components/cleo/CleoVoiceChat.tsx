@@ -36,12 +36,6 @@ interface CleoVoiceChatProps {
     toggleMute?: () => void;
     isMuted?: boolean;
   }) => void;
-  voiceTimer?: {
-    start: () => void;
-    pause: () => void;
-    hasReachedLimit: boolean;
-  };
-  onVoiceLimitReached?: () => void;
   selectedMicrophoneId?: string;
   selectedSpeakerId?: string;
 }
@@ -57,8 +51,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onListeningChange,
   onSpeakingChange,
   onProvideControls,
-  voiceTimer,
-  onVoiceLimitReached,
   selectedMicrophoneId,
   selectedSpeakerId
 }) => {
@@ -161,14 +153,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       setConnectionState('connecting');
       console.log("🔗 Connecting via WebRTC...");
 
-      // Check voice limit before starting
-      if (voiceTimer?.hasReachedLimit) {
-        console.log('⏱️ Voice limit reached');
-        onVoiceLimitReached?.();
-        setConnectionState('disconnected');
-        return;
-      }
-
       // Cleanup any existing connection
       if (rtcRef.current) {
         rtcRef.current.disconnect();
@@ -185,7 +169,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             console.log('✅ WebRTC session created');
             setConnectionState('connected');
             reconnectionAttemptsRef.current = 0;
-            voiceTimer?.start();
             if (!isReconnectingRef.current) {
               toast({
                 title: "Connected",
@@ -428,7 +411,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       rtcRef.current = null;
     }
     
-    voiceTimer?.pause();
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
