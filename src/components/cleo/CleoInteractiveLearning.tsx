@@ -124,6 +124,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     toggleMute?: () => void; 
     isMuted?: boolean;
   } | null>(null);
+  const hasDisconnectedOnComplete = useRef(false);
   const modeSwitchCountRef = useRef(0);
 
   // Check for saved state and show resume dialog
@@ -245,6 +246,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   const handleVoiceConnect = () => {
     if (mode === 'voice') {
+      hasDisconnectedOnComplete.current = false; // Reset flag for reconnection
       controlsRef.current?.connect();
     }
   };
@@ -313,6 +315,19 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   const allStepsCompleted = completedSteps.length === lessonData.steps.length;
   const sessionTimeMinutes = Math.round((Date.now() - sessionStartTime) / 60000);
+
+  // Auto-disconnect when lesson completes to save costs
+  useEffect(() => {
+    if (allStepsCompleted && connectionState === 'connected' && !hasDisconnectedOnComplete.current) {
+      hasDisconnectedOnComplete.current = true;
+      handleVoiceDisconnect();
+      
+      toast({
+        title: "Lesson Complete! 🎉",
+        description: "Voice session ended. Choose to continue or finish up.",
+      });
+    }
+  }, [allStepsCompleted, connectionState]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -445,14 +460,37 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               </Button>
 
               {allStepsCompleted && (
-                <Button
-                  onClick={handleCompleteLesson}
-                  className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                  size="sm"
-                >
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Done
-                </Button>
+                <div className="flex flex-col gap-2 w-full mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Trophy className="w-4 h-4 text-green-600" />
+                    <span className="font-semibold text-green-800 text-sm">
+                      Lesson Complete! 🎉
+                    </span>
+                  </div>
+                  
+                  {connectionState === 'disconnected' && (
+                    <Button
+                      onClick={() => {
+                        hasDisconnectedOnComplete.current = false;
+                        handleVoiceConnect();
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      Continue & Ask Questions
+                    </Button>
+                  )}
+                  
+                  <Button
+                    onClick={handleCompleteLesson}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    size="sm"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Done - Finish Lesson
+                  </Button>
+                </div>
               )}
             </div>
           </aside>

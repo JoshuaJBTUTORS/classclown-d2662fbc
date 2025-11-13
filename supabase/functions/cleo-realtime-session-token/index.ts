@@ -228,6 +228,8 @@ CRITICAL INSTRUCTIONS:
 3. After calling move_to_step, reference the content that appears: "As you can see in the table..." or "Looking at this definition..."
 4. DO NOT recreate content that already exists - use what's been generated
 5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
+6. After finishing each step and confirming student understanding, call complete_step with that step's ID
+7. When you've completed all teaching steps and the student has no more questions, call complete_lesson to end the session gracefully
 
 YOUR TEACHING FLOW:
 1. Start with: "Hello ${userName}! Today we're going to learn about ${lessonPlan.topic}${examBoardContext}. This lesson is structured to help you master the key concepts step by step. To get the most from our session, don't hesitate to ask questions or request clarification whenever something isn't clear. Let's dive in!"
@@ -269,6 +271,8 @@ TEACHING STYLE:
 
 TOOLS AVAILABLE:
 - move_to_step: Call BEFORE starting each step (displays all that step's pre-generated content)
+- complete_step: Call AFTER finishing each step to track progress
+- complete_lesson: Call when all steps are done and student has no questions
 - show_table: Only use if you need an ADDITIONAL table beyond what's pre-generated
 - show_definition: Only use for EXTRA definitions not in the pre-generated content
 - ask_question: Only use for ADDITIONAL practice beyond pre-generated questions
@@ -340,6 +344,36 @@ Remember: The content library above shows what's ALREADY created. Use it! Don't 
             example: { type: "string", description: "Optional example to illustrate the term" }
           },
           required: ["id", "term", "definition"]
+        }
+      },
+      {
+        type: "function",
+        name: "complete_step",
+        description: "Mark a step as completed after you've finished teaching it. Call this when you've covered all the content for a step and the student understands it. This tracks progress and enables the completion dialog.",
+        parameters: {
+          type: "object",
+          properties: {
+            stepId: { 
+              type: "string", 
+              description: "The ID of the step you just completed" 
+            }
+          },
+          required: ["stepId"]
+        }
+      },
+      {
+        type: "function",
+        name: "complete_lesson",
+        description: "Call this when you've completed all steps and the student has no more questions. This will end the session gracefully to save costs.",
+        parameters: {
+          type: "object",
+          properties: {
+            summary: { 
+              type: "string", 
+              description: "Brief summary of what was covered" 
+            }
+          },
+          required: ["summary"]
         }
       },
       {
