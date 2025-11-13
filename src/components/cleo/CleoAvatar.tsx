@@ -53,6 +53,16 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
         if (typeof rive.stateMachineInputs === 'function') {
           const inputs = rive.stateMachineInputs('avatar');
           console.log('📊 State Machine Inputs (via method):', inputs);
+          
+          // Extract and log each input's name
+          console.log('📝 Input Names:');
+          inputs.forEach((input, index) => {
+            console.log(`  Input ${index}:`, {
+              name: input.name,
+              type: input.type,
+              value: input.value
+            });
+          });
         }
       } catch (e) {
         console.log('⚠️ Could not access stateMachineInputs method:', e);
