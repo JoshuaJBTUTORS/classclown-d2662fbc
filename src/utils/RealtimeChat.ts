@@ -194,6 +194,15 @@ export class RealtimeChat {
     this.dc.send(JSON.stringify({ type: 'response.create' }));
   }
 
+  sendEvent(event: any) {
+    if (!this.dc || this.dc.readyState !== 'open') {
+      console.warn('Data channel not ready, cannot send event');
+      return;
+    }
+    
+    this.dc.send(JSON.stringify(event));
+  }
+
   disconnect() {
     console.log("🔌 Disconnecting WebRTC...");
     this.cleanup();

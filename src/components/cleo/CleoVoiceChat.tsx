@@ -251,6 +251,111 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             setIsSpeaking(false);
             break;
 
+          case 'response.function_call_arguments.done':
+            const functionName = event.name;
+            const args = JSON.parse(event.arguments);
+            const callId = event.call_id;
+            
+            console.log(`🎨 Function called: ${functionName}`, args);
+            
+            // Handle move_to_step
+            if (functionName === 'move_to_step') {
+              const { stepId, stepTitle } = args;
+              
+              console.log(`📚 ========== MOVE_TO_STEP CALLED ==========`);
+              console.log(`📚 Step ID: ${stepId}`);
+              console.log(`📚 Step Title: ${stepTitle}`);
+              
+              // Emit content marker event to show step content
+              if (onContentEvent) {
+                onContentEvent({
+                  type: 'move_to_step',
+                  stepId: stepId
+                });
+              }
+              
+              // Confirm to OpenAI
+              rtcRef.current?.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify({ 
+                    success: true, 
+                    message: `Moved to step: ${stepTitle}. All content for this step is now visible to the student.` 
+                  })
+                }
+              });
+              
+              // Trigger next response
+              rtcRef.current?.sendEvent({ type: 'response.create' });
+              break;
+            }
+            
+            // Handle other tools (show_table, show_definition, ask_question)
+            let contentBlock: any = null;
+            
+            if (functionName === 'show_table') {
+              contentBlock = {
+                id: args.id,
+                stepId: 'current',
+                type: 'table',
+                data: {
+                  headers: args.headers,
+                  rows: args.rows
+                },
+                visible: false
+              };
+            } else if (functionName === 'show_definition') {
+              contentBlock = {
+                id: args.id,
+                stepId: 'current',
+                type: 'definition',
+                data: {
+                  term: args.term,
+                  definition: args.definition,
+                  example: args.example
+                },
+                visible: false
+              };
+            } else if (functionName === 'ask_question') {
+              contentBlock = {
+                id: args.id,
+                stepId: 'current',
+                type: 'question',
+                data: {
+                  id: args.id,
+                  question: args.question,
+                  options: args.options,
+                  explanation: args.explanation
+                },
+                visible: false
+              };
+            }
+            
+            // Send content block to UI
+            if (contentBlock && onContentEvent) {
+              onContentEvent({
+                type: 'upsert_content',
+                block: contentBlock,
+                autoShow: true
+              });
+            }
+            
+            // Confirm to OpenAI
+            rtcRef.current?.sendEvent({
+              type: 'conversation.item.create',
+              item: {
+                type: 'function_call_output',
+                call_id: callId,
+                output: JSON.stringify({ success: true, displayed: true })
+              }
+            });
+            
+            // Trigger next response
+            rtcRef.current?.sendEvent({ type: 'response.create' });
+            break;
+
           case 'error':
             console.error('OpenAI error:', event);
             toast({
