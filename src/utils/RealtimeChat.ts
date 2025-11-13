@@ -8,6 +8,7 @@ export class RealtimeChat {
   private microphoneId?: string;
   private speakerId?: string;
   private localStream: MediaStream | null = null;
+  private isMuted: boolean = false;
 
   constructor(
     private onMessage: (event: any) => void,
@@ -201,6 +202,47 @@ export class RealtimeChat {
     }
     
     this.dc.send(JSON.stringify(event));
+  }
+
+  mute() {
+    if (!this.localStream) {
+      console.warn('No local stream to mute');
+      return;
+    }
+    
+    this.localStream.getAudioTracks().forEach(track => {
+      track.enabled = false;
+    });
+    
+    this.isMuted = true;
+    console.log('🔇 Microphone muted');
+  }
+
+  unmute() {
+    if (!this.localStream) {
+      console.warn('No local stream to unmute');
+      return;
+    }
+    
+    this.localStream.getAudioTracks().forEach(track => {
+      track.enabled = true;
+    });
+    
+    this.isMuted = false;
+    console.log('🎤 Microphone unmuted');
+  }
+
+  toggleMute(): boolean {
+    if (this.isMuted) {
+      this.unmute();
+    } else {
+      this.mute();
+    }
+    return this.isMuted;
+  }
+
+  getMuteState(): boolean {
+    return this.isMuted;
   }
 
   disconnect() {

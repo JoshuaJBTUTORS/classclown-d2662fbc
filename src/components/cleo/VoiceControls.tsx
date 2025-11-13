@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Square, Volume2 } from 'lucide-react';
+import { Play, Square, Volume2, Mic, MicOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,8 @@ interface VoiceControlsProps {
   onConnect: () => void;
   onDisconnect: () => void;
   conversationId?: string;
+  onToggleMute?: () => void;
+  isMuted?: boolean;
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
@@ -23,6 +25,8 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   onConnect,
   onDisconnect,
   conversationId,
+  onToggleMute,
+  isMuted,
 }) => {
   const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,15 +157,42 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
             {isSpeaking && <Volume2 className="w-4 h-4 text-green-500" />}
           </motion.div>
           
-          <Button
-            onClick={onDisconnect}
-            variant="outline"
-            size="sm"
-            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            <Square className="w-4 h-4 mr-2" />
-            Stop
-          </Button>
+          <div className="flex gap-2">
+            {onToggleMute && (
+              <Button
+                onClick={onToggleMute}
+                variant={isMuted ? "destructive" : "outline"}
+                size="sm"
+                className={`${
+                  isMuted 
+                    ? 'bg-destructive text-destructive-foreground' 
+                    : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
+                }`}
+              >
+                {isMuted ? (
+                  <>
+                    <MicOff className="w-4 h-4 mr-2" />
+                    Unmute
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-4 h-4 mr-2" />
+                    Mute
+                  </>
+                )}
+              </Button>
+            )}
+            
+            <Button
+              onClick={onDisconnect}
+              variant="outline"
+              size="sm"
+              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Square className="w-4 h-4 mr-2" />
+              Stop
+            </Button>
+          </div>
         </div>
       )}
     </div>

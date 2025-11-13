@@ -26,6 +26,8 @@ interface HybridChatInterfaceProps {
   onAskHelp?: (questionId: string, questionText: string) => void;
   isExamPractice?: boolean;
   conversationId?: string | null;
+  onToggleMute?: () => void;
+  isMuted?: boolean;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -45,6 +47,8 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   onAskHelp,
   isExamPractice,
   conversationId,
+  onToggleMute,
+  isMuted,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -136,6 +140,8 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
               onConnect={onVoiceConnect}
               onDisconnect={onVoiceDisconnect}
               conversationId={conversationId || undefined}
+              onToggleMute={onToggleMute}
+              isMuted={isMuted}
             />
           </div>
         ) : (

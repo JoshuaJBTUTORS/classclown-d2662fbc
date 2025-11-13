@@ -109,11 +109,18 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   >('idle');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
   
-  const controlsRef = useRef<{ connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void } | null>(null);
+  const controlsRef = useRef<{ 
+    connect: () => void; 
+    disconnect: () => void; 
+    sendUserMessage: (text: string) => void; 
+    toggleMute?: () => void; 
+    isMuted?: boolean;
+  } | null>(null);
   const modeSwitchCountRef = useRef(0);
 
   // Check for saved state and show resume dialog
@@ -404,6 +411,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   console.log('Content action:', { contentId, action, message });
                   controlsRef.current?.sendUserMessage(message);
                 }}
+                onToggleMute={() => controlsRef.current?.toggleMute?.()}
+                isMuted={isMuted}
               />
             </div>
           </section>
@@ -537,6 +546,9 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onSpeakingChange={setIsSpeaking}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
+            if (controls.isMuted !== undefined) {
+              setIsMuted(controls.isMuted);
+            }
           }}
           voiceTimer={voiceTimer}
           onVoiceLimitReached={handleVoiceLimitReached}

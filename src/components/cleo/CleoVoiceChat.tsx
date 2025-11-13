@@ -29,7 +29,13 @@ interface CleoVoiceChatProps {
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
-  onProvideControls?: (controls: { connect: () => void; disconnect: () => void; sendUserMessage: (text: string) => void }) => void;
+  onProvideControls?: (controls: { 
+    connect: () => void; 
+    disconnect: () => void; 
+    sendUserMessage: (text: string) => void;
+    toggleMute?: () => void;
+    isMuted?: boolean;
+  }) => void;
   voiceTimer?: {
     start: () => void;
     pause: () => void;
@@ -62,6 +68,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
 
   const rtcRef = useRef<RealtimeChat | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
@@ -82,10 +89,17 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     onSpeakingChange?.(isSpeaking);
   }, [isSpeaking, onSpeakingChange]);
 
+  const toggleMute = () => {
+    if (rtcRef.current) {
+      const newMuteState = rtcRef.current.toggleMute();
+      setIsMuted(newMuteState);
+    }
+  };
+
   // Provide connect/disconnect controls to parent
   useEffect(() => {
-    onProvideControls?.({ connect, disconnect, sendUserMessage });
-  }, [onProvideControls]);
+    onProvideControls?.({ connect, disconnect, sendUserMessage, toggleMute, isMuted });
+  }, [onProvideControls, isMuted]);
 
   useEffect(() => {
     return () => {
