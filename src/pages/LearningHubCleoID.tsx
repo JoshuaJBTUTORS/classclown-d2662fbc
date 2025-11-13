@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGamification } from '@/hooks/useGamification';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { getMasteryLevel, getNextMasteryLevel, getMasteryProgress, MASTERY_LEVELS } from '@/services/masterySystem';
 
 export default function LearningHubCleoID() {
   const { user, profile, signOut } = useAuth();
@@ -29,9 +30,12 @@ export default function LearningHubCleoID() {
   }
 
   const firstName = profile?.first_name || 'Student';
-  const persona = stats?.learning_persona || 'The Strategist';
   const level = stats?.level || 1;
   const currentStreak = stats?.current_streak_days || 0;
+  const totalCoins = stats?.total_coins || 0;
+  const masteryLevel = getMasteryLevel(totalCoins);
+  const nextLevel = getNextMasteryLevel(totalCoins);
+  const masteryProgress = getMasteryProgress(totalCoins);
   const energy = stats?.energy_percentage || 100;
   const focusScore = stats?.focus_score || 0;
 
@@ -75,13 +79,16 @@ export default function LearningHubCleoID() {
           </div>
         </div>
 
-        {/* Name & Persona */}
+        {/* Name & Mastery Level */}
         <header className="text-center mb-2">
           <div className="mb-1">
             <span className="text-2xl font-bold">{firstName}</span>
             <span className="text-2xl ml-2">🦊</span>
           </div>
-          <div className="text-xl font-semibold text-foreground/90">{persona}</div>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-3xl">{masteryLevel.emoji}</span>
+            <span className="text-xl font-semibold text-foreground/90">{masteryLevel.name}</span>
+          </div>
         </header>
 
         {/* Tagline */}
@@ -98,11 +105,33 @@ export default function LearningHubCleoID() {
             {currentStreak}-day streak
           </span>
           <span className="flex items-center gap-1">
+            <span>🪙</span>
+            {totalCoins} coins
+          </span>
+          <span className="flex items-center gap-1">
             <span>🪴</span>
             Level {level}
           </span>
-          <span>Energy: {energy}%</span>
         </div>
+
+        {/* Mastery Progress */}
+        {nextLevel && (
+          <div className="mb-4 px-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>{masteryLevel.name}</span>
+              <span>Next: {nextLevel.name} {nextLevel.emoji}</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className={`h-full bg-gradient-to-r ${masteryLevel.color} transition-all duration-500`}
+                style={{ width: `${masteryProgress}%` }}
+              />
+            </div>
+            <div className="text-center text-xs text-muted-foreground mt-1">
+              {nextLevel.minCoins - totalCoins} coins to {nextLevel.name}
+            </div>
+          </div>
+        )}
 
         {/* Info Grid - Pills */}
         <section className="grid grid-cols-2 gap-2.5 mb-4" aria-label="Cleo stats">
@@ -115,11 +144,11 @@ export default function LearningHubCleoID() {
             <div className="text-xs text-muted-foreground">strong</div>
           </article>
 
-          {/* Persona Pill */}
+          {/* Coins Pill */}
           <article className="bg-muted/50 border border-border rounded-2xl p-3 flex flex-col justify-center">
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400">
-              <span>🍃</span>
-              <span>{persona}</span>
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
+              <span>🪙</span>
+              <span>{totalCoins} coins</span>
             </div>
           </article>
 
@@ -162,6 +191,40 @@ export default function LearningHubCleoID() {
               <div className="text-xs text-muted-foreground">{topBadges[1].badge_name}</div>
             )}
           </article>
+        </section>
+
+        {/* Mastery Milestones */}
+        <section className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground mb-2">
+            Mastery Milestones
+          </h3>
+          <div className="grid grid-cols-4 gap-2">
+            {MASTERY_LEVELS.map((masteryLevelItem) => {
+              const isUnlocked = totalCoins >= masteryLevelItem.minCoins;
+              return (
+                <div
+                  key={masteryLevelItem.id}
+                  className={`
+                    relative rounded-xl p-2 text-center transition-all
+                    ${isUnlocked 
+                      ? `bg-gradient-to-br ${masteryLevelItem.color} shadow-md` 
+                      : 'bg-muted opacity-40'
+                    }
+                  `}
+                >
+                  <div className="text-2xl mb-1">{masteryLevelItem.emoji}</div>
+                  <div className={`text-[10px] font-medium ${isUnlocked ? 'text-white' : 'text-muted-foreground'}`}>
+                    {masteryLevelItem.name}
+                  </div>
+                  {isUnlocked && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-[10px] text-white">✓</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </section>
 
         {/* CTA Buttons */}
