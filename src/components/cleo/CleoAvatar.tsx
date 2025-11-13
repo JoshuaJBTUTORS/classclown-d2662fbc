@@ -37,10 +37,9 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
     },
   });
 
-  // Get state machine inputs
-  const speakingInput = useStateMachineInput(rive, 'avatar', 'isSpeaking');
-  const listeningInput = useStateMachineInput(rive, 'avatar', 'isListening');
-  const mutedInput = useStateMachineInput(rive, 'avatar', 'isMuted');
+  // Get state machine inputs (talk = energetic, talk2 = calm)
+  const talkInput = useStateMachineInput(rive, 'avatar', 'talk');
+  const talk2Input = useStateMachineInput(rive, 'avatar', 'talk2');
 
   // Debug: Log Rive instance and state machines
   useEffect(() => {
@@ -48,40 +47,33 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
       console.log('🎭 Rive instance:', rive);
       console.log('🎬 Available state machines:', rive.stateMachineNames);
       console.log('📊 State machine inputs:', {
-        speakingInput: speakingInput ? 'found' : 'NOT FOUND',
-        listeningInput: listeningInput ? 'found' : 'NOT FOUND',
-        mutedInput: mutedInput ? 'found' : 'NOT FOUND',
+        talkInput: talkInput ? 'found' : 'NOT FOUND',
+        talk2Input: talk2Input ? 'found' : 'NOT FOUND',
       });
     }
-  }, [rive, speakingInput, listeningInput, mutedInput]);
+  }, [rive, talkInput, talk2Input]);
 
   // Update animation states based on props
+  // talk = energetic (when speaking), talk2 = calm (when listening/idle)
   useEffect(() => {
-    if (speakingInput) {
-      console.log('🗣️ Setting speaking:', isSpeaking);
-      speakingInput.value = isSpeaking;
+    if (talkInput && talk2Input) {
+      if (isSpeaking) {
+        console.log('🗣️ Setting talk (energetic):', true);
+        talkInput.value = true;
+        talk2Input.value = false;
+      } else if (isListening) {
+        console.log('👂 Setting talk2 (calm/listening):', true);
+        talkInput.value = false;
+        talk2Input.value = true;
+      } else {
+        // Idle/neutral - use calm animation
+        talkInput.value = false;
+        talk2Input.value = true;
+      }
     } else {
-      console.warn('⚠️ speakingInput not found');
+      console.warn('⚠️ talk or talk2 input not found');
     }
-  }, [isSpeaking, speakingInput]);
-
-  useEffect(() => {
-    if (listeningInput) {
-      console.log('👂 Setting listening:', isListening);
-      listeningInput.value = isListening;
-    } else {
-      console.warn('⚠️ listeningInput not found');
-    }
-  }, [isListening, listeningInput]);
-
-  useEffect(() => {
-    if (mutedInput) {
-      console.log('🔇 Setting muted:', isMuted);
-      mutedInput.value = isMuted;
-    } else {
-      console.warn('⚠️ mutedInput not found');
-    }
-  }, [isMuted, mutedInput]);
+  }, [isSpeaking, isListening, talkInput, talk2Input]);
 
   // Size mapping
   const sizeClasses = {
