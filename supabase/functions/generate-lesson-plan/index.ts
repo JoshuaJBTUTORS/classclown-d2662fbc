@@ -268,14 +268,16 @@ Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
               : `You are an expert curriculum designer creating concise, focused lesson plans for students.
 
-Your task: Create a streamlined lesson plan with 3-5 main teaching steps, each containing rich, pre-generated content.
+Your task: Create a streamlined lesson plan optimized for 15-20 minute sessions with 3-4 main teaching steps.
 
 LESSON PLAN STRUCTURE:
-1. Learning Objectives (3-5 clear, measurable goals)
-2. Teaching Sequence (3-5 FOCUSED steps, each 5-8 minutes)
+1. Learning Objectives (3-4 clear, measurable goals)
+2. Teaching Sequence (3-4 FOCUSED steps, targeting 15-20 minutes total)
 3. Content Blocks (tables, definitions, questions, diagrams, text)
 
-⚠️ CRITICAL: Each step MUST have 2-4 content blocks minimum. This is non-negotiable!
+⚠️ TARGET DURATION: Aim for 15-20 minutes total. Keep content concise and focused.
+
+⚠️ CRITICAL: Each step MUST have 2-3 content blocks. Keep it focused and concise for 15-20 minute lessons.
 
 CONTENT BLOCK TYPES (with detailed examples):
 
@@ -305,12 +307,14 @@ CONTENT BLOCK TYPES (with detailed examples):
 - Example: "Photosynthesis is the process by which plants convert light energy.\n\n**Key fact:** Plants need sunlight, water, and CO2.\n\n• Occurs in chloroplasts\n• Produces glucose and oxygen\n• Essential for plant growth"
 
 IMPORTANT RULES:
-- Each step MUST contain AT LEAST 2 content blocks
+- Target 15-20 minutes total duration
+- 3-4 steps maximum for conciseness
+- Each step MUST contain 2-3 content blocks
 - Mix different content types for variety
 - Include teaching_notes to guide how to present each block
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
-- Focus on depth and engagement, not quantity of steps`
+- Focus on core concepts - avoid unnecessary detail`
           },
           {
             role: 'user',
@@ -336,18 +340,18 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                   type: 'array',
                   items: { type: 'string' },
                   minItems: isExamPractice ? 3 : 3,
-                  maxItems: isExamPractice ? 4 : 5,
+                  maxItems: isExamPractice ? 4 : 4,
                   description: isExamPractice 
                     ? '3-4 exam skills to master' 
-                    : '3-5 clear, measurable learning objectives'
+                    : '3-4 clear, measurable learning objectives'
                 },
                 steps: {
                   type: 'array',
                   minItems: isExamPractice ? 2 : 3,
-                  maxItems: isExamPractice ? 2 : 5,
+                  maxItems: isExamPractice ? 2 : 4,
                   description: isExamPractice
                     ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
-                    : 'EXACTLY 3-5 teaching steps (NOT micro-steps). Each step should be substantial with multiple content blocks.',
+                    : '3-4 focused teaching steps targeting 15-20 minutes total. Each step should be substantial with 2-3 content blocks.',
                   items: {
                     type: 'object',
                     properties: {
@@ -357,9 +361,10 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                       content_blocks: {
                         type: 'array',
                         minItems: isExamPractice ? 1 : 2,
+                        maxItems: isExamPractice ? 20 : 3,
                         description: isExamPractice
                           ? 'Step 1: 1-2 explanation blocks. Step 2: EXACTLY 20 question blocks'
-                          : 'REQUIRED: Each step MUST have at least 2 content blocks. Mix different types for variety.',
+                          : 'REQUIRED: Each step MUST have 2-3 content blocks for concise 15-20 minute lessons.',
                         items: {
                           type: 'object',
                           properties: {
