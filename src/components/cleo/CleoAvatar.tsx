@@ -38,8 +38,8 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
   });
 
   // Get state machine inputs
-  const talk = useStateMachineInput(rive, 'avatar', 'talk');
-  const talk2 = useStateMachineInput(rive, 'avatar', 'talk2');
+  const talk = useStateMachineInput(rive, 'avatar', 'Talk');
+  const talk2 = useStateMachineInput(rive, 'avatar', 'Talk2');
 
   // Debug: Log Rive instance and state machines
   useEffect(() => {
