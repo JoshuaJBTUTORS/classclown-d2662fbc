@@ -421,7 +421,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           {/* Right Column - Cleo Panel */}
           <aside className="cleo-panel">
             <div>
-              <div className="cleo-avatar-large-new">🧑🏻‍🔬</div>
+              <div className={`cleo-avatar-large-new ${isSpeaking ? 'speaking' : ''}`}>🧑🏻‍🔬</div>
               <div className="cleo-status-pill">
                 <span className="cleo-status-dot"></span>
                 <span>{isSpeaking ? 'Cleo is speaking…' : 'Ready to help'}</span>
