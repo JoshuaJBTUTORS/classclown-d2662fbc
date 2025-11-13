@@ -217,7 +217,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5',
+        model: 'gpt-5',
         messages: [
           {
             role: 'system',
@@ -565,7 +565,7 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'openai/gpt-5',
+              model: 'gpt-5',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: retryPrompt }
