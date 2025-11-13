@@ -17,7 +17,7 @@ const PricingPage = () => {
   const plans = [
     {
       name: 'Starter',
-      monthlyPrice: 10,
+      monthlyPrice: 9.99,
       minutes: 50,
       popular: false,
       features: [
@@ -29,7 +29,7 @@ const PricingPage = () => {
     },
     {
       name: 'Standard',
-      monthlyPrice: 20,
+      monthlyPrice: 19.99,
       minutes: 100,
       popular: true,
       features: [
@@ -41,7 +41,7 @@ const PricingPage = () => {
     },
     {
       name: 'Booster',
-      monthlyPrice: 50,
+      monthlyPrice: 45,
       minutes: 250,
       popular: false,
       features: [
@@ -54,7 +54,7 @@ const PricingPage = () => {
     },
     {
       name: 'Pro',
-      monthlyPrice: 100,
+      monthlyPrice: 98,
       minutes: 500,
       popular: false,
       features: [
@@ -70,10 +70,18 @@ const PricingPage = () => {
 
   const calculatePrice = (monthlyPrice: number) => {
     if (isAnnual) {
-      const annualPrice = monthlyPrice * 12 * 0.85; // 15% discount
+      // Use exact annual prices from Stripe
+      const annualPricing: Record<number, number> = {
+        9.99: 102,
+        19.99: 204,
+        45: 510,
+        98: 1020,
+      };
+      
+      const annualPrice = annualPricing[monthlyPrice] || monthlyPrice * 12 * 0.85;
       return {
-        total: Math.round(annualPrice),
-        perMonth: Math.round(annualPrice / 12),
+        total: annualPrice,
+        perMonth: Number((annualPrice / 12).toFixed(2)),
       };
     }
     return {

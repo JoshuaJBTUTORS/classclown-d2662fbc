@@ -3,9 +3,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceQuota {
-  minutes_remaining: number;
-  bonus_minutes: number;
-  total_minutes_allowed: number;
+  minutes_remaining?: number;
+  bonus_minutes?: number;
+  total_minutes_allowed?: number;
+  sessions_remaining?: number;
+  bonus_sessions?: number;
+  total_sessions_allowed?: number;
 }
 
 export const VoiceSessionIndicator = () => {
@@ -24,7 +27,7 @@ export const VoiceSessionIndicator = () => {
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('voice_session_quotas')
-        .select('*')
+        .select('minutes_remaining, bonus_minutes, total_minutes_allowed, sessions_remaining, bonus_sessions, total_sessions_allowed')
         .eq('user_id', user.id)
         .lte('period_start', now)
         .gte('period_end', now)
@@ -35,7 +38,8 @@ export const VoiceSessionIndicator = () => {
         return;
       }
 
-      setQuota(data);
+      // Type assertion needed until Supabase types are regenerated
+      setQuota(data as unknown as VoiceQuota);
     } catch (error) {
       console.error('Error:', error);
     } finally {
