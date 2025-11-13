@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceQuota {
-  sessions_remaining: number;
-  bonus_sessions: number;
-  total_sessions_allowed: number;
+  minutes_remaining: number;
+  bonus_minutes: number;
+  total_minutes_allowed: number;
 }
 
 export const VoiceSessionIndicator = () => {
@@ -45,8 +45,10 @@ export const VoiceSessionIndicator = () => {
 
   if (loading || !quota) return null;
 
-  const totalRemaining = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
-  const percentRemaining = (totalRemaining / quota.total_sessions_allowed) * 100;
+  const totalRemaining = (quota.minutes_remaining || 0) + (quota.bonus_minutes || 0);
+  const percentRemaining = quota.total_minutes_allowed 
+    ? (totalRemaining / quota.total_minutes_allowed) * 100 
+    : 0;
 
   const getColorClass = () => {
     if (percentRemaining > 50) return 'bg-mint-50 text-mint-700 border-mint-200';
@@ -58,7 +60,7 @@ export const VoiceSessionIndicator = () => {
     <div className={`flex items-center gap-2 px-3 py-2 rounded-full border ${getColorClass()}`}>
       <Zap className="h-4 w-4" />
       <span className="text-sm font-medium">
-        {totalRemaining}/{quota.total_sessions_allowed}
+        {totalRemaining} min{totalRemaining !== 1 ? 's' : ''}
       </span>
     </div>
   );

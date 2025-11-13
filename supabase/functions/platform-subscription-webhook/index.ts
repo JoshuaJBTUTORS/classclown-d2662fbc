@@ -203,9 +203,14 @@ async function handleSubscriptionUpdate(supabase: any, subscription: Stripe.Subs
             user_id: userId,
             period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            total_sessions_allowed: dbSub.plan.voice_sessions_per_month,
+            total_minutes_allowed: dbSub.plan.voice_minutes_per_month,
+            minutes_used: 0,
+            minutes_remaining: dbSub.plan.voice_minutes_per_month,
+            bonus_minutes: 0,
+            // Legacy session fields for backwards compatibility
+            total_sessions_allowed: 0,
             sessions_used: 0,
-            sessions_remaining: dbSub.plan.voice_sessions_per_month,
+            sessions_remaining: 0,
             bonus_sessions: 0
           });
 

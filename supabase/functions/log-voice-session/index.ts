@@ -52,10 +52,12 @@ Deno.serve(async (req) => {
       throw new Error('No active quota found');
     }
 
-    // Calculate AI cost estimate (£0.61 per 5-minute session)
-    const costPer5Min = 0.61;
-    const costPerSecond = costPer5Min / 300;
-    const aiCostEstimate = (durationSeconds * costPerSecond).toFixed(4);
+    // Calculate minutes used (round up to nearest minute)
+    const minutesUsed = Math.ceil(durationSeconds / 60);
+
+    // Calculate AI cost estimate (£0.20 per minute based on new pricing)
+    const costPerMinute = 0.20;
+    const aiCostEstimate = (minutesUsed * costPerMinute).toFixed(4);
 
     // Insert session log
     const { data: sessionLog, error: logError } = await supabase
@@ -79,25 +81,32 @@ Deno.serve(async (req) => {
       throw logError;
     }
 
-    // Decrement quota - prioritize bonus sessions first
-    let sessionsToDeduct = 1;
-    let updatedBonusSessions = quota.bonus_sessions;
-    let updatedSessionsRemaining = quota.sessions_remaining;
-    let updatedSessionsUsed = quota.sessions_used;
+    // Decrement quota by ACTUAL MINUTES used - prioritize bonus minutes first
+    let updatedBonusMinutes = quota.bonus_minutes;
+    let updatedMinutesRemaining = quota.minutes_remaining;
+    let updatedMinutesUsed = quota.minutes_used;
 
-    if (quota.bonus_sessions > 0) {
-      updatedBonusSessions = quota.bonus_sessions - 1;
+    if (quota.bonus_minutes >= minutesUsed) {
+      // Deduct entirely from bonus minutes
+      updatedBonusMinutes = quota.bonus_minutes - minutesUsed;
+    } else if (quota.bonus_minutes > 0) {
+      // Deduct partially from bonus, rest from regular quota
+      const remainingToDeduct = minutesUsed - quota.bonus_minutes;
+      updatedBonusMinutes = 0;
+      updatedMinutesRemaining = Math.max(0, quota.minutes_remaining - remainingToDeduct);
+      updatedMinutesUsed = quota.minutes_used + remainingToDeduct;
     } else {
-      updatedSessionsRemaining = Math.max(0, quota.sessions_remaining - 1);
-      updatedSessionsUsed = quota.sessions_used + 1;
+      // Deduct from regular quota only
+      updatedMinutesRemaining = Math.max(0, quota.minutes_remaining - minutesUsed);
+      updatedMinutesUsed = quota.minutes_used + minutesUsed;
     }
 
     const { error: updateError } = await supabase
       .from('voice_session_quotas')
       .update({
-        sessions_remaining: updatedSessionsRemaining,
-        sessions_used: updatedSessionsUsed,
-        bonus_sessions: updatedBonusSessions
+        minutes_remaining: updatedMinutesRemaining,
+        minutes_used: updatedMinutesUsed,
+        bonus_minutes: updatedBonusMinutes
       })
       .eq('id', quota.id);
 
@@ -106,16 +115,20 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
+    const totalRemaining = updatedMinutesRemaining + updatedBonusMinutes;
+
     console.log('Session logged successfully:', {
       sessionLogId: sessionLog.id,
-      newRemaining: updatedSessionsRemaining + updatedBonusSessions
+      minutesUsed,
+      newRemaining: totalRemaining
     });
 
     return new Response(
       JSON.stringify({
         success: true,
         sessionLogId: sessionLog.id,
-        sessionsRemaining: updatedSessionsRemaining + updatedBonusSessions,
+        minutesRemaining: totalRemaining,
+        minutesUsed,
         aiCostEstimate: parseFloat(aiCostEstimate)
       }),
       {
