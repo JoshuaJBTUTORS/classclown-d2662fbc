@@ -61,6 +61,7 @@ export const gamificationService = {
           longest_streak_days: 0,
           level: 1,
           total_xp: 0,
+          total_coins: 0,
           energy_percentage: 100,
           focus_score: 0,
           learning_persona: 'The Strategist',
@@ -73,10 +74,10 @@ export const gamificationService = {
         return null;
       }
 
-      return newStats;
+      return newStats as GamificationStats;
     }
 
-    return data;
+    return data as GamificationStats;
   },
 
   /**
