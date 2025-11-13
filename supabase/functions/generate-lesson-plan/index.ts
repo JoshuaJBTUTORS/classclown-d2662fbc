@@ -637,37 +637,64 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
       }
     }
 
-    // Generate images for diagram blocks
+    // Generate images for diagram blocks in parallel
     console.log('Generating images for diagram blocks...');
+    
+    // Collect all diagram blocks that need images
+    const diagramsToGenerate: Array<{
+      block: any;
+      prompt: string;
+      title: string;
+    }> = [];
+    
     for (const step of planData.steps) {
       if (step.content_blocks) {
         for (const block of step.content_blocks) {
           if (block.type === 'diagram' && block.data?.description) {
-            try {
-              const elements = block.data.elements || [];
-              const prompt = `Small compact educational diagram: ${block.data.description}. Must clearly show: ${elements.join(', ')}. Style: minimalist icon-style illustration, simple and clean, white background, suitable for ${yearGroup} students. Size: small thumbnail format, 400x300 pixels maximum.`;
-              
-              console.log(`Generating image for diagram: ${block.title || 'Untitled'}`);
-              
-              const imageResponse = await supabase.functions.invoke('generate-diagram-image', {
-                body: { prompt }
-              });
-              
-              if (imageResponse.data?.imageUrl) {
-                block.data.url = imageResponse.data.imageUrl;
-                block.data.caption = block.data.description;
-                block.data.alt = `Diagram showing ${elements.join(', ')}`;
-                console.log(`✓ Image generated for diagram: ${block.title || 'Untitled'}`);
-              } else {
-                console.warn(`Failed to generate image for diagram: ${block.title}`, imageResponse.error);
-              }
-            } catch (error) {
-              console.error(`Error generating diagram image for ${block.title}:`, error);
-              // Continue without image - DiagramBlock will show placeholder
-            }
+            const elements = block.data.elements || [];
+            const prompt = `Small compact educational diagram: ${block.data.description}. Must clearly show: ${elements.join(', ')}. Style: minimalist icon-style illustration, simple and clean, white background, suitable for ${yearGroup} students. Size: small thumbnail format, 400x300 pixels maximum.`;
+            diagramsToGenerate.push({
+              block,
+              prompt,
+              title: block.title || 'Untitled'
+            });
           }
         }
       }
+    }
+    
+    // Generate all images in parallel
+    if (diagramsToGenerate.length > 0) {
+      console.log(`Generating ${diagramsToGenerate.length} diagram images in parallel...`);
+      
+      const imagePromises = diagramsToGenerate.map(async ({ block, prompt, title }) => {
+        try {
+          console.log(`Generating image for diagram: ${title}`);
+          
+          const imageResponse = await supabase.functions.invoke('generate-diagram-image', {
+            body: { prompt }
+          });
+          
+          if (imageResponse.data?.imageUrl) {
+            block.data.url = imageResponse.data.imageUrl;
+            block.data.caption = block.data.description;
+            const elements = block.data.elements || [];
+            block.data.alt = `Diagram showing ${elements.join(', ')}`;
+            console.log(`✓ Image generated for diagram: ${title}`);
+          } else {
+            console.warn(`Failed to generate image for diagram: ${title}`, imageResponse.error);
+          }
+        } catch (error) {
+          console.error(`Error generating diagram image for ${title}:`, error);
+          // Continue without image - DiagramBlock will show placeholder
+        }
+      });
+      
+      // Wait for all images to complete
+      await Promise.all(imagePromises);
+      console.log(`✓ All ${diagramsToGenerate.length} diagram images processed`);
+    } else {
+      console.log('No diagram blocks require image generation');
     }
 
     // Calculate estimated duration
