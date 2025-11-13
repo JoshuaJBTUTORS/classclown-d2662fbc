@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { AudioStreamRecorder, AudioStreamPlayer } from '@/utils/realtimeAudio';
+import { RealtimeChat } from '@/utils/RealtimeChat';
 import { supabase } from '@/integrations/supabase/client';
 import { ContentEvent } from '@/types/lessonContent';
 
@@ -62,15 +62,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [audioContextState, setAudioContextState] = useState<string>('unknown');
-  const [microphoneActive, setMicrophoneActive] = useState(false);
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const recorderRef = useRef<AudioStreamRecorder | null>(null);
-  const playerRef = useRef<AudioStreamPlayer | null>(null);
+  const rtcRef = useRef<RealtimeChat | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
   const reconnectionAttemptsRef = useRef(0);
-  const maxReconnectionAttempts = 5;
+  const maxReconnectionAttempts = 3;
   const isReconnectingRef = useRef(false);
 
   // Notify parent of state changes
@@ -111,12 +107,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     isReconnectingRef.current = true;
     reconnectionAttemptsRef.current++;
     
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-    const delay = Math.min(1000 * Math.pow(2, reconnectionAttemptsRef.current - 1), 16000);
+    const delay = Math.min(1000 * Math.pow(2, reconnectionAttemptsRef.current - 1), 8000);
     console.log(`🔄 Attempting reconnection ${reconnectionAttemptsRef.current}/${maxReconnectionAttempts} after ${delay}ms`);
     
-    // Show toast only after 3rd attempt
-    if (reconnectionAttemptsRef.current >= 3) {
+    if (reconnectionAttemptsRef.current >= 2) {
       toast({
         title: "Reconnecting...",
         description: `Attempt ${reconnectionAttemptsRef.current} of ${maxReconnectionAttempts}`,
@@ -127,20 +121,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     await new Promise(resolve => setTimeout(resolve, delay));
     
     try {
-      // Cleanup old connection
-      if (playerRef.current) {
-        playerRef.current.clearQueue();
-        playerRef.current.pause();
-      }
-      stopRecording();
-      
-      // Wait briefly before reconnecting
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Attempt to reconnect
       await connect();
-      
-      // Success! Reset attempts
       reconnectionAttemptsRef.current = 0;
       isReconnectingRef.current = false;
       console.log("✅ Reconnection successful");
@@ -152,98 +133,68 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     } catch (error) {
       console.error("❌ Reconnection failed:", error);
       isReconnectingRef.current = false;
-      // Try again
       attemptReconnection();
     }
   };
 
   const connect = async () => {
+    if (connectionState === 'connecting' || connectionState === 'connected') {
+      console.log("Already connecting or connected");
+      return;
+    }
+
     try {
       setConnectionState('connecting');
+      console.log("🔗 Connecting via WebRTC...");
 
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
+      // Check voice limit before starting
+      if (voiceTimer?.hasReachedLimit) {
+        console.log('⏱️ Voice limit reached');
+        onVoiceLimitReached?.();
+        setConnectionState('disconnected');
+        return;
       }
 
-    // Create audio player with selected output device
-    playerRef.current = new AudioStreamPlayer(selectedSpeakerId);
-    
-    // Resume AudioContext immediately (user gesture)
-    await playerRef.current.resume();
-    setAudioContextState('running');
-
-      // Connect WebSocket
-      let wsUrl = `wss://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/cleo-realtime-voice?token=${session.access_token}`;
-      if (currentConversationId.current) {
-        wsUrl += `&conversationId=${currentConversationId.current}`;
+      // Cleanup any existing connection
+      if (rtcRef.current) {
+        rtcRef.current.disconnect();
+        rtcRef.current = null;
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-      if (topic) {
-        wsUrl += `&topic=${encodeURIComponent(topic)}`;
-      }
-      if (yearGroup) {
-        wsUrl += `&yearGroup=${encodeURIComponent(yearGroup)}`;
-      }
-      if (lessonPlan?.id) {
-        wsUrl += `&lessonPlanId=${encodeURIComponent(lessonPlan.id)}`;
-      }
-      
-      wsRef.current = new WebSocket(wsUrl);
 
-      wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
-        setConnectionState('connected');
-        reconnectionAttemptsRef.current = 0; // Reset reconnection attempts on successful connection
-        if (!isReconnectingRef.current) {
-          toast({
-            title: "Connected",
-            description: "Start speaking to Cleo!",
-          });
-        }
-        startRecording();
-      };
+      // Handle events from WebRTC data channel
+      const handleMessage = async (event: any) => {
+        console.log('Received:', event.type);
 
-      wsRef.current.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        console.log('Received:', data.type);
-
-        switch (data.type) {
-          case 'connection.status':
-            if (data.conversationId && !currentConversationId.current) {
-              currentConversationId.current = data.conversationId;
-              onConversationCreated?.(data.conversationId);
-            }
-            break;
-
+        switch (event.type) {
           case 'session.created':
-            console.log('Session created:', data);
+            console.log('✅ WebRTC session created');
             setConnectionState('connected');
+            reconnectionAttemptsRef.current = 0;
+            voiceTimer?.start();
+            if (!isReconnectingRef.current) {
+              toast({
+                title: "Connected",
+                description: "Cleo is ready!",
+                duration: 2000,
+              });
+            }
             break;
 
           case 'content.marker':
-            console.log('📍 ========== CONTENT MARKER RECEIVED ==========');
-            console.log('📍 Full data:', JSON.stringify(data, null, 2));
-            console.log('📍 Marker type:', data.data?.type);
-            if (data.data?.type === 'move_to_step') {
-              console.log('📍 Move to step ID:', data.data.stepId);
-              console.log('📍 Move to step title:', data.data.stepTitle);
-            }
-            if (onContentEvent) {
-              console.log('📍 Calling onContentEvent with:', data.data);
-              onContentEvent(data.data as ContentEvent);
-            } else {
-              console.warn('📍 ⚠️ No onContentEvent handler registered!');
+            console.log('📍 Content marker:', event.data?.type);
+            if (onContentEvent && event.data) {
+              onContentEvent(event.data as ContentEvent);
             }
             break;
 
           case 'content.block':
-            console.log('🎨 Content block received:', data.block);
-            if (onContentEvent && data.block) {
+            console.log('🎨 Content block received');
+            if (onContentEvent && event.block) {
               onContentEvent({ 
                 type: 'upsert_content', 
-                block: data.block, 
-                autoShow: data.autoShow 
+                block: event.block, 
+                autoShow: event.autoShow 
               });
             }
             break;
@@ -251,7 +202,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
           case 'input_audio_buffer.speech_started':
             setIsListening(true);
             setIsSpeaking(false);
-            playerRef.current?.pause();
             break;
 
           case 'input_audio_buffer.speech_stopped':
@@ -259,187 +209,136 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             break;
 
           case 'conversation.item.input_audio_transcription.completed':
+            const userMessage = event.transcript;
             setCurrentTranscript('');
-            setMessages(prev => [...prev, { role: 'user', content: data.transcript }]);
-            break;
-
-          case 'response.audio.delta':
-            setIsSpeaking(true);
-            if (playerRef.current && data.delta) {
-              await playerRef.current.playChunk(data.delta);
+            setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+            
+            // Save to database
+            if (currentConversationId.current) {
+              await supabase.from('cleo_messages').insert({
+                conversation_id: currentConversationId.current,
+                role: 'user',
+                content: userMessage
+              });
             }
             break;
 
           case 'response.audio_transcript.delta':
-            setCurrentTranscript(prev => prev + data.delta);
+            setCurrentTranscript(prev => prev + event.delta);
             break;
 
           case 'response.audio_transcript.done':
-            if (data.transcript) {
-              setMessages(prev => [...prev, { role: 'assistant', content: data.transcript }]);
+            if (event.transcript) {
+              setMessages(prev => [...prev, { role: 'assistant', content: event.transcript }]);
+              
+              // Save to database
+              if (currentConversationId.current) {
+                await supabase.from('cleo_messages').insert({
+                  conversation_id: currentConversationId.current,
+                  role: 'assistant',
+                  content: event.transcript
+                });
+              }
             }
             setCurrentTranscript('');
+            break;
+
+          case 'response.created':
+            setIsSpeaking(true);
             break;
 
           case 'response.done':
             setIsSpeaking(false);
             break;
 
-          case 'server_error':
-            console.error('🚨 Detailed Server Error:', data.details);
-            toast({
-              title: "OpenAI Error",
-              description: data.error || "Unknown error from AI service",
-              variant: "destructive",
-            });
-            break;
-
-          case 'connection.error':
-            console.error('🚨 Connection Error:', data);
-            toast({
-              title: data.fatal ? "Connection Lost" : "Connection Issue",
-              description: data.message || data.error,
-              variant: "destructive",
-              duration: data.fatal ? 8000 : 5000,
-            });
-            if (data.fatal) {
-              // Clean disconnect on fatal errors
-              setTimeout(() => disconnect(), 2000);
-            }
-            break;
-
-          case 'connection.closed':
-            console.log('🔌 Connection closed:', data);
-            if (!data.wasClean) {
-              toast({
-                title: "Connection Interrupted",
-                description: data.message || "The connection was lost unexpectedly. Please start a new session.",
-                variant: "destructive",
-                duration: 6000,
-              });
-            }
-            break;
-
           case 'error':
-            console.error('Server error:', data.error);
+            console.error('OpenAI error:', event);
             toast({
-              title: "Error",
-              description: data.error,
+              title: "AI Error",
+              description: event.error?.message || "An error occurred",
               variant: "destructive",
             });
             break;
         }
       };
 
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setConnectionState('disconnected');
-        toast({
-          title: "Connection Error",
-          description: "Failed to connect to voice service",
-          variant: "destructive",
-        });
-      };
-
-      wsRef.current.onclose = (event) => {
-        console.log('🔌 WebSocket closed', { code: event.code, wasClean: event.wasClean });
-        setConnectionState('disconnected');
-        
-        // Cleanup audio
-        if (playerRef.current) {
-          playerRef.current.clearQueue();
-          playerRef.current.pause();
-        }
-        stopRecording();
-        
-        // Auto-reconnect silently unless it was a clean user-initiated close
-        if (!event.wasClean && event.code !== 1000) {
-          console.log('🔄 Connection lost unexpectedly, attempting silent reconnection...');
-          attemptReconnection();
-        } else {
-          // Clean close - reset reconnection attempts
-          reconnectionAttemptsRef.current = 0;
-          isReconnectingRef.current = false;
-        }
-      };
-
-    } catch (error) {
-      console.error('Error connecting:', error);
-      setConnectionState('disconnected');
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to connect',
-        variant: "destructive",
-      });
-    }
-  };
-
-  const startRecording = async () => {
-    // Check voice limit before starting
-    if (voiceTimer?.hasReachedLimit) {
-      console.log('⏱️ Voice limit reached, cannot start recording');
-      onVoiceLimitReached?.();
-      return;
-    }
-
-    try {
-      recorderRef.current = new AudioStreamRecorder(
-        (base64Audio) => {
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-              type: 'input_audio_buffer.append',
-              audio: base64Audio
-            }));
-          }
-        },
-        selectedMicrophoneId
+      // Initialize RealtimeChat
+      rtcRef.current = new RealtimeChat(
+        handleMessage,
+        selectedMicrophoneId,
+        selectedSpeakerId
       );
 
-      await recorderRef.current.start();
-      setMicrophoneActive(true);
-      voiceTimer?.start();
-      console.log('🎤 Recording started');
+      const result = await rtcRef.current.init(
+        currentConversationId.current,
+        lessonPlan?.id,
+        topic,
+        yearGroup
+      );
+
+      currentConversationId.current = result.conversationId;
+      onConversationCreated?.(result.conversationId);
+      
+      console.log("✅ WebRTC connection established");
+
     } catch (error) {
-      console.error('Error starting recorder:', error);
-      setMicrophoneActive(false);
+      console.error('❌ Connection error:', error);
+      setConnectionState('disconnected');
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to connect';
       toast({
-        title: "Microphone Error",
-        description: "Please allow microphone access",
+        title: "Connection Error",
+        description: errorMessage,
         variant: "destructive",
       });
-    }
-  };
 
-  const stopRecording = () => {
-    recorderRef.current?.stop();
-    recorderRef.current = null;
-    setMicrophoneActive(false);
-    voiceTimer?.pause();
-    console.log('🎤 Recording stopped');
+      // Attempt reconnection if appropriate
+      if (!errorMessage.includes('authenticated') && 
+          !errorMessage.includes('quota') &&
+          reconnectionAttemptsRef.current < maxReconnectionAttempts) {
+        attemptReconnection();
+      }
+    }
   };
 
   const disconnect = () => {
-    console.log('Disconnecting...');
-    stopRecording();
-    playerRef.current?.stop();
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+    console.log('🔌 Disconnecting...');
+    
+    if (rtcRef.current) {
+      rtcRef.current.disconnect();
+      rtcRef.current = null;
     }
+    
+    voiceTimer?.pause();
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
+    reconnectionAttemptsRef.current = 0;
+    isReconnectingRef.current = false;
   };
 
   const sendUserMessage = (text: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('📤 Sending user text message:', text);
-      wsRef.current.send(JSON.stringify({
-        type: 'user_message',
-        text: text
-      }));
+    if (rtcRef.current) {
+      console.log('📤 Sending text message:', text);
+      
+      // Save to database
+      if (currentConversationId.current) {
+        supabase.from('cleo_messages').insert({
+          conversation_id: currentConversationId.current,
+          role: 'user',
+          content: text
+        }).then(() => console.log('✅ Message saved'));
+      }
+      
+      rtcRef.current.sendMessage(text);
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
     } else {
-      console.warn('Cannot send message: WebSocket not connected');
+      console.warn('Cannot send message: Not connected');
+      toast({
+        title: "Not Connected",
+        description: "Please connect first",
+        variant: "destructive",
+      });
     }
   };
 

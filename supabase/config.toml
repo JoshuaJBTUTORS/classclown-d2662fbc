@@ -132,6 +132,9 @@ verify_jwt = true
 [functions.platform-customer-portal]
 verify_jwt = true
 
+[functions.cleo-realtime-session-token]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 port = 54328
