@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRive, useStateMachineInput } from '@rive-app/react-canvas';
+import cleoAvatarRiv from '@/assets/rive/cleo-avatar.riv';
 
 interface CleoAvatarProps {
   isSpeaking: boolean;
@@ -18,10 +19,22 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
   size = 'medium',
   className = '',
 }) => {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   const { RiveComponent, rive } = useRive({
-    src: '/src/assets/rive/cleo-avatar.riv',
+    src: cleoAvatarRiv,
     stateMachines: 'State Machine 1',
     autoplay: true,
+    onLoadError: (error) => {
+      console.error('❌ Rive load error:', error);
+      setHasError(true);
+      setIsLoading(false);
+    },
+    onLoad: () => {
+      console.log('✅ Rive file loaded successfully');
+      setIsLoading(false);
+    },
   });
 
   // Get state machine inputs
@@ -29,22 +42,44 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
   const listeningInput = useStateMachineInput(rive, 'State Machine 1', 'listening');
   const mutedInput = useStateMachineInput(rive, 'State Machine 1', 'muted');
 
+  // Debug: Log Rive instance and state machines
+  useEffect(() => {
+    if (rive) {
+      console.log('🎭 Rive instance:', rive);
+      console.log('🎬 Available state machines:', rive.stateMachineNames);
+      console.log('📊 State machine inputs:', {
+        speakingInput: speakingInput ? 'found' : 'NOT FOUND',
+        listeningInput: listeningInput ? 'found' : 'NOT FOUND',
+        mutedInput: mutedInput ? 'found' : 'NOT FOUND',
+      });
+    }
+  }, [rive, speakingInput, listeningInput, mutedInput]);
+
   // Update animation states based on props
   useEffect(() => {
     if (speakingInput) {
+      console.log('🗣️ Setting speaking:', isSpeaking);
       speakingInput.value = isSpeaking;
+    } else {
+      console.warn('⚠️ speakingInput not found');
     }
   }, [isSpeaking, speakingInput]);
 
   useEffect(() => {
     if (listeningInput) {
+      console.log('👂 Setting listening:', isListening);
       listeningInput.value = isListening;
+    } else {
+      console.warn('⚠️ listeningInput not found');
     }
   }, [isListening, listeningInput]);
 
   useEffect(() => {
     if (mutedInput) {
+      console.log('🔇 Setting muted:', isMuted);
       mutedInput.value = isMuted;
+    } else {
+      console.warn('⚠️ mutedInput not found');
     }
   }, [isMuted, mutedInput]);
 
@@ -54,6 +89,25 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
     medium: 'w-24 h-24',
     large: 'w-[120px] h-[120px]',
   };
+
+  // Fallback to emoji if Rive fails
+  if (hasError) {
+    return (
+      <div 
+        className={`${sizeClasses[size]} ${className} flex items-center justify-center`}
+        style={{
+          borderRadius: '50%',
+          boxShadow: isSpeaking 
+            ? '0 0 20px 5px hsl(var(--primary) / 0.4)' 
+            : '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+          transition: 'box-shadow 0.3s ease',
+          fontSize: size === 'large' ? '60px' : size === 'medium' ? '40px' : '24px',
+        }}
+      >
+        🧑🏻‍🔬
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -67,6 +121,11 @@ const CleoAvatar: React.FC<CleoAvatarProps> = ({
         transition: 'box-shadow 0.3s ease',
       }}
     >
+      {isLoading && (
+        <div className="flex items-center justify-center h-full bg-background/50">
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        </div>
+      )}
       <RiveComponent />
     </div>
   );
