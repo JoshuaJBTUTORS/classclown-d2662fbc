@@ -169,7 +169,7 @@ export default function SubscriptionManagement() {
           <p className="text-muted-foreground">
             Subscribe to start learning with Cleo's voice sessions
           </p>
-          <Button onClick={() => navigate('/signup')}>
+          <Button onClick={() => navigate('/pricing')}>
             View Plans
           </Button>
         </Card>
