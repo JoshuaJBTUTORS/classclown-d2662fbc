@@ -16,6 +16,7 @@ interface VoiceControlsProps {
   conversationId?: string;
   onToggleMute?: () => void;
   isMuted?: boolean;
+  isConnecting?: boolean;
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
@@ -27,6 +28,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   conversationId,
   onToggleMute,
   isMuted,
+  isConnecting,
 }) => {
   const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,33 +106,60 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       )}
 
       {!isConnected ? (
-        /* Connect Button */
+        /* Connect Button or Loading State */
         <div className="flex flex-col items-center gap-3">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Button
-              onClick={handleConnect}
-              disabled={sessionsRemaining === 0 || loading}
-              size="lg"
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-lg font-semibold rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          {isConnecting ? (
+            /* Loading State */
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-3"
             >
-              <Play className="w-6 h-6 mr-2" />
-              Start Learning
-            </Button>
-          </motion.div>
-          
-          {sessionsRemaining === 0 && !loading && (
-            <div className="text-center space-y-2">
-              <p className="text-sm text-muted-foreground">No sessions left</p>
-              <Link to="/learning-hub/subscription">
-                <Button variant="outline" size="sm">
-                  Buy More Sessions
+              <div className="relative">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full"
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                  🧑🏻‍🔬
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">Connecting to Cleo...</p>
+                <p className="text-xs text-muted-foreground mt-1">This will only take a moment</p>
+              </div>
+            </motion.div>
+          ) : (
+            /* Connect Button */
+            <>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Button
+                  onClick={handleConnect}
+                  disabled={sessionsRemaining === 0 || loading}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-lg font-semibold rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Play className="w-6 h-6 mr-2" />
+                  Start Learning
                 </Button>
-              </Link>
-            </div>
+              </motion.div>
+              
+              {sessionsRemaining === 0 && !loading && (
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">No sessions left</p>
+                  <Link to="/learning-hub/subscription">
+                    <Button variant="outline" size="sm">
+                      Buy More Sessions
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (

@@ -413,6 +413,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 }}
                 onToggleMute={() => controlsRef.current?.toggleMute?.()}
                 isMuted={isMuted}
+                isConnecting={connectionState === 'connecting'}
               />
             </div>
           </section>
