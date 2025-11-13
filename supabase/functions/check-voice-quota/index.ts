@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface QuotaResponse {
   canStart: boolean;
-  sessionsRemaining: number;
+  minutesRemaining: number;
   quotaId: string | null;
   message: string;
   periodEnd?: string;
@@ -62,29 +62,29 @@ Deno.serve(async (req) => {
       .limit(1)
       .single();
 
-    // Check if user has free sessions (quota exists but no subscription)
+    // Check if user has free minutes (quota exists but no subscription)
     if (quota && !subscription) {
-      const totalRemaining = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
+      const totalRemaining = (quota.minutes_remaining || 0) + (quota.bonus_minutes || 0);
       
       if (totalRemaining > 0) {
-        console.log('User has free sessions:', totalRemaining);
+        console.log('User has free minutes:', totalRemaining);
         const response: QuotaResponse = {
           canStart: true,
-          sessionsRemaining: totalRemaining,
+          minutesRemaining: totalRemaining,
           quotaId: quota.id,
-          message: `You have ${totalRemaining} free session${totalRemaining !== 1 ? 's' : ''} remaining`,
+          message: `You have ${totalRemaining} free minute${totalRemaining !== 1 ? 's' : ''} remaining`,
           periodEnd: quota.period_end
         };
         return new Response(JSON.stringify(response), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       } else {
-        console.log('Free sessions exhausted, no subscription');
+        console.log('Free minutes exhausted, no subscription');
         const response: QuotaResponse = {
           canStart: false,
-          sessionsRemaining: 0,
+          minutesRemaining: 0,
           quotaId: null,
-          message: 'Free sessions used. Subscribe to continue learning!'
+          message: 'Free minutes used. Subscribe to continue learning!'
         };
         return new Response(JSON.stringify(response), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     if (!subscription && !quota) {
       const response: QuotaResponse = {
         canStart: false,
-        sessionsRemaining: 0,
+        minutesRemaining: 0,
         quotaId: null,
         message: 'No active subscription found. Please subscribe to continue.'
       };
@@ -120,9 +120,14 @@ Deno.serve(async (req) => {
           user_id: user.id,
           period_start: periodStart.toISOString(),
           period_end: periodEnd.toISOString(),
-          total_sessions_allowed: subscription.plan.voice_sessions_per_month,
+          total_minutes_allowed: subscription.plan.voice_minutes_per_month,
+          minutes_used: 0,
+          minutes_remaining: subscription.plan.voice_minutes_per_month,
+          bonus_minutes: 0,
+          // Keep legacy session fields for backwards compatibility
+          total_sessions_allowed: 0,
           sessions_used: 0,
-          sessions_remaining: subscription.plan.voice_sessions_per_month,
+          sessions_remaining: 0,
           bonus_sessions: 0
         })
         .select()
@@ -135,9 +140,9 @@ Deno.serve(async (req) => {
 
       const response: QuotaResponse = {
         canStart: true,
-        sessionsRemaining: newQuota.sessions_remaining + newQuota.bonus_sessions,
+        minutesRemaining: newQuota.minutes_remaining + newQuota.bonus_minutes,
         quotaId: newQuota.id,
-        message: `You have ${newQuota.sessions_remaining + newQuota.bonus_sessions} sessions remaining this period`,
+        message: `You have ${newQuota.minutes_remaining + newQuota.bonus_minutes} minutes remaining this period`,
         periodEnd: periodEnd.toISOString()
       };
 
@@ -146,17 +151,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if user has sessions remaining
-    const totalRemaining = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
+    // Check if user has minutes remaining
+    const totalRemaining = (quota.minutes_remaining || 0) + (quota.bonus_minutes || 0);
     const canStart = totalRemaining > 0;
 
     const response: QuotaResponse = {
       canStart,
-      sessionsRemaining: totalRemaining,
+      minutesRemaining: totalRemaining,
       quotaId: quota.id,
       message: canStart
-        ? `You have ${totalRemaining} session${totalRemaining !== 1 ? 's' : ''} remaining this period`
-        : 'No sessions remaining. Purchase more sessions or upgrade your plan.',
+        ? `You have ${totalRemaining} minute${totalRemaining !== 1 ? 's' : ''} remaining this period`
+        : 'No minutes remaining. Purchase more minutes or upgrade your plan.',
       periodEnd: quota.period_end
     };
 
@@ -170,7 +175,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         canStart: false, 
-        sessionsRemaining: 0, 
+        minutesRemaining: 0, 
         quotaId: null,
         message: error.message 
       }),

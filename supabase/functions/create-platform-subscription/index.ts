@@ -165,8 +165,8 @@ Deno.serve(async (req) => {
       throw dbError;
     }
 
-    // Create initial quota
-    const sessionsToGrant = hasCompletedTrial ? plan.voice_sessions_per_month : 1; // 1 free session for trial
+    // Create initial quota with minutes
+    const minutesToGrant = plan.voice_minutes_per_month;
 
     const { error: quotaError } = await supabase
       .from('voice_session_quotas')
@@ -174,9 +174,14 @@ Deno.serve(async (req) => {
         user_id: user.id,
         period_start: new Date(subscription.current_period_start * 1000).toISOString(),
         period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        total_sessions_allowed: sessionsToGrant,
+        total_minutes_allowed: minutesToGrant,
+        minutes_used: 0,
+        minutes_remaining: minutesToGrant,
+        bonus_minutes: 0,
+        // Legacy session fields for backwards compatibility
+        total_sessions_allowed: 0,
         sessions_used: 0,
-        sessions_remaining: sessionsToGrant,
+        sessions_remaining: 0,
         bonus_sessions: 0
       });
 

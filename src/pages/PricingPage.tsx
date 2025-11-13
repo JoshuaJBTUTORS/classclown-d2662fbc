@@ -17,54 +17,53 @@ const PricingPage = () => {
   const plans = [
     {
       name: 'Starter',
-      monthlyPrice: 18,
-      sessions: 15,
+      monthlyPrice: 10,
+      minutes: 50,
       popular: false,
       features: [
-        '15 × 5-minute voice lessons',
+        '50 minutes of AI voice tutoring',
         'Full access to all GCSE & 11+ courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
-        'Practice questions & quizzes',
       ],
     },
     {
       name: 'Standard',
-      monthlyPrice: 37,
-      sessions: 30,
+      monthlyPrice: 20,
+      minutes: 100,
       popular: true,
       features: [
-        '30 × 5-minute voice lessons',
+        '100 minutes of AI voice tutoring',
         'Full access to all GCSE & 11+ courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
-        'Practice questions & quizzes',
       ],
     },
     {
-      name: 'Plus',
-      monthlyPrice: 61,
-      sessions: 60,
+      name: 'Booster',
+      monthlyPrice: 50,
+      minutes: 250,
       popular: false,
       features: [
-        '60 × 5-minute voice lessons',
+        '250 minutes of AI voice tutoring',
         'Full access to all GCSE & 11+ courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
-        'Practice questions & quizzes',
+        'Priority support',
       ],
     },
     {
-      name: 'Premium',
-      monthlyPrice: 110,
-      sessions: 90,
+      name: 'Pro',
+      monthlyPrice: 100,
+      minutes: 500,
       popular: false,
       features: [
-        '90 × 5-minute voice lessons',
+        '500 minutes of AI voice tutoring',
         'Full access to all GCSE & 11+ courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
-        'Practice questions & quizzes',
+        'Priority support',
+        'Perfect for families',
       ],
     },
   ];
@@ -193,7 +192,7 @@ const PricingPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => {
             const pricing = calculatePrice(plan.monthlyPrice);
-            const costPerSession = (pricing.perMonth / plan.sessions).toFixed(2);
+            const costPerMinute = (pricing.perMonth / plan.minutes).toFixed(2);
 
             return (
               <Card
@@ -239,7 +238,7 @@ const PricingPage = () => {
                   )}
                   
                   <div className="mt-3 text-sm text-muted-foreground">
-                    {plan.sessions} sessions • £{costPerSession} per session
+                    {plan.minutes} minutes • ≈ {Math.floor(plan.minutes / 15)} lessons
                   </div>
                 </div>
 

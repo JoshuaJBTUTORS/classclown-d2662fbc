@@ -665,12 +665,20 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
       }
     }
 
-    // Update lesson plan with objectives and full teaching sequence (including content blocks)
+    // Calculate estimated duration
+    const estimatedMinutes = Math.ceil(planData.steps.length * 3); // Rough estimate: 3 min per step
+    const contentBlockCount = planData.steps.reduce((total: number, step: any) => {
+      return total + (step.content_blocks?.length || 0);
+    }, 0);
+
+    // Update lesson plan with objectives, teaching sequence, and duration estimate
     const { error: updateError } = await supabase
       .from('cleo_lesson_plans')
       .update({
         learning_objectives: planData.objectives,
         teaching_sequence: planData.steps,
+        estimated_duration_minutes: estimatedMinutes,
+        content_block_count: contentBlockCount,
         status: 'ready'
       })
       .eq('id', lessonPlan.id);
