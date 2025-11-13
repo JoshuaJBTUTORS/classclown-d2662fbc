@@ -9,21 +9,21 @@ export const lessonDurationEstimator = {
   estimateDuration: (lessonPlan: LessonPlan): number => {
     let totalMinutes = 0;
     
-    // Base time for intro + objectives (2 min)
-    totalMinutes += 2;
+    // Base time for intro + objectives (1 min)
+    totalMinutes += 1;
     
     // If no teaching sequence, estimate based on objectives
     if (!lessonPlan.teaching_sequence || lessonPlan.teaching_sequence.length === 0) {
       const objectiveCount = lessonPlan.learning_objectives?.length || 3;
-      totalMinutes += objectiveCount * 4; // 4 minutes per objective
-      return Math.ceil(totalMinutes * 1.2); // Add 20% buffer
+      totalMinutes += objectiveCount * 2.5; // 2.5 minutes per objective
+      return Math.ceil(totalMinutes * 1.1); // Add 10% buffer
     }
     
     // Estimate per step based on content blocks
     lessonPlan.teaching_sequence.forEach((step: any) => {
       if (!step.content_blocks || step.content_blocks.length === 0) {
         // Default step time if no content blocks
-        totalMinutes += 3;
+        totalMinutes += 2;
         return;
       }
 
@@ -32,17 +32,17 @@ export const lessonDurationEstimator = {
           case 'text':
           case 'explanation':
             // Reading/explanation time based on word count estimate
-            totalMinutes += 2;
+            totalMinutes += 1.5;
             break;
             
           case 'table':
             // Time to review table
-            totalMinutes += 1.5;
+            totalMinutes += 1;
             break;
             
           case 'definition':
             // Time for definition
-            totalMinutes += 1;
+            totalMinutes += 0.5;
             break;
             
           case 'question':
@@ -50,24 +50,24 @@ export const lessonDurationEstimator = {
             const questionCount = Array.isArray(block.data?.questions) 
               ? block.data.questions.length 
               : 1;
-            totalMinutes += questionCount * 2;
+            totalMinutes += questionCount * 1.5;
             break;
             
           case 'worked_example':
           case 'diagram':
             // Time for worked examples and diagrams
-            totalMinutes += 3;
+            totalMinutes += 2;
             break;
             
           default:
             // Default for unknown block types
-            totalMinutes += 2;
+            totalMinutes += 1.5;
         }
       });
     });
     
-    // Add buffer for student questions/clarifications (20%)
-    totalMinutes = Math.ceil(totalMinutes * 1.2);
+    // Add buffer for student questions/clarifications (10%)
+    totalMinutes = Math.ceil(totalMinutes * 1.1);
     
     // Apply difficulty multiplier based on year group
     const difficultyMultiplier = lessonDurationEstimator.getDifficultyMultiplier(
