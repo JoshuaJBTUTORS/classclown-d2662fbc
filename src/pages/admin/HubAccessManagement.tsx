@@ -31,57 +31,73 @@ const HubAccessManagement = () => {
   const closeSidebar = () => setSidebarOpen(false);
 
   // Fetch all users with their access status
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error: queryError } = useQuery({
     queryKey: ['hub-access-users'],
     queryFn: async () => {
-      // Get profiles - query builder doesn't have the new column yet, use raw query
-      const { data: rawData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
+      try {
+        // Get profiles - use raw select to bypass TypeScript types
+        const { data: rawData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*');
 
-      if (profilesError) throw profilesError;
-
-      // Cast to include the new field
-      const profiles = rawData as Array<{
-        id: string;
-        first_name: string | null;
-        last_name: string | null;
-        has_cleo_hub_access?: boolean;
-      }>;
-
-      // Get auth users for emails
-      const userIds = profiles.map(p => p.id);
-      const emailMap: Record<string, string> = {};
-      
-      for (const userId of userIds) {
-        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-        if (authUser?.user?.email) {
-          emailMap[userId] = authUser.user.email;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
         }
+
+        if (!rawData || rawData.length === 0) {
+          return [];
+        }
+
+        // Cast to include the new field
+        const profiles = rawData as Array<{
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          has_cleo_hub_access?: boolean;
+        }>;
+
+        // Get user roles
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .eq('is_primary', true);
+
+        if (rolesError) {
+          console.error('Error fetching roles:', rolesError);
+          throw rolesError;
+        }
+
+        // Build users with access info
+        const usersWithAccess: UserWithAccess[] = await Promise.all(
+          profiles.map(async (profile) => {
+            // Get email from auth
+            let email = 'No email';
+            try {
+              const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
+              email = authUser?.user?.email || 'No email';
+            } catch (err) {
+              console.error('Error fetching user email:', err);
+            }
+
+            const userRole = roles?.find((r) => r.user_id === profile.id);
+            
+            return {
+              id: profile.id,
+              email,
+              first_name: profile.first_name,
+              last_name: profile.last_name,
+              role: userRole?.role || 'none',
+              has_cleo_hub_access: profile.has_cleo_hub_access || false,
+            };
+          })
+        );
+
+        return usersWithAccess;
+      } catch (err) {
+        console.error('Error in hub-access query:', err);
+        throw err;
       }
-
-      // Get user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .eq('is_primary', true);
-
-      if (rolesError) throw rolesError;
-
-      const usersWithAccess: UserWithAccess[] = profiles.map((profile) => {
-        const userRole = roles.find((r) => r.user_id === profile.id);
-        
-        return {
-          id: profile.id,
-          email: emailMap[profile.id] || 'No email',
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          role: userRole?.role || 'none',
-          has_cleo_hub_access: profile.has_cleo_hub_access || false,
-        };
-      });
-
-      return usersWithAccess;
     },
     enabled: isAdmin || isOwner,
   });
@@ -217,6 +233,11 @@ const HubAccessManagement = () => {
                 {isLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : queryError ? (
+                  <div className="text-center py-12">
+                    <p className="text-destructive">Error loading users: {(queryError as any)?.message}</p>
+                    <p className="text-sm text-muted-foreground mt-2">Check console for details</p>
                   </div>
                 ) : filteredUsers && filteredUsers.length > 0 ? (
                   <div className="space-y-2">
