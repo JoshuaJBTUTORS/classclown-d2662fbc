@@ -71,63 +71,46 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
     validatePhone(data.parentPhone);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+    <div className="min-h-screen bg-background p-6 sm:p-8">
+      {/* Cleo Logo */}
+      <div className="mb-12">
+        <h1 className="text-4xl font-bold text-primary">Cleo</h1>
+      </div>
+
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1fr_400px] gap-12">
+        {/* Left Column - Form */}
+        <div className="space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 text-center lg:text-left">
+            <h2 className="text-5xl font-bold text-foreground mb-4">
               Let's get your details 👋
             </h2>
-            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center lg:text-left">
-              We'll use this information to create your account and keep you updated on your child's progress.
+            <p className="text-lg text-muted-foreground mb-12">
+              We'll use this information to create your account and keep you updated.
             </p>
 
-            <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-6">
               {/* First Name */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="relative"
+                className="space-y-2"
               >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="inline h-4 w-4 mr-2" />
+                <label className="flex items-center text-base font-semibold text-foreground">
+                  <User className="h-4 w-4 mr-2" />
                   First Name
                 </label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Enter your first name here..."
-                    value={data.parentFirstName}
-                    onChange={(e) => handleInputChange('parentFirstName', e.target.value)}
-                    className={`h-12 pr-10 transition-all duration-200 ${
-                      validationState.firstName ? 'border-green-500 focus:border-green-500' : ''
-                    }`}
-                  />
-                  {validationState.firstName && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    >
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    </motion.div>
-                  )}
-                </div>
-                {data.parentFirstName && validationState.firstName && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-xs sm:text-sm text-green-600 mt-1"
-                  >
-                    Great! Name looks good. ✓
-                  </motion.p>
-                )}
+                <Input
+                  type="text"
+                  placeholder="Enter your first name here..."
+                  value={data.parentFirstName}
+                  onChange={(e) => handleInputChange('parentFirstName', e.target.value)}
+                  className="h-14 text-base"
+                />
               </motion.div>
 
               {/* Last Name */}
@@ -135,192 +118,135 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="relative"
+                className="space-y-2"
               >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="inline h-4 w-4 mr-2" />
+                <label className="flex items-center text-base font-semibold text-foreground">
+                  <User className="h-4 w-4 mr-2" />
                   Last Name
                 </label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Enter your last name here..."
-                    value={data.parentLastName}
-                    onChange={(e) => handleInputChange('parentLastName', e.target.value)}
-                    className={`h-12 pr-10 transition-all duration-200 ${
-                      validationState.lastName ? 'border-green-500 focus:border-green-500' : ''
-                    }`}
-                  />
-                  {validationState.lastName && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    >
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    </motion.div>
-                  )}
-                </div>
+                <Input
+                  type="text"
+                  placeholder="Enter your last name here..."
+                  value={data.parentLastName}
+                  onChange={(e) => handleInputChange('parentLastName', e.target.value)}
+                  className="h-14 text-base"
+                />
               </motion.div>
 
-              {/* Email */}
+              {/* Email Address */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="relative"
+                className="space-y-2"
               >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="inline h-4 w-4 mr-2" />
+                <label className="flex items-center text-base font-semibold text-foreground">
+                  <Mail className="h-4 w-4 mr-2" />
                   Email Address
                 </label>
-                <div className="relative">
-                  <Input
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={data.parentEmail}
-                    onChange={(e) => handleInputChange('parentEmail', e.target.value)}
-                    className={`h-12 pr-10 transition-all duration-200 ${
-                      validationState.email ? 'border-green-500 focus:border-green-500' : ''
-                    }`}
-                  />
-                  {validationState.email && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    >
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    </motion.div>
-                  )}
-                </div>
-                {data.parentEmail && validationState.email && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-xs sm:text-sm text-green-600 mt-1"
-                  >
-                    Perfect! Email looks good. ✓
-                  </motion.p>
-                )}
-              </motion.div>
-
-              {/* Phone */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="relative"
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="inline h-4 w-4 mr-2" />
-                  Phone Number
-                </label>
-                <div className="relative">
-                  <Input
-                    type="tel"
-                    placeholder="+44 7123 456789"
-                    value={data.parentPhone}
-                    onChange={(e) => handleInputChange('parentPhone', e.target.value)}
-                    className={`h-12 pr-10 transition-all duration-200 ${
-                      validationState.phone ? 'border-green-500 focus:border-green-500' : ''
-                    }`}
-                  />
-                  {validationState.phone && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    >
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    </motion.div>
-                  )}
-                </div>
+                <Input
+                  type="email"
+                  placeholder="Enter your email here..."
+                  value={data.parentEmail}
+                  onChange={(e) => handleInputChange('parentEmail', e.target.value)}
+                  className="h-14 text-base"
+                />
               </motion.div>
             </div>
           </motion.div>
 
           {/* Navigation Buttons */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-col sm:flex-row justify-between gap-4 pt-4 sm:pt-6"
+            className="flex flex-col sm:flex-row gap-4 pt-8"
           >
             <Button
+              type="button"
               variant="outline"
               onClick={onPrev}
-              className="flex items-center justify-center gap-2 h-12 sm:w-auto order-2 sm:order-1"
+              className="h-14 px-8 text-base font-medium border-2 rounded-full"
             >
               ← Back
             </Button>
-            
             <Button
+              type="button"
               onClick={onNext}
               disabled={!canProceed}
-              size="lg"
-              className="bg-purple-600 hover:bg-purple-700 h-12 text-base font-semibold order-1 sm:order-2"
+              className="h-14 px-8 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-full"
             >
-              Continue to Student Details →
+              Continue to Password →
             </Button>
           </motion.div>
-          
+
+          {/* Validation Message */}
           {!canProceed && (
-            <p className="text-xs sm:text-sm text-gray-500 text-center">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-muted-foreground text-sm"
+            >
               Please fill in all fields correctly to continue
-            </p>
+            </motion.p>
           )}
         </div>
 
-        {/* Sidebar Tips */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-4"
-        >
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-start space-x-3">
-                <Info className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-blue-900 mb-1 text-sm">
-                    We'll use this info to:
-                  </h4>
-                  <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
-                    <li>• Send progress updates</li>
-                    <li>• Schedule lessons</li>
-                    <li>• Share homework feedback</li>
-                    <li>• Provide support when needed</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-xl sm:text-2xl mb-2">🔒</div>
-              <h4 className="font-medium text-green-900 mb-1 text-sm">
-                Your Privacy Matters
-              </h4>
-              <p className="text-xs sm:text-sm text-green-700">
-                We never share your personal information with third parties. 
-                Your data is secure with us.
+        {/* Right Column - Benefits */}
+        <div className="space-y-6">
+          {/* Account Benefits */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex gap-4"
+          >
+            <div className="flex-shrink-0 w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Account Benefits</h3>
+              <p className="text-base text-muted-foreground">
+                Access personalised lessons and track your progress.
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </motion.div>
 
-          {/* Motivational Message */}
-          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-xl sm:text-2xl mb-2">🌟</div>
-              <p className="text-xs sm:text-sm font-medium text-purple-800">
-                "You're making a great investment in your child's future!"
+          {/* Your Privacy Matters */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex gap-4"
+          >
+            <div className="flex-shrink-0 w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-3xl">
+              👩🏾
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Your Privacy Matters</h3>
+              <p className="text-base text-muted-foreground">
+                Your data is always safe and secure with Cleo.
               </p>
-            </CardContent>
-          </Card>
-        </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Fantastic Step */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex gap-4"
+          >
+            <div className="flex-shrink-0 w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center text-3xl">
+              💡
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                You're taking a fantastic step for your education!
+              </h3>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
