@@ -296,6 +296,17 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const handleCompleteLesson = async () => {
     if (!conversationId) return;
     
+    // CRITICAL: Disconnect voice session to stop OpenAI charges
+    if (connectionState === 'connected') {
+      console.log('🔌 Disconnecting voice session on lesson completion...');
+      await handleVoiceDisconnect();
+      
+      toast({
+        title: "Voice Session Ended",
+        description: "Connection closed to save costs.",
+      });
+    }
+    
     const totalSteps = lessonData.steps.length;
     
     await lessonState.completeLesson({
@@ -320,11 +331,12 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   useEffect(() => {
     if (allStepsCompleted && connectionState === 'connected' && !hasDisconnectedOnComplete.current) {
       hasDisconnectedOnComplete.current = true;
+      console.log('🎓 All steps completed - auto-disconnecting voice session');
       handleVoiceDisconnect();
       
       toast({
         title: "Lesson Complete! 🎉",
-        description: "Voice session ended. Choose to continue or finish up.",
+        description: "Voice session ended automatically. Choose to continue or finish up.",
       });
     }
   }, [allStepsCompleted, connectionState]);
