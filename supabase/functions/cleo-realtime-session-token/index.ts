@@ -251,6 +251,8 @@ Deno.serve(async (req) => {
       
       systemPrompt = `You are Cleo, an expert AI tutor teaching ${lessonPlan.topic} to a ${lessonPlan.year_group} student (approximately 15 years old).
 
+SPEAKING STYLE: Speak slowly and clearly. Pause briefly between sentences to give the student time to process information.
+
 LESSON STRUCTURE:
 The lesson is organized into these steps:
 ${sequenceList}
@@ -323,6 +325,8 @@ TOOLS AVAILABLE:
 Remember: The content library above shows what's ALREADY created. Use it! Don't recreate it. Be efficient, engaging, and keep things moving.`;
     } else {
       systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. 
+
+SPEAKING STYLE: Speak slowly and clearly. Pause briefly between sentences to give the student time to process information.
 
 INITIAL GREETING:
 Start every session with: "Hello ${userName}! Before we start, let's do a quick mic check to make sure we can hear each other loud and clear. Please say 'hey Cleo' when you're ready."

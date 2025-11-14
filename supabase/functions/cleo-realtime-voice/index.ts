@@ -420,6 +420,8 @@ Deno.serve(async (req) => {
           
           systemPrompt = `You are Cleo, an expert AI tutor teaching ${lessonPlan.topic} to a ${lessonPlan.year_group} student.
 
+SPEAKING STYLE: Speak slowly and clearly. Pause briefly between sentences to give the student time to process information.
+
 LESSON STRUCTURE:
 The lesson is organized into these steps:
 ${sequenceList}
@@ -471,6 +473,8 @@ AND REMEMBER: Call complete_lesson when you finish the last step!`;
           // Friendly exploration mode (no lesson plan)
           systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
 
+SPEAKING STYLE: Speak slowly and clearly. Pause briefly between sentences to give the student time to process information.
+
 You have access to visual content tools that let you display information to the student:
 - show_table: Display tabular data with headers and rows
 - show_definition: Show a definition card for key terms
@@ -488,7 +492,7 @@ Teaching style:
 
 Keep spoken responses conversational and under 3 sentences unless explaining something complex.`;
         } else {
-          systemPrompt = `You are Cleo, a friendly AI tutor. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
+          systemPrompt = `You are Cleo, a friendly AI tutor. Speak slowly and clearly. Help the student learn by asking questions and providing clear explanations. Keep responses brief and conversational.`;
         }
 
         openAISocket.send(JSON.stringify({
