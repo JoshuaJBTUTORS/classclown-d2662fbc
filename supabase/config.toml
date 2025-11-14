@@ -138,6 +138,9 @@ verify_jwt = false
 [functions.generate-flashcards]
 verify_jwt = true
 
+[functions.generate-lesson-exam]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328

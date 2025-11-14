@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, ArrowRight, RotateCcw, Trophy, Download, Sparkles, BookOpen } from 'lucide-react';
+import { CheckCircle, ArrowRight, RotateCcw, Trophy, Download, Sparkles, BookOpen, FileText, Loader2 } from 'lucide-react';
 import { QuestionStats } from '@/services/cleoQuestionTrackingService';
 import { lessonExportService } from '@/services/lessonExportService';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +41,8 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
   const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
   const [flashcardsGenerated, setFlashcardsGenerated] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingExam, setIsGeneratingExam] = useState(false);
+  const [examGenerated, setExamGenerated] = useState(false);
 
   const handleGenerateFlashcards = async () => {
     if (!conversationId) {
@@ -125,6 +127,47 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
     }
   };
 
+  const handleGenerateExam = async () => {
+    if (!conversationId) {
+      toast({
+        title: "Error",
+        description: "Cannot generate exam without a conversation ID",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingExam(true);
+    try {
+      const pdfBlob = await lessonExportService.generateLessonExam(conversationId);
+      
+      // Trigger download
+      const url = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gcse-exam-${lessonTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      setExamGenerated(true);
+      toast({
+        title: "Exam Generated! 📝",
+        description: "Your GCSE practice exam PDF has been downloaded.",
+      });
+    } catch (error) {
+      console.error('Error generating exam:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate exam. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingExam(false);
+    }
+  };
+
   const incorrectAnswers = questionStats?.incorrect_answers || 0;
 
   return (
@@ -144,12 +187,13 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="summary" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-            <TabsTrigger value="practice">Practice</TabsTrigger>
-            <TabsTrigger value="export">Export</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="summary" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="practice">Practice</TabsTrigger>
+              <TabsTrigger value="exam">Exam</TabsTrigger>
+              <TabsTrigger value="export">Export</TabsTrigger>
+            </TabsList>
 
           <TabsContent value="summary" className="space-y-4 py-4">
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg p-4 space-y-3">
@@ -287,6 +331,79 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
                   </Button>
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="exam" className="space-y-4 py-4">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-600" />
+                GCSE Practice Exam
+              </h4>
+              
+              <p className="text-sm text-muted-foreground">
+                Generate realistic GCSE-style exam questions based on what you've learned
+              </p>
+
+              {!examGenerated ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div className="flex items-center gap-1 bg-background/80 p-2 rounded">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
+                      <span>6-10 Questions</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-background/80 p-2 rounded">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
+                      <span>Mixed Types</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-background/80 p-2 rounded">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
+                      <span>Answer Key</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-background/80 p-2 rounded">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
+                      <span>Marking Scheme</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleGenerateExam}
+                    disabled={isGeneratingExam}
+                    className="w-full"
+                  >
+                    {isGeneratingExam ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating Exam...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Exam PDF
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-4 space-y-3">
+                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto" />
+                  <div>
+                    <p className="text-sm font-medium">Exam Downloaded!</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your GCSE exam PDF includes questions and answer key with marking schemes.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExamGenerated(false)}
+                    className="mx-auto"
+                  >
+                    <RotateCcw className="w-3 h-3 mr-2" />
+                    Generate Another
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
 
