@@ -432,6 +432,7 @@ CRITICAL INSTRUCTIONS:
 3. After calling move_to_step, reference the content that appears: "As you can see in the table..." or "Looking at this definition..."
 4. DO NOT recreate content that already exists - use what's been generated
 5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
+6. **WHEN YOU FINISH THE LAST STEP, call complete_lesson with a brief summary** - this signals the lesson is done
 
 YOUR TEACHING FLOW:
 1. Start with: "Hello ${userName}! Today we're going to learn about ${lessonPlan.topic}${examBoardContext}. This lesson is structured to help you master the key concepts step by step. To get the most from our session, don't hesitate to ask questions or request clarification whenever something isn't clear. Let's dive in!"
@@ -440,6 +441,14 @@ YOUR TEACHING FLOW:
 4. After the content appears, reference it naturally in your explanation
 5. When you see a question in the content, present it and wait for the student's answer
 6. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
+7. After covering all content and answering any final questions, call complete_lesson("Covered [main topics]")
+8. **This is CRITICAL**: Without calling complete_lesson, the student won't see the "Done" button
+
+LESSON COMPLETION CRITERIA:
+- You've called move_to_step for ALL ${lessonPlan.teaching_sequence.length} steps
+- You've presented all pre-generated questions and received answers
+- You've addressed any student questions
+- THEN call complete_lesson with a 1-sentence summary
 
 TEACHING STYLE:
 - Be warm and engaging
@@ -451,11 +460,13 @@ TEACHING STYLE:
 
 TOOLS AVAILABLE:
 - move_to_step: Call BEFORE starting each step (displays all that step's pre-generated content)
+- complete_lesson: **Call AFTER finishing the last step** to signal lesson completion
 - show_table: Only use if you need an ADDITIONAL table beyond what's pre-generated
 - show_definition: Only use for EXTRA definitions not in the pre-generated content
 - ask_question: Only use for ADDITIONAL practice beyond pre-generated questions
 
-Remember: The content library above shows what's ALREADY created. Use it! Don't recreate it.`;
+Remember: The content library above shows what's ALREADY created. Use it! Don't recreate it.
+AND REMEMBER: Call complete_lesson when you finish the last step!`;
         } else if (conversation.topic && conversation.year_group) {
           // Friendly exploration mode (no lesson plan)
           systemPrompt = `You are Cleo, a friendly and encouraging AI tutor teaching ${conversation.topic} to a ${conversation.year_group} student.
@@ -584,6 +595,21 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
                     explanation: { type: "string", description: "Explanation shown after answering" }
                   },
                   required: ["id", "question", "options"]
+                }
+              },
+              {
+                type: "function",
+                name: "complete_lesson",
+                description: "Call this when you have finished teaching all steps in the lesson and the student has completed all practice questions. This signals that the lesson is complete and allows the student to finish the session.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    summary: {
+                      type: "string",
+                      description: "Brief summary of what was covered in the lesson (1-2 sentences)"
+                    }
+                  },
+                  required: ["summary"]
                 }
               }
             ],
@@ -756,6 +782,47 @@ Keep spoken responses conversational and under 3 sentences unless explaining som
               output: JSON.stringify({ 
                 success: true, 
                 message: `Moved to step: ${stepTitle}. All content for this step is now visible to the student.` 
+              })
+            }
+          }));
+          
+          openAISocket.send(JSON.stringify({
+            type: 'response.create'
+          }));
+          
+          return;
+        }
+        
+        // Handle complete_lesson
+        if (functionName === 'complete_lesson') {
+          const { summary } = args;
+          
+          console.log(`🎓 ========== LESSON COMPLETE ==========`);
+          console.log(`🎓 Summary: ${summary}`);
+          console.log(`🎓 Call ID: ${message.call_id}`);
+          
+          // Send completion event to frontend
+          if (clientSocket.readyState === WebSocket.OPEN) {
+            const payload = {
+              type: 'content.marker',
+              data: {
+                type: 'lesson_complete',
+                summary: summary
+              }
+            };
+            console.log(`📤 Sending lesson complete to frontend:`, JSON.stringify(payload));
+            clientSocket.send(JSON.stringify(payload));
+          }
+          
+          // Confirm to OpenAI
+          openAISocket.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'function_call_output',
+              call_id: message.call_id,
+              output: JSON.stringify({ 
+                success: true, 
+                message: 'Lesson marked as complete. The student will see the completion options.' 
               })
             }
           }));

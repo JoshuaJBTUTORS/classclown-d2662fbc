@@ -90,10 +90,25 @@ export const useContentSync = (lessonData: LessonData, onStateChange?: (state: {
               return newVisible;
             });
             
-            // Mark step as active
+            // Find current and previous step indices
             const stepIndex = lessonData.steps.findIndex(s => s.id === event.stepId);
             console.log('📚 Step index:', stepIndex);
+            
             if (stepIndex >= 0) {
+              // Auto-complete all previous steps that aren't already completed
+              const previousSteps = lessonData.steps.slice(0, stepIndex).map(s => s.id);
+              setCompletedSteps(prev => {
+                const newCompleted = [...prev];
+                previousSteps.forEach(stepId => {
+                  if (!newCompleted.includes(stepId)) {
+                    newCompleted.push(stepId);
+                    console.log('✅ Auto-completing previous step:', stepId);
+                  }
+                });
+                return newCompleted;
+              });
+              
+              // Set as active step
               setActiveStep(stepIndex);
               console.log('📚 ✅ Active step set to:', stepIndex);
             } else {
@@ -102,6 +117,13 @@ export const useContentSync = (lessonData: LessonData, onStateChange?: (state: {
           } else {
             console.error('❌ move_to_step event missing stepId!');
           }
+          break;
+        case 'lesson_complete':
+          console.log('🎓 Lesson completion signaled by AI');
+          // Mark ALL steps as completed
+          const allStepIds = lessonData.steps.map(s => s.id);
+          setCompletedSteps(allStepIds);
+          console.log('✅ All steps marked complete:', allStepIds);
           break;
       }
     },
