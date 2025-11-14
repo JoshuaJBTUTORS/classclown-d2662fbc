@@ -5,7 +5,6 @@ import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 
 // Course emoji mapping for GCSE subjects
@@ -170,30 +169,27 @@ const LearningHubMyCourses = () => {
     };
   });
 
-  // Filter courses by category
-  const is11PlusCourse = (course: any) => {
-    return course.title?.includes('11 Plus') || course.subject?.includes('11 Plus');
-  };
-
   const isGCSECourse = (course: any) => {
     return course.title?.includes('GCSE') || course.subject?.includes('GCSE');
   };
 
-  // Apply user preference filtering
+  // Apply user preference filtering and EXCLUDE 11 Plus courses
   const filteredCourses = myCourses.filter(course => {
-    // If no education level selected, show all courses
+    // ALWAYS exclude 11 Plus courses
+    const is11Plus = course.title?.includes('11 Plus') || 
+                     course.subject?.includes('11 Plus') ||
+                     course.title?.includes('11+') || 
+                     course.subject?.includes('11+');
+    
+    if (is11Plus) return false;
+    
+    // If no education level selected, show all non-11+ courses
     if (!userProfile?.education_level) {
       return true;
     }
     
-    // Filter by education level
-    if (userProfile.education_level === '11_plus') {
-      // Show only 11 Plus courses
-      return is11PlusCourse(course);
-    }
-    
+    // For GCSE education level, show only GCSE courses
     if (userProfile.education_level === 'gcse') {
-      // Show only GCSE courses that match selected subjects
       const isGCSE = isGCSECourse(course);
       if (!isGCSE) return false;
       
@@ -210,8 +206,7 @@ const LearningHubMyCourses = () => {
     return true;
   });
 
-  // Separate filtered courses into categories for display
-  const elevenPlusCourses = filteredCourses.filter(is11PlusCourse);
+  // Only GCSE courses
   const gcseCourses = filteredCourses.filter(isGCSECourse);
 
   // Loading state
@@ -278,9 +273,7 @@ const LearningHubMyCourses = () => {
 
   // Empty state - has subscription but filtered courses are empty
   if (filteredCourses.length === 0) {
-    const emptyMessage = userProfile?.education_level === '11_plus' 
-      ? 'No 11 Plus courses found'
-      : userProfile?.education_level === 'gcse'
+    const emptyMessage = userProfile?.education_level === 'gcse'
       ? 'No GCSE courses found for your selected subjects'
       : 'No courses yet';
     
@@ -335,85 +328,37 @@ const LearningHubMyCourses = () => {
           <VoiceSessionIndicator />
         </div>
 
-        {/* Tabs for course categories */}
-        <Tabs defaultValue="11plus" className="cleo-tabs">
-          <TabsList className="cleo-tabs-list">
-            <TabsTrigger value="11plus" className="cleo-tabs-trigger">
-              11 Plus
-            </TabsTrigger>
-            <TabsTrigger value="gcse" className="cleo-tabs-trigger">
-              GCSE
-            </TabsTrigger>
-          </TabsList>
-
-          {/* 11 Plus courses */}
-          <TabsContent value="11plus" className="cleo-tabs-content">
-            {elevenPlusCourses.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No 11 Plus courses yet</p>
+        {/* Course list - no tabs */}
+        {gcseCourses.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No GCSE courses yet</p>
+          </div>
+        ) : (
+          gcseCourses.map((course) => (
+            <div
+              key={course.id}
+              className="course-pill"
+              onClick={() => navigate(`/course/${course.id}`)}
+            >
+              <div className="course-pill-title">
+                {getCourseEmoji(course.title)} {course.title}
               </div>
-            ) : (
-              elevenPlusCourses.map((course) => (
-                <div
-                  key={course.id}
-                  className="course-pill"
-                  onClick={() => navigate(`/course/${course.id}`)}
-                >
-                  <div className="course-pill-title">
-                    {getCourseEmoji(course.title)} {course.title}
-                  </div>
-                  <div className="course-pill-meta">
-                    <span>{getStreakText(course.last_accessed)}</span>
-                    <span>{course.progress || 0}%</span>
-                  </div>
-                  <div className="progress-bar-thin">
-                    <div
-                      className="progress-bar-thin-fill"
-                      style={{ width: `${course.progress || 0}%` }}
-                    />
-                  </div>
-                  {hasStreak(course.last_accessed) && (
-                    <div className="flame-soft-right" />
-                  )}
-                </div>
-              ))
-            )}
-          </TabsContent>
-
-          {/* GCSE courses */}
-          <TabsContent value="gcse" className="cleo-tabs-content">
-            {gcseCourses.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No GCSE courses yet</p>
+              <div className="course-pill-meta">
+                <span>{getStreakText(course.last_accessed)}</span>
+                <span>{course.progress || 0}%</span>
               </div>
-            ) : (
-              gcseCourses.map((course) => (
+              <div className="progress-bar-thin">
                 <div
-                  key={course.id}
-                  className="course-pill"
-                  onClick={() => navigate(`/course/${course.id}`)}
-                >
-                  <div className="course-pill-title">
-                    {getCourseEmoji(course.title)} {course.title}
-                  </div>
-                  <div className="course-pill-meta">
-                    <span>{getStreakText(course.last_accessed)}</span>
-                    <span>{course.progress || 0}%</span>
-                  </div>
-                  <div className="progress-bar-thin">
-                    <div
-                      className="progress-bar-thin-fill"
-                      style={{ width: `${course.progress || 0}%` }}
-                    />
-                  </div>
-                  {hasStreak(course.last_accessed) && (
-                    <div className="flame-soft-right" />
-                  )}
-                </div>
-              ))
-            )}
-          </TabsContent>
-        </Tabs>
+                  className="progress-bar-thin-fill"
+                  style={{ width: `${course.progress || 0}%` }}
+                />
+              </div>
+              {hasStreak(course.last_accessed) && (
+                <div className="flame-soft-right" />
+              )}
+            </div>
+          ))
+        )}
 
         {/* Footer tip */}
         <p className="footer-note">
