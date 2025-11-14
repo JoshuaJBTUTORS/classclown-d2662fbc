@@ -13,9 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LearningHubDashboard = () => {
-  const { user, userRole } = useAuth();
+  const { user, profile, primaryStudentName, userRole } = useAuth();
   const navigate = useNavigate();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const displayName = (userRole === 'parent' && primaryStudentName) 
+    ? primaryStudentName 
+    : (profile?.first_name || user?.user_metadata?.first_name || 'Learner');
 
   const { data: courses, isLoading: coursesLoading } = useQuery({
     queryKey: ['courses'],
@@ -49,7 +53,7 @@ const LearningHubDashboard = () => {
           {user?.user_metadata?.avatar || '😊'}
         </div>
         <h2 className="text-3xl font-bold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
-          Welcome back, {user?.user_metadata?.first_name || 'Learner'} 🦊
+          Welcome back, {displayName} 🦊
         </h2>
         <p className="text-sm text-gray-600 mb-4">Strategist Mode: Engaged.</p>
         <p className="text-gray-600 mb-8">
