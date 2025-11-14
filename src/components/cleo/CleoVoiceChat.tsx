@@ -64,9 +64,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   const rtcRef = useRef<RealtimeChat | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
-  const reconnectionAttemptsRef = useRef(0);
-  const maxReconnectionAttempts = 3;
-  const isReconnectingRef = useRef(false);
 
   // Notify parent of state changes
   useEffect(() => {
@@ -105,51 +102,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     };
   }, []);
 
-  const attemptReconnection = async () => {
-    if (isReconnectingRef.current) return;
-    if (reconnectionAttemptsRef.current >= maxReconnectionAttempts) {
-      console.error('❌ Max reconnection attempts reached');
-      await disconnect(true); // Mark as interrupted
-      toast({
-        title: "Connection Lost",
-        description: "Unable to reconnect. Please start a new session.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    isReconnectingRef.current = true;
-    reconnectionAttemptsRef.current++;
-    
-    const delay = Math.min(1000 * Math.pow(2, reconnectionAttemptsRef.current - 1), 8000);
-    console.log(`🔄 Attempting reconnection ${reconnectionAttemptsRef.current}/${maxReconnectionAttempts} after ${delay}ms`);
-    
-    if (reconnectionAttemptsRef.current >= 2) {
-      toast({
-        title: "Reconnecting...",
-        description: `Attempt ${reconnectionAttemptsRef.current} of ${maxReconnectionAttempts}`,
-        duration: 3000,
-      });
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    try {
-      await connect();
-      reconnectionAttemptsRef.current = 0;
-      isReconnectingRef.current = false;
-      console.log("✅ Reconnection successful");
-      toast({
-        title: "Reconnected",
-        description: "Connection restored successfully",
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error("❌ Reconnection failed:", error);
-      isReconnectingRef.current = false;
-      attemptReconnection();
-    }
-  };
 
   const connect = async () => {
     if (connectionState === 'connecting' || connectionState === 'connected') {
@@ -176,14 +128,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
           case 'session.created':
             console.log('✅ WebRTC session created');
             setConnectionState('connected');
-            reconnectionAttemptsRef.current = 0;
-            if (!isReconnectingRef.current) {
-              toast({
-                title: "Connected",
-                description: "Cleo is ready!",
-                duration: 2000,
-              });
-            }
+            toast({
+              title: "Connected",
+              description: "Cleo is ready!",
+              duration: 2000,
+            });
             break;
 
           case 'content.marker':
@@ -468,12 +417,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         variant: "destructive",
       });
 
-      // Attempt reconnection if appropriate
-      if (!errorMessage.includes('authenticated') && 
-          !errorMessage.includes('quota') &&
-          reconnectionAttemptsRef.current < maxReconnectionAttempts) {
-        attemptReconnection();
-      }
+      // No automatic reconnection - user must manually reconnect
+      console.log('❌ Connection failed - automatic reconnection disabled');
     }
   };
 
@@ -488,8 +433,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
-    reconnectionAttemptsRef.current = 0;
-    isReconnectingRef.current = false;
   };
 
   const sendUserMessage = (text: string) => {
