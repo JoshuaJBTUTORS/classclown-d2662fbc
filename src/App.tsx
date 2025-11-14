@@ -76,6 +76,7 @@ import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OnboardingWizard from './pages/OnboardingWizard';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
 import PricingPage from './pages/PricingPage';
+import HubAccessManagement from './pages/admin/HubAccessManagement';
 
 
 function App() {
@@ -250,6 +251,14 @@ function App() {
                     } 
                   />
                   <Route 
+                    path="hub-access" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <HubAccessManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route
                     path="trial-bookings" 
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>

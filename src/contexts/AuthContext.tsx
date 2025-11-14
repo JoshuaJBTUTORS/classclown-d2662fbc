@@ -19,6 +19,7 @@ interface UserProfile {
   preferred_subjects?: string[];
   onboarding_completed?: boolean;
   onboarding_completed_at?: string;
+  has_cleo_hub_access?: boolean;
 }
 
 interface ParentProfile {
@@ -150,8 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileData) {
-        setProfile(profileData);
-        setHasCleoHubAccess(profileData.has_cleo_hub_access ?? false);
+        setProfile(profileData as unknown as UserProfile);
+        setHasCleoHubAccess((profileData as any).has_cleo_hub_access ?? false);
       }
 
       if (roleData) {
