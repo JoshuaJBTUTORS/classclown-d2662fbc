@@ -78,6 +78,8 @@ import OnboardingWizard from './pages/OnboardingWizard';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
 import PricingPage from './pages/PricingPage';
 import HubAccessManagement from './pages/admin/HubAccessManagement';
+import CleoTracker from './pages/admin/CleoTracker';
+import CleoUserDetail from './pages/admin/CleoUserDetail';
 import Unauthorized from './pages/Unauthorized';
 
 
@@ -242,6 +244,22 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <TimeOffRequests />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin/cleo-tracker" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <CleoTracker />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin/cleo-tracker/:userId" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <CleoUserDetail />
                       </ProtectedRoute>
                     } 
                   />

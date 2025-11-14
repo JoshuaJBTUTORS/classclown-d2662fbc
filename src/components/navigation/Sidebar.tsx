@@ -26,6 +26,7 @@ import {
   Film,
   FileSignature,
   BookMarked,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -209,6 +210,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: BookMarked,
           label: 'Exam Board Specs',
           href: '/admin/exam-board-specifications',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: Activity,
+          label: 'Cleo Tracker',
+          href: '/admin/cleo-tracker',
           roles: ['admin', 'owner'],
         },
       ]
