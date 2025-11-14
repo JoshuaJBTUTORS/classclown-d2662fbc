@@ -8,6 +8,7 @@ import SubscriptionManager from '@/components/learningHub/SubscriptionManager';
 import LiveTutoringUpgradeModal from '@/components/learningHub/LiveTutoringUpgradeModal';
 import { EnrolledCoursesSection } from '@/components/learningHub/EnrolledCoursesSection';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
+import LessonSearchBar from '@/components/learningHub/LessonSearchBar';
 import { BookOpen, Brain, Calendar, TrendingUp, Video, Sparkles, Bot } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -68,20 +69,7 @@ const LearningHubDashboard = () => {
         </p>
         
         <div className="flex flex-col gap-4 max-w-md mx-auto">
-          <Button
-            asChild
-            className="w-full flex items-center justify-center gap-2 text-lg py-6 font-bold"
-            style={{
-              background: 'linear-gradient(135deg, #1fb86b, #35d086)',
-              color: '#fff',
-              borderRadius: '999px',
-              boxShadow: '0 12px 26px rgba(22, 160, 90, 0.35)'
-            }}
-          >
-            <Link to="/learning-hub/my-courses" className="flex items-center justify-center gap-2">
-              🔥 Learn with Cleo
-            </Link>
-          </Button>
+          <LessonSearchBar placeholder="🔥 Search any topic to learn with Cleo..." />
           <Button
             onClick={handleAccessLiveTutoring}
             className="w-full flex items-center justify-center gap-2 text-lg py-6 font-bold"
