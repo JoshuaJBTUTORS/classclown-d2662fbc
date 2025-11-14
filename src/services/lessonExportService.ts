@@ -161,5 +161,28 @@ ${new Date().toISOString()}
       console.error('Error exporting JSON:', error);
       throw new Error('Failed to export as JSON');
     }
+  },
+
+  async generateLessonExam(conversationId: string): Promise<Blob> {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-lesson-exam', {
+        body: { conversationId }
+      });
+
+      if (error) throw error;
+      if (!data?.pdfData) throw new Error('No PDF data returned');
+
+      // Decode base64 PDF data
+      const binaryString = atob(data.pdfData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      return new Blob([bytes], { type: 'application/pdf' });
+    } catch (error) {
+      console.error('Error generating exam PDF:', error);
+      throw new Error('Failed to generate lesson exam PDF');
+    }
   }
 };

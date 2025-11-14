@@ -58,3 +58,21 @@ export interface ContentEvent {
   autoShow?: boolean;
   summary?: string;
 }
+
+export interface ExamQuestion {
+  question_number: number;
+  question_text: string;
+  question_type: 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation';
+  marks: number;
+  marking_scheme: string;
+  correct_answer: string;
+  keywords: string[];
+}
+
+export interface ExamGenerationResponse {
+  success: boolean;
+  pdfData?: string;
+  questionsGenerated?: number;
+  totalMarks?: number;
+  error?: string;
+}
