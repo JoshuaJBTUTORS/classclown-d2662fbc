@@ -55,30 +55,35 @@ const EducationLevelStep: React.FC<EducationLevelStepProps> = ({
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="text-center space-y-2 sm:space-y-3">
+    <div className="space-y-8 relative">
+      {/* Cleo Avatar */}
+      <div className="absolute top-0 right-4 text-5xl">
+        🧑🏻‍🔬
+      </div>
+      
+      <div className="text-center space-y-4">
         <motion.h2
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900"
+          transition={{ duration: 0.5 }}
+          className="text-4xl font-bold text-foreground"
         >
-          What are you studying for? 🎯
+          What are you studying for?
         </motion.h2>
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-sm sm:text-base lg:text-lg text-gray-600"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-lg text-muted-foreground"
         >
-          Let's personalize your learning journey with Cleo
+          Select your current education level
         </motion.p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
         {educationLevels.map((level, index) => {
           const Icon = level.icon;
-          const isSelected = data.educationLevel === level.id;
-
+          
           return (
             <motion.div
               key={level.id}
@@ -87,64 +92,26 @@ const EducationLevelStep: React.FC<EducationLevelStepProps> = ({
               transition={{ delay: index * 0.1 }}
             >
               <Card
-                className={`cursor-pointer transition-all duration-300 hover:shadow-xl ${
-                  isSelected
-                    ? 'ring-2 ring-purple-500 shadow-lg scale-105'
-                    : 'hover:scale-102'
-                }`}
+                className="cursor-pointer transition-all duration-300 hover:shadow-xl border-2 hover:border-primary hover:scale-[1.02] overflow-hidden group"
                 onClick={() => handleSelect(level.id as 'gcse' | '11plus', level.yearGroupId)}
               >
-                <CardContent className="p-6 sm:p-8">
-                  <div className="space-y-4">
-                    {/* Icon with gradient background */}
-                    <div
-                      className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${level.gradient} flex items-center justify-center mx-auto`}
-                    >
-                      <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                <CardContent className="p-8">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="bg-primary/10 p-4 rounded-full group-hover:bg-primary/20 transition-colors">
+                      <Icon className="h-12 w-12 text-primary" />
                     </div>
-
-                    {/* Title */}
-                    <div className="text-center">
-                      <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-                        {level.title}
-                      </h3>
-                      <p className="text-sm sm:text-base text-gray-600 mb-1">
-                        {level.description}
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-500 font-medium">
+                    <div>
+                      <h3 className="text-2xl font-bold text-foreground mb-2">{level.title}</h3>
+                      <p className="text-muted-foreground mb-2">{level.description}</p>
+                      <p className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full inline-block">
                         {level.ageRange}
                       </p>
                     </div>
-
-                    {/* Preview subjects */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <p className="text-xs sm:text-sm text-gray-500 text-center leading-relaxed">
+                    <div className="bg-muted/50 rounded-lg p-4 w-full">
+                      <p className="text-sm text-muted-foreground">
                         {level.preview}
                       </p>
                     </div>
-
-                    {/* Selection indicator */}
-                    {isSelected && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex items-center justify-center"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
-                          <svg
-                            className="w-5 h-5 text-white"
-                            fill="none"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path d="M5 13l4 4L19 7"></path>
-                          </svg>
-                        </div>
-                      </motion.div>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -154,18 +121,18 @@ const EducationLevelStep: React.FC<EducationLevelStepProps> = ({
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between items-center pt-4 sm:pt-6">
+      <div className="flex justify-between items-center pt-6">
         <Button
           type="button"
           variant="outline"
           onClick={onPrev}
           disabled={isFirst}
-          className="px-6 sm:px-8"
+          className="px-8"
         >
           ← Back
         </Button>
 
-        <div className="text-xs sm:text-sm text-gray-500">
+        <div className="text-sm text-muted-foreground">
           Select your education level to continue
         </div>
       </div>

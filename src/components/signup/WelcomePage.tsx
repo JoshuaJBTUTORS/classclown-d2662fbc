@@ -19,7 +19,12 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
           transition={{ duration: 0.6 }}
           className="max-w-4xl mx-auto text-center"
         >
-          <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm relative">
+            {/* Cleo Avatar */}
+            <div className="absolute top-4 right-4 text-5xl">
+              🧑🏻‍🔬
+            </div>
+            
             <CardContent className="p-12">
               {/* Header */}
               <motion.div
@@ -30,7 +35,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
               >
                 <div className="flex justify-center mb-6">
                   <div className="relative">
-                    <GraduationCap className="h-20 w-20 text-purple-600" />
+                    <GraduationCap className="h-20 w-20 text-primary" />
                     <motion.div
                       animate={{ rotate: [0, 10, -10, 0] }}
                       transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
@@ -40,10 +45,10 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
                     </motion.div>
                   </div>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
                   Meet Cleo, Your AI Tutor! 🤖
                 </h1>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                   Hi! I'm Cleo, your personal AI tutor. I'm here to help you achieve your academic goals with personalized learning, interactive lessons, and smart guidance tailored just for you. Let's get started on your learning journey!
                 </p>
               </motion.div>
@@ -81,19 +86,19 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
                 className="grid md:grid-cols-3 gap-6 mb-8"
               >
                 <div className="text-center">
-                  <Sparkles className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-                  <h3 className="font-semibold text-gray-900">AI-Powered Learning</h3>
-                  <p className="text-sm text-gray-600">Cleo adapts to your unique learning style and pace</p>
+                  <Sparkles className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <h3 className="font-semibold text-foreground">AI-Powered Learning</h3>
+                  <p className="text-sm text-muted-foreground">Cleo adapts to your unique learning style and pace</p>
                 </div>
                 <div className="text-center">
                   <Star className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                  <h3 className="font-semibold text-gray-900">Always Available</h3>
-                  <p className="text-sm text-gray-600">Learn anytime, anywhere with 24/7 AI support</p>
+                  <h3 className="font-semibold text-foreground">Always Available</h3>
+                  <p className="text-sm text-muted-foreground">Learn anytime, anywhere with 24/7 AI support</p>
                 </div>
                 <div className="text-center">
                   <Heart className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  <h3 className="font-semibold text-gray-900">Instant Feedback</h3>
-                  <p className="text-sm text-gray-600">Get immediate help and explanations when you need them</p>
+                  <h3 className="font-semibold text-foreground">Instant Feedback</h3>
+                  <p className="text-sm text-muted-foreground">Get immediate help and explanations when you need them</p>
                 </div>
               </motion.div>
 
@@ -106,11 +111,11 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
                 <Button
                   onClick={onStart}
                   size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
                   Let's Get Started! 🚀
                 </Button>
-                <p className="text-sm text-gray-500 mt-4">
+                <p className="text-sm text-muted-foreground mt-4">
                   Takes just 2 minutes • No credit card required
                 </p>
               </motion.div>
