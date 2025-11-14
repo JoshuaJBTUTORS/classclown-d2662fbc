@@ -77,6 +77,7 @@ import OnboardingWizard from './pages/OnboardingWizard';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
 import PricingPage from './pages/PricingPage';
 import HubAccessManagement from './pages/admin/HubAccessManagement';
+import Unauthorized from './pages/Unauthorized';
 
 
 function App() {
@@ -97,6 +98,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/interactive-signup" element={<InteractiveSignup />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
                 
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/book-trial-musa" element={<TrialBookingMusa />} />
