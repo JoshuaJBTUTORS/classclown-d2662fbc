@@ -7,6 +7,9 @@ import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearni
 import { useLessonPlan } from '@/hooks/useLessonPlan';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Play, ArrowLeft } from 'lucide-react';
 
 const LessonPlanning: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -15,12 +18,16 @@ const LessonPlanning: React.FC = () => {
   const [lessonPlanId, setLessonPlanId] = useState<string | null>(null);
   const [showPlanDisplay, setShowPlanDisplay] = useState(false);
   const [showLearning, setShowLearning] = useState(false);
+  const [isLessonCompleted, setIsLessonCompleted] = useState(false);
+  const [showLearnAgainDialog, setShowLearnAgainDialog] = useState(false);
+  const [completedDate, setCompletedDate] = useState<string | null>(null);
 
   const topic = searchParams.get('topic') || 'General Topic';
   const yearGroup = searchParams.get('yearGroup') || 'GCSE';
   const lessonId = searchParams.get('lessonId') || undefined;
   const moduleId = searchParams.get('moduleId') || undefined;
   const courseId = searchParams.get('courseId') || undefined;
+  const isCompletedParam = searchParams.get('isCompleted') === 'true';
 
   // Generate or retrieve conversation ID to prevent duplicate lesson plans
   const [conversationId] = useState(() => {
@@ -30,6 +37,31 @@ const LessonPlanning: React.FC = () => {
   });
 
   const { lessonPlan, contentBlocks, loading } = useLessonPlan(lessonPlanId);
+
+  // Check if lesson is completed on mount
+  useEffect(() => {
+    const checkCompletion = async () => {
+      if (!lessonId || !isCompletedParam) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('student_progress')
+        .select('id, completed_at')
+        .eq('user_id', user.id)
+        .eq('lesson_id', lessonId)
+        .eq('status', 'completed')
+        .maybeSingle();
+      
+      if (data && !error) {
+        setIsLessonCompleted(true);
+        setCompletedDate(data.completed_at);
+        setShowLearnAgainDialog(true);
+      }
+    };
+    checkCompletion();
+  }, [lessonId, isCompletedParam]);
 
   // Attempt to recover existing lesson plan by lessonId or topic+yearGroup on mount
   useEffect(() => {
@@ -150,13 +182,48 @@ const LessonPlanning: React.FC = () => {
     };
 
     return (
-      <LessonPlanDisplay
-        lessonPlan={lessonPlan}
-        contentCounts={contentCounts}
-        onStartLesson={handleStartLesson}
-        moduleId={moduleId}
-        courseId={courseId}
-      />
+      <>
+        {/* Learn Again Dialog */}
+        <Dialog open={showLearnAgainDialog} onOpenChange={setShowLearnAgainDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>You've completed this lesson! 🎉</DialogTitle>
+              <DialogDescription>
+                You completed "{topic}" {completedDate ? `on ${new Date(completedDate).toLocaleDateString()}` : 'previously'}. 
+                Would you like to learn it again or go back?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 mt-4">
+              <Button 
+                onClick={() => {
+                  setShowLearnAgainDialog(false);
+                  setShowLearning(true);
+                }}
+                className="w-full"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Learn Again
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(`/course/${courseId}/module/${moduleId}`)}
+                className="w-full"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Module
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <LessonPlanDisplay
+          lessonPlan={lessonPlan}
+          contentCounts={contentCounts}
+          onStartLesson={handleStartLesson}
+          moduleId={moduleId}
+          courseId={courseId}
+        />
+      </>
     );
   }
 
@@ -164,54 +231,122 @@ const LessonPlanning: React.FC = () => {
     // If we have a lesson plan, use it
     if (lessonPlan && contentBlocks.length > 0 && !loading) {
       return (
-        <CleoInteractiveLearning
-          lessonData={{
-            id: lessonId || lessonPlan.id,
-            title: topic,
-            topic: topic,
-            yearGroup: lessonPlan.year_group,
-            steps: lessonPlan.teaching_sequence.map((step, index) => ({
-              id: step.id,
-              order: index + 1,
-              title: step.title,
-              completed: false
-            })),
-            content: contentBlocks
-          }}
-          lessonPlan={lessonPlan}
-          moduleId={moduleId}
-          courseId={courseId}
-        />
+        <>
+          {/* Learn Again Dialog */}
+          <Dialog open={showLearnAgainDialog} onOpenChange={setShowLearnAgainDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>You've completed this lesson! 🎉</DialogTitle>
+                <DialogDescription>
+                  You completed "{topic}" {completedDate ? `on ${new Date(completedDate).toLocaleDateString()}` : 'previously'}. 
+                  Would you like to learn it again or go back?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-3 mt-4">
+                <Button 
+                  onClick={() => {
+                    setShowLearnAgainDialog(false);
+                  }}
+                  className="w-full"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Learn Again
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate(`/course/${courseId}/module/${moduleId}`)}
+                  className="w-full"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Module
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <CleoInteractiveLearning
+            lessonData={{
+              id: lessonId || lessonPlan.id,
+              title: topic,
+              topic: topic,
+              yearGroup: lessonPlan.year_group,
+              steps: lessonPlan.teaching_sequence.map((step, index) => ({
+                id: step.id,
+                order: index + 1,
+                title: step.title,
+                completed: false
+              })),
+              content: contentBlocks
+            }}
+            lessonPlan={lessonPlan}
+            moduleId={moduleId}
+            courseId={courseId}
+          />
+        </>
       );
     }
 
     // Fallback to simple mode if no plan
     return (
-      <CleoInteractiveLearning
-        lessonData={{
-          id: lessonId || 'fallback',
-          title: topic,
-          topic: topic,
-          yearGroup: yearGroup,
-          steps: [
-            { id: 'intro', order: 1, title: 'Introduction', completed: false },
-            { id: 'main', order: 2, title: 'Main Content', completed: false },
-          ],
-          content: []
-        }}
-        lessonPlan={{
-          id: 'fallback-lesson',
-          topic: topic,
-          year_group: yearGroup,
-          learning_objectives: [],
-          teaching_sequence: [
-            { id: 'intro', title: 'Introduction', duration_minutes: 10 },
-            { id: 'main', title: 'Main Content', duration_minutes: 20 },
-          ]
-        }}
-        moduleId={moduleId}
-        courseId={courseId}
-      />
+      <>
+        {/* Learn Again Dialog */}
+        <Dialog open={showLearnAgainDialog} onOpenChange={setShowLearnAgainDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>You've completed this lesson! 🎉</DialogTitle>
+              <DialogDescription>
+                You completed "{topic}" {completedDate ? `on ${new Date(completedDate).toLocaleDateString()}` : 'previously'}. 
+                Would you like to learn it again or go back?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 mt-4">
+              <Button 
+                onClick={() => {
+                  setShowLearnAgainDialog(false);
+                }}
+                className="w-full"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Learn Again
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(`/course/${courseId}/module/${moduleId}`)}
+                className="w-full"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Module
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <CleoInteractiveLearning
+          lessonData={{
+            id: lessonId || 'fallback',
+            title: topic,
+            topic: topic,
+            yearGroup: yearGroup,
+            steps: [
+              { id: 'intro', order: 1, title: 'Introduction', completed: false },
+              { id: 'main', order: 2, title: 'Main Content', completed: false },
+            ],
+            content: []
+          }}
+          lessonPlan={{
+            id: 'fallback-lesson',
+            topic: topic,
+            year_group: yearGroup,
+            learning_objectives: [],
+            teaching_sequence: [
+              { id: 'intro', title: 'Introduction', duration_minutes: 10 },
+              { id: 'main', title: 'Main Content', duration_minutes: 20 },
+            ]
+          }}
+          moduleId={moduleId}
+          courseId={courseId}
+        />
+      </>
     );
   }
 
