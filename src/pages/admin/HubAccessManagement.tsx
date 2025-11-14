@@ -137,7 +137,7 @@ const HubAccessManagement = () => {
   }
 
   if (!isAdmin && !isOwner) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/unauthorized" replace />;
   }
 
   const filteredUsers = users?.filter((user) => {
