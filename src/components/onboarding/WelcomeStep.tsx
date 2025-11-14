@@ -1,11 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface WelcomeStepProps {
   onNext: () => void;
 }
 
 export const WelcomeStep = ({ onNext }: WelcomeStepProps) => {
+  const { profile, primaryStudentName, userRole } = useAuth();
+  const displayName = (userRole === 'parent' && primaryStudentName) 
+    ? primaryStudentName 
+    : profile?.first_name || 'there';
+
   return (
     <div className="relative">
       {/* Cleo Avatar - Top Right */}
@@ -27,7 +33,7 @@ export const WelcomeStep = ({ onNext }: WelcomeStepProps) => {
         </motion.div>
 
         <h1 className="text-5xl md:text-6xl font-bold mb-4">
-          Meet Cleo
+          {displayName !== 'there' ? `Welcome, ${displayName}!` : 'Meet Cleo'}
         </h1>
 
         <p className="text-xl text-muted-foreground mb-12 max-w-2xl">

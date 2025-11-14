@@ -36,6 +36,7 @@ interface AuthContextType {
   session: Session | null;
   profile: UserProfile | null;
   parentProfile: ParentProfile | null;
+  primaryStudentName?: string;
   userRole: AppRole | null;
   hasCleoHubAccess: boolean;
   isAdmin: boolean;
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
+  const [primaryStudentName, setPrimaryStudentName] = useState<string | undefined>(undefined);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [hasCleoHubAccess, setHasCleoHubAccess] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
@@ -179,6 +181,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (parentData) {
         setParentProfile(parentData);
+        
+        // If user is a parent, fetch primary student's name
+        if (roleData?.role === 'parent') {
+          const { data: studentData } = await supabase
+            .from('students')
+            .select('first_name')
+            .eq('parent_id', parentData.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          
+          if (studentData?.first_name) {
+            setPrimaryStudentName(studentData.first_name);
+          }
+        }
       }
     } catch (error) {
       console.error('❌ AuthContext: Error fetching user data:', error);
@@ -350,6 +368,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     parentProfile,
+    primaryStudentName,
     userRole,
     hasCleoHubAccess,
     isAdmin,

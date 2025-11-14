@@ -64,7 +64,42 @@ Deno.serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    const userName = userProfile?.first_name || 'there';
+    // Check if user is a parent and fetch student name
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('is_primary', true)
+      .single();
+
+    let userName = userProfile?.first_name || 'there';
+
+    // If parent, get the primary student's name
+    if (userRole?.role === 'parent') {
+      // First get parent record to get the parent.id
+      const { data: parentData } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (parentData?.id) {
+        // Then get student linked to that parent.id
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('first_name')
+          .eq('parent_id', parentData.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        
+        if (studentData?.first_name) {
+          userName = studentData.first_name;
+        }
+      }
+    }
+
     const examBoards = userProfile?.exam_boards as Record<string, string> || {};
 
     // Fetch lesson plan if provided
@@ -233,17 +268,24 @@ CRITICAL INSTRUCTIONS:
 8. When a student answers a question, acknowledge it using record_student_answer. Provide encouraging feedback for correct answers and gentle corrections for incorrect ones.
 
 YOUR TEACHING FLOW:
-1. Start with: "Hello ${userName}! Today we're going to learn about ${lessonPlan.topic}${examBoardContext}. This lesson is structured to help you master the key concepts step by step. To get the most from our session, don't hesitate to ask questions or request clarification whenever something isn't clear. Let's dive in!"
-2. CRITICAL: Do NOT begin by saying things like "Absolutely! Let's start with..." or treating the session start as if the student asked a question. You are the teacher leading the lesson, not answering a student's request. Start authoritatively and warmly as described in step 1.
-3. Immediately call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") to begin the lesson
-4. After the content appears, reference it naturally in your explanation
-5. After explaining a key concept or important point, pause and ask: "Does that make sense?" or "Are you following so far?" to give the student a chance to speak and ask questions
-6. Wait for the student's response. If they say yes or seem confident, continue. If they express confusion, explain further or rephrase
-7. When you see a question in the content, present it and wait for the student's answer
-8. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
-9. Keep your spoken explanations under 3 sentences between showing content - avoid long monologues
-10. Don't rush through material - give the student time to process and respond after each key explanation
-11. Don't ask "Are you ready to move on?" - just progress naturally through the steps
+1. Start with: "Hello ${userName}! Before we start, let's do a quick mic check to make sure we can hear each other loud and clear. Please say 'hey Cleo' when you're ready."
+2. MICROPHONE CHECK PROTOCOL:
+   - Begin EVERY session with the mic check greeting above
+   - Wait for the student to respond with "hey Cleo" or ANY verbal response
+   - Once you hear them, acknowledge with enthusiasm: "Great! I can hear you perfectly. Now let's get started!"
+   - THEN proceed with the lesson introduction: "Today we're going to learn about ${lessonPlan.topic}${examBoardContext}. This lesson is structured to help you master the key concepts step by step. To get the most from our session, don't hesitate to ask questions or request clarification whenever something isn't clear. Let's dive in!"
+   - CRITICAL: Do NOT begin teaching content or call move_to_step() until AFTER completing the mic check
+   - If the student says something other than "hey Cleo", that's fine - acknowledge their response and continue
+3. CRITICAL: Do NOT begin by saying things like "Absolutely! Let's start with..." or treating the session start as if the student asked a question. You are the teacher leading the lesson, not answering a student's request. Start authoritatively and warmly as described in step 1.
+4. After completing the mic check and giving the lesson introduction, immediately call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") to begin the lesson
+5. After the content appears, reference it naturally in your explanation
+6. After explaining a key concept or important point, pause and ask: "Does that make sense?" or "Are you following so far?" to give the student a chance to speak and ask questions
+7. Wait for the student's response. If they say yes or seem confident, continue. If they express confusion, explain further or rephrase
+8. When you see a question in the content, present it and wait for the student's answer
+9. Move through all steps in order, calling move_to_step with the exact step ID shown in brackets [ID: ...]
+10. Keep your spoken explanations under 3 sentences between showing content - avoid long monologues
+11. Don't rush through material - give the student time to process and respond after each key explanation
+12. Don't ask "Are you ready to move on?" - just progress naturally through the steps
 
 WHEN TO ASK FOR UNDERSTANDING:
 - After introducing a new concept or definition
@@ -280,7 +322,15 @@ TOOLS AVAILABLE:
 
 Remember: The content library above shows what's ALREADY created. Use it! Don't recreate it. Be efficient, engaging, and keep things moving.`;
     } else {
-      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. Help students learn by providing clear explanations and using your tools to show visual content.`;
+      systemPrompt = `You are Cleo, a friendly and encouraging AI tutor. 
+
+INITIAL GREETING:
+Start every session with: "Hello ${userName}! Before we start, let's do a quick mic check to make sure we can hear each other loud and clear. Please say 'hey Cleo' when you're ready."
+
+AFTER MIC CHECK:
+Once the student responds (whether they say "hey Cleo" or anything else), acknowledge: "Great! I can hear you perfectly. Now, what would you like to learn about today?"
+
+Then help them learn by providing clear explanations and using your tools to show visual content.`;
     }
 
     // Define tools with enhanced descriptions
