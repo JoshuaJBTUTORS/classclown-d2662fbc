@@ -209,9 +209,9 @@ Deno.serve(async (req) => {
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
     // Connect to OpenAI Realtime API using subprotocol authentication
-    console.log("Connecting to OpenAI Realtime API (mini model for testing)...");
+    console.log("Connecting to OpenAI Realtime API (full model)...");
     const openAISocket = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview-2024-12-17",
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
       [
         'realtime',
         `openai-insecure-api-key.${OPENAI_API_KEY}`,
