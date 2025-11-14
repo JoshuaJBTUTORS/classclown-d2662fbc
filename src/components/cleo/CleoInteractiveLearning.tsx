@@ -382,8 +382,53 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 onTextSend={textChat.sendMessage}
                 contentBlocks={content}
                 visibleContentIds={visibleContent}
-                onAnswerQuestion={(qId, aId, correct) => {
+                onAnswerQuestion={async (qId, aId, correct) => {
                   console.log('Question answered:', { qId, aId, correct });
+                  
+                  // Find the question and answer text
+                  const questionBlock = content.find(b => b.id === qId);
+                  const questionData = questionBlock?.data as any;
+                  const answerText = questionData?.options?.find((o: any) => o.id === aId)?.text || '';
+                  
+                  // Send answer info to OpenAI so Cleo knows what was answered
+                  const answerMessage = correct 
+                    ? `The student answered correctly: "${answerText}". Acknowledge this briefly and continue teaching.`
+                    : `The student answered incorrectly: "${answerText}". Provide gentle correction and explanation.`;
+                  
+                  if (connectionState === 'connected') {
+                    controlsRef.current?.sendUserMessage(answerMessage);
+                  }
+                  
+                  // Record answer and award coins
+                  if (conversationId && questionBlock) {
+                    try {
+                      await cleoQuestionTrackingService.recordQuestionAnswer({
+                        conversation_id: conversationId,
+                        question_id: qId,
+                        question_text: questionData?.question || '',
+                        answer_id: aId,
+                        answer_text: answerText,
+                        is_correct: correct,
+                        time_taken_seconds: undefined,
+                        step_id: questionBlock.stepId || '',
+                      });
+                      
+                      // Show success notification for correct answers
+                      if (correct) {
+                        toast({
+                          title: '🪙 +2 coins earned!',
+                          description: 'Keep going to unlock mastery levels!',
+                        });
+                      }
+                    } catch (error) {
+                      console.error('Failed to record question answer:', error);
+                      toast({
+                        title: 'Failed to save your answer',
+                        description: 'Your progress may not be tracked',
+                        variant: 'destructive',
+                      });
+                    }
+                  }
                 }}
                 onAskHelp={(qId, questionText) => {
                   const helpMessage = `Can you help me with this question: "${questionText}"`;

@@ -230,6 +230,7 @@ CRITICAL INSTRUCTIONS:
 5. Pay attention to teaching notes (💡) - they guide how to use each piece of content
 6. After finishing each step and confirming student understanding, call complete_step with that step's ID
 7. When you've completed all teaching steps and the student has no more questions, call complete_lesson to end the session gracefully
+8. When a student answers a question, acknowledge it using record_student_answer. Provide encouraging feedback for correct answers and gentle corrections for incorrect ones.
 
 YOUR TEACHING FLOW:
 1. Start with: "Hello ${userName}! Today we're going to learn about ${lessonPlan.topic}${examBoardContext}. This lesson is structured to help you master the key concepts step by step. To get the most from our session, don't hesitate to ask questions or request clarification whenever something isn't clear. Let's dive in!"
@@ -400,6 +401,29 @@ Remember: The content library above shows what's ALREADY created. Use it! Don't 
             explanation: { type: "string", description: "Explanation shown after answering" }
           },
           required: ["id", "question", "options"]
+        }
+      },
+      {
+        type: "function",
+        name: "record_student_answer",
+        description: "Called when you observe the student answering a question. Use this to acknowledge their answer and provide feedback.",
+        parameters: {
+          type: "object",
+          properties: {
+            questionId: { 
+              type: "string", 
+              description: "The question ID" 
+            },
+            wasCorrect: { 
+              type: "boolean", 
+              description: "Whether the answer was correct" 
+            },
+            feedback: { 
+              type: "string", 
+              description: "Brief feedback to give the student" 
+            }
+          },
+          required: ["questionId", "wasCorrect", "feedback"]
         }
       }
     ];
