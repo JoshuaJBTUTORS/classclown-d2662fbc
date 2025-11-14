@@ -87,6 +87,14 @@ const LessonSearchBar: React.FC<LessonSearchBarProps> = ({
 
   return (
     <div ref={searchRef} className="relative w-full max-w-md mx-auto">
+      <style>{`
+        .lesson-search-input::placeholder {
+          color: rgba(255, 255, 255, 0.95);
+          opacity: 1;
+          font-weight: 600;
+        }
+      `}</style>
+      
       <div className="relative">
         <input
           ref={inputRef}
@@ -99,7 +107,7 @@ const LessonSearchBar: React.FC<LessonSearchBarProps> = ({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full px-6 py-4 text-lg font-bold rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          className="lesson-search-input w-full px-6 py-4 text-lg font-bold rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           style={{
             background: 'linear-gradient(135deg, #1fb86b, #35d086)',
             color: '#fff',
