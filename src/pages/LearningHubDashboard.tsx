@@ -7,6 +7,7 @@ import CourseCard from '@/components/learningHub/CourseCard';
 import SubscriptionManager from '@/components/learningHub/SubscriptionManager';
 import LiveTutoringUpgradeModal from '@/components/learningHub/LiveTutoringUpgradeModal';
 import { EnrolledCoursesSection } from '@/components/learningHub/EnrolledCoursesSection';
+import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { BookOpen, Brain, Calendar, TrendingUp, Video, Sparkles, Bot } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -46,9 +47,15 @@ const LearningHubDashboard = () => {
   };
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center px-4" style={{ background: '#fafaf9' }}>
+    <div className="w-full min-h-screen flex flex-col" style={{ background: '#fafaf9' }}>
+      {/* Top Bar with Voice Minutes Indicator */}
+      <div className="w-full px-4 sm:px-8 md:px-16 lg:px-24 py-4 flex justify-end">
+        <VoiceSessionIndicator />
+      </div>
+
       {/* Welcome Hero - Cleo Style */}
-      <div className="text-center w-full px-4 sm:px-8 md:px-16 lg:px-24 py-12">
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="text-center w-full px-4 sm:px-8 md:px-16 lg:px-24 py-12">
         <div className="cleo-avatar-circle mx-auto mb-4" style={{ fontSize: '46px' }}>
           {user?.user_metadata?.avatar || '😊'}
         </div>
@@ -92,8 +99,8 @@ const LearningHubDashboard = () => {
         <p className="mt-8 text-sm text-gray-600">
           <strong>Cleo says:</strong> Your focus is your greatest strategy. 💚
         </p>
+        </div>
       </div>
-
 
       {/* Upgrade Modal */}
       <LiveTutoringUpgradeModal 
