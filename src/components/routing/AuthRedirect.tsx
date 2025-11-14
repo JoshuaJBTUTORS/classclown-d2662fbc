@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage';
 
 const AuthRedirect = () => {
-  const { user, userRole, loading } = useAuth();
+  const { user, userRole, hasCleoHubAccess, loading } = useAuth();
 
   if (loading) {
     return (
@@ -14,9 +14,20 @@ const AuthRedirect = () => {
     );
   }
 
-  // If user is authenticated, redirect ALL users to learning hub dashboard
+  // If user is authenticated, apply routing logic
   if (user) {
-    return <Navigate to="/learning-hub" replace />;
+    // learning_hub_only users ALWAYS go to learning hub (they're restricted)
+    if (userRole === 'learning_hub_only') {
+      return <Navigate to="/learning-hub" replace />;
+    }
+    
+    // Other authenticated users: check feature flag
+    if (hasCleoHubAccess) {
+      return <Navigate to="/learning-hub" replace />;
+    } else {
+      // Users without Cleo hub access go to Calendar
+      return <Navigate to="/calendar" replace />;
+    }
   }
 
   // If user is not authenticated, show landing page

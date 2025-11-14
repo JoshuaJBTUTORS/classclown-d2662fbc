@@ -36,6 +36,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   parentProfile: ParentProfile | null;
   userRole: AppRole | null;
+  hasCleoHubAccess: boolean;
   isAdmin: boolean;
   isOwner: boolean;
   isTutor: boolean;
@@ -78,16 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [hasCleoHubAccess, setHasCleoHubAccess] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // Fetch user profile, role, and parent profile
   const fetchUserData = async (userId: string) => {
     try {
-      // Fetch basic profile
+      // Fetch basic profile with Cleo hub access flag
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, has_cleo_hub_access')
         .eq('id', userId)
         .maybeSingle();
 
@@ -149,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileData) {
         setProfile(profileData);
+        setHasCleoHubAccess(profileData.has_cleo_hub_access ?? false);
       }
 
       if (roleData) {
@@ -199,6 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           setParentProfile(null);
           setUserRole(null);
+          setHasCleoHubAccess(false);
           setTimeout(() => {
             toast({
               title: "Signed out",
@@ -314,6 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setParentProfile(null);
       setUserRole(null);
+      setHasCleoHubAccess(false);
       navigate('/');
     } catch (error: any) {
       console.error("Sign-out error:", error);
@@ -345,6 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     parentProfile,
     userRole,
+    hasCleoHubAccess,
     isAdmin,
     isOwner,
     isTutor,
