@@ -26,7 +26,6 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
     firstName: false,
     lastName: false,
     email: false,
-    phone: false,
   });
 
   const validateEmail = (email: string) => {
@@ -57,18 +56,13 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
         isValid = validateEmail(value);
         setValidationState(prev => ({ ...prev, email: isValid }));
         break;
-      case 'parentPhone':
-        isValid = validatePhone(value);
-        setValidationState(prev => ({ ...prev, phone: isValid }));
-        break;
     }
   };
 
   const canProceed = 
     data.parentFirstName.trim() &&
     data.parentLastName.trim() &&
-    validateEmail(data.parentEmail) &&
-    validatePhone(data.parentPhone);
+    validateEmail(data.parentEmail);
 
   return (
     <div className="min-h-screen bg-background p-6 sm:p-8">
