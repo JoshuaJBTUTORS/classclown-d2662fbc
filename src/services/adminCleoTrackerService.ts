@@ -149,8 +149,17 @@ export const getCleoUsers = async (filters: CleoUserFilters = {}): Promise<CleoU
     .select('id, first_name, last_name')
     .in('id', userIds);
   
+  // Get voice quotas for all users
+  const { data: voiceQuotas } = await supabase
+    .from('voice_session_quotas')
+    .select('user_id, total_minutes_allowed, minutes_remaining, bonus_minutes')
+    .in('user_id', userIds) as any;
+  
   const users: CleoUserSummary[] = profiles?.map(profile => {
     const userData = userMap.get(profile.id);
+    const quota = voiceQuotas?.find(q => q.user_id === profile.id);
+    const quotaRemaining = (quota?.minutes_remaining || 0) + (quota?.bonus_minutes || 0);
+    
     return {
       ...userData,
       userId: profile.id,
@@ -158,6 +167,8 @@ export const getCleoUsers = async (filters: CleoUserFilters = {}): Promise<CleoU
       lastName: profile.last_name || '',
       email: '',
       voiceMinutesUsed: Math.round(userData.voiceMinutesUsed * 10) / 10,
+      voiceQuotaRemaining: quotaRemaining,
+      voiceQuotaTotal: quota?.total_minutes_allowed || 0,
       accountType: 'student' as const,
     };
   }) || [];
@@ -193,9 +204,17 @@ export const getCleoUserDetail = async (userId: string): Promise<CleoUserDetail 
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   
-  // Voice quota is not tracked in a separate table, calculate from usage
-  const totalVoiceQuota = 0;
-  const voiceQuotaRemaining = 0;
+  // Get voice quota data
+  const { data: voiceQuota } = await supabase
+    .from('voice_session_quotas')
+    .select('total_minutes_allowed, minutes_remaining, bonus_minutes, minutes_used')
+    .eq('user_id', userId)
+    .order('period_start', { ascending: false })
+    .limit(1)
+    .single() as any;
+  
+  const totalVoiceQuota = voiceQuota?.total_minutes_allowed || 0;
+  const voiceQuotaRemaining = (voiceQuota?.minutes_remaining || 0) + (voiceQuota?.bonus_minutes || 0);
   
   const mappedConversations: CleoConversation[] = conversations?.map(conv => ({
     id: conv.id,
