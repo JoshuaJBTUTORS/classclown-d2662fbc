@@ -290,30 +290,42 @@ export class RealtimeChat {
   }
 
   private cleanup() {
+    console.log('🧹 Starting WebRTC cleanup...');
+    
     if (this.dc) {
+      console.log('📡 Closing data channel...');
       this.dc.close();
       this.dc = null;
     }
 
     if (this.pc) {
+      console.log('🌐 Closing RTCPeerConnection...');
       this.pc.close();
       this.pc = null;
     }
 
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
+      console.log('🎤 Stopping microphone tracks...');
+      this.localStream.getTracks().forEach(track => {
+        track.stop();
+        console.log(`  ✓ Stopped track: ${track.kind}`);
+      });
       this.localStream = null;
     }
 
     if (this.audioEl.srcObject) {
+      console.log('🔊 Stopping audio playback tracks...');
       const stream = this.audioEl.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log(`  ✓ Stopped track: ${track.kind}`);
+      });
       this.audioEl.srcObject = null;
     }
 
     this.sessionStartTime = null;
     this.conversationId = null;
 
-    console.log("✅ Cleanup complete");
+    console.log("✅ WebRTC cleanup complete - all connections closed");
   }
 }
