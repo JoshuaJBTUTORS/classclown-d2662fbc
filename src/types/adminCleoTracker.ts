@@ -29,6 +29,8 @@ export interface CleoUserSummary {
   textMessagesSent: number;
   lastActive: string;
   accountType: 'student' | 'parent';
+  voiceQuotaRemaining?: number;
+  voiceQuotaTotal?: number;
 }
 
 export interface CleoUserDetail extends CleoUserSummary {

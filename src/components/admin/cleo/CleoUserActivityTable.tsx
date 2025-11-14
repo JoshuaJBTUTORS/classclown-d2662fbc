@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, Search } from 'lucide-react';
 import { CleoUserSummary } from '@/types/adminCleoTracker';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
 interface CleoUserActivityTableProps {
   users: CleoUserSummary[];
@@ -59,6 +59,7 @@ export const CleoUserActivityTable = ({ users, onSearchChange }: CleoUserActivit
               <TableHead className="text-center">Completed</TableHead>
               <TableHead className="text-center">Voice (min)</TableHead>
               <TableHead className="text-center">Messages</TableHead>
+              <TableHead>Voice Quota</TableHead>
               <TableHead>Last Active</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -66,7 +67,7 @@ export const CleoUserActivityTable = ({ users, onSearchChange }: CleoUserActivit
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No users found with Cleo activity
                 </TableCell>
               </TableRow>
@@ -83,6 +84,14 @@ export const CleoUserActivityTable = ({ users, onSearchChange }: CleoUserActivit
                   <TableCell className="text-center">{user.lessonsCompleted}</TableCell>
                   <TableCell className="text-center">{user.voiceMinutesUsed.toFixed(1)}</TableCell>
                   <TableCell className="text-center">{user.textMessagesSent}</TableCell>
+                  <TableCell>
+                    <div className="text-sm font-medium">
+                      {user.voiceQuotaRemaining || 0} min
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      of {user.voiceQuotaTotal || 0} total
+                    </div>
+                  </TableCell>
                   <TableCell>{formatLastActive(user.lastActive)}</TableCell>
                   <TableCell className="text-right">
                     <Button
