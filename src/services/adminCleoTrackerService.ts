@@ -91,13 +91,7 @@ export const getAdminCleoStats = async (): Promise<AdminCleoStats> => {
 export const getCleoUsers = async (filters: CleoUserFilters = {}): Promise<CleoUserSummary[]> => {
   let query = supabase
     .from('cleo_conversations')
-    .select(`
-      user_id,
-      status,
-      text_message_count,
-      voice_duration_seconds,
-      updated_at
-    `);
+    .select('user_id, id, status, updated_at');
   
   if (filters.startDate) {
     query = query.gte('created_at', filters.startDate);
@@ -112,6 +106,32 @@ export const getCleoUsers = async (filters: CleoUserFilters = {}): Promise<CleoU
   if (!conversations || conversations.length === 0) {
     return [];
   }
+  
+  // Get all user IDs
+  const userIds = Array.from(new Set(conversations.map(c => c.user_id).filter(Boolean)));
+  
+  // Get conversation IDs for querying related data
+  const conversationIds = conversations.map(c => c.id);
+  
+  // Fetch voice session data
+  const { data: voiceSessions } = await supabase
+    .from('voice_session_logs')
+    .select('user_id, duration_seconds')
+    .in('user_id', userIds);
+  
+  // Fetch message counts per user
+  const { data: messages } = await supabase
+    .from('cleo_messages')
+    .select('conversation_id, role')
+    .in('conversation_id', conversationIds)
+    .eq('role', 'user');
+  
+  // Fetch completed lessons per user
+  const { data: completedLessons } = await supabase
+    .from('cleo_lesson_state')
+    .select('user_id, completed_at')
+    .in('user_id', userIds)
+    .not('completed_at', 'is', null);
   
   // Group by user
   const userMap = new Map<string, any>();
@@ -131,9 +151,6 @@ export const getCleoUsers = async (filters: CleoUserFilters = {}): Promise<CleoU
     
     existing.totalConversations++;
     existing.lessonsStarted++;
-    if (conv.status === 'completed') existing.lessonsCompleted++;
-    existing.voiceMinutesUsed += (conv.voice_duration_seconds || 0) / 60;
-    existing.textMessagesSent += conv.text_message_count || 0;
     
     if (new Date(conv.updated_at) > new Date(existing.lastActive)) {
       existing.lastActive = conv.updated_at;
@@ -142,8 +159,44 @@ export const getCleoUsers = async (filters: CleoUserFilters = {}): Promise<CleoU
     userMap.set(conv.user_id, existing);
   });
   
+  // Aggregate voice minutes per user
+  voiceSessions?.forEach(session => {
+    const userData = userMap.get(session.user_id);
+    if (userData) {
+      userData.voiceMinutesUsed += (session.duration_seconds || 0) / 60;
+    }
+  });
+  
+  // Count messages per user by conversation
+  const userMessageCounts = new Map<string, number>();
+  messages?.forEach(msg => {
+    const conv = conversations.find(c => c.id === msg.conversation_id);
+    if (conv?.user_id) {
+      userMessageCounts.set(conv.user_id, (userMessageCounts.get(conv.user_id) || 0) + 1);
+    }
+  });
+  
+  userMessageCounts.forEach((count, userId) => {
+    const userData = userMap.get(userId);
+    if (userData) {
+      userData.textMessagesSent = count;
+    }
+  });
+  
+  // Count completed lessons per user
+  const userCompletedCounts = new Map<string, number>();
+  completedLessons?.forEach(lesson => {
+    userCompletedCounts.set(lesson.user_id, (userCompletedCounts.get(lesson.user_id) || 0) + 1);
+  });
+  
+  userCompletedCounts.forEach((count, userId) => {
+    const userData = userMap.get(userId);
+    if (userData) {
+      userData.lessonsCompleted = count;
+    }
+  });
+  
   // Get user profiles
-  const userIds = Array.from(userMap.keys());
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, first_name, last_name')
