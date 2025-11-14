@@ -25,24 +25,38 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
 }) => {
   const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const lastVisibleRef = useRef<string | null>(null);
+  const previousVisibleCount = useRef<number>(0);
 
   useEffect(() => {
     if (visibleContent.length > 0) {
-      const latestContent = visibleContent[visibleContent.length - 1];
+      // Find the first NEW content item that was just added
+      let firstNewContent: string | null = null;
+      
+      // If content was added (length increased), find the first new item
+      if (visibleContent.length > previousVisibleCount.current) {
+        // Get the first item that wasn't in the previous state
+        firstNewContent = visibleContent[previousVisibleCount.current];
+      } else {
+        // Fallback to latest content if nothing new
+        firstNewContent = visibleContent[visibleContent.length - 1];
+      }
       
       // Only scroll if this is a new content block
-      if (latestContent !== lastVisibleRef.current) {
-        const element = contentRefs.current[latestContent];
+      if (firstNewContent && firstNewContent !== lastVisibleRef.current) {
+        const element = contentRefs.current[firstNewContent];
         if (element) {
           setTimeout(() => {
             element.scrollIntoView({
               behavior: 'smooth',
-              block: 'center',
+              block: 'start',
             });
           }, 100);
         }
-        lastVisibleRef.current = latestContent;
+        lastVisibleRef.current = firstNewContent;
       }
+      
+      // Update the count for next comparison
+      previousVisibleCount.current = visibleContent.length;
     }
   }, [visibleContent]);
 
