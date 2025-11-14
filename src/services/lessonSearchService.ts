@@ -1,9 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SearchResult {
-  lessonId: string;
-  lessonTitle: string;
-  lessonDescription: string | null;
+  type: 'lesson' | 'module';
+  lessonId?: string;
+  lessonTitle?: string;
+  lessonDescription?: string | null;
   moduleId: string;
   moduleTitle: string;
   courseId: string;
@@ -17,7 +18,26 @@ export const lessonSearchService = {
       return [];
     }
 
-    const { data, error } = await supabase
+    // Search for modules
+    const { data: moduleData, error: moduleError } = await supabase
+      .from('course_modules')
+      .select(`
+        id,
+        title,
+        description,
+        courses!inner (
+          id,
+          title,
+          subject,
+          status
+        )
+      `)
+      .ilike('title', `%${searchTerm}%`)
+      .eq('courses.status', 'published')
+      .limit(5);
+
+    // Search for lessons
+    const { data: lessonData, error: lessonError } = await supabase
       .from('course_lessons')
       .select(`
         id,
@@ -41,29 +61,49 @@ export const lessonSearchService = {
       .order('position', { ascending: true })
       .limit(10);
 
-    if (error) {
-      console.error('Search error:', error);
-      return [];
+    if (moduleError) {
+      console.error('Module search error:', moduleError);
     }
 
-    if (!data) return [];
+    if (lessonError) {
+      console.error('Lesson search error:', lessonError);
+    }
 
-    // Transform the data into our SearchResult format
-    const results: SearchResult[] = data.map((lesson: any) => {
-      const module = lesson.course_modules;
-      const course = module.courses;
-      
-      return {
-        lessonId: lesson.id,
-        lessonTitle: lesson.title,
-        lessonDescription: lesson.description,
-        moduleId: module.id,
-        moduleTitle: module.title,
-        courseId: course.id,
-        courseTitle: course.title,
-        courseSubject: course.subject,
-      };
-    });
+    const results: SearchResult[] = [];
+
+    // Add module results
+    if (moduleData) {
+      moduleData.forEach((module: any) => {
+        const course = module.courses;
+        results.push({
+          type: 'module',
+          moduleId: module.id,
+          moduleTitle: module.title,
+          courseId: course.id,
+          courseTitle: course.title,
+          courseSubject: course.subject,
+        });
+      });
+    }
+
+    // Add lesson results
+    if (lessonData) {
+      lessonData.forEach((lesson: any) => {
+        const module = lesson.course_modules;
+        const course = module.courses;
+        results.push({
+          type: 'lesson',
+          lessonId: lesson.id,
+          lessonTitle: lesson.title,
+          lessonDescription: lesson.description,
+          moduleId: module.id,
+          moduleTitle: module.title,
+          courseId: course.id,
+          courseTitle: course.title,
+          courseSubject: course.subject,
+        });
+      });
+    }
 
     return results;
   },

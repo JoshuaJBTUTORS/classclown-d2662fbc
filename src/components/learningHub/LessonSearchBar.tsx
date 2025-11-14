@@ -69,16 +69,20 @@ const LessonSearchBar: React.FC<LessonSearchBarProps> = ({
       case 'Enter':
         e.preventDefault();
         if (results[selectedIndex]) {
-          handleSelectLesson(results[selectedIndex]);
+          handleSelectResult(results[selectedIndex]);
         }
         break;
     }
   };
 
-  const handleSelectLesson = (result: SearchResult) => {
-    navigate(`/course/${result.courseId}/module/${result.moduleId}`, {
-      state: { selectedLessonId: result.lessonId }
-    });
+  const handleSelectResult = (result: SearchResult) => {
+    if (result.type === 'lesson') {
+      navigate(`/course/${result.courseId}/module/${result.moduleId}`, {
+        state: { selectedLessonId: result.lessonId }
+      });
+    } else {
+      navigate(`/course/${result.courseId}/module/${result.moduleId}`);
+    }
     setIsOpen(false);
     setSearchQuery('');
   };
@@ -141,8 +145,8 @@ const LessonSearchBar: React.FC<LessonSearchBarProps> = ({
             <div>
               {results.map((result, index) => (
                 <div
-                  key={result.lessonId}
-                  onClick={() => handleSelectLesson(result)}
+                  key={result.type === 'lesson' ? result.lessonId : result.moduleId}
+                  onClick={() => handleSelectResult(result)}
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={`p-4 cursor-pointer transition-colors border-b border-border last:border-b-0 ${
                     index === selectedIndex
@@ -154,16 +158,24 @@ const LessonSearchBar: React.FC<LessonSearchBarProps> = ({
                     📚 {result.courseTitle}
                     {result.courseSubject && ` • ${result.courseSubject}`}
                   </div>
-                  <div className="text-sm text-muted-foreground/80 mb-1 ml-4">
-                    └─ {result.moduleTitle}
-                  </div>
-                  <div className="font-semibold text-foreground ml-8">
-                    • {result.lessonTitle}
-                  </div>
-                  {result.lessonDescription && (
-                    <div className="text-sm text-muted-foreground mt-1 ml-8 line-clamp-1">
-                      {result.lessonDescription}
+                  {result.type === 'module' ? (
+                    <div className="font-semibold text-foreground ml-4">
+                      📖 {result.moduleTitle}
                     </div>
+                  ) : (
+                    <>
+                      <div className="text-sm text-muted-foreground/80 mb-1 ml-4">
+                        └─ {result.moduleTitle}
+                      </div>
+                      <div className="font-semibold text-foreground ml-8">
+                        • {result.lessonTitle}
+                      </div>
+                      {result.lessonDescription && (
+                        <div className="text-sm text-muted-foreground mt-1 ml-8 line-clamp-1">
+                          {result.lessonDescription}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
