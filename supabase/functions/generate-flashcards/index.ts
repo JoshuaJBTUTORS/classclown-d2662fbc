@@ -72,18 +72,18 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: 'You are an educational assistant that creates clear, concise flashcards. Generate 5-8 flashcards based on the lesson content. Each flashcard should have a front (question or term) and back (answer or definition).'
+              content: 'You are an educational assistant that creates high-quality flashcards for effective learning. Generate 8-12 flashcards based on the lesson content. Each flashcard should have a front (question or term) and back (answer or definition), a difficulty level (easy, medium, or hard), and optionally include visual cues or examples.'
             },
             {
               role: 'user',
-              content: `Create flashcards for this lesson about "${conversation.lesson_title}":\n\n${conversationText.slice(0, 3000)}`
+              content: `Create comprehensive flashcards for this lesson about "${conversation.lesson_title}":\n\n${conversationText.slice(0, 4000)}\n\nInclude various difficulty levels and focus on key concepts, definitions, and application questions.`
             }
           ],
           tools: [{
             type: 'function',
             function: {
               name: 'create_flashcards',
-              description: 'Create flashcards from lesson content',
+              description: 'Create flashcards from lesson content with difficulty levels',
               parameters: {
                 type: 'object',
                 properties: {
@@ -92,10 +92,25 @@ serve(async (req) => {
                     items: {
                       type: 'object',
                       properties: {
-                        front: { type: 'string' },
-                        back: { type: 'string' }
+                        front: { 
+                          type: 'string',
+                          description: 'The question or term'
+                        },
+                        back: { 
+                          type: 'string',
+                          description: 'The answer or definition'
+                        },
+                        difficulty: {
+                          type: 'string',
+                          enum: ['easy', 'medium', 'hard'],
+                          description: 'Difficulty level of the flashcard'
+                        },
+                        example: {
+                          type: 'string',
+                          description: 'Optional example or context'
+                        }
                       },
-                      required: ['front', 'back']
+                      required: ['front', 'back', 'difficulty']
                     }
                   }
                 },
@@ -122,11 +137,13 @@ serve(async (req) => {
       flashcards = [
         {
           front: `What did you learn about ${conversation.lesson_title}?`,
-          back: 'Review your lesson notes to remember the key concepts covered.'
+          back: 'Review your lesson notes to remember the key concepts covered.',
+          difficulty: 'medium'
         },
         {
           front: 'Key Topic: ' + conversation.lesson_title,
-          back: 'This lesson covered fundamental concepts. Review your conversation with Cleo for details.'
+          back: 'This lesson covered fundamental concepts. Review your conversation with Cleo for details.',
+          difficulty: 'easy'
         }
       ];
     }
@@ -135,8 +152,17 @@ serve(async (req) => {
     const noteInserts = flashcards.map((card: any) => ({
       user_id: user.id,
       lesson_id: conversation.lesson_id,
+      course_id: conversation.course_id,
       note_type: 'flashcard',
-      content: JSON.stringify(card),
+      title: card.front,
+      content: JSON.stringify({
+        front: card.front,
+        back: card.back,
+        example: card.example
+      }),
+      difficulty: card.difficulty || 'medium',
+      mastery_level: 0,
+      review_count: 0,
       created_at: new Date().toISOString(),
     }));
 

@@ -6,6 +6,7 @@ import { LessonPlanSidebar } from './LessonPlanSidebar';
 import { LessonResumeDialog } from './LessonResumeDialog';
 import { LessonCompleteDialog } from './LessonCompleteDialog';
 import { AssignPracticeDialog } from './AssignPracticeDialog';
+import { LessonProgressIndicator } from './LessonProgressIndicator';
 import { useContentSync } from '@/hooks/useContentSync';
 import { useTextChat } from '@/hooks/useTextChat';
 import { useCleoLessonState } from '@/hooks/useCleoLessonState';
@@ -369,6 +370,13 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           Cleo {isExamPractice ? '📝' : '🧑🏻‍🔬'}
         </div>
         <div className="flex items-center gap-3">
+          {/* Progress Indicator */}
+          <LessonProgressIndicator
+            totalSteps={lessonData.steps.length}
+            completedSteps={completedSteps}
+            activeStep={activeStep}
+          />
+          
           {/* Show real-time usage during voice session */}
           {connectionState === 'connected' && (
             <MinuteUsageTracker sessionStartTime={new Date(sessionStartTime)} />
