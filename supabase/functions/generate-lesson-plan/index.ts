@@ -32,16 +32,6 @@ serve(async (req) => {
     const { lessonId, topic, yearGroup, learningGoal, conversationId } = await req.json();
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId });
-    
-    // Detect teaching mode
-    const subjectLower = topic.toLowerCase();
-    const yearGroupLower = yearGroup?.toLowerCase() || '';
-    const isExamPractice = subjectLower.includes('11 plus') || 
-                          subjectLower.includes('11plus') || 
-                          yearGroupLower.includes('11+') ||
-                          yearGroupLower.includes('11 plus');
-    
-    console.log('Teaching mode:', isExamPractice ? 'exam_practice' : 'continuous_teaching');
 
     // Fetch learning objectives from the lesson if lessonId is provided
     let learningObjectives: string[] = [];

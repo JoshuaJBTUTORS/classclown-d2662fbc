@@ -297,7 +297,6 @@ const ProfileSettings = () => {
             <SelectValue placeholder="Select education level" />
           </SelectTrigger>
           <SelectContent className="bg-white z-50 border border-gray-200 shadow-lg">
-            <SelectItem value="11_plus">11 Plus</SelectItem>
             <SelectItem value="gcse">GCSE</SelectItem>
           </SelectContent>
         </Select>
@@ -316,7 +315,7 @@ const ProfileSettings = () => {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="font-semibold" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
-                {educationLevel === '11_plus' ? '11 Plus' : 'GCSE'}
+                GCSE
               </div>
               <Button
                 type="button"

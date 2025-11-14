@@ -17,7 +17,6 @@ interface SubjectSelectionStepProps {
   error?: string;
 }
 const CATEGORY_LABELS = {
-  'entrance': '11 Plus / Entrance Exams',
   'primary': 'Primary Education (KS1 & KS2)',
   'secondary': 'Secondary Education (KS3)',
   'gcse': 'GCSE & Year 11',

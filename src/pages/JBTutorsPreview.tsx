@@ -90,7 +90,7 @@ const JBTutorsPreview = () => {
   }, {
     number: "100%",
     label: "UK Curriculum",
-    subtitle: "Aligned with KS2, KS3, GCSE, and 11+ requirements"
+    subtitle: "Aligned with KS2, KS3, and GCSE requirements"
   }];
   return <div className="min-h-screen bg-black text-white">
       {/* Header */}
@@ -343,7 +343,7 @@ const JBTutorsPreview = () => {
               <div className="aspect-video rounded-lg overflow-hidden mb-3">
                 <img src={gcseMaterials} alt="GCSE Study Materials" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
               </div>
-              <h4 className="text-lg font-semibold text-white mb-2">GCSE & 11+ Preparation</h4>
+              <h4 className="text-lg font-semibold text-white mb-2">GCSE Preparation</h4>
               <p className="text-gray-400 text-sm">Comprehensive exam preparation with practice tests and revision schedules</p>
             </motion.div>
           </div>

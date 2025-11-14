@@ -25,7 +25,6 @@ import { TranscriptPanel } from './TranscriptPanel';
 import { QuickChatInput } from './QuickChatInput';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MessageSquare } from 'lucide-react';
-import { detectTeachingMode } from '@/utils/teachingModeDetection';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { MinuteUsageTracker } from '@/components/voice/MinuteUsageTracker';
 
@@ -61,15 +60,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   
   const lessonState = useCleoLessonState(conversationId || null);
   
-  // Detect teaching mode
-  const teachingMode = useMemo(() => {
-    const subject = lessonData.topic || lessonPlan?.topic || '';
-    const yearGrp = lessonData.yearGroup || lessonPlan?.year_group || '';
-    return detectTeachingMode(subject, yearGrp);
-  }, [lessonData, lessonPlan]);
-
-  const isExamPractice = teachingMode === 'exam_practice';
-  const sessionDuration = isExamPractice ? 30 : 15; // minutes
+  const sessionDuration = 15; // minutes
   
   const {
     activeStep,
@@ -367,7 +358,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       {/* Top Header Bar */}
       <div className="flex items-center justify-between px-8 pt-6 pb-4 max-w-[1120px] mx-auto">
         <div className="cleo-logo">
-          Cleo {isExamPractice ? '📝' : '🧑🏻‍🔬'}
+          Cleo 🧑🏻‍🔬
         </div>
         <div className="flex items-center gap-3">
           {/* Progress Indicator */}
@@ -472,7 +463,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                     description: "Cleo will guide you through the question",
                   });
                 }}
-                isExamPractice={isExamPractice}
                 conversationId={conversationId || null}
                 onContentAction={(contentId, action, message) => {
                   console.log('Content action:', { contentId, action, message });

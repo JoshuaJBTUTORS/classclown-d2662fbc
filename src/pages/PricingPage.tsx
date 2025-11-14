@@ -22,7 +22,7 @@ const PricingPage = () => {
       popular: false,
       features: [
         '50 minutes of AI voice tutoring',
-        'Full access to all GCSE & 11+ courses',
+        'Full access to all GCSE courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
       ],
@@ -34,7 +34,7 @@ const PricingPage = () => {
       popular: true,
       features: [
         '100 minutes of AI voice tutoring',
-        'Full access to all GCSE & 11+ courses',
+        'Full access to all GCSE courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
       ],
@@ -46,7 +46,7 @@ const PricingPage = () => {
       popular: false,
       features: [
         '250 minutes of AI voice tutoring',
-        'Full access to all GCSE & 11+ courses',
+        'Full access to all GCSE courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
         'Priority support',
@@ -59,7 +59,7 @@ const PricingPage = () => {
       popular: false,
       features: [
         '500 minutes of AI voice tutoring',
-        'Full access to all GCSE & 11+ courses',
+        'Full access to all GCSE courses',
         'AI-powered personalized learning',
         'Progress tracking & analytics',
         'Priority support',

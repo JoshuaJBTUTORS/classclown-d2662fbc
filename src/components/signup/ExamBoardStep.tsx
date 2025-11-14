@@ -54,14 +54,6 @@ const ExamBoardStep: React.FC<ExamBoardStepProps> = ({
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // If 11+ student, skip this step automatically
-  useEffect(() => {
-    if (data.educationLevel === '11plus') {
-      onNext();
-      return;
-    }
-  }, [data.educationLevel, onNext]);
-
   useEffect(() => {
     loadSelectedSubjects();
   }, [data.selectedSubjects]);

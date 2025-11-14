@@ -8,14 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 
-// Course emoji mapping for both 11+ and GCSE subjects
+// Course emoji mapping for GCSE subjects
 const courseEmojiMap: Record<string, string> = {
-  // 11 Plus subjects
-  '11 Plus Maths': '🔢',
-  '11 Plus English': '✏️',
-  '11 Plus VR': '🧬',
-  '11 Plus NVR': '⚛️',
-  
   // GCSE subjects
   'GCSE Maths': '📐',
   'GCSE English': '📝',
@@ -58,10 +52,9 @@ const getStreakText = (lastAccessedAt: string | null): string => {
 
 // Helper to extract core subject name from a subject string
 const extractCoreSubject = (subjectName: string): string => {
-  // Remove prefixes like "GCSE", "11 Plus", "A-Level"
+  // Remove prefixes like "GCSE", "A-Level"
   return subjectName
     .replace(/^GCSE\s+/i, '')
-    .replace(/^11 Plus\s+/i, '')
     .replace(/^A-Level\s+/i, '')
     .trim()
     .toLowerCase();

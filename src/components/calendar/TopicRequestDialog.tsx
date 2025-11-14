@@ -46,7 +46,6 @@ interface TopicRequestDialogProps {
 
 // Available subjects from the database
 const SUBJECTS = [
-  '11 Plus English', '11 Plus Maths', '11 Plus NVR', '11 Plus VR',
   'A-level Biology', 'A-level Chemistry', 'A-level Computer Science', 'A-level Maths', 'A-level Physics',
   'Early KS2 English', 'Early KS2 Maths',
   'GCSE Biology', 'GCSE Business', 'GCSE Chemistry', 'GCSE Combined Science', 'GCSE Computer Science', 'GCSE English', 'GCSE Maths', 'GCSE Physics',
