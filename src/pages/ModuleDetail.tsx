@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { learningHubService } from '@/services/learningHubService';
@@ -36,6 +36,7 @@ import { useCourseTopics } from '@/hooks/useCourseTopics';
 const ModuleDetail = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isOwner, user } = useAuth();
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -155,6 +156,17 @@ const ModuleDetail = () => {
       }
     };
   }, []);
+
+  // Handle selected lesson from search
+  useEffect(() => {
+    const selectedLessonId = location.state?.selectedLessonId;
+    if (selectedLessonId && lessons.length > 0) {
+      const lessonIndex = lessons.findIndex(l => l.id === selectedLessonId);
+      if (lessonIndex !== -1) {
+        setCurrentLessonIndex(lessonIndex);
+      }
+    }
+  }, [location.state?.selectedLessonId, lessons]);
 
   // Reset lesson index when module changes
   useEffect(() => {
