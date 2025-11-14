@@ -813,8 +813,11 @@ export type Database = {
       }
       cleo_lesson_plans: {
         Row: {
+          content_block_count: number | null
           conversation_id: string | null
           created_at: string | null
+          difficulty_score: number | null
+          estimated_duration_minutes: number | null
           id: string
           learning_objectives: Json | null
           lesson_id: string | null
@@ -825,8 +828,11 @@ export type Database = {
           year_group: string
         }
         Insert: {
+          content_block_count?: number | null
           conversation_id?: string | null
           created_at?: string | null
+          difficulty_score?: number | null
+          estimated_duration_minutes?: number | null
           id?: string
           learning_objectives?: Json | null
           lesson_id?: string | null
@@ -837,8 +843,11 @@ export type Database = {
           year_group: string
         }
         Update: {
+          content_block_count?: number | null
           conversation_id?: string | null
           created_at?: string | null
+          difficulty_score?: number | null
+          estimated_duration_minutes?: number | null
           id?: string
           learning_objectives?: Json | null
           lesson_id?: string | null
@@ -1379,8 +1388,13 @@ export type Database = {
           content: string | null
           course_id: string
           created_at: string
+          difficulty: string | null
           id: string
+          last_reviewed_at: string | null
           lesson_id: string | null
+          mastery_level: number | null
+          note_type: string | null
+          review_count: number | null
           title: string
           updated_at: string
           user_id: string
@@ -1389,8 +1403,13 @@ export type Database = {
           content?: string | null
           course_id: string
           created_at?: string
+          difficulty?: string | null
           id?: string
+          last_reviewed_at?: string | null
           lesson_id?: string | null
+          mastery_level?: number | null
+          note_type?: string | null
+          review_count?: number | null
           title: string
           updated_at?: string
           user_id: string
@@ -1399,8 +1418,13 @@ export type Database = {
           content?: string | null
           course_id?: string
           created_at?: string
+          difficulty?: string | null
           id?: string
+          last_reviewed_at?: string | null
           lesson_id?: string | null
+          mastery_level?: number | null
+          note_type?: string | null
+          review_count?: number | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -1976,6 +2000,60 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_completion_badges: {
+        Row: {
+          badge_emoji: string | null
+          badge_name: string
+          badge_type: string
+          conversation_id: string | null
+          created_at: string | null
+          earned_at: string | null
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          badge_emoji?: string | null
+          badge_name: string
+          badge_type: string
+          conversation_id?: string | null
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          badge_emoji?: string | null
+          badge_name?: string
+          badge_type?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_completion_badges_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cleo_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_completion_badges_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -2767,6 +2845,7 @@ export type Database = {
           stripe_annual_price_id: string | null
           stripe_monthly_price_id: string | null
           updated_at: string | null
+          voice_minutes_per_month: number | null
           voice_sessions_per_month: number
         }
         Insert: {
@@ -2782,6 +2861,7 @@ export type Database = {
           stripe_annual_price_id?: string | null
           stripe_monthly_price_id?: string | null
           updated_at?: string | null
+          voice_minutes_per_month?: number | null
           voice_sessions_per_month: number
         }
         Update: {
@@ -2797,6 +2877,7 @@ export type Database = {
           stripe_annual_price_id?: string | null
           stripe_monthly_price_id?: string | null
           updated_at?: string | null
+          voice_minutes_per_month?: number | null
           voice_sessions_per_month?: number
         }
         Relationships: []
@@ -2867,6 +2948,7 @@ export type Database = {
           exam_boards: Json | null
           first_name: string | null
           gcse_subject_ids: string[] | null
+          has_cleo_hub_access: boolean | null
           has_completed_trial: boolean | null
           id: string
           last_name: string | null
@@ -2887,6 +2969,7 @@ export type Database = {
           exam_boards?: Json | null
           first_name?: string | null
           gcse_subject_ids?: string[] | null
+          has_cleo_hub_access?: boolean | null
           has_completed_trial?: boolean | null
           id: string
           last_name?: string | null
@@ -2907,6 +2990,7 @@ export type Database = {
           exam_boards?: Json | null
           first_name?: string | null
           gcse_subject_ids?: string[] | null
+          has_cleo_hub_access?: boolean | null
           has_completed_trial?: boolean | null
           id?: string
           last_name?: string | null
@@ -4148,6 +4232,7 @@ export type Database = {
           learning_persona: string | null
           level: number | null
           longest_streak_days: number | null
+          total_coins: number | null
           total_xp: number | null
           updated_at: string
           user_id: string
@@ -4162,6 +4247,7 @@ export type Database = {
           learning_persona?: string | null
           level?: number | null
           longest_streak_days?: number | null
+          total_coins?: number | null
           total_xp?: number | null
           updated_at?: string
           user_id: string
@@ -4176,6 +4262,7 @@ export type Database = {
           learning_persona?: string | null
           level?: number | null
           longest_streak_days?: number | null
+          total_coins?: number | null
           total_xp?: number | null
           updated_at?: string
           user_id?: string
@@ -4456,37 +4543,49 @@ export type Database = {
       }
       voice_session_quotas: {
         Row: {
+          bonus_minutes: number | null
           bonus_sessions: number | null
           created_at: string | null
           id: string
+          minutes_remaining: number | null
+          minutes_used: number | null
           period_end: string
           period_start: string
           sessions_remaining: number
           sessions_used: number | null
+          total_minutes_allowed: number | null
           total_sessions_allowed: number
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          bonus_minutes?: number | null
           bonus_sessions?: number | null
           created_at?: string | null
           id?: string
+          minutes_remaining?: number | null
+          minutes_used?: number | null
           period_end: string
           period_start: string
           sessions_remaining: number
           sessions_used?: number | null
+          total_minutes_allowed?: number | null
           total_sessions_allowed: number
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          bonus_minutes?: number | null
           bonus_sessions?: number | null
           created_at?: string | null
           id?: string
+          minutes_remaining?: number | null
+          minutes_used?: number | null
           period_end?: string
           period_start?: string
           sessions_remaining?: number
           sessions_used?: number | null
+          total_minutes_allowed?: number | null
           total_sessions_allowed?: number
           updated_at?: string | null
           user_id?: string
@@ -4706,6 +4805,10 @@ export type Database = {
       parent_notified_in_cycle: {
         Args: { cycle_id_param: string; parent_id_param: string }
         Returns: boolean
+      }
+      toggle_cleo_hub_access: {
+        Args: { enable_access: boolean; target_user_id: string }
+        Returns: undefined
       }
       trigger_hourly_lesson_processing: { Args: never; Returns: undefined }
       user_can_edit_assessment: {
