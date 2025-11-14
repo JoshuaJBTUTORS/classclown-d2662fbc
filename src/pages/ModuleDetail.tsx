@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { learningHubService } from '@/services/learningHubService';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -99,6 +100,29 @@ const ModuleDetail = () => {
 
   // Fetch available topics from current module lessons
   const { data: availableTopics = [] } = useCourseTopics(courseId!, moduleId!);
+
+  // Fetch completed lessons for the current user and module
+  const { data: completedLessonIds = [] } = useQuery({
+    queryKey: ['completed-lessons', moduleId, user?.id],
+    queryFn: async () => {
+      if (!user?.id || !availableTopics.length) return [];
+      
+      const { data, error } = await supabase
+        .from('student_progress')
+        .select('lesson_id')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .in('lesson_id', availableTopics.map(t => t.id));
+      
+      if (error) {
+        console.error('Error fetching completed lessons:', error);
+        return [];
+      }
+      
+      return data?.map(d => d.lesson_id) || [];
+    },
+    enabled: !!moduleId && !!user && availableTopics.length > 0
+  });
 
   // All modules always accessible - sequential access removed
   const { data: hasModuleAccess, isLoading: accessLoading } = useQuery({
@@ -314,6 +338,7 @@ const ModuleDetail = () => {
         userName={user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
         topics={availableTopics}
         yearGroup={course.subject || 'GCSE'}
+        completedLessonIds={completedLessonIds}
       />
 
       {/* Module Assessment Dialog */}
