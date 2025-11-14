@@ -136,10 +136,6 @@ const HubAccessManagement = () => {
     );
   }
 
-  if (!isAdmin && !isOwner) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
   const filteredUsers = users?.filter((user) => {
     const searchLower = searchQuery.toLowerCase();
     const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
