@@ -436,7 +436,7 @@ Remember: The content library above shows what's ALREADY created. Use it! Don't 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-realtime-preview-2024-10-01",
+        model: "gpt-realtime",
         voice: "ballad",
         instructions: systemPrompt,
         modalities: ["text", "audio"],
