@@ -133,27 +133,32 @@ const SubjectStep: React.FC<SubjectStepProps> = ({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
-      >
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+      <div className="text-center space-y-4">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-4xl font-bold text-foreground"
+        >
           {data.educationLevel === 'gcse' 
-            ? 'What subjects do you want to study? 📖' 
-            : 'What areas do you want to focus on? 🎯'}
-        </h2>
-        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto mb-4">
+            ? 'What subjects do you want to study?' 
+            : 'What areas do you want to focus on?'}
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-lg text-muted-foreground max-w-2xl mx-auto"
+        >
           Select all the subjects Cleo should help you with
-        </p>
+        </motion.p>
         <Button
           variant="outline"
           onClick={handleSelectAll}
-          className="mb-4"
+          className="border-primary/50 hover:bg-primary/10 hover:border-primary"
         >
           {(data.selectedSubjects?.length || 0) === subjects.length ? 'Deselect All' : 'Select All'}
         </Button>
-      </motion.div>
+      </div>
 
       <div className="max-w-4xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -170,18 +175,18 @@ const SubjectStep: React.FC<SubjectStepProps> = ({
                 className={`p-4 cursor-pointer transition-all duration-300 relative ${
                   isSelected(subject.id)
                     ? 'border-2 border-primary bg-primary/5 shadow-md'
-                    : 'border-2 border-gray-200 hover:border-primary/50'
+                    : 'border-2 border-transparent hover:border-primary/30'
                 }`}
                 onClick={() => handleSubjectToggle(subject.id)}
               >
                 <div className="text-center space-y-2">
-                  <div className="text-4xl">{subjectEmojis[subject.name] || '📚'}</div>
-                  <h4 className="font-semibold text-sm text-gray-900">{subject.name}</h4>
+                  <div className="text-5xl">{subjectEmojis[subject.name] || '📚'}</div>
+                  <h4 className="font-semibold text-sm text-foreground">{subject.name}</h4>
                   {isSelected(subject.id) && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute top-2 right-2 bg-primary text-white rounded-full p-1"
+                      className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1"
                     >
                       <Check className="h-3 w-3" />
                     </motion.div>
@@ -197,7 +202,7 @@ const SubjectStep: React.FC<SubjectStepProps> = ({
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-sm text-red-500 text-center"
+          className="text-sm text-muted-foreground text-center font-medium"
         >
           Please select at least one subject
         </motion.p>
