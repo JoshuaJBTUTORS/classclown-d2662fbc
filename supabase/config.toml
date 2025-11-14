@@ -141,6 +141,12 @@ verify_jwt = true
 [functions.generate-lesson-exam]
 verify_jwt = true
 
+[functions.add-minutes-bal]
+verify_jwt = false
+
+[functions.admin-add-voice-minutes]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328
