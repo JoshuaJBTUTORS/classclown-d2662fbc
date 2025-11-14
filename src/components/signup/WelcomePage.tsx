@@ -2,8 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { GraduationCap, Star, Heart, Sparkles } from 'lucide-react';
+import { Sparkles, Star, Heart } from 'lucide-react';
 
 interface WelcomePageProps {
   onStart: () => void;
@@ -11,116 +10,122 @@ interface WelcomePageProps {
 
 const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+      <div className="container mx-auto max-w-6xl">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto text-center"
+          className="space-y-8"
         >
-          <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm relative">
-            {/* Cleo Avatar */}
-            <div className="absolute top-4 right-4 text-5xl">
-              🧑🏻‍🔬
-            </div>
-            
-            <CardContent className="p-12">
-              {/* Header */}
+          {/* Header Section */}
+          <div className="flex items-start justify-between gap-8">
+            <div className="flex-1 space-y-6">
+              {/* Cleo Logo */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h2 className="text-primary text-2xl font-semibold">Cleo</h2>
+              </motion.div>
+
+              {/* Main Heading */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.6 }}
-                className="mb-8"
+                transition={{ delay: 0.3 }}
               >
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    <GraduationCap className="h-20 w-20 text-primary" />
-                    <motion.div
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                      className="absolute -top-2 -right-2"
-                    >
-                      <Sparkles className="h-8 w-8 text-yellow-500" />
-                    </motion.div>
-                  </div>
-                </div>
-                <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-                  Meet Cleo, Your AI Tutor! 🤖
+                <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight mb-6">
+                  Meet Cleo, Your<br />AI Tutor!
                 </h1>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                  Hi! I'm Cleo, your personal AI tutor. I'm here to help you achieve your academic goals with personalized learning, interactive lessons, and smart guidance tailored just for you. Let's get started on your learning journey!
+                <p className="text-lg text-foreground/80 max-w-2xl leading-relaxed">
+                  Hi! I'm Cleo, your personal AI tutor. I'm here to help you achieve your academic goals with personalized learning, interactive lessons, and smart guidance tailored just for you. Let's get started on your learning journey.
                 </p>
               </motion.div>
+            </div>
 
-              {/* Happy Students Image Placeholder */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                className="mb-8"
-              >
-                <div className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl p-8 mb-6">
-                  <div className="flex justify-center items-center space-x-4 mb-4">
-                    <div className="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center">
-                      <span className="text-2xl">😊</span>
-                    </div>
-                    <div className="w-16 h-16 bg-purple-200 rounded-full flex items-center justify-center">
-                      <span className="text-2xl">📚</span>
-                    </div>
-                    <div className="w-16 h-16 bg-green-200 rounded-full flex items-center justify-center">
-                      <span className="text-2xl">🌟</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 font-medium">
-                    Join students learning smarter with Cleo!
-                  </p>
-                </div>
-              </motion.div>
+            {/* Cleo Avatar */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4, type: "spring" }}
+              className="flex-shrink-0"
+            >
+              <div className="text-9xl">
+                🧑🏻‍🔬
+              </div>
+            </motion.div>
+          </div>
 
-              {/* Key Benefits */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
-                className="grid md:grid-cols-3 gap-6 mb-8"
-              >
-                <div className="text-center">
-                  <Sparkles className="h-8 w-8 text-primary mx-auto mb-2" />
-                  <h3 className="font-semibold text-foreground">AI-Powered Learning</h3>
-                  <p className="text-sm text-muted-foreground">Cleo adapts to your unique learning style and pace</p>
-                </div>
-                <div className="text-center">
-                  <Star className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                  <h3 className="font-semibold text-foreground">Always Available</h3>
-                  <p className="text-sm text-muted-foreground">Learn anytime, anywhere with 24/7 AI support</p>
-                </div>
-                <div className="text-center">
-                  <Heart className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  <h3 className="font-semibold text-foreground">Instant Feedback</h3>
-                  <p className="text-sm text-muted-foreground">Get immediate help and explanations when you need them</p>
-                </div>
-              </motion.div>
+          {/* Happy Students Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl p-8 text-center"
+          >
+            <div className="flex justify-center items-center gap-6 mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-3xl">😊</span>
+              </div>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-3xl">📊</span>
+              </div>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-3xl">⭐</span>
+              </div>
+            </div>
+            <p className="text-foreground font-medium text-lg">
+              Join students learning smarter with Cleo!
+            </p>
+          </motion.div>
 
-              {/* CTA Button */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.8, duration: 0.5 }}
-              >
-                <Button
-                  onClick={onStart}
-                  size="lg"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  Let's Get Started! 🚀
-                </Button>
-                <p className="text-sm text-muted-foreground mt-4">
-                  Takes just 2 minutes • No credit card required
-                </p>
-              </motion.div>
-            </CardContent>
-          </Card>
+          {/* Features Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="grid md:grid-cols-3 gap-8 py-8"
+          >
+            <div className="text-center space-y-3">
+              <Sparkles className="h-10 w-10 text-primary mx-auto" />
+              <h3 className="font-semibold text-foreground text-lg">AI-Powered Learning</h3>
+              <p className="text-foreground/70 text-sm leading-relaxed">
+                Cleo adapts to your unique learning style and pace
+              </p>
+            </div>
+            <div className="text-center space-y-3">
+              <Star className="h-10 w-10 text-primary mx-auto" />
+              <h3 className="font-semibold text-foreground text-lg">Always-Available</h3>
+              <p className="text-foreground/70 text-sm leading-relaxed">
+                Learn anytime, anywhere with 24/7 AI support
+              </p>
+            </div>
+            <div className="text-center space-y-3">
+              <Heart className="h-10 w-10 text-primary mx-auto" />
+              <h3 className="font-semibold text-foreground text-lg">Instant Feedback</h3>
+              <p className="text-foreground/70 text-sm leading-relaxed">
+                Get immediate help and explanations when you need them
+              </p>
+            </div>
+          </motion.div>
+
+          {/* CTA Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="text-center pt-4"
+          >
+            <Button
+              onClick={onStart}
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-16 py-6 text-xl font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              Let's Get Started!
+            </Button>
+          </motion.div>
         </motion.div>
       </div>
     </div>
