@@ -94,7 +94,6 @@ const EditAssessmentDetails: React.FC<EditAssessmentDetailsProps> = ({
   }, {} as Record<string, typeof subjects>);
 
   const categoryLabels: Record<string, string> = {
-    'entrance': '11 Plus / Entrance Exams',
     'primary': 'Primary Education (KS1 & KS2)',
     'secondary': 'Secondary Education (KS3)',
     'gcse': 'GCSE & Year 11',

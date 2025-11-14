@@ -55,10 +55,6 @@ const getSubjectIcon = (subject: string) => {
       normalizedSubject.includes('technology')) {
     return Computer;
   }
-  if (normalizedSubject.includes('11+') || normalizedSubject.includes('entrance')) {
-    return Trophy;
-  }
-  
   return GraduationCap; // Default icon
 };
 

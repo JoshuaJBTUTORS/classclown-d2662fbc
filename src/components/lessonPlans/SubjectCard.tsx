@@ -29,9 +29,6 @@ const getSubjectGradient = (subject: string) => {
   if (normalizedSubject.includes('science')) {
     return 'from-[hsl(var(--light-blue))]/20 via-[hsl(var(--light-green))]/15 to-[hsl(var(--medium-green))]/10';
   }
-  if (normalizedSubject.includes('11+') || normalizedSubject.includes('entrance')) {
-    return 'from-[hsl(var(--deep-purple-blue))]/25 via-[hsl(var(--medium-blue))]/20 to-[hsl(var(--light-blue))]/15';
-  }
   
   return 'from-[hsl(var(--light-green))]/20 via-[hsl(var(--medium-green))]/15 to-[hsl(var(--deep-green))]/10';
 };
@@ -47,9 +44,6 @@ const getSubjectAccent = (subject: string) => {
   }
   if (normalizedSubject.includes('science')) {
     return 'text-[hsl(var(--light-blue))]';
-  }
-  if (normalizedSubject.includes('11+') || normalizedSubject.includes('entrance')) {
-    return 'text-[hsl(var(--deep-purple-blue))]';
   }
   
   return 'text-[hsl(var(--medium-green))]';

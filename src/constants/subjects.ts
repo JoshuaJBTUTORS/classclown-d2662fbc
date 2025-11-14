@@ -1,9 +1,5 @@
 
 export const LESSON_SUBJECTS = [
-  '11 Plus Maths',
-  '11 Plus English',
-  '11 Plus VR',
-  '11 Plus NVR',
   'Early KS2 Maths',
   'Early KS2 English',
   'KS2 Maths',
@@ -46,12 +42,6 @@ export type LessonSubject = typeof LESSON_SUBJECTS[number];
 
 // Educational stage categories for better organization - removed as const from subjects arrays
 export const EDUCATIONAL_STAGES = {
-  '11_plus': {
-    label: '11 Plus',
-    description: 'Preparation for grammar school entrance',
-    subjects: ['11 Plus Maths', '11 Plus English', '11 Plus VR', '11 Plus NVR'],
-    icon: 'GraduationCap'
-  },
   'ks2': {
     label: 'Key Stage 2',
     description: 'Ages 7-11 primary education',

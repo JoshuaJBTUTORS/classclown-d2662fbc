@@ -93,39 +93,9 @@ const LessonPlanning: React.FC = () => {
       }
 
       if (data) {
-        // For exam practice mode (11+), check compliance
-        const subjectLower = topic.toLowerCase();
-        const yearGroupLower = yearGroup?.toLowerCase() || '';
-        const isExamPractice = subjectLower.includes('11 plus') || 
-                              subjectLower.includes('11plus') || 
-                              yearGroupLower.includes('11+') ||
-                              yearGroupLower.includes('11 plus');
-        
-        if (isExamPractice) {
-          // Validate compliance
-          const steps = data.teaching_sequence || [];
-          const hasTwoSteps = steps.length === 2;
-          const practiceStep = steps.find((s: any) => 
-            (s.title || '').toLowerCase().includes('practice')
-          );
-          const questionCount = practiceStep?.content_blocks?.filter(
-            (b: any) => b.type === 'question'
-          ).length || 0;
-          
-          if (hasTwoSteps && questionCount >= 20) {
-            console.log('Recovered compliant exam practice plan:', data.id);
-            setLessonPlanId(data.id);
-            setShowLearning(true);
-          } else {
-            console.log(`Existing 11+ plan is non-compliant (steps: ${steps.length}, questions: ${questionCount}), showing planning screen`);
-            // Don't set lessonPlanId - force fresh generation
-          }
-        } else {
-          // Non-exam practice: use existing plan
-          console.log('Recovered existing lesson plan:', data.id);
-          setLessonPlanId(data.id);
-          setShowLearning(true);
-        }
+        console.log('Recovered existing lesson plan:', data.id);
+        setLessonPlanId(data.id);
+        setShowLearning(true);
       }
     };
 

@@ -21,38 +21,15 @@ const EducationLevelStep: React.FC<EducationLevelStepProps> = ({
   onPrev,
   isFirst,
 }) => {
-  const handleSelect = (level: 'gcse' | '11plus', yearGroupId: string) => {
+  const handleContinue = () => {
     updateData({ 
-      educationLevel: level,
-      yearGroupId,
+      educationLevel: 'gcse',
+      yearGroupId: '041d7c7c-3b83-417c-a616-e26fe264cf50', // GCSE year group ID
       region: 'england',
       curriculum: 'english',
     });
     setTimeout(() => onNext(), 300);
   };
-
-  const educationLevels = [
-    {
-      id: 'gcse',
-      yearGroupId: '041d7c7c-3b83-417c-a616-e26fe264cf50', // GCSE year group ID
-      icon: BookOpen,
-      title: 'GCSE',
-      description: "I'm preparing for my GCSE exams",
-      ageRange: 'Ages 14-16 • Years 10-11',
-      preview: 'Biology, Chemistry, Physics, Maths, English...',
-      gradient: 'from-blue-500 to-purple-500',
-    },
-    {
-      id: '11plus',
-      yearGroupId: 'e434ace2-5fdf-4224-9f33-6211727570a8', // 11 Plus year group ID
-      icon: GraduationCap,
-      title: '11 Plus',
-      description: "I'm preparing for 11+ entrance exams",
-      ageRange: 'Ages 10-11 • Year 6',
-      preview: 'English, Maths, Verbal Reasoning, Non-Verbal Reasoning',
-      gradient: 'from-green-500 to-teal-500',
-    },
-  ];
 
   return (
     <div className="space-y-8 relative">
@@ -80,45 +57,39 @@ const EducationLevelStep: React.FC<EducationLevelStepProps> = ({
         </motion.p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {educationLevels.map((level, index) => {
-          const Icon = level.icon;
-          
-          return (
-            <motion.div
-              key={level.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card
-                className="cursor-pointer transition-all duration-300 hover:shadow-xl border-2 hover:border-primary hover:scale-[1.02] overflow-hidden group"
-                onClick={() => handleSelect(level.id as 'gcse' | '11plus', level.yearGroupId)}
-              >
-                <CardContent className="p-8">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="bg-primary/10 p-4 rounded-full group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-12 w-12 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground mb-2">{level.title}</h3>
-                      <p className="text-muted-foreground mb-2">{level.description}</p>
-                      <p className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full inline-block">
-                        {level.ageRange}
-                      </p>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-4 w-full">
-                      <p className="text-sm text-muted-foreground">
-                        {level.preview}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card className="max-w-2xl mx-auto border-2 border-primary/50 overflow-hidden">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="bg-primary/10 p-6 rounded-full">
+                <BookOpen className="h-16 w-16 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-3xl font-bold text-foreground mb-3">GCSE Study Programme</h3>
+                <p className="text-lg text-muted-foreground mb-2">Comprehensive GCSE preparation</p>
+                <p className="text-sm text-muted-foreground bg-muted px-4 py-2 rounded-full inline-block">
+                  Ages 14-16 • Years 10-11
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-6 w-full">
+                <p className="text-muted-foreground mb-4">
+                  Access comprehensive courses in:
+                </p>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Biology, Chemistry, Physics, Maths, English, Computer Science, and more...
+                </p>
+              </div>
+              <Button onClick={handleContinue} size="lg" className="w-full mt-4">
+                Continue with GCSE
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between items-center pt-6">

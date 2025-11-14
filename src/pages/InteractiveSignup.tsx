@@ -20,8 +20,8 @@ export interface SignupData {
   studentLastName: string;
   password: string;
   confirmPassword: string;
-  // Simplified onboarding fields for GCSE & 11+
-  educationLevel?: 'gcse' | '11plus';
+  // Simplified onboarding fields for GCSE
+  educationLevel?: 'gcse';
   region?: 'england' | 'scotland' | 'wales';
   curriculum?: 'english' | 'scottish' | 'welsh';
   yearGroupId?: string;
@@ -49,7 +49,7 @@ const InteractiveSignup = () => {
     examBoards: {},
   });
 
-  // Build steps array dynamically - skip exam boards for 11+ students
+  // Build steps array dynamically
   const baseSteps = [
     { title: "Parent Info", component: ParentInfoStep },
     { title: "Student Details", component: StudentInfoStep },
@@ -63,7 +63,7 @@ const InteractiveSignup = () => {
 
   const steps = [
     ...baseSteps,
-    ...(signupData.educationLevel === 'gcse' ? [examBoardStep] : []),
+    examBoardStep,
     successStep,
   ];
 

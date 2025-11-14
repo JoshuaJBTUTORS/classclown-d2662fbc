@@ -9,10 +9,9 @@ interface QuestionBlockProps {
   data: QuestionContent;
   onAnswer: (questionId: string, answerId: string, isCorrect: boolean) => void;
   onAskHelp?: (questionId: string, questionText: string) => void;
-  isExamPractice?: boolean;
 }
 
-export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp, isExamPractice }) => {
+export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
@@ -97,21 +96,6 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
           })}
         </div>
 
-        {!selectedAnswer && isExamPractice && onAskHelp && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4"
-          >
-            <button
-              onClick={() => onAskHelp(data.id, data.question)}
-              className="cleo-pill-btn w-full justify-center"
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span>Ask Cleo for Help</span>
-            </button>
-          </motion.div>
-        )}
 
         {showFeedback && data.explanation && (
           <motion.div
