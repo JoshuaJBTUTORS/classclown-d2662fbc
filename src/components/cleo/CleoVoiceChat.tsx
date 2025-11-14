@@ -297,6 +297,72 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               break;
             }
             
+            // Handle complete_step
+            if (functionName === 'complete_step') {
+              const { stepId } = args;
+              
+              console.log(`✅ ========== COMPLETE_STEP CALLED ==========`);
+              console.log(`✅ Step ID: ${stepId}`);
+              
+              // Emit event to mark step as complete
+              if (onContentEvent) {
+                onContentEvent({
+                  type: 'complete_step',
+                  stepId: stepId
+                });
+              }
+              
+              // Confirm to OpenAI
+              rtcRef.current?.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify({ 
+                    success: true, 
+                    message: `Step ${stepId} marked as complete.` 
+                  })
+                }
+              });
+              
+              // Trigger next response
+              rtcRef.current?.sendEvent({ type: 'response.create' });
+              break;
+            }
+            
+            // Handle complete_lesson
+            if (functionName === 'complete_lesson') {
+              const { summary } = args;
+              
+              console.log(`🎓 ========== COMPLETE_LESSON CALLED ==========`);
+              console.log(`🎓 Summary: ${summary}`);
+              
+              // Emit event to complete lesson
+              if (onContentEvent) {
+                onContentEvent({
+                  type: 'lesson_complete',
+                  summary: summary || 'Lesson completed successfully!'
+                });
+              }
+              
+              // Confirm to OpenAI
+              rtcRef.current?.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify({ 
+                    success: true, 
+                    message: 'Lesson marked as complete. Great work!' 
+                  })
+                }
+              });
+              
+              // Trigger next response
+              rtcRef.current?.sendEvent({ type: 'response.create' });
+              break;
+            }
+            
             // Handle other tools (show_table, show_definition, ask_question)
             let contentBlock: any = null;
             

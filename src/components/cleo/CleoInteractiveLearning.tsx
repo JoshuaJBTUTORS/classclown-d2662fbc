@@ -224,7 +224,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     });
   };
 
-  const handleContentEventWithUpsert = (event: ContentEvent) => {
+  const handleContentEventWithUpsert = async (event: ContentEvent) => {
     if (event.type === 'upsert_content' && event.block) {
       console.log('🎨 Upserting content block:', event.block.id);
       setContent(prev => {
@@ -239,6 +239,16 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       if (event.autoShow) {
         showContent(event.block.id);
       }
+    } else if (event.type === 'lesson_complete') {
+      console.log('🎓 ========== LESSON_COMPLETE EVENT RECEIVED ==========');
+      console.log('🎓 Summary:', event.summary);
+      
+      // First, forward to handleContentEvent to mark all steps complete
+      handleContentEvent(event);
+      
+      // Then trigger lesson completion (saves state, disconnects voice, shows dialog)
+      await handleCompleteLesson();
+      console.log('🎓 Completion dialog opened and voice disconnected');
     } else {
       handleContentEvent(event);
     }
@@ -338,6 +348,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         title: "Lesson Complete! 🎉",
         description: "Voice session ended automatically. Choose to continue or finish up.",
       });
+      
+      // CRITICAL: Ensure completion dialog shows even if complete_lesson wasn't called
+      console.log('🎓 Opening completion dialog (fallback for missing complete_lesson call)');
+      setShowCompleteDialog(true);
     }
   }, [allStepsCompleted, connectionState]);
 
