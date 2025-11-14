@@ -62,9 +62,14 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
 
       setFlashcardsGenerated(data?.flashcardsGenerated || 0);
       toast({
-        title: "Flashcards generated!",
-        description: `${data?.flashcardsGenerated || 0} flashcards created successfully`,
+        title: "Flashcards Generated! 🎴",
+        description: `Created ${data?.flashcardsGenerated || 0} flashcards. View them in the Learning Hub.`,
       });
+      
+      // Automatically navigate to flashcards after generation
+      setTimeout(() => {
+        window.location.href = '/learning-hub?tab=notes';
+      }, 2000);
     } catch (error) {
       console.error('Error generating flashcards:', error);
       toast({
@@ -77,7 +82,7 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
     }
   };
 
-  const handleExportSummary = async () => {
+  const handleExportSummary = async (format: 'text' | 'json' = 'text') => {
     if (!conversationId) {
       toast({
         title: "Error",
@@ -89,21 +94,24 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
 
     setIsExporting(true);
     try {
-      const blob = await lessonExportService.exportLessonSummary(conversationId);
+      const blob = format === 'json' 
+        ? await lessonExportService.exportAsJSON(conversationId)
+        : await lessonExportService.exportLessonSummary(conversationId);
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${lessonTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-summary.txt`;
+      const extension = format === 'json' ? 'json' : 'txt';
+      a.download = `${lessonTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-summary.${extension}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       toast({
-        title: "Summary exported!",
-        description: "Your lesson summary has been downloaded",
+        title: "Report Downloaded ✓",
+        description: `Your detailed lesson report has been saved as ${extension.toUpperCase()}`,
       });
     } catch (error) {
       console.error('Error exporting summary:', error);
@@ -190,6 +198,41 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
               )}
             </div>
 
+            {/* Prominent Flashcards Section */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 space-y-3 border-2 border-primary/20">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Study Flashcards
+                </h4>
+                {flashcardsGenerated > 0 && (
+                  <div className="px-2 py-1 bg-primary/10 rounded-full text-xs font-medium text-primary">
+                    {flashcardsGenerated} Generated
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-sm text-muted-foreground">
+                AI-generated flashcards to help you master key concepts
+              </p>
+
+              <Button
+                onClick={handleGenerateFlashcards}
+                disabled={isGeneratingFlashcards}
+                className="w-full"
+                size="lg"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {isGeneratingFlashcards ? 'Creating Flashcards...' : flashcardsGenerated > 0 ? 'View in Learning Hub' : 'Generate Flashcards'}
+              </Button>
+
+              {flashcardsGenerated > 0 && (
+                <div className="text-xs text-center text-muted-foreground animate-fade-in">
+                  Redirecting to Learning Hub...
+                </div>
+              )}
+            </div>
+
             <div className="bg-muted/50 rounded-lg p-3 text-sm text-center text-muted-foreground">
               Keep up the great work! Continue practicing to master this topic.
             </div>
@@ -255,21 +298,34 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
               </h4>
               
               <p className="text-sm text-muted-foreground">
-                Download your lesson summary for offline review
+                Download your detailed lesson report in multiple formats
               </p>
 
-              <Button
-                onClick={handleExportSummary}
-                disabled={isExporting}
-                variant="outline"
-                className="w-full"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {isExporting ? 'Exporting...' : 'Download Lesson Summary'}
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => handleExportSummary('text')}
+                  disabled={isExporting}
+                  variant="outline"
+                  className="w-full justify-start"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? 'Exporting...' : 'Download as Text Report'}
+                </Button>
 
-              <div className="text-xs text-muted-foreground text-center pt-2">
-                Includes transcript, questions answered, and key concepts
+                <Button
+                  onClick={() => handleExportSummary('json')}
+                  disabled={isExporting}
+                  variant="outline"
+                  className="w-full justify-start"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? 'Exporting...' : 'Download as JSON Data'}
+                </Button>
+              </div>
+
+              <div className="text-xs text-muted-foreground pt-2 space-y-1">
+                <p>• Text: Detailed transcript with performance metrics</p>
+                <p>• JSON: Structured data for analysis and record-keeping</p>
               </div>
             </div>
           </TabsContent>
