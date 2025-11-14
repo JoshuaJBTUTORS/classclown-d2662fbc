@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { WelcomeStep } from "./WelcomeStep";
 import { RegionSelectionStep } from "./RegionSelectionStep";
-import { YearGroupSelectionStep } from "./YearGroupSelectionStep";
 import { SubjectSelectionStep } from "./SubjectSelectionStep";
 import { CourseMatchingStep } from "./CourseMatchingStep";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import type { OnboardingData, Region, Curriculum } from "@/types/onboarding";
 import { AVAILABLE_SUBJECTS } from "@/types/onboarding";
 
-const STEPS = ['welcome', 'region', 'yearGroup', 'subjects', 'matching'] as const;
+const STEPS = ['welcome', 'region', 'subjects', 'matching'] as const;
 type Step = typeof STEPS[number];
 
 export const OnboardingWizard = () => {
@@ -20,23 +20,28 @@ export const OnboardingWizard = () => {
 
   const stepIndex = STEPS.indexOf(currentStep);
 
-  const handleRegionSelect = (region: Region) => {
+  const handleRegionSelect = async (region: Region) => {
     const curriculumMap: Record<Region, Curriculum> = {
       england: 'english',
       scotland: 'scottish',
       wales: 'welsh',
     };
 
+    // Set default year group based on region
+    const defaultYearName = region === 'scotland' ? 'S4' : 'Year 10';
+    const { data: yearGroupData } = await supabase
+      .from('curriculum_year_groups')
+      .select('year_group_id, year_groups(id)')
+      .eq('curriculum', curriculumMap[region])
+      .eq('display_name', defaultYearName)
+      .single();
+
     setData({
       ...data,
       region,
       curriculum: curriculumMap[region],
+      yearGroupId: yearGroupData?.year_groups?.id || '',
     });
-    setCurrentStep('yearGroup');
-  };
-
-  const handleYearGroupSelect = (yearGroupId: string) => {
-    setData({ ...data, yearGroupId });
     setCurrentStep('subjects');
   };
 
@@ -120,14 +125,6 @@ export const OnboardingWizard = () => {
             <RegionSelectionStep
               selectedRegion={data.region}
               onSelect={handleRegionSelect}
-            />
-          )}
-
-          {currentStep === 'yearGroup' && data.curriculum && (
-            <YearGroupSelectionStep
-              curriculum={data.curriculum}
-              selectedYearGroupId={data.yearGroupId}
-              onSelect={handleYearGroupSelect}
             />
           )}
 
