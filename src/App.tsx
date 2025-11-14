@@ -9,6 +9,7 @@ import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
 import { OnboardingGuard } from '@/components/routing/OnboardingGuard';
+import { HubAccessGuard } from '@/components/routing/HubAccessGuard';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 
@@ -421,14 +422,16 @@ function App() {
                   }
                 />
 
-                {/* Learning Hub routes - with onboarding guard */}
+                {/* Learning Hub routes - with hub access and onboarding guard */}
                 <Route
                   path="/learning-hub"
                   element={
                     <ProtectedRoute>
-                      <OnboardingGuard>
-                        <LearningHubLayout />
-                      </OnboardingGuard>
+                      <HubAccessGuard>
+                        <OnboardingGuard>
+                          <LearningHubLayout />
+                        </OnboardingGuard>
+                      </HubAccessGuard>
                     </ProtectedRoute>
                   }
                 >
