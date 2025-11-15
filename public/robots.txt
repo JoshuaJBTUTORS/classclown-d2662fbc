@@ -12,3 +12,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemaps
+Sitemap: https://app.heycleo.io/sitemap.xml
+Sitemap: https://classclown.io/sitemap.xml

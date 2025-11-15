@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { GraduationCap, Users, Star, BookOpen, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DomainSEO } from '@/components/seo/DomainSEO';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -18,7 +19,12 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <>
+      <DomainSEO 
+        pageTitle="Home"
+        pageDescription="Your complete learning platform - from self-paced courses to 1-on-1 live tutoring. AI-powered personalized lessons starting at £9.99/month."
+      />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
@@ -144,6 +150,7 @@ const LandingPage = () => {
         </motion.div>
       </div>
     </div>
+    </>
   );
 };
 
