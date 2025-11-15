@@ -131,8 +131,8 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
         ease: "easeOut"
       }}
       className={`absolute w-2 h-2 sm:w-3 sm:h-3 ${
-        Math.random() > 0.5 ? 'bg-purple-500' : 
-        Math.random() > 0.5 ? 'bg-yellow-400' : 'bg-pink-500'
+        Math.random() > 0.5 ? 'bg-primary' : 
+        Math.random() > 0.5 ? 'bg-accent' : 'bg-secondary'
       } rounded-full`}
       style={{
         left: `${Math.random() * 100}%`,
@@ -143,134 +143,197 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
 
   if (!isComplete) {
     return (
-      <div className="space-y-6 sm:space-y-8 text-center">
+      <div className="space-y-8 relative">
+        {/* Cleo Avatar */}
+        <div className="absolute top-0 right-4 text-5xl">
+          🧑🏻‍🔬
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4 sm:space-y-6"
+          transition={{ duration: 0.5 }}
         >
-          <div className="mx-auto">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="inline-block"
-            >
-              <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
-            </motion.div>
-          </div>
+          <Card className="max-w-2xl mx-auto border-2 border-primary/20 shadow-lg">
+            <CardContent className="p-8 text-center space-y-6">
+              {/* Rotating Icon */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="inline-block"
+              >
+                <div className="bg-primary/10 p-6 rounded-full">
+                  <BookOpen className="h-16 w-16 text-primary" />
+                </div>
+              </motion.div>
 
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Creating Your Cleo Account
-            </h2>
-            <Progress value={loadingProgress} className="w-full max-w-xs sm:max-w-md mx-auto h-2 sm:h-3 mb-3 sm:mb-4" />
-            <motion.p
-              key={currentStep}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="text-sm sm:text-base text-gray-600"
-            >
-              {loadingSteps[currentStep]}
-            </motion.p>
-          </div>
+              {/* Heading */}
+              <div className="space-y-3">
+                <h2 className="text-3xl font-bold text-foreground">
+                  Creating Your Cleo Account
+                </h2>
+                <motion.p
+                  key={currentStep}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-lg text-muted-foreground"
+                >
+                  {loadingSteps[currentStep]}
+                </motion.p>
+              </div>
 
-          <div className="text-xs sm:text-sm text-gray-500">
-            <p>{Math.round(loadingProgress)}% Complete</p>
-          </div>
+              {/* Progress Bar */}
+              <div className="space-y-3">
+                <Progress 
+                  value={loadingProgress} 
+                  className="w-full max-w-md mx-auto h-3"
+                />
+                <p className="text-sm font-medium text-primary">
+                  {Math.round(loadingProgress)}% Complete
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
+
+        {/* Help Text */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center text-sm text-muted-foreground"
+        >
+          This will only take a moment...
+        </motion.p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 text-center relative overflow-hidden">
+    <div className="space-y-8 text-center relative overflow-hidden">
+      {/* Confetti Animation */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">
-          {[...Array(15)].map((_, i) => (
+          {[...Array(20)].map((_, i) => (
             <ConfettiParticle key={i} delay={i * 0.1} />
           ))}
         </div>
       )}
 
+      {/* Cleo Avatar */}
+      <motion.div 
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", duration: 0.8 }}
+        className="text-6xl"
+      >
+        🧑🏻‍🔬
+      </motion.div>
+
       <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
+        initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
-        className="space-y-4 sm:space-y-6"
       >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="mx-auto"
-        >
-          <div className="relative">
-            <CheckCircle className="h-16 w-16 sm:h-20 sm:w-20 text-green-500 mx-auto" />
+        <Card className="max-w-2xl mx-auto border-2 border-primary/20 shadow-xl">
+          <CardContent className="p-8 space-y-8">
+            {/* Success Icon */}
             <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ delay: 0.5, duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
-              <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500" />
+              <div className="relative inline-block">
+                <div className="bg-green-100 dark:bg-green-950 p-6 rounded-full">
+                  <CheckCircle className="h-20 w-20 text-green-600 dark:text-green-400" />
+                </div>
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ delay: 0.5, duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  className="absolute -top-2 -right-2"
+                >
+                  <Sparkles className="h-8 w-8 text-accent" />
+                </motion.div>
+              </div>
             </motion.div>
-          </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Welcome to Cleo! 🎉
-          </h2>
-          <p className="text-base sm:text-lg text-gray-600 mb-3 sm:mb-4">
-            Your Cleo account is ready, {data.parentFirstName}!
-          </p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 inline-block max-w-full">
-            <p className="text-sm sm:text-base text-green-800 font-medium">
-              🎉 3 FREE voice lessons included!
-            </p>
-            <p className="text-xs sm:text-sm text-green-600">
-              No credit card required • Start learning immediately
-            </p>
-          </div>
-        </motion.div>
+            {/* Welcome Message */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-4"
+            >
+              <h2 className="text-4xl font-bold text-foreground">
+                Welcome to Cleo! 🎉
+              </h2>
+              <p className="text-xl text-muted-foreground">
+                Your account is ready, {data.parentFirstName}!
+              </p>
+              
+              {/* Free Lessons Badge */}
+              <div className="bg-green-50 dark:bg-green-950 border-2 border-green-200 dark:border-green-800 rounded-xl p-4 inline-block">
+                <p className="text-base text-green-800 dark:text-green-200 font-semibold">
+                  🎉 3 FREE voice lessons included!
+                </p>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  No credit card required • Start learning immediately
+                </p>
+              </div>
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="space-y-3 sm:space-y-4"
-        >
-          <Button
-            onClick={() => navigate('/learning-hub')}
-            size="lg"
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto"
-          >
-            <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            Start Learning with Cleo
-            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-2" />
-          </Button>
-          
-          <p className="text-xs sm:text-sm text-gray-500">
-            Explore courses, chat with Cleo, and achieve your goals!
-          </p>
-        </motion.div>
+            {/* Call to Action */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="space-y-4"
+            >
+              <Button
+                onClick={() => navigate('/learning-hub')}
+                size="lg"
+                className="w-full sm:w-auto px-8 py-6 text-lg font-semibold group"
+              >
+                <GraduationCap className="h-5 w-5 mr-2" />
+                Start Learning with Cleo
+                <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              
+              <p className="text-sm text-muted-foreground">
+                Explore courses, chat with Cleo, and achieve your goals!
+              </p>
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="border-t pt-4 sm:pt-6 mt-6 sm:mt-8"
-        >
-          <blockquote className="text-sm sm:text-base text-gray-600 italic">
-            "Education is the most powerful weapon which you can use to change the world."
-          </blockquote>
-          <p className="text-xs sm:text-sm text-gray-500 mt-2">— Nelson Mandela</p>
-        </motion.div>
+            {/* Inspirational Quote */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="border-t border-border pt-6"
+            >
+              <blockquote className="text-base text-muted-foreground italic">
+                "Education is the most powerful weapon which you can use to change the world."
+              </blockquote>
+              <p className="text-sm text-muted-foreground/70 mt-2">— Nelson Mandela</p>
+            </motion.div>
+          </CardContent>
+        </Card>
       </motion.div>
+
+      {/* Help Footer */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="text-sm text-muted-foreground"
+      >
+        Need help? Contact us at{' '}
+        <a href="mailto:hello@heycleo.io" className="text-primary hover:underline">
+          hello@heycleo.io
+        </a>
+      </motion.p>
     </div>
   );
 };
