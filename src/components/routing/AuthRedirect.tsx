@@ -1,7 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage';
-import CleoLandingPage from '@/pages/CleoLandingPage';
 import { isCleoIO } from '@/utils/domainConfig';
 
 const AuthRedirect = () => {
@@ -15,12 +14,12 @@ const AuthRedirect = () => {
     );
   }
 
-  // If on heycleo.io domain
+  // If on app.heycleo.io domain
   if (isCleoIO()) {
-    // Show Cleo landing page when logged out
-    if (!user) return <CleoLandingPage />;
+    // Redirect to auth page when logged out
+    if (!user) return <Navigate to="/auth" replace />;
     
-    // Always redirect to learning hub when logged in on heycleo.io
+    // Always redirect to learning hub when logged in on app.heycleo.io
     return <Navigate to="/learning-hub" replace />;
   }
 
