@@ -5,6 +5,7 @@ import { useGamification } from '@/hooks/useGamification';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { getMasteryLevel, getNextMasteryLevel, getMasteryProgress, MASTERY_LEVELS } from '@/services/masterySystem';
+import { DomainSEO } from '@/components/seo/DomainSEO';
 
 export default function LearningHubCleoID() {
   const { user, profile, signOut } = useAuth();
@@ -55,7 +56,12 @@ export default function LearningHubCleoID() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-background via-background/95 to-muted/20">
+    <>
+      <DomainSEO 
+        pageTitle="My Cleo ID" 
+        pageDescription="Track your learning progress, achievements, and mastery levels with Cleo"
+      />
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-background via-background/95 to-muted/20">
       <main className="w-full max-w-md bg-card rounded-[28px] shadow-[0_18px_45px_rgba(15,23,42,0.12)] p-6">
         {/* Section Label */}
         <div className="text-center text-xs font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-5">
@@ -260,5 +266,6 @@ export default function LearningHubCleoID() {
         </p>
       </main>
     </div>
+    </>
   );
 }

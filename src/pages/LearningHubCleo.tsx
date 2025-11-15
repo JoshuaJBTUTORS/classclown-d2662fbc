@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { DomainSEO } from '@/components/seo/DomainSEO';
 import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
 import { vectorsScalarsLesson } from '@/data/lessons/vectorsScalars';
 
@@ -20,13 +20,10 @@ const LearningHubCleo: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Cleo AI Tutor - Interactive Learning | JB Tutors</title>
-        <meta
-          name="description"
-          content="Learn with Cleo's interactive voice tutor. Visual lessons with tables, diagrams, and interactive questions."
-        />
-      </Helmet>
+      <DomainSEO 
+        pageTitle="Interactive Learning with Cleo" 
+        pageDescription="Learn with Cleo's interactive voice tutor. Visual lessons with tables, diagrams, and interactive questions."
+      />
       
       <div className="h-screen w-full">
         <CleoInteractiveLearning lessonData={vectorsScalarsLesson} />
