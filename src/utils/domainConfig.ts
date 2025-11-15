@@ -28,7 +28,7 @@ export const getDomainConfig = (): DomainConfig => {
       domain: 'app.heycleo.io',
       title: 'Cleo - Your AI Learning Companion',
       description: 'Learn anything with Cleo, your personal AI tutor. Interactive voice lessons with visual aids, diagrams, and personalized teaching.',
-      logo: '/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png',
+      logo: '/cleo-icon.png',
       theme: 'cleo',
       ogImage: '/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png'
     };
