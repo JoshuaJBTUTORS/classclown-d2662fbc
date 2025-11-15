@@ -13,6 +13,7 @@ import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
 import { getDomainConfig, isCleoIO } from '@/utils/domainConfig';
+import { DomainSEO } from '@/components/seo/DomainSEO';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -73,7 +74,13 @@ const Auth = () => {
         <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
       </div>;
   }
-  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+  return (
+    <>
+      <DomainSEO 
+        pageTitle="Login"
+        pageDescription="Sign in to continue your AI-powered learning journey with personalized lessons and interactive tutoring."
+      />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Left Side - Branding */}
@@ -210,9 +217,12 @@ const Auth = () => {
                 </form>
               </CardContent>
             </Card>
-          </motion.div>
+      </motion.div>
         </div>
       </div>
-    </div>;
+    </div>
+    </>
+  );
 };
+
 export default Auth;

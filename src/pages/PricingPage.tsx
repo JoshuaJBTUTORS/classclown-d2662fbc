@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Check, Sparkles } from 'lucide-react';
+import { DomainSEO } from '@/components/seo/DomainSEO';
 
 const PricingPage = () => {
   const { user, isOwner } = useAuth();
@@ -160,7 +161,12 @@ const PricingPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4">
+    <>
+      <DomainSEO 
+        pageTitle="Pricing Plans"
+        pageDescription="Choose the perfect AI tutoring plan for your learning journey. Flexible pricing with unlimited lessons and personalized teaching."
+      />
+      <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -286,6 +292,7 @@ const PricingPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

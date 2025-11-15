@@ -34,6 +34,7 @@ export const DomainSEO = ({ pageTitle, pageDescription }: DomainSEOProps) => {
       
       {/* Favicon */}
       <link rel="icon" href={config.logo} />
+      <link rel="apple-touch-icon" href={config.logo} />
     </Helmet>
   );
 };
