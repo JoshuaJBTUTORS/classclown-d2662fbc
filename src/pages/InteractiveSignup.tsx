@@ -6,7 +6,6 @@ import WelcomePage from '@/components/signup/WelcomePage';
 import ParentInfoStep from '@/components/signup/ParentInfoStep';
 import StudentInfoStep from '@/components/signup/StudentInfoStep';
 import PasswordStep from '@/components/signup/PasswordStep';
-import EducationLevelStep from '@/components/signup/EducationLevelStep';
 import SubjectStep from '@/components/signup/SubjectStep';
 import ExamBoardStep from '@/components/signup/ExamBoardStep';
 import SuccessStep from '@/components/signup/SuccessStep';
@@ -41,10 +40,10 @@ const InteractiveSignup = () => {
     studentLastName: '',
     password: '',
     confirmPassword: '',
-    educationLevel: undefined,
+    educationLevel: 'gcse',
     region: 'england',
     curriculum: 'english',
-    yearGroupId: undefined,
+    yearGroupId: '041d7c7c-3b83-417c-a616-e26fe264cf50', // GCSE year group ID
     selectedSubjects: [],
     examBoards: {},
   });
@@ -54,7 +53,6 @@ const InteractiveSignup = () => {
     { title: "Parent Info", component: ParentInfoStep },
     { title: "Student Details", component: StudentInfoStep },
     { title: "Password", component: PasswordStep },
-    { title: "Education Level", component: EducationLevelStep },
     { title: "Subjects", component: SubjectStep },
   ];
 
