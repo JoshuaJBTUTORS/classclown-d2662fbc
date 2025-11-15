@@ -13,6 +13,7 @@ import { BookOpen, Brain, Calendar, TrendingUp, Video, Sparkles, Bot } from 'luc
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DomainSEO } from '@/components/seo/DomainSEO';
 
 const LearningHubDashboard = () => {
   const { user, profile, primaryStudentName, userRole } = useAuth();
@@ -48,7 +49,12 @@ const LearningHubDashboard = () => {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col" style={{ background: '#fafaf9' }}>
+    <>
+      <DomainSEO 
+        pageTitle="Learning Hub" 
+        pageDescription="Your personalized learning dashboard with AI-powered courses and assessments"
+      />
+      <div className="w-full min-h-screen flex flex-col" style={{ background: '#fafaf9' }}>
       {/* Top Bar with Voice Minutes Indicator */}
       <div className="w-full px-4 sm:px-8 md:px-16 lg:px-24 py-4 flex justify-end">
         <VoiceSessionIndicator />
@@ -96,6 +102,7 @@ const LearningHubDashboard = () => {
         onClose={() => setShowUpgradeModal(false)}
       />
     </div>
+    </>
   );
 };
 

@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
 import { OnboardingGuard } from '@/components/routing/OnboardingGuard';
 import { HubAccessGuard } from '@/components/routing/HubAccessGuard';
+import { DomainRouteGuard } from '@/components/routing/DomainRouteGuard';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 
@@ -113,13 +114,15 @@ function App() {
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 <Route path="/p/:proposalId/:token" element={<ProposalView />} />
                 
-                {/* Main App Layout - all main application routes */}
+                {/* Main App Layout - all main application routes - Restricted on heycleo.io */}
                 <Route
                   path="/*"
                   element={
-                    <ProtectedRoute>
-                      <MainLayout />
-                    </ProtectedRoute>
+                    <DomainRouteGuard>
+                      <ProtectedRoute>
+                        <MainLayout />
+                      </ProtectedRoute>
+                    </DomainRouteGuard>
                   }
                 >
                   <Route path="calendar" element={<Calendar />} />
