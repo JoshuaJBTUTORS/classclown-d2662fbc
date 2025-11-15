@@ -29,7 +29,7 @@ serve(async (req) => {
       );
     }
 
-    const { lessonId, topic, yearGroup, learningGoal, conversationId } = await req.json();
+    const { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice } = await req.json();
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId });
 
