@@ -8,7 +8,7 @@ interface DomainRouteGuardProps {
 export const DomainRouteGuard = ({ children }: DomainRouteGuardProps) => {
   const location = useLocation();
   
-  // If on heycleo.io and trying to access non-learning-hub routes, redirect
+  // If on app.heycleo.io and trying to access non-learning-hub routes, redirect
   if (isCleoIO() && !location.pathname.startsWith('/learning-hub') && location.pathname !== '/auth') {
     return <Navigate to="/learning-hub" replace />;
   }

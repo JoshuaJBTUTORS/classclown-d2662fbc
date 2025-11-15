@@ -3,7 +3,8 @@ export const isDomain = (domain: string): boolean => {
 };
 
 export const isCleoIO = (): boolean => {
-  return isDomain('heycleo.io');
+  return window.location.hostname === 'app.heycleo.io' || 
+         window.location.hostname === 'localhost'; // for testing
 };
 
 export const isClassClown = (): boolean => {
@@ -24,7 +25,7 @@ export const getDomainConfig = (): DomainConfig => {
   if (isCleoIO()) {
     return {
       name: 'Cleo',
-      domain: 'heycleo.io',
+      domain: 'app.heycleo.io',
       title: 'Cleo - Your AI Learning Companion',
       description: 'Learn anything with Cleo, your personal AI tutor. Interactive voice lessons with visual aids, diagrams, and personalized teaching.',
       logo: '/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png',
