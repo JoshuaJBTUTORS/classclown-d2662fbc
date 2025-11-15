@@ -29,9 +29,9 @@ serve(async (req) => {
       );
     }
 
-    const { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice } = await req.json();
+    const { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice = false } = await req.json();
 
-    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId });
+    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice });
 
     // Fetch learning objectives from the lesson if lessonId is provided
     let learningObjectives: string[] = [];
