@@ -97,7 +97,7 @@ const LearningHubSidebar = () => {
         <SidebarContent className="bg-transparent border-none shadow-none">
           {/* Header */}
           <div className="cleo-sidebar-header">
-            <img src={cleoLogo} alt="Cleo" className="h-8 w-auto" />
+            <img src={cleoLogo} alt="Cleo" className="h-12 w-auto" />
             <div className="cleo-smiley">☺️</div>
           </div>
 
