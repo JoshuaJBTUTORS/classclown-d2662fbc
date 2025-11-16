@@ -8,6 +8,8 @@ export const LESSON_SUBJECTS = [
   'Sats English',
   '11 Plus Maths',
   '11 Plus English',
+  '11 Plus VR',
+  '11 Plus NVR',
   'KS3 Maths',
   'KS3 English',
   'KS3 Science',
@@ -47,7 +49,7 @@ export const EDUCATIONAL_STAGES = {
   'ks2': {
     label: 'Key Stage 2',
     description: 'Ages 7-11 primary education',
-    subjects: ['Early KS2 Maths', 'Early KS2 English', 'KS2 Maths', 'KS2 English', 'Sats Maths', 'Sats English', '11 Plus Maths', '11 Plus English'],
+    subjects: ['Early KS2 Maths', 'Early KS2 English', 'KS2 Maths', 'KS2 English', 'Sats Maths', 'Sats English', '11 Plus Maths', '11 Plus English', '11 Plus VR', '11 Plus NVR'],
     icon: 'BookOpen'
   },
   'ks3': {
