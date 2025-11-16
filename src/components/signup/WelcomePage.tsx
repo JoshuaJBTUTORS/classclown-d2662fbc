@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Star, Heart } from 'lucide-react';
 
@@ -9,6 +10,8 @@ interface WelcomePageProps {
 }
 
 const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
+  const navigate = useNavigate();
+  
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
       <div className="container mx-auto max-w-6xl">
@@ -116,7 +119,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="text-center pt-4"
+            className="text-center pt-4 space-y-4"
           >
             <Button
               onClick={onStart}
@@ -125,6 +128,19 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
             >
               Let's Get Started!
             </Button>
+            
+            <div className="pt-2">
+              <p className="text-sm text-gray-600">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/auth')}
+                  className="text-primary font-medium hover:underline"
+                >
+                  Sign in
+                </button>
+              </p>
+            </div>
           </motion.div>
         </motion.div>
       </div>
