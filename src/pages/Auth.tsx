@@ -11,7 +11,6 @@ import { Loader2, Mail, Lock, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
-import SignupForm from '@/components/auth/SignupForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
 import { getDomainConfig, isCleoIO } from '@/utils/domainConfig';
 import { DomainSEO } from '@/components/seo/DomainSEO';
@@ -21,7 +20,6 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
   const {
     signIn,
     user
@@ -75,108 +73,6 @@ const Auth = () => {
     return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
         <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
       </div>;
-  }
-  
-  // Handle showing signup form
-  if (showSignup) {
-    return (
-      <>
-        <DomainSEO 
-          pageTitle="Sign Up"
-          pageDescription="Create your account to start your AI-powered learning journey with personalized lessons and interactive tutoring."
-        />
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
-              {/* Left Side - Branding */}
-              <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="text-center lg:text-left space-y-6">
-                <div className="flex justify-center lg:justify-start">
-                  {isCleo ? (
-                    <div className="text-7xl">🦊</div>
-                  ) : (
-                    <img src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" alt="JB Tutors Logo" className="h-24 w-auto" />
-                  )}
-                </div>
-                
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                    {isCleo ? 'Join Cleo' : 'Join JB Tutors'}
-                  </h1>
-                  <p className="text-xl text-gray-600 mb-6">
-                    {isCleo 
-                      ? 'Start your personalized learning journey with AI-powered lessons.'
-                      : 'Create your account and begin achieving your academic goals.'
-                    }
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {isCleo ? (
-                    <>
-                      <div className="flex items-center justify-center lg:justify-start space-x-3">
-                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-2xl">🎙️</span>
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900">Interactive Voice Lessons</h3>
-                          <p className="text-gray-600 text-sm">Learn by speaking with Cleo</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-center lg:justify-start space-x-3">
-                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-2xl">📊</span>
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900">Visual Learning</h3>
-                          <p className="text-gray-600 text-sm">Diagrams and visual aids</p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-center lg:justify-start space-x-3">
-                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                          <GraduationCap className="h-6 w-6 text-purple-600" />
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900">Expert Tutors</h3>
-                          <p className="text-gray-600 text-sm">Qualified teachers ready to help</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-center lg:justify-start space-x-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-bold">📚</span>
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900">Personalized Learning</h3>
-                          <p className="text-gray-600 text-sm">Tailored to each student's needs</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-
-              {/* Right Side - Signup Form */}
-              <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-                <Card className="shadow-xl">
-                  <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Create Account</CardTitle>
-                    <CardDescription>
-                      Sign up to get started with {isCleo ? 'Cleo' : 'JB Tutors'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SignupForm onSwitchToLogin={() => setShowSignup(false)} />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
   }
   return (
     <>
@@ -324,7 +220,7 @@ const Auth = () => {
                       Don't have an account?{' '}
                       <button
                         type="button"
-                        onClick={() => setShowSignup(true)}
+                        onClick={() => navigate('/interactive-signup')}
                         className="text-primary font-medium hover:underline"
                       >
                         Sign up
