@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, User, Mail, Phone, Info } from 'lucide-react';
+import { CheckCircle, User, Mail, Phone, Info, Loader2, XCircle, AlertCircle } from 'lucide-react';
 import { SignupData } from '@/pages/InteractiveSignup';
+import { checkParentEmailUniqueness } from '@/services/uniquenessValidationService';
+import { Link } from 'react-router-dom';
 
 interface ParentInfoStepProps {
   data: SignupData;
@@ -27,6 +29,18 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
     lastName: false,
     email: false,
   });
+  
+  const [emailCheckState, setEmailCheckState] = useState<{
+    isChecking: boolean;
+    emailExists: boolean;
+    errorMessage: string | null;
+  }>({
+    isChecking: false,
+    emailExists: false,
+    errorMessage: null,
+  });
+
+  const [emailCheckTimeout, setEmailCheckTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -37,6 +51,53 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
     const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
     return phoneRegex.test(phone);
   };
+
+  const checkEmailAvailability = async (email: string) => {
+    if (!validateEmail(email)) {
+      return;
+    }
+
+    setEmailCheckState({
+      isChecking: true,
+      emailExists: false,
+      errorMessage: null,
+    });
+
+    try {
+      const result = await checkParentEmailUniqueness(email);
+      
+      if (!result.isUnique) {
+        setEmailCheckState({
+          isChecking: false,
+          emailExists: true,
+          errorMessage: 'This email is already registered. Please sign in instead or use a different email.',
+        });
+      } else {
+        setEmailCheckState({
+          isChecking: false,
+          emailExists: false,
+          errorMessage: null,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+      // Don't block signup on check failure, just log it
+      setEmailCheckState({
+        isChecking: false,
+        emailExists: false,
+        errorMessage: null,
+      });
+    }
+  };
+
+  useEffect(() => {
+    // Cleanup timeout on unmount
+    return () => {
+      if (emailCheckTimeout) {
+        clearTimeout(emailCheckTimeout);
+      }
+    };
+  }, [emailCheckTimeout]);
 
   const handleInputChange = (field: keyof SignupData, value: string) => {
     updateData({ [field]: value });
@@ -55,6 +116,25 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
       case 'parentEmail':
         isValid = validateEmail(value);
         setValidationState(prev => ({ ...prev, email: isValid }));
+        
+        // Clear previous timeout
+        if (emailCheckTimeout) {
+          clearTimeout(emailCheckTimeout);
+        }
+        
+        // Debounce email check
+        if (isValid) {
+          const timeout = setTimeout(() => {
+            checkEmailAvailability(value);
+          }, 800);
+          setEmailCheckTimeout(timeout);
+        } else {
+          setEmailCheckState({
+            isChecking: false,
+            emailExists: false,
+            errorMessage: null,
+          });
+        }
         break;
     }
   };
@@ -62,7 +142,9 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
   const canProceed = 
     data.parentFirstName.trim() &&
     data.parentLastName.trim() &&
-    validateEmail(data.parentEmail);
+    validateEmail(data.parentEmail) &&
+    !emailCheckState.isChecking &&
+    !emailCheckState.emailExists;
 
   return (
     <div className="min-h-screen bg-background p-6 sm:p-8">
@@ -138,13 +220,51 @@ const ParentInfoStep: React.FC<ParentInfoStepProps> = ({
                   <Mail className="h-4 w-4 mr-2" />
                   Email Address
                 </label>
-                <Input
-                  type="email"
-                  placeholder="Enter your email here..."
-                  value={data.parentEmail}
-                  onChange={(e) => handleInputChange('parentEmail', e.target.value)}
-                  className="h-14 text-base"
-                />
+                <div className="relative">
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={data.parentEmail}
+                    onChange={(e) => handleInputChange('parentEmail', e.target.value)}
+                    className="h-14 text-base pr-10"
+                  />
+                  {validationState.email && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {emailCheckState.isChecking && (
+                        <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+                      )}
+                      {!emailCheckState.isChecking && !emailCheckState.emailExists && (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      )}
+                      {!emailCheckState.isChecking && emailCheckState.emailExists && (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {emailCheckState.isChecking && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Checking availability...
+                  </p>
+                )}
+                {!emailCheckState.isChecking && !emailCheckState.emailExists && validationState.email && (
+                  <p className="text-sm text-green-600 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Email available!
+                  </p>
+                )}
+                {emailCheckState.errorMessage && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {emailCheckState.errorMessage}
+                    </p>
+                    <Link to="/auth" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+                      Go to Sign In →
+                    </Link>
+                  </div>
+                )}
               </motion.div>
             </div>
           </motion.div>
