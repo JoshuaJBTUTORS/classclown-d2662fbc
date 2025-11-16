@@ -406,6 +406,18 @@ export const paymentService = {
       return { hasAccess: true, reason: 'Owner access' };
     }
 
+    // Check if user has Cleo Hub access granted manually
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('has_cleo_hub_access')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.has_cleo_hub_access) {
+      console.log('User has manual Cleo Hub access granted');
+      return { hasAccess: true, reason: 'Cleo Hub access granted' };
+    }
+
     // Check for active platform subscription
     const { data: subscription } = await supabase
       .from('user_platform_subscriptions')
