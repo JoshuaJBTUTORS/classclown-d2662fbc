@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +30,7 @@ export interface SignupData {
 }
 
 const InteractiveSignup = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
   const [signupData, setSignupData] = useState<SignupData>({
@@ -146,9 +148,22 @@ const InteractiveSignup = () => {
         </AnimatePresence>
 
         {/* Help Text */}
-        <div className="text-center max-w-4xl mx-auto mt-6 sm:mt-8">
+        <div className="text-center max-w-4xl mx-auto mt-6 sm:mt-8 space-y-3">
           <div className="text-xs sm:text-sm text-gray-500">
             Need help? Contact us at hello@jbtutors.co.uk
+          </div>
+          
+          <div className="pt-2">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/auth')}
+                className="text-primary font-medium hover:underline"
+              >
+                Sign in
+              </button>
+            </p>
           </div>
         </div>
       </div>
