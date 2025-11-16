@@ -145,7 +145,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
               >
                 <Button
                   onClick={handleConnect}
-                  disabled={sessionsRemaining === 0 || loading}
+                  disabled={!hasQuota || loading}
                   size="lg"
                   className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-lg font-semibold rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
