@@ -34,11 +34,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-image-1',
+        model: 'gpt-image-mini', // Faster model for quicker generation
         prompt: prompt,
         n: 1,
-        size: '1024x1024',
-        quality: 'high',
+        size: '512x512', // Smaller size for faster generation
+        quality: 'standard', // Standard quality for speed
         output_format: 'png'
       }),
     });
