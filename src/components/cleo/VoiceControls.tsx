@@ -31,6 +31,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   isConnecting,
 }) => {
   const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
+  const [hasQuota, setHasQuota] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -46,7 +47,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('voice_session_quotas')
-        .select('sessions_remaining, bonus_sessions')
+        .select('sessions_remaining, bonus_sessions, minutes_remaining, bonus_minutes')
         .eq('user_id', user.id)
         .lte('period_start', now)
         .gte('period_end', now)
@@ -57,8 +58,12 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         return;
       }
 
-      const total = (data?.sessions_remaining || 0) + (data?.bonus_sessions || 0);
-      setSessionsRemaining(total);
+      const totalSessions = (data?.sessions_remaining || 0) + (data?.bonus_sessions || 0);
+      const totalMinutes = (data?.minutes_remaining || 0) + (data?.bonus_minutes || 0);
+      
+      setSessionsRemaining(totalSessions);
+      // User has quota if they have either sessions OR minutes available
+      setHasQuota(totalSessions > 0 || totalMinutes > 0);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -67,10 +72,10 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   };
 
   const handleConnect = async () => {
-    if (sessionsRemaining === 0) {
+    if (!hasQuota) {
       toast({
-        title: "No sessions available",
-        description: "You've used all your voice sessions. Buy more to continue learning!",
+        title: "No quota available",
+        description: "You've used all your voice time. Subscribe or purchase more to continue learning!",
         variant: "destructive",
       });
       return;
@@ -149,12 +154,12 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
                 </Button>
               </motion.div>
               
-              {sessionsRemaining === 0 && !loading && (
+              {!hasQuota && !loading && (
                 <div className="text-center space-y-2">
-                  <p className="text-sm text-muted-foreground">No sessions left</p>
-                  <Link to="/learning-hub/subscription">
+                  <p className="text-sm text-muted-foreground">No quota remaining</p>
+                  <Link to="/pricing">
                     <Button variant="outline" size="sm">
-                      Buy More Sessions
+                      Get More Time
                     </Button>
                   </Link>
                 </div>
