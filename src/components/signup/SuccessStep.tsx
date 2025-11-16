@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { SignupData } from '@/pages/InteractiveSignup';
 import { supabase } from '@/integrations/supabase/client';
+import { checkParentEmailUniqueness } from '@/services/uniquenessValidationService';
 
 interface SuccessStepProps {
   data: SignupData;
@@ -47,6 +48,22 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
 
   const createAccount = async () => {
     try {
+      // Final email uniqueness check before signup
+      const emailCheck = await checkParentEmailUniqueness(data.parentEmail);
+      if (!emailCheck.isUnique) {
+        toast.error('This email is already registered', {
+          description: 'Please use a different email or sign in to your existing account.',
+          action: {
+            label: 'Go to Sign In',
+            onClick: () => navigate('/auth'),
+          },
+        });
+        setTimeout(() => {
+          onPrev(); // Go back to edit email
+        }, 2000);
+        return;
+      }
+
       // Progress animation
       const progressInterval = setInterval(() => {
         setLoadingProgress(prev => {
@@ -109,8 +126,49 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
       }, 5000);
       
     } catch (error: any) {
-      toast.error('Failed to create account. Please try again.');
       console.error('Account creation error:', error);
+      
+      // Map Supabase errors to user-friendly messages
+      let errorMessage = 'Failed to create account';
+      let errorDescription = 'Please try again.';
+      
+      const errorString = error?.message?.toLowerCase() || '';
+      
+      if (errorString.includes('already registered') || 
+          errorString.includes('already exists') ||
+          errorString.includes('duplicate')) {
+        errorMessage = 'Email already in use';
+        errorDescription = 'This email is already registered. Please sign in or use a different email.';
+        toast.error(errorMessage, {
+          description: errorDescription,
+          action: {
+            label: 'Go to Sign In',
+            onClick: () => navigate('/auth'),
+          },
+        });
+        setTimeout(() => {
+          onPrev(); // Go back to edit email
+        }, 2000);
+      } else if (errorString.includes('invalid email')) {
+        errorMessage = 'Invalid email address';
+        errorDescription = 'Please check your email address and try again.';
+        toast.error(errorMessage, { description: errorDescription });
+        setTimeout(() => {
+          onPrev();
+        }, 1500);
+      } else if (errorString.includes('weak password') || errorString.includes('password')) {
+        errorMessage = 'Password issue';
+        errorDescription = 'Your password doesn\'t meet the requirements. Please try a stronger password.';
+        toast.error(errorMessage, { description: errorDescription });
+        setTimeout(() => {
+          onPrev();
+        }, 1500);
+      } else {
+        toast.error(errorMessage, { 
+          description: errorDescription + ' If the problem persists, please contact support.',
+        });
+      }
+      
       setLoadingProgress(0);
       setCurrentStep(0);
     }
