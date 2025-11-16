@@ -18,6 +18,7 @@ const PricingPage = () => {
   const plans = [
     {
       name: 'Starter',
+      bestFor: 'Best for getting started',
       monthlyPrice: 9.99,
       minutes: 50,
       popular: false,
@@ -30,6 +31,7 @@ const PricingPage = () => {
     },
     {
       name: 'Standard',
+      bestFor: 'Best for micro daily lessons with Cleo',
       monthlyPrice: 19.99,
       minutes: 100,
       popular: true,
@@ -42,6 +44,7 @@ const PricingPage = () => {
     },
     {
       name: 'Booster',
+      bestFor: 'Best for mock revision/GCSE revision',
       monthlyPrice: 45,
       minutes: 250,
       popular: false,
@@ -55,6 +58,7 @@ const PricingPage = () => {
     },
     {
       name: 'Pro',
+      bestFor: 'Best for families',
       monthlyPrice: 98,
       minutes: 500,
       popular: false,
@@ -225,6 +229,7 @@ const PricingPage = () => {
 
                 <div className="mb-6">
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{plan.bestFor}</p>
                   
                   {/* Price Display with Strikethrough for Annual */}
                   <div className="mb-2">
