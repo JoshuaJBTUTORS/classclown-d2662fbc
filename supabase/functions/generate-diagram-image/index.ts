@@ -11,9 +11,9 @@ serve(async (req) => {
   }
 
   try {
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     const { prompt } = await req.json();
@@ -27,19 +27,21 @@ serve(async (req) => {
 
     console.log('Generating diagram image with prompt:', prompt.substring(0, 100) + '...');
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-image-mini', // Faster model for quicker generation
-        prompt: prompt,
-        n: 1,
-        size: '512x512', // Smaller size for faster generation
-        quality: 'standard', // Standard quality for speed
-        output_format: 'png'
+        model: 'google/gemini-2.5-flash-image-preview',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        modalities: ['image', 'text']
       }),
     });
 
@@ -65,9 +67,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const imageUrl = data.data?.[0]?.b64_json 
-      ? `data:image/png;base64,${data.data[0].b64_json}`
-      : data.data?.[0]?.url;
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!imageUrl) {
       console.error('No image generated in response:', JSON.stringify(data));
