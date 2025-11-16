@@ -7,6 +7,7 @@ import LiveTutoringUpgradeModal from './LiveTutoringUpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { isCleoIO } from '@/utils/domainConfig';
+import cleoLogo from '@/assets/cleo-logo.png';
 import {
   Sidebar,
   SidebarContent,
@@ -96,7 +97,7 @@ const LearningHubSidebar = () => {
         <SidebarContent className="bg-transparent border-none shadow-none">
           {/* Header */}
           <div className="cleo-sidebar-header">
-            <div className="cleo-logo">Cleo</div>
+            <img src={cleoLogo} alt="Cleo" className="h-8 w-auto" />
             <div className="cleo-smiley">☺️</div>
           </div>
 
