@@ -68,6 +68,7 @@ const LearningHubSidebar = () => {
         item.href === '/learning-hub/my-courses' || 
         item.href === '/learning-hub/assessments' ||
         item.href === '/learning-hub/cleo-id' ||
+        item.href === '/learning-hub/subscription' ||
         item.href === '/learning-hub/settings'
       )
     : navigationItems; // Show all on ClassClown domain
