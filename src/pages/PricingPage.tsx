@@ -250,10 +250,6 @@ const PricingPage = () => {
                       </div>
                     </div>
                   )}
-                  
-                  <div className="mt-3 text-sm text-muted-foreground">
-                    {plan.minutes} minutes • ≈ {Math.floor(plan.minutes / 15)} lessons
-                  </div>
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-grow">
