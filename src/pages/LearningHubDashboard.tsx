@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DomainSEO } from '@/components/seo/DomainSEO';
 
+import cleoLogo from '@/assets/cleo-logo.png';
+
 const LearningHubDashboard = () => {
   const { user, profile, primaryStudentName, userRole } = useAuth();
   const navigate = useNavigate();
@@ -66,8 +68,9 @@ const LearningHubDashboard = () => {
         <div className="cleo-avatar-circle mx-auto mb-4" style={{ fontSize: '46px' }}>
           {user?.user_metadata?.avatar || '😊'}
         </div>
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
-          Welcome back, {displayName} 🦊
+        <h2 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2" style={{ color: 'hsl(var(--cleo-text-dark))' }}>
+          Welcome back, {displayName} 
+          <img src={cleoLogo} alt="Cleo" className="h-8 w-auto inline-block" />
         </h2>
         <p className="text-sm text-gray-600 mb-4">Strategist Mode: Engaged.</p>
         <p className="text-gray-600 mb-8">

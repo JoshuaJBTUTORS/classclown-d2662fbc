@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProfileSettings from '@/components/learningHub/ProfileSettings';
 import SubscriptionSettings from '@/components/learningHub/SubscriptionSettings';
+import cleoLogo from '@/assets/cleo-logo.png';
 
 const LearningHubSettings = () => {
   return (
@@ -9,7 +10,9 @@ const LearningHubSettings = () => {
       <section className="cleo-screen-courses">
         {/* Header with fox emoji */}
         <div className="strategist-header">
-          <div className="fox-avatar">🦊</div>
+          <div className="fox-avatar">
+            <img src={cleoLogo} alt="Cleo" className="h-8 w-auto" />
+          </div>
           <div className="strategist-info">
             <h2>Settings</h2>
             <p className="small-label">

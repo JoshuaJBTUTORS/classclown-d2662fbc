@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Star, Heart } from 'lucide-react';
+import cleoLogo from '@/assets/cleo-logo.png';
 
 interface WelcomePageProps {
   onStart: () => void;
@@ -55,9 +56,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
               transition={{ delay: 0.4, type: "spring" }}
               className="flex-shrink-0"
             >
-              <div className="text-9xl">
-                🧑🏻‍🔬
-              </div>
+              <img src={cleoLogo} alt="Cleo Logo" className="h-32 w-auto" />
             </motion.div>
           </div>
 

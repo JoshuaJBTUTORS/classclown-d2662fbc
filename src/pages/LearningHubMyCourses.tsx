@@ -6,6 +6,7 @@ import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
+import cleoLogo from '@/assets/cleo-logo.png';
 
 // Course emoji mapping for GCSE subjects
 const courseEmojiMap: Record<string, string> = {
@@ -215,7 +216,9 @@ const LearningHubMyCourses = () => {
       <div className="cleo-screen-wrapper">
         <section className="cleo-screen-courses">
           <div className="strategist-header">
-            <div className="fox-avatar">🦊</div>
+            <div className="fox-avatar">
+              <img src={cleoLogo} alt="Cleo" className="h-8 w-auto" />
+            </div>
             <div className="strategist-info">
               <h2>Strategist Mode: ON</h2>
               <p className="small-label">
@@ -243,7 +246,9 @@ const LearningHubMyCourses = () => {
       <div className="cleo-screen-wrapper">
         <section className="cleo-screen-courses">
           <div className="strategist-header">
-            <div className="fox-avatar">🦊</div>
+            <div className="fox-avatar">
+              <img src={cleoLogo} alt="Cleo" className="h-8 w-auto" />
+            </div>
             <div className="strategist-info">
               <h2>Strategist Mode: ON</h2>
               <p className="small-label">
@@ -285,7 +290,9 @@ const LearningHubMyCourses = () => {
       <div className="cleo-screen-wrapper">
         <section className="cleo-screen-courses">
           <div className="strategist-header">
-            <div className="fox-avatar">🦊</div>
+            <div className="fox-avatar">
+              <img src={cleoLogo} alt="Cleo" className="h-8 w-auto" />
+            </div>
             <div className="strategist-info">
               <h2>Strategist Mode: ON</h2>
               <p className="small-label">
@@ -318,7 +325,9 @@ const LearningHubMyCourses = () => {
       <section className="cleo-screen-courses">
         {/* Header with fox emoji */}
         <div className="strategist-header">
-          <div className="fox-avatar">🦊</div>
+          <div className="fox-avatar">
+            <img src={cleoLogo} alt="Cleo" className="h-8 w-auto" />
+          </div>
           <div className="strategist-info">
             <h2>Strategist Mode: ON</h2>
             <p className="small-label">

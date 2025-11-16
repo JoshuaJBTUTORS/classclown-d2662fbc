@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { getMasteryLevel, getNextMasteryLevel, getMasteryProgress, MASTERY_LEVELS } from '@/services/masterySystem';
 import { DomainSEO } from '@/components/seo/DomainSEO';
+import cleoLogo from '@/assets/cleo-logo.png';
 
 export default function LearningHubCleoID() {
   const { user, profile, signOut } = useAuth();
@@ -89,7 +90,7 @@ export default function LearningHubCleoID() {
         <header className="text-center mb-2">
           <div className="mb-1">
             <span className="text-2xl font-bold">{firstName}</span>
-            <span className="text-2xl ml-2">🦊</span>
+            <img src={cleoLogo} alt="Cleo" className="h-6 w-auto inline-block ml-2" />
           </div>
           <div className="flex items-center justify-center gap-2">
             <span className="text-3xl">{masteryLevel.emoji}</span>
