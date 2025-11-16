@@ -14,6 +14,8 @@ import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
 import { getDomainConfig, isCleoIO } from '@/utils/domainConfig';
 import { DomainSEO } from '@/components/seo/DomainSEO';
+import cleoLogo from '@/assets/cleo-logo.png';
+
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,7 +97,7 @@ const Auth = () => {
         }} className="text-center lg:text-left space-y-6">
             <div className="flex justify-center lg:justify-start">
               {isCleo ? (
-                <div className="text-7xl">🦊</div>
+                <img src={cleoLogo} alt="Cleo Logo" className="h-20 w-auto" />
               ) : (
                 <img src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" alt="JB Tutors Logo" className="h-24 w-auto" />
               )}
