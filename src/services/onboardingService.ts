@@ -16,6 +16,7 @@ export const onboardingService = {
         preferred_subjects: data.subjects,
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
+        has_cleo_hub_access: true,
       }, { onConflict: 'id' })
       .select('id')
       .single();
