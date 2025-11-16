@@ -431,28 +431,37 @@ export const paymentService = {
       return { hasAccess: true, subscription };
     }
 
-    // Check for available voice session quotas (including free sessions)
+    // Check for available voice session quotas (including free sessions and minutes)
     const now = new Date().toISOString();
     const { data: quota } = await supabase
       .from('voice_session_quotas')
-      .select('sessions_remaining, bonus_sessions')
+      .select('sessions_remaining, bonus_sessions, minutes_remaining, bonus_minutes')
       .eq('user_id', user.id)
       .lte('period_start', now)
       .gte('period_end', now)
       .maybeSingle();
 
     if (quota) {
-      const totalRemaining = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
-      if (totalRemaining > 0) {
-        console.log('User has available free sessions:', totalRemaining);
+      const totalSessions = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
+      const totalMinutes = (quota.minutes_remaining || 0) + (quota.bonus_minutes || 0);
+      
+      if (totalSessions > 0 || totalMinutes > 0) {
+        const reasons = [];
+        if (totalSessions > 0) {
+          reasons.push(`${totalSessions} free session${totalSessions > 1 ? 's' : ''}`);
+        }
+        if (totalMinutes > 0) {
+          reasons.push(`${totalMinutes} free minute${totalMinutes > 1 ? 's' : ''}`);
+        }
+        console.log('User has available free quota:', { sessions: totalSessions, minutes: totalMinutes });
         return { 
           hasAccess: true, 
-          reason: `${totalRemaining} free session${totalRemaining > 1 ? 's' : ''} available` 
+          reason: `${reasons.join(' and ')} available` 
         };
       }
     }
 
-    console.log('No active platform subscription or free sessions found');
-    return { hasAccess: false, reason: 'No active subscription or free sessions' };
+    console.log('No active platform subscription or free quota found');
+    return { hasAccess: false, reason: 'No active subscription or free quota' };
   },
 };
