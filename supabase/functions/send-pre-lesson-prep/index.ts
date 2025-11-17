@@ -90,6 +90,7 @@ function normalizeSubjectForLessonPlans(lessonSubject: string, lessonTitle: stri
   
   if (normalized.includes('english language')) return 'GCSE English Language';
   if (normalized.includes('english literature')) return 'GCSE English Literature';
+  if (normalized.includes('english')) return 'GCSE English'; // Generic English fallback
   if (normalized.includes('computer science')) return 'GCSE Computer Science';
   
   // Combined Science handling (will be resolved later)
