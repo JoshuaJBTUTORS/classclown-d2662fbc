@@ -20,6 +20,8 @@ interface UserProfile {
   onboarding_completed?: boolean;
   onboarding_completed_at?: string;
   has_cleo_hub_access?: boolean;
+  education_level?: string | null;
+  exam_boards?: any;
 }
 
 interface ParentProfile {
