@@ -14,6 +14,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DomainSEO } from '@/components/seo/DomainSEO';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 import cleoLogo from '@/assets/cleo-logo.png';
 
@@ -21,6 +23,8 @@ const LearningHubDashboard = () => {
   const { user, profile, primaryStudentName, userRole } = useAuth();
   const navigate = useNavigate();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const needsEducationSetup = !profile?.education_level || !profile?.exam_boards;
   
   const displayName = (userRole === 'parent' && primaryStudentName) 
     ? primaryStudentName 
@@ -61,6 +65,25 @@ const LearningHubDashboard = () => {
       <div className="w-full px-4 sm:px-8 md:px-16 lg:px-24 py-4 flex justify-end">
         <VoiceSessionIndicator />
       </div>
+
+      {/* Education Setup Alert */}
+      {needsEducationSetup && (
+        <div className="w-full px-4 sm:px-8 md:px-16 lg:px-24 pb-4">
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Hey! In order to get the most out of Cleo, please{' '}
+              <button
+                onClick={() => navigate('/learning-hub/settings')}
+                className="font-semibold underline hover:text-amber-900"
+              >
+                set your exam board
+              </button>
+              .
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Welcome Hero - Cleo Style */}
       <div className="flex-1 flex items-center justify-center px-4">
