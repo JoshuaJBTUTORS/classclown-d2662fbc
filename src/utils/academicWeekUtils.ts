@@ -36,11 +36,11 @@ export function getAcademicWeekInfo(): AcademicWeekInfo {
   // Calculate progress percentage
   const weekProgress = (currentWeek / 52) * 100;
   
-  // Determine current term
+  // Determine current term (without "Term" suffix to match DB)
   const getCurrentTerm = (week: number): string => {
-    if (week >= 1 && week <= 14) return 'Autumn Term';
-    if (week >= 15 && week <= 28) return 'Spring Term';
-    if (week >= 29 && week <= 42) return 'Summer Term';
+    if (week >= 1 && week <= 14) return 'Autumn';
+    if (week >= 15 && week <= 28) return 'Spring';
+    if (week >= 29 && week <= 42) return 'Summer';
     return 'Summer Holidays';
   };
   

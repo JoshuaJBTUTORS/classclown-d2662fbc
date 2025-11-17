@@ -39,6 +39,12 @@ interface WeeklyTopicMatch {
   searchInstruction: string;
 }
 
+// Valid Cleo GCSE subjects
+const VALID_CLEO_SUBJECTS = [
+  'biology', 'chemistry', 'physics', 'combined science',
+  'maths', 'mathematics', 'english'
+];
+
 // Helper function to get current academic week and term
 function getAcademicWeekInfo() {
   const now = new Date();
@@ -56,24 +62,32 @@ function getAcademicWeekInfo() {
   
   const currentWeek = ((weeksSinceStart % 52) + 1);
   
-  // Determine term
-  let currentTerm = 'Autumn Term';
-  if (currentWeek >= 15 && currentWeek <= 28) currentTerm = 'Spring Term';
-  if (currentWeek >= 29 && currentWeek <= 42) currentTerm = 'Summer Term';
+  // Determine term (without "Term" suffix to match DB)
+  let currentTerm = 'Autumn';
+  if (currentWeek >= 15 && currentWeek <= 28) currentTerm = 'Spring';
+  if (currentWeek >= 29 && currentWeek <= 42) currentTerm = 'Summer';
   if (currentWeek > 42) currentTerm = 'Summer Holidays';
   
   return { currentWeek, currentTerm };
 }
 
 // Helper function to normalize lesson subjects to match lesson_plans table
-function normalizeSubjectForLessonPlans(lessonSubject: string): string {
+function normalizeSubjectForLessonPlans(lessonSubject: string, lessonTitle: string = ''): string {
   const normalized = lessonSubject.toLowerCase();
+  const title = lessonTitle.toLowerCase();
   
   // Direct mappings
   if (normalized.includes('biology')) return 'GCSE Biology';
   if (normalized.includes('chemistry')) return 'GCSE Chemistry';
   if (normalized.includes('physics')) return 'GCSE Physics';
-  if (normalized.includes('maths') || normalized.includes('mathematics')) return 'GCSE Maths';
+  
+  // Maths handling with Foundation/Higher split
+  if (normalized.includes('maths') || normalized.includes('mathematics')) {
+    if (title.includes('foundation')) return 'GCSE Maths Foundation';
+    if (title.includes('higher')) return 'GCSE Maths Higher';
+    return 'GCSE Maths Foundation'; // Default to Foundation
+  }
+  
   if (normalized.includes('english language')) return 'GCSE English Language';
   if (normalized.includes('english literature')) return 'GCSE English Literature';
   if (normalized.includes('computer science')) return 'GCSE Computer Science';
@@ -221,7 +235,13 @@ serve(async (req) => {
                        lesson.subject?.toLowerCase().includes('gcse') ||
                        lesson.title?.toLowerCase().includes('gcse');
         
-        if (isGCSE) {
+        // Check if subject is a valid Cleo subject
+        const normalizedSubject = lesson.subject?.toLowerCase() || '';
+        const isCleoSubject = VALID_CLEO_SUBJECTS.some(validSubject => 
+          normalizedSubject.includes(validSubject)
+        );
+        
+        if (isGCSE && isCleoSubject) {
           gcseStudents.push({
             id: lesson.id,
             title: lesson.title,
