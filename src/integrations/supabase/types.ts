@@ -4625,6 +4625,54 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_topic_module_mappings: {
+        Row: {
+          confidence_score: number | null
+          course_lesson_id: string | null
+          course_module_id: string | null
+          created_at: string | null
+          id: string
+          subject: string
+          updated_at: string | null
+          weekly_topic_title: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          course_lesson_id?: string | null
+          course_module_id?: string | null
+          created_at?: string | null
+          id?: string
+          subject: string
+          updated_at?: string | null
+          weekly_topic_title: string
+        }
+        Update: {
+          confidence_score?: number | null
+          course_lesson_id?: string | null
+          course_module_id?: string | null
+          created_at?: string | null
+          id?: string
+          subject?: string
+          updated_at?: string | null
+          weekly_topic_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_topic_module_mappings_course_lesson_id_fkey"
+            columns: ["course_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_topic_module_mappings_course_module_id_fkey"
+            columns: ["course_module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whiteboard_files: {
         Row: {
           created_at: string
