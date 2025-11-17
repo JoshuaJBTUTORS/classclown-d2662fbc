@@ -50,32 +50,6 @@ const getStreakText = (lastAccessedAt: string | null): string => {
   return 'Start your streak!';
 };
 
-// Helper to extract core subject name from a subject string
-const extractCoreSubject = (subjectName: string): string => {
-  // Remove prefixes like "GCSE", "A-Level"
-  return subjectName
-    .replace(/^GCSE\s+/i, '')
-    .replace(/^A-Level\s+/i, '')
-    .trim()
-    .toLowerCase();
-};
-
-// Check if a course matches the selected subjects
-const courseMatchesSelectedSubjects = (course: any, selectedSubjectNames: string[]): boolean => {
-  if (!selectedSubjectNames || selectedSubjectNames.length === 0) {
-    return true; // No filter applied if no subjects selected
-  }
-  
-  const courseSubject = course.subject || '';
-  const courseTitle = course.title || '';
-  const coreSubjects = selectedSubjectNames.map(extractCoreSubject);
-  
-  // Check if course subject or title contains any of the selected core subjects
-  return coreSubjects.some(coreSubject => {
-    return courseSubject.toLowerCase().includes(coreSubject) ||
-           courseTitle.toLowerCase().includes(coreSubject);
-  });
-};
 
 const LearningHubMyCourses = () => {
   const navigate = useNavigate();
@@ -136,24 +110,6 @@ const LearningHubMyCourses = () => {
     enabled: !!user,
   });
 
-  // Fetch selected subject names if GCSE subjects are selected
-  const { data: selectedSubjects } = useQuery({
-    queryKey: ['selected-subjects', userProfile?.gcse_subject_ids],
-    queryFn: async () => {
-      if (!userProfile?.gcse_subject_ids || userProfile.gcse_subject_ids.length === 0) {
-        return [];
-      }
-      
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('id, name')
-        .in('id', userProfile.gcse_subject_ids);
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userProfile?.gcse_subject_ids && userProfile.gcse_subject_ids.length > 0,
-  });
 
   // Determine courses to show based on subscription
   const allCourses = !subscriptionAccess?.hasAccess 
@@ -189,19 +145,9 @@ const LearningHubMyCourses = () => {
       return true;
     }
     
-    // For GCSE education level, show only GCSE courses
+    // For GCSE education level, show ALL GCSE courses (no subject filtering)
     if (userProfile.education_level === 'gcse') {
-      const isGCSE = isGCSECourse(course);
-      if (!isGCSE) return false;
-      
-      // If no subjects selected yet, show all GCSE courses
-      if (!selectedSubjects || selectedSubjects.length === 0) {
-        return true;
-      }
-      
-      // Filter by selected subjects
-      const subjectNames = selectedSubjects.map(s => s.name);
-      return courseMatchesSelectedSubjects(course, subjectNames);
+      return isGCSECourse(course);
     }
     
     return true;
