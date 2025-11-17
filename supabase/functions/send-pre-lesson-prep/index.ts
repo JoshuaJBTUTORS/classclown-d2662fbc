@@ -30,6 +30,130 @@ interface CleoTopic {
   year_group: string;
 }
 
+interface WeeklyTopicMatch {
+  found: boolean;
+  subject: string;
+  weekNumber: number;
+  term: string;
+  topicTitle: string | null;
+  searchInstruction: string;
+}
+
+// Helper function to get current academic week and term
+function getAcademicWeekInfo() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  
+  // Calculate academic year start (first Monday of September)
+  const academicYearStart = now.getMonth() < 8 
+    ? new Date(currentYear - 1, 8, 1)
+    : new Date(currentYear, 8, 1);
+  
+  // Calculate weeks since start
+  const weeksSinceStart = Math.floor(
+    (now.getTime() - academicYearStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
+  
+  const currentWeek = ((weeksSinceStart % 52) + 1);
+  
+  // Determine term
+  let currentTerm = 'Autumn Term';
+  if (currentWeek >= 15 && currentWeek <= 28) currentTerm = 'Spring Term';
+  if (currentWeek >= 29 && currentWeek <= 42) currentTerm = 'Summer Term';
+  if (currentWeek > 42) currentTerm = 'Summer Holidays';
+  
+  return { currentWeek, currentTerm };
+}
+
+// Helper function to normalize lesson subjects to match lesson_plans table
+function normalizeSubjectForLessonPlans(lessonSubject: string): string {
+  const normalized = lessonSubject.toLowerCase();
+  
+  // Direct mappings
+  if (normalized.includes('biology')) return 'GCSE Biology';
+  if (normalized.includes('chemistry')) return 'GCSE Chemistry';
+  if (normalized.includes('physics')) return 'GCSE Physics';
+  if (normalized.includes('maths') || normalized.includes('mathematics')) return 'GCSE Maths';
+  if (normalized.includes('english language')) return 'GCSE English Language';
+  if (normalized.includes('english literature')) return 'GCSE English Literature';
+  if (normalized.includes('computer science')) return 'GCSE Computer Science';
+  
+  // Combined Science handling (will be resolved later)
+  if (normalized.includes('combined science') || normalized.includes('combined sci')) {
+    return 'Combined Science';
+  }
+  
+  return lessonSubject; // Fallback
+}
+
+// Helper function to detect which branch of Combined Science
+function detectCombinedScienceBranch(lessonTitle: string): string {
+  const title = lessonTitle.toLowerCase();
+  
+  const bioKeywords = ['cell', 'enzyme', 'photosynthesis', 'respiration', 'organ', 'tissue', 'dna', 'gene', 'mitosis'];
+  const chemKeywords = ['atom', 'molecule', 'reaction', 'periodic', 'element', 'acid', 'base', 'bond', 'ionic'];
+  const physKeywords = ['force', 'energy', 'wave', 'motion', 'electricity', 'current', 'voltage', 'magnet', 'light'];
+  
+  const bioScore = bioKeywords.filter(kw => title.includes(kw)).length;
+  const chemScore = chemKeywords.filter(kw => title.includes(kw)).length;
+  const physScore = physKeywords.filter(kw => title.includes(kw)).length;
+  
+  if (chemScore > bioScore && chemScore > physScore) return 'GCSE Chemistry';
+  if (physScore > bioScore && physScore > chemScore) return 'GCSE Physics';
+  
+  return 'GCSE Biology'; // Default to Biology
+}
+
+// Main function to find weekly topic for a lesson
+async function findWeeklyTopicForLesson(
+  supabase: any,
+  lesson: LessonData
+): Promise<WeeklyTopicMatch> {
+  
+  // Step 1: Get current academic week
+  const { currentWeek, currentTerm } = getAcademicWeekInfo();
+  
+  console.log(`Current academic week: ${currentWeek}, Term: ${currentTerm}`);
+  
+  // Step 2: Normalize subject
+  let normalizedSubject = normalizeSubjectForLessonPlans(lesson.subject);
+  
+  // Step 3: Handle Combined Science
+  if (normalizedSubject === 'Combined Science') {
+    normalizedSubject = detectCombinedScienceBranch(lesson.title);
+    console.log(`Combined Science detected as: ${normalizedSubject}`);
+  }
+  
+  // Step 4: Query lesson_plans table
+  const { data: lessonPlan, error } = await supabase
+    .from('lesson_plans')
+    .select('topic_title, description')
+    .eq('subject', normalizedSubject)
+    .eq('week_number', currentWeek)
+    .eq('term', currentTerm)
+    .single();
+  
+  if (error) {
+    console.log(`No lesson plan found for ${normalizedSubject} week ${currentWeek}:`, error.message);
+  }
+  
+  // Step 5: Build result
+  const topicTitle = lessonPlan?.topic_title || null;
+  
+  const searchInstruction = topicTitle
+    ? `Search for "${topicTitle}" on heycleo.io`
+    : `Browse ${normalizedSubject} topics related to your lesson`;
+  
+  return {
+    found: !!topicTitle,
+    subject: normalizedSubject,
+    weekNumber: currentWeek,
+    term: currentTerm,
+    topicTitle,
+    searchInstruction
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -129,8 +253,12 @@ serve(async (req) => {
     // Process each student
     for (const studentLesson of gcseStudents) {
       try {
-        // Find matching Cleo topic
-        const cleoTopic = await findCleoTopic(supabase, studentLesson.subject, studentLesson.title);
+        // Find matching weekly topic from lesson plans
+        const topicMatch = await findWeeklyTopicForLesson(supabase, studentLesson);
+        
+        console.log(`Lesson: ${studentLesson.title}`);
+        console.log(`Matched Topic: ${topicMatch.topicTitle || 'None'}`);
+        console.log(`Instruction: ${topicMatch.searchInstruction}`);
         
         // Send email to parent (or student if no parent)
         const recipientEmail = studentLesson.parent_email || studentLesson.student_email;
@@ -144,7 +272,7 @@ serve(async (req) => {
             studentLesson.subject,
             studentLesson.title,
             studentLesson.start_time,
-            cleoTopic
+            topicMatch.topicTitle || topicMatch.subject
           );
           emailsSent++;
           await new Promise(resolve => setTimeout(resolve, 100)); // Rate limiting
@@ -157,7 +285,7 @@ serve(async (req) => {
             studentLesson.student_first_name,
             studentLesson.subject,
             studentLesson.start_time,
-            cleoTopic
+            topicMatch.topicTitle || topicMatch.subject
           );
           whatsappSent++;
           await new Promise(resolve => setTimeout(resolve, 200)); // Rate limiting
