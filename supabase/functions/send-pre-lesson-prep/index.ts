@@ -37,6 +37,10 @@ interface WeeklyTopicMatch {
   term: string;
   topicTitle: string | null;
   searchInstruction: string;
+  cleoModuleId?: string;
+  cleoLessonId?: string;
+  cleoModuleLink?: string;
+  cleoModuleTitle?: string;
 }
 
 // Valid Cleo GCSE subjects
@@ -119,6 +123,107 @@ function detectCombinedScienceBranch(lessonTitle: string): string {
   return 'GCSE Biology'; // Default to Biology
 }
 
+// Helper function to calculate fuzzy match score
+function calculateMatchScore(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+  
+  // Exact match
+  if (s1 === s2) return 100;
+  
+  // Contains match
+  if (s1.includes(s2) || s2.includes(s1)) return 75;
+  
+  // Word overlap
+  const words1 = s1.split(/\s+/);
+  const words2 = s2.split(/\s+/);
+  const commonWords = words1.filter(w => words2.includes(w)).length;
+  const totalWords = Math.max(words1.length, words2.length);
+  
+  return (commonWords / totalWords) * 60;
+}
+
+// Helper function to find Cleo module/lesson for weekly topic
+async function findCleoModuleForWeeklyTopic(
+  subject: string,
+  topicTitle: string,
+  supabase: any
+): Promise<{ moduleId?: string; lessonId?: string; moduleLink?: string; moduleTitle?: string }> {
+  try {
+    // First, check explicit mappings
+    const { data: mapping, error: mappingError } = await supabase
+      .from('weekly_topic_module_mappings')
+      .select('course_module_id, course_lesson_id, course_modules!inner(id, title, course_id)')
+      .eq('subject', subject)
+      .eq('weekly_topic_title', topicTitle)
+      .order('confidence_score', { ascending: false })
+      .single();
+    
+    if (!mappingError && mapping) {
+      const courseId = mapping.course_modules.course_id;
+      const moduleId = mapping.course_module_id;
+      const moduleTitle = mapping.course_modules.title;
+      const link = `https://classclowncrm.com/learning-hub/courses/${courseId}/modules/${moduleId}`;
+      
+      return {
+        moduleId,
+        lessonId: mapping.course_lesson_id,
+        moduleLink: link,
+        moduleTitle
+      };
+    }
+    
+    // Fallback: Fuzzy matching for Biology/Maths
+    if (subject.includes('Biology') || subject.includes('Maths')) {
+      // Find the course
+      const { data: course } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('subject', subject.replace('GCSE ', ''))
+        .eq('status', 'published')
+        .single();
+      
+      if (course) {
+        // Get all modules for this course
+        const { data: modules } = await supabase
+          .from('course_modules')
+          .select('id, title, course_id')
+          .eq('course_id', course.id);
+        
+        if (modules && modules.length > 0) {
+          // Find best matching module
+          let bestMatch = null;
+          let bestScore = 0;
+          
+          for (const module of modules) {
+            const score = calculateMatchScore(topicTitle, module.title);
+            if (score > bestScore && score >= 50) { // Minimum 50% match
+              bestScore = score;
+              bestMatch = module;
+            }
+          }
+          
+          if (bestMatch) {
+            const link = `https://classclowncrm.com/learning-hub/courses/${bestMatch.course_id}/modules/${bestMatch.id}`;
+            console.log(`🎯 Fuzzy matched "${topicTitle}" to "${bestMatch.title}" (${bestScore}% confidence)`);
+            
+            return {
+              moduleId: bestMatch.id,
+              moduleLink: link,
+              moduleTitle: bestMatch.title
+            };
+          }
+        }
+      }
+    }
+    
+    return {};
+  } catch (error) {
+    console.error('Error finding Cleo module:', error);
+    return {};
+  }
+}
+
 // Main function to find weekly topic for a lesson
 async function findWeeklyTopicForLesson(
   supabase: any,
@@ -159,13 +264,26 @@ async function findWeeklyTopicForLesson(
     ? `Search for "${topicTitle}" on heycleo.io`
     : `Browse ${normalizedSubject} topics related to your lesson`;
   
+  // Step 6: Try to find matching Cleo module
+  let cleoMatch = { moduleId: undefined, lessonId: undefined, moduleLink: undefined, moduleTitle: undefined };
+  if (topicTitle) {
+    cleoMatch = await findCleoModuleForWeeklyTopic(normalizedSubject, topicTitle, supabase);
+    if (cleoMatch.moduleLink) {
+      console.log(`🎓 Found Cleo Module: "${cleoMatch.moduleTitle}" - ${cleoMatch.moduleLink}`);
+    }
+  }
+  
   return {
     found: !!topicTitle,
     subject: normalizedSubject,
     weekNumber: currentWeek,
     term: currentTerm,
     topicTitle,
-    searchInstruction
+    searchInstruction,
+    cleoModuleId: cleoMatch.moduleId,
+    cleoLessonId: cleoMatch.lessonId,
+    cleoModuleLink: cleoMatch.moduleLink,
+    cleoModuleTitle: cleoMatch.moduleTitle
   };
 }
 
@@ -306,7 +424,10 @@ serve(async (req) => {
             studentLesson.student_first_name,
             studentLesson.subject,
             studentLesson.start_time,
-            topicMatch.topicTitle || topicMatch.subject
+            topicMatch.topicTitle || topicMatch.subject,
+            topicMatch.searchInstruction,
+            topicMatch.cleoModuleLink,
+            topicMatch.cleoModuleTitle
           );
           whatsappSent++;
           await new Promise(resolve => setTimeout(resolve, 200)); // Rate limiting
@@ -521,7 +642,10 @@ async function sendWhatsApp(
   studentName: string,
   subject: string,
   startTime: string,
-  cleoTopic: string
+  topicTitle: string,
+  searchInstruction: string,
+  cleoModuleLink?: string,
+  cleoModuleTitle?: string
 ) {
   const wazzupApiKey = Deno.env.get('WAZZUP_API_KEY');
   const wazzupChannelId = Deno.env.get('WAZZUP_CHANNEL_ID');
@@ -550,21 +674,22 @@ async function sendWhatsApp(
     }
   }
 
-  const message = `🎓 *JB Tutors - Tomorrow's Lesson Prep*
+  // Build Cleo section if module link available
+  const cleoSection = cleoModuleLink 
+    ? `\n\n🎓 *Learn with Cleo AI:*\n👉 ${cleoModuleTitle}\n🔗 ${cleoModuleLink}\n\nGet ahead by exploring this topic on Cleo before your lesson!`
+    : '';
 
-Hi! ${studentName} has ${subject} tomorrow at ${timeStr}.
+  const message = `🦊 *Pre-Lesson Prep with Cleo!*
 
-⚠️ *REQUIRED PREPARATION*
+Hi! ${studentName} has ${subject} tomorrow at ${timeStr}. 📚
 
-📚 *Please complete before the lesson:*
+This week you'll be learning about:
+📖 *${topicTitle}*
 
-1️⃣ Login to Cleo: https://classclowncrm.com/learning-hub
-2️⃣ Find topic: *"${cleoTopic}"*
-3️⃣ Complete 10-15 min voice session
+🎯 *Get prepared:*
+${searchInstruction}${cleoSection}
 
-This will help ${studentName} get the most from the lesson!
-
-See you tomorrow! 👋
+See you in class! 👋
 
 _💬 If you'd like this sent to ${studentName} directly too, please reply._`;
 
