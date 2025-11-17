@@ -328,4 +328,29 @@ Questions? Just reply to this message!
 _Journey Beyond Education_
 Building confidence, one lesson at a time 🌟`;
   },
+
+  preLessonPrep: (
+    studentName: string,
+    subject: string,
+    time: string,
+    cleoTopic: string
+  ): string => {
+    return `🎓 *JB Tutors - Tomorrow's Lesson Prep*
+
+Hi! ${studentName} has ${subject} tomorrow at ${time}.
+
+⚠️ *REQUIRED PREPARATION*
+
+📚 *Please complete before the lesson:*
+
+1️⃣ Login to Cleo: https://classclowncrm.com/learning-hub
+2️⃣ Find topic: *"${cleoTopic}"*
+3️⃣ Complete 10-15 min voice session
+
+This will help ${studentName} get the most from the lesson!
+
+See you tomorrow! 👋
+
+_💬 If you'd like this sent to ${studentName} directly too, please reply._`;
+  },
 };
