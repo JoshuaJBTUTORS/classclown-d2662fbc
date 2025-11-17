@@ -307,8 +307,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 }
               });
               
-              // Trigger next response
-              rtcRef.current?.sendEvent({ type: 'response.create' });
+              // PHASE 1 FIX: Wait for closing remarks, then auto-disconnect
+              console.log('🎓 Waiting 3 seconds for closing remarks before auto-disconnect...');
+              setTimeout(() => {
+                console.log('🎓 Auto-disconnecting after lesson completion');
+                rtcRef.current?.disconnect(false);
+              }, 3000);
               break;
             }
             

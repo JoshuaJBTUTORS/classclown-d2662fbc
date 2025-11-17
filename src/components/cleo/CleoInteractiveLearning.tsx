@@ -97,6 +97,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [showPracticeDialog, setShowPracticeDialog] = useState(false);
   const [questionStats, setQuestionStats] = useState<any>(null);
   const [sessionStartTime] = useState(Date.now());
+  
+  // PHASE 3: Goodbye loop detection (safety net)
+  const goodbyeCounter = useRef(0);
+  const recentMessages = useRef<Array<{ role: 'user' | 'assistant', content: string }>>([]);
 
   const [mode, setMode] = useState<ChatMode>('voice');
   const [connectionState, setConnectionState] = useState<
@@ -159,6 +163,51 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   useEffect(() => {
     setAllMessages(textChat.messages);
   }, [textChat.messages]);
+
+  // PHASE 3: Goodbye loop detection (safety net)
+  useEffect(() => {
+    if (connectionState !== 'connected' || allMessages.length < 2) return;
+
+    const isGoodbyeMessage = (content: string) => {
+      const lowerContent = content.toLowerCase();
+      return (
+        lowerContent.includes('bye') ||
+        lowerContent.includes('goodbye') ||
+        lowerContent.includes('see you') ||
+        lowerContent.includes('take care') ||
+        lowerContent === 'you too!' ||
+        lowerContent === 'thanks!'
+      );
+    };
+
+    // Check the last 10 messages for goodbye patterns
+    const recentMsgs = allMessages.slice(-10);
+    const goodbyeMessages = recentMsgs.filter(msg => isGoodbyeMessage(msg.content));
+    
+    // Count consecutive goodbyes from both user and assistant
+    let consecutiveGoodbyes = 0;
+    for (let i = recentMsgs.length - 1; i >= 0; i--) {
+      if (isGoodbyeMessage(recentMsgs[i].content)) {
+        consecutiveGoodbyes++;
+      } else {
+        break;
+      }
+    }
+
+    if (consecutiveGoodbyes >= 4) {
+      console.log('🚨 GOODBYE LOOP DETECTED! Force disconnecting...');
+      console.log('🚨 Consecutive goodbyes:', consecutiveGoodbyes);
+      console.log('🚨 Recent messages:', recentMsgs.map(m => `${m.role}: ${m.content}`));
+      
+      handleVoiceDisconnect();
+      
+      toast({
+        title: "Session Ended 👋",
+        description: "Goodbye! Hope you enjoyed the lesson.",
+      });
+    }
+  }, [allMessages, connectionState]);
+
 
 
   const handleBackToModule = () => {
@@ -297,6 +346,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   const handleCompleteLesson = async () => {
     if (!conversationId) return;
+    
+    // PHASE 4: Wait 5 seconds for Cleo's closing audio to finish
+    console.log('🎓 Waiting 5 seconds for closing audio before disconnecting...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
     
     // CRITICAL: Disconnect voice session to stop OpenAI charges
     if (connectionState === 'connected') {
