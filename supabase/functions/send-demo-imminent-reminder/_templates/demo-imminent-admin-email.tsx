@@ -97,8 +97,8 @@ export const DemoImminentAdminEmail = ({
         <Section style={footer}>
           <Hr style={footerDivider} />
           <Text style={footerText}>
-            <strong>JB Tutors Admin Alert</strong><br />
-            📧 joshua@jb-tutors.com | 📱 +44 7413069120
+            <strong>Class Beyond Admin Alert</strong><br />
+            📧 joshua@classbeyondacademy.io | 📱 +44 7413069120
           </Text>
         </Section>
       </Container>

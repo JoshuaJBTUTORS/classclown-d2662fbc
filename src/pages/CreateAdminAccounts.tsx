@@ -52,19 +52,19 @@ const CreateAdminAccounts: React.FC = () => {
 
   const adminsToCreate = [
     {
-      email: 'Joshua@jb-tutors.com',
+      email: 'Joshua@classbeyondacademy.io',
       firstName: 'Joshua',
       lastName: 'Ekundayo',
       availability: '9am - 8pm GMT, Monday to Sunday'
     },
     {
-      email: 'Britney@jb-tutors.com', 
+      email: 'Britney@classbeyondacademy.io', 
       firstName: 'Britney',
       lastName: 'Lawrence',
       availability: '9am - 8pm GMT, Monday to Sunday'
     },
     {
-      email: 'Musa@jb-tutors.com',
+      email: 'Musa@classbeyondacademy.io',
       firstName: 'Musa',
       lastName: 'Thulubona', 
       availability: '12pm - 8pm GMT, Monday to Friday'

@@ -127,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Send email
         const emailResponse = await resend.emails.send({
-          from: 'JB Tutors <notifications@jb-tutors.com>',
+          from: 'Class Beyond <notifications@classbeyondacademy.io>',
           to: [parent.email],
           subject: `School Progress Report Reminder - Due ${cycleEndDate}`,
           html: emailHtml,

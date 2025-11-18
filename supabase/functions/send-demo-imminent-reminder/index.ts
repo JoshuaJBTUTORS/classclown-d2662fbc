@@ -130,7 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
             console.log(`Sending imminent demo reminder email to parent: ${trialBooking.email}`);
 
             await sendEmailWithRetry({
-              from: 'JB Tutors <lessons@jb-tutors.com>',
+              from: 'Class Beyond <lessons@classbeyondacademy.io>',
               to: [trialBooking.email],
               subject: `🚨 STARTING IN 10 MINUTES - Demo Session for ${trialBooking.child_name}`,
               html: parentEmailHtml,
@@ -193,11 +193,11 @@ const handler = async (req: Request): Promise<Response> => {
             })
           );
 
-          console.log('Sending imminent demo reminder to admin: joshua@jb-tutors.com');
+          console.log('Sending imminent demo reminder to admin: joshua@classbeyondacademy.io');
 
           await sendEmailWithRetry({
-            from: 'JB Tutors Alerts <lessons@jb-tutors.com>',
-            to: ['joshua@jb-tutors.com'],
+            from: 'Class Beyond Alerts <lessons@classbeyondacademy.io>',
+            to: ['joshua@classbeyondacademy.io'],
             subject: `🚨 Demo Starting in 10 Min - ${trialBooking.parent_name} & ${trialBooking.child_name} ${contactNote}`,
             html: adminEmailHtml,
           });

@@ -112,7 +112,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email notification
     const emailResponse = await resend.emails.send({
-      from: 'JB Tutors <notifications@jb-tutors.com>',
+      from: 'Class Beyond <notifications@classbeyondacademy.io>',
       to: recipients,
       subject: `Topic Request ${status === 'approved' ? 'Approved' : 'Update'} - General Request`,
       html: emailHtml,

@@ -63,7 +63,7 @@ serve(async (req: Request) => {
     const endTime = timeOffData.end_date ? formatInUKTime(timeOffData.end_date, 'h:mm a') : null;
 
     // Admin details
-    const adminEmail = "britney@jb-tutors.com";
+    const adminEmail = "britney@classbeyondacademy.io";
     const adminWhatsApp = "+44 7956363448";
 
     // Send email notification
@@ -82,7 +82,7 @@ serve(async (req: Request) => {
     );
 
     const { error: emailError } = await resend.emails.send({
-      from: 'JB Tutors <notifications@jb-tutors.com>',
+      from: 'Class Beyond <notifications@classbeyondacademy.io>',
       to: [adminEmail],
       subject: `New Time-Off Request from ${tutorName}`,
       html: emailHtml,

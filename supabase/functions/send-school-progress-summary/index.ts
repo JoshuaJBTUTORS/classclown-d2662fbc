@@ -189,7 +189,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     // Send summary email to admin emails
-    const adminEmails = ['britney@jb-tutors.com', 'joshua@jb-tutors.com'];
+    const adminEmails = ['britney@classbeyondacademy.io', 'joshua@classbeyondacademy.io'];
     
     let emailsSent = 0;
     const errors: string[] = [];
@@ -197,7 +197,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const adminEmail of adminEmails) {
       try {
         const emailResponse = await resend.emails.send({
-          from: 'JB Tutors <notifications@jb-tutors.com>',
+          from: 'Class Beyond <notifications@classbeyondacademy.io>',
           to: [adminEmail],
           subject: `School Progress Report Summary - ${cycleStartDate} to ${cycleEndDate}`,
           html: emailHtml,

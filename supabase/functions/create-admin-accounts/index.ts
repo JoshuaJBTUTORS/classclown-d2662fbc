@@ -39,27 +39,35 @@ const handler = async (req: Request): Promise<Response> => {
     // Define the admin accounts to create
     const adminAccounts: AdminAccount[] = [
       {
-        email: 'Joshua@jb-tutors.com',
+        email: 'Joshua@classbeyondacademy.io',
         firstName: 'Joshua',
         lastName: 'Ekundayo',
         availability: {
-          days: [0, 1, 2, 3, 4, 5, 6], // Monday to Sunday (every day)
-          startTime: '09:00',
-          endTime: '20:00'
+          monday: '09:00-20:00',
+          tuesday: '09:00-20:00',
+          wednesday: '09:00-20:00',
+          thursday: '09:00-20:00',
+          friday: '09:00-20:00',
+          saturday: '09:00-20:00',
+          sunday: '09:00-20:00'
         }
       },
       {
-        email: 'Britney@jb-tutors.com',
+        email: 'Britney@classbeyondacademy.io',
         firstName: 'Britney',
         lastName: 'Lawrence',
         availability: {
-          days: [0, 1, 2, 3, 4, 5, 6], // Monday to Sunday (every day)
-          startTime: '09:00',
-          endTime: '20:00'
+          monday: '09:00-20:00',
+          tuesday: '09:00-20:00',
+          wednesday: '09:00-20:00',
+          thursday: '09:00-20:00',
+          friday: '09:00-20:00',
+          saturday: '09:00-20:00',
+          sunday: '09:00-20:00'
         }
       },
       {
-        email: 'Musa@jb-tutors.com',
+        email: 'Musa@classbeyondacademy.io',
         firstName: 'Musa',
         lastName: 'Thulubona',
         availability: {
