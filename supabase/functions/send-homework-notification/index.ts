@@ -108,7 +108,7 @@ serve(async (req) => {
         );
 
         const studentEmailPromise = resend.emails.send({
-          from: 'JB Tutors <enquiries@jb-tutors.com>',
+          from: 'Class Beyond <enquiries@classbeyondacademy.io>',
           to: [student.email],
           subject: `New Homework Set - ${homeworkData.title}`,
           html: studentHtml,
@@ -149,7 +149,7 @@ serve(async (req) => {
         );
 
         const parentEmailPromise = resend.emails.send({
-          from: 'JB Tutors <enquiries@jb-tutors.com>',
+          from: 'Class Beyond <enquiries@classbeyondacademy.io>',
           to: [student.parent.email],
           subject: `Homework Set for ${student.first_name} - ${homeworkData.title}`,
           html: parentHtml,

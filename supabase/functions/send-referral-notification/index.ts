@@ -76,11 +76,11 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     // Send email to both recipients
-    const recipients = ['joshua@jb-tutors.com', 'britney@jb-tutors.com'];
+    const recipients = ['joshua@classbeyondacademy.io', 'britney@classbeyondacademy.io'];
     
     const emailPromises = recipients.map(recipient => 
       resend.emails.send({
-        from: 'JB Tutors <noreply@jb-tutors.com>',
+        from: 'Class Beyond <noreply@classbeyondacademy.io>',
         to: [recipient],
         subject: emailSubject,
         html: emailHtml,

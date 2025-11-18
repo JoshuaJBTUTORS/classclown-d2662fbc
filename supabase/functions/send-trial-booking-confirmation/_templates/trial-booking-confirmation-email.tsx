@@ -72,7 +72,7 @@ export const TrialBookingConfirmationEmail = ({
           If you have any questions or need to make changes to your request, please contact us:
         </Text>
         <Text style={text}>
-          📧 <Link href="mailto:enquiries@jb-tutors.com" style={link}>enquiries@jb-tutors.com</Link><br />
+          📧 <Link href="mailto:enquiries@classbeyondacademy.io" style={link}>enquiries@classbeyondacademy.io</Link><br />
           📞 Phone: 020 3598 9133
         </Text>
 

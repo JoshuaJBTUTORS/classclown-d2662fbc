@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
           );
 
           await resend.emails.send({
-            from: 'Journey Beyond Education <enquiries@jb-tutors.com>',
+            from: 'Class Beyond <enquiries@classbeyondacademy.io>',
             to: [proposal.recipient_email],
             subject: isAgreedStatus 
               ? '⏰ Complete Your Proposal - Secure Your Spot'

@@ -165,7 +165,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Send email with retry logic
         const emailResult = await sendEmailWithRetry({
-          from: 'JB Tutors <lessons@jb-tutors.com>',
+          from: 'Class Beyond <lessons@classbeyondacademy.io>',
           to: [trialBooking.email],
           subject: `Exciting Trial Lesson ${isToday ? 'Today' : 'Tomorrow'} - ${trialLesson.subject || 'Tutoring'}`,
           html: emailHtml,

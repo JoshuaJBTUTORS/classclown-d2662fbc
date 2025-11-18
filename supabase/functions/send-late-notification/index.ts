@@ -128,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send the late notification email
     const emailResponse = await resend.emails.send({
-      from: "JB Tutors <enquiries@jb-tutors.com>",
+      from: "Class Beyond <enquiries@classbeyondacademy.io>",
       to: [recipientEmail],
       subject: emailSubject,
       html,

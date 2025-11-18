@@ -173,8 +173,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Send email to Joshua
       await resend.emails.send({
-        from: 'JB Tutors CRM <enquiries@jb-tutors.com>',
-        to: ['joshua@jb-tutors.com'],
+        from: 'Class Beyond CRM <enquiries@classbeyondacademy.io>',
+        to: ['joshua@classbeyondacademy.io'],
         subject: `✅ New Enrollment: ${updatedProposal.recipient_name} - ${updatedProposal.subject}`,
         html: emailHtml,
       });
@@ -183,8 +183,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Send onboarding email to Britney
       await resend.emails.send({
-        from: 'JB Tutors CRM <enquiries@jb-tutors.com>',
-        to: ['britney@jb-tutors.com'],
+        from: 'Class Beyond CRM <enquiries@classbeyondacademy.io>',
+        to: ['britney@classbeyondacademy.io'],
         subject: 'New Customer to Onboard',
         html: onboardingEmailHtml,
       });

@@ -68,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const { error: emailError } = await resend.emails.send({
-      from: 'Journey Beyond Education <enquiries@jb-tutors.com>',
+      from: 'Class Beyond <enquiries@classbeyondacademy.io>',
       to: [recipientEmail],
       subject: 'Your Lesson Proposal from Journey Beyond Education',
       html,

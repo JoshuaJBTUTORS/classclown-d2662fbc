@@ -158,8 +158,8 @@ const handler = async (req: Request): Promise<Response> => {
       const emailSubject = `Daily Demo List - ${formattedDate} (${totalDemos} demo${totalDemos !== 1 ? 's' : ''} scheduled)`;
       
       const { error: emailError } = await resend.emails.send({
-        from: 'JB Tutors Demo List <noreply@jb-tutors.com>',
-        to: ['joshua@jb-tutors.com'],
+        from: 'Class Beyond Demo List <noreply@classbeyondacademy.io>',
+        to: ['joshua@classbeyondacademy.io'],
         subject: emailSubject,
         html,
       });
@@ -169,7 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw emailError;
       }
 
-      console.log(`Daily demo list email sent successfully to joshua@jb-tutors.com for ${currentDate}`);
+      console.log(`Daily demo list email sent successfully to joshua@classbeyondacademy.io for ${currentDate}`);
       console.log(`Email contained ${totalDemos} demo sessions`);
 
       return new Response(
@@ -198,8 +198,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Send error notification email
     try {
       await resend.emails.send({
-        from: 'JB Tutors System <noreply@jb-tutors.com>',
-        to: ['joshua@jb-tutors.com'],
+        from: 'Class Beyond System <noreply@classbeyondacademy.io>',
+        to: ['joshua@classbeyondacademy.io'],
         subject: 'Daily Demo List - System Error',
         html: `
           <h1>Daily Demo List Error</h1>

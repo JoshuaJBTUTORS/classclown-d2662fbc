@@ -94,7 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Created reset token:", tokenData.id);
 
     // Create reset URL pointing to the current domain 
-    const resetUrl = `https://jb-tutors.lovable.app/auth?tab=reset-password&token=${resetToken}`;
+    const resetUrl = `https://classbeyond.lovable.app/auth?tab=reset-password&token=${resetToken}`;
     
     const html = await renderAsync(
       React.createElement(PasswordResetEmail, {
@@ -104,9 +104,9 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const emailResponse = await resend.emails.send({
-      from: "JB Tutors <noreply@jb-tutors.com>",
+      from: "Class Beyond <noreply@classbeyondacademy.io>",
       to: [email],
-      subject: "Reset Your JB Tutors Password",
+      subject: "Reset Your Class Beyond Password",
       html,
     });
 

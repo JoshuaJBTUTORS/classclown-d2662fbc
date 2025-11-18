@@ -62,8 +62,8 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const emailResponse = await resend.emails.send({
-      from: "JB Tutors <enquiries@jb-tutors.com>",
-      to: ["joshua@jb-tutors.com", "musa@jb-tutors.com"],
+      from: "Class Beyond <enquiries@classbeyondacademy.io>",
+      to: ["joshua@classbeyondacademy.io", "musa@classbeyondacademy.io"],
       subject: `New Trial Booking - ${childName} - ${subject}`,
       html,
     });
