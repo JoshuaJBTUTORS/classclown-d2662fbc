@@ -7,6 +7,22 @@
     <title>Loading...</title>
     <meta name="description" content="AI-powered learning platform">
     <link rel="icon" href="/cleo-icon.png" type="image/png">
+    <script>
+      // Set favicon based on domain before React loads
+      (function() {
+        const isCleoIO = window.location.hostname === 'app.heycleo.io' || 
+                         window.location.hostname === 'localhost';
+        
+        const faviconPath = isCleoIO 
+          ? '/cleo-icon.png' 
+          : '/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png';
+        
+        const link = document.querySelector("link[rel='icon']");
+        if (link) {
+          link.href = faviconPath;
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
