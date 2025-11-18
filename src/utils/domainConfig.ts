@@ -41,6 +41,6 @@ export const getDomainConfig = (): DomainConfig => {
     description: 'Comprehensive tuition service management platform with AI-powered learning.',
     logo: '/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png',
     theme: 'classclown',
-    ogImage: '/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png'
+    ogImage: '/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png'
   };
 };
