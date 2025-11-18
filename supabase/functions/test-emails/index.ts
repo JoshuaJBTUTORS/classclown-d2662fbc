@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import { renderAsync } from 'npm:@react-email/components@0.0.22';
-import React from 'npm:react@18.3.1';
-import { PasswordResetEmail } from '../send-password-reset-email/_templates/password-reset-email.tsx';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -31,12 +28,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (emailType) {
       case 'password-reset':
-        emailHtml = await renderAsync(
-          React.createElement(PasswordResetEmail, {
-            email: testEmail,
-            resetUrl: 'https://classbeyond.lovable.app/auth?tab=reset-password&token=test-token-123',
-          })
-        );
+        emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1fb86b;">Password Reset Request</h1>
+            <p>Hello,</p>
+            <p>We received a request to reset your Class Beyond password. This is a test email.</p>
+            <div style="margin: 30px 0;">
+              <a href="https://classbeyond.lovable.app/auth?tab=reset-password&token=test-token-123" 
+                 style="background: #1fb86b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Reset Password
+              </a>
+            </div>
+            <p style="color: #666; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+            <p style="color: #666; font-size: 14px; margin-top: 40px;">
+              Best regards,<br>
+              The Class Beyond Team<br>
+              📧 noreply@classbeyondacademy.io
+            </p>
+          </div>
+        `;
         subject = 'Test: Reset Your Class Beyond Password';
         break;
 
