@@ -243,7 +243,7 @@ const LearningHub: React.FC = () => {
                     <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Welcome to JB Tutors Learning Hub!</h3>
+                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Welcome to Class Beyond Learning Hub!</h3>
                     <p className="text-gray-600 text-xs sm:text-sm mt-1">
                       Explore our educational resources. Ready for personalized tutoring? Book a free trial lesson to unlock calendar and homework features.
                     </p>

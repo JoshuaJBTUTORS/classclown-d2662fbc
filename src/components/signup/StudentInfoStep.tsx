@@ -255,7 +255,7 @@ const StudentInfoStep: React.FC<StudentInfoStepProps> = ({
                   {data.studentFirstName || 'First'} {data.studentLastName || 'Last'}
                 </h5>
                 <p className="text-xs sm:text-sm text-gray-600 mb-2">
-                  JB Tutors Student
+                  Class Beyond Student
                 </p>
                 <p className="text-xs text-purple-600">
                   Ready to learn!

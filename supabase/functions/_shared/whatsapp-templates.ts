@@ -19,7 +19,7 @@ export const WhatsAppTemplates = {
     const timeRange = startTime && endTime ? ` (${startTime} - ${endTime})` : '';
     const dateRange = startDate === endDate ? startDate : `${startDate} to ${endDate}`;
     
-    return `🚫 JB Tutors - New Time-Off Request
+    return `🚫 Class Beyond - New Time-Off Request
 
 Tutor: ${tutorName}
 📅 Dates: ${dateRange}${timeRange}
@@ -45,7 +45,7 @@ We'll contact you within 24 hours to confirm the lesson details and send you the
 Looking forward to meeting ${childName}!
 
 Best regards,
-JB Tutors Team 🎯
+Class Beyond Team 🎯
   `.trim(),
 
   trialLessonApproval: (parentName: string, childName: string, subject: string, lessonDate: string, lessonTime: string, studentLessonLink: string) => `
@@ -67,7 +67,7 @@ Please join at the scheduled time for the parent consultation. ${childName} will
 Looking forward to meeting you both!
 
 Best regards,
-JB Tutors Team 🎓
+Class Beyond Team 🎓
   `.trim(),
 
   trialLessonReminder: (parentName: string, childName: string, lessonTitle: string, lessonDate: string, lessonTime: string, lessonUrl: string, isToday: boolean) => `
@@ -97,7 +97,7 @@ Important:
 We're so excited to meet you both!
 
 Best regards,
-JB Tutors Team 🚀
+Class Beyond Team 🚀
   `.trim(),
 
   regularLessonReminder: (parentName: string, childName: string, lessonTitle: string, lessonDate: string, lessonTime: string, isToday: boolean) => `
@@ -118,7 +118,7 @@ Please ensure ${childName} is ready 5 minutes before the lesson starts.
 Have a great lesson!
 
 Best regards,
-JB Tutors Team 📝
+Class Beyond Team 📝
   `.trim(),
 
   homeworkNotification: (parentName: string, childName: string, homeworkTitle: string, dueDate: string) => `
@@ -134,7 +134,7 @@ ${childName} has been assigned new homework:
 Please check the lesson platform for full details and submission instructions.
 
 Best regards,
-JB Tutors Team 🎯
+Class Beyond Team 🎯
   `.trim(),
 
   lateNotification: (parentName: string, childName: string, lessonTitle: string) => `
@@ -149,15 +149,15 @@ ${childName} appears to be late for today's lesson:
 Please join the lesson as soon as possible. If there are any issues, please contact us immediately.
 
 Best regards,
-JB Tutors Team 📞
+Class Beyond Team 📞
   `.trim(),
 
   welcomeMessage: (firstName: string, lastName: string) => `
-🌟 Welcome to JB Tutors! 🌟
+🌟 Welcome to Class Beyond! 🌟
 
 Hi ${firstName}!
 
-Welcome to the JB Tutors family! We're excited to support your learning journey.
+Welcome to the Class Beyond family! We're excited to support your learning journey.
 
 Since 2009, we've been helping students excel in:
 📚 Maths, English & Science
@@ -173,7 +173,7 @@ If you have any questions, just reply to this message.
 Welcome aboard! 🚀
 
 Best regards,
-JB Tutors Team
+Class Beyond Team
   `.trim(),
 
   proposalNotification: (
@@ -181,7 +181,7 @@ JB Tutors Team
     subject: string,
     proposalUrl: string
   ): string => {
-    return `🎓 *Lesson Proposal from JB Tutors*
+    return `🎓 *Lesson Proposal from Class Beyond*
 
 Hi ${recipientName}! 👋
 
@@ -198,7 +198,7 @@ To view your full proposal and get started:
 
 If you have any questions, feel free to reply to this message!
 
-_Journey Beyond Education_
+_Class Beyond Academy_
 Building confidence, one lesson at a time 🌟`;
   },
 
@@ -243,7 +243,7 @@ Important reminders:
 
 See you soon!
 
-JB Tutors Team 🎯
+Class Beyond Team 🎯
 `.trim(),
 
   demoImminentReminderAdmin: (
@@ -268,7 +268,7 @@ Demo session about to begin:
 
 ⚡ ACTION: Join the demo session now!
 
-JB Tutors Team
+Class Beyond Team
 `.trim(),
 
   proposalReminder: (
@@ -306,7 +306,7 @@ Building confidence, one lesson at a time 🌟`;
     subject: string,
     proposalUrl: string
   ): string => {
-    return `⏰ *Complete Your Proposal - JB Tutors*
+    return `⏰ *Complete Your Proposal - Class Beyond*
 
 Hi ${recipientName}! 👋
 
@@ -325,7 +325,7 @@ Don't miss out - lesson slots fill up fast!
 
 Questions? Just reply to this message!
 
-_Journey Beyond Education_
+_Class Beyond Academy_
 Building confidence, one lesson at a time 🌟`;
   },
 
@@ -335,7 +335,7 @@ Building confidence, one lesson at a time 🌟`;
     time: string,
     cleoTopic: string
   ): string => {
-    return `🎓 *JB Tutors - Tomorrow's Lesson Prep*
+    return `🎓 *Class Beyond - Tomorrow's Lesson Prep*
 
 Hi! ${studentName} has ${subject} tomorrow at ${time}.
 

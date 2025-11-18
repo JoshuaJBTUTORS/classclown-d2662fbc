@@ -163,7 +163,7 @@ const AddParentOnlyForm: React.FC<AddParentOnlyFormProps> = ({ isOpen, onClose, 
         return;
       }
 
-      toast.success(result?.message || "Parent account created successfully! Default password: jbtutors123!");
+      toast.success(result?.message || "Parent account created successfully! Default password: classbeyond123!");
 
       form.reset();
       onSuccess?.();

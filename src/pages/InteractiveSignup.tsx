@@ -150,7 +150,7 @@ const InteractiveSignup = () => {
         {/* Help Text */}
         <div className="text-center max-w-4xl mx-auto mt-6 sm:mt-8 space-y-3">
           <div className="text-xs sm:text-sm text-gray-500">
-            Need help? Contact us at hello@jbtutors.co.uk
+            Need help? Contact us at hello@classbeyondacademy.io
           </div>
           
           <div className="pt-2">

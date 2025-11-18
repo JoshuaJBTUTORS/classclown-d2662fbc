@@ -122,7 +122,7 @@ const Blog = () => {
       <section className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            JB Tutors Study Hub
+            Class Beyond Study Hub
           </h1>
           <p className="text-xl md:text-2xl mb-8 opacity-90">
             Expert GCSE guidance, study tips, and educational insights to help you excel

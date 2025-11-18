@@ -262,7 +262,7 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Login accounts created successfully!</strong> 
-                  <br />Default password: <code className="bg-gray-100 px-1 rounded">jbtutors123!</code>
+                  <br />Default password: <code className="bg-gray-100 px-1 rounded">classbeyond123!</code>
                   <br />Users should change their passwords after first login.
                 </AlertDescription>
               </Alert>

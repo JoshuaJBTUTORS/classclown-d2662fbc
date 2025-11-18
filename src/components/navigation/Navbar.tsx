@@ -71,7 +71,7 @@ export default function Navbar({ toggleSidebar }: NavbarProps) {
           <div className="bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 rounded-lg p-2 shadow-sm border border-gray-100">
             <img 
               src="/lovable-uploads/e1ea034d-772d-44aa-a7d7-37815cae9930.png" 
-              alt="JB Tutors Logo" 
+              alt="Class Beyond Logo" 
               className="h-6 w-auto drop-shadow-sm" 
             />
           </div>

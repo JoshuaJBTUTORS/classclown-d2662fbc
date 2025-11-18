@@ -301,7 +301,7 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
           transition={{ delay: 0.4 }}
         >
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Welcome to JB Tutors Learning Hub! 🎉
+            Welcome to Class Beyond Learning Hub! 🎉
           </h2>
           <p className="text-base sm:text-lg text-gray-600 mb-3 sm:mb-4">
             Your learning hub account is ready, {data.parentFirstName}!
