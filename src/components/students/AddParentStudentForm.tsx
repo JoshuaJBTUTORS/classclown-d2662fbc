@@ -58,7 +58,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const DEFAULT_STUDENT_PASSWORD = 'jbtutors123!';
+const DEFAULT_STUDENT_PASSWORD = 'classbeyond123!';
 
 const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);

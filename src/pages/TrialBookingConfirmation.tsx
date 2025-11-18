@@ -56,7 +56,7 @@ const TrialBookingConfirmation: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  <span>Email: enquiries@jb-tutors.com</span>
+                  <span>Email: enquiries@classbeyondacademy.io</span>
                 </div>
               </div>
             </div>

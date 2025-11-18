@@ -67,7 +67,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const DEFAULT_PASSWORD = 'jbtutors123!';
+const DEFAULT_PASSWORD = 'classbeyond123!';
 
 const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);

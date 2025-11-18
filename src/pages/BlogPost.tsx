@@ -147,7 +147,7 @@ const BlogPost = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>{seoTitle} | JB Tutors</title>
+        <title>{seoTitle} | Class Beyond</title>
         <meta name="description" content={seoDescription} />
         <meta property="og:title" content={post.seo_data?.og_title || seoTitle} />
         <meta property="og:description" content={post.seo_data?.og_description || seoDescription} />

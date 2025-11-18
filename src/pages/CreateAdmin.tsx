@@ -37,7 +37,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const DEFAULT_PASSWORD = 'jbtutors123!';
+const DEFAULT_PASSWORD = 'classbeyond123!';
 
 const CreateAdmin = () => {
   const { userRole, isOwner } = useAuth();

@@ -60,7 +60,7 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
       // Create the admin user
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
-        password: 'jbtutors123!',
+        password: 'classbeyond123!',
         options: {
           data: {
             first_name: data.firstName,

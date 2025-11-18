@@ -33,7 +33,7 @@ const LoginPage = () => {
                 <GraduationCap className="h-12 w-12 text-purple-600" />
               </div>
               <CardTitle className="text-2xl font-bold text-gray-900">
-                Welcome Back to JB Tutors! 👋
+                Welcome Back to Class Beyond! 👋
               </CardTitle>
               <p className="text-gray-600">
                 Sign in to access your learning dashboard

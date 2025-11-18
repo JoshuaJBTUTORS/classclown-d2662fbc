@@ -21,7 +21,7 @@ const IntegrationsTab: React.FC = () => {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Check back later for new integration options for JB Tutors.
+            Check back later for new integration options for Class Beyond.
           </p>
         </CardContent>
       </Card>

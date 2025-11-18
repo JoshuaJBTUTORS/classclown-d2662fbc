@@ -146,12 +146,11 @@ const Auth = () => {
             ) : (
               <>
                 <div className="flex justify-center lg:justify-start">
-                  <img src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" alt="JB Tutors Logo" className="h-24 w-auto" />
+                  <img src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" alt="Class Beyond Logo" className="h-24 w-auto" />
                 </div>
-                
-                <div>
+                <div className="text-center lg:text-left">
                   <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                    Welcome to JB Tutors
+                    Welcome to Class Beyond
                   </h1>
                   <p className="text-xl text-gray-600 mb-6">
                     Personalized learning experiences that help students achieve their academic goals.
