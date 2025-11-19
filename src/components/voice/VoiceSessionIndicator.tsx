@@ -1,6 +1,8 @@
 import { Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
 
 interface VoiceQuota {
   minutes_remaining?: number;
@@ -11,7 +13,11 @@ interface VoiceQuota {
   total_sessions_allowed?: number;
 }
 
-export const VoiceSessionIndicator = () => {
+interface VoiceSessionIndicatorProps {
+  showSubscriptionPrompt?: boolean;
+}
+
+export const VoiceSessionIndicator = ({ showSubscriptionPrompt = false }: VoiceSessionIndicatorProps) => {
   const [quota, setQuota] = useState<VoiceQuota | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +65,48 @@ export const VoiceSessionIndicator = () => {
     if (percentRemaining > 20) return 'bg-yellow-50 text-yellow-700 border-yellow-200';
     return 'bg-red-50 text-red-700 border-red-200';
   };
+
+  // Show subscription prompt if enabled and user has 0 minutes
+  if (showSubscriptionPrompt && totalRemaining === 0) {
+    return (
+      <div className="w-full">
+        {/* Prominent subscription banner */}
+        <div className="bg-gradient-to-r from-mint-50 to-mint-100 border-2 border-mint-300 rounded-2xl p-6 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="text-4xl">⚡</div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-mint-900 mb-2">
+                You're out of learning time! 🦊
+              </h3>
+              <p className="text-sm text-mint-700 mb-4">
+                Subscribe to continue learning with Cleo's AI voice lessons. Plans start from just £9.99/month.
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                <Link to="/pricing">
+                  <Button className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white rounded-full px-6">
+                    View Plans & Subscribe
+                  </Button>
+                </Link>
+                <Link to="/learning-hub/subscription">
+                  <Button variant="outline" className="rounded-full border-mint-300 text-mint-700 hover:bg-mint-50">
+                    Manage Subscription
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Still show the minute indicator below */}
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-full border ${getColorClass()}`}>
+          <Zap className="h-4 w-4" />
+          <span className="text-sm font-medium">
+            0 mins
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center gap-2 px-3 py-2 rounded-full border ${getColorClass()}`}>
