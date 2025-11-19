@@ -81,7 +81,7 @@ export const TimeOffNotificationEmail = ({
           </Link>
 
           <Text style={footer}>
-            This is an automated notification from the JB Tutors system.
+            This is an automated notification from the Class Beyond system.
           </Text>
         </Container>
       </Body>

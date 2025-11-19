@@ -116,7 +116,7 @@ export const TrialSalesNotificationEmail = ({
         </Text>
 
         <Text style={footer}>
-          JB Tutors Sales Team<br />
+          Class Beyond Sales Team<br />
           This is an automated notification from the trial booking system.
         </Text>
       </Container>

@@ -44,7 +44,7 @@ export const SchoolProgressSummaryEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Heading style={h1}>JB Tutors</Heading>
+          <Heading style={h1}>Class Beyond</Heading>
           <Text style={subtitle}>6-Week School Progress Report Summary</Text>
         </Section>
 
@@ -117,7 +117,7 @@ export const SchoolProgressSummaryEmail = ({
           </Text>
 
           <Text style={signature}>
-            Generated automatically by JB Tutors System<br />
+            Generated automatically by Class Beyond System<br />
             {new Date().toLocaleDateString('en-GB', { 
               weekday: 'long', 
               year: 'numeric', 
@@ -129,7 +129,7 @@ export const SchoolProgressSummaryEmail = ({
 
         <Section style={footer}>
           <Text style={footerText}>
-            JB Tutors - School Progress Monitoring System
+            Class Beyond - School Progress Monitoring System
           </Text>
         </Section>
       </Container>

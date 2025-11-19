@@ -28,11 +28,11 @@ export const SchoolProgressReminderEmail = ({
 }: SchoolProgressReminderEmailProps) => (
   <Html>
     <Head />
-    <Preview>Time to submit your child's school progress reports - JB Tutors</Preview>
+    <Preview>Time to submit your child's school progress reports - Class Beyond</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Heading style={h1}>JB Tutors</Heading>
+          <Heading style={h1}>Class Beyond</Heading>
           <Text style={subtitle}>School Progress Report Reminder</Text>
         </Section>
 
@@ -97,13 +97,13 @@ export const SchoolProgressReminderEmail = ({
 
           <Text style={signature}>
             Best regards,<br />
-            The JB Tutors Team
+            The Class Beyond Team
           </Text>
         </Section>
 
         <Section style={footer}>
           <Text style={footerText}>
-            This email was sent by JB Tutors. If you no longer wish to receive these 
+            This email was sent by Class Beyond. If you no longer wish to receive these
             reminders, please contact us directly.
           </Text>
         </Section>

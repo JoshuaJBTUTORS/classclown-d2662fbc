@@ -82,7 +82,6 @@ import HubAccessManagement from './pages/admin/HubAccessManagement';
 import CleoTracker from './pages/admin/CleoTracker';
 import CleoUserDetail from './pages/admin/CleoUserDetail';
 import Unauthorized from './pages/Unauthorized';
-import TestEmails from './pages/TestEmails';
 
 
 function App() {
@@ -478,9 +477,6 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                
-                {/* Test Emails Route */}
-                <Route path="/test-emails" element={<TestEmails />} />
               </Routes>
               <Toaster />
             </LearningHubProvider>

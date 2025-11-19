@@ -38,12 +38,12 @@ export const RegularLessonReminderEmail = ({
 }: RegularLessonReminderEmailProps) => (
   <Html>
     <Head />
-    <Preview>🎓 {isToday ? "Today's" : "Tomorrow's"} lesson reminder - {lessonSubject} with JB Tutors</Preview>
+    <Preview>🎓 {isToday ? "Today's" : "Tomorrow's"} lesson reminder - {lessonSubject} with Class Beyond</Preview>
     <Body style={main}>
       <Container style={container}>
         {/* Header Section */}
         <Section style={header}>
-          <Heading style={brandTitle}>JB Tutors</Heading>
+          <Heading style={brandTitle}>Class Beyond</Heading>
           <Text style={headerSubtitle}>Excellence in Education</Text>
         </Section>
 
@@ -109,7 +109,7 @@ export const RegularLessonReminderEmail = ({
               <Hr style={credentialsDivider} />
               <Text style={credentialsText}>
                 <strong>Email:</strong> {studentEmail}<br />
-                <strong>Password:</strong> jbtutors123!<br />
+                <strong>Password:</strong> classbeyond123!<br />
                 <em style={credentialsNote}>(Change this password after your first login for security)</em>
               </Text>
             </Section>
@@ -119,8 +119,8 @@ export const RegularLessonReminderEmail = ({
           <Section style={supportSection}>
             <Text style={supportText}>
               Need help? We're here for you! Contact us anytime at{' '}
-              <Link href="mailto:support@jbtutors.co.uk" style={supportLink}>
-                support@jbtutors.co.uk
+              <Link href="mailto:enquiries@classbeyondacademy.io" style={supportLink}>
+                enquiries@classbeyondacademy.io
               </Link>
             </Text>
           </Section>
@@ -130,12 +130,12 @@ export const RegularLessonReminderEmail = ({
         <Section style={footer}>
           <Hr style={footerDivider} />
           <Text style={footerText}>
-            <strong>JB Tutors</strong><br />
+            <strong>Class Beyond</strong><br />
             Empowering students to achieve their academic goals<br />
-            📧 support@jbtutors.co.uk | 🌐 www.jbtutors.co.uk
+            📧 enquiries@classbeyondacademy.io | 🌐 classbeyond.lovable.app
           </Text>
           <Text style={footerCopyright}>
-            © 2025 JB Tutors. All rights reserved.
+            © 2025 Class Beyond. All rights reserved.
           </Text>
         </Section>
       </Container>

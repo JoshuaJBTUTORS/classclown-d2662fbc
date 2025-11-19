@@ -124,9 +124,9 @@ export const TrialLessonApprovalEmail = ({
 
         <Text style={footer}>
           Best regards,<br />
-          The JB Tutors Team<br />
-          <Link href="https://jb-tutors.com" target="_blank" style={{ ...link, color: '#898989' }}>
-            jb-tutors.com
+          The Class Beyond Team<br />
+          <Link href="https://classbeyond.lovable.app" target="_blank" style={{ ...link, color: '#898989' }}>
+            classbeyond.lovable.app
           </Link>
         </Text>
       </Container>

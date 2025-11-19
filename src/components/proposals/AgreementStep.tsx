@@ -95,7 +95,7 @@ export default function AgreementStep({ proposal, onAgree, onBack }: AgreementSt
           />
           <label htmlFor="agree" className="text-sm cursor-pointer text-left">
             I have read and agree to the Terms & Conditions outlined above. I understand that by clicking
-            "I Agree," I am entering into a binding agreement with Journey Beyond Education.
+            "I Agree," I am entering into a binding agreement with Class Beyond.
           </label>
         </div>
 
@@ -115,7 +115,7 @@ export default function AgreementStep({ proposal, onAgree, onBack }: AgreementSt
 
 const TERMS_AND_CONDITIONS = `
 <h3 class="font-semibold text-base mb-2">1. Services Provided</h3>
-<p class="mb-4">Journey Beyond Education ("we," "our," or "the Company") agrees to provide tutoring services as outlined in this proposal. Services include personalized instruction, progress monitoring, and educational support tailored to the student's needs.</p>
+<p class="mb-4">Class Beyond ("we," "our," or "the Company") agrees to provide tutoring services as outlined in this proposal. Services include personalized instruction, progress monitoring, and educational support tailored to the student's needs.</p>
 
 <h3 class="font-semibold text-base mb-2">2. Payment Terms</h3>
 <p class="mb-4">Payment for lessons will be charged according to the payment cycle specified in this proposal (per lesson, monthly, or termly). All payments are due in advance unless otherwise agreed in writing. Late payments may result in suspension of services.</p>
@@ -130,7 +130,7 @@ const TERMS_AND_CONDITIONS = `
 <p class="mb-4">All parties agree to maintain a respectful learning environment. Inappropriate behavior, harassment, or failure to comply with our code of conduct may result in termination of services without refund.</p>
 
 <h3 class="font-semibold text-base mb-2">6. Liability</h3>
-<p class="mb-4">While we strive to provide excellent educational services, Journey Beyond Education cannot guarantee specific academic outcomes. Our liability is limited to the fees paid for services rendered.</p>
+<p class="mb-4">While we strive to provide excellent educational services, Class Beyond cannot guarantee specific academic outcomes. Our liability is limited to the fees paid for services rendered.</p>
 
 <h3 class="font-semibold text-base mb-2">7. Data Protection</h3>
 <p class="mb-4">We are committed to protecting your privacy. Personal information will be processed in accordance with GDPR and our Privacy Policy. We will never share your data with third parties without consent.</p>

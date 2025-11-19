@@ -39,7 +39,7 @@ export const LateNotificationEmail = ({
       <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#f4f4f4', margin: 0, padding: 0 }}>
         <Container style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: '#ffffff', padding: '20px' }}>
           <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#333333', marginBottom: '20px' }}>
-            JB Tutors - Late Notification
+            Class Beyond - Late Notification
           </Text>
           
           <Text style={{ fontSize: '16px', color: '#555555', lineHeight: '1.5', marginBottom: '15px' }}>
@@ -77,11 +77,11 @@ export const LateNotificationEmail = ({
           
           <Text style={{ fontSize: '14px', color: '#666666', lineHeight: '1.4' }}>
             Best regards,<br />
-            The JB Tutors Team
+            The Class Beyond Team
           </Text>
           
           <Text style={{ fontSize: '12px', color: '#999999', marginTop: '20px' }}>
-            This is an automated message from JB Tutors. Please do not reply to this email.
+            This is an automated message from Class Beyond. Please do not reply to this email.
           </Text>
         </Container>
       </Body>

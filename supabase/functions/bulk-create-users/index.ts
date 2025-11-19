@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
 
     const results = [];
     const errors = [];
-    const defaultPassword = 'jbtutors123!';
+    const defaultPassword = 'classbeyond123!';
 
     for (const userData of users) {
       try {

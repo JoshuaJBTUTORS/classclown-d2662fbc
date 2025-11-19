@@ -139,7 +139,7 @@ export default function ProposalView() {
     return (
       <div className="container max-w-2xl py-16 text-center">
         <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold mb-2">🎉 Welcome to Journey Beyond!</h1>
+        <h1 className="text-3xl font-bold mb-2">🎉 Welcome to Class Beyond!</h1>
         <p className="text-muted-foreground">
           Your proposal has been completed. We'll be in touch shortly to schedule your first lesson.
         </p>
@@ -170,8 +170,8 @@ export default function ProposalView() {
         <Card className="p-8 md:p-12 space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
-            <img src={jbLogo} alt="Journey Beyond Education" className="h-16 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-primary">Journey Beyond Education</h1>
+            <img src={jbLogo} alt="Class Beyond" className="h-16 mx-auto mb-4" />
+            <h1 className="text-4xl font-bold text-primary">Class Beyond</h1>
             <p className="text-xl text-muted-foreground">Lesson Proposal</p>
           </div>
 
@@ -183,7 +183,7 @@ export default function ProposalView() {
             </div>
             <div>
               <h3 className="font-semibold text-sm text-muted-foreground mb-2">PREPARED BY</h3>
-              <p className="text-lg font-medium">Journey Beyond Education</p>
+              <p className="text-lg font-medium">Class Beyond</p>
               <p className="text-sm text-muted-foreground">Business Development Team</p>
             </div>
           </div>
@@ -291,7 +291,7 @@ export default function ProposalView() {
           <div className="text-center pt-8 border-t">
             <p className="text-sm font-semibold text-primary">✨ Helping Every Child Shine ✨</p>
             <p className="text-xs text-muted-foreground mt-2">
-              &copy; {new Date().getFullYear()} Journey Beyond Education. All rights reserved.
+              &copy; {new Date().getFullYear()} Class Beyond. All rights reserved.
             </p>
           </div>
         </Card>

@@ -76,7 +76,7 @@ const CreateAdminAccounts: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Create Admin Accounts</h1>
         <p className="text-muted-foreground">
-          Create admin accounts for the JB Tutors platform with their availability schedules.
+          Create admin accounts for the Class Beyond platform with their availability schedules.
         </p>
       </div>
 

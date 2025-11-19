@@ -107,13 +107,13 @@ export const TopicRequestNotificationEmail = ({
 
           <Text style={footerText}>
             Best regards,<br />
-            The JB Tutors Team
+            The Class Beyond Team
           </Text>
 
           <Hr style={hr} />
 
           <Text style={disclaimerText}>
-            This is an automated notification from JB Tutors. 
+            This is an automated notification from Class Beyond.
             If you have any questions, please contact us directly.
           </Text>
         </Container>
