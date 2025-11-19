@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['class-beyond-logo.png', 'favicon.ico'],
+      includeAssets: ['favicon.png'],
       manifest: {
         name: 'Class Beyond - AI Learning Platform',
         short_name: 'Class Beyond',
@@ -29,13 +29,13 @@ export default defineConfig(({ mode }) => ({
         start_url: '/',
         icons: [
           {
-            src: '/class-beyond-logo.png',
+            src: '/favicon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/class-beyond-logo.png',
+            src: '/favicon.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
