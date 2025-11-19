@@ -18,6 +18,14 @@ interface ExamQuestion {
   keywords: string[];
 }
 
+function sanitizeMessageContent(content: string): string {
+  // Remove base64 image data URLs (they start with data:image/)
+  return content
+    .replace(/data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+/g, '[IMAGE REMOVED]')
+    .replace(/!\[.*?\]\(data:image\/[^\)]+\)/g, '[IMAGE]') // Markdown images
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -55,7 +63,7 @@ serve(async (req) => {
     
     // Extract key content from conversation
     const conversationContext = messages
-      .map((msg: any) => `${msg.role}: ${msg.content}`)
+      .map((msg: any) => `${msg.role}: ${sanitizeMessageContent(msg.content)}`)
       .join('\n')
       .substring(0, 3000); // Limit context size
 
