@@ -35,10 +35,12 @@ serve(async (req) => {
 
     // Fetch learning objectives from the lesson if lessonId is provided
     let learningObjectives: string[] = [];
+    let avoidOverlapContext = '';
+    
     if (lessonId) {
       const { data: lessonData } = await supabase
         .from('course_lessons')
-        .select('content_text')
+        .select('content_text, module_id')
         .eq('id', lessonId)
         .single();
       
@@ -51,6 +53,36 @@ serve(async (req) => {
           }
         } catch (e) {
           console.warn('Failed to parse lesson content_text:', e);
+        }
+      }
+
+      // Fetch sibling lessons from the same module to avoid overlap
+      if (lessonData?.module_id) {
+        const { data: siblingLessons } = await supabase
+          .from('course_lessons')
+          .select('id, title, description, content_text')
+          .eq('module_id', lessonData.module_id)
+          .neq('id', lessonId)
+          .order('position');
+
+        if (siblingLessons && siblingLessons.length > 0) {
+          const lessonSummaries = siblingLessons.map(lesson => {
+            let objectives: string[] = [];
+            if (lesson.content_text) {
+              try {
+                const parsed = JSON.parse(lesson.content_text);
+                objectives = parsed.objectives || [];
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+            
+            return `- "${lesson.title}"${lesson.description ? ` - ${lesson.description}` : ''}${objectives.length > 0 ? `\n  Covers: ${objectives.join(', ')}` : ''}`;
+          }).join('\n');
+
+          avoidOverlapContext = `\n\n⚠️ AVOID OVERLAP WITH THESE LESSONS IN THE SAME MODULE:\n${lessonSummaries}\n\nYOUR LESSON MUST:\n- Focus specifically on the narrow scope of "${topic}"\n- NOT repeat content from the above lessons\n- Build upon or complement (not duplicate) existing module content\n- Be precise and targeted, not broad overviews`;
+          
+          console.log('Loaded sibling lessons for overlap avoidance:', siblingLessons.length);
         }
       }
     }
@@ -311,7 +343,7 @@ IMPORTANT RULES:
             content: `Create a lesson plan for teaching: ${topic}
 Year Group: ${yearGroup}
 ${learningGoal ? `Learning Goal: ${learningGoal}` : ''}
-${learningObjectives.length > 0 ? `\nPredefined Learning Objectives (MUST use these exactly):\n${learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}` : ''}
+${learningObjectives.length > 0 ? `\nPredefined Learning Objectives (MUST use these exactly):\n${learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}` : ''}${avoidOverlapContext}
 
 Generate a complete lesson with all necessary tables, definitions, diagrams, and questions.${learningObjectives.length > 0 ? ' Make sure to use the predefined learning objectives listed above.' : ''}`
           }
@@ -550,6 +582,7 @@ STEP 2: "Practice Questions"
   * 4 multiple choice options
   * One correct answer (isCorrect: true)
   * An explanation
+${avoidOverlapContext}
 
 You MUST generate all 20 questions. If you generate fewer, the lesson will be rejected.`;
 
