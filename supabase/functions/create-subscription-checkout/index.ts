@@ -32,20 +32,27 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Define pricing configuration
-    const planPrices: Record<string, { monthly: number; yearly: number; sessions: number }> = {
-      'Starter': { monthly: 1800, yearly: 18360, sessions: 15 }, // £18/month
-      'Standard': { monthly: 3700, yearly: 37740, sessions: 30 }, // £37/month
-      'Plus': { monthly: 6100, yearly: 62220, sessions: 60 }, // £61/month
-      'Premium': { monthly: 11000, yearly: 112200, sessions: 90 }, // £110/month
-    };
+    // Fetch plan details from database
+    const { data: planData, error: planError } = await supabase
+      .from('platform_subscription_plans')
+      .select('*')
+      .eq('name', planName)
+      .eq('is_active', true)
+      .single();
 
-    const planConfig = planPrices[planName];
-    if (!planConfig) {
+    if (planError || !planData) {
+      console.error('Plan fetch error:', planError);
       throw new Error('Invalid plan name');
     }
 
-    const price = billingInterval === 'yearly' ? planConfig.yearly : planConfig.monthly;
+    // Get the correct Stripe Price ID based on billing interval
+    const stripePriceId = billingInterval === 'yearly' 
+      ? planData.stripe_annual_price_id 
+      : planData.stripe_monthly_price_id;
+
+    if (!stripePriceId) {
+      throw new Error(`No Stripe Price ID configured for ${planName} ${billingInterval} plan`);
+    }
 
     // Get or create Stripe customer
     let customerId: string;
@@ -76,24 +83,14 @@ serve(async (req) => {
 
     const hasUsedTrial = profile?.has_used_trial || false;
 
-    // Create Checkout Session
+    // Create Checkout Session using Stripe Price ID
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [
         {
-          price_data: {
-            currency: 'gbp',
-            product_data: {
-              name: `${planName} Plan`,
-              description: `${planConfig.sessions} × 5-minute voice lessons per ${billingInterval === 'yearly' ? 'year' : 'month'}`,
-            },
-            unit_amount: price,
-            recurring: {
-              interval: billingInterval === 'yearly' ? 'year' : 'month',
-            },
-          },
+          price: stripePriceId,
           quantity: 1,
         },
       ],
@@ -101,7 +98,7 @@ serve(async (req) => {
         metadata: {
           supabase_user_id: user.id,
           plan_name: planName,
-          sessions_quota: planConfig.sessions.toString(),
+          voice_minutes: planData.voice_minutes_per_month.toString(),
           billing_interval: billingInterval,
         },
       },
