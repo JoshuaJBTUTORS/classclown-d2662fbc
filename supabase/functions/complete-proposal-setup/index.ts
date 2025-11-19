@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY_LESSON_PROPOSAL') || '', {
   apiVersion: '2023-10-16',
 });
 
