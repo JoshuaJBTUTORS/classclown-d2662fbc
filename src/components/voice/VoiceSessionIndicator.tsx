@@ -1,6 +1,6 @@
 import { Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 
@@ -20,6 +20,7 @@ interface VoiceSessionIndicatorProps {
 export const VoiceSessionIndicator = ({ showSubscriptionPrompt = false }: VoiceSessionIndicatorProps) => {
   const [quota, setQuota] = useState<VoiceQuota | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchQuota();
@@ -82,16 +83,19 @@ export const VoiceSessionIndicator = ({ showSubscriptionPrompt = false }: VoiceS
                 Subscribe to continue learning with Cleo's AI voice lessons. Plans start from just £9.99/month.
               </p>
               <div className="flex gap-3 flex-wrap">
-                <Link to="/pricing">
-                  <Button className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white rounded-full px-6">
-                    View Plans & Subscribe
-                  </Button>
-                </Link>
-                <Link to="/learning-hub/subscription">
-                  <Button variant="outline" className="rounded-full border-mint-300 text-mint-700 hover:bg-mint-50">
-                    Manage Subscription
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => navigate('/pricing')}
+                  className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white rounded-full px-6"
+                >
+                  View Plans & Subscribe
+                </Button>
+                <Button 
+                  onClick={() => navigate('/learning-hub/subscription')}
+                  variant="outline" 
+                  className="rounded-full border-mint-300 text-mint-700 hover:bg-mint-50"
+                >
+                  Manage Subscription
+                </Button>
               </div>
             </div>
           </div>
