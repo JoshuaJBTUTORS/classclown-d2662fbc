@@ -6,6 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function sanitizeMessageContent(content: string): string {
+  // Remove base64 image data URLs (they start with data:image/)
+  return content
+    .replace(/data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+/g, '[IMAGE REMOVED]')
+    .replace(/!\[.*?\]\(data:image\/[^\)]+\)/g, '[IMAGE]') // Markdown images
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -54,7 +62,7 @@ serve(async (req) => {
     const messages = conversation.cleo_messages || [];
     const conversationText = messages
       .filter((m: any) => m.role === 'assistant')
-      .map((m: any) => m.content)
+      .map((m: any) => sanitizeMessageContent(m.content))
       .join('\n\n');
 
     // Generate flashcards using AI

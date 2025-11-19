@@ -1,5 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 
+function sanitizeMessageContent(content: string): string {
+  // Remove base64 image data URLs (they start with data:image/)
+  return content
+    .replace(/data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+/g, '[IMAGE REMOVED]')
+    .replace(/!\[.*?\]\(data:image\/[^\)]+\)/g, '[IMAGE]') // Markdown images
+    .trim();
+}
+
 export interface LessonExportData {
   lessonTitle: string;
   topic: string;
@@ -93,7 +101,8 @@ ${messages.map((msg: any) => {
     hour: '2-digit', 
     minute: '2-digit' 
   });
-  return `[${timestamp}] ${msg.role === 'user' ? 'You' : 'Cleo'}: ${msg.content}`;
+  const sanitizedContent = sanitizeMessageContent(msg.content);
+  return `[${timestamp}] ${msg.role === 'user' ? 'You' : 'Cleo'}: ${sanitizedContent}`;
 }).join('\n\n') || 'No messages recorded'}
 
 QUESTIONS & ANSWERS
@@ -150,7 +159,10 @@ ${new Date().toISOString()}
           textMessageCount: conversation.text_message_count,
           modeSwitches: conversation.mode_switches,
         },
-        messages: conversation.cleo_messages,
+        messages: conversation.cleo_messages.map((msg: any) => ({
+          ...msg,
+          content: sanitizeMessageContent(msg.content)
+        })),
         questions: conversation.cleo_question_answers,
         progress: conversation.cleo_learning_progress,
         exportedAt: new Date().toISOString(),
