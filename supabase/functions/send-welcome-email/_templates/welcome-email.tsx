@@ -38,17 +38,17 @@ export const WelcomeEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>Welcome to JB Tutors - Your account has been created</Preview>
+      <Preview>Welcome to Class Beyond - Your account has been created</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>Welcome to JB Tutors!</Heading>
+          <Heading style={h1}>Welcome to Class Beyond!</Heading>
           
           <Text style={text}>
             Hello {firstName} {lastName},
           </Text>
           
           <Text style={text}>
-            Your {roleDisplayName} account has been successfully created on the JB Tutors platform. 
+            Your {roleDisplayName} account has been successfully created on the Class Beyond platform. 
             We're excited to have you join our learning community!
           </Text>
           
@@ -114,7 +114,7 @@ export const WelcomeEmail = ({
           
           <Text style={footer}>
             Best regards,<br />
-            The JB Tutors Team
+            The Class Beyond Team
           </Text>
         </Container>
       </Body>

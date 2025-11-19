@@ -74,7 +74,7 @@ export const DemoImminentEmail = ({
           </Text>
 
           <Text style={signature}>
-            <strong>JB Tutors Team 🎯</strong>
+            <strong>Class Beyond Team 🎯</strong>
           </Text>
         </Section>
 
@@ -82,8 +82,8 @@ export const DemoImminentEmail = ({
         <Section style={footer}>
           <Hr style={footerDivider} />
           <Text style={footerText}>
-            <strong>JB Tutors</strong><br />
-            📧 support@jbtutors.co.uk | 🌐 www.jbtutors.co.uk
+            <strong>Class Beyond</strong><br />
+            📧 enquiries@classbeyondacademy.io | 🌐 classbeyond.lovable.app
           </Text>
         </Section>
       </Container>

@@ -78,7 +78,7 @@ export const AgreedReminderEmail = ({
         </Text>
 
         <Text style={footer}>
-          <strong>Journey Beyond Education (JB Tutors)</strong><br />
+          <strong>Class Beyond</strong><br />
           Helping Every Child Shine ✨
         </Text>
       </Container>

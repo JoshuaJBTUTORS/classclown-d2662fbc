@@ -24,7 +24,7 @@ export const ProposalEmail = ({
 }: ProposalEmailProps) => (
   <Html>
     <Head />
-    <Preview>Your Personalized Lesson Proposal from Journey Beyond</Preview>
+    <Preview>Your Personalized Lesson Proposal from Class Beyond</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>✨ Your Personalized Proposal</Heading>
@@ -32,7 +32,7 @@ export const ProposalEmail = ({
         <Text style={greeting}>Dear {recipientName},</Text>
         
         <Text style={text}>
-          Thank you for joining the trial lesson! It was a pleasure to connect and discuss how we can support you here at <strong>Journey Beyond</strong> (JB Tutors). 
+          Thank you for joining the trial lesson! It was a pleasure to connect and discuss how we can support you here at <strong>Class Beyond</strong>. 
         </Text>
 
         <Text style={text}>
@@ -54,7 +54,7 @@ export const ProposalEmail = ({
         </Text>
 
         <Text style={footer}>
-          <strong>Journey Beyond Education (JB Tutors)</strong><br />
+          <strong>Class Beyond</strong><br />
           Helping Every Child Shine ✨
         </Text>
       </Container>

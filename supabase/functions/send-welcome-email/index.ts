@@ -35,7 +35,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     );
 
-    const { userId, email, firstName, lastName, role, password = "jbtutors123!" }: WelcomeEmailRequest = await req.json();
+    const { userId, email, firstName, lastName, role, password = "classbeyond123!" }: WelcomeEmailRequest = await req.json();
 
     if (!userId || !email || !firstName || !lastName || !role) {
       return new Response(

@@ -28,7 +28,7 @@ export const ReminderEmail = ({
 }: ReminderEmailProps) => (
   <Html>
     <Head />
-    <Preview>Reminder: Your Personalized Lesson Proposal from Journey Beyond</Preview>
+    <Preview>Reminder: Your Personalized Lesson Proposal from Class Beyond</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>📢 Friendly Reminder</Heading>
@@ -40,7 +40,7 @@ export const ReminderEmail = ({
         </Text>
 
         <Text style={text}>
-          At <strong>Journey Beyond</strong> (JB Tutors), we've been helping students excel since 2009 with our personalized learning approach. Your proposal includes:
+          At <strong>Class Beyond</strong>, we've been helping students excel since 2009 with our personalized learning approach. Your proposal includes:
         </Text>
 
         <div style={highlightBox}>
@@ -69,7 +69,7 @@ export const ReminderEmail = ({
         </Text>
 
         <Text style={footer}>
-          <strong>Journey Beyond Education (JB Tutors)</strong><br />
+          <strong>Class Beyond</strong><br />
           Helping Every Child Shine ✨
         </Text>
       </Container>

@@ -177,7 +177,7 @@ serve(async (req) => {
     // Create the auth user with admin client
     const { data: authData, error: authCreateError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: 'jbtutors123!', // Default password - parent can change later
+      password: 'classbeyond123!', // Default password - parent can change later
       email_confirm: true, // Auto-confirm email
       user_metadata: {
         first_name,

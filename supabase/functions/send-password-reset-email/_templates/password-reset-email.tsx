@@ -23,7 +23,7 @@ export const PasswordResetEmail = ({
 }: PasswordResetEmailProps) => (
   <Html>
     <Head />
-    <Preview>Reset your JB Tutors password</Preview>
+    <Preview>Reset your Class Beyond password</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={logoSection}>
@@ -31,7 +31,7 @@ export const PasswordResetEmail = ({
             src="https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/public/teaching-materials/jb-tutors-logo.png"
             width="150"
             height="60"
-            alt="JB Tutors"
+            alt="Class Beyond"
             style={logo}
           />
         </Section>
@@ -43,7 +43,7 @@ export const PasswordResetEmail = ({
         </Text>
         
         <Text style={text}>
-          We received a request to reset the password for your JB Tutors account ({email}).
+          We received a request to reset the password for your Class Beyond account ({email}).
         </Text>
         
         <Text style={text}>
@@ -78,7 +78,7 @@ export const PasswordResetEmail = ({
 
         <Text style={footer}>
           Best regards,<br />
-          The JB Tutors Team
+          The Class Beyond Team
         </Text>
 
         <Text style={disclaimer}>

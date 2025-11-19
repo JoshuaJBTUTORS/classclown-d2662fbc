@@ -104,7 +104,7 @@ const JBTutorsPreview = () => {
               <h1 className="text-2xl font-bold text-white">
                 ClassClown
               </h1>
-              <p className="text-sm text-gray-400">Powered by JB Tutors</p>
+              <p className="text-sm text-gray-400">Powered by Class Beyond</p>
             </div>
           </div>
           <Badge variant="secondary" className="bg-gray-800 text-violet-400 border-gray-700">
@@ -362,7 +362,7 @@ const JBTutorsPreview = () => {
             </div>
             <div>
               <div className="text-lg font-bold text-white">ClassClown</div>
-              <div className="text-sm text-gray-400">Powered by JB Tutors</div>
+              <div className="text-sm text-gray-400">Powered by Class Beyond</div>
             </div>
           </div>
           <p className="text-gray-400">

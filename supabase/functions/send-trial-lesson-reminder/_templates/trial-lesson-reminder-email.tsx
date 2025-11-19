@@ -36,12 +36,12 @@ export const TrialLessonReminderEmail = ({
 }: TrialLessonReminderEmailProps) => (
   <Html>
     <Head />
-    <Preview>🌟 {isToday ? "Today's" : "Tomorrow's"} trial lesson reminder - {lessonSubject} with JB Tutors</Preview>
+    <Preview>🌟 {isToday ? "Today's" : "Tomorrow's"} trial lesson reminder - {lessonSubject} with Class Beyond</Preview>
     <Body style={main}>
       <Container style={container}>
         {/* Header Section */}
         <Section style={header}>
-          <Heading style={brandTitle}>JB Tutors</Heading>
+          <Heading style={brandTitle}>Class Beyond</Heading>
           <Text style={headerSubtitle}>Excellence in Education</Text>
         </Section>
 
@@ -56,7 +56,7 @@ export const TrialLessonReminderEmail = ({
           </Text>
           
           <Text style={mainText}>
-            We are so <strong>excited and happy</strong> that <strong>{childName}</strong> has decided to give JB Tutors a try! This is a reminder about {childName}'s trial lesson {isToday ? 'today' : 'tomorrow'}.
+            We are so <strong>excited and happy</strong> that <strong>{childName}</strong> has decided to give Class Beyond a try! This is a reminder about {childName}'s trial lesson {isToday ? 'today' : 'tomorrow'}.
           </Text>
 
           {/* Lesson Details Card */}
@@ -149,12 +149,12 @@ export const TrialLessonReminderEmail = ({
         <Section style={footer}>
           <Hr style={footerDivider} />
           <Text style={footerText}>
-            <strong>JB Tutors</strong><br />
+            <strong>Class Beyond</strong><br />
             Empowering students to achieve their academic goals<br />
-            📧 support@jbtutors.co.uk | 🌐 www.jbtutors.co.uk
+            📧 enquiries@classbeyondacademy.io | 🌐 classbeyond.lovable.app
           </Text>
           <Text style={footerCopyright}>
-            © 2025 JB Tutors. All rights reserved.
+            © 2025 Class Beyond. All rights reserved.
           </Text>
         </Section>
       </Container>

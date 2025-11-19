@@ -99,7 +99,7 @@ export const DailyDemoListEmail = ({
 
         <Section style={footer}>
           <Text style={footerText}>
-            JB Tutors - Daily Demo Management System<br/>
+            Class Beyond - Daily Demo Management System<br/>
             This email was automatically generated at {new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/London' })} UK time
           </Text>
         </Section>

@@ -89,7 +89,7 @@ export const DemoImminentAdminEmail = ({
           </Section>
 
           <Text style={signature}>
-            JB Tutors Team
+            Class Beyond Team
           </Text>
         </Section>
 
