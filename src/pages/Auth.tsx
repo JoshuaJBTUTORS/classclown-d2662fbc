@@ -12,9 +12,8 @@ import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
-import { getDomainConfig, isCleoIO } from '@/utils/domainConfig';
+import { getDomainConfig } from '@/utils/domainConfig';
 import { DomainSEO } from '@/components/seo/DomainSEO';
-import cleoLogo from '@/assets/cleo-logo.png';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -29,7 +28,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const config = getDomainConfig();
-  const isCleo = isCleoIO();
   
   useEffect(() => {
     if (user) {
@@ -95,91 +93,50 @@ const Auth = () => {
         }} transition={{
           duration: 0.6
         }} className="text-center lg:text-left space-y-6">
-            {isCleo ? (
-              <>
-                {/* Cleo Branding */}
-                <div className="flex items-center justify-center lg:justify-start gap-3">
-                  <span className="text-6xl">👋</span>
-                  <img src={cleoLogo} alt="Cleo" className="h-16 w-auto" />
+            {/* Class Beyond Branding */}
+            <div className="flex items-center justify-center lg:justify-start gap-3">
+              <img src="/class-beyond-logo.png" alt="Class Beyond" className="h-20 w-auto" />
+            </div>
+            
+            <div>
+              <h1 className="text-5xl font-bold text-gray-900 mb-8">
+                Welcome to Class Beyond
+              </h1>
+              
+              <div className="space-y-4 text-left">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🗣️</span>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Interactive Voice Lessons</h3>
+                    <p className="text-gray-600">Talk naturally with AI tutoring</p>
+                  </div>
                 </div>
                 
-                <div>
-                  <h1 className="text-5xl font-bold text-gray-900 mb-8">
-                    Just say hey Cleo!
-                  </h1>
-                  
-                  <div className="space-y-4 text-left">
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">🗣️</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Interactive Voice Lessons</h3>
-                        <p className="text-gray-600">Talk naturally with Cleo</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">📊</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Visual Learning Aids</h3>
-                        <p className="text-gray-600">Diagrams and examples appear as you learn</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">🎯</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Personalized Teaching</h3>
-                        <p className="text-gray-600">Adapts to your learning style</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">💡</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Learn Anything, Anytime</h3>
-                        <p className="text-gray-600">Available 24/7 for all subjects</p>
-                      </div>
-                    </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">📊</span>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Visual Learning Aids</h3>
+                    <p className="text-gray-600">Diagrams and examples appear as you learn</p>
                   </div>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="flex justify-center lg:justify-start">
-                  <img src="/lovable-uploads/d35d104e-dca8-466e-8820-20dcc5131ad3.png" alt="Class Beyond Logo" className="h-24 w-auto" />
-                </div>
-                <div className="text-center lg:text-left">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                    Welcome to Class Beyond
-                  </h1>
-                  <p className="text-xl text-gray-600 mb-6">
-                    Personalized learning experiences that help students achieve their academic goals.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-center lg:justify-start space-x-3">
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                      <GraduationCap className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-900">Expert Tutors</h3>
-                      <p className="text-gray-600 text-sm">Qualified teachers ready to help</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-center lg:justify-start space-x-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-bold">📚</span>
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-900">Personalized Learning</h3>
-                      <p className="text-gray-600 text-sm">Tailored to each student's needs</p>
-                    </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Personalized Teaching</h3>
+                    <p className="text-gray-600">Adapts to your learning style</p>
                   </div>
                 </div>
-              </>
-            )}
+                
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">💡</span>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Learn Anything, Anytime</h3>
+                    <p className="text-gray-600">Available 24/7 for all subjects</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
           </motion.div>
 
@@ -225,7 +182,7 @@ const Auth = () => {
 
                   <Button 
                     type="submit" 
-                    className={`w-full ${isCleo ? 'bg-[hsl(142,65%,29%)] hover:bg-[hsl(143,63%,15%)] text-white' : ''}`}
+                    className="w-full"
                     disabled={loading}
                   >
                     {loading ? <>
@@ -242,29 +199,14 @@ const Auth = () => {
                   
                   <div className="text-center pt-4 border-t">
                     <p className="text-sm text-gray-600">
-                      {isCleo ? (
-                        <>
-                          New to Cleo?{' '}
-                          <button
-                            type="button"
-                            onClick={() => navigate('/interactive-signup')}
-                            className="text-[hsl(142,65%,29%)] font-medium hover:underline"
-                          >
-                            Sign up
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          Don't have an account?{' '}
-                          <button
-                            type="button"
-                            onClick={() => navigate('/interactive-signup')}
-                            className="text-primary font-medium hover:underline"
-                          >
-                            Sign up
-                          </button>
-                        </>
-                      )}
+                      New to Class Beyond?{' '}
+                      <button
+                        type="button"
+                        onClick={() => navigate('/interactive-signup')}
+                        className="text-primary font-medium hover:underline"
+                      >
+                        Sign up now
+                      </button>
                     </p>
                   </div>
                 </form>

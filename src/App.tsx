@@ -82,6 +82,8 @@ import HubAccessManagement from './pages/admin/HubAccessManagement';
 import CleoTracker from './pages/admin/CleoTracker';
 import CleoUserDetail from './pages/admin/CleoUserDetail';
 import Unauthorized from './pages/Unauthorized';
+import InstallApp from './pages/InstallApp';
+import { InstallPrompt } from './components/pwa/InstallPrompt';
 
 
 function App() {
@@ -103,6 +105,7 @@ function App() {
                 <Route path="/interactive-signup" element={<InteractiveSignup />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
+                <Route path="/install" element={<InstallApp />} />
                 
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/book-trial-musa" element={<TrialBookingMusa />} />

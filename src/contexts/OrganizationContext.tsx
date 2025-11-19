@@ -17,8 +17,8 @@ const defaultOrganization: Organization = {
   id: '1',
   name: 'Class Beyond',
   subdomain: 'classbeyond',
-    logo_url: '/lovable-uploads/e1ea034d-772d-44aa-a7d7-37815cae9930.png',
-    primary_color: '#4f46e5',
+    logo_url: '/class-beyond-logo.png',
+    primary_color: '#E91E63',
     status: 'active'
   };
 
