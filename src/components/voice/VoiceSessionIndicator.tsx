@@ -72,7 +72,7 @@ export const VoiceSessionIndicator = ({
               <p className="text-sm text-mint-700 mb-4">
                 Subscribe to continue learning with Cleo's AI voice lessons. Plans start from just £9.99/month.
               </p>
-              <div className="flex gap-3 flex-wrap">
+              <div className="flex gap-3 flex-wrap justify-center">
                 
                 <Button onClick={() => navigate('/learning-hub/subscription')} variant="outline" className="rounded-full border-mint-300 text-mint-700 hover:bg-mint-50">
                   Manage Subscription
