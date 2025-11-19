@@ -85,7 +85,8 @@ export const VoiceSessionIndicator = ({ showSubscriptionPrompt = false }: VoiceS
               <div className="flex gap-3 flex-wrap">
                 <Button 
                   onClick={() => navigate('/pricing')}
-                  className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white rounded-full px-6"
+                  className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 rounded-full px-6 font-semibold"
+                  style={{ color: 'white' }}
                 >
                   View Plans & Subscribe
                 </Button>
