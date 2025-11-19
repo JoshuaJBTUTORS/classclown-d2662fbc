@@ -139,6 +139,7 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
 
   const createSetupIntent = async () => {
     try {
+      console.log('🔐 Creating setup intent for proposal:', proposal.id);
       const { data, error } = await supabase.functions.invoke('create-proposal-setup-intent', {
         body: {
           proposalId: proposal.id,
@@ -147,11 +148,15 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Setup intent error:', error);
+        throw error;
+      }
 
+      console.log('✅ Client secret received:', data.clientSecret?.substring(0, 20) + '...');
       setClientSecret(data.clientSecret);
     } catch (error: any) {
-      console.error('Error creating setup intent:', error);
+      console.error('❌ Error creating setup intent:', error);
       toast({
         title: 'Error',
         description: 'Failed to initialize payment setup',
@@ -178,6 +183,8 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
     );
   }
 
+  console.log('💳 Rendering PaymentCaptureStep with clientSecret:', clientSecret ? 'present' : 'missing');
+
   return (
     <div className="container max-w-2xl py-12">
       <Card className="p-8 md:p-12 space-y-6">
@@ -189,17 +196,22 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
           </p>
         </div>
 
-        <Elements
-          stripe={stripePromise}
-          options={{
-            clientSecret,
-            appearance: {
-              theme: 'stripe',
-            },
-          }}
-        >
-          <PaymentForm proposal={proposal} onComplete={onComplete} />
-        </Elements>
+        {clientSecret && (
+          <Elements
+            stripe={stripePromise}
+            options={{
+              clientSecret,
+              appearance: {
+                theme: 'flat',
+                variables: {
+                  colorPrimary: '#1fb86b',
+                },
+              },
+            }}
+          >
+            <PaymentForm proposal={proposal} onComplete={onComplete} />
+          </Elements>
+        )}
 
         <div className="text-center text-xs text-muted-foreground">
           <p>Secured by Stripe. Your card information is never stored on our servers.</p>
