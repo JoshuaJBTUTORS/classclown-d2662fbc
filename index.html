@@ -3,32 +3,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Loading...</title>
-    <meta name="description" content="AI-powered learning platform">
-    <link rel="icon" href="/cleo-icon.png" type="image/png">
-    <script>
-      // Set favicon based on domain before React loads
-      (function() {
-        const isCleoIO = window.location.hostname === 'app.heycleo.io' || 
-                         window.location.hostname === 'localhost';
-        
-        const faviconPath = isCleoIO 
-          ? '/cleo-icon.png' 
-          : '/lovable-uploads/963b1f9b-3727-4176-a1d2-d9ed14181c23.png';
-        
-        const link = document.querySelector("link[rel='icon']");
-        if (link) {
-          link.href = faviconPath;
-        }
-      })();
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Class Beyond - AI Learning Platform</title>
+    <meta name="description" content="Complete learning platform with AI-powered tutoring and voice lessons">
+    
+    <!-- PWA Icons -->
+    <link rel="icon" href="/class-beyond-logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="/class-beyond-logo.png">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#E91E63">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Class Beyond">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/cleo-icon.png">
+    <meta property="og:title" content="Class Beyond - AI Learning Platform" />
+    <meta property="og:description" content="Complete learning platform with AI-powered tutoring and voice lessons" />
+    <meta property="og:image" content="/class-beyond-logo.png">
   </head>
 
   <body>

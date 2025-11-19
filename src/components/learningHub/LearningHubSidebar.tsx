@@ -6,7 +6,6 @@ import { Lock, Video } from 'lucide-react';
 import LiveTutoringUpgradeModal from './LiveTutoringUpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { isCleoIO } from '@/utils/domainConfig';
 import cleoLogo from '@/assets/cleo-logo.png';
 import {
   Sidebar,
@@ -57,22 +56,11 @@ const LearningHubSidebar = () => {
   const location = useLocation();
   const { userRole } = useAuth();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const isCleoDomain = isCleoIO();
 
   const hasLiveTutoringAccess = userRole === 'parent' || userRole === 'student' || userRole === 'admin' || userRole === 'owner' || userRole === 'tutor';
 
-  // Filter navigation items based on domain
-  const visibleNavigationItems = isCleoDomain 
-    ? navigationItems.filter(item => 
-        // On heycleo.io, only show essential Cleo features
-        item.href === '/learning-hub' || 
-        item.href === '/learning-hub/my-courses' || 
-        item.href === '/learning-hub/assessments' ||
-        item.href === '/learning-hub/cleo-id' ||
-        item.href === '/learning-hub/subscription' ||
-        item.href === '/learning-hub/settings'
-      )
-    : navigationItems; // Show all on ClassClown domain
+  // Show all navigation items for Class Beyond
+  const visibleNavigationItems = navigationItems;
 
   const handleLiveTutoringClick = (e: React.MouseEvent) => {
     if (!hasLiveTutoringAccess) {
