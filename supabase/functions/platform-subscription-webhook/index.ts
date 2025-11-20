@@ -57,14 +57,6 @@ Deno.serve(async (req) => {
         break;
       }
 
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        // Handle session pack purchases
-        if (paymentIntent.metadata.pack_size) {
-          await handlePackPurchase(supabaseAdmin, paymentIntent);
-        }
-        break;
-      }
 
       default:
         console.log('Unhandled event type:', event.type);
@@ -206,12 +198,7 @@ async function handleSubscriptionUpdate(supabase: any, subscription: Stripe.Subs
             total_minutes_allowed: dbSub.plan.voice_minutes_per_month,
             minutes_used: 0,
             minutes_remaining: dbSub.plan.voice_minutes_per_month,
-            bonus_minutes: 0,
-            // Legacy session fields for backwards compatibility
-            total_sessions_allowed: 0,
-            sessions_used: 0,
-            sessions_remaining: 0,
-            bonus_sessions: 0
+            bonus_minutes: 0
           });
 
         console.log('Created new quota period for user:', userId);
@@ -276,53 +263,3 @@ async function handlePaymentFailed(supabase: any, invoice: Stripe.Invoice) {
     .eq('stripe_subscription_id', subscription);
 }
 
-async function handlePackPurchase(supabase: any, paymentIntent: Stripe.PaymentIntent) {
-  console.log('Handling pack purchase:', paymentIntent.id);
-
-  const userId = paymentIntent.metadata.supabase_user_id;
-  const packSize = parseInt(paymentIntent.metadata.pack_size);
-  const sessionsGranted = parseInt(paymentIntent.metadata.sessions_granted);
-
-  if (!userId) {
-    console.error('No user ID in payment intent metadata');
-    return;
-  }
-
-  // Record purchase
-  const { error: purchaseError } = await supabase
-    .from('session_pack_purchases')
-    .insert({
-      user_id: userId,
-      pack_size: packSize,
-      price_paid_pence: paymentIntent.amount,
-      sessions_granted: sessionsGranted,
-      stripe_payment_intent_id: paymentIntent.id,
-      purchased_at: new Date().toISOString()
-    });
-
-  if (purchaseError) {
-    console.error('Error recording purchase:', purchaseError);
-    return;
-  }
-
-  // Add bonus sessions to current quota
-  const now = new Date().toISOString();
-  const { data: quota } = await supabase
-    .from('voice_session_quotas')
-    .select('*')
-    .eq('user_id', userId)
-    .lte('period_start', now)
-    .gte('period_end', now)
-    .single();
-
-  if (quota) {
-    await supabase
-      .from('voice_session_quotas')
-      .update({
-        bonus_sessions: (quota.bonus_sessions || 0) + sessionsGranted
-      })
-      .eq('id', quota.id);
-
-    console.log('Added bonus sessions to quota:', sessionsGranted);
-  }
-}

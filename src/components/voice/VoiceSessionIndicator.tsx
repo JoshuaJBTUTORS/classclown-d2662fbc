@@ -7,9 +7,6 @@ interface VoiceQuota {
   minutes_remaining?: number;
   bonus_minutes?: number;
   total_minutes_allowed?: number;
-  sessions_remaining?: number;
-  bonus_sessions?: number;
-  total_sessions_allowed?: number;
 }
 interface VoiceSessionIndicatorProps {
   showSubscriptionPrompt?: boolean;
@@ -35,7 +32,7 @@ export const VoiceSessionIndicator = ({
       const {
         data,
         error
-      } = await supabase.from('voice_session_quotas').select('minutes_remaining, bonus_minutes, total_minutes_allowed, sessions_remaining, bonus_sessions, total_sessions_allowed').eq('user_id', user.id).lte('period_start', now).gte('period_end', now).single();
+      } = await supabase.from('voice_session_quotas').select('minutes_remaining, bonus_minutes, total_minutes_allowed').eq('user_id', user.id).lte('period_start', now).gte('period_end', now).single();
       if (error) {
         console.error('Error fetching quota:', error);
         return;

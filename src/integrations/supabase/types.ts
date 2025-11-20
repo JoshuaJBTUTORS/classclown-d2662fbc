@@ -4553,49 +4553,37 @@ export type Database = {
       voice_session_quotas: {
         Row: {
           bonus_minutes: number | null
-          bonus_sessions: number | null
           created_at: string | null
           id: string
           minutes_remaining: number | null
           minutes_used: number | null
           period_end: string
           period_start: string
-          sessions_remaining: number
-          sessions_used: number | null
           total_minutes_allowed: number | null
-          total_sessions_allowed: number
           updated_at: string | null
           user_id: string
         }
         Insert: {
           bonus_minutes?: number | null
-          bonus_sessions?: number | null
           created_at?: string | null
           id?: string
           minutes_remaining?: number | null
           minutes_used?: number | null
           period_end: string
           period_start: string
-          sessions_remaining: number
-          sessions_used?: number | null
           total_minutes_allowed?: number | null
-          total_sessions_allowed: number
           updated_at?: string | null
           user_id: string
         }
         Update: {
           bonus_minutes?: number | null
-          bonus_sessions?: number | null
           created_at?: string | null
           id?: string
           minutes_remaining?: number | null
           minutes_used?: number | null
           period_end?: string
           period_start?: string
-          sessions_remaining?: number
-          sessions_used?: number | null
           total_minutes_allowed?: number | null
-          total_sessions_allowed?: number
           updated_at?: string | null
           user_id?: string
         }

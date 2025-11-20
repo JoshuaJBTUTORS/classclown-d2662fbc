@@ -123,12 +123,7 @@ Deno.serve(async (req) => {
           total_minutes_allowed: subscription.plan.voice_minutes_per_month,
           minutes_used: 0,
           minutes_remaining: subscription.plan.voice_minutes_per_month,
-          bonus_minutes: 0,
-          // Keep legacy session fields for backwards compatibility
-          total_sessions_allowed: 0,
-          sessions_used: 0,
-          sessions_remaining: 0,
-          bonus_sessions: 0
+          bonus_minutes: 0
         })
         .select()
         .single();

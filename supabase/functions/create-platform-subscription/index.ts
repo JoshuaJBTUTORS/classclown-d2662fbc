@@ -177,12 +177,7 @@ Deno.serve(async (req) => {
         total_minutes_allowed: minutesToGrant,
         minutes_used: 0,
         minutes_remaining: minutesToGrant,
-        bonus_minutes: 0,
-        // Legacy session fields for backwards compatibility
-        total_sessions_allowed: 0,
-        sessions_used: 0,
-        sessions_remaining: 0,
-        bonus_sessions: 0
+        bonus_minutes: 0
       });
 
     if (quotaError) {

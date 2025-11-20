@@ -49,7 +49,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('voice_session_quotas')
-        .select('sessions_remaining, bonus_sessions, minutes_remaining, bonus_minutes')
+        .select('minutes_remaining, bonus_minutes')
         .eq('user_id', user.id)
         .lte('period_start', now)
         .gte('period_end', now)
@@ -60,12 +60,10 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         return;
       }
 
-      const totalSessions = (data?.sessions_remaining || 0) + (data?.bonus_sessions || 0);
       const totalMinutes = (data?.minutes_remaining || 0) + (data?.bonus_minutes || 0);
       
-      setSessionsRemaining(totalSessions);
-      // User has quota if they have either sessions OR minutes available
-      setHasQuota(totalSessions > 0 || totalMinutes > 0);
+      // User has quota if they have minutes available
+      setHasQuota(totalMinutes > 0);
     } catch (error) {
       console.error('Error:', error);
     } finally {
