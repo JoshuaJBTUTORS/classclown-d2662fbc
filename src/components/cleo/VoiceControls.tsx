@@ -17,6 +17,7 @@ interface VoiceControlsProps {
   onToggleMute?: () => void;
   isMuted?: boolean;
   isConnecting?: boolean;
+  sessionStage?: string;  // NEW
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
@@ -29,6 +30,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   onToggleMute,
   isMuted,
   isConnecting,
+  sessionStage,  // NEW
 }) => {
   const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
   const [hasQuota, setHasQuota] = useState(false);
@@ -190,6 +192,16 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
             </span>
             {isSpeaking && <Volume2 className="w-4 h-4 text-green-500" />}
           </motion.div>
+          
+          {/* NEW: Show current stage during intro */}
+          {sessionStage && ['mic_check', 'paper_check', 'prior_knowledge', 'lesson_intro'].includes(sessionStage) && (
+            <div className="text-xs text-muted-foreground">
+              {sessionStage === 'mic_check' && '🎤 Microphone Check'}
+              {sessionStage === 'paper_check' && '📝 Materials Check'}
+              {sessionStage === 'prior_knowledge' && '🧠 Prior Knowledge Assessment'}
+              {sessionStage === 'lesson_intro' && '📚 Lesson Introduction'}
+            </div>
+          )}
           
           <div className="flex gap-2">
             {onToggleMute && (

@@ -690,6 +690,7 @@ export type Database = {
           model_switches: number | null
           module_id: string | null
           resume_count: number
+          session_stage: string | null
           status: string
           subject_id: string | null
           text_message_count: number | null
@@ -713,6 +714,7 @@ export type Database = {
           model_switches?: number | null
           module_id?: string | null
           resume_count?: number
+          session_stage?: string | null
           status?: string
           subject_id?: string | null
           text_message_count?: number | null
@@ -736,6 +738,7 @@ export type Database = {
           model_switches?: number | null
           module_id?: string | null
           resume_count?: number
+          session_stage?: string | null
           status?: string
           subject_id?: string | null
           text_message_count?: number | null
