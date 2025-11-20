@@ -21,10 +21,10 @@ interface Subscription {
 }
 
 interface Quota {
-  sessions_remaining: number;
-  bonus_sessions: number;
-  sessions_used: number;
-  total_sessions_allowed: number;
+  minutes_remaining: number;
+  bonus_minutes: number;
+  minutes_used: number;
+  total_minutes_allowed: number;
   period_end: string;
 }
 
@@ -177,9 +177,9 @@ export default function SubscriptionManagement() {
     );
   }
 
-  const totalRemaining = (quota?.sessions_remaining || 0) + (quota?.bonus_sessions || 0);
+  const totalRemaining = (quota?.minutes_remaining || 0) + (quota?.bonus_minutes || 0);
   const percentUsed = quota 
-    ? ((quota.sessions_used / quota.total_sessions_allowed) * 100)
+    ? ((quota.minutes_used / quota.total_minutes_allowed) * 100)
     : 0;
 
   return (
@@ -219,10 +219,10 @@ export default function SubscriptionManagement() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium">Voice Sessions This Period</p>
+                <p className="text-sm font-medium">Voice Minutes This Period</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">{totalRemaining}</span>
-                  <span className="text-muted-foreground">/ {quota.total_sessions_allowed} remaining</span>
+                  <span className="text-muted-foreground">/ {quota.total_minutes_allowed} remaining</span>
                 </div>
               </div>
               <Zap className="h-8 w-8 text-mint-600" />
@@ -232,15 +232,15 @@ export default function SubscriptionManagement() {
 
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold text-mint-600">{quota.sessions_used}</p>
+                <p className="text-2xl font-bold text-mint-600">{quota.minutes_used}</p>
                 <p className="text-xs text-muted-foreground">Used</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{quota.sessions_remaining}</p>
+                <p className="text-2xl font-bold">{quota.minutes_remaining}</p>
                 <p className="text-xs text-muted-foreground">Regular</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-yellow-600">{quota.bonus_sessions}</p>
+                <p className="text-2xl font-bold text-yellow-600">{quota.bonus_minutes}</p>
                 <p className="text-xs text-muted-foreground">Bonus</p>
               </div>
             </div>

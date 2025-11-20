@@ -435,28 +435,20 @@ export const paymentService = {
     const now = new Date().toISOString();
     const { data: quota } = await supabase
       .from('voice_session_quotas')
-      .select('sessions_remaining, bonus_sessions, minutes_remaining, bonus_minutes')
+      .select('minutes_remaining, bonus_minutes')
       .eq('user_id', user.id)
       .lte('period_start', now)
       .gte('period_end', now)
       .maybeSingle();
 
     if (quota) {
-      const totalSessions = (quota.sessions_remaining || 0) + (quota.bonus_sessions || 0);
       const totalMinutes = (quota.minutes_remaining || 0) + (quota.bonus_minutes || 0);
       
-      if (totalSessions > 0 || totalMinutes > 0) {
-        const reasons = [];
-        if (totalSessions > 0) {
-          reasons.push(`${totalSessions} free session${totalSessions > 1 ? 's' : ''}`);
-        }
-        if (totalMinutes > 0) {
-          reasons.push(`${totalMinutes} free minute${totalMinutes > 1 ? 's' : ''}`);
-        }
-        console.log('User has available free quota:', { sessions: totalSessions, minutes: totalMinutes });
+      if (totalMinutes > 0) {
+        console.log('User has available free quota:', { minutes: totalMinutes });
         return { 
           hasAccess: true, 
-          reason: `${reasons.join(' and ')} available` 
+          reason: `${totalMinutes} free minute${totalMinutes > 1 ? 's' : ''} available` 
         };
       }
     }
