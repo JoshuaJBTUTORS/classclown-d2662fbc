@@ -624,7 +624,14 @@ Remember: All that content above is already created and ready to show. I'll use 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-    } // Close if (lessonPlan) block
+  } else {
+    // Handle case where lesson plan is not found
+    console.error('Lesson plan not found for ID:', lessonPlanId);
+    return new Response(
+      JSON.stringify({ error: 'Lesson plan not found' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 
   } catch (error) {
     console.error("Error:", error);
