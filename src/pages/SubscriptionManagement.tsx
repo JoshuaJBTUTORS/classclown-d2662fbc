@@ -5,12 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Zap, CreditCard, Calendar, ArrowRight, CheckCircle } from 'lucide-react';
+import { Loader2, Zap, CreditCard, Calendar, ArrowRight, CheckCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-
-const stripePromise = loadStripe('pk_live_51QN38HJvbqr5stJM97b75qtlGHikLcEdXzhPypRqJPKRcZgeYyCztQ6h65rz79HGs1iCgI97GUqUlAUE7vJkGtPk001FSXb648');
+import { paymentService } from '@/services/paymentService';
+import { PlanComparisonDialog } from '@/components/subscription/PlanComparisonDialog';
 
 interface Subscription {
   plan_name: string;
@@ -32,19 +30,23 @@ export default function SubscriptionManagement() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showPackPurchase, setShowPackPurchase] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSubscriptionData();
+    fetchAvailablePlans();
   }, []);
 
-  // Handle successful subscription from Stripe
+  // Handle successful subscription and bonus purchases
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
+    const bonusPurchase = searchParams.get('bonus_purchase');
+    
     if (sessionId) {
       setShowSuccess(true);
       toast({
@@ -52,15 +54,24 @@ export default function SubscriptionManagement() {
         description: 'Subscription activated successfully!',
       });
       
-      // Refresh data after a short delay
       setTimeout(() => {
         fetchSubscriptionData();
       }, 2000);
 
-      // Redirect to courses after showing success
       setTimeout(() => {
         navigate('/learning-hub/my-courses');
       }, 3000);
+    }
+    
+    if (bonusPurchase === 'success') {
+      toast({
+        title: 'Bonus Minutes Added!',
+        description: 'Your bonus minutes have been added to your account.',
+      });
+      
+      setTimeout(() => {
+        fetchSubscriptionData();
+      }, 2000);
     }
   }, [searchParams, navigate, toast]);
 
@@ -117,6 +128,36 @@ export default function SubscriptionManagement() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailablePlans = async () => {
+    const { data } = await supabase
+      .from('platform_subscription_plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('voice_minutes_per_month', { ascending: true });
+    setAvailablePlans(data || []);
+  };
+
+  const handleChangePlan = async (newPlanName: string) => {
+    try {
+      await paymentService.updateSubscriptionPlan(newPlanName);
+      
+      toast({
+        title: 'Plan Updated!',
+        description: `Successfully switched to ${newPlanName} plan. Changes take effect immediately.`,
+      });
+      
+      await fetchSubscriptionData();
+      setShowPlanDialog(false);
+    } catch (error) {
+      console.error('Error changing plan:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to change plan. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -204,14 +245,23 @@ export default function SubscriptionManagement() {
                 {subscription.billing_interval} billing
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleManageSubscription}
-              className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white border-none"
-            >
-              <CreditCard className="mr-2 h-4 w-4" />
-              Manage
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPlanDialog(true)}
+                className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white border-none"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Change Plan
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleManageSubscription}
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Billing
+              </Button>
+            </div>
           </div>
 
         {/* Usage Stats */}
@@ -253,24 +303,22 @@ export default function SubscriptionManagement() {
           )}
         </Card>
 
-        {/* Buy More Sessions */}
-        {totalRemaining < 10 && (
-          <Card className="p-6 space-y-4 bg-gradient-to-br from-yellow-50 to-white border-yellow-200">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-600" />
-              <h3 className="text-xl font-bold">Running Low on Sessions?</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Purchase additional session packs - they never expire!
-            </p>
+        {/* Buy Bonus Minutes - Always Visible */}
+        <Card className="p-6 space-y-4 bg-gradient-to-br from-mint-50 to-white border-mint-200">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-mint-600" />
+            <h3 className="text-xl font-bold">Need Extra Minutes?</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Purchase bonus minutes at £0.30/minute. They're added immediately and never expire!
+          </p>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <SessionPackCard size={5} price={1000} />
-              <SessionPackCard size={10} price={1800} recommended />
-              <SessionPackCard size={20} price={3200} />
-            </div>
-          </Card>
-        )}
+          <div className="grid md:grid-cols-3 gap-4">
+            <BonusMinutePackCard minutes={10} price={300} />
+            <BonusMinutePackCard minutes={50} price={1500} recommended />
+            <BonusMinutePackCard minutes={100} price={3000} />
+          </div>
+        </Card>
 
         {/* Quick Actions */}
         <Card className="p-6 bg-white">
@@ -286,45 +334,41 @@ export default function SubscriptionManagement() {
             </Button>
           </div>
         </Card>
+
+        {/* Plan Comparison Dialog */}
+        <PlanComparisonDialog
+          open={showPlanDialog}
+          onOpenChange={setShowPlanDialog}
+          plans={availablePlans}
+          currentPlanName={subscription.plan_name}
+          billingInterval={subscription.billing_interval as 'monthly' | 'yearly'}
+          onChangePlan={handleChangePlan}
+        />
       </div>
     </div>
   );
 }
 
-interface SessionPackCardProps {
-  size: 5 | 10 | 20;
+interface BonusMinutePackCardProps {
+  minutes: 10 | 50 | 100;
   price: number;
   recommended?: boolean;
 }
 
-const SessionPackCard = ({ size, price, recommended }: SessionPackCardProps) => {
+const BonusMinutePackCard = ({ minutes, price, recommended }: BonusMinutePackCardProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handlePurchase = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('purchase-session-pack', {
-        body: { packSize: size }
-      });
-
-      if (error) throw error;
-
-      // Open Stripe checkout with client secret
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe not loaded');
-
-      // Here you would integrate Stripe's Payment Element
-      // For now, show success
-      toast({
-        title: 'Purchase Initiated',
-        description: `Processing your ${size}-session pack purchase...`
-      });
+      const { url } = await paymentService.purchaseBonusMinutes(minutes);
+      window.location.href = url;
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to purchase session pack',
+        description: 'Failed to initiate purchase',
         variant: 'destructive'
       });
     } finally {
@@ -340,11 +384,11 @@ const SessionPackCard = ({ size, price, recommended }: SessionPackCardProps) => 
         </div>
       )}
       <div className="space-y-1 text-center">
-        <p className="text-3xl font-bold text-mint-700">{size}</p>
-        <p className="text-sm text-muted-foreground">Sessions</p>
+        <p className="text-3xl font-bold text-mint-700">{minutes}</p>
+        <p className="text-sm text-muted-foreground">Minutes</p>
         <p className="text-2xl font-bold">£{(price / 100).toFixed(2)}</p>
         <p className="text-xs text-muted-foreground">
-          £{((price / size) / 100).toFixed(2)} per session
+          £0.30 per minute
         </p>
       </div>
       <Button 
