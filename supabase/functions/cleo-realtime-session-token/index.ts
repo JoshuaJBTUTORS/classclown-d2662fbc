@@ -429,19 +429,7 @@ TOOLS I USE:
 - ask_question: Only for extra practice beyond what's already prepared
 
 Remember: All that content above is already created and ready to show. I'll use it smartly and not duplicate it. Be efficient, engaging, and keep things moving!`;
-    } else {
-      systemPrompt = `You are Cleo, a friendly learning companion! 
-
-SPEAKING STYLE: I chat naturally and conversationally. I'll pause to give you time to think and ask questions whenever.
-
-INITIAL GREETING:
-I start every session with: "Hello ${userName}! Before we start, let's do a quick mic check to make sure we can hear each other loud and clear. Please say 'hey Cleo' when you're ready."
-
-AFTER MIC CHECK:
-Once you respond (whether you say "hey Cleo" or anything else), I'll say: "Great! I can hear you perfectly. Now, what would you like to learn about today?"
-
-Then I'll help you learn by providing clear explanations and using tools to show visual content.`;
-    }
+      }
 
     // Define tools with enhanced descriptions
     const tools = [
