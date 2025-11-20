@@ -33,6 +33,7 @@ const uploadSchema = z.object({
   description: z.string().optional(),
   specification_year: z.number().optional(),
   version: z.string().optional(),
+  text_content: z.string().optional(),
 });
 
 type UploadFormData = z.infer<typeof uploadSchema>;
@@ -51,6 +52,7 @@ const UploadExamBoardSpecDialog: React.FC<UploadExamBoardSpecDialogProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [textContent, setTextContent] = useState('');
 
   const {
     register,
@@ -95,19 +97,48 @@ const UploadExamBoardSpecDialog: React.FC<UploadExamBoardSpecDialogProps> = ({
   };
 
   const onSubmit = async (data: UploadFormData) => {
-    if (!selectedFile) {
-      toast.error('Please select a file to upload');
+    if (!textContent && !selectedFile) {
+      toast.error('Please either paste specification text or upload a file');
       return;
     }
 
     setIsUploading(true);
 
     try {
-      // Upload file to storage
-      const fileName = `${Date.now()}_${selectedFile.name}`;
+      // If text content is provided, insert directly without file upload
+      if (textContent) {
+        const { error: insertError } = await supabase
+          .from('exam_board_specifications')
+          .insert({
+            subject_id: data.subject_id,
+            exam_board: data.exam_board,
+            title: data.title,
+            description: data.description || null,
+            specification_year: data.specification_year || null,
+            version: data.version || null,
+            document_url: '', // No file uploaded
+            file_name: 'pasted-text',
+            extracted_text: textContent,
+            status: 'active' // Immediately active since no processing needed
+          });
+
+        if (insertError) throw insertError;
+
+        toast.success('Specification added successfully!');
+        onUploadComplete();
+        reset();
+        setTextContent('');
+        setSelectedFile(null);
+        onOpenChange(false);
+        setIsUploading(false);
+        return;
+      }
+
+      // File upload flow
+      const fileName = `${Date.now()}_${selectedFile!.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('exam-board-specifications')
-        .upload(fileName, selectedFile);
+        .upload(fileName, selectedFile!);
 
       if (uploadError) throw uploadError;
 
@@ -127,9 +158,9 @@ const UploadExamBoardSpecDialog: React.FC<UploadExamBoardSpecDialogProps> = ({
           specification_year: data.specification_year || null,
           version: data.version || null,
           document_url: publicUrl,
-          file_name: fileName, // Store the timestamped filename that was actually uploaded
-          file_size_bytes: selectedFile.size,
-          mime_type: selectedFile.type,
+          file_name: fileName,
+          file_size_bytes: selectedFile!.size,
+          mime_type: selectedFile!.type,
           status: 'draft',
         })
         .select()
@@ -152,6 +183,7 @@ const UploadExamBoardSpecDialog: React.FC<UploadExamBoardSpecDialogProps> = ({
       }
 
       reset();
+      setTextContent('');
       setSelectedFile(null);
       onUploadComplete();
     } catch (error: any) {
@@ -255,7 +287,35 @@ const UploadExamBoardSpecDialog: React.FC<UploadExamBoardSpecDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="file">Specification Document (PDF/DOCX) *</Label>
+            <Label htmlFor="text_content">Specification Content (Primary Method)</Label>
+            <Textarea
+              id="text_content"
+              value={textContent}
+              onChange={(e) => setTextContent(e.target.value)}
+              placeholder="=== Assessment Objectives (AOs) ===
+[Paste your specification content here...]
+
+=== Paper Structure ===
+...
+
+=== Marking Criteria ===
+...
+
+=== What Appears on Which Paper ===
+...
+
+=== Question Templates/Common Patterns ===
+..."
+              rows={15}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Paste your formatted specification text here, or upload a document below
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="file">Or Upload Document (PDF/DOCX)</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="file"
@@ -281,12 +341,12 @@ const UploadExamBoardSpecDialog: React.FC<UploadExamBoardSpecDialogProps> = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isUploading || !selectedFile}>
+            <Button type="submit" disabled={isUploading || (!textContent && !selectedFile)}>
               {isUploading ? (
                 'Uploading...'
               ) : (
                 <>
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload className="mr-2 h-4 w-4" />
                   Upload
                 </>
               )}
