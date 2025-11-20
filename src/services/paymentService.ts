@@ -384,6 +384,26 @@ export const paymentService = {
     }
   },
 
+  // Update subscription plan
+  updateSubscriptionPlan: async (newPlanName: string): Promise<{ success: boolean }> => {
+    const { data, error } = await supabase.functions.invoke('update-platform-subscription', {
+      body: { newPlanName }
+    });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Purchase bonus minutes
+  purchaseBonusMinutes: async (packageSize: 10 | 50 | 100): Promise<{ url: string }> => {
+    const { data, error } = await supabase.functions.invoke('purchase-bonus-minutes', {
+      body: { packageSize }
+    });
+    
+    if (error) throw error;
+    return data;
+  },
+
   // Check if user has platform subscription access
   checkPlatformSubscriptionAccess: async (): Promise<{
     hasAccess: boolean;
