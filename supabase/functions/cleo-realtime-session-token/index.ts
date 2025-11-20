@@ -431,8 +431,8 @@ TOOLS I USE:
 Remember: All that content above is already created and ready to show. I'll use it smartly and not duplicate it. Be efficient, engaging, and keep things moving!`;
       }
 
-    // Define tools with enhanced descriptions
-    const tools = [
+      // Define tools with enhanced descriptions
+      const tools = [
       {
         type: "function",
         name: "move_to_step",
@@ -624,6 +624,7 @@ Remember: All that content above is already created and ready to show. I'll use 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+    } // Close if (lessonPlan) block
 
   } catch (error) {
     console.error("Error:", error);
