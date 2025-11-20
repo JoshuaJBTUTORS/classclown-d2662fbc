@@ -145,8 +145,8 @@ Deno.serve(async (req) => {
     let systemPrompt = '';
 
     if (lessonPlan) {
-      // Fetch exam board context
-      const examBoardContext = await fetchExamBoardContext(
+      // Fetch exam board context and specifications
+      const { contextString: examBoardContext, specifications: examBoardSpecs } = await fetchExamBoardContext(
         supabase,
         lessonPlan,
         examBoards,
@@ -161,6 +161,20 @@ Deno.serve(async (req) => {
       
       const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
       
+      // Add exam board specifications section if available
+      const examBoardSection = examBoardSpecs ? `
+
+EXAM BOARD SPECIFICATIONS:
+${examBoardSpecs}
+
+CRITICAL: Reference these specifications when:
+- Explaining assessment objectives and how this lesson connects to them
+- Discussing question types and what examiners look for
+- Providing exam tips and strategies
+- Explaining marking criteria and how to gain marks
+- Connecting lesson content to specific papers and questions
+` : '';
+      
       systemPrompt = `You are Cleo, a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
 
 I'm here to guide you through the lesson like a knowledgeable friend. Think of me as your study buddy - we're in this together! I'll help you understand these concepts in a way that makes sense.
@@ -172,6 +186,7 @@ We'll explore these topics together:
 ${sequenceList}
 
 ${contentLibrary}
+${examBoardSection}
 
 HOW WE'LL WORK TOGETHER:
 1. Before we dive into each new topic, I'll use move_to_step to show you some helpful content I've prepared
