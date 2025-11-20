@@ -78,6 +78,39 @@ export function formatContentBlocksForPrompt(lessonPlan: any): string {
 }
 
 /**
+ * Fetches exam board specifications from storage
+ */
+async function fetchExamBoardSpecifications(
+  supabase: any,
+  examBoard: string,
+  subjectName: string
+): Promise<string> {
+  try {
+    // Normalize subject name for file path (e.g., "English Language" -> "English-Language")
+    const normalizedSubject = subjectName.replace(/\s+/g, '-');
+    const filePath = `${examBoard}/${normalizedSubject}.txt`;
+    
+    // Fetch the specification file from storage
+    const { data, error } = await supabase
+      .storage
+      .from('exam-board-specifications')
+      .download(filePath);
+    
+    if (error || !data) {
+      console.log(`No exam board specification found for ${examBoard} ${subjectName}`);
+      return '';
+    }
+    
+    // Convert blob to text
+    const text = await data.text();
+    return text;
+  } catch (error) {
+    console.error('Error fetching exam board specification:', error);
+    return '';
+  }
+}
+
+/**
  * Fetches exam board context for a lesson
  */
 export async function fetchExamBoardContext(
@@ -86,9 +119,10 @@ export async function fetchExamBoardContext(
   examBoards: Record<string, string>,
   conversation: any,
   educationLevel?: string
-): Promise<string> {
+): Promise<{ contextString: string; specifications: string }> {
   let examBoardContext = '';
   let subjectName = '';
+  let examBoard = '';
   
   if (lessonPlan?.lesson_id) {
     const { data: lessonData } = await supabase
@@ -111,11 +145,20 @@ export async function fetchExamBoardContext(
 
   // Look up exam board
   if (subjectName && examBoards[subjectName.toLowerCase()]) {
-    const examBoard = examBoards[subjectName.toLowerCase()];
+    examBoard = examBoards[subjectName.toLowerCase()];
     examBoardContext = ` for ${examBoard} ${subjectName}`;
   } else if (lessonPlan?.year_group) {
     examBoardContext = ` for ${lessonPlan.year_group}`;
   }
 
-  return examBoardContext;
+  // Fetch detailed specifications if exam board and subject are available
+  let specifications = '';
+  if (examBoard && subjectName) {
+    specifications = await fetchExamBoardSpecifications(supabase, examBoard, subjectName);
+  }
+
+  return {
+    contextString: examBoardContext,
+    specifications: specifications
+  };
 }
