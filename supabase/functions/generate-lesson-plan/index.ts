@@ -33,6 +33,73 @@ serve(async (req) => {
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice });
 
+    // Helper function to get user's exam board for a subject
+    async function getUserExamBoardForSubject(userId: string, subjectName: string): Promise<string | null> {
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('exam_boards')
+        .eq('id', userId)
+        .single();
+      
+      const examBoards = userProfile?.exam_boards || {};
+      return examBoards[subjectName?.toLowerCase()] || null;
+    }
+
+    // Determine subject name and exam board from lesson structure
+    let subjectName = '';
+    let examBoard = '';
+    
+    if (lessonId) {
+      const { data: lessonData } = await supabase
+        .from('course_lessons')
+        .select(`
+          id,
+          module_id,
+          course_modules!inner(
+            course_id,
+            courses!inner(subject)
+          )
+        `)
+        .eq('id', lessonId)
+        .single();
+      
+      if (lessonData?.course_modules?.courses?.subject) {
+        subjectName = lessonData.course_modules.courses.subject;
+        console.log('Determined subject from lesson:', subjectName);
+        
+        // Get user's exam board for this subject
+        examBoard = await getUserExamBoardForSubject(user.id, subjectName) || '';
+        console.log('User exam board for', subjectName, ':', examBoard);
+      }
+    }
+
+    // Fetch exam board specifications if available
+    let examBoardSpecs = '';
+    if (examBoard && subjectName) {
+      console.log('Fetching exam board specifications for', examBoard, subjectName);
+      const { data: specData, error: specError } = await supabase
+        .from('exam_board_specifications')
+        .select(`
+          extracted_text,
+          subjects!inner(name)
+        `)
+        .eq('exam_board', examBoard)
+        .eq('subjects.name', subjectName)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (specError) {
+        console.error('Error fetching exam board specs:', specError);
+      } else if (specData?.extracted_text) {
+        examBoardSpecs = specData.extracted_text;
+        console.log('Loaded exam board specifications, length:', examBoardSpecs.length);
+      } else {
+        console.log('No exam board specifications found for', examBoard, subjectName);
+      }
+    }
+
     // Fetch learning objectives from the lesson if lessonId is provided
     let learningObjectives: string[] = [];
     let avoidOverlapContext = '';
@@ -88,14 +155,33 @@ serve(async (req) => {
     }
 
     // Find an existing plan using a robust strategy to respect unique indexes
-    // Priority: lesson_id -> conversation_id+topic -> standalone (topic+year_group, lesson_id IS NULL)
+    // Priority: lesson_id + exam_board -> lesson_id only -> conversation_id+topic -> standalone
     let existingPlan = null as any;
 
-    if (lessonId) {
+    // Priority 1: Check by lesson_id + exam_board (if both provided)
+    if (lessonId && examBoard) {
+      const { data, error: lookupError } = await supabase
+        .from('cleo_lesson_plans')
+        .select()
+        .eq('lesson_id', lessonId)
+        .eq('exam_board', examBoard)
+        .maybeSingle();
+      
+      if (lookupError) {
+        console.error('Error looking up lesson plan by lesson_id + exam_board:', lookupError);
+      } else {
+        existingPlan = data;
+        console.log('Lookup by lesson_id + exam_board:', !!existingPlan);
+      }
+    }
+
+    // Priority 2: Check by lesson_id only (if no exam board match found)
+    if (!existingPlan && lessonId) {
       const { data } = await supabase
         .from('cleo_lesson_plans')
         .select()
         .eq('lesson_id', lessonId)
+        .is('exam_board', null)
         .maybeSingle();
       existingPlan = data;
       console.log('Lookup by lesson_id result:', !!existingPlan);
@@ -181,12 +267,14 @@ serve(async (req) => {
       planError = null;
     } else {
       // Create new lesson plan with lesson_id if provided and valid
-      const insertPayload: any = {
-        conversation_id: conversationId || null,
-        topic,
-        year_group: yearGroup,
-        status: 'generating'
-      };
+    const insertPayload: any = {
+      conversation_id: conversationId || null,
+      topic,
+      year_group: yearGroup,
+      exam_board: examBoard || null,
+      subject_name: subjectName || null,
+      status: 'generating'
+    };
       
       // Validate and include lesson_id if provided
       if (lessonId) {
@@ -288,7 +376,33 @@ CONTENT BLOCKS FOR STEP 2 (Practice):
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
-              : `You are an expert curriculum designer creating concise, focused lesson plans for students.
+              : `You are an expert curriculum designer creating concise, focused lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''} for students.
+${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
+${examBoardSpecs ? `
+
+📋 EXAM BOARD SPECIFICATIONS FOR ${examBoard} ${subjectName}:
+${examBoardSpecs}
+
+🎯 CRITICAL REQUIREMENTS - EXAM BOARD ALIGNMENT:
+- MUST align all learning objectives with the Assessment Objectives (AOs) stated above
+- MUST use ${examBoard}-specific terminology and methods
+- MUST structure questions to match ${examBoard} exam paper formats
+- MUST include exam tips that reference marking criteria from above
+- MUST focus on question types that appear in ${examBoard} papers
+- Reference specific topics from the specification when relevant
+
+Example of good exam board integration:
+"In ${examBoard} ${subjectName} Paper 1, questions on this topic typically award 6 marks for..."
+"Remember, ${examBoard} examiners are looking for [specific criteria from marking scheme]..."
+"This connects to Assessment Objective 2 (AO2) - applying knowledge to new situations..."
+` : examBoard ? `
+
+⚠️ EXAM BOARD CONTEXT: This lesson is for ${examBoard} ${subjectName}, but detailed specifications are not available.
+- Use general GCSE/11+ best practices for ${examBoard}
+- Keep content broad and applicable to the ${examBoard} curriculum
+- When discussing exam techniques, mention "${examBoard}" specifically but avoid specification details
+- Example: "In your ${examBoard} exam, you'll need to..." rather than specific paper structures
+` : ''}
 
 Your task: Create a streamlined lesson plan optimized for 15-20 minute sessions with 3-4 main teaching steps.
 
