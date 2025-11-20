@@ -125,7 +125,9 @@ export async function fetchExamBoardContext(
   let examBoardContext = '';
   let subjectName = '';
   let examBoard = '';
+  let subjectId = '';
   
+  // Step 1: Get subject name from course_lessons
   if (lessonPlan?.lesson_id) {
     const { data: lessonData } = await supabase
       .from('course_lessons')
@@ -145,15 +147,30 @@ export async function fetchExamBoardContext(
     }
   }
 
-  // Look up exam board
-  if (subjectName && examBoards[subjectName.toLowerCase()]) {
-    examBoard = examBoards[subjectName.toLowerCase()];
+  // Step 2: Map subject name to subject ID
+  if (subjectName) {
+    const { data: subjectData } = await supabase
+      .from('subjects')
+      .select('id, name')
+      .ilike('name', `%${subjectName}%`)
+      .limit(1)
+      .single();
+    
+    if (subjectData?.id) {
+      subjectId = subjectData.id;
+      subjectName = subjectData.name;
+    }
+  }
+
+  // Step 3: Look up exam board using subject ID (not name)
+  if (subjectId && examBoards[subjectId]) {
+    examBoard = examBoards[subjectId];
     examBoardContext = ` for ${examBoard} ${subjectName}`;
   } else if (lessonPlan?.year_group) {
     examBoardContext = ` for ${lessonPlan.year_group}`;
   }
 
-  // Fetch detailed specifications if exam board and subject are available
+  // Step 4: Fetch detailed specifications if exam board and subject are available
   let specifications = '';
   if (examBoard && subjectName) {
     specifications = await fetchExamBoardSpecifications(supabase, examBoard, subjectName);
