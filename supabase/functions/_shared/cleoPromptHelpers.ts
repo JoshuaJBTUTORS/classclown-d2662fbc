@@ -78,7 +78,7 @@ export function formatContentBlocksForPrompt(lessonPlan: any): string {
 }
 
 /**
- * Fetches exam board specifications from storage
+ * Fetches exam board specifications from database
  */
 async function fetchExamBoardSpecifications(
   supabase: any,
@@ -86,24 +86,26 @@ async function fetchExamBoardSpecifications(
   subjectName: string
 ): Promise<string> {
   try {
-    // Normalize subject name for file path (e.g., "English Language" -> "English-Language")
-    const normalizedSubject = subjectName.replace(/\s+/g, '-');
-    const filePath = `${examBoard}/${normalizedSubject}.txt`;
-    
-    // Fetch the specification file from storage
+    // Query the exam_board_specifications table with subject join
     const { data, error } = await supabase
-      .storage
-      .from('exam-board-specifications')
-      .download(filePath);
+      .from('exam_board_specifications')
+      .select(`
+        extracted_text,
+        subjects!inner(name)
+      `)
+      .eq('exam_board', examBoard)
+      .eq('subjects.name', subjectName)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
     
     if (error || !data) {
       console.log(`No exam board specification found for ${examBoard} ${subjectName}`);
       return '';
     }
     
-    // Convert blob to text
-    const text = await data.text();
-    return text;
+    return data.extracted_text || '';
   } catch (error) {
     console.error('Error fetching exam board specification:', error);
     return '';
