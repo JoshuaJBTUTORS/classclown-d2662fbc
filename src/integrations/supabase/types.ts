@@ -818,10 +818,12 @@ export type Database = {
           created_at: string | null
           difficulty_score: number | null
           estimated_duration_minutes: number | null
+          exam_board: string | null
           id: string
           learning_objectives: Json | null
           lesson_id: string | null
           status: string
+          subject_name: string | null
           teaching_sequence: Json | null
           topic: string
           updated_at: string | null
@@ -833,10 +835,12 @@ export type Database = {
           created_at?: string | null
           difficulty_score?: number | null
           estimated_duration_minutes?: number | null
+          exam_board?: string | null
           id?: string
           learning_objectives?: Json | null
           lesson_id?: string | null
           status?: string
+          subject_name?: string | null
           teaching_sequence?: Json | null
           topic: string
           updated_at?: string | null
@@ -848,10 +852,12 @@ export type Database = {
           created_at?: string | null
           difficulty_score?: number | null
           estimated_duration_minutes?: number | null
+          exam_board?: string | null
           id?: string
           learning_objectives?: Json | null
           lesson_id?: string | null
           status?: string
+          subject_name?: string | null
           teaching_sequence?: Json | null
           topic?: string
           updated_at?: string | null

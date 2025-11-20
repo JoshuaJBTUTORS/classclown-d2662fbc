@@ -154,6 +154,36 @@ Deno.serve(async (req) => {
         userProfile?.education_level
       );
 
+      // Build exam board context section for system prompt
+      const examBoardSection = examBoardSpecs ? `
+
+📋 EXAM BOARD SPECIFICATIONS${examBoardContext}:
+${examBoardSpecs}
+
+🎯 HOW TO USE THESE SPECIFICATIONS (MANDATORY):
+When teaching, you MUST:
+- Explicitly mention the exam board name when discussing exam techniques
+  Example: "In ${lessonPlan.exam_board || 'your exam board'} ${lessonPlan.subject_name || 'this subject'}, they love asking about..."
+- Reference specific Assessment Objectives (AOs) when relevant
+  Example: "This connects to AO2 - applying knowledge to new situations"
+- Link concepts to specific exam papers when mentioned in specs
+  Example: "You'll see this type of question in Paper 1, Section B"
+- Use exam board terminology and command words from the specifications
+  Example: "When they say 'evaluate', they want you to weigh up pros and cons..."
+- Share marking criteria insights from the specifications
+  Example: "To get full marks, examiners want to see..."
+
+✅ SPECIFIC REFERENCES: Make at least 2-3 explicit exam board references per lesson section
+❌ AVOID: Generic phrases like "in the exam" - always say the exam board name when discussing exams
+🎯 PRIORITY: Exam board alignment is MORE important than covering extra content - focus on what examiners want` : examBoardContext ? `
+
+⚠️ NO EXAM BOARD SPECIFICATIONS AVAILABLE${examBoardContext}
+
+Use general best practices:
+- Say "In your GCSE exam..." or "In your 11+ exam..." (not board-specific)
+- Focus on universal exam skills (reading carefully, managing time, showing working)
+- Keep advice broad and applicable to all exam boards
+- Avoid making specific claims about marking criteria or paper structure` : '';
       
       const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => 
         `Step ${i+1}: ${step.title} (${step.duration_minutes || 5}min) [ID: ${step.id}]`
@@ -223,6 +253,8 @@ OUR LESSON JOURNEY:
    - After the assessment, I'll introduce: "Okay, so today we're looking at ${lessonPlan.topic}${examBoardContext}. Based on what you've told me, I think you'll find [specific aspect] particularly interesting. I've organized everything into sections that build on each other. Feel free to stop me anytime if something doesn't click. Ready?"
    - I'll wait briefly, then: "Alright, let's get into it."
    - Important: I won't call move_to_step until AFTER all these checks
+
+${examBoardSection}
 
 5. START TEACHING:
    - After the intro, I'll immediately call move_to_step("${lessonPlan.teaching_sequence[0]?.id}", "${lessonPlan.teaching_sequence[0]?.title || 'Introduction'}") to show our first content
