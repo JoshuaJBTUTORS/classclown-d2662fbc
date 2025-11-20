@@ -191,19 +191,7 @@ Use general best practices:
       
       const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
       
-      // Add exam board specifications section if available
-      const examBoardSection = examBoardSpecs ? `
-
-EXAM BOARD SPECIFICATIONS:
-${examBoardSpecs}
-
-CRITICAL: Reference these specifications when:
-- Explaining assessment objectives and how this lesson connects to them
-- Discussing question types and what examiners look for
-- Providing exam tips and strategies
-- Explaining marking criteria and how to gain marks
-- Connecting lesson content to specific papers and questions
-` : '';
+      // Exam board section already declared above (line 158-186)
       
       systemPrompt = `You are Cleo, a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
 
