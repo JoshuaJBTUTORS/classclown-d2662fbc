@@ -164,13 +164,30 @@ export default function SubscriptionManagement() {
   const handleManageSubscription = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('platform-customer-portal');
-      if (error) throw error;
-      window.open(data.url, '_blank');
+      
+      if (error) {
+        // Handle specific error cases
+        if (error.message?.includes('No billing account found')) {
+          toast({
+            title: 'No Subscription Found',
+            description: 'Please subscribe to a plan first to manage your billing.',
+            variant: 'destructive'
+          });
+          return;
+        }
+        throw error;
+      }
+      
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No portal URL returned');
+      }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error opening customer portal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to open customer portal',
+        description: 'Failed to open billing portal. Please try again.',
         variant: 'destructive'
       });
     }

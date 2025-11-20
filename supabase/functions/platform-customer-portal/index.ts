@@ -35,16 +35,27 @@ serve(async (req) => {
       );
     }
 
-    // Get user's platform subscription to find stripe_customer_id
+    // Get user's most recent active platform subscription to find stripe_customer_id
     const { data: subscription, error: subError } = await supabaseClient
       .from('user_platform_subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, status')
       .eq('user_id', user.id)
-      .single();
+      .in('status', ['active', 'trialing', 'past_due'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (subError || !subscription?.stripe_customer_id) {
+    if (subError) {
+      console.error('Database error fetching subscription:', subError);
       return new Response(
-        JSON.stringify({ error: "No billing account found" }),
+        JSON.stringify({ error: "Database error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!subscription?.stripe_customer_id) {
+      return new Response(
+        JSON.stringify({ error: "No billing account found. Please subscribe first." }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
