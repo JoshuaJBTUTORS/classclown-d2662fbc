@@ -134,19 +134,28 @@ Deno.serve(async (req) => {
           user_id: user.id,
           status: 'active',
           topic: topic || null,
-          year_group: yearGroup || null
+          year_group: yearGroup || null,
+          session_stage: 'mic_check'  // Initialize to first stage
         })
         .select()
         .single();
       conversation = data;
     }
 
+    const currentStage = conversation.session_stage || 'mic_check';
+    console.log(`📍 Current session stage: ${currentStage}`);
+
     // Build comprehensive system prompt
     let systemPrompt = '';
 
     if (lessonPlan) {
       // Fetch exam board context and specifications
-      const { contextString: examBoardContext, specifications: examBoardSpecs } = await fetchExamBoardContext(
+      const { 
+        contextString: examBoardContext, 
+        specifications: examBoardSpecs,
+        examBoard,          // NEW
+        subjectName         // NEW
+      } = await fetchExamBoardContext(
         supabase,
         lessonPlan,
         examBoards,
@@ -192,8 +201,70 @@ Use general best practices:
       const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
       
       // Exam board section already declared above (line 158-186)
-      
-      systemPrompt = `You are Cleo, a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
+      // Build system prompt based on current session stage
+      if (currentStage === 'mic_check') {
+        systemPrompt = `You are Cleo, an enthusiastic AI tutor conducting a microphone check.
+
+CRITICAL INSTRUCTIONS:
+- Say: "Hey ${userName}! Can you hear me okay? Just say something so I know we're connected!"
+- STOP and WAIT for the user's response
+- Do NOT continue to the next step
+- Once they respond, acknowledge briefly: "Cool, I can hear you!" or "Yeah, you're all set."
+- Then STOP SPEAKING and wait - the system will advance to the next stage
+
+Keep it natural and brief. Just confirm the mic works.`;
+      } else if (currentStage === 'paper_check') {
+        systemPrompt = `You are Cleo, an enthusiastic AI tutor checking if the student has materials ready.
+
+CRITICAL INSTRUCTIONS:
+- Say: "Have you got your pen and paper ready? It really helps to jot things down."
+- STOP and WAIT for the user's response
+- Do NOT continue to the next step
+- Once they respond, acknowledge briefly: "Good" or "Sorted" or "Alright"
+- Then STOP SPEAKING and wait - the system will advance to the next stage
+
+Keep it casual and encouraging.`;
+      } else if (currentStage === 'prior_knowledge') {
+        systemPrompt = `You are Cleo, an enthusiastic AI tutor assessing the student's prior knowledge.
+
+CRITICAL INSTRUCTIONS:
+- Say: "Now before we dive in, I'd love to know where you're starting from. Tell me - what do you already know about ${lessonPlan.topic}? Even if it's just a little bit, I want to hear it!"
+- STOP and WAIT for the user's full response
+- LISTEN carefully to what they say
+- Based on their answer, gauge their level and respond warmly:
+  * If they know nothing: "No problem — we'll start simple and work our way up."
+  * If they know some basics: "Nice — we'll build on that and take it further."
+  * If they seem advanced: "Alright, sounds like you're ready for the harder stuff."
+- Acknowledge: "Okay, that gives me a good sense of where we're starting."
+- Then STOP SPEAKING - the system will advance to the next stage
+
+Remember what they tell you - this informs how you'll teach the rest of the lesson.`;
+      } else if (currentStage === 'lesson_intro') {
+        // Build exam board intro string
+        const examBoardIntro = examBoard && subjectName 
+          ? `We're following the ${examBoard} ${subjectName} specification` 
+          : examBoardContext 
+            ? `We're covering ${lessonPlan.topic}${examBoardContext}`
+            : `We're covering ${lessonPlan.topic}`;
+
+        systemPrompt = `You are Cleo, an enthusiastic AI tutor introducing today's lesson.
+
+CONTEXT FROM PRIOR KNOWLEDGE CHECK:
+- Review the conversation history to see what the student said they already know
+- Tailor your introduction based on their level
+
+CRITICAL INSTRUCTIONS:
+- Start with: "Okay, so today we're learning about ${lessonPlan.topic}. ${examBoardIntro}."
+- Reference what they told you in prior knowledge: "Based on what you've told me, I think you'll find [specific aspect] particularly interesting."
+- Continue: "I've organized everything into sections that build on each other. Feel free to stop me anytime if something doesn't click. Ready?"
+- STOP and WAIT for confirmation
+- Once they say "yes" or "ready", respond: "Alright, let's get into it."
+- Then STOP SPEAKING - the system will advance to teaching mode
+
+Be confident and set the stage for a great lesson. Make the exam board clear upfront.`;
+      } else {
+        // FULL TEACHING PROMPT
+        systemPrompt = `You are Cleo, a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
 
 I'm here to guide you through the lesson like a knowledgeable friend. Think of me as your study buddy - we're in this together! I'll help you understand these concepts in a way that makes sense.
 
@@ -560,7 +631,8 @@ Then I'll help you learn by providing clear explanations and using tools to show
       JSON.stringify({
         client_secret: sessionData.client_secret.value,
         conversationId: conversation.id,
-        lessonPlan
+        lessonPlan,
+        currentStage  // NEW: Tell client which stage we're in
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

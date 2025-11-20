@@ -121,7 +121,7 @@ export async function fetchExamBoardContext(
   examBoards: Record<string, string>,
   conversation: any,
   educationLevel?: string
-): Promise<{ contextString: string; specifications: string }> {
+): Promise<{ contextString: string; specifications: string; examBoard: string; subjectName: string }> {
   let examBoardContext = '';
   let subjectName = '';
   let examBoard = '';
@@ -178,6 +178,8 @@ export async function fetchExamBoardContext(
 
   return {
     contextString: examBoardContext,
-    specifications: specifications
+    specifications: specifications,
+    examBoard: examBoard,
+    subjectName: subjectName
   };
 }

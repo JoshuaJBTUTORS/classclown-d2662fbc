@@ -168,7 +168,8 @@ export class RealtimeChat {
 
       return {
         conversationId: this.conversationId,
-        lessonPlan: tokenData.lessonPlan
+        lessonPlan: tokenData.lessonPlan,
+        currentStage: tokenData.currentStage  // Pass through the stage from token response
       };
 
     } catch (error) {
