@@ -252,7 +252,7 @@ export default function SubscriptionManagement() {
             </div>
             <Button 
               onClick={() => setShowPlanDialog(true)}
-              className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white border-none"
+              className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-foreground border-none"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Upgrade Plan
@@ -306,7 +306,7 @@ export default function SubscriptionManagement() {
             </p>
             <Button 
               onClick={() => setShowPlanDialog(true)}
-              className="w-full bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white"
+              className="w-full bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-foreground"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Upgrade Plan
@@ -320,7 +320,7 @@ export default function SubscriptionManagement() {
           <div className="space-y-3">
             <Button 
               onClick={() => setShowPlanDialog(true)}
-              className="w-full justify-between bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white"
+              className="w-full justify-between bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-foreground"
             >
               Upgrade Plan
               <RefreshCw className="h-4 w-4" />
