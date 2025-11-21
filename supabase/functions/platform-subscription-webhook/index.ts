@@ -57,13 +57,6 @@ Deno.serve(async (req) => {
         break;
       }
 
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (session.metadata?.purchase_type === 'bonus_minutes') {
-          await handleBonusMinutesPurchase(supabaseAdmin, session);
-        }
-        break;
-      }
 
       default:
         console.log('Unhandled event type:', event.type);
@@ -258,43 +251,4 @@ async function handlePaymentFailed(supabase: any, invoice: Stripe.Invoice) {
     .eq('stripe_subscription_id', subscription);
 }
 
-async function handleBonusMinutesPurchase(supabase: any, session: Stripe.Checkout.Session) {
-  console.log('Handling bonus minutes purchase:', session.id);
-
-  const userId = session.metadata?.supabase_user_id;
-  const bonusMinutes = parseInt(session.metadata?.bonus_minutes || '0');
-
-  if (!userId || !bonusMinutes) {
-    console.error('Missing user ID or bonus minutes in metadata');
-    return;
-  }
-
-  // Get user's current quota
-  const now = new Date().toISOString();
-  const { data: currentQuota } = await supabase
-    .from('voice_session_quotas')
-    .select('*')
-    .eq('user_id', userId)
-    .lte('period_start', now)
-    .gte('period_end', now)
-    .single();
-
-  if (currentQuota) {
-    // Add bonus minutes
-    const { error } = await supabase
-      .from('voice_session_quotas')
-      .update({
-        bonus_minutes: currentQuota.bonus_minutes + bonusMinutes
-      })
-      .eq('id', currentQuota.id);
-
-    if (error) {
-      console.error('Error updating bonus minutes:', error);
-    } else {
-      console.log(`Added ${bonusMinutes} bonus minutes to user ${userId}`);
-    }
-  } else {
-    console.error('No active quota found for user:', userId);
-  }
-}
 

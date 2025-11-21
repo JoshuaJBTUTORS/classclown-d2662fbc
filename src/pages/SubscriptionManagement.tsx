@@ -42,10 +42,9 @@ export default function SubscriptionManagement() {
     fetchAvailablePlans();
   }, []);
 
-  // Handle successful subscription and bonus purchases
+  // Handle successful subscription
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
-    const bonusPurchase = searchParams.get('bonus_purchase');
     
     if (sessionId) {
       setShowSuccess(true);
@@ -61,17 +60,6 @@ export default function SubscriptionManagement() {
       setTimeout(() => {
         navigate('/learning-hub/my-courses');
       }, 3000);
-    }
-    
-    if (bonusPurchase === 'success') {
-      toast({
-        title: 'Bonus Minutes Added!',
-        description: 'Your bonus minutes have been added to your account.',
-      });
-      
-      setTimeout(() => {
-        fetchSubscriptionData();
-      }, 2000);
     }
   }, [searchParams, navigate, toast]);
 
@@ -297,18 +285,14 @@ export default function SubscriptionManagement() {
 
             <Progress value={100 - percentUsed} className="h-3" />
 
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-2xl font-bold text-mint-600">{quota.minutes_used}</p>
                 <p className="text-xs text-muted-foreground">Used</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{quota.minutes_remaining}</p>
-                <p className="text-xs text-muted-foreground">Regular</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-yellow-600">{quota.bonus_minutes}</p>
-                <p className="text-xs text-muted-foreground">Bonus</p>
+                <p className="text-2xl font-bold">{totalRemaining}</p>
+                <p className="text-xs text-muted-foreground">Remaining</p>
               </div>
             </div>
 
@@ -320,22 +304,25 @@ export default function SubscriptionManagement() {
           )}
         </Card>
 
-        {/* Buy Bonus Minutes - Always Visible */}
-        <Card className="p-6 space-y-4 bg-gradient-to-br from-mint-50 to-white border-mint-200">
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-mint-600" />
-            <h3 className="text-xl font-bold">Need Extra Minutes?</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Purchase bonus minutes at £0.30/minute. They're added immediately and never expire!
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <BonusMinutePackCard minutes={10} price={300} />
-            <BonusMinutePackCard minutes={50} price={1500} recommended />
-            <BonusMinutePackCard minutes={100} price={3000} />
-          </div>
-        </Card>
+        {/* Upgrade Prompt when out of minutes */}
+        {totalRemaining === 0 && (
+          <Card className="p-6 space-y-4 bg-gradient-to-br from-mint-50 to-white border-mint-200">
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-mint-600" />
+              <h3 className="text-xl font-bold">Out of Minutes?</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              You've used all your minutes this month. Upgrade your plan for more learning time!
+            </p>
+            <Button 
+              onClick={() => setShowPlanDialog(true)}
+              className="w-full bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Upgrade Plan
+            </Button>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <Card className="p-6 bg-white">
@@ -366,56 +353,3 @@ export default function SubscriptionManagement() {
   );
 }
 
-interface BonusMinutePackCardProps {
-  minutes: 10 | 50 | 100;
-  price: number;
-  recommended?: boolean;
-}
-
-const BonusMinutePackCard = ({ minutes, price, recommended }: BonusMinutePackCardProps) => {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
-  const handlePurchase = async () => {
-    try {
-      setLoading(true);
-      const { url } = await paymentService.purchaseBonusMinutes(minutes);
-      window.location.href = url;
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to initiate purchase',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Card className={`p-4 space-y-3 hover:shadow-xl transition-all ${recommended ? 'border-mint-500 border-2 relative' : ''}`}>
-      {recommended && (
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-mint-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-          BEST VALUE
-        </div>
-      )}
-      <div className="space-y-1 text-center">
-        <p className="text-3xl font-bold text-mint-700">{minutes}</p>
-        <p className="text-sm text-muted-foreground">Minutes</p>
-        <p className="text-2xl font-bold">£{(price / 100).toFixed(2)}</p>
-        <p className="text-xs text-muted-foreground">
-          £0.30 per minute
-        </p>
-      </div>
-      <Button 
-        onClick={handlePurchase} 
-        disabled={loading}
-        size="sm"
-        className={`w-full ${recommended ? 'bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700' : ''}`}
-      >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buy Now'}
-      </Button>
-    </Card>
-  );
-};
