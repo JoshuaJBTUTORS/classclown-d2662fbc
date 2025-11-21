@@ -470,17 +470,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         return;
       }
 
-      // Disconnect and reconnect with new stage
-      console.log('🔄 Reconnecting with new session stage...');
+      // Just update the stage - no need to reconnect
+      // The AI will naturally progress through stages based on conversation
       setSessionStage(nextStage);
-      
-      // Brief delay to ensure database update propagates
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Reconnect (this will fetch new prompt for new stage)
-      await disconnect(false);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await connect();
+      console.log(`✅ Stage updated to "${nextStage}" - continuing conversation`);
       
     } catch (error) {
       console.error('Error advancing session stage:', error);
