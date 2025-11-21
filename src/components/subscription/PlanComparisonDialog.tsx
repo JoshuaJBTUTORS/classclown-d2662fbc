@@ -117,8 +117,8 @@ export function PlanComparisonDialog({
                   disabled={isCurrent || changingPlan !== null}
                   className={`w-full ${
                     isUpgrade && !isCurrent
-                      ? 'bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700'
-                      : ''
+                      ? 'bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-foreground'
+                      : 'text-foreground'
                   }`}
                   variant={isCurrent ? 'outline' : 'default'}
                 >
