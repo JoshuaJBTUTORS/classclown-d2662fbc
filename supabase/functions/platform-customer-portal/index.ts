@@ -21,10 +21,17 @@ serve(async (req) => {
       );
     }
 
-    // Verify user is authenticated
+    // Verify user is authenticated and create client with auth token
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
     );
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader.replace("Bearer ", ""));
@@ -36,6 +43,7 @@ serve(async (req) => {
     }
 
     // Get user's most recent active platform subscription to find stripe_customer_id
+    console.log(`Fetching subscription for user: ${user.id}`);
     const { data: subscription, error: subError } = await supabaseClient
       .from('user_platform_subscriptions')
       .select('stripe_customer_id, status')
@@ -44,6 +52,8 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    console.log('Subscription query result:', { subscription, error: subError });
 
     if (subError) {
       console.error('Database error fetching subscription:', subError);
