@@ -318,6 +318,13 @@ export default function SubscriptionManagement() {
         <Card className="p-6 bg-white">
           <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-3">
+            <Button 
+              onClick={() => setShowPlanDialog(true)}
+              className="w-full justify-between bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white"
+            >
+              Upgrade Plan
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             <Button variant="outline" className="w-full justify-between" onClick={() => navigate('/learning-hub')}>
               Back to Learning Hub
               <ArrowRight className="h-4 w-4" />
