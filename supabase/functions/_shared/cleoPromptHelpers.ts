@@ -145,6 +145,9 @@ export async function fetchExamBoardContext(
     if (lessonData?.course_modules?.courses?.subject) {
       subjectName = lessonData.course_modules.courses.subject;
     }
+  } else if (lessonPlan?.subject_name) {
+    // Fallback: Use subject_name from lesson plan if no lesson_id
+    subjectName = lessonPlan.subject_name;
   }
 
   // Step 2: Map subject name to subject ID
