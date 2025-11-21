@@ -179,7 +179,7 @@ export default function SubscriptionManagement() {
       }
       
       if (data?.url) {
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       } else {
         throw new Error('No portal URL returned');
       }
