@@ -127,8 +127,18 @@ export async function fetchExamBoardContext(
   let examBoard = '';
   let subjectId = '';
   
+  console.log('📚 fetchExamBoardContext START:', { 
+    lessonPlanId: lessonPlan?.id,
+    lessonId: lessonPlan?.lesson_id, 
+    lessonPlanSubjectName: lessonPlan?.subject_name,
+    examBoardsKeys: Object.keys(examBoards || {}),
+    examBoards: examBoards,
+    educationLevel 
+  });
+  
   // Step 1: Get subject name from course_lessons
   if (lessonPlan?.lesson_id) {
+    console.log('📍 Step 1: Looking up subject from lesson_id:', lessonPlan.lesson_id);
     const { data: lessonData } = await supabase
       .from('course_lessons')
       .select(`
@@ -142,42 +152,65 @@ export async function fetchExamBoardContext(
       .eq('id', lessonPlan.lesson_id)
       .single();
     
+    console.log('📍 Lesson data result:', lessonData);
+    
     if (lessonData?.course_modules?.courses?.subject) {
       subjectName = lessonData.course_modules.courses.subject;
+      console.log('✅ Got subject name from course:', subjectName);
     }
   } else if (lessonPlan?.subject_name) {
     // Fallback: Use subject_name from lesson plan if no lesson_id
     subjectName = lessonPlan.subject_name;
+    console.log('✅ Using subject name from lesson plan:', subjectName);
   }
 
   // Step 2: Map subject name to subject ID
+  console.log('📍 Step 2: Mapping subject name to ID. subjectName:', subjectName);
   if (subjectName) {
-    const { data: subjectData } = await supabase
+    const { data: subjectData, error: subjectError } = await supabase
       .from('subjects')
       .select('id, name')
       .ilike('name', `%${subjectName}%`)
       .limit(1)
       .single();
     
+    console.log('📍 Subject lookup result:', { subjectData, subjectError });
+    
     if (subjectData?.id) {
       subjectId = subjectData.id;
       subjectName = subjectData.name;
+      console.log('✅ Mapped to subject ID:', subjectId, 'Name:', subjectName);
+    } else {
+      console.warn('⚠️ No subject found matching:', subjectName);
     }
   }
 
   // Step 3: Look up exam board using subject ID (not name)
+  console.log('📍 Step 3: Looking up exam board. subjectId:', subjectId, 'examBoards:', examBoards);
   if (subjectId && examBoards[subjectId]) {
     examBoard = examBoards[subjectId];
     examBoardContext = ` for ${examBoard} ${subjectName}`;
+    console.log('✅ Found exam board:', examBoard, 'Context:', examBoardContext);
   } else if (lessonPlan?.year_group) {
     examBoardContext = ` for ${lessonPlan.year_group}`;
+    console.log('⚠️ No exam board found, using year_group fallback:', examBoardContext);
   }
 
   // Step 4: Fetch detailed specifications if exam board and subject are available
   let specifications = '';
+  console.log('📍 Step 4: Fetching specifications. examBoard:', examBoard, 'subjectName:', subjectName);
   if (examBoard && subjectName) {
     specifications = await fetchExamBoardSpecifications(supabase, examBoard, subjectName);
+    console.log('📄 Specifications fetched, length:', specifications?.length || 0);
   }
+
+  console.log('✅ fetchExamBoardContext RETURN:', {
+    contextString: examBoardContext,
+    examBoard,
+    subjectName,
+    hasSpecifications: !!specifications,
+    specificationsLength: specifications?.length || 0
+  });
 
   return {
     contextString: examBoardContext,

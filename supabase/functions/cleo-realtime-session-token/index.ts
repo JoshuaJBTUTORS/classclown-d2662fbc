@@ -150,6 +150,7 @@ Deno.serve(async (req) => {
 
     if (lessonPlan) {
       // Fetch exam board context and specifications
+      console.log('🎯 Fetching exam board context...');
       const { 
         contextString: examBoardContext, 
         specifications: examBoardSpecs,
@@ -162,6 +163,13 @@ Deno.serve(async (req) => {
         conversation,
         userProfile?.education_level
       );
+      
+      console.log('📋 Exam Board Context Retrieved:', {
+        examBoard,
+        subjectName,
+        examBoardContext,
+        hasSpecs: !!examBoardSpecs
+      });
 
       // Build exam board context section for system prompt
       const examBoardSection = examBoardSpecs ? `
