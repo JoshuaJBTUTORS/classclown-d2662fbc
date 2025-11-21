@@ -45,11 +45,13 @@ serve(async (req) => {
       return examBoards[subjectName?.toLowerCase()] || null;
     }
 
-    // Determine subject name and exam board from lesson structure
+    // Determine subject name and exam board from lesson structure (via course)
     let subjectName = '';
     let examBoard = '';
+    let examBoardSpecs = '';
     
     if (lessonId) {
+      console.log('Fetching course and exam board spec from lesson_id:', lessonId);
       const { data: lessonData } = await supabase
         .from('course_lessons')
         .select(`
@@ -57,46 +59,34 @@ serve(async (req) => {
           module_id,
           course_modules!inner(
             course_id,
-            courses!inner(subject)
+            courses!inner(
+              subject,
+              exam_board_specification_id,
+              exam_board_specifications(
+                title,
+                exam_board,
+                extracted_text
+              )
+            )
           )
         `)
         .eq('id', lessonId)
         .single();
       
-      if (lessonData?.course_modules?.courses?.subject) {
-        subjectName = lessonData.course_modules.courses.subject;
-        console.log('Determined subject from lesson:', subjectName);
+      if (lessonData?.course_modules?.courses) {
+        const course = lessonData.course_modules.courses;
+        subjectName = course.subject;
+        console.log('Determined subject from course:', subjectName);
         
-        // Get user's exam board for this subject
-        examBoard = await getUserExamBoardForSubject(user.id, subjectName) || '';
-        console.log('User exam board for', subjectName, ':', examBoard);
-      }
-    }
-
-    // Fetch exam board specifications if available
-    let examBoardSpecs = '';
-    if (examBoard && subjectName) {
-      console.log('Fetching exam board specifications for', examBoard, subjectName);
-      const { data: specData, error: specError } = await supabase
-        .from('exam_board_specifications')
-        .select(`
-          extracted_text,
-          subjects!inner(name)
-        `)
-        .eq('exam_board', examBoard)
-        .eq('subjects.name', subjectName)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (specError) {
-        console.error('Error fetching exam board specs:', specError);
-      } else if (specData?.extracted_text) {
-        examBoardSpecs = specData.extracted_text;
-        console.log('Loaded exam board specifications, length:', examBoardSpecs.length);
-      } else {
-        console.log('No exam board specifications found for', examBoard, subjectName);
+        // If course has an exam board spec linked, use it directly
+        if (course.exam_board_specifications) {
+          const spec = course.exam_board_specifications;
+          examBoard = spec.exam_board;
+          examBoardSpecs = spec.extracted_text || '';
+          console.log('Loaded exam board from course:', examBoard, 'Specs length:', examBoardSpecs.length);
+        } else {
+          console.log('No exam board specification linked to this course');
+        }
       }
     }
 
