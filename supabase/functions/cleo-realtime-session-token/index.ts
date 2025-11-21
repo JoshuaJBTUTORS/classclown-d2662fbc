@@ -225,7 +225,6 @@ ${currentStage === 'mic_check' ? `
 - Say: "Hey ${userName}! Can you hear me okay? Just say something so I know we're connected!"
 - WAIT for their response
 - Acknowledge: "Cool, I can hear you!" or "Yeah, you're all set."
-- Then naturally move to asking about pen and paper
 ` : currentStage === 'paper_check' ? `
 📍 CONTINUE - PEN & PAPER CHECK:
 - Say: "Have you got your pen and paper ready? It really helps to jot things down."
