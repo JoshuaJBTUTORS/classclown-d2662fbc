@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { PlanChangeConfirmationDialog } from './PlanChangeConfirmationDialog';
 
 interface Plan {
   id: string;
@@ -31,11 +32,21 @@ export function PlanComparisonDialog({
   onChangePlan
 }: PlanComparisonDialogProps) {
   const [changingPlan, setChangingPlan] = useState<string | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
-  const handlePlanChange = async (planName: string) => {
-    setChangingPlan(planName);
+  const handlePlanClick = (plan: Plan) => {
+    setSelectedPlan(plan);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmChange = async () => {
+    if (!selectedPlan) return;
+    
+    setChangingPlan(selectedPlan.name);
     try {
-      await onChangePlan(planName);
+      await onChangePlan(selectedPlan.name);
+      setConfirmDialogOpen(false);
     } finally {
       setChangingPlan(null);
     }
@@ -113,7 +124,7 @@ export function PlanComparisonDialog({
                 </div>
 
                 <Button
-                  onClick={() => handlePlanChange(plan.name)}
+                  onClick={() => handlePlanClick(plan)}
                   disabled={isCurrent || changingPlan !== null}
                   className={`w-full ${
                     isUpgrade && !isCurrent
@@ -141,6 +152,18 @@ export function PlanComparisonDialog({
           💡 Changes are prorated automatically. You'll only pay the difference.
         </p>
       </DialogContent>
+
+      {selectedPlan && (
+        <PlanChangeConfirmationDialog
+          open={confirmDialogOpen}
+          onOpenChange={setConfirmDialogOpen}
+          currentPlan={plans.find(p => p.name === currentPlanName)!}
+          newPlan={selectedPlan}
+          billingInterval={billingInterval}
+          onConfirm={handleConfirmChange}
+          isProcessing={changingPlan !== null}
+        />
+      )}
     </Dialog>
   );
 }
