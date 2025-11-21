@@ -118,8 +118,9 @@ async function fetchExamBoardSpecifications(
 export async function fetchExamBoardContext(
   supabase: any,
   lessonPlan: any,
-  examBoards: Record<string, string>,
-  conversation: any,
+  lessonId?: string,
+  examBoards?: Record<string, string>,
+  conversation?: any,
   educationLevel?: string
 ): Promise<{ contextString: string; specifications: string; examBoard: string; subjectName: string }> {
   let examBoardContext = '';
@@ -129,13 +130,17 @@ export async function fetchExamBoardContext(
   
   console.log('📚 fetchExamBoardContext START:', { 
     lessonPlanId: lessonPlan?.id,
-    lessonId: lessonPlan?.lesson_id, 
+    providedLessonId: lessonId,
+    lessonPlanLessonId: lessonPlan?.lesson_id, 
     lessonPlanSubjectName: lessonPlan?.subject_name
   });
   
+  // PRIORITY 1: Use provided lessonId (from CleoInteractiveLearning)
+  const lookupLessonId = lessonId || lessonPlan?.lesson_id;
+  
   // New simplified approach: Get exam board spec directly from course
-  if (lessonPlan?.lesson_id) {
-    console.log('📍 Looking up course and exam board spec from lesson_id:', lessonPlan.lesson_id);
+  if (lookupLessonId) {
+    console.log('📍 Looking up course and exam board spec from lesson_id:', lookupLessonId);
     const { data: lessonData } = await supabase
       .from('course_lessons')
       .select(`
@@ -154,7 +159,7 @@ export async function fetchExamBoardContext(
           )
         )
       `)
-      .eq('id', lessonPlan.lesson_id)
+      .eq('id', lookupLessonId)
       .single();
     
     console.log('📍 Lesson data result:', lessonData);

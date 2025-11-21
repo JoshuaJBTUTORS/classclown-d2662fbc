@@ -25,6 +25,7 @@ export class RealtimeChat {
   async init(
     conversationId?: string, 
     lessonPlanId?: string, 
+    lessonId?: string,
     topic?: string, 
     yearGroup?: string
   ) {
@@ -46,6 +47,7 @@ export class RealtimeChat {
             token: session.access_token,
             conversationId,
             lessonPlanId,
+            lessonId,
             topic,
             yearGroup
           }
@@ -168,8 +170,7 @@ export class RealtimeChat {
 
       return {
         conversationId: this.conversationId,
-        lessonPlan: tokenData.lessonPlan,
-        currentStage: tokenData.currentStage  // Pass through the stage from token response
+        lessonPlan: tokenData.lessonPlan
       };
 
     } catch (error) {
