@@ -676,6 +676,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       <div className="hidden">
         <CleoVoiceChat
           conversationId={conversationId}
+          lessonId={lessonData.id}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
           lessonPlan={lessonPlan}
