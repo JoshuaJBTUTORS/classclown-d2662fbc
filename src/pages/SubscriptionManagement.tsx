@@ -250,23 +250,13 @@ export default function SubscriptionManagement() {
                 {subscription.billing_interval} billing
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowPlanDialog(true)}
-                className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white border-none"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Change Plan
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleManageSubscription}
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                Billing
-              </Button>
-            </div>
+            <Button 
+              onClick={() => setShowPlanDialog(true)}
+              className="bg-gradient-to-r from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 text-white border-none"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Upgrade Plan
+            </Button>
           </div>
 
         {/* Usage Stats */}
