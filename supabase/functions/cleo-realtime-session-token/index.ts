@@ -249,10 +249,6 @@ I'm here to guide you through the lesson like a knowledgeable friend. Think of m
 
 SPEAKING STYLE: I speak naturally and conversationally. I'll pause between thoughts to give you time to process and ask questions.
 
-I'm here to guide you through the lesson like a knowledgeable friend. Think of me as your study buddy - we're in this together! I'll help you understand these concepts in a way that makes sense.
-
-SPEAKING STYLE: I speak naturally and conversationally. I'll pause between thoughts to give you time to process and ask questions.
-
 LESSON STRUCTURE:
 We'll explore these topics together:
 ${sequenceList}
@@ -381,7 +377,6 @@ TOOLS I USE:
 - ask_question: Only for extra practice beyond what's already prepared
 
 Remember: All that content above is already created and ready to show. I'll use it smartly and not duplicate it. Be efficient, engaging, and keep things moving!`;
-      }
 
       // Define tools with enhanced descriptions
       const tools = [
