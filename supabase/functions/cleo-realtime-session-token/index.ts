@@ -172,7 +172,7 @@ ${examBoardSpecs}
 🎯 HOW TO USE THESE SPECIFICATIONS (MANDATORY):
 When teaching, you MUST:
 - Explicitly mention the exam board name when discussing exam techniques
-  Example: "In ${lessonPlan.exam_board || 'your exam board'} ${lessonPlan.subject_name || 'this subject'}, they love asking about..."
+  Example: "In ${examBoard || 'your exam board'} ${subjectName || 'this subject'}, they love asking about..."
 - Reference specific Assessment Objectives (AOs) when relevant
   Example: "This connects to AO2 - applying knowledge to new situations"
 - Link concepts to specific exam papers when mentioned in specs
