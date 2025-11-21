@@ -9,8 +9,8 @@ interface Plan {
   id: string;
   name: string;
   voice_minutes_per_month: number;
-  monthly_price_pence: number;
-  annual_price_pence: number;
+  price_monthly_pence: number;
+  price_annual_pence: number;
 }
 
 interface PlanComparisonDialogProps {
@@ -43,15 +43,15 @@ export function PlanComparisonDialog({
 
   const getPrice = (plan: Plan) => {
     const price = billingInterval === 'yearly' 
-      ? plan.annual_price_pence 
-      : plan.monthly_price_pence;
+      ? plan.price_annual_pence 
+      : plan.price_monthly_pence;
     return (price / 100).toFixed(2);
   };
 
   const getPricePerMinute = (plan: Plan) => {
     const price = billingInterval === 'yearly' 
-      ? plan.annual_price_pence / 12
-      : plan.monthly_price_pence;
+      ? plan.price_annual_pence / 12
+      : plan.price_monthly_pence;
     return (price / 100 / plan.voice_minutes_per_month).toFixed(2);
   };
 
