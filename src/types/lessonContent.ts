@@ -29,11 +29,39 @@ export interface DefinitionContent {
   example?: string;
 }
 
+export interface WorkedExampleStep {
+  step_number: number;
+  explanation: string;
+  calculation?: string;
+  visual_note?: string;
+}
+
+export interface WorkedExampleContent {
+  problem: string;
+  steps: WorkedExampleStep[];
+  key_technique: string;
+}
+
+export interface WritingBoxContent {
+  prompt: string;
+  guidance: string;
+  sentenceStarters?: string[];
+  wordTarget?: number;
+  marks?: number;
+}
+
+export interface CodeExampleContent {
+  language: 'pseudocode' | 'python' | 'javascript';
+  code: string;
+  explanation: string;
+  lineHighlights?: number[];
+}
+
 export interface ContentBlock {
   id: string;
   stepId: string;
-  type: 'text' | 'table' | 'definition' | 'question' | 'diagram';
-  data: TableContent | QuestionContent | DefinitionContent | string | any;
+  type: 'text' | 'table' | 'definition' | 'question' | 'diagram' | 'worked_example' | 'writing_box' | 'code_example';
+  data: TableContent | QuestionContent | DefinitionContent | WorkedExampleContent | WritingBoxContent | CodeExampleContent | string | any;
   visible: boolean;
   title?: string;
   teachingNotes?: string;
