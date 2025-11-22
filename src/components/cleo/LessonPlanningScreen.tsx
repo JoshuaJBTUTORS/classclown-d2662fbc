@@ -50,57 +50,6 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
     { time: 40, label: 'Finalizing lesson content...', progress: 90 },
   ];
 
-  const getEdgeFunctionName = async (lessonId?: string): Promise<string> => {
-    if (!lessonId) return 'generate-lesson-plan'; // fallback to original
-    
-    try {
-      // Get the course subject from the lesson
-      const { data: lesson } = await supabase
-        .from('course_lessons')
-        .select('module_id')
-        .eq('id', lessonId)
-        .single();
-      
-      if (!lesson) return 'generate-lesson-plan';
-      
-      const { data: module } = await supabase
-        .from('course_modules')
-        .select('course_id')
-        .eq('id', lesson.module_id)
-        .single();
-      
-      if (!module) return 'generate-lesson-plan';
-      
-      const { data: course } = await supabase
-        .from('courses')
-        .select('subject')
-        .eq('id', module.course_id)
-        .single();
-      
-      if (!course?.subject) return 'generate-lesson-plan';
-      
-      // Map subject to edge function name
-      const subject = course.subject.toLowerCase();
-      
-      if (subject.includes('maths') || subject === 'maths') {
-        return 'generate-lesson-plan-maths';
-      } else if (subject.includes('english language')) {
-        return 'generate-lesson-plan-english-language';
-      } else if (subject.includes('english literature')) {
-        return 'generate-lesson-plan-english-literature';
-      } else if (subject === 'computer science') {
-        return 'generate-lesson-plan-computer-science';
-      } else if (subject.includes('physics') || subject.includes('chemistry') || subject.includes('biology')) {
-        return 'generate-lesson-plan-science';
-      }
-      
-      return 'generate-lesson-plan'; // fallback
-    } catch (error) {
-      console.error('Error determining edge function:', error);
-      return 'generate-lesson-plan'; // fallback
-    }
-  };
-
   useEffect(() => {
     generateLessonPlan();
     
@@ -140,12 +89,8 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
 
       // Steps will be updated based on actual progress phases
 
-      // Determine which edge function to call based on subject
-      const edgeFunctionName = await getEdgeFunctionName(lessonId);
-      console.log('Calling edge function:', edgeFunctionName);
-
-      // Call the appropriate subject-specific edge function
-      const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
+      // Call the edge function using Supabase client
+      const { data, error } = await supabase.functions.invoke('generate-lesson-plan', {
         body: {
           lessonId,
           topic,

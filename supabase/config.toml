@@ -99,21 +99,6 @@ verify_jwt = false
 [functions.generate-lesson-plan]
 verify_jwt = true
 
-[functions.generate-lesson-plan-maths]
-verify_jwt = true
-
-[functions.generate-lesson-plan-english-language]
-verify_jwt = true
-
-[functions.generate-lesson-plan-english-literature]
-verify_jwt = true
-
-[functions.generate-lesson-plan-science]
-verify_jwt = true
-
-[functions.generate-lesson-plan-computer-science]
-verify_jwt = true
-
 [functions.generate-diagram-image]
 verify_jwt = false
 
