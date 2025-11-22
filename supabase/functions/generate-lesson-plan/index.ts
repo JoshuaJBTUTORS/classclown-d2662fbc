@@ -518,6 +518,79 @@ NEVER use plain text for math:
 ✅ CORRECT: "$x^2 = 16$"
 
 Apply LaTeX to: question fields, workShown fields, explanation fields, finalAnswer, text blocks with math` : ''
+}${
+  // Detect if this is an English Literature lesson
+  subjectName?.toLowerCase().includes('english') && subjectName?.toLowerCase().includes('literature') ? `
+
+📚 ENGLISH LITERATURE TEACHING STRUCTURE - MANDATORY FORMAT:
+
+You MUST follow this exact sequence for all English Literature lessons:
+
+STEP 1: Context & Theme Introduction (2 content blocks)
+- 1 TEXT block: Brief context about the scene/section/chapter we're studying
+- 1 TEXT block: Introduction to the key themes we'll explore
+- Keep concise - this is scene-setting
+
+STEP 2: Quote Analysis (2-3 content blocks)
+- 2-3 QUOTE_ANALYSIS blocks: Literary quotes for deep analysis
+- Each block must include: quote, source (Act/Chapter/Scene), context, thematicLinks, keyWords, techniques array
+- Focus on quotes that exemplify the themes introduced in Step 1
+
+STEP 3: Making Notes (2 content blocks)
+- 1 TEXT block: Guidance on what notes to make
+- 1 DEFINITION block: Key literary term or concept
+- Pause for students to write down key insights
+
+STEP 4: Exam Practice (1-2 content blocks)
+- 1-2 QUESTION blocks: Essay-style questions (NO options field)
+- CRITICAL: For essay questions, include: marks, assessmentObjectives, themesFocus, textReferences, successCriteria, planningPrompts
+- Example question structure: "How does [author] present [theme] in this extract?"
+
+⚠️ CRITICAL ENGLISH LITERATURE RULES:
+- Total blocks: 7-9 blocks across 4 steps
+- Steps: Exactly 4 steps following the structure above
+- Focus on ANALYSIS and INTERPRETATION, not just comprehension
+- Link everything back to exam assessment objectives
+- Encourage PEE/PEEL paragraph structure in guidance
+
+📝 QUOTE ANALYSIS FORMAT:
+{
+  type: "quote_analysis",
+  title: "Key Quote Analysis",
+  data: {
+    quote: "The actual quote from the text",
+    source: "Act 3, Scene 2" or "Chapter 5",
+    context: "What's happening when this is said/written",
+    thematicLinks: ["Power", "Ambition", "Fate"],
+    keyWords: ["darkness", "dagger", "bloody"],
+    techniques: [
+      { name: "Metaphor", explanation: "How the metaphor works" },
+      { name: "Foreshadowing", explanation: "What it hints at" }
+    ],
+    examTips: ["Always embed quotes smoothly", "Link to context"]
+  }
+}
+
+📝 ESSAY QUESTION FORMAT (NO OPTIONS):
+{
+  type: "question",
+  title: "Exam Practice Question",
+  data: {
+    question: "How does Shakespeare present the theme of ambition in Macbeth?",
+    marks: 20,
+    assessmentObjectives: ["AO1: Textual references", "AO2: Language/structure analysis", "AO3: Context"],
+    themesFocus: ["Ambition", "Power", "Consequences"],
+    textReferences: ["Act 1 Scene 5 - Lady Macbeth's soliloquy", "Act 2 Scene 1 - Dagger soliloquy"],
+    successCriteria: [
+      "Embed short, relevant quotations",
+      "Analyze language and structural choices",
+      "Link to historical/social context",
+      "Develop a clear argument throughout"
+    ],
+    exampleParagraph: "Shakespeare presents ambition as a destructive force through...",
+    planningPrompts: ["What is your main argument?", "Which 3-4 quotes best support this?", "How does context link to your points?"]
+  }
+}` : ''
 }`
           },
           {
@@ -555,9 +628,11 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                   maxItems: isExamPractice ? 2 : (subjectName?.toLowerCase().includes('math') ? 4 : 4),
                   description: isExamPractice
                     ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
-                    : subjectName?.toLowerCase().includes('math')
-                      ? 'EXACTLY 4 steps for Maths: (1) Explanation, (2) 2 Worked Examples, (3) 2 Guided Practice, (4) 3-4 Independent Practice'
-                      : '3-4 focused teaching steps targeting 15-20 minutes total. Each step should be substantial with 2-3 content blocks.',
+                     : subjectName?.toLowerCase().includes('math')
+                       ? 'EXACTLY 4 steps for Maths: (1) Explanation, (2) 2 Worked Examples, (3) 2 Guided Practice, (4) 3-4 Independent Practice'
+                       : subjectName?.toLowerCase().includes('english') && subjectName?.toLowerCase().includes('literature')
+                         ? 'EXACTLY 4 steps for English Literature: (1) Context & Theme Introduction, (2) Quote Analysis, (3) Making Notes, (4) Exam Practice'
+                         : '3-4 focused teaching steps targeting 15-20 minutes total. Each step should be substantial with 2-3 content blocks.',
                   items: {
                     type: 'object',
                     properties: {
@@ -574,10 +649,10 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                         items: {
                           type: 'object',
                           properties: {
-                            type: { 
-                              type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example']
-                            },
+                             type: { 
+                               type: 'string',
+                               enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example', 'quote_analysis']
+                             },
                             title: { type: 'string' },
                             data: {
                               oneOf: [
@@ -611,26 +686,55 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                   },
                                   required: ['term', 'definition']
                                 },
-                                {
-                                  type: 'object',
-                                  description: 'Question',
-                                  properties: {
-                                    question: { type: 'string' },
-                                    options: {
-                                      type: 'array',
-                                      items: {
-                                        type: 'object',
-                                        properties: {
-                                          text: { type: 'string' },
-                                          isCorrect: { type: 'boolean' }
-                                        },
-                                        required: ['text', 'isCorrect']
-                                      }
-                                    },
-                                    explanation: { type: 'string' }
-                                  },
-                                  required: ['question', 'options']
-                                },
+                                 {
+                                   type: 'object',
+                                   description: 'Question - Multiple choice OR Essay question',
+                                   properties: {
+                                     question: { type: 'string' },
+                                     options: {
+                                       type: 'array',
+                                       items: {
+                                         type: 'object',
+                                         properties: {
+                                           text: { type: 'string' },
+                                           isCorrect: { type: 'boolean' }
+                                         },
+                                         required: ['text', 'isCorrect']
+                                       },
+                                       description: 'Options for multiple choice. Omit for essay questions.'
+                                     },
+                                     explanation: { type: 'string' },
+                                     marks: { type: 'number', description: 'For essay questions: number of marks' },
+                                     examBoard: { type: 'string', description: 'For essay questions: exam board (optional)' },
+                                     assessmentObjectives: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'For essay questions: Assessment Objectives being tested'
+                                     },
+                                     themesFocus: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'For essay questions: Themes to explore'
+                                     },
+                                     textReferences: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'For essay questions: Key quotes or scenes to reference'
+                                     },
+                                     successCriteria: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'For essay questions: What makes a strong answer'
+                                     },
+                                     exampleParagraph: { type: 'string', description: 'For essay questions: Model paragraph (optional)' },
+                                     planningPrompts: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'For essay questions: Planning questions to help structure answer'
+                                     }
+                                   },
+                                   required: ['question']
+                                 },
                                 {
                                   type: 'object',
                                   description: 'Diagram',
@@ -640,34 +744,70 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                   },
                                   required: ['description', 'elements']
                                 },
-                                {
-                                  type: 'object',
-                                  description: 'Worked Example - step-by-step solution showing method and reasoning',
-                                  properties: {
-                                    question: { type: 'string', description: 'The problem or question being solved' },
-                                    examContext: { type: 'string', description: 'Optional: exam board context (e.g., "AQA GCSE Paper 1, 4 marks")' },
-                                    steps: {
-                                      type: 'array',
-                                      items: {
-                                        type: 'object',
-                                        properties: {
-                                          number: { type: 'number', description: 'Step number (1, 2, 3...)' },
-                                          title: { type: 'string', description: 'Brief step title (e.g., "Subtract 5 from both sides")' },
-                                          explanation: { type: 'string', description: 'Why we do this step' },
-                                          workShown: { type: 'string', description: 'The actual mathematical/logical work. Use \\n for line breaks.' }
-                                        },
-                                        required: ['number', 'title', 'explanation']
-                                      }
-                                    },
-                                    finalAnswer: { type: 'string', description: 'The final answer with units if applicable' },
-                                    examTips: {
-                                      type: 'array',
-                                      items: { type: 'string' },
-                                      description: 'Optional: exam-specific tips for this type of question'
-                                    }
-                                  },
-                                  required: ['question', 'steps', 'finalAnswer']
-                                }
+                                 {
+                                   type: 'object',
+                                   description: 'Worked Example - step-by-step solution showing method and reasoning',
+                                   properties: {
+                                     question: { type: 'string', description: 'The problem or question being solved' },
+                                     examContext: { type: 'string', description: 'Optional: exam board context (e.g., "AQA GCSE Paper 1, 4 marks")' },
+                                     steps: {
+                                       type: 'array',
+                                       items: {
+                                         type: 'object',
+                                         properties: {
+                                           number: { type: 'number', description: 'Step number (1, 2, 3...)' },
+                                           title: { type: 'string', description: 'Brief step title (e.g., "Subtract 5 from both sides")' },
+                                           explanation: { type: 'string', description: 'Why we do this step' },
+                                           workShown: { type: 'string', description: 'The actual mathematical/logical work. Use \\n for line breaks.' }
+                                         },
+                                         required: ['number', 'title', 'explanation']
+                                       }
+                                     },
+                                     finalAnswer: { type: 'string', description: 'The final answer with units if applicable' },
+                                     examTips: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'Optional: exam-specific tips for this type of question'
+                                     }
+                                   },
+                                   required: ['question', 'steps', 'finalAnswer']
+                                 },
+                                 {
+                                   type: 'object',
+                                   description: 'Quote Analysis - for English Literature',
+                                   properties: {
+                                     quote: { type: 'string', description: 'The literary quote to analyze' },
+                                     source: { type: 'string', description: 'Source (e.g., "Act 3, Scene 2")' },
+                                     context: { type: 'string', description: 'Context of the quote in the text' },
+                                     thematicLinks: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'Themes connected to this quote'
+                                     },
+                                     keyWords: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'Key words/phrases for analysis'
+                                     },
+                                     techniques: {
+                                       type: 'array',
+                                       items: {
+                                         type: 'object',
+                                         properties: {
+                                           name: { type: 'string' },
+                                           explanation: { type: 'string' }
+                                         }
+                                       },
+                                       description: 'Literary techniques used'
+                                     },
+                                     examTips: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'Optional: exam-specific tips for analyzing this quote'
+                                     }
+                                   },
+                                   required: ['quote', 'source', 'context', 'thematicLinks', 'keyWords', 'techniques']
+                                 }
                               ]
                             },
                             teaching_notes: { type: 'string' },
