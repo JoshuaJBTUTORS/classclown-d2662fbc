@@ -7,18 +7,73 @@
  * Formats a single content block for display in the system prompt
  */
 export function formatSingleBlock(block: any): string {
-  const { id, type, title, teaching_notes } = block;
+  const { id, type, data, title, teaching_notes } = block;
+  let description = '';
   
-  // Concise metadata-only format to keep prompt size minimal
-  let description = `   • ${type.toUpperCase()}`;
-  if (title) description += `: "${title}"`;
-  description += ` [ID: ${id}]`;
-  
-  if (teaching_notes) {
-    description += `\n      💡 ${teaching_notes}`;
+  switch (type) {
+    case 'text':
+      const textPreview = (data?.content || '').substring(0, 100);
+      description = `   • Text Block: "${textPreview}${textPreview.length >= 100 ? '...' : ''}"`;
+      break;
+      
+    case 'definition':
+      description = `   • Definition: "${data?.term || 'Unknown'}" - ${(data?.definition || '').substring(0, 60)}...`;
+      if (data?.example) description += `\n      Example: ${data.example.substring(0, 60)}...`;
+      break;
+      
+    case 'question':
+      description = `   • Question: "${(data?.question || '').substring(0, 80)}..."`;
+      if (data?.options) {
+        description += `\n      Options: ${data.options.map((o: any) => o.text).slice(0, 2).join(', ')}...`;
+      }
+      break;
+      
+    case 'table':
+      const headers = data?.headers || [];
+      const rowCount = data?.rows?.length || 0;
+      description = `   • Table: ${headers.join(', ')} (${rowCount} rows)`;
+      break;
+      
+    case 'diagram':
+      description = `   • Diagram: ${title || data?.title || 'Visual diagram'}`;
+      break;
+      
+    case 'worked_example':
+      description = `
+   📐 WORKED EXAMPLE: ${title || 'Example'}
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Question: "${data?.question || 'N/A'}"
+
+   Steps to follow:
+${data?.steps?.map((step: any, i: number) => `
+     Step ${step.number}: ${step.title}
+     Explanation: ${step.explanation}
+     Work Shown: ${step.workShown}
+`).join('') || '   No steps provided'}
+
+   Final Answer: ${data?.finalAnswer || 'N/A'}
+
+   Exam Context: ${data?.examContext || 'N/A'}
+   Exam Tips: ${data?.examTips?.join('; ') || 'N/A'}
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ⚠️ YOU MUST READ OUT THIS EXACT CONTENT - DO NOT MAKE UP YOUR OWN EXAMPLE`;
+      break;
+      
+    default:
+      description = `   • ${type}: ${title || id}`;
   }
   
-  description += '\n';
+  if (title && type !== 'diagram') {
+    description = `   • ${title} (${type})\n      ${description.substring(5)}`;
+  }
+  
+  if (teaching_notes) {
+    description += `\n      💡 Teaching Note: ${teaching_notes}`;
+  }
+  
+  description += `\n      [ID: ${id}]\n`;
+  
   return description;
 }
 
@@ -28,22 +83,18 @@ export function formatSingleBlock(block: any): string {
 export function formatContentBlocksForPrompt(lessonPlan: any): string {
   if (!lessonPlan?.teaching_sequence) return '';
   
-  let contentLibrary = '\n\n📚 CONTENT BLOCKS (displayed when you call move_to_step):\n';
+  let contentLibrary = '\n\nPRE-GENERATED CONTENT AVAILABLE:\n';
+  contentLibrary += 'When you call move_to_step, the following content will be displayed automatically:\n\n';
   
   lessonPlan.teaching_sequence.forEach((step: any) => {
     if (!step.content_blocks || step.content_blocks.length === 0) return;
     
-    contentLibrary += `\n${step.title} [${step.id}] — ${step.content_blocks.length} blocks:\n`;
+    contentLibrary += `\n📚 ${step.title} [ID: ${step.id}]:\n`;
+    
     step.content_blocks.forEach((block: any) => {
       contentLibrary += formatSingleBlock(block);
     });
   });
-  
-  contentLibrary += `\n💡 TEACHING APPROACH:\n`;
-  contentLibrary += `- Content blocks are shown automatically when you move to each step\n`;
-  contentLibrary += `- Reference what's displayed, don't duplicate content in your speech\n`;
-  contentLibrary += `- Use teaching notes (💡) to guide your explanations\n`;
-  contentLibrary += `- For worked examples & questions: walk through what's shown on screen\n`;
   
   return contentLibrary;
 }
