@@ -315,36 +315,13 @@ Example of good exam board integration:
 - Example: "In your ${examBoard} exam, you'll need to..." rather than specific paper structures
 ` : ''}
 
-Your task: Create a streamlined lesson plan optimized for 15-20 minute sessions with 3-4 main teaching steps.
+Your task: Create a streamlined lesson plan for an AI tutor to deliver in 15-20 minute sessions with 3-4 main teaching steps.
 
 LESSON PLAN STRUCTURE:
 1. Learning Objectives (3-4 clear, measurable goals)
-2. Teaching Sequence (3-4 FOCUSED steps, targeting 15-20 minutes total)
-3. Content Blocks (tables, definitions, questions, diagrams, text)
+2. Teaching Sequence (3-4 FOCUSED steps)
 
-⚠️ TARGET DURATION: Aim for 15-20 minutes total. Keep content concise and focused.
-
-⚠️ CRITICAL: Each step MUST have 2-3 content blocks. Keep it focused and concise for 15-20 minute lessons.
-
-CONTENT BLOCK TYPES (with detailed examples):
-
-1. TEXT: Explanatory content or instructions
-   Example: { type: "text", title: "Understanding Photosynthesis", data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy.\n\n**Key Point:** Plants use sunlight to make food.\n\n• Requires sunlight, water, and CO2\n• Produces glucose and oxygen\n• Happens in chloroplasts" } }
-
-2. TABLE: Comparisons, data, organized information
-   Example: { type: "table", title: "Plant vs Animal Cells", data: { headers: ["Feature", "Plant Cell", "Animal Cell"], rows: [["Cell Wall", "Yes", "No"], ["Chloroplasts", "Yes", "No"]] } }
-
-3. DEFINITION: Key terms with examples
-   Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
-
-4. QUESTION: Check understanding (multiple choice)
-   Example: { type: "question", title: "Check Understanding", data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" } }
-
-5. DIAGRAM: Visual representations
-   Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
-
-6. WORKED EXAMPLE: Step-by-step solutions showing method/technique (especially for Maths, Sciences)
-   Example: { type: "worked_example", title: "Solving Linear Equations", data: { question: "Solve 3x + 5 = 20", examContext: "This is a typical AQA GCSE question worth 3 marks", steps: [{ number: 1, title: "Subtract 5 from both sides", explanation: "We need to isolate the x term first", workShown: "3x + 5 - 5 = 20 - 5\\n3x = 15" }, { number: 2, title: "Divide by 3", explanation: "Now isolate x by dividing both sides by 3", workShown: "3x ÷ 3 = 15 ÷ 3\\nx = 5" }], finalAnswer: "x = 5", examTips: ["Always show your working for method marks", "Check by substituting back: 3(5) + 5 = 20 ✓"] } }
+Subject-specific content requirements are defined below.
 
 ⚠️ TEXT FORMATTING RULES FOR ALL CONTENT:
 - Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
@@ -354,17 +331,7 @@ CONTENT BLOCK TYPES (with detailed examples):
 - For numbered lists: "1. Step one\n2. Step two\n3. Step three"
 - For headings, use "## Heading" or bold: "**Key Concept**"
 - Keep formatting simple and clean
-- Example: "Photosynthesis is the process by which plants convert light energy.\n\n**Key fact:** Plants need sunlight, water, and CO2.\n\n• Occurs in chloroplasts\n• Produces glucose and oxygen\n• Essential for plant growth"
-
-IMPORTANT RULES:
-- Target 15-20 minutes total duration
-- 3-4 steps maximum for conciseness
-- Each step MUST contain 2-3 content blocks
-- Mix different content types for variety
-- Include teaching_notes to guide how to present each block
-- Use prerequisites to ensure blocks are shown in the right order
-- Make content age-appropriate for ${yearGroup}
-- Focus on core concepts - avoid unnecessary detail${
+- Example: "Photosynthesis is the process by which plants convert light energy.\n\n**Key fact:** Plants need sunlight, water, and CO2.\n\n• Occurs in chloroplasts\n• Produces glucose and oxygen\n• Essential for plant growth"${
   // Detect if this is a Maths lesson
   subjectName?.toLowerCase().includes('math') ? `
 
