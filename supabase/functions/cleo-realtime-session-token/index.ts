@@ -586,40 +586,95 @@ Remember: All that content above is already created and ready to show. I'll use 
       }
     ];
 
-    // Request ephemeral token
-    const sessionResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-realtime",
-        voice: "ballad",
-        instructions: systemPrompt,
-        modalities: ["text", "audio"],
-        input_audio_format: "pcm16",
-        output_audio_format: "pcm16",
-        input_audio_transcription: { model: "whisper-1" },
-        turn_detection: {
-          type: "server_vad",
-          threshold: 0.6,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500
-        },
-        tools,
-        tool_choice: "auto",
-        temperature: 0.8,
-        max_response_output_tokens: 4096
-      }),
-    });
+    // Request ephemeral token with retry logic for transient errors
+    let sessionResponse;
+    let lastError = null;
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        sessionResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-realtime-preview-2024-12-17",
+            voice: "ballad",
+            instructions: systemPrompt,
+            modalities: ["text", "audio"],
+            input_audio_format: "pcm16",
+            output_audio_format: "pcm16",
+            input_audio_transcription: { model: "whisper-1" },
+            turn_detection: {
+              type: "server_vad",
+              threshold: 0.6,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500
+            },
+            tools,
+            tool_choice: "auto",
+            temperature: 0.8,
+            max_response_output_tokens: 4096
+          }),
+        });
 
-    if (!sessionResponse.ok) {
-      const errorText = await sessionResponse.text();
-      console.error("OpenAI error:", errorText);
+        if (sessionResponse.ok) {
+          break; // Success!
+        }
+
+        // Check if it's a retryable error
+        const errorText = await sessionResponse.text();
+        console.error(`OpenAI error (attempt ${attempt}/${maxRetries}):`, errorText);
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          lastError = errorJson.error;
+          
+          // Only retry on server errors (5xx) or rate limits
+          if (errorJson.error?.type === 'server_error' || sessionResponse.status === 429 || sessionResponse.status >= 500) {
+            if (attempt < maxRetries) {
+              const waitTime = attempt * 1000; // Exponential backoff: 1s, 2s, 3s
+              console.log(`Retrying in ${waitTime}ms...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              continue;
+            }
+          } else {
+            // Non-retryable error (client error like 400, 401, etc.)
+            break;
+          }
+        } catch (parseError) {
+          lastError = { message: errorText };
+          break;
+        }
+      } catch (fetchError) {
+        console.error(`Network error (attempt ${attempt}/${maxRetries}):`, fetchError);
+        lastError = { message: fetchError instanceof Error ? fetchError.message : 'Network error' };
+        
+        if (attempt < maxRetries) {
+          const waitTime = attempt * 1000;
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+      }
+    }
+
+    if (!sessionResponse || !sessionResponse.ok) {
+      const errorMessage = lastError?.message || 'Failed to create session';
+      const isServerError = lastError?.type === 'server_error';
+      
+      console.error("Final OpenAI error after retries:", lastError);
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to create session' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: isServerError 
+            ? 'OpenAI service is temporarily unavailable. Please try again in a moment.'
+            : errorMessage,
+          retryable: isServerError,
+          details: lastError
+        }),
+        { status: isServerError ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
