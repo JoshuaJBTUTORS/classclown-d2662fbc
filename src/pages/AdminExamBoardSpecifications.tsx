@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Archive, Trash2 } from 'lucide-react';
+import { Upload, FileText, Archive, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import UploadExamBoardSpecDialog from '@/components/admin/UploadExamBoardSpecDialog';
+import EditExamBoardSpecDialog from '@/components/admin/EditExamBoardSpecDialog';
 
 const AdminExamBoardSpecifications = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedSpecId, setSelectedSpecId] = useState<string | null>(null);
 
   const { data: specifications, isLoading, refetch } = useQuery({
     queryKey: ['exam-board-specifications'],
@@ -45,6 +48,21 @@ const AdminExamBoardSpecifications = () => {
     refetch();
   };
 
+  const handleUnarchive = async (id: string) => {
+    const { error } = await supabase
+      .from('exam_board_specifications')
+      .update({ status: 'active' })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to unarchive specification');
+      return;
+    }
+
+    toast.success('Specification activated');
+    refetch();
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this specification?')) return;
 
@@ -60,6 +78,11 @@ const AdminExamBoardSpecifications = () => {
 
     toast.success('Specification deleted');
     refetch();
+  };
+
+  const handleEdit = (id: string) => {
+    setSelectedSpecId(id);
+    setEditDialogOpen(true);
   };
 
   return (
@@ -116,19 +139,38 @@ const AdminExamBoardSpecifications = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {spec.status === 'active' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(spec.id)}
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        {spec.status === 'active' ? (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleArchive(spec.id)}
+                            title="Archive"
                           >
                             <Archive className="w-4 h-4" />
                           </Button>
-                        )}
+                        ) : spec.status === 'archived' ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUnarchive(spec.id)}
+                            title="Unarchive"
+                          >
+                            <Archive className="w-4 h-4 text-primary" />
+                          </Button>
+                        ) : null}
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(spec.id)}
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -152,6 +194,16 @@ const AdminExamBoardSpecifications = () => {
         onUploadComplete={() => {
           refetch();
           setUploadDialogOpen(false);
+        }}
+      />
+
+      <EditExamBoardSpecDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        specificationId={selectedSpecId}
+        onEditComplete={() => {
+          refetch();
+          setEditDialogOpen(false);
         }}
       />
     </div>
