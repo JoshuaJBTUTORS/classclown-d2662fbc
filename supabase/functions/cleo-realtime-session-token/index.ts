@@ -169,6 +169,10 @@ Deno.serve(async (req) => {
       });
 
       // Build exam board context section for system prompt
+      // TEMPORARILY DISABLED FOR TESTING - Suspected cause of OpenAI server errors
+      const examBoardSection = ''; 
+      
+      /* ORIGINAL CODE - COMMENTED OUT FOR TESTING
       const examBoardSection = examBoardSpecs ? `
 
 📋 EXAM BOARD SPECIFICATIONS${examBoardContext}:
@@ -198,6 +202,7 @@ Use general best practices:
 - Focus on universal exam skills (reading carefully, managing time, showing working)
 - Keep advice broad and applicable to all exam boards
 - Avoid making specific claims about marking criteria or paper structure` : '';
+      */
       
       const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => 
         `Step ${i+1}: ${step.title} (${step.duration_minutes || 5}min) [ID: ${step.id}]`
@@ -206,11 +211,8 @@ Use general best practices:
       const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
       
       // Build exam board intro string for lesson intro stage
-      const examBoardIntro = examBoard && subjectName 
-        ? `We're following the ${examBoard} ${subjectName} specification` 
-        : examBoardContext 
-          ? `We're covering ${lessonPlan.topic}${examBoardContext}`
-          : `We're covering ${lessonPlan.topic}`;
+      // TEMPORARILY SIMPLIFIED - No exam board mention for testing
+      const examBoardIntro = `We're learning about ${lessonPlan.topic} today`;
       
       // UNIFIED TEACHING PROMPT - Natural flow through all stages
       systemPrompt = `You are Cleo, a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
