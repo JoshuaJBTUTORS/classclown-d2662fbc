@@ -29,9 +29,9 @@ serve(async (req) => {
       );
     }
 
-    const { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice = false } = await req.json();
+    const { lessonId, topic, yearGroup, learningGoal, conversationId } = await req.json();
 
-    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice });
+    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId });
 
     // Helper function to get user's exam board for a subject
     async function getUserExamBoardForSubject(userId: string, subjectName: string): Promise<string | null> {
@@ -204,51 +204,17 @@ serve(async (req) => {
     let planError;
 
     if (existingPlan) {
-      // If plan is complete and ready, check compliance before reusing
+      // If plan is complete and ready, return it
       if (existingPlan.status === 'ready' && existingPlan.learning_objectives && existingPlan.teaching_sequence) {
-        // For exam practice mode, validate compliance
-        if (isExamPractice) {
-          const steps = existingPlan.teaching_sequence || [];
-          const hasTwoSteps = steps.length === 2;
-          const practiceStep = steps.find((s: any) => 
-            (s.title || '').toLowerCase().includes('practice')
-          );
-          const questionCount = practiceStep?.content_blocks?.filter(
-            (b: any) => b.type === 'question'
-          ).length || 0;
-          
-          if (hasTwoSteps && questionCount >= 20) {
-            console.log('Found compliant exam practice plan, returning immediately');
-            return new Response(
-              JSON.stringify({
-                lessonPlanId: existingPlan.id,
-                objectives: existingPlan.learning_objectives,
-                stepsCount: existingPlan.teaching_sequence.length
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          } else {
-            console.log(`Existing plan is not exam-practice compliant (steps: ${steps.length}, questions: ${questionCount}), regenerating...`);
-            // Fall through to regeneration - mark as generating and overwrite
-            await supabase
-              .from('cleo_lesson_plans')
-              .update({ status: 'generating' })
-              .eq('id', existingPlan.id);
-            lessonPlan = existingPlan;
-            planError = null;
-          }
-        } else {
-          // Non-exam practice: return existing plan as before
-          console.log('Found complete existing plan, returning immediately');
-          return new Response(
-            JSON.stringify({
-              lessonPlanId: existingPlan.id,
-              objectives: existingPlan.learning_objectives,
-              stepsCount: existingPlan.teaching_sequence.length
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
+        console.log('Found complete existing plan, returning immediately');
+        return new Response(
+          JSON.stringify({
+            lessonPlanId: existingPlan.id,
+            objectives: existingPlan.learning_objectives,
+            stepsCount: existingPlan.teaching_sequence.length
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
       // Plan exists but is incomplete, use it for generation without updating
@@ -321,52 +287,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: isExamPractice 
-              ? `You are an expert 11+ exam preparation tutor creating practice-focused lesson plans.
-
-Your task: Create a lesson plan optimized for EXAM PRACTICE with one worked example followed by 20 practice questions.
-
-LESSON PLAN STRUCTURE FOR 11+:
-1. Learning Objectives (3-4 clear exam skills to master)
-2. Teaching Sequence with TWO main steps:
-   - Step 1: "Worked Example" - One detailed example showing method/technique
-   - Step 2: "Practice Questions" - 20 exam-style questions
-
-⚠️ CRITICAL REQUIREMENTS:
-- Step 1 MUST have 1-2 content blocks showing a worked example with explanation
-- Step 2 MUST have 20 question blocks (type: "question")
-- Each question should be exam-style with multiple choice options
-- Questions should gradually increase in difficulty
-- Include clear explanations for each answer
-
-CONTENT BLOCKS FOR STEP 1 (Worked Example):
-- Use "text" blocks for explanation of method
-- Use "definition" blocks for key concepts/formulas
-- Keep it concise - focus on ONE clear example
-
-⚠️ TEXT FORMATTING RULES:
-- Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
-- For emphasis, use **bold text** (double asterisks)
-- Use \n for line breaks and paragraphs
-- For lists, use simple bullet points: "• Item 1\n• Item 2"
-- For headings, use "## Heading" format or bold
-- Example: "Place value tells us the value of each digit.\n\n**Important:** The digit 6 in 4,629 represents 600."
-
-CONTENT BLOCKS FOR STEP 2 (Practice):
-- YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
-- Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
-- ALL blocks must be type "question"
-- Format: { type: "question", data: { question: "...", options: [...], explanation: "..." } }
-- Questions 1-7: Basic application (7 questions)
-- Questions 8-14: Intermediate difficulty (7 questions)
-- Questions 15-20: Advanced/challenging (6 questions)
-- TOTAL: Exactly 20 questions
-
-⚠️ CRITICAL: If you generate fewer than 20 questions, the lesson will be rejected. Count carefully!
-
-Make all content appropriate for 11+ entrance exam level (ages 10-11).`
-              
-              : `You are an expert curriculum designer creating concise, focused lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''} for students.
+            content: `You are an expert curriculum designer creating concise, focused lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''} for students.
 ${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
 ${examBoardSpecs ? `
 
@@ -388,7 +309,7 @@ Example of good exam board integration:
 ` : examBoard ? `
 
 ⚠️ EXAM BOARD CONTEXT: This lesson is for ${examBoard} ${subjectName}, but detailed specifications are not available.
-- Use general GCSE/11+ best practices for ${examBoard}
+- Use general GCSE best practices for ${examBoard}
 - Keep content broad and applicable to the ${examBoard} curriculum
 - When discussing exam techniques, mention "${examBoard}" specifically but avoid specification details
 - Example: "In your ${examBoard} exam, you'll need to..." rather than specific paper structures
@@ -713,32 +634,26 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
           type: 'function',
           function: {
             name: 'create_lesson_plan',
-            description: isExamPractice 
-              ? 'Create an exam practice lesson plan with worked example and practice questions'
-              : 'Create a structured lesson plan with pre-generated content',
+            description: 'Create a structured lesson plan with pre-generated content',
             parameters: {
               type: 'object',
               properties: {
                 objectives: {
                   type: 'array',
                   items: { type: 'string' },
-                  minItems: isExamPractice ? 3 : 3,
-                  maxItems: isExamPractice ? 4 : 4,
-                  description: isExamPractice 
-                    ? '3-4 exam skills to master' 
-                    : '3-4 clear, measurable learning objectives'
+                  minItems: 3,
+                  maxItems: 4,
+                  description: '3-4 clear, measurable learning objectives'
                 },
                 steps: {
                   type: 'array',
-                  minItems: isExamPractice ? 2 : (subjectName?.toLowerCase().includes('math') ? 4 : 3),
-                  maxItems: isExamPractice ? 2 : (subjectName?.toLowerCase().includes('math') ? 4 : 4),
-                  description: isExamPractice
-                    ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
-                     : subjectName?.toLowerCase().includes('math')
-                       ? 'EXACTLY 4 steps for Maths: (1) Explanation, (2) 2 Worked Examples, (3) 2 Guided Practice, (4) 3-4 Independent Practice'
-                       : subjectName?.toLowerCase().includes('english') && subjectName?.toLowerCase().includes('literature')
-                         ? 'EXACTLY 4 steps for English Literature: (1) Context & Theme Introduction, (2) Quote Analysis, (3) Making Notes, (4) Exam Practice'
-                         : '3-4 focused teaching steps targeting 15-20 minutes total. Each step should be substantial with 2-3 content blocks.',
+                  minItems: subjectName?.toLowerCase().includes('math') ? 4 : 3,
+                  maxItems: subjectName?.toLowerCase().includes('math') ? 4 : 4,
+                  description: subjectName?.toLowerCase().includes('math')
+                    ? 'EXACTLY 4 steps for Maths: (1) Explanation, (2) 2 Worked Examples, (3) 2 Guided Practice, (4) 3-4 Independent Practice'
+                    : subjectName?.toLowerCase().includes('english') && subjectName?.toLowerCase().includes('literature')
+                      ? 'EXACTLY 4 steps for English Literature: (1) Context & Theme Introduction, (2) Quote Analysis, (3) Making Notes, (4) Exam Practice'
+                      : '3-4 focused teaching steps targeting 15-20 minutes total. Each step should be substantial with 2-3 content blocks.',
                   items: {
                     type: 'object',
                     properties: {
@@ -747,11 +662,9 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                       duration_minutes: { type: 'number' },
                       content_blocks: {
                         type: 'array',
-                        minItems: isExamPractice ? 1 : 2,
-                        maxItems: isExamPractice ? 20 : 3,
-                        description: isExamPractice
-                          ? 'Step 1: 1-2 explanation blocks. Step 2: EXACTLY 20 question blocks'
-                          : 'REQUIRED: Each step MUST have 2-3 content blocks for concise 15-20 minute lessons.',
+                        minItems: 2,
+                        maxItems: 3,
+                        description: 'REQUIRED: Each step MUST have 2-3 content blocks for concise 15-20 minute lessons.',
                         items: {
                           type: 'object',
                           properties: {
@@ -1225,127 +1138,9 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       }
     });
     
-    // Validate exam practice structure - enforce strict compliance
-    if (isExamPractice) {
-      const hasTwoSteps = planData.steps.length === 2;
-      const practiceStep = planData.steps.find((s: any) => 
-        s.title.toLowerCase().includes('practice')
-      );
-      
-      if (practiceStep) {
-        const questionCount = practiceStep.content_blocks?.filter(
-          (b: any) => b.type === 'question'
-        ).length || 0;
-        
-        console.log(`Exam practice validation: ${questionCount} questions generated (target: 20, steps: ${planData.steps.length})`);
-        
-        if (!hasTwoSteps || questionCount < 20) {
-          console.error(`❌ First attempt non-compliant: steps=${planData.steps.length}, questions=${questionCount}`);
-          console.log('🔄 Retrying with stricter prompt...');
-          
-          // RETRY WITH ULTRA-EXPLICIT PROMPT
-          const retryPrompt = `CRITICAL: Your previous response had only ${questionCount} questions but you MUST generate EXACTLY 20 questions.
-
-Generate a complete 11+ exam practice lesson plan for "${topic}" (Year Group: ${yearGroup}) with:
-
-STEP 1: "Worked Example" 
-- 1-2 content blocks showing a worked example
-
-STEP 2: "Practice Questions"
-- EXACTLY 20 question blocks
-- Count each one: Q1, Q2, Q3... up to Q20
-- Each question must have:
-  * A clear question text
-  * 4 multiple choice options
-  * One correct answer (isCorrect: true)
-  * An explanation
-${avoidOverlapContext}
-
-You MUST generate all 20 questions. If you generate fewer, the lesson will be rejected.`;
-
-          const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'openai/gpt-5',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: retryPrompt }
-              ],
-              tools: [{
-                type: 'function',
-                function: {
-                  name: 'create_lesson_plan',
-                  description: 'Create a complete lesson plan',
-                  parameters: lessonPlanSchema
-                }
-              }],
-              tool_choice: { type: 'function', function: { name: 'create_lesson_plan' } }
-            })
-          });
-          
-          if (!retryResponse.ok) {
-            throw new Error(`Retry failed: ${retryResponse.status}`);
-          }
-          
-          const retryData = await retryResponse.json();
-          console.log('Retry response:', JSON.stringify(retryData).substring(0, 500));
-          
-          if (!retryData.choices || !Array.isArray(retryData.choices) || retryData.choices.length === 0) {
-            throw new Error(`Retry failed: ${retryData.error?.message || 'No choices returned'}`);
-          }
-          
-          const retryToolCall = retryData.choices[0]?.message?.tool_calls?.[0];
-          
-          if (retryToolCall) {
-            const retryPlanData = JSON.parse(retryToolCall.function.arguments);
-            
-            // Parse data fields
-            retryPlanData.steps.forEach((step: any) => {
-              if (step.content_blocks) {
-                step.content_blocks.forEach((block: any) => {
-                  if (block.data && typeof block.data === 'string') {
-                    try {
-                      block.data = JSON.parse(block.data);
-                    } catch (e) {
-                      console.warn('Failed to parse retry content block data:', block.type, e);
-                    }
-                  }
-                });
-              }
-            });
-            
-            const retryPracticeStep = retryPlanData.steps.find((s: any) => 
-              s.title.toLowerCase().includes('practice')
-            );
-            const retryQuestionCount = retryPracticeStep?.content_blocks?.filter(
-              (b: any) => b.type === 'question'
-            ).length || 0;
-            
-            console.log(`✅ Retry generated ${retryQuestionCount} questions`);
-            
-            if (retryQuestionCount >= 20) {
-              // Use retry data instead
-              planData.objectives = retryPlanData.objectives;
-              planData.steps = retryPlanData.steps;
-              console.log('✅ Retry successful - using retry data');
-            } else {
-              console.warn(`⚠️ Retry still non-compliant with ${retryQuestionCount} questions - proceeding anyway`);
-            }
-          }
-        }
-      } else {
-        console.error(`❌ Exam practice plan missing 'Practice' step`);
-        throw new Error('Invalid exam practice plan: Missing practice questions step');
-      }
-    }
-
     // Validate Maths lesson structure
     const isMaths = subjectName?.toLowerCase().includes('math');
-    if (isMaths && !isExamPractice) {
+    if (isMaths) {
       console.log('🧮 Validating Maths lesson structure...');
       const steps = planData.steps;
       
