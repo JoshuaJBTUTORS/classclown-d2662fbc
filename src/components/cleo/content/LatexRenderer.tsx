@@ -12,47 +12,109 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({ content, className
     if (!content) return null;
 
     try {
-      // Split content by display math ($$...$$) and inline math ($...$)
+      // Split content using character-by-character parsing with balanced bracket tracking
       const parts: Array<{ type: 'text' | 'display' | 'inline'; content: string }> = [];
-      let currentIndex = 0;
+      let i = 0;
       
-      // Regex to match display math ($$...$$ or \[...\]) or inline math ($...$ or \(...\))
-      const mathRegex = /\$\$([^$]+?)\$\$|\$([^$]+?)\$|\\[\s]*([^\]]+?)\\]|\\\\?\(([^)]+?)\\\\?\)/g;
-      let match;
+      // Helper function to find matching delimiter with balanced bracket tracking
+      const findMatchingDelimiter = (startIndex: number, openChar: string, closeChar: string): number => {
+        let depth = 1;
+        let j = startIndex;
+        
+        while (j < content.length && depth > 0) {
+          // Skip escaped characters
+          if (content[j] === '\\' && j + 1 < content.length) {
+            j += 2;
+            continue;
+          }
+          
+          if (content[j] === openChar) depth++;
+          if (content[j] === closeChar) depth--;
+          j++;
+        }
+        
+        return depth === 0 ? j - 1 : -1;
+      };
       
-      while ((match = mathRegex.exec(content)) !== null) {
-        // Add text before the math
-        if (match.index > currentIndex) {
+      while (i < content.length) {
+        // Check for $$ (display math)
+        if (i < content.length - 1 && content[i] === '$' && content[i + 1] === '$') {
+          const endIndex = content.indexOf('$$', i + 2);
+          if (endIndex !== -1) {
+            parts.push({
+              type: 'display',
+              content: content.slice(i + 2, endIndex).trim()
+            });
+            i = endIndex + 2;
+            continue;
+          }
+        }
+        
+        // Check for $ (inline math)
+        if (content[i] === '$') {
+          const endIndex = content.indexOf('$', i + 1);
+          if (endIndex !== -1) {
+            parts.push({
+              type: 'inline',
+              content: content.slice(i + 1, endIndex).trim()
+            });
+            i = endIndex + 1;
+            continue;
+          }
+        }
+        
+        // Check for \[ (display math)
+        if (i < content.length - 1 && content[i] === '\\' && content[i + 1] === '[') {
+          const endIndex = content.indexOf('\\]', i + 2);
+          if (endIndex !== -1) {
+            parts.push({
+              type: 'display',
+              content: content.slice(i + 2, endIndex).trim()
+            });
+            i = endIndex + 2;
+            continue;
+          }
+        }
+        
+        // Check for \( (inline math) with balanced parentheses
+        if (i < content.length - 1 && content[i] === '\\' && content[i + 1] === '(') {
+          // Find the matching \)
+          let j = i + 2;
+          let found = false;
+          while (j < content.length - 1) {
+            if (content[j] === '\\' && content[j + 1] === ')') {
+              parts.push({
+                type: 'inline',
+                content: content.slice(i + 2, j).trim()
+              });
+              i = j + 2;
+              found = true;
+              break;
+            }
+            j++;
+          }
+          if (found) continue;
+        }
+        
+        // Regular text - accumulate until next delimiter
+        let textStart = i;
+        while (i < content.length) {
+          const char = content[i];
+          const nextChar = i < content.length - 1 ? content[i + 1] : '';
+          
+          // Stop if we hit a delimiter
+          if (char === '$' || (char === '\\' && (nextChar === '(' || nextChar === '['))) {
+            break;
+          }
+          i++;
+        }
+        
+        if (i > textStart) {
           parts.push({
             type: 'text',
-            content: content.slice(currentIndex, match.index)
+            content: content.slice(textStart, i)
           });
         }
-        
-        // Add the math expression
-        if (match[1] || match[3]) {
-          // Display math ($$...$$ or \[...\])
-          parts.push({
-            type: 'display',
-            content: (match[1] || match[3]).trim()
-          });
-        } else if (match[2] || match[4]) {
-          // Inline math ($...$ or \(...\))
-          parts.push({
-            type: 'inline',
-            content: (match[2] || match[4]).trim()
-          });
-        }
-        
-        currentIndex = match.index + match[0].length;
-      }
-      
-      // Add remaining text
-      if (currentIndex < content.length) {
-        parts.push({
-          type: 'text',
-          content: content.slice(currentIndex)
-        });
       }
       
       // If no math found, return plain text
