@@ -309,7 +309,7 @@ serve(async (req) => {
 
     if (planError) throw planError;
 
-    // Generate lesson plan using Lovable AI (Gemini 2.5 Flash - faster than GPT-5 mini)
+    // Generate lesson plan using Lovable AI (Gemini 2.5 Pro - better JSON schema adherence)
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -317,7 +317,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           {
             role: 'system',
@@ -1270,7 +1270,7 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
+              model: 'google/gemini-2.5-pro',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: retryPrompt }
