@@ -29,11 +29,24 @@ export interface DefinitionContent {
   example?: string;
 }
 
+export interface WorkedExampleContent {
+  question: string;
+  examContext?: string;
+  steps: {
+    number: number;
+    title: string;
+    explanation: string;
+    workShown?: string;
+  }[];
+  finalAnswer: string;
+  examTips?: string[];
+}
+
 export interface ContentBlock {
   id: string;
   stepId: string;
-  type: 'text' | 'table' | 'definition' | 'question' | 'diagram';
-  data: TableContent | QuestionContent | DefinitionContent | string | any;
+  type: 'text' | 'table' | 'definition' | 'question' | 'diagram' | 'worked_example';
+  data: TableContent | QuestionContent | DefinitionContent | WorkedExampleContent | string | any;
   visible: boolean;
   title?: string;
   teachingNotes?: string;
