@@ -77,6 +77,7 @@ import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OnboardingWizard from './pages/OnboardingWizard';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
+import AdminVoiceMinutes from './pages/AdminVoiceMinutes';
 import PricingPage from './pages/PricingPage';
 import HubAccessManagement from './pages/admin/HubAccessManagement';
 import CleoTracker from './pages/admin/CleoTracker';
