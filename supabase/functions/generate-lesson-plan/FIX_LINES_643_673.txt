@@ -1,0 +1,21 @@
+CORRECT STRUCTURE FOR LINES 643-673:
+
+- For all other blocks, data MUST be a properly structured object` : ''
+}
+
+✔️ Output Requirements
+
+Produce a full lesson plan using ONLY the approved block types.
+All JSON must be valid.
+No extra fields.
+No explanations outside the lesson content.`
+          },
+          {
+            role: 'user',
+            content: `Create a lesson plan for teaching: ${topic}
+Year Group: ${yearGroup}
+${learningGoal ? `Learning Goal: ${learningGoal}` : ''}
+${learningObjectives.length > 0 ? `\nPredefined Learning Objectives (MUST use these exactly):\n${learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}` : ''}${avoidOverlapContext}
+
+Generate a complete lesson with all necessary tables, definitions, diagrams, and questions.${learningObjectives.length > 0 ? ' Make sure to use the predefined learning objectives listed above.' : ''}`
+          }
