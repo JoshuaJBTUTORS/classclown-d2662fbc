@@ -895,19 +895,24 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                        items: { type: 'string' },
                                        description: 'Key words/phrases for analysis'
                                      },
-                                      techniques: {
-                                        type: 'array',
-                                        items: { type: 'string' },
-                                        description: 'Literary techniques used (e.g., "Metaphor", "Imagery", "Alliteration") - array of technique names only'
-                                      },
-                                      examTips: {
-                                        type: 'array',
-                                        items: { type: 'string' },
-                                        description: 'Optional: exam-specific tips for analyzing this quote'
-                                      }
-                                    },
-                                    // CRITICAL: techniques must be simple strings, not objects with name/explanation
-                                    required: ['quote', 'source', 'context', 'thematicLinks', 'keyWords', 'techniques']
+                                     techniques: {
+                                       type: 'array',
+                                       items: {
+                                         type: 'object',
+                                         properties: {
+                                           name: { type: 'string' },
+                                           explanation: { type: 'string' }
+                                         }
+                                       },
+                                       description: 'Literary techniques used'
+                                     },
+                                     examTips: {
+                                       type: 'array',
+                                       items: { type: 'string' },
+                                       description: 'Optional: exam-specific tips for analyzing this quote'
+                                     }
+                                   },
+                                   required: ['quote', 'source', 'context', 'thematicLinks', 'keyWords', 'techniques']
                                  }
                               ]
                             },
