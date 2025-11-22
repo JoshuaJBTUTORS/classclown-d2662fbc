@@ -564,7 +564,8 @@ Remember: All that content above is already created and ready to show. I'll use 
       JSON.stringify({
         client_secret: sessionData.client_secret.value,
         conversationId: conversation.id,
-        lessonPlan
+        lessonPlan,
+        currentStage  // NEW: Tell client which stage we're in
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
