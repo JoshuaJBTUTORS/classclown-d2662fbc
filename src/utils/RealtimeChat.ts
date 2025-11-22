@@ -56,7 +56,18 @@ export class RealtimeChat {
 
       if (tokenError || !tokenData?.client_secret) {
         console.error("Token error:", tokenError);
-        throw new Error(tokenError?.message || 'Failed to get ephemeral token');
+        
+        // Parse error response for better user messaging
+        const errorData = tokenError?.context?.body;
+        if (errorData?.retryable || errorData?.error?.includes('temporarily unavailable')) {
+          throw new Error('OpenAI voice service is temporarily unavailable. Please try again in a moment.');
+        } else if (errorData?.error?.includes('No voice sessions remaining')) {
+          throw new Error('No voice sessions remaining. Please purchase more sessions.');
+        } else if (errorData?.error) {
+          throw new Error(errorData.error);
+        }
+        
+        throw new Error(tokenError?.message || 'Failed to initialize voice session. Please try again.');
       }
 
       console.log("✅ Ephemeral token received");
