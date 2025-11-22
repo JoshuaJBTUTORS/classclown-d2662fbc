@@ -422,6 +422,9 @@ CONTENT BLOCK TYPES (with detailed examples):
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
 
+6. WORKED EXAMPLE: Step-by-step solutions showing method/technique (especially for Maths, Sciences)
+   Example: { type: "worked_example", title: "Solving Linear Equations", data: { question: "Solve 3x + 5 = 20", examContext: "This is a typical AQA GCSE question worth 3 marks", steps: [{ number: 1, title: "Subtract 5 from both sides", explanation: "We need to isolate the x term first", workShown: "3x + 5 - 5 = 20 - 5\\n3x = 15" }, { number: 2, title: "Divide by 3", explanation: "Now isolate x by dividing both sides by 3", workShown: "3x ÷ 3 = 15 ÷ 3\\nx = 5" }], finalAnswer: "x = 5", examTips: ["Always show your working for method marks", "Check by substituting back: 3(5) + 5 = 20 ✓"] } }
+
 ⚠️ TEXT FORMATTING RULES FOR ALL CONTENT:
 - Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
 - For emphasis, use **bold text** (double asterisks)
@@ -496,7 +499,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                           properties: {
                             type: { 
                               type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text']
+                              enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example']
                             },
                             title: { type: 'string' },
                             data: {
@@ -559,6 +562,34 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                     elements: { type: 'array', items: { type: 'string' } }
                                   },
                                   required: ['description', 'elements']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Worked Example - step-by-step solution showing method and reasoning',
+                                  properties: {
+                                    question: { type: 'string', description: 'The problem or question being solved' },
+                                    examContext: { type: 'string', description: 'Optional: exam board context (e.g., "AQA GCSE Paper 1, 4 marks")' },
+                                    steps: {
+                                      type: 'array',
+                                      items: {
+                                        type: 'object',
+                                        properties: {
+                                          number: { type: 'number', description: 'Step number (1, 2, 3...)' },
+                                          title: { type: 'string', description: 'Brief step title (e.g., "Subtract 5 from both sides")' },
+                                          explanation: { type: 'string', description: 'Why we do this step' },
+                                          workShown: { type: 'string', description: 'The actual mathematical/logical work. Use \\n for line breaks.' }
+                                        },
+                                        required: ['number', 'title', 'explanation']
+                                      }
+                                    },
+                                    finalAnswer: { type: 'string', description: 'The final answer with units if applicable' },
+                                    examTips: {
+                                      type: 'array',
+                                      items: { type: 'string' },
+                                      description: 'Optional: exam-specific tips for this type of question'
+                                    }
+                                  },
+                                  required: ['question', 'steps', 'finalAnswer']
                                 }
                               ]
                             },
