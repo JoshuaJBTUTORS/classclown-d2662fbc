@@ -479,7 +479,45 @@ STEP 4: Independent Practice (3-4 content blocks)
 - Steps: Exactly 4 steps following the structure above
 - NO mixing of content types within steps
 - teaching_notes must clearly distinguish between "guided" and "solo" questions
-- All questions must be exam-relevant and mark-scheme aligned` : ''
+- All questions must be exam-relevant and mark-scheme aligned
+
+📐 LATEX FORMATTING FOR ALL MATHEMATICAL CONTENT:
+
+CRITICAL: Use LaTeX syntax for ALL mathematical expressions in Maths lessons.
+
+Inline math (within text): Use $...$ for expressions like $x^2$, $\\frac{2}{3}$
+Display math (on separate line): Use $$...$$ for equations like $$ax^2 + bx + c = 0$$
+
+Common LaTeX patterns you MUST use:
+- Fractions: $\\frac{numerator}{denominator}$ → Example: $\\frac{2}{3}$ NOT "2/3"
+- Powers: $x^2$, $x^{10}$ → Example: $x^2$ NOT "x²"
+- Square roots: $\\sqrt{x}$, $\\sqrt{16}$ → Example: $\\sqrt{16}$ NOT "√16"
+- Multiplication: $\\times$ → Example: $2 \\times 3$ NOT "2 × 3" or "2 * 3"
+- Division: $\\div$ → Example: $10 \\div 2$ NOT "10 ÷ 2"
+- Equals in display: $$2x + 3 = 7$$
+- Greek letters: $\\pi$, $\\theta$, $\\alpha$
+
+LaTeX Example for workShown field:
+"Convert to same denominator: $\\frac{2}{3} = \\frac{2 \\times 5}{3 \\times 5} = \\frac{10}{15}$"
+
+LaTeX Example for question:
+"Solve the equation $3x + 5 = 20$ for $x$"
+
+LaTeX Example for explanation:
+"To isolate $x$, we first subtract $5$ from both sides: $$3x + 5 - 5 = 20 - 5$$ which simplifies to $$3x = 15$$"
+
+⚠️ DOUBLE BACKSLASHES IN JSON:
+Since this is JSON, you MUST escape backslashes. Use \\\\frac NOT \\frac
+Example: "question": "Solve $\\\\frac{x}{2} = 5$"
+
+NEVER use plain text for math:
+❌ WRONG: "Calculate 2/3 + 1/5"
+✅ CORRECT: "Calculate $\\\\frac{2}{3} + \\\\frac{1}{5}$"
+
+❌ WRONG: "x squared equals 16"
+✅ CORRECT: "$x^2 = 16$"
+
+Apply LaTeX to: question fields, workShown fields, explanation fields, finalAnswer, text blocks with math` : ''
 }`
           },
           {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ContentActionButtons } from './ContentActionButtons';
+import { LatexRenderer } from './LatexRenderer';
 
 interface TextBlockProps {
   data: string | any;
@@ -24,21 +25,6 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data, onContentAction }) =
     return String(data || '');
   };
 
-  // Simple markdown-like rendering for bold text
-  const renderText = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return (
-          <strong key={index} className="font-semibold text-foreground">
-            {part.slice(2, -2)}
-          </strong>
-        );
-      }
-      return <span key={index}>{part}</span>;
-    });
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -48,7 +34,7 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data, onContentAction }) =
     >
       <div className="cleo-text-block">
         <div className="cleo-text-content">
-          {renderText(getText())}
+          <LatexRenderer content={getText()} />
         </div>
         {onContentAction && (
           <div className="cleo-lesson-actions mt-4">

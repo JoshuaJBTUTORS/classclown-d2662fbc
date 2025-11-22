@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { WorkedExampleContent } from '@/types/lessonContent';
 import { Calculator } from 'lucide-react';
 import { ContentActionButtons } from './ContentActionButtons';
+import { LatexRenderer } from './LatexRenderer';
 
 interface WorkedExampleBlockProps {
   data: WorkedExampleContent;
@@ -42,7 +43,7 @@ export const WorkedExampleBlock: React.FC<WorkedExampleBlockProps> = ({ data, on
                 )}
               </div>
               <p className="text-base text-foreground font-medium leading-relaxed">
-                {data.question}
+                <LatexRenderer content={data.question} />
               </p>
             </div>
 
@@ -55,14 +56,16 @@ export const WorkedExampleBlock: React.FC<WorkedExampleBlockProps> = ({ data, on
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h5 className="text-sm font-bold text-foreground mb-1">{step.title}</h5>
+                    <h5 className="text-sm font-bold text-foreground mb-1">
+                      <LatexRenderer content={step.title} />
+                    </h5>
                     <p className="text-sm text-muted-foreground leading-relaxed mb-2">
-                      {step.explanation}
+                      <LatexRenderer content={step.explanation} />
                     </p>
                     {step.workShown && (
                       <div className="bg-background/70 dark:bg-background/50 rounded-md p-3 border border-border">
                         <pre className="text-sm font-mono text-foreground whitespace-pre-wrap">
-                          {step.workShown}
+                          <LatexRenderer content={step.workShown} />
                         </pre>
                       </div>
                     )}
@@ -73,7 +76,9 @@ export const WorkedExampleBlock: React.FC<WorkedExampleBlockProps> = ({ data, on
 
             <div className="bg-green-50 dark:bg-green-950/20 border-l-4 border-green-500 dark:border-green-600 rounded-r-md p-4 mb-4">
               <p className="text-xs font-semibold text-green-700 dark:text-green-400 mb-1">Final Answer:</p>
-              <p className="text-base font-bold text-green-900 dark:text-green-200">{data.finalAnswer}</p>
+              <p className="text-base font-bold text-green-900 dark:text-green-200">
+                <LatexRenderer content={data.finalAnswer} />
+              </p>
             </div>
 
             {data.examTips && data.examTips.length > 0 && (
