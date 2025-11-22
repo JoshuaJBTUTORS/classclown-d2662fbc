@@ -610,21 +610,49 @@ CRITICAL: The data field MUST be an object with "headers" (array) and "rows" (ar
 }
 CRITICAL: The data field MUST be an object. DO NOT include "options" field for essay questions. Include all essay-specific fields shown above.
 
-**QUOTE ANALYSIS BLOCK EXAMPLE:**
+**QUOTE ANALYSIS BLOCK — STRICT JSON OUTPUT ONLY**
+
+📝 SYSTEM — When generating quote analysis, you MUST return a VALID JSON object and NOTHING else.
+No commentary. No markdown. No explanations. No trailing text.
+
+The JSON schema you MUST follow EXACTLY:
+
 {
   "type": "quote_analysis",
   "title": "Key Quote Analysis",
   "data": {
+    "quote": "The exact quote from the text (string)",
+    "source": "Play/Act/Scene (string)", 
+    "context": "Brief explanation of what is happening (string)",
+    "thematicLinks": ["Theme1", "Theme2"], 
+    "keyWords": ["word1", "word2"], 
+    "techniques": ["Technique1", "Technique2"], 
+    "examTips": ["Tip 1", "Tip 2"]
+  }
+}
+
+STRICT RULES (DO NOT BREAK):
+- Return ONLY valid JSON. No markdown codeblocks.
+- Field names MUST match EXACTLY (case-sensitive).
+- "source" is ALWAYS the Act/Scene, NEVER the speaker.
+- "thematicLinks" MUST be an array of strings, NOT objects.
+- "techniques" MUST be an array of strings (e.g., ["Metaphor", "Imagery"]).
+- "examTips" MUST be an array of short strings.
+- No extra fields. No missing fields. No renaming.
+- If a value is unknown, use an EMPTY STRING or EMPTY ARRAY — NEVER invent new fields.
+
+EXAMPLE:
+{
+  "type": "quote_analysis",
+  "title": "Dagger Soliloquy Analysis",
+  "data": {
     "quote": "Is this a dagger which I see before me, the handle toward my hand?",
     "source": "Macbeth, Act 2, Scene 1",
     "context": "Macbeth hallucinates a dagger before murdering King Duncan",
-    "thematicLinks": ["Ambition", "Guilt", "Supernatural", "Reality vs Illusion"],
+    "thematicLinks": ["Ambition", "Guilt", "Supernatural"],
     "keyWords": ["dagger", "see", "handle"],
-    "techniques": [
-      { "name": "Rhetorical question", "explanation": "Creates dramatic tension and shows Macbeth's confusion" },
-      { "name": "Supernatural imagery", "explanation": "The dagger symbolizes Macbeth's guilty conscience" }
-    ],
-    "examTips": ["Always embed quotes smoothly", "Link to context of regicide and divine right"]
+    "techniques": ["Rhetorical question", "Supernatural imagery", "Symbolism"],
+    "examTips": ["Embed quotes smoothly", "Link to context of regicide"]
   }
 }
 CRITICAL: The data field MUST be an object with all fields shown above
@@ -645,25 +673,9 @@ CRITICAL: The data field MUST be an object with "term", "definition", and "examp
 - NEVER generate the data field as a plain string for table, question, quote_analysis, or definition blocks
 - ALWAYS structure data as shown in the examples above
 - For TEXT blocks, data IS a plain string (not an object)
+- For QUOTE_ANALYSIS blocks, "techniques" MUST be a string array, NOT objects
 - For all other blocks, data MUST be a properly structured object
 
-📝 QUOTE ANALYSIS FORMAT:
-{
-  type: "quote_analysis",
-  title: "Key Quote Analysis",
-  data: {
-    quote: "The actual quote from the text",
-    source: "Act 3, Scene 2" or "Chapter 5",
-    context: "What's happening when this is said/written",
-    thematicLinks: ["Power", "Ambition", "Fate"],
-    keyWords: ["darkness", "dagger", "bloody"],
-    techniques: [
-      { name: "Metaphor", explanation: "How the metaphor works" },
-      { name: "Foreshadowing", explanation: "What it hints at" }
-    ],
-    examTips: ["Always embed quotes smoothly", "Link to context"]
-  }
-}
 
 📝 ESSAY QUESTION FORMAT (NO OPTIONS):
 {
