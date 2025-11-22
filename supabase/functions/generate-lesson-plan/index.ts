@@ -560,6 +560,93 @@ STEP 4: Exam Practice (1-2 content blocks)
 - Link everything back to exam assessment objectives
 - Encourage PEE/PEEL paragraph structure in guidance
 
+### CRITICAL: Content Block JSON Structure for English Literature
+
+YOU MUST generate content blocks with EXACTLY these JSON structures. Do not generate plain strings for the data field - always use the proper object structure shown below.
+
+**TEXT BLOCK EXAMPLE:**
+{
+  "type": "text",
+  "title": "Act 2 Context",
+  "data": "Act 2 of Macbeth takes place immediately after Macbeth has decided to murder King Duncan. The atmosphere is tense and dark, reflecting Macbeth's inner turmoil. This is a plain string - NOT an object."
+}
+CRITICAL: The data field is a PLAIN STRING, not {"content": "..."} or {"text": "..."}
+
+**TABLE BLOCK EXAMPLE:**
+{
+  "type": "table",
+  "title": "Themes in Act 2",
+  "data": {
+    "headers": ["Theme", "Example Quote", "Analysis"],
+    "rows": [
+      ["Ambition", "Is this a dagger which I see before me", "Macbeth's ambition manifests as hallucination"],
+      ["Guilt", "Will all great Neptune's ocean wash this blood", "Guilt is presented as permanent and overwhelming"]
+    ]
+  }
+}
+CRITICAL: The data field MUST be an object with "headers" (array) and "rows" (array of arrays)
+
+**QUESTION BLOCK EXAMPLE (Essay Style):**
+{
+  "type": "question",
+  "title": "Exam Practice Question",
+  "data": {
+    "id": "q1",
+    "question": "How does Shakespeare present the theme of ambition in Act 2 of Macbeth?",
+    "marks": 20,
+    "examBoard": "AQA",
+    "assessmentObjectives": ["AO1: Textual references", "AO2: Language/structure analysis", "AO3: Context"],
+    "themesFocus": ["Ambition", "Power", "Consequences"],
+    "textReferences": ["Act 2, Scene 1 - Dagger soliloquy", "Act 2, Scene 2 - After the murder"],
+    "successCriteria": [
+      "Embed short, relevant quotations",
+      "Analyze language and structural choices",
+      "Link to historical/social context",
+      "Develop a clear argument throughout"
+    ],
+    "exampleParagraph": "Shakespeare presents ambition as a destructive force through Macbeth's hallucination of the dagger...",
+    "planningPrompts": ["What is your main argument?", "Which 3-4 quotes best support this?", "How does context link to your points?"]
+  }
+}
+CRITICAL: The data field MUST be an object. DO NOT include "options" field for essay questions. Include all essay-specific fields shown above.
+
+**QUOTE ANALYSIS BLOCK EXAMPLE:**
+{
+  "type": "quote_analysis",
+  "title": "Key Quote Analysis",
+  "data": {
+    "quote": "Is this a dagger which I see before me, the handle toward my hand?",
+    "source": "Macbeth, Act 2, Scene 1",
+    "context": "Macbeth hallucinates a dagger before murdering King Duncan",
+    "thematicLinks": ["Ambition", "Guilt", "Supernatural", "Reality vs Illusion"],
+    "keyWords": ["dagger", "see", "handle"],
+    "techniques": [
+      { "name": "Rhetorical question", "explanation": "Creates dramatic tension and shows Macbeth's confusion" },
+      { "name": "Supernatural imagery", "explanation": "The dagger symbolizes Macbeth's guilty conscience" }
+    ],
+    "examTips": ["Always embed quotes smoothly", "Link to context of regicide and divine right"]
+  }
+}
+CRITICAL: The data field MUST be an object with all fields shown above
+
+**DEFINITION BLOCK EXAMPLE:**
+{
+  "type": "definition",
+  "title": "Key Literary Term",
+  "data": {
+    "term": "Soliloquy",
+    "definition": "A speech in which a character speaks their thoughts aloud, typically when alone on stage",
+    "example": "Macbeth's dagger speech in Act 2 Scene 1 is a famous soliloquy revealing his inner conflict"
+  }
+}
+CRITICAL: The data field MUST be an object with "term", "definition", and "example" fields
+
+⚠️ VALIDATION RULES:
+- NEVER generate the data field as a plain string for table, question, quote_analysis, or definition blocks
+- ALWAYS structure data as shown in the examples above
+- For TEXT blocks, data IS a plain string (not an object)
+- For all other blocks, data MUST be a properly structured object
+
 📝 QUOTE ANALYSIS FORMAT:
 {
   type: "quote_analysis",
@@ -887,43 +974,222 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       }
     }
     
-    // Parse the data field of each content block (it comes as a JSON string)
-    planData.steps.forEach((step: any) => {
-      if (step.content_blocks) {
-        step.content_blocks.forEach((block: any) => {
+    // Helper: Repair text block string data
+    function repairTextBlockString(data: any): string | null {
+      try {
+        if (typeof data === 'string') return data;
+        if (data && typeof data === 'object' && data.text) return data.text;
+        if (data && typeof data === 'object' && data.content) return data.content;
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Helper: Repair table block string data
+    function repairTableBlockString(data: any): {headers: string[], rows: string[][]} | null {
+      try {
+        if (data && data.headers && Array.isArray(data.headers) && data.rows && Array.isArray(data.rows)) {
+          return data;
+        }
+        if (typeof data === 'string') {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.headers && parsed.rows) return parsed;
+          } catch {}
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Helper: Repair question block string data
+    function repairQuestionBlockString(data: any): any | null {
+      try {
+        if (data && data.id && data.question) return data;
+        if (typeof data === 'string') {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.id && parsed.question) return parsed;
+          } catch {}
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Helper: Repair definition block string data
+    function repairDefinitionString(data: any): any | null {
+      try {
+        if (data && data.term && data.definition) return data;
+        if (typeof data === 'string') {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.term && parsed.definition) return parsed;
+          } catch {}
+          
+          // Try extracting from plain text
+          const termMatch = data.match(/^([^:]+):/);
+          const term = termMatch ? termMatch[1].trim() : 'Key Term';
+          const definition = termMatch ? data.substring(termMatch[0].length).trim() : data;
+          
+          return { term, definition, example: '' };
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Parse and repair content blocks with validation
+    const invalidBlocks: string[] = [];
+    
+    planData.steps.forEach((step: any, stepIndex: number) => {
+      if (!step.content_blocks) return;
+      
+      step.content_blocks = step.content_blocks.filter((block: any, blockIndex: number) => {
+        const blockId = `Step ${stepIndex + 1}, Block ${blockIndex + 1} (${block.type})`;
+        
+        // Handle text blocks
+        if (block.type === 'text') {
+          const repaired = repairTextBlockString(block.data);
+          if (repaired) {
+            block.data = repaired;
+            return true;
+          } else {
+            console.error(`❌ Invalid text block: ${blockId}`);
+            invalidBlocks.push(blockId);
+            return false;
+          }
+        }
+        
+        // Handle table blocks
+        if (block.type === 'table') {
           if (block.data && typeof block.data === 'string') {
             try {
               block.data = JSON.parse(block.data);
             } catch (e) {
-              console.warn('Failed to parse content block data:', block.type, e);
+              console.warn(`⚠️ Failed to parse table data: ${blockId}`, e);
             }
           }
           
-          // Validate and repair worked_example blocks
-          if (block.type === 'worked_example') {
-            if (typeof block.data === 'string') {
-              console.warn('⚠️ Repairing stringified worked_example data');
-              block.data = repairWorkedExampleString(block.data);
-              if (!block.data) {
-                console.error('❌ Could not repair worked_example, skipping');
-                return;
-              }
-            }
-            
-            if (!block.data.question || !block.data.steps) {
-              console.error('❌ Malformed worked_example:', block.data);
-              return;
+          const repaired = repairTableBlockString(block.data);
+          if (repaired) {
+            block.data = repaired;
+            return true;
+          } else {
+            console.error(`❌ Invalid table block: ${blockId}`, block.data);
+            invalidBlocks.push(blockId);
+            return false;
+          }
+        }
+        
+        // Handle question blocks
+        if (block.type === 'question') {
+          if (block.data && typeof block.data === 'string') {
+            try {
+              block.data = JSON.parse(block.data);
+            } catch (e) {
+              console.warn(`⚠️ Failed to parse question data: ${blockId}`, e);
             }
           }
           
-          // Remove LaTeX delimiters from definition examples
-          if (block.type === 'definition' && block.data?.example?.includes('$')) {
-            console.warn('⚠️ Removing LaTeX from definition example:', block.data.example);
-            block.data.example = block.data.example.replace(/\$/g, '');
+          const repaired = repairQuestionBlockString(block.data);
+          if (repaired) {
+            block.data = repaired;
+            return true;
+          } else {
+            console.error(`❌ Invalid question block: ${blockId}`, block.data);
+            invalidBlocks.push(blockId);
+            return false;
           }
-        });
-      }
+        }
+        
+        // Handle definition blocks
+        if (block.type === 'definition') {
+          if (block.data && typeof block.data === 'string') {
+            try {
+              block.data = JSON.parse(block.data);
+            } catch (e) {
+              console.warn(`⚠️ Failed to parse definition data: ${blockId}`, e);
+            }
+          }
+          
+          const repaired = repairDefinitionString(block.data);
+          if (repaired) {
+            block.data = repaired;
+            // Remove LaTeX from examples
+            if (block.data.example?.includes('$')) {
+              block.data.example = block.data.example.replace(/\$/g, '');
+            }
+            return true;
+          } else {
+            console.error(`❌ Invalid definition block: ${blockId}`, block.data);
+            invalidBlocks.push(blockId);
+            return false;
+          }
+        }
+        
+        // Handle worked_example blocks
+        if (block.type === 'worked_example') {
+          if (block.data && typeof block.data === 'string') {
+            try {
+              block.data = JSON.parse(block.data);
+            } catch (e) {
+              console.warn(`⚠️ Failed to parse worked_example data: ${blockId}`, e);
+            }
+          }
+          
+          if (typeof block.data === 'string') {
+            console.warn('⚠️ Repairing stringified worked_example data');
+            block.data = repairWorkedExampleString(block.data);
+          }
+          
+          if (!block.data || !block.data.question || !block.data.steps) {
+            console.error(`❌ Malformed worked_example: ${blockId}`, block.data);
+            invalidBlocks.push(blockId);
+            return false;
+          }
+          return true;
+        }
+        
+        // Handle quote_analysis blocks
+        if (block.type === 'quote_analysis') {
+          if (block.data && typeof block.data === 'string') {
+            try {
+              block.data = JSON.parse(block.data);
+            } catch (e) {
+              console.warn(`⚠️ Failed to parse quote_analysis data: ${blockId}`, e);
+            }
+          }
+          
+          if (!block.data || !block.data.quote || !block.data.source) {
+            console.error(`❌ Invalid quote_analysis block: ${blockId}`, block.data);
+            invalidBlocks.push(blockId);
+            return false;
+          }
+          return true;
+        }
+        
+        // Handle other block types - try parsing if string
+        if (block.data && typeof block.data === 'string') {
+          try {
+            block.data = JSON.parse(block.data);
+          } catch (e) {
+            console.warn(`⚠️ Failed to parse ${block.type} data: ${blockId}`, e);
+          }
+        }
+        
+        return true; // Keep other block types
+      });
     });
+    
+    // Log summary of invalid blocks
+    if (invalidBlocks.length > 0) {
+      console.error(`❌ ${invalidBlocks.length} invalid blocks removed:`, invalidBlocks);
+    }
     
     // Validate content blocks were generated
     const totalContentBlocks = planData.steps.reduce((sum: number, step: any) => 
@@ -1176,6 +1442,76 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
     } else {
       console.log('No diagram blocks require image generation');
     }
+
+    // Final validation: ensure all blocks have valid data structures
+    console.log('Running final validation on content blocks...');
+    const finalValidationErrors: string[] = [];
+    
+    planData.steps.forEach((step: any, stepIndex: number) => {
+      if (!step.content_blocks || step.content_blocks.length === 0) {
+        finalValidationErrors.push(`Step ${stepIndex + 1} (${step.id}) has no content blocks`);
+        return;
+      }
+      
+      step.content_blocks.forEach((block: any, blockIndex: number) => {
+        const blockId = `Step ${stepIndex + 1}, Block ${blockIndex + 1} (${block.type})`;
+        
+        if (!block.type || !block.data) {
+          finalValidationErrors.push(`${blockId}: Missing type or data`);
+          return;
+        }
+        
+        // Type-specific validation
+        switch (block.type) {
+          case 'text':
+            if (typeof block.data !== 'string' || block.data.length === 0) {
+              finalValidationErrors.push(`${blockId}: Invalid text data`);
+            }
+            break;
+          case 'table':
+            if (!block.data.headers || !block.data.rows) {
+              finalValidationErrors.push(`${blockId}: Missing headers or rows`);
+            }
+            break;
+          case 'question':
+            if (!block.data.id || !block.data.question) {
+              finalValidationErrors.push(`${blockId}: Missing id or question`);
+            }
+            break;
+          case 'worked_example':
+            if (!block.data.question || !block.data.steps) {
+              finalValidationErrors.push(`${blockId}: Missing question or steps`);
+            }
+            break;
+          case 'definition':
+            if (!block.data.term || !block.data.definition) {
+              finalValidationErrors.push(`${blockId}: Missing term or definition`);
+            }
+            break;
+          case 'quote_analysis':
+            if (!block.data.quote || !block.data.source) {
+              finalValidationErrors.push(`${blockId}: Missing quote or source`);
+            }
+            break;
+        }
+      });
+    });
+    
+    if (finalValidationErrors.length > 0) {
+      console.error('❌ Lesson plan failed final validation:', finalValidationErrors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Generated lesson plan contains invalid content blocks',
+          details: finalValidationErrors
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    console.log('✓ Final validation passed - all content blocks are valid');
 
     // Calculate estimated duration
     const estimatedMinutes = Math.ceil(planData.steps.length * 3); // Rough estimate: 3 min per step
