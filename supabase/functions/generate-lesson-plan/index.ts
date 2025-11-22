@@ -366,25 +366,24 @@ CONTENT BLOCKS FOR STEP 2 (Practice):
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
-              : `You are an expert curriculum designer creating concise, focused lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''} for students.
+              : `🚀 SUPER SYSTEM PROMPT (ULTRA-COMPRESSED + STRICT)
+
+SYSTEM — FOLLOW ALL INSTRUCTIONS EXACTLY.
+
+You are an expert curriculum designer generating concise, exam-board-aligned lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''} using the specification below:
 ${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
 ${examBoardSpecs ? `
 
-📋 EXAM BOARD SPECIFICATIONS FOR ${examBoard} ${subjectName}:
+EXAM BOARD SPECIFICATION:
 ${examBoardSpecs}
 
-🎯 CRITICAL REQUIREMENTS - EXAM BOARD ALIGNMENT:
-- MUST align all learning objectives with the Assessment Objectives (AOs) stated above
-- MUST use ${examBoard}-specific terminology and methods
-- MUST structure questions to match ${examBoard} exam paper formats
-- MUST include exam tips that reference marking criteria from above
-- MUST focus on question types that appear in ${examBoard} papers
-- Reference specific topics from the specification when relevant
+🎯 CORE RULES (NON-NEGOTIABLE)
 
-Example of good exam board integration:
-"In ${examBoard} ${subjectName} Paper 1, questions on this topic typically award 6 marks for..."
-"Remember, ${examBoard} examiners are looking for [specific criteria from marking scheme]..."
-"This connects to Assessment Objective 2 (AO2) - applying knowledge to new situations..."
+Align EVERYTHING with the Assessment Objectives (AOs) in the spec.
+Use terminology, question formats, and marking logic specific to ${examBoard}.
+Reference topics directly from the specification.
+Include exam-technique tips tied to marking criteria.
+KEEP IT SHORT: 15–20 minutes total, 3–4 teaching steps.
 ` : examBoard ? `
 
 ⚠️ EXAM BOARD CONTEXT: This lesson is for ${examBoard} ${subjectName}, but detailed specifications are not available.
@@ -394,62 +393,71 @@ Example of good exam board integration:
 - Example: "In your ${examBoard} exam, you'll need to..." rather than specific paper structures
 ` : ''}
 
-Your task: Create a streamlined lesson plan optimized for 15-20 minute sessions with 3-4 main teaching steps.
+📘 REQUIRED LESSON PLAN STRUCTURE
 
-LESSON PLAN STRUCTURE:
-1. Learning Objectives (3-4 clear, measurable goals)
-2. Teaching Sequence (3-4 FOCUSED steps, targeting 15-20 minutes total)
-3. Content Blocks (tables, definitions, questions, diagrams, text)
+Learning Objectives: 3–4 measurable, AO-aligned goals.
+Teaching Sequence: 3–4 steps, each with 2–3 content blocks.
+Content Blocks: Must only use the approved JSON block types below.
 
-⚠️ TARGET DURATION: Aim for 15-20 minutes total. Keep content concise and focused.
+🔧 APPROVED CONTENT BLOCK TYPES (STRICT JSON)
 
-⚠️ CRITICAL: Each step MUST have 2-3 content blocks. Keep it focused and concise for 15-20 minute lessons.
+TEXT BLOCK
+{ "type": "text", "title": "Title", "data": "Plain text only.\\nUse **bold**.\\n• Bullet points\\n• No HTML" }
 
-CONTENT BLOCK TYPES (with detailed examples):
+TABLE BLOCK
+{ "type": "table", "title": "Title", "data": { "headers": ["A","B"], "rows": [["1","2"],["3","4"]] } }
 
-1. TEXT: Explanatory content or instructions
-   Example: { type: "text", title: "Understanding Photosynthesis", data: { content: "Photosynthesis is the process by which plants convert light energy into chemical energy.\n\n**Key Point:** Plants use sunlight to make food.\n\n• Requires sunlight, water, and CO2\n• Produces glucose and oxygen\n• Happens in chloroplasts" } }
+DEFINITION BLOCK
+{ "type": "definition", "title": "Title", "data": { "term": "Term", "definition": "Meaning", "example": "Short example" } }
 
-2. TABLE: Comparisons, data, organized information
-   Example: { type: "table", title: "Plant vs Animal Cells", data: { headers: ["Feature", "Plant Cell", "Animal Cell"], rows: [["Cell Wall", "Yes", "No"], ["Chloroplasts", "Yes", "No"]] } }
+QUESTION BLOCK (MCQ/Short)
+{ "type": "question", "title": "Title", "data": { "question": "Q", "options":[{"text":"A","isCorrect":false},{"text":"B","isCorrect":true}], "explanation":"Reason" } }
 
-3. DEFINITION: Key terms with examples
-   Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
+DIAGRAM BLOCK
+{ "type": "diagram", "title": "Title", "data": { "description": "What it shows", "elements": ["A","B","C"] } }
 
-4. QUESTION: Check understanding (multiple choice)
-   Example: { type: "question", title: "Check Understanding", data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" } }
+WORKED EXAMPLE BLOCK
+{
+  "type": "worked_example",
+  "title": "Title",
+  "data": {
+    "question": "Exam-style Q",
+    "examContext": "How it appears in ${examBoard}",
+    "steps":[
+      { "number":1, "title":"Step", "explanation":"Why", "workShown":"Working" }
+    ],
+    "finalAnswer":"Answer",
+    "examTips":["Tip 1"]
+  }
+}
 
-5. DIAGRAM: Visual representations
-   Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
+QUOTE ANALYSIS BLOCK (English Literature ONLY)
+{
+  "type": "quote_analysis",
+  "title": "Key Quote Analysis",
+  "data": {
+    "quote": "exact quote",
+    "source": "Act/Scene ONLY",
+    "context": "brief explanation",
+    "thematicLinks": ["Theme1","Theme2"],
+    "keyWords": ["word1","word2"],
+    "techniques": ["Technique1","Technique2"],
+    "examTips": ["Tip 1","Tip 2"]
+  }
+}
 
-6. WORKED EXAMPLE: Step-by-step solutions showing method/technique (especially for Maths, Sciences)
-   Example: { type: "worked_example", title: "Solving Linear Equations", data: { question: "Solve 3x + 5 = 20", examContext: "This is a typical AQA GCSE question worth 3 marks", steps: [{ number: 1, title: "Subtract 5 from both sides", explanation: "We need to isolate the x term first", workShown: "3x + 5 - 5 = 20 - 5\\n3x = 15" }, { number: 2, title: "Divide by 3", explanation: "Now isolate x by dividing both sides by 3", workShown: "3x ÷ 3 = 15 ÷ 3\\nx = 5" }], finalAnswer: "x = 5", examTips: ["Always show your working for method marks", "Check by substituting back: 3(5) + 5 = 20 ✓"] } }
+📝 FORMATTING RULES
 
-⚠️ TEXT FORMATTING RULES FOR ALL CONTENT:
-- Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
-- For emphasis, use **bold text** (double asterisks)
-- Use line breaks (\n) to separate paragraphs
-- For lists, use simple bullet points: "• Item 1\n• Item 2\n• Item 3"
-- For numbered lists: "1. Step one\n2. Step two\n3. Step three"
-- For headings, use "## Heading" or bold: "**Key Concept**"
-- Keep formatting simple and clean
-- Example: "Photosynthesis is the process by which plants convert light energy.\n\n**Key fact:** Plants need sunlight, water, and CO2.\n\n• Occurs in chloroplasts\n• Produces glucose and oxygen\n• Essential for plant growth"
-
-IMPORTANT RULES:
-- Target 15-20 minutes total duration
-- 3-4 steps maximum for conciseness
-- Each step MUST contain 2-3 content blocks
-- Mix different content types for variety
-- Include teaching_notes to guide how to present each block
-- Use prerequisites to ensure blocks are shown in the right order
-- Make content age-appropriate for ${yearGroup}
-- Focus on core concepts - avoid unnecessary detail${
+Plain text only.
+Use **bold** for emphasis.
+Use "•" for bullets.
+Use numbered lists when needed.
+No HTML tags.
+Keep content short, exam-focused, and clean.${
   // Detect if this is a Maths lesson
   subjectName?.toLowerCase().includes('math') ? `
 
-🧮 MATHEMATICS TEACHING STRUCTURE - MANDATORY FORMAT:
-
-You MUST follow this exact sequence for all Maths lessons:
+🧮 MATHEMATICS — MANDATORY STRUCTURE
 
 STEP 1: Introduction & Explanation (1 content block)
 - 1 TEXT block: Clear, concise explanation of the concept
@@ -481,38 +489,28 @@ STEP 4: Independent Practice (3-4 content blocks)
 - teaching_notes must clearly distinguish between "guided" and "solo" questions
 - All questions must be exam-relevant and mark-scheme aligned
 
-📐 LATEX FORMATTING FOR ALL MATHEMATICAL CONTENT:
+📐 LATEX FORMATTING FOR ALL MATHEMATICAL CONTENT
 
 CRITICAL: Use LaTeX syntax for ALL mathematical expressions in Maths lessons.
 
-Inline math (within text): Use $...$ for expressions like $x^2$, $\\frac{2}{3}$
-Display math (on separate line): Use $$...$$ for equations like $$ax^2 + bx + c = 0$$
+Inline math: Use $...$ for expressions like $x^2$, $\\\\frac{2}{3}$
+Display math: Use $$...$$ for equations like $$ax^2 + bx + c = 0$$
 
 Common LaTeX patterns you MUST use:
-- Fractions: $\\frac{numerator}{denominator}$ → Example: $\\frac{2}{3}$ NOT "2/3"
+- Fractions: $\\\\frac{numerator}{denominator}$ → Example: $\\\\frac{2}{3}$ NOT "2/3"
 - Powers: $x^2$, $x^{10}$ → Example: $x^2$ NOT "x²"
-- Square roots: $\\sqrt{x}$, $\\sqrt{16}$ → Example: $\\sqrt{16}$ NOT "√16"
-- Multiplication: $\\times$ → Example: $2 \\times 3$ NOT "2 × 3" or "2 * 3"
-- Division: $\\div$ → Example: $10 \\div 2$ NOT "10 ÷ 2"
-- Equals in display: $$2x + 3 = 7$$
-- Greek letters: $\\pi$, $\\theta$, $\\alpha$
-
-LaTeX Example for workShown field:
-"Convert to same denominator: $\\frac{2}{3} = \\frac{2 \\times 5}{3 \\times 5} = \\frac{10}{15}$"
-
-LaTeX Example for question:
-"Solve the equation $3x + 5 = 20$ for $x$"
-
-LaTeX Example for explanation:
-"To isolate $x$, we first subtract $5$ from both sides: $$3x + 5 - 5 = 20 - 5$$ which simplifies to $$3x = 15$$"
+- Square roots: $\\\\sqrt{x}$, $\\\\sqrt{16}$ → Example: $\\\\sqrt{16}$ NOT "√16"
+- Multiplication: $\\\\times$ → Example: $2 \\\\times 3$ NOT "2 × 3" or "2 * 3"
+- Division: $\\\\div$ → Example: $10 \\\\div 2$ NOT "10 ÷ 2"
+- Greek letters: $\\\\pi$, $\\\\theta$, $\\\\alpha$
 
 ⚠️ DOUBLE BACKSLASHES IN JSON:
-Since this is JSON, you MUST escape backslashes. Use \\\\frac NOT \\frac
-Example: "question": "Solve $\\\\frac{x}{2} = 5$"
+Since this is JSON, you MUST escape backslashes. Use \\\\\\\\frac NOT \\\\frac
+Example: "question": "Solve $\\\\\\\\frac{x}{2} = 5$"
 
 NEVER use plain text for math:
 ❌ WRONG: "Calculate 2/3 + 1/5"
-✅ CORRECT: "Calculate $\\\\frac{2}{3} + \\\\frac{1}{5}$"
+✅ CORRECT: "Calculate $\\\\\\\\frac{2}{3} + \\\\\\\\frac{1}{5}$"
 
 ❌ WRONG: "x squared equals 16"
 ✅ CORRECT: "$x^2 = 16$"
@@ -522,26 +520,22 @@ Apply LaTeX to: question fields, workShown fields, explanation fields, finalAnsw
 ⚠️ CRITICAL - DEFINITION BLOCKS IN MATHS:
 - The "example" field MUST be PLAIN TEXT without LaTeX delimiters
 - Do NOT use $...$ in the example field
-- Only use LaTeX in the "definition" field if showing a formula
-  ✅ CORRECT: { "term": "Cosine Rule", "definition": "A rule used to find unknown sides or angles: $$a^2 = b^2 + c^2 - 2bc \\\\cos A$$", "example": "Given sides b and c, and angle A, find side a." }
-  ❌ WRONG: { "term": "Cosine Rule", "definition": "...", "example": "Given sides $b$ and $c$, and angle $A$, find side $a$." }` : ''
+- Only use LaTeX in the "definition" field if showing a formula` : ''
 }${
   // Detect if this is an English Literature lesson
   subjectName?.toLowerCase().includes('english') && subjectName?.toLowerCase().includes('literature') ? `
 
-📚 ENGLISH LITERATURE TEACHING STRUCTURE - MANDATORY FORMAT:
-
-You MUST follow this exact sequence for all English Literature lessons:
+📚 ENGLISH LITERATURE — MANDATORY STRUCTURE
 
 STEP 1: Context & Theme Introduction (2 content blocks)
-- 1 TEXT block: Brief context about the scene/section/chapter we're studying
-- 1 TEXT block: Introduction to the key themes we'll explore
+- 1 TEXT block: Brief context about the scene/section/chapter
+- 1 TEXT block: Introduction to the key themes
 - Keep concise - this is scene-setting
 
 STEP 2: Quote Analysis (2-3 content blocks)
 - 2-3 QUOTE_ANALYSIS blocks: Literary quotes for deep analysis
 - Each block must include: quote, source (Act/Chapter/Scene), context, thematicLinks, keyWords, techniques array
-- Focus on quotes that exemplify the themes introduced in Step 1
+- Focus on quotes that exemplify the themes
 
 STEP 3: Making Notes (2 content blocks)
 - 1 TEXT block: Guidance on what notes to make
@@ -558,35 +552,31 @@ STEP 4: Exam Practice (1-2 content blocks)
 - Steps: Exactly 4 steps following the structure above
 - Focus on ANALYSIS and INTERPRETATION, not just comprehension
 - Link everything back to exam assessment objectives
-- Encourage PEE/PEEL paragraph structure in guidance
 
 ### CRITICAL: Content Block JSON Structure for English Literature
 
-YOU MUST generate content blocks with EXACTLY these JSON structures. Do not generate plain strings for the data field - always use the proper object structure shown below.
-
-**TEXT BLOCK EXAMPLE:**
+**TEXT BLOCK:**
 {
   "type": "text",
   "title": "Act 2 Context",
-  "data": "Act 2 of Macbeth takes place immediately after Macbeth has decided to murder King Duncan. The atmosphere is tense and dark, reflecting Macbeth's inner turmoil. This is a plain string - NOT an object."
+  "data": "Act 2 of Macbeth takes place immediately after Macbeth has decided to murder King Duncan..."
 }
-CRITICAL: The data field is a PLAIN STRING, not {"content": "..."} or {"text": "..."}
+CRITICAL: The data field is a PLAIN STRING, not an object.
 
-**TABLE BLOCK EXAMPLE:**
+**TABLE BLOCK:**
 {
   "type": "table",
   "title": "Themes in Act 2",
   "data": {
     "headers": ["Theme", "Example Quote", "Analysis"],
     "rows": [
-      ["Ambition", "Is this a dagger which I see before me", "Macbeth's ambition manifests as hallucination"],
-      ["Guilt", "Will all great Neptune's ocean wash this blood", "Guilt is presented as permanent and overwhelming"]
+      ["Ambition", "Is this a dagger which I see before me", "Macbeth's ambition manifests as hallucination"]
     ]
   }
 }
-CRITICAL: The data field MUST be an object with "headers" (array) and "rows" (array of arrays)
+CRITICAL: The data field MUST be an object with "headers" (array) and "rows" (array of arrays).
 
-**QUESTION BLOCK EXAMPLE (Essay Style):**
+**QUESTION BLOCK (Essay Style):**
 {
   "type": "question",
   "title": "Exam Practice Question",
@@ -598,48 +588,25 @@ CRITICAL: The data field MUST be an object with "headers" (array) and "rows" (ar
     "assessmentObjectives": ["AO1: Textual references", "AO2: Language/structure analysis", "AO3: Context"],
     "themesFocus": ["Ambition", "Power", "Consequences"],
     "textReferences": ["Act 2, Scene 1 - Dagger soliloquy", "Act 2, Scene 2 - After the murder"],
-    "successCriteria": [
-      "Embed short, relevant quotations",
-      "Analyze language and structural choices",
-      "Link to historical/social context",
-      "Develop a clear argument throughout"
-    ],
-    "exampleParagraph": "Shakespeare presents ambition as a destructive force through Macbeth's hallucination of the dagger...",
-    "planningPrompts": ["What is your main argument?", "Which 3-4 quotes best support this?", "How does context link to your points?"]
+    "successCriteria": ["Embed short, relevant quotations", "Analyze language and structural choices"],
+    "exampleParagraph": "Shakespeare presents ambition as a destructive force...",
+    "planningPrompts": ["What is your main argument?", "Which 3-4 quotes best support this?"]
   }
 }
-CRITICAL: The data field MUST be an object. DO NOT include "options" field for essay questions. Include all essay-specific fields shown above.
+CRITICAL: The data field MUST be an object. DO NOT include "options" field for essay questions.
 
 **QUOTE ANALYSIS BLOCK — STRICT JSON OUTPUT ONLY**
 
 📝 SYSTEM — When generating quote analysis, you MUST return a VALID JSON object and NOTHING else.
-No commentary. No markdown. No explanations. No trailing text.
 
-The JSON schema you MUST follow EXACTLY:
-
-{
-  "type": "quote_analysis",
-  "title": "Key Quote Analysis",
-  "data": {
-    "quote": "The exact quote from the text (string)",
-    "source": "Play/Act/Scene (string)", 
-    "context": "Brief explanation of what is happening (string)",
-    "thematicLinks": ["Theme1", "Theme2"], 
-    "keyWords": ["word1", "word2"], 
-    "techniques": ["Technique1", "Technique2"], 
-    "examTips": ["Tip 1", "Tip 2"]
-  }
-}
-
-STRICT RULES (DO NOT BREAK):
+STRICT RULES:
 - Return ONLY valid JSON. No markdown codeblocks.
 - Field names MUST match EXACTLY (case-sensitive).
 - "source" is ALWAYS the Act/Scene, NEVER the speaker.
-- "thematicLinks" MUST be an array of strings, NOT objects.
-- "techniques" MUST be an array of strings (e.g., ["Metaphor", "Imagery"]).
-- "examTips" MUST be an array of short strings.
-- No extra fields. No missing fields. No renaming.
-- If a value is unknown, use an EMPTY STRING or EMPTY ARRAY — NEVER invent new fields.
+- "thematicLinks" MUST be an array of strings ["Theme1", "Theme2"]
+- "techniques" MUST be an array of strings ["Metaphor", "Imagery"]
+- "examTips" MUST be an array of short strings
+- No extra fields. No missing fields.
 
 EXAMPLE:
 {
@@ -655,9 +622,8 @@ EXAMPLE:
     "examTips": ["Embed quotes smoothly", "Link to context of regicide"]
   }
 }
-CRITICAL: The data field MUST be an object with all fields shown above
 
-**DEFINITION BLOCK EXAMPLE:**
+**DEFINITION BLOCK:**
 {
   "type": "definition",
   "title": "Key Literary Term",
@@ -667,17 +633,22 @@ CRITICAL: The data field MUST be an object with all fields shown above
     "example": "Macbeth's dagger speech in Act 2 Scene 1 is a famous soliloquy revealing his inner conflict"
   }
 }
-CRITICAL: The data field MUST be an object with "term", "definition", and "example" fields
+CRITICAL: The data field MUST be an object with "term", "definition", and "example" fields.
 
 ⚠️ VALIDATION RULES:
 - NEVER generate the data field as a plain string for table, question, quote_analysis, or definition blocks
 - ALWAYS structure data as shown in the examples above
 - For TEXT blocks, data IS a plain string (not an object)
 - For QUOTE_ANALYSIS blocks, "techniques" MUST be a string array, NOT objects
-- For all other blocks, data MUST be a properly structured object
+- For all other blocks, data MUST be a properly structured object` : ''
+}
 
+✔️ Output Requirements
 
-📝 ESSAY QUESTION FORMAT (NO OPTIONS):
+Produce a full lesson plan using ONLY the approved block types.
+All JSON must be valid.
+No extra fields.
+No explanations outside the lesson content.
 {
   type: "question",
   title: "Exam Practice Question",
@@ -760,18 +731,11 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example', 'quote_analysis']
                              },
                             title: { type: 'string' },
-                            data: {
+                             data: {
                               oneOf: [
                                 {
-                                  type: 'object',
-                                  description: 'Text content (PLAIN TEXT ONLY - no HTML tags. Use **bold** for emphasis, \\n for line breaks, • for bullets)',
-                                  properties: {
-                                    content: { 
-                                      type: 'string',
-                                      description: 'Plain text content with simple markdown. NO HTML tags. Use **text** for bold, \\n for paragraphs, • for bullet points.'
-                                    }
-                                  },
-                                  required: ['content']
+                                  type: 'string',
+                                  description: 'Text content (PLAIN TEXT ONLY - no HTML tags. Use **bold** for emphasis, \\n for line breaks, • for bullets). For text blocks, data is a plain string, NOT an object.'
                                 },
                                 {
                                   type: 'object',
@@ -897,14 +861,8 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                      },
                                      techniques: {
                                        type: 'array',
-                                       items: {
-                                         type: 'object',
-                                         properties: {
-                                           name: { type: 'string' },
-                                           explanation: { type: 'string' }
-                                         }
-                                       },
-                                       description: 'Literary techniques used'
+                                       items: { type: 'string' },
+                                       description: 'Literary techniques used (array of strings, e.g., ["Metaphor", "Imagery"])'
                                      },
                                      examTips: {
                                        type: 'array',
