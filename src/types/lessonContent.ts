@@ -19,8 +19,17 @@ export interface QuestionOption {
 export interface QuestionContent {
   id: string;
   question: string;
-  options: QuestionOption[];
+  options?: QuestionOption[];
   explanation?: string;
+  // Essay question fields for English Literature
+  marks?: number;
+  examBoard?: string;
+  assessmentObjectives?: string[];
+  themesFocus?: string[];
+  textReferences?: string[];
+  successCriteria?: string[];
+  exampleParagraph?: string;
+  planningPrompts?: string[];
 }
 
 export interface DefinitionContent {
