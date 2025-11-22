@@ -443,7 +443,44 @@ IMPORTANT RULES:
 - Include teaching_notes to guide how to present each block
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
-- Focus on core concepts - avoid unnecessary detail`
+- Focus on core concepts - avoid unnecessary detail${
+  // Detect if this is a Maths lesson
+  subjectName?.toLowerCase().includes('math') ? `
+
+🧮 MATHEMATICS TEACHING STRUCTURE - MANDATORY FORMAT:
+
+You MUST follow this exact sequence for all Maths lessons:
+
+STEP 1: Introduction & Explanation (1 content block)
+- 1 TEXT block: Clear, concise explanation of the concept
+- Keep it simple and focused (2-3 paragraphs max)
+- Use examples to illustrate key points
+
+STEP 2: Worked Examples (2 content blocks)
+- 2 WORKED_EXAMPLE blocks: Fully worked solutions
+- Show complete working with step-by-step breakdown
+- Include examContext, clear steps with workShown, finalAnswer
+- Add examTips for each example
+
+STEP 3: Guided Practice (2 content blocks)
+- 2 QUESTION blocks with extensive guidance
+- teaching_notes MUST say: "Guide student through this step-by-step. Ask them what to do first, then second, etc."
+- Include detailed explanation field showing full working
+- These are collaborative - Cleo solves WITH the student
+
+STEP 4: Independent Practice (3-4 content blocks)
+- 3-4 QUESTION blocks: Exam-style questions
+- teaching_notes MUST say: "Student completes independently. Provide hints only if stuck."
+- Real GCSE-style questions appropriate for ${examBoard || 'GCSE'}
+- Vary difficulty: 1-2 easier, 1-2 harder, 1 challenging
+
+⚠️ CRITICAL MATHS RULES:
+- Total blocks: 8-9 (1 explanation + 2 worked + 2 guided + 3-4 solo)
+- Steps: Exactly 4 steps following the structure above
+- NO mixing of content types within steps
+- teaching_notes must clearly distinguish between "guided" and "solo" questions
+- All questions must be exam-relevant and mark-scheme aligned` : ''
+}`
           },
           {
             role: 'user',
@@ -476,11 +513,13 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                 },
                 steps: {
                   type: 'array',
-                  minItems: isExamPractice ? 2 : 3,
-                  maxItems: isExamPractice ? 2 : 4,
+                  minItems: isExamPractice ? 2 : (subjectName?.toLowerCase().includes('math') ? 4 : 3),
+                  maxItems: isExamPractice ? 2 : (subjectName?.toLowerCase().includes('math') ? 4 : 4),
                   description: isExamPractice
                     ? 'EXACTLY 2 steps: (1) Worked Example, (2) 20 Practice Questions'
-                    : '3-4 focused teaching steps targeting 15-20 minutes total. Each step should be substantial with 2-3 content blocks.',
+                    : subjectName?.toLowerCase().includes('math')
+                      ? 'EXACTLY 4 steps for Maths: (1) Explanation, (2) 2 Worked Examples, (3) 2 Guided Practice, (4) 3-4 Independent Practice'
+                      : '3-4 focused teaching steps targeting 15-20 minutes total. Each step should be substantial with 2-3 content blocks.',
                   items: {
                     type: 'object',
                     properties: {
@@ -793,6 +832,58 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
         console.error(`❌ Exam practice plan missing 'Practice' step`);
         throw new Error('Invalid exam practice plan: Missing practice questions step');
       }
+    }
+
+    // Validate Maths lesson structure
+    const isMaths = subjectName?.toLowerCase().includes('math');
+    if (isMaths && !isExamPractice) {
+      console.log('🧮 Validating Maths lesson structure...');
+      const steps = planData.steps;
+      
+      // Check we have exactly 4 steps
+      if (steps.length !== 4) {
+        console.warn(`⚠️ Maths lesson has ${steps.length} steps, expected 4`);
+      } else {
+        console.log('✓ Maths lesson has 4 steps');
+      }
+      
+      // Validate step 1: 1 text block (explanation)
+      const step1Blocks = steps[0]?.content_blocks || [];
+      const hasExplanation = step1Blocks.some((b: any) => b.type === 'text');
+      if (!hasExplanation) {
+        console.warn('⚠️ Maths Step 1 missing explanation text block');
+      } else {
+        console.log('✓ Step 1 has explanation');
+      }
+      
+      // Validate step 2: 2 worked examples
+      const step2Blocks = steps[1]?.content_blocks || [];
+      const workedExamples = step2Blocks.filter((b: any) => b.type === 'worked_example');
+      if (workedExamples.length !== 2) {
+        console.warn(`⚠️ Maths Step 2 has ${workedExamples.length} worked examples, expected 2`);
+      } else {
+        console.log('✓ Step 2 has 2 worked examples');
+      }
+      
+      // Validate step 3: 2 guided questions
+      const step3Blocks = steps[2]?.content_blocks || [];
+      const guidedQuestions = step3Blocks.filter((b: any) => b.type === 'question');
+      if (guidedQuestions.length !== 2) {
+        console.warn(`⚠️ Maths Step 3 has ${guidedQuestions.length} guided questions, expected 2`);
+      } else {
+        console.log('✓ Step 3 has 2 guided questions');
+      }
+      
+      // Validate step 4: 3-4 solo questions
+      const step4Blocks = steps[3]?.content_blocks || [];
+      const soloQuestions = step4Blocks.filter((b: any) => b.type === 'question');
+      if (soloQuestions.length < 3 || soloQuestions.length > 4) {
+        console.warn(`⚠️ Maths Step 4 has ${soloQuestions.length} solo questions, expected 3-4`);
+      } else {
+        console.log(`✓ Step 4 has ${soloQuestions.length} solo questions`);
+      }
+      
+      console.log('🧮 Maths lesson structure validation complete');
     }
 
     // Generate images for diagram blocks in parallel
