@@ -309,19 +309,6 @@ serve(async (req) => {
 
     if (planError) throw planError;
 
-    // Categorize subject for specialized prompts
-    const categorizeSubject = (subject: string): string => {
-      const s = subject.toLowerCase();
-      if (s.includes('maths') || s.includes('mathematics')) return 'maths';
-      if (s.includes('english') && s.includes('language')) return 'english_language';
-      if (s.includes('english') && s.includes('literature')) return 'english_literature';
-      if (s.includes('computer') || s.includes('computing')) return 'computer_science';
-      if (s.includes('biology') || s.includes('chemistry') || s.includes('physics')) return 'science';
-      return 'general';
-    };
-
-    const subjectCategory = categorizeSubject(subjectName || topic);
-
     // Generate lesson plan using Lovable AI (Gemini 2.5 Flash - faster than GPT-5 mini)
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -365,13 +352,6 @@ CONTENT BLOCKS FOR STEP 1 (Worked Example):
 - For headings, use "## Heading" format or bold
 - Example: "Place value tells us the value of each digit.\n\n**Important:** The digit 6 in 4,629 represents 600."
 
-⚠️ CRITICAL JSON FORMATTING - MATH NOTATION:
-- NEVER use LaTeX backslash commands (\\div, \\times, \\frac) in JSON strings
-- Use Unicode symbols instead: ÷ × ² ³ ½ ¼ ¾
-- Use plain text: "divided by" instead of \\div, "multiplied by" instead of \\times
-- Example CORRECT: "7x²y³ ÷ 7xy² = xy"
-- Example WRONG: "7x^2y^3 \\div 7xy^2 = xy" (will cause JSON parse error)
-
 CONTENT BLOCKS FOR STEP 2 (Practice):
 - YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
 - Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
@@ -386,238 +366,6 @@ CONTENT BLOCKS FOR STEP 2 (Practice):
 
 Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
-              : subjectCategory === 'maths'
-              ? `You are an expert GCSE Maths curriculum designer creating concise, exam-focused lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''}.
-${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
-${examBoardSpecs ? `\n📋 EXAM SPECIFICATIONS: ${examBoardSpecs}\n` : ''}
-
-📐 MATHS LESSON STRUCTURE:
-Your task: Create a tutor-style maths lesson following this EXACT flow:
-
-TEACHING SEQUENCE (3-4 main steps, 15-20 minutes total):
-
-Step 1: "Concept Introduction" (3-4 minutes)
-- 1 text block explaining the concept
-- 1 definition block for key formula/term
-
-Step 2: "Worked Example" (5-6 minutes)
-- 1 worked_example block showing full solution step-by-step
-- Format: { type: "worked_example", data: { problem: "...", steps: [...], key_technique: "..." } }
-- Teaching notes: Emphasize method marks and exam technique
-
-⚠️ CRITICAL: DEFINITION BLOCK FORMAT (you MUST follow this exactly):
-CORRECT FORMAT (data is an OBJECT):
-{
-  type: "definition",
-  title: "Key Formula",
-  data: {
-    term: "Quadratic Formula",
-    definition: "A formula used to solve equations of the form ax² + bx + c = 0",
-    example: "For x² + 5x + 6 = 0, use x = (-b ± √(b² - 4ac)) / 2a"
-  },
-  teaching_notes: "Emphasize when to use this formula"
-}
-
-❌ WRONG (data is a STRING - this will cause errors):
-{
-  type: "definition",
-  data: "A quadratic formula is used to solve..."
-}
-
-Step 3: "Guided Practice" (4-5 minutes)
-- 2-3 question blocks with detailed explanations
-- Format: Exam-style questions with mark schemes
-- Cleo walks through these WITH the student
-
-Step 4: "Independent Practice" (5-7 minutes)
-- 3-4 question blocks
-- Student completes these independently
-- Include mark scheme feedback in explanations
-
-${examBoard === 'AQA' ? '⚠️ AQA STYLE: Use "Show that...", "Work out the value of..." wording. Include method marks clearly (e.g., 2 marks for method, 1 for answer).' : ''}
-${examBoard === 'Edexcel' ? '⚠️ EDEXCEL STYLE: Use "Calculate...", "Find the value of..." wording. Show clear step-by-step working.' : ''}
-
-WORKED EXAMPLE FORMAT:
-{
-  type: "worked_example",
-  title: "Worked Example: [Topic]",
-  data: {
-    problem: "The actual question",
-    steps: [
-      { step_number: 1, explanation: "First, identify what we know", calculation: "x = 5, y = 3" },
-      { step_number: 2, explanation: "Apply the formula", calculation: "A = x × y" },
-      { step_number: 3, explanation: "Calculate the answer", calculation: "A = 15" }
-    ],
-    key_technique: "When solving for area, always identify dimensions first"
-  },
-  teaching_notes: "Emphasize showing working for method marks"
-}
-
-⚠️ CRITICAL JSON FORMATTING - MATH NOTATION:
-- NEVER use LaTeX backslash commands (\\div, \\times, \\frac, \\sqrt) in JSON strings
-- Use Unicode math symbols: ÷ × ² ³ √ ≠ ≤ ≥ ±
-- Or use plain operators: * for multiply, / for divide
-- Example CORRECT: "Simplify: 12x² ÷ 3x = 4x"
-- Example WRONG: "Simplify: 12x^2 \\div 3x = 4x" (causes JSON errors)
-- Always use proper JSON with double quotes, not Python single quotes`
-
-              : subjectCategory === 'english_language'
-              ? `You are an expert GCSE English Language curriculum designer${examBoard ? ` for ${examBoard}` : ''}.
-${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
-${examBoardSpecs ? `\n📋 EXAM SPECIFICATIONS: ${examBoardSpecs}\n` : ''}
-
-📝 ENGLISH LANGUAGE LESSON STRUCTURE:
-Focus: Analysis techniques and exam question structure
-
-TEACHING SEQUENCE (3-4 main steps, 15-20 minutes total):
-
-Step 1: "Text Introduction & Context" (3-4 minutes)
-- 1 text block with extract
-- 1 definition block for key terminology (e.g., "Rhetoric", "Tone")
-
-Step 2: "Model Analysis" (5-6 minutes)
-- 1 text block showing model paragraph
-- Must include: embedded quotations, analysis structure
-- Teaching notes: Point out sentence starters, PEE/PETAL structure
-
-Step 3: "Guided Practice" (4-5 minutes)
-- 1-2 question blocks (shorter response, 4 marks)
-- Provide sentence starters in teaching notes
-
-Step 4: "Extended Writing Task" (8-10 minutes)
-- 1 writing_box block for 8-mark or 12-mark question
-- Format: { type: "writing_box", data: { prompt: "...", guidance: "...", sentenceStarters: [...], marks: 8 } }
-
-${examBoard === 'AQA' ? '⚠️ AQA STRUCTURE: Use What/How/Why - "What does the writer do? How do they do it? Why/What effect?"' : ''}
-${examBoard === 'Edexcel' ? '⚠️ EDEXCEL STRUCTURE: Use PETAL (Point, Evidence, Technique, Analysis, Link)' : ''}
-${!examBoard ? '⚠️ STRUCTURE: Use PEE (Point, Evidence, Explain)' : ''}
-
-MODEL PARAGRAPH EXAMPLE:
-"The writer uses powerful imagery to create tension. In the phrase 'shadows crept across the floor,' the verb 'crept' suggests something sinister and threatening. This makes the reader feel uneasy and anticipates danger."
-
-WRITING BOX FORMAT:
-{
-  type: "writing_box",
-  title: "Analysis Question (8 marks)",
-  data: {
-    prompt: "How does the writer use language to describe the storm? (8 marks)",
-    guidance: "Structure your answer using ${examBoard === 'Edexcel' ? 'PETAL' : examBoard === 'AQA' ? 'What/How/Why' : 'PEE'}",
-    sentenceStarters: [
-      "The writer creates [effect] by...",
-      "This is shown in the phrase '...' where...",
-      "The technique of [X] suggests...",
-      "This makes the reader feel..."
-    ],
-    marks: 8
-  },
-  teaching_notes: "Remind students to embed quotations and analyze language"
-}`
-
-              : subjectCategory === 'english_literature'
-              ? `You are an expert GCSE English Literature curriculum designer${examBoard ? ` for ${examBoard}` : ''}.
-${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
-${examBoardSpecs ? `\n📋 EXAM SPECIFICATIONS: ${examBoardSpecs}\n` : ''}
-
-📚 ENGLISH LITERATURE LESSON STRUCTURE:
-⚠️ CRITICAL: All quotations MUST be from actual set texts (Macbeth, Jekyll & Hyde, An Inspector Calls, etc.)
-
-TEACHING SEQUENCE (3-4 main steps, 15-20 minutes total):
-
-Step 1: "Theme/Character Introduction" (3-4 minutes)
-- 1 text block introducing theme/character
-- 1 table block comparing scenes or character development
-
-Step 2: "Quotation Bank & Analysis" (5-7 minutes)
-- 3-4 definition blocks with key quotes
-- Format: { type: "definition", data: { term: "Theme/Aspect", definition: "[actual quote from text]", example: "Analysis with context" } }
-
-Step 3: "Close Analysis Practice" (4-5 minutes)
-- 2 question blocks focusing on quotation analysis
-- Ask: "How does this quote reveal [character/theme]?"
-
-Step 4: "Essay Writing" (8-10 minutes)
-- 1 writing_box for full essay response
-- Guidance on: selecting quotes, analyzing keywords, linking to context
-
-QUOTATION BANK EXAMPLE:
-{
-  type: "definition",
-  title: "Key Quotations",
-  data: {
-    term: "Character's Manipulation",
-    definition: "'[actual quote from the text]'",
-    example: "Analysis: This quote shows... The word '[X]' suggests... This connects to the theme of... Contextually, in [time period]..."
-  },
-  teaching_notes: "Emphasize context - link to historical/social background"
-}
-
-ASSESSMENT OBJECTIVES:
-- AO1: Textual references and terminology
-- AO2: Language and structure analysis
-- AO3: Context (historical, social, cultural)
-
-${examBoard === 'AQA' ? '⚠️ AQA FOCUS: Whole-text knowledge and thematic links' : ''}
-${examBoard === 'Edexcel' ? '⚠️ EDEXCEL FOCUS: Specific extract analysis with wider text connections' : ''}`
-
-              : subjectCategory === 'computer_science'
-              ? `You are an expert GCSE Computer Science curriculum designer${examBoard ? ` for ${examBoard}` : ''}.
-${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
-${examBoardSpecs ? `\n📋 EXAM SPECIFICATIONS: ${examBoardSpecs}\n` : ''}
-
-💻 COMPUTER SCIENCE LESSON STRUCTURE:
-Focus: Definitions, algorithms, and exam-style questions
-
-TEACHING SEQUENCE (3-4 main steps, 15-20 minutes total):
-
-Step 1: "Concept Definition" (3-4 minutes)
-- 2-3 definition blocks with GCSE-level language
-- Keep definitions clear and exam-board aligned
-
-Step 2: "Code/Algorithm Examples" (5-6 minutes)
-- 1-2 code_example blocks
-- Format: { type: "code_example", data: { language: "pseudocode", code: "...", explanation: "...", lineHighlights: [2] } }
-- Show pseudocode first, then optionally Python
-- Teaching notes: Explain logic line-by-line
-
-⚠️ CRITICAL JSON FORMATTING:
-- Use proper JSON with double quotes, never Python single quotes
-- Escape special characters properly in code strings
-- Use \\n for newlines in code examples
-- Backslashes in code must be doubled: \\\\ for single backslash
-
-Step 3: "Practice Questions" (5-7 minutes)
-- 3-4 question blocks (mix of multiple choice and short answer)
-- Include: definitions, trace tables, code completion
-
-Step 4: "Structured Question" (6-8 minutes)
-- 1-2 question blocks (6-8 marks)
-- Exam-style format with sub-parts
-
-CODE EXAMPLE FORMAT:
-{
-  type: "code_example",
-  title: "Linear Search Algorithm",
-  data: {
-    language: "pseudocode",
-    code: "FOR each item IN list\\n  IF item == target THEN\\n    RETURN position\\n  ENDIF\\nENDFOR\\nRETURN -1",
-    explanation: "This algorithm checks each element until it finds the target or reaches the end",
-    lineHighlights: [2]
-  },
-  teaching_notes: "Emphasize time complexity: O(n)"
-}
-
-DIAGRAM TYPES TO USE:
-- System architecture (CPU, Von Neumann)
-- Network topologies (star, bus, ring)
-- Data structures (arrays, linked lists)
-- Flowcharts for algorithms
-
-QUESTION VARIETY:
-- Multiple choice (4-5 per lesson)
-- Short answer definitions (2-3)
-- 6-8 mark structured questions (1-2)
-- Code tracing exercises (1)`
-
               : `You are an expert curriculum designer creating concise, focused lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''} for students.
 ${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
 ${examBoardSpecs ? `
@@ -695,23 +443,6 @@ IMPORTANT RULES:
 - Focus on core concepts - avoid unnecessary detail`
           },
           {
-            role: 'system',
-            content: `🚨 CRITICAL JSON VALIDATION REQUIREMENT 🚨
-
-For DEFINITION blocks, the 'data' field MUST ALWAYS be a JSON object with these exact keys:
-- term (string): The concept name
-- definition (string): Clear explanation  
-- example (string, optional): Illustrative example
-
-❌ INVALID (will cause error):
-{ "type": "definition", "data": "A ratio is a comparison..." }
-
-✅ VALID (correct structure):
-{ "type": "definition", "data": { "term": "Ratio", "definition": "A comparison of two quantities", "example": "3:5" } }
-
-This is NON-NEGOTIABLE. Check your JSON before responding.`
-          },
-          {
             role: 'user',
             content: `Create a lesson plan for teaching: ${topic}
 Year Group: ${yearGroup}
@@ -765,7 +496,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                           properties: {
                             type: { 
                               type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example', 'writing_box', 'code_example']
+                              enum: ['table', 'definition', 'question', 'diagram', 'text']
                             },
                             title: { type: 'string' },
                             data: {
@@ -792,23 +523,13 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                 },
                                 {
                                   type: 'object',
-                                  description: 'Definition - term with explanation and optional example. MUST be a JSON object with term and definition fields, NOT a plain string.',
+                                  description: 'Definition',
                                   properties: {
-                                    term: { 
-                                      type: 'string',
-                                      description: 'The key term or concept being defined'
-                                    },
-                                    definition: { 
-                                      type: 'string',
-                                      description: 'Clear explanation of the term'
-                                    },
-                                    example: { 
-                                      type: 'string',
-                                      description: 'Optional example to illustrate the definition'
-                                    }
+                                    term: { type: 'string' },
+                                    definition: { type: 'string' },
+                                    example: { type: 'string' }
                                   },
-                                  required: ['term', 'definition'],
-                                  additionalProperties: false
+                                  required: ['term', 'definition']
                                 },
                                 {
                                   type: 'object',
@@ -838,63 +559,6 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                     elements: { type: 'array', items: { type: 'string' } }
                                   },
                                   required: ['description', 'elements']
-                                },
-                                {
-                                  type: 'object',
-                                  description: 'Worked Example (for Maths) - step-by-step solution',
-                                  properties: {
-                                    problem: { type: 'string', description: 'The question/problem to solve' },
-                                    steps: {
-                                      type: 'array',
-                                      items: {
-                                        type: 'object',
-                                        properties: {
-                                          step_number: { type: 'number' },
-                                          explanation: { type: 'string' },
-                                          calculation: { type: 'string' },
-                                          visual_note: { type: 'string' }
-                                        },
-                                        required: ['step_number', 'explanation']
-                                      }
-                                    },
-                                    key_technique: { type: 'string', description: 'The main method/technique being demonstrated' }
-                                  },
-                                  required: ['problem', 'steps', 'key_technique']
-                                },
-                                {
-                                  type: 'object',
-                                  description: 'Writing Box (for English) - extended writing task',
-                                  properties: {
-                                    prompt: { type: 'string', description: 'The question/task' },
-                                    guidance: { type: 'string', description: 'Structure guidance (e.g., PEE, PETAL)' },
-                                    sentenceStarters: { 
-                                      type: 'array', 
-                                      items: { type: 'string' },
-                                      description: 'Optional sentence starters to help students'
-                                    },
-                                    wordTarget: { type: 'number', description: 'Optional target word count' },
-                                    marks: { type: 'number', description: 'Mark allocation' }
-                                  },
-                                  required: ['prompt', 'guidance', 'marks']
-                                },
-                                {
-                                  type: 'object',
-                                  description: 'Code Example (for Computer Science) - code/pseudocode with explanation',
-                                  properties: {
-                                    language: { 
-                                      type: 'string',
-                                      enum: ['pseudocode', 'python', 'javascript'],
-                                      description: 'Programming language'
-                                    },
-                                    code: { type: 'string', description: 'The actual code' },
-                                    explanation: { type: 'string', description: 'What the code does' },
-                                    lineHighlights: {
-                                      type: 'array',
-                                      items: { type: 'number' },
-                                      description: 'Optional line numbers to highlight'
-                                    }
-                                  },
-                                  required: ['language', 'code', 'explanation']
                                 }
                               ]
                             },
@@ -951,164 +615,20 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
 
     const planData = JSON.parse(toolCall.function.arguments);
     
-    // Helper function to escape LaTeX backslashes before JSON parsing
-    const escapeLaTeXBackslashes = (str: string): string => {
-      // Escape common LaTeX commands that appear in math notation
-      return str
-        .replace(/\\div(?![a-z])/g, '\\\\div')
-        .replace(/\\times(?![a-z])/g, '\\\\times')
-        .replace(/\\frac(?![a-z])/g, '\\\\frac')
-        .replace(/\\sqrt(?![a-z])/g, '\\\\sqrt')
-        .replace(/\\cdot(?![a-z])/g, '\\\\cdot')
-        .replace(/\\pm(?![a-z])/g, '\\\\pm')
-        .replace(/\\neq(?![a-z])/g, '\\\\neq')
-        .replace(/\\leq(?![a-z])/g, '\\\\leq')
-        .replace(/\\geq(?![a-z])/g, '\\\\geq')
-        .replace(/\\infty(?![a-z])/g, '\\\\infty')
-        // Preserve valid JSON escapes like \n, \t, \", \\
-        .replace(/([^\\])\\([^ntr"\\dfscpil])/g, '$1\\\\$2');
-    };
-
-    // Helper function to repair Python dict strings (single quotes to double quotes)
-    const repairPythonDict = (str: string): any => {
-      try {
-        // First, escape LaTeX backslashes to prevent "Bad escaped character" errors
-        let repaired = escapeLaTeXBackslashes(str);
-        
-        // Replace single quotes with double quotes, but not within strings
-        repaired = repaired
-          .replace(/'/g, '"')
-          .replace(/True/g, 'true')
-          .replace(/False/g, 'false')
-          .replace(/None/g, 'null');
-        
-        return JSON.parse(repaired);
-      } catch (e) {
-        console.error('Failed to repair Python dict:', str.substring(0, 200), e);
-        console.error('Error message:', e instanceof Error ? e.message : String(e));
-        return null;
-      }
-    };
-
-    // Helper function to intelligently repair definition blocks from plain strings
-    const repairDefinitionString = (str: string): { term: string; definition: string; example?: string } | null => {
-      try {
-        // Strategy 1: Extract from "**Term**: Definition" format
-        const boldTermMatch = str.match(/\*\*([^*]+)\*\*:?\s*(.+)/s);
-        if (boldTermMatch) {
-          const term = boldTermMatch[1].trim();
-          const definition = boldTermMatch[2].trim();
-          console.log(`✅ Repaired definition using **bold** pattern: "${term}"`);
-          return { term, definition };
-        }
-        
-        // Strategy 2: Extract from "Term: Definition" format
-        const colonMatch = str.match(/^([^:]{1,50}):\s*(.+)/s);
-        if (colonMatch) {
-          const term = colonMatch[1].trim();
-          const definition = colonMatch[2].trim();
-          console.log(`✅ Repaired definition using colon pattern: "${term}"`);
-          return { term, definition };
-        }
-        
-        // Strategy 3: Extract from "A [term] is [definition]" format
-        const isMatch = str.match(/^(?:A |An |The )?([A-Z][\w\s]{1,40}?)\s+(?:is|are|refers to)\s+(.+)/si);
-        if (isMatch) {
-          const term = isMatch[1].trim();
-          const definition = isMatch[2].trim();
-          console.log(`✅ Repaired definition using "is/are" pattern: "${term}"`);
-          return { term, definition };
-        }
-        
-        // Strategy 4: Split on first sentence, use rest as definition
-        const sentences = str.split(/\.\s+/);
-        if (sentences.length >= 2) {
-          const term = sentences[0].substring(0, 50).trim();
-          const definition = sentences.slice(1).join('. ').trim();
-          console.log(`✅ Repaired definition using sentence split: "${term}..."`);
-          return { term, definition };
-        }
-        
-        // Last resort: use entire string as definition with generic term
-        console.warn('⚠️ Using fallback repair for definition');
-        return {
-          term: 'Key Concept',
-          definition: str.trim()
-        };
-      } catch (error) {
-        console.error('Failed to repair definition string:', error);
-        return null;
-      }
-    };
-
-    // Helper function to validate and repair definition blocks
-    const repairDefinitionBlock = (block: any): boolean => {
-      if (block.type === 'definition') {
-        // If data is a string, intelligently extract term and definition
-        if (typeof block.data === 'string') {
-          console.warn('⚠️ Malformed definition block - data is string:', block.data.substring(0, 100));
-          
-          const repaired = repairDefinitionString(block.data);
-          
-          if (repaired) {
-            block.data = repaired;
-            console.log(`✅ Successfully repaired definition block: "${repaired.term}"`);
-            return true;
-          } else {
-            console.error('❌ Failed to repair definition block:', block.data.substring(0, 100));
-            return false;
-          }
-        }
-        
-        // Validate structure
-        if (!block.data.term || !block.data.definition) {
-          console.error('❌ Definition block missing required fields:', block.data);
-          return false;
-        }
-      }
-      return true;
-    };
-    
     // Parse the data field of each content block (it comes as a JSON string)
-    let hasErrors = false;
     planData.steps.forEach((step: any) => {
       if (step.content_blocks) {
         step.content_blocks.forEach((block: any) => {
           if (block.data && typeof block.data === 'string') {
             try {
-              // First, try escaping LaTeX and parsing
-              const escapedData = escapeLaTeXBackslashes(block.data);
-              block.data = JSON.parse(escapedData);
+              block.data = JSON.parse(block.data);
             } catch (e) {
-              // Try repairing Python dict syntax
-              console.warn('⚠️ Failed normal parse, attempting Python dict repair:', block.type);
-              console.warn('Data preview:', block.data.substring(0, 150));
-              console.warn('Parse error:', e instanceof Error ? e.message : String(e));
-              
-              const repaired = repairPythonDict(block.data);
-              if (repaired) {
-                block.data = repaired;
-                console.log('✅ Successfully repaired Python dict for:', block.type);
-              } else {
-                console.error('❌ Failed to parse content block data:', block.type);
-                console.error('Raw data sample:', block.data.substring(0, 200));
-                hasErrors = true;
-              }
+              console.warn('Failed to parse content block data:', block.type, e);
             }
-          }
-          
-          // Validate and repair definition blocks specifically
-          if (!repairDefinitionBlock(block)) {
-            hasErrors = true;
           }
         });
       }
     });
-    
-    if (hasErrors) {
-      console.error('❌ Lesson plan has malformed content blocks - rejecting');
-      throw new Error('Generated lesson plan contains malformed content blocks. Please try regenerating.');
-    }
     
     // Validate content blocks were generated
     const totalContentBlocks = planData.steps.reduce((sum: number, step: any) => 

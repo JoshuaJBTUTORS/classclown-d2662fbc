@@ -5,9 +5,6 @@ import { TextBlock } from './content/TextBlock';
 import { QuestionBlock } from './content/QuestionBlock';
 import { DefinitionBlock } from './content/DefinitionBlock';
 import { DiagramBlock } from './content/DiagramBlock';
-import { WorkedExampleBlock } from './content/WorkedExampleBlock';
-import { WritingBoxBlock } from './content/WritingBoxBlock';
-import { CodeExampleBlock } from './content/CodeExampleBlock';
 
 interface ContentDisplayProps {
   content: ContentBlock[];
@@ -89,17 +86,6 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
         return <DefinitionBlock data={block.data} onContentAction={handleContentAction} />;
       case 'diagram':
         return <DiagramBlock data={block.data} onContentAction={handleContentAction} />;
-      case 'worked_example':
-        return <WorkedExampleBlock data={block.data} />;
-      case 'writing_box':
-        return <WritingBoxBlock 
-          data={block.data} 
-          onSubmit={(content) => {
-            onContentAction?.(block.id, 'student_writing_submission', content);
-          }}
-        />;
-      case 'code_example':
-        return <CodeExampleBlock data={block.data} />;
       default:
         return null;
     }

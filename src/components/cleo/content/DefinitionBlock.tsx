@@ -12,24 +12,9 @@ interface DefinitionBlockProps {
 export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data, onContentAction }) => {
   // Defensive check for undefined data
   if (!data || !data.term || !data.definition) {
-    // Log the actual data received for debugging
-    if (import.meta.env.DEV) {
-      console.error('DefinitionBlock received invalid data:', {
-        data,
-        hasData: !!data,
-        hasTerm: data?.term,
-        hasDefinition: data?.definition,
-        dataType: typeof data,
-        dataValue: data
-      });
-    }
-    
     return (
-      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
-        <p className="text-sm font-medium text-destructive mb-1">Definition formatting error</p>
-        <p className="text-xs text-muted-foreground">
-          This lesson has a formatting issue. Please try regenerating the lesson for properly formatted content.
-        </p>
+      <div className="bg-muted/50 border border-border rounded-lg p-4">
+        <p className="text-sm text-muted-foreground">Definition content not available</p>
       </div>
     );
   }
