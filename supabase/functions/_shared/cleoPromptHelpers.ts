@@ -38,6 +38,28 @@ export function formatSingleBlock(block: any): string {
       description = `   • Diagram: ${title || data?.title || 'Visual diagram'}`;
       break;
       
+    case 'worked_example':
+      description = `
+   📐 WORKED EXAMPLE: ${title || 'Example'}
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Question: "${data?.question || 'N/A'}"
+
+   Steps to follow:
+${data?.steps?.map((step: any, i: number) => `
+     Step ${step.number}: ${step.title}
+     Explanation: ${step.explanation}
+     Work Shown: ${step.workShown}
+`).join('') || '   No steps provided'}
+
+   Final Answer: ${data?.finalAnswer || 'N/A'}
+
+   Exam Context: ${data?.examContext || 'N/A'}
+   Exam Tips: ${data?.examTips?.join('; ') || 'N/A'}
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ⚠️ YOU MUST READ OUT THIS EXACT CONTENT - DO NOT MAKE UP YOUR OWN EXAMPLE`;
+      break;
+      
     default:
       description = `   • ${type}: ${title || id}`;
   }
