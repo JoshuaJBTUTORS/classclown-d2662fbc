@@ -6,6 +6,7 @@ import { QuestionBlock } from './content/QuestionBlock';
 import { DefinitionBlock } from './content/DefinitionBlock';
 import { DiagramBlock } from './content/DiagramBlock';
 import { WorkedExampleBlock } from './content/WorkedExampleBlock';
+import { QuoteAnalysisBlock } from './content/QuoteAnalysisBlock';
 
 interface ContentDisplayProps {
   content: ContentBlock[];
@@ -89,6 +90,8 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
         return <DiagramBlock data={block.data} onContentAction={handleContentAction} />;
       case 'worked_example':
         return <WorkedExampleBlock data={block.data} onContentAction={handleContentAction} />;
+      case 'quote_analysis':
+        return <QuoteAnalysisBlock data={block.data} onContentAction={handleContentAction} />;
       default:
         return null;
     }

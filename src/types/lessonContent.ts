@@ -42,11 +42,21 @@ export interface WorkedExampleContent {
   examTips?: string[];
 }
 
+export interface QuoteAnalysisContent {
+  quote: string;
+  source: string;
+  context?: string;
+  thematicLinks: string[];
+  keyWords: string[];
+  techniques: string[];
+  examTips?: string[];
+}
+
 export interface ContentBlock {
   id: string;
   stepId: string;
-  type: 'text' | 'table' | 'definition' | 'question' | 'diagram' | 'worked_example';
-  data: TableContent | QuestionContent | DefinitionContent | WorkedExampleContent | string | any;
+  type: 'text' | 'table' | 'definition' | 'question' | 'diagram' | 'worked_example' | 'quote_analysis';
+  data: TableContent | QuestionContent | DefinitionContent | WorkedExampleContent | QuoteAnalysisContent | string | any;
   visible: boolean;
   title?: string;
   teachingNotes?: string;
