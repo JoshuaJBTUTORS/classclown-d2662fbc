@@ -692,6 +692,73 @@ Remember: All that content above is already created and ready to show. I'll use 
     let lastError = null;
     const maxRetries = 3;
     
+    // ============= DIAGNOSTIC LOGGING START =============
+    console.log('=== PROMPT DEBUG START ===');
+    console.log(`[PROMPT-DEBUG] Lesson: ${lessonPlan.topic}`);
+    console.log(`[PROMPT-DEBUG] Subject: ${subjectName || 'N/A'}`);
+    console.log(`[PROMPT-DEBUG] Year Group: ${lessonPlan.year_group}`);
+    console.log(`[PROMPT-DEBUG] Lesson ID: ${lessonPlanId}`);
+    
+    // System prompt analysis
+    console.log(`[PROMPT-DEBUG] System Prompt Length: ${systemPrompt.length} chars`);
+    console.log(`[PROMPT-DEBUG] Estimated Tokens: ~${Math.ceil(systemPrompt.length / 4)}`);
+    console.log(`[PROMPT-DEBUG] First 500 chars:`, systemPrompt.substring(0, 500));
+    console.log(`[PROMPT-DEBUG] Last 500 chars:`, systemPrompt.substring(systemPrompt.length - 500));
+    
+    // Content library analysis
+    console.log(`[PROMPT-DEBUG] Content Library Length: ${contentLibrary.length} chars`);
+    console.log(`[PROMPT-DEBUG] Teaching Sequence Steps: ${lessonPlan.teaching_sequence?.length || 0}`);
+    
+    // Count content blocks by type
+    const blockCounts: Record<string, number> = {};
+    let totalBlocks = 0;
+    let base64Count = 0;
+    let base64Size = 0;
+    
+    lessonPlan.teaching_sequence?.forEach((step: any) => {
+      step.content_blocks?.forEach((block: any) => {
+        totalBlocks++;
+        blockCounts[block.type] = (blockCounts[block.type] || 0) + 1;
+        
+        // Check for base64 images in diagrams
+        if (block.type === 'diagram' && block.data?.url?.startsWith('data:image')) {
+          base64Count++;
+          base64Size += block.data.url.length;
+        }
+      });
+    });
+    
+    console.log(`[PROMPT-DEBUG] Total Content Blocks: ${totalBlocks}`);
+    console.log(`[PROMPT-DEBUG] Block Breakdown:`, JSON.stringify(blockCounts));
+    console.log(`[PROMPT-DEBUG] Base64 Images: ${base64Count} (total size: ${base64Size} chars)`);
+    
+    // Request payload analysis
+    const requestBody = {
+      model: "gpt-4o-realtime-preview",
+      voice: "ballad",
+      instructions: systemPrompt,
+      modalities: ["text", "audio"],
+      input_audio_format: "pcm16",
+      output_audio_format: "pcm16",
+      input_audio_transcription: { model: "whisper-1" },
+      turn_detection: {
+        type: "server_vad",
+        threshold: 0.6,
+        prefix_padding_ms: 300,
+        silence_duration_ms: 500
+      },
+      tools,
+      tool_choice: "auto",
+      temperature: 0.8,
+      max_response_output_tokens: 4096
+    };
+    
+    const payloadSize = JSON.stringify(requestBody).length;
+    console.log(`[PROMPT-DEBUG] Total Payload Size: ${payloadSize} chars (~${Math.ceil(payloadSize / 4)} tokens)`);
+    console.log(`[PROMPT-DEBUG] Tools Count: ${tools.length}`);
+    console.log('=== PROMPT DEBUG END ===');
+    // ============= DIAGNOSTIC LOGGING END =============
+    
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         sessionResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
