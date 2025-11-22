@@ -16,8 +16,8 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({ content, className
       const parts: Array<{ type: 'text' | 'display' | 'inline'; content: string }> = [];
       let currentIndex = 0;
       
-      // Regex to match display math ($$...$$) or inline math ($...$)
-      const mathRegex = /\$\$([^$]+?)\$\$|\$([^$]+?)\$/g;
+      // Regex to match display math ($$...$$ or \[...\]) or inline math ($...$ or \(...\))
+      const mathRegex = /\$\$([^$]+?)\$\$|\$([^$]+?)\$|\\[\s]*([^\]]+?)\\]|\\\\?\(([^)]+?)\\\\?\)/g;
       let match;
       
       while ((match = mathRegex.exec(content)) !== null) {
@@ -30,17 +30,17 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({ content, className
         }
         
         // Add the math expression
-        if (match[1]) {
-          // Display math ($$...$$)
+        if (match[1] || match[3]) {
+          // Display math ($$...$$ or \[...\])
           parts.push({
             type: 'display',
-            content: match[1].trim()
+            content: (match[1] || match[3]).trim()
           });
-        } else if (match[2]) {
-          // Inline math ($...$)
+        } else if (match[2] || match[4]) {
+          // Inline math ($...$ or \(...\))
           parts.push({
             type: 'inline',
-            content: match[2].trim()
+            content: (match[2] || match[4]).trim()
           });
         }
         
