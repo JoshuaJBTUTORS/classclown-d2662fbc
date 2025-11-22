@@ -93,11 +93,23 @@ export function useLessonPlan(lessonPlanId: string | null) {
                 return;
               }
               
+              // Parse stringified data for worked_example blocks
+              let parsedData = block.data;
+              if (block.type === 'worked_example' && typeof block.data === 'string') {
+                try {
+                  parsedData = JSON.parse(block.data);
+                  console.log('✅ Parsed stringified worked_example data');
+                } catch (e) {
+                  console.error('❌ Failed to parse worked_example data:', e);
+                  return; // Skip this block
+                }
+              }
+              
               allContentBlocks.push({
                 id: `${step.id}-block-${blockIndex}`,
                 stepId: step.id,
                 type: block.type as any,
-                data: block.data,
+                data: parsedData, // Use parsed data
                 visible: false, // All blocks start hidden
                 title: block.title || undefined,
                 teachingNotes: block.teaching_notes || undefined,
