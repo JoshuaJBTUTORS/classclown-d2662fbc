@@ -405,6 +405,25 @@ Step 2: "Worked Example" (5-6 minutes)
 - Format: { type: "worked_example", data: { problem: "...", steps: [...], key_technique: "..." } }
 - Teaching notes: Emphasize method marks and exam technique
 
+⚠️ CRITICAL: DEFINITION BLOCK FORMAT (you MUST follow this exactly):
+CORRECT FORMAT (data is an OBJECT):
+{
+  type: "definition",
+  title: "Key Formula",
+  data: {
+    term: "Quadratic Formula",
+    definition: "A formula used to solve equations of the form ax² + bx + c = 0",
+    example: "For x² + 5x + 6 = 0, use x = (-b ± √(b² - 4ac)) / 2a"
+  },
+  teaching_notes: "Emphasize when to use this formula"
+}
+
+❌ WRONG (data is a STRING - this will cause errors):
+{
+  type: "definition",
+  data: "A quadratic formula is used to solve..."
+}
+
 Step 3: "Guided Practice" (4-5 minutes)
 - 2-3 question blocks with detailed explanations
 - Format: Exam-style questions with mark schemes
@@ -674,6 +693,23 @@ IMPORTANT RULES:
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
 - Focus on core concepts - avoid unnecessary detail`
+          },
+          {
+            role: 'system',
+            content: `🚨 CRITICAL JSON VALIDATION REQUIREMENT 🚨
+
+For DEFINITION blocks, the 'data' field MUST ALWAYS be a JSON object with these exact keys:
+- term (string): The concept name
+- definition (string): Clear explanation  
+- example (string, optional): Illustrative example
+
+❌ INVALID (will cause error):
+{ "type": "definition", "data": "A ratio is a comparison..." }
+
+✅ VALID (correct structure):
+{ "type": "definition", "data": { "term": "Ratio", "definition": "A comparison of two quantities", "example": "3:5" } }
+
+This is NON-NEGOTIABLE. Check your JSON before responding.`
           },
           {
             role: 'user',
@@ -954,33 +990,74 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
       }
     };
 
+    // Helper function to intelligently repair definition blocks from plain strings
+    const repairDefinitionString = (str: string): { term: string; definition: string; example?: string } | null => {
+      try {
+        // Strategy 1: Extract from "**Term**: Definition" format
+        const boldTermMatch = str.match(/\*\*([^*]+)\*\*:?\s*(.+)/s);
+        if (boldTermMatch) {
+          const term = boldTermMatch[1].trim();
+          const definition = boldTermMatch[2].trim();
+          console.log(`✅ Repaired definition using **bold** pattern: "${term}"`);
+          return { term, definition };
+        }
+        
+        // Strategy 2: Extract from "Term: Definition" format
+        const colonMatch = str.match(/^([^:]{1,50}):\s*(.+)/s);
+        if (colonMatch) {
+          const term = colonMatch[1].trim();
+          const definition = colonMatch[2].trim();
+          console.log(`✅ Repaired definition using colon pattern: "${term}"`);
+          return { term, definition };
+        }
+        
+        // Strategy 3: Extract from "A [term] is [definition]" format
+        const isMatch = str.match(/^(?:A |An |The )?([A-Z][\w\s]{1,40}?)\s+(?:is|are|refers to)\s+(.+)/si);
+        if (isMatch) {
+          const term = isMatch[1].trim();
+          const definition = isMatch[2].trim();
+          console.log(`✅ Repaired definition using "is/are" pattern: "${term}"`);
+          return { term, definition };
+        }
+        
+        // Strategy 4: Split on first sentence, use rest as definition
+        const sentences = str.split(/\.\s+/);
+        if (sentences.length >= 2) {
+          const term = sentences[0].substring(0, 50).trim();
+          const definition = sentences.slice(1).join('. ').trim();
+          console.log(`✅ Repaired definition using sentence split: "${term}..."`);
+          return { term, definition };
+        }
+        
+        // Last resort: use entire string as definition with generic term
+        console.warn('⚠️ Using fallback repair for definition');
+        return {
+          term: 'Key Concept',
+          definition: str.trim()
+        };
+      } catch (error) {
+        console.error('Failed to repair definition string:', error);
+        return null;
+      }
+    };
+
     // Helper function to validate and repair definition blocks
     const repairDefinitionBlock = (block: any): boolean => {
       if (block.type === 'definition') {
-        // If data is a string, try to extract term and definition
+        // If data is a string, intelligently extract term and definition
         if (typeof block.data === 'string') {
           console.warn('⚠️ Malformed definition block - data is string:', block.data.substring(0, 100));
           
-          // Attempt to parse as "Term: Definition" format
-          const colonIndex = block.data.indexOf(':');
-          if (colonIndex > 0) {
-            const term = block.data.substring(0, colonIndex).trim();
-            const definition = block.data.substring(colonIndex + 1).trim();
-            
-            block.data = { term, definition };
-            console.log('✅ Repaired definition block:', term);
-            return true;
-          }
+          const repaired = repairDefinitionString(block.data);
           
-          // Fallback: use title as term if available
-          if (block.title) {
-            block.data = { term: block.title, definition: block.data };
-            console.log('✅ Repaired definition using title:', block.title);
+          if (repaired) {
+            block.data = repaired;
+            console.log(`✅ Successfully repaired definition block: "${repaired.term}"`);
             return true;
+          } else {
+            console.error('❌ Failed to repair definition block:', block.data.substring(0, 100));
+            return false;
           }
-          
-          console.error('❌ Cannot repair definition block - no clear structure');
-          return false;
         }
         
         // Validate structure
