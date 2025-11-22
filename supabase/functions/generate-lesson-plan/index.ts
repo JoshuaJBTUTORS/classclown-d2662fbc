@@ -517,7 +517,14 @@ NEVER use plain text for math:
 ❌ WRONG: "x squared equals 16"
 ✅ CORRECT: "$x^2 = 16$"
 
-Apply LaTeX to: question fields, workShown fields, explanation fields, finalAnswer, text blocks with math` : ''
+Apply LaTeX to: question fields, workShown fields, explanation fields, finalAnswer, text blocks with math
+
+⚠️ CRITICAL - DEFINITION BLOCKS IN MATHS:
+- The "example" field MUST be PLAIN TEXT without LaTeX delimiters
+- Do NOT use $...$ in the example field
+- Only use LaTeX in the "definition" field if showing a formula
+  ✅ CORRECT: { "term": "Cosine Rule", "definition": "A rule used to find unknown sides or angles: $$a^2 = b^2 + c^2 - 2bc \\\\cos A$$", "example": "Given sides b and c, and angle A, find side a." }
+  ❌ WRONG: { "term": "Cosine Rule", "definition": "...", "example": "Given sides $b$ and $c$, and angle $A$, find side $a$." }` : ''
 }${
   // Detect if this is an English Literature lesson
   subjectName?.toLowerCase().includes('english') && subjectName?.toLowerCase().includes('literature') ? `
@@ -676,16 +683,16 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                   },
                                   required: ['headers', 'rows']
                                 },
-                                {
-                                  type: 'object',
-                                  description: 'Definition',
-                                  properties: {
-                                    term: { type: 'string' },
-                                    definition: { type: 'string' },
-                                    example: { type: 'string' }
-                                  },
-                                  required: ['term', 'definition']
-                                },
+                                 {
+                                   type: 'object',
+                                   description: 'Definition - term, definition (can use LaTeX), and plain-text example WITHOUT LaTeX delimiters',
+                                   properties: {
+                                     term: { type: 'string' },
+                                     definition: { type: 'string', description: 'Technical definition, can include LaTeX formulas' },
+                                     example: { type: 'string', description: 'Plain text example WITHOUT LaTeX $...$. Use regular text: "angle A", "side b"' }
+                                   },
+                                   required: ['term', 'definition']
+                                 },
                                  {
                                    type: 'object',
                                    description: 'Question - Multiple choice OR Essay question',
@@ -854,14 +861,31 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI response received');
+    console.log('AI response status:', aiResponse.status);
 
-    const toolCall = aiData.choices[0].message.tool_calls?.[0];
-    if (!toolCall) {
-      throw new Error('No lesson plan generated');
+    // Validate response structure
+    if (!aiData.choices || !Array.isArray(aiData.choices) || aiData.choices.length === 0) {
+      console.error('Invalid AI response:', JSON.stringify(aiData).substring(0, 500));
+      throw new Error(`AI API error: ${aiData.error?.message || 'No choices returned'}`);
+    }
+
+    const toolCall = aiData.choices[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) {
+      throw new Error('No lesson plan generated - AI returned no tool calls');
     }
 
     const planData = JSON.parse(toolCall.function.arguments);
+    
+    // Helper: Repair worked example string data
+    function repairWorkedExampleString(dataStr: string): any {
+      try {
+        if (typeof dataStr === 'object') return dataStr;
+        return JSON.parse(dataStr);
+      } catch (e) {
+        console.error('Failed to parse worked_example data:', e);
+        return null;
+      }
+    }
     
     // Parse the data field of each content block (it comes as a JSON string)
     planData.steps.forEach((step: any) => {
@@ -873,6 +897,29 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
             } catch (e) {
               console.warn('Failed to parse content block data:', block.type, e);
             }
+          }
+          
+          // Validate and repair worked_example blocks
+          if (block.type === 'worked_example') {
+            if (typeof block.data === 'string') {
+              console.warn('⚠️ Repairing stringified worked_example data');
+              block.data = repairWorkedExampleString(block.data);
+              if (!block.data) {
+                console.error('❌ Could not repair worked_example, skipping');
+                return;
+              }
+            }
+            
+            if (!block.data.question || !block.data.steps) {
+              console.error('❌ Malformed worked_example:', block.data);
+              return;
+            }
+          }
+          
+          // Remove LaTeX delimiters from definition examples
+          if (block.type === 'definition' && block.data?.example?.includes('$')) {
+            console.warn('⚠️ Removing LaTeX from definition example:', block.data.example);
+            block.data.example = block.data.example.replace(/\$/g, '');
           }
         });
       }
@@ -967,7 +1014,13 @@ You MUST generate all 20 questions. If you generate fewer, the lesson will be re
           }
           
           const retryData = await retryResponse.json();
-          const retryToolCall = retryData.choices[0].message.tool_calls?.[0];
+          console.log('Retry response:', JSON.stringify(retryData).substring(0, 500));
+          
+          if (!retryData.choices || !Array.isArray(retryData.choices) || retryData.choices.length === 0) {
+            throw new Error(`Retry failed: ${retryData.error?.message || 'No choices returned'}`);
+          }
+          
+          const retryToolCall = retryData.choices[0]?.message?.tool_calls?.[0];
           
           if (retryToolCall) {
             const retryPlanData = JSON.parse(retryToolCall.function.arguments);
