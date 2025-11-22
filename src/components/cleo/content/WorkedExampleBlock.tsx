@@ -7,6 +7,28 @@ interface WorkedExampleBlockProps {
 }
 
 export const WorkedExampleBlock: React.FC<WorkedExampleBlockProps> = ({ data }) => {
+  // Defensive check for invalid data
+  if (!data || !data.problem || !data.steps || data.steps.length === 0) {
+    if (import.meta.env.DEV) {
+      console.error('WorkedExampleBlock received invalid data:', {
+        data,
+        hasData: !!data,
+        hasProblem: data?.problem,
+        hasSteps: data?.steps,
+        stepsLength: data?.steps?.length
+      });
+    }
+    
+    return (
+      <div className="cleo-content-card bg-destructive/10 border-destructive/30">
+        <p className="text-sm font-medium text-destructive mb-1">Worked example formatting error</p>
+        <p className="text-xs text-muted-foreground">
+          This lesson has a formatting issue. Please try regenerating the lesson.
+        </p>
+      </div>
+    );
+  }
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
