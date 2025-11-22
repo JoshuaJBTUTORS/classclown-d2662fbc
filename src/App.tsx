@@ -351,6 +351,14 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route 
+                    path="admin/voice-minutes" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <AdminVoiceMinutes />
+                      </ProtectedRoute>
+                    } 
+                  />
                 </Route>
                 <Route
                   path="/join-lesson/:lessonId"
