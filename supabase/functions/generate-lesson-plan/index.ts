@@ -365,6 +365,13 @@ CONTENT BLOCKS FOR STEP 1 (Worked Example):
 - For headings, use "## Heading" format or bold
 - Example: "Place value tells us the value of each digit.\n\n**Important:** The digit 6 in 4,629 represents 600."
 
+⚠️ CRITICAL JSON FORMATTING - MATH NOTATION:
+- NEVER use LaTeX backslash commands (\\div, \\times, \\frac) in JSON strings
+- Use Unicode symbols instead: ÷ × ² ³ ½ ¼ ¾
+- Use plain text: "divided by" instead of \\div, "multiplied by" instead of \\times
+- Example CORRECT: "7x²y³ ÷ 7xy² = xy"
+- Example WRONG: "7x^2y^3 \\div 7xy^2 = xy" (will cause JSON parse error)
+
 CONTENT BLOCKS FOR STEP 2 (Practice):
 - YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
 - Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
@@ -425,7 +432,15 @@ WORKED EXAMPLE FORMAT:
     key_technique: "When solving for area, always identify dimensions first"
   },
   teaching_notes: "Emphasize showing working for method marks"
-}`
+}
+
+⚠️ CRITICAL JSON FORMATTING - MATH NOTATION:
+- NEVER use LaTeX backslash commands (\\div, \\times, \\frac, \\sqrt) in JSON strings
+- Use Unicode math symbols: ÷ × ² ³ √ ≠ ≤ ≥ ±
+- Or use plain operators: * for multiply, / for divide
+- Example CORRECT: "Simplify: 12x² ÷ 3x = 4x"
+- Example WRONG: "Simplify: 12x^2 \\div 3x = 4x" (causes JSON errors)
+- Always use proper JSON with double quotes, not Python single quotes`
 
               : subjectCategory === 'english_language'
               ? `You are an expert GCSE English Language curriculum designer${examBoard ? ` for ${examBoard}` : ''}.
@@ -544,6 +559,12 @@ Step 2: "Code/Algorithm Examples" (5-6 minutes)
 - Format: { type: "code_example", data: { language: "pseudocode", code: "...", explanation: "...", lineHighlights: [2] } }
 - Show pseudocode first, then optionally Python
 - Teaching notes: Explain logic line-by-line
+
+⚠️ CRITICAL JSON FORMATTING:
+- Use proper JSON with double quotes, never Python single quotes
+- Escape special characters properly in code strings
+- Use \\n for newlines in code examples
+- Backslashes in code must be doubled: \\\\ for single backslash
 
 Step 3: "Practice Questions" (5-7 minutes)
 - 3-4 question blocks (mix of multiple choice and short answer)
@@ -894,18 +915,41 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
 
     const planData = JSON.parse(toolCall.function.arguments);
     
+    // Helper function to escape LaTeX backslashes before JSON parsing
+    const escapeLaTeXBackslashes = (str: string): string => {
+      // Escape common LaTeX commands that appear in math notation
+      return str
+        .replace(/\\div(?![a-z])/g, '\\\\div')
+        .replace(/\\times(?![a-z])/g, '\\\\times')
+        .replace(/\\frac(?![a-z])/g, '\\\\frac')
+        .replace(/\\sqrt(?![a-z])/g, '\\\\sqrt')
+        .replace(/\\cdot(?![a-z])/g, '\\\\cdot')
+        .replace(/\\pm(?![a-z])/g, '\\\\pm')
+        .replace(/\\neq(?![a-z])/g, '\\\\neq')
+        .replace(/\\leq(?![a-z])/g, '\\\\leq')
+        .replace(/\\geq(?![a-z])/g, '\\\\geq')
+        .replace(/\\infty(?![a-z])/g, '\\\\infty')
+        // Preserve valid JSON escapes like \n, \t, \", \\
+        .replace(/([^\\])\\([^ntr"\\dfscpil])/g, '$1\\\\$2');
+    };
+
     // Helper function to repair Python dict strings (single quotes to double quotes)
     const repairPythonDict = (str: string): any => {
       try {
+        // First, escape LaTeX backslashes to prevent "Bad escaped character" errors
+        let repaired = escapeLaTeXBackslashes(str);
+        
         // Replace single quotes with double quotes, but not within strings
-        const repaired = str
+        repaired = repaired
           .replace(/'/g, '"')
           .replace(/True/g, 'true')
           .replace(/False/g, 'false')
           .replace(/None/g, 'null');
+        
         return JSON.parse(repaired);
       } catch (e) {
-        console.error('Failed to repair Python dict:', str, e);
+        console.error('Failed to repair Python dict:', str.substring(0, 200), e);
+        console.error('Error message:', e instanceof Error ? e.message : String(e));
         return null;
       }
     };
@@ -955,17 +999,22 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
         step.content_blocks.forEach((block: any) => {
           if (block.data && typeof block.data === 'string') {
             try {
-              // Try normal JSON parse first
-              block.data = JSON.parse(block.data);
+              // First, try escaping LaTeX and parsing
+              const escapedData = escapeLaTeXBackslashes(block.data);
+              block.data = JSON.parse(escapedData);
             } catch (e) {
               // Try repairing Python dict syntax
               console.warn('⚠️ Failed normal parse, attempting Python dict repair:', block.type);
+              console.warn('Data preview:', block.data.substring(0, 150));
+              console.warn('Parse error:', e instanceof Error ? e.message : String(e));
+              
               const repaired = repairPythonDict(block.data);
               if (repaired) {
                 block.data = repaired;
                 console.log('✅ Successfully repaired Python dict for:', block.type);
               } else {
-                console.error('❌ Failed to parse content block data:', block.type, e);
+                console.error('❌ Failed to parse content block data:', block.type);
+                console.error('Raw data sample:', block.data.substring(0, 200));
                 hasErrors = true;
               }
             }
