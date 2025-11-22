@@ -735,13 +735,23 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                 },
                                 {
                                   type: 'object',
-                                  description: 'Definition',
+                                  description: 'Definition - term with explanation and optional example. MUST be a JSON object with term and definition fields, NOT a plain string.',
                                   properties: {
-                                    term: { type: 'string' },
-                                    definition: { type: 'string' },
-                                    example: { type: 'string' }
+                                    term: { 
+                                      type: 'string',
+                                      description: 'The key term or concept being defined'
+                                    },
+                                    definition: { 
+                                      type: 'string',
+                                      description: 'Clear explanation of the term'
+                                    },
+                                    example: { 
+                                      type: 'string',
+                                      description: 'Optional example to illustrate the definition'
+                                    }
                                   },
-                                  required: ['term', 'definition']
+                                  required: ['term', 'definition'],
+                                  additionalProperties: false
                                 },
                                 {
                                   type: 'object',
@@ -884,20 +894,95 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
 
     const planData = JSON.parse(toolCall.function.arguments);
     
+    // Helper function to repair Python dict strings (single quotes to double quotes)
+    const repairPythonDict = (str: string): any => {
+      try {
+        // Replace single quotes with double quotes, but not within strings
+        const repaired = str
+          .replace(/'/g, '"')
+          .replace(/True/g, 'true')
+          .replace(/False/g, 'false')
+          .replace(/None/g, 'null');
+        return JSON.parse(repaired);
+      } catch (e) {
+        console.error('Failed to repair Python dict:', str, e);
+        return null;
+      }
+    };
+
+    // Helper function to validate and repair definition blocks
+    const repairDefinitionBlock = (block: any): boolean => {
+      if (block.type === 'definition') {
+        // If data is a string, try to extract term and definition
+        if (typeof block.data === 'string') {
+          console.warn('⚠️ Malformed definition block - data is string:', block.data.substring(0, 100));
+          
+          // Attempt to parse as "Term: Definition" format
+          const colonIndex = block.data.indexOf(':');
+          if (colonIndex > 0) {
+            const term = block.data.substring(0, colonIndex).trim();
+            const definition = block.data.substring(colonIndex + 1).trim();
+            
+            block.data = { term, definition };
+            console.log('✅ Repaired definition block:', term);
+            return true;
+          }
+          
+          // Fallback: use title as term if available
+          if (block.title) {
+            block.data = { term: block.title, definition: block.data };
+            console.log('✅ Repaired definition using title:', block.title);
+            return true;
+          }
+          
+          console.error('❌ Cannot repair definition block - no clear structure');
+          return false;
+        }
+        
+        // Validate structure
+        if (!block.data.term || !block.data.definition) {
+          console.error('❌ Definition block missing required fields:', block.data);
+          return false;
+        }
+      }
+      return true;
+    };
+    
     // Parse the data field of each content block (it comes as a JSON string)
+    let hasErrors = false;
     planData.steps.forEach((step: any) => {
       if (step.content_blocks) {
         step.content_blocks.forEach((block: any) => {
           if (block.data && typeof block.data === 'string') {
             try {
+              // Try normal JSON parse first
               block.data = JSON.parse(block.data);
             } catch (e) {
-              console.warn('Failed to parse content block data:', block.type, e);
+              // Try repairing Python dict syntax
+              console.warn('⚠️ Failed normal parse, attempting Python dict repair:', block.type);
+              const repaired = repairPythonDict(block.data);
+              if (repaired) {
+                block.data = repaired;
+                console.log('✅ Successfully repaired Python dict for:', block.type);
+              } else {
+                console.error('❌ Failed to parse content block data:', block.type, e);
+                hasErrors = true;
+              }
             }
+          }
+          
+          // Validate and repair definition blocks specifically
+          if (!repairDefinitionBlock(block)) {
+            hasErrors = true;
           }
         });
       }
     });
+    
+    if (hasErrors) {
+      console.error('❌ Lesson plan has malformed content blocks - rejecting');
+      throw new Error('Generated lesson plan contains malformed content blocks. Please try regenerating.');
+    }
     
     // Validate content blocks were generated
     const totalContentBlocks = planData.steps.reduce((sum: number, step: any) => 
