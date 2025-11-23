@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { learningHubService } from '@/services/learningHubService';
-import { supabase } from '@/integrations/supabase/client';
 import { Course } from '@/types/course';
 import ModuleManager from '@/components/learningHub/ModuleManager';
 import { CurriculumImporter } from '@/components/learningHub/CurriculumImporter';
@@ -31,7 +30,6 @@ interface CourseEditFormData {
   subject: string; // Allow empty string for form handling
   difficulty_level: string;
   cover_image_url: string;
-  exam_board_specification_id: string;
   status: 'draft' | 'published' | 'archived';
 }
 
@@ -48,21 +46,7 @@ const CourseEdit: React.FC = () => {
     subject: '',
     difficulty_level: '',
     cover_image_url: '',
-    exam_board_specification_id: '',
     status: 'draft'
-  });
-  
-  // Fetch exam board specifications for dropdown
-  const { data: examBoardSpecs = [] } = useQuery({
-    queryKey: ['exam-board-specs'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('exam_board_specifications')
-        .select('id, title, exam_board, subject_id')
-        .eq('status', 'active')
-        .order('title');
-      return data || [];
-    },
   });
   
   // Fetch course data
@@ -85,7 +69,6 @@ const CourseEdit: React.FC = () => {
         subject: course.subject || '',
         difficulty_level: course.difficulty_level || '',
         cover_image_url: course.cover_image_url || '',
-        exam_board_specification_id: (course as any).exam_board_specification_id || '',
         status: course.status
       });
     }
@@ -145,7 +128,7 @@ const CourseEdit: React.FC = () => {
     }
 
     // Transform form data to match Course interface
-    const updateData: Partial<Course> & { exam_board_specification_id?: string } = {
+    const updateData: Partial<Course> = {
       title: courseData.title,
       description: courseData.description,
       subject: courseData.subject && isValidLessonSubject(courseData.subject) 
@@ -153,11 +136,10 @@ const CourseEdit: React.FC = () => {
         : undefined,
       difficulty_level: courseData.difficulty_level,
       cover_image_url: courseData.cover_image_url,
-      exam_board_specification_id: courseData.exam_board_specification_id || undefined,
       status: courseData.status
     };
 
-    updateCourseMutation.mutate(updateData as any);
+    updateCourseMutation.mutate(updateData);
   };
   
   if (isLoading) {
@@ -299,26 +281,6 @@ const CourseEdit: React.FC = () => {
                       <SelectItem value="beginner">Beginner</SelectItem>
                       <SelectItem value="intermediate">Intermediate</SelectItem>
                       <SelectItem value="advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Exam Board Specification (Optional)</label>
-                  <Select
-                    value={courseData.exam_board_specification_id}
-                    onValueChange={(value) => handleInputChange('exam_board_specification_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select exam board spec" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {examBoardSpecs.map((spec: any) => (
-                        <SelectItem key={spec.id} value={spec.id}>
-                          {spec.title}
-                        </SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>

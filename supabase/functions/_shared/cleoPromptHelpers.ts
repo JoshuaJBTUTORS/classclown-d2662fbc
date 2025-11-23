@@ -38,28 +38,6 @@ export function formatSingleBlock(block: any): string {
       description = `   • Diagram: ${title || data?.title || 'Visual diagram'}`;
       break;
       
-    case 'worked_example':
-      description = `
-   📐 WORKED EXAMPLE: ${title || 'Example'}
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Question: "${data?.question || 'N/A'}"
-
-   Steps to follow:
-${data?.steps?.map((step: any, i: number) => `
-     Step ${step.number}: ${step.title}
-     Explanation: ${step.explanation}
-     Work Shown: ${step.workShown}
-`).join('') || '   No steps provided'}
-
-   Final Answer: ${data?.finalAnswer || 'N/A'}
-
-   Exam Context: ${data?.examContext || 'N/A'}
-   Exam Tips: ${data?.examTips?.join('; ') || 'N/A'}
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-   ⚠️ YOU MUST READ OUT THIS EXACT CONTENT - DO NOT MAKE UP YOUR OWN EXAMPLE`;
-      break;
-      
     default:
       description = `   • ${type}: ${title || id}`;
   }
@@ -135,34 +113,32 @@ async function fetchExamBoardSpecifications(
 }
 
 /**
- * Fetches exam board context for a lesson by looking up via courses table
+ * Fetches exam board context for a lesson
  */
 export async function fetchExamBoardContext(
   supabase: any,
   lessonPlan: any,
-  lessonId?: string,
-  examBoards?: Record<string, string>,
-  conversation?: any,
+  examBoards: Record<string, string>,
+  conversation: any,
   educationLevel?: string
 ): Promise<{ contextString: string; specifications: string; examBoard: string; subjectName: string }> {
   let examBoardContext = '';
   let subjectName = '';
   let examBoard = '';
-  let specifications = '';
+  let subjectId = '';
   
   console.log('📚 fetchExamBoardContext START:', { 
     lessonPlanId: lessonPlan?.id,
-    providedLessonId: lessonId,
-    lessonPlanLessonId: lessonPlan?.lesson_id, 
-    lessonPlanSubjectName: lessonPlan?.subject_name
+    lessonId: lessonPlan?.lesson_id, 
+    lessonPlanSubjectName: lessonPlan?.subject_name,
+    examBoardsKeys: Object.keys(examBoards || {}),
+    examBoards: examBoards,
+    educationLevel 
   });
   
-  // PRIORITY 1: Use provided lessonId (from CleoInteractiveLearning)
-  const lookupLessonId = lessonId || lessonPlan?.lesson_id;
-  
-  // New simplified approach: Get exam board spec directly from course
-  if (lookupLessonId) {
-    console.log('📍 Looking up course and exam board spec from lesson_id:', lookupLessonId);
+  // Step 1: Get subject name from course_lessons
+  if (lessonPlan?.lesson_id) {
+    console.log('📍 Step 1: Looking up subject from lesson_id:', lessonPlan.lesson_id);
     const { data: lessonData } = await supabase
       .from('course_lessons')
       .select(`
@@ -170,45 +146,62 @@ export async function fetchExamBoardContext(
         module_id,
         course_modules!inner(
           course_id,
-          courses!inner(
-            subject,
-            exam_board_specification_id,
-            exam_board_specifications(
-              title,
-              exam_board,
-              extracted_text
-            )
-          )
+          courses!inner(subject)
         )
       `)
-      .eq('id', lookupLessonId)
+      .eq('id', lessonPlan.lesson_id)
       .single();
     
     console.log('📍 Lesson data result:', lessonData);
     
-    if (lessonData?.course_modules?.courses) {
-      const course = lessonData.course_modules.courses;
-      subjectName = course.subject;
-      
-      // If course has an exam board spec linked, use it directly
-      if (course.exam_board_specifications) {
-        const spec = course.exam_board_specifications;
-        examBoard = spec.exam_board;
-        specifications = spec.extracted_text || '';
-        examBoardContext = ` for ${examBoard} ${subjectName}`;
-        console.log('✅ Got exam board from course:', examBoard, 'Specs length:', specifications.length);
-      } else {
-        console.log('⚠️ No exam board spec linked to this course');
-      }
+    if (lessonData?.course_modules?.courses?.subject) {
+      subjectName = lessonData.course_modules.courses.subject;
+      console.log('✅ Got subject name from course:', subjectName);
     }
   } else if (lessonPlan?.subject_name) {
     // Fallback: Use subject_name from lesson plan if no lesson_id
     subjectName = lessonPlan.subject_name;
-    console.log('✅ Using subject name from lesson plan (standalone):', subjectName);
+    console.log('✅ Using subject name from lesson plan:', subjectName);
+  }
+
+  // Step 2: Map subject name to subject ID
+  console.log('📍 Step 2: Mapping subject name to ID. subjectName:', subjectName);
+  if (subjectName) {
+    const { data: subjectData, error: subjectError } = await supabase
+      .from('subjects')
+      .select('id, name')
+      .ilike('name', `%${subjectName}%`)
+      .limit(1)
+      .single();
     
-    if (lessonPlan?.year_group) {
-      examBoardContext = ` for ${lessonPlan.year_group}`;
+    console.log('📍 Subject lookup result:', { subjectData, subjectError });
+    
+    if (subjectData?.id) {
+      subjectId = subjectData.id;
+      subjectName = subjectData.name;
+      console.log('✅ Mapped to subject ID:', subjectId, 'Name:', subjectName);
+    } else {
+      console.warn('⚠️ No subject found matching:', subjectName);
     }
+  }
+
+  // Step 3: Look up exam board using subject ID (not name)
+  console.log('📍 Step 3: Looking up exam board. subjectId:', subjectId, 'examBoards:', examBoards);
+  if (subjectId && examBoards[subjectId]) {
+    examBoard = examBoards[subjectId];
+    examBoardContext = ` for ${examBoard} ${subjectName}`;
+    console.log('✅ Found exam board:', examBoard, 'Context:', examBoardContext);
+  } else if (lessonPlan?.year_group) {
+    examBoardContext = ` for ${lessonPlan.year_group}`;
+    console.log('⚠️ No exam board found, using year_group fallback:', examBoardContext);
+  }
+
+  // Step 4: Fetch detailed specifications if exam board and subject are available
+  let specifications = '';
+  console.log('📍 Step 4: Fetching specifications. examBoard:', examBoard, 'subjectName:', subjectName);
+  if (examBoard && subjectName) {
+    specifications = await fetchExamBoardSpecifications(supabase, examBoard, subjectName);
+    console.log('📄 Specifications fetched, length:', specifications?.length || 0);
   }
 
   console.log('✅ fetchExamBoardContext RETURN:', {

@@ -25,7 +25,6 @@ export class RealtimeChat {
   async init(
     conversationId?: string, 
     lessonPlanId?: string, 
-    lessonId?: string,
     topic?: string, 
     yearGroup?: string
   ) {
@@ -47,7 +46,6 @@ export class RealtimeChat {
             token: session.access_token,
             conversationId,
             lessonPlanId,
-            lessonId,
             topic,
             yearGroup
           }
@@ -56,18 +54,7 @@ export class RealtimeChat {
 
       if (tokenError || !tokenData?.client_secret) {
         console.error("Token error:", tokenError);
-        
-        // Parse error response for better user messaging
-        const errorData = tokenError?.context?.body;
-        if (errorData?.retryable || errorData?.error?.includes('temporarily unavailable')) {
-          throw new Error('OpenAI voice service is temporarily unavailable. Please try again in a moment.');
-        } else if (errorData?.error?.includes('No voice sessions remaining')) {
-          throw new Error('No voice sessions remaining. Please purchase more sessions.');
-        } else if (errorData?.error) {
-          throw new Error(errorData.error);
-        }
-        
-        throw new Error(tokenError?.message || 'Failed to initialize voice session. Please try again.');
+        throw new Error(tokenError?.message || 'Failed to get ephemeral token');
       }
 
       console.log("✅ Ephemeral token received");
@@ -153,7 +140,7 @@ export class RealtimeChat {
       // Connect to OpenAI Realtime API
       console.log("🚀 Connecting to OpenAI Realtime...");
       const baseUrl = "https://api.openai.com/v1/realtime";
-      const model = "gpt-4o-realtime-preview";
+      const model = "gpt-4o-realtime-preview-2024-10-01";
       
       const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
         method: "POST",
@@ -181,7 +168,8 @@ export class RealtimeChat {
 
       return {
         conversationId: this.conversationId,
-        lessonPlan: tokenData.lessonPlan
+        lessonPlan: tokenData.lessonPlan,
+        currentStage: tokenData.currentStage  // Pass through the stage from token response
       };
 
     } catch (error) {

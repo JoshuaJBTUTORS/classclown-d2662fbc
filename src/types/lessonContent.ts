@@ -19,17 +19,8 @@ export interface QuestionOption {
 export interface QuestionContent {
   id: string;
   question: string;
-  options?: QuestionOption[];
+  options: QuestionOption[];
   explanation?: string;
-  // Essay question fields for English Literature
-  marks?: number;
-  examBoard?: string;
-  assessmentObjectives?: string[];
-  themesFocus?: string[];
-  textReferences?: string[];
-  successCriteria?: string[];
-  exampleParagraph?: string;
-  planningPrompts?: string[];
 }
 
 export interface DefinitionContent {
@@ -38,34 +29,11 @@ export interface DefinitionContent {
   example?: string;
 }
 
-export interface WorkedExampleContent {
-  question: string;
-  examContext?: string;
-  steps: {
-    number: number;
-    title: string;
-    explanation: string;
-    workShown?: string;
-  }[];
-  finalAnswer: string;
-  examTips?: string[];
-}
-
-export interface QuoteAnalysisContent {
-  quote: string;
-  source: string;
-  context?: string;
-  thematicLinks: string[];
-  keyWords: string[];
-  techniques: string[];
-  examTips?: string[];
-}
-
 export interface ContentBlock {
   id: string;
   stepId: string;
-  type: 'text' | 'table' | 'definition' | 'question' | 'diagram' | 'worked_example' | 'quote_analysis';
-  data: TableContent | QuestionContent | DefinitionContent | WorkedExampleContent | QuoteAnalysisContent | string | any;
+  type: 'text' | 'table' | 'definition' | 'question' | 'diagram';
+  data: TableContent | QuestionContent | DefinitionContent | string | any;
   visible: boolean;
   title?: string;
   teachingNotes?: string;

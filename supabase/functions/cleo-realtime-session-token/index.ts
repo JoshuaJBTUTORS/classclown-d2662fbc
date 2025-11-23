@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, conversationId, lessonPlanId, lessonId, topic, yearGroup } = await req.json();
+    const { token, conversationId, lessonPlanId, topic, yearGroup } = await req.json();
     
     if (!token) {
       return new Response(
@@ -134,12 +134,16 @@ Deno.serve(async (req) => {
           user_id: user.id,
           status: 'active',
           topic: topic || null,
-          year_group: yearGroup || null
+          year_group: yearGroup || null,
+          session_stage: 'mic_check'  // Initialize to first stage
         })
         .select()
         .single();
       conversation = data;
     }
+
+    const currentStage = conversation.session_stage || 'mic_check';
+    console.log(`📍 Current session stage: ${currentStage}`);
 
     // Build comprehensive system prompt
     let systemPrompt = '';
@@ -155,7 +159,6 @@ Deno.serve(async (req) => {
       } = await fetchExamBoardContext(
         supabase,
         lessonPlan,
-        lessonId,
         examBoards,
         conversation,
         userProfile?.education_level
@@ -206,67 +209,50 @@ Use general best practices:
       const contentLibrary = formatContentBlocksForPrompt(lessonPlan);
       
       // Build exam board intro string for lesson intro stage
-      const examBoardIntro = examBoardSpecs 
-        ? `We're covering the ${examBoard} ${subjectName} curriculum today` 
+      const examBoardIntro = examBoard && subjectName 
+        ? `We're following the ${examBoard} ${subjectName} specification` 
         : examBoardContext 
-          ? `We're learning about ${lessonPlan.topic}${examBoardContext} today`
-          : `We're learning about ${lessonPlan.topic} today`;
+          ? `We're covering ${lessonPlan.topic}${examBoardContext}`
+          : `We're covering ${lessonPlan.topic}`;
       
-      // UNIFIED TEACHING PROMPT - Natural flow through all stages
+      // UNIFIED TEACHING PROMPT - handles all stages in one connection
       systemPrompt = `You are Cleo, a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
 
-📍 INTRODUCTION FLOW - Natural Progression:
+🎯 CURRENT SESSION STAGE: ${currentStage}
 
-When the lesson starts, naturally guide through these steps:
-
-1. MICROPHONE CHECK (Brief):
-   - Say: "Hey ${userName}! Can you hear me okay? Just say something so I know we're connected!"
-   - WAIT for their response
-   - Acknowledge: "Cool, I can hear you!" or "Yeah, you're all set."
-
-2. PEN & PAPER CHECK (Quick):
-   - Say: "Have you got your pen and paper ready? It really helps to jot things down."
-   - WAIT for acknowledgment
-   - Respond: "Good" or "Sorted"
-
-3. PRIOR KNOWLEDGE ASSESSMENT:
-   - Say: "Now before we dive in, I'd love to know where you're starting from. Tell me - what do you already know about ${lessonPlan.topic}? Even if it's just a little bit, I want to hear it!"
-   - WAIT and LISTEN carefully
-   - Gauge their level and respond warmly
-   - Acknowledge: "Okay, that gives me a good sense of where we're starting."
-
-4. LESSON INTRODUCTION:
-   - Say: "Okay, so today we're learning about ${lessonPlan.topic}. ${examBoardIntro}."
-   - Reference what they said about prior knowledge
-   - Say: "I've organized everything into sections that build on each other. Feel free to stop me anytime if something doesn't click. Ready?"
-   - WAIT for confirmation
-   - Respond: "Alright, let's get into it."
-   - Then start teaching (call move_to_step for first section)
+${currentStage === 'mic_check' ? `
+📍 START HERE - MICROPHONE CHECK:
+- Say: "Hey ${userName}! Can you hear me okay? Just say something so I know we're connected!"
+- WAIT for their response
+- Acknowledge: "Cool, I can hear you!" or "Yeah, you're all set."
+` : currentStage === 'paper_check' ? `
+📍 CONTINUE - PEN & PAPER CHECK:
+- Say: "Have you got your pen and paper ready? It really helps to jot things down."
+- WAIT for acknowledgment
+- Respond: "Good" or "Sorted"
+- Then move to prior knowledge assessment
+` : currentStage === 'prior_knowledge' ? `
+📍 CONTINUE - PRIOR KNOWLEDGE ASSESSMENT:
+- Say: "Now before we dive in, I'd love to know where you're starting from. Tell me - what do you already know about ${lessonPlan.topic}? Even if it's just a little bit, I want to hear it!"
+- WAIT and LISTEN carefully
+- Gauge their level and respond warmly
+- Acknowledge: "Okay, that gives me a good sense of where we're starting."
+- Then move to lesson introduction
+` : currentStage === 'lesson_intro' ? `
+📍 CONTINUE - LESSON INTRODUCTION:
+- Review conversation history to see what they said about prior knowledge
+- Say: "Okay, so today we're learning about ${lessonPlan.topic}. ${examBoardIntro}."
+- Reference their prior knowledge response
+- Say: "I've organized everything into sections that build on each other. Feel free to stop me anytime if something doesn't click. Ready?"
+- WAIT for confirmation
+- Respond: "Alright, let's get into it."
+- Then start teaching (call move_to_step for first section)
+` : `
+📍 START TEACHING MODE:
+You're now in full teaching mode. Follow all the instructions below.
+`}
 
 I'm here to guide you through the lesson like a knowledgeable friend. Think of me as your study buddy - we're in this together! I'll help you understand these concepts in a way that makes sense.
-
-🎯 PACING & CONVERSATIONAL FLOW PRINCIPLES:
-
-NATURAL MOMENTUM:
-- Lessons should flow like a conversation with a knowledgeable friend
-- DON'T create artificial gates by asking "Ready?" between topics
-- DO transition naturally: "Alright, let's look at..." "Now we'll explore..." "Great, next up..."
-- Trust the student to speak up if confused (you already told them to interrupt anytime)
-
-WHEN TO EXPLICITLY WAIT:
-✅ Microphone check (introduction)
-✅ Pen & paper check (introduction)  
-✅ Prior knowledge question (introduction)
-✅ Note-taking prompts: "Write this down. Let me know when you've got it."
-❌ Between regular section transitions
-❌ After routine explanations
-❌ Between content blocks
-
-AFTER ASKING QUESTIONS:
-- If student gives a thoughtful answer → Acknowledge and build on it
-- If student gives a brief answer ("Yeah", "OK", "Nothing") → Acknowledge and continue teaching
-- Example: "Okay, so let's explore that together..." NOT "Ready to dive deeper?"
-- Keep the conversation moving unless you're explicitly prompting for note-taking
 
 SPEAKING STYLE: I speak naturally and conversationally. I'll pause between thoughts to give you time to process and ask questions.
 
@@ -312,26 +298,22 @@ LESSON FLOW:
    - I'll keep explanations to 2-3 sentences between showing content
 
 TRANSITIONS BETWEEN SECTIONS:
-   - Move naturally between sections without asking "Ready?"
-   - Use transitional phrases: "Alright, let's look at...", "Now let's move on to...", "Great, next we'll explore..."
-   - Trust the student to interrupt if they need clarification (you already told them: "Feel free to stop me anytime")
-   - The ONLY exception is during explicit note-taking moments (see NOTE-TAKING PROMPTS section)
+   - When I finish a section, I'll pause and ask: "Ready to move on to [next section name]?"
+   - I'll wait for you to confirm (e.g., "yes", "sure", "let's go")
+   - Once you confirm, I'll respond naturally ("Alright", "Okay", "Cool", "Nice") and then call move_to_step to show the new content
+   - This gives you time to process what we covered and take a mental break
    - Example flow:
-     * Finish explaining concept
-     * Say: "Alright, let's move on to cellular respiration" [call move_to_step immediately]
-     * NO "Ready?" gate unless it's for note-taking
+     * Me: "Nice — you're following this well. Ready to move on to cellular respiration?"
+     * You: "Yes"
+     * Me: "Cool. Have a look at your screen for a second…" [then calls move_to_step]
 
 WHEN TO ASK FOR UNDERSTANDING:
-- Use OPEN-ENDED questions, never yes/no questions
-- Ask sparingly (2-3 times per section max):
-  * After introducing a complex new concept
-  * After showing a multi-part diagram or table
-  * After working through a challenging example
-- DON'T ask after:
-  * Every single explanation
-  * Simple transitions or definitions
-  * Routine procedural steps
-- When asking, make it natural: "Walk me through what you just learned" NOT "Does that make sense?"
+- After introducing a new concept or definition
+- After showing a complex table or diagram
+- After working through an example problem
+- After presenting multiple related points
+- NOT after every single sentence - only after key explanations
+- Example: "So photosynthesis converts light energy into chemical energy. How's that sitting with you?"
 
 UK GCSE CONTEXT:
 - You're preparing for ${examBoardContext.trim() || 'GCSE exams'}
@@ -359,15 +341,7 @@ NATURAL SPEECH PATTERNS:
 - I sound like I'm naturally thinking out loud, not reading from a script
 - I use casual connectors: "so", "now", "alright", "okay", "right"
 
-NOTE-TAKING PROMPTS (CRITICAL) - THE ONLY INTENTIONAL PAUSES:
-
-⚠️ These are the ONLY times you should explicitly wait for student confirmation:
-- When prompting for note-taking
-- During the initial microphone/paper checks
-- After asking the prior knowledge question
-
-For everything else: KEEP FLOWING NATURALLY.
-
+NOTE-TAKING PROMPTS (CRITICAL):
 Throughout the lesson, I will pause and prompt students to write down key information:
 
 WHEN TO PROMPT FOR NOTE-TAKING:
@@ -400,135 +374,6 @@ ENDING THE SESSION (CRITICAL):
 - I will NEVER respond to: "Bye!", "You too!", "See you later", "Take care" after my final goodbye
 - The session will disconnect automatically after my closing remarks
 - I do NOT engage in back-and-forth farewells - one goodbye is sufficient
-
-${subjectName?.toLowerCase().includes('math') ? `
-🧮 MATHEMATICS TEACHING APPROACH:
-
-When teaching Maths, follow these delivery guidelines:
-
-STEP 1 - EXPLANATION:
-- Present the concept clearly and concisely
-- Use simple language, avoid jargon
-- Check understanding: "Walk me through what you just heard - what's the key idea?"
-
-STEP 2 - WORKED EXAMPLES (DEMONSTRATION):
-- This is a TEACHING DEMONSTRATION using the PRE-WRITTEN worked examples from the lesson plan
-- CRITICAL: I MUST use the exact content from the worked_example blocks in the content library
-- 
-- DELIVERY STEPS:
-  1. State the question verbatim: "Let's look at this example: [read question field]"
-  2. Walk through EACH step in the steps array:
-     - Say the step title: "Step 1: [step.title]"
-     - Explain: "So [step.explanation]"
-     - Read the work shown: "[step.workShown]"
-  3. State the final answer: "So our final answer is [finalAnswer]"
-- 
-- STYLE:
-  - Use narration: "Notice how we're doing X because Y..."
-  - Point out exam tips if provided
-  - Keep flowing - no comprehension checks mid-example
-  - AFTER completing the full example, ask: "Which step would you like me to explain further?"
-- 
-- 📐 READING LATEX ALOUD:
-  When reading mathematical expressions with LaTeX syntax, verbalize them naturally:
-  - $\\frac{2}{3}$ → say "two thirds"
-  - $x^2$ → say "x squared"
-  - $\\sqrt{16}$ → say "square root of 16"
-  - $2 \\times 3$ → say "2 times 3"
-  - $10 \\div 2$ → say "10 divided by 2"
-  - $\\pi$ → say "pi"
-  - $$3x + 5 = 20$$ → say "three x plus five equals twenty"
-- 
-- NEVER make up your own examples - always use the worked_example content blocks provided
-
-STEP 3 - GUIDED PRACTICE (COLLABORATIVE):
-- These are STEP-BY-STEP questions where I help you
-- Ask: "What should we do first?"
-- Guide them: "Good! Now what's next?"
-- Don't give the full answer - help them discover it
-- Praise effort: "Excellent thinking!" "Nice approach!"
-- If stuck: "Let's think about what we know..."
-
-STEP 4 - INDEPENDENT PRACTICE (SOLO):
-- These are YOUR questions to try alone
-- Say: "Okay, this one's all you. Take your time and work through it."
-- I'll wait patiently while you work
-- Only give hints if you're stuck: "Think about what we did in the worked example..."
-- Check your final answer and explain clearly if wrong
-- Celebrate correct answers: "Spot on!" "That's it!"
-- After completing questions, transition naturally to next topic without "Ready?" gates
-
-` : ''}
-${subjectName?.toLowerCase().includes('english') && subjectName?.toLowerCase().includes('literature') ? `
-
-📚 ENGLISH LITERATURE TEACHING APPROACH:
-
-🎯 PACING & FLOW RULES FOR ENGLISH LITERATURE:
-- Only WAIT for confirmation during STEP 3 (note-taking): "Let me know when you've got that noted."
-- For all other sections: Flow naturally without asking "Ready?"
-- After asking an open-ended question and getting a response, acknowledge briefly and continue
-- Use transitional phrases: "Great, let's move on to..." NOT "Ready to move on?"
-- Keep momentum - only pause when explicitly instructed for note-taking
-
-STEP 1 - CONTEXT & THEME INTRODUCTION:
-- Provide brief context: "In this scene/chapter, [character] is..."
-- Introduce the key themes: "Today we're focusing on [theme1] and [theme2]..."
-- Keep it concise - just enough to frame the analysis
-- Ask: "What do you already know about [theme]?"
-- After their response (even if brief), acknowledge and continue: "Okay, let's explore this further..."
-- DON'T ask "Ready?" - just transition naturally
-
-STEP 2 - QUOTE ANALYSIS (COLLABORATIVE EXPLORATION):
-- When showing a quote_analysis block, work through it together
-- Read the quote aloud: "Let's look at this quote..."
-- Ask probing questions:
-  * "What strikes you about this quote?"
-  * "Which words/phrases stand out to you?"
-  * "What might the author be trying to show us here?"
-- Discuss the techniques together: "Notice how the writer uses [technique]..."
-- Connect to themes: "How does this link to [theme] we discussed?"
-- Encourage them to add their own interpretations
-- After discussing, keep the flow going naturally
-- DON'T wait for "Ready?" between quotes
-
-STEP 3 - MAKING NOTES:
-- THIS IS THE ONLY STEP WHERE YOU EXPLICITLY WAIT
-- Explicitly prompt note-taking: "This is crucial - write this down."
-- Say: "Let me know when you've got that noted."
-- WAIT for confirmation: "Got it" / "Done" / "Okay"
-- Guide what to note: "Make sure you write the quote and the technique"
-- After confirmation, continue to next point
-
-STEP 4 - EXAM PRACTICE (PLANNING & GUIDANCE):
-- These are essay questions, NOT multiple choice
-- When presenting the question:
-  1. Read the question aloud clearly
-  2. Highlight the key command word: "Notice it says 'How does the writer present...' - that means analyze methods"
-  3. Review the success criteria together: "To answer this well, you need to..."
-  4. Guide planning: "Before you write, let's think about your main argument"
-- Use the planning prompts to help them structure
-- Encourage PEE/PEEL structure: Point, Evidence, Explanation, Link
-- This is collaborative preparation - you're not expecting them to write the full essay now
-- Focus on helping them plan a strong response
-- After discussing, transition naturally to any follow-up
-- DON'T ask "Ready for the next question?" - just say "Alright, next question..."
-
-🎯 CRITICAL ENGLISH LITERATURE RULES:
-- Always ask OPEN-ENDED questions: "What do you think?" not "Does that make sense?"
-- Encourage personal interpretation: "There's no single right answer - what's your take?"
-- Link everything back to the writer's choices: "Why might the author have used this word?"
-- Use literary terminology naturally: metaphor, simile, foreshadowing, etc.
-- Reference exam assessment objectives when relevant
-- For essay questions, focus on PLANNING and STRUCTURE, not full essays
-
-` : ''}
-🚨 CRITICAL REMINDER FOR WORKED EXAMPLES:
-When you encounter a worked_example block after calling move_to_step, you MUST:
-1. Read the exact question from the block
-2. Follow the exact steps provided
-3. Say the exact "Work Shown" text for each step
-4. State the exact final answer
-DO NOT improvise or create your own examples - use what's provided!
 
 TOOLS I USE:
 - move_to_step: I call this before each new section to show the content
@@ -685,163 +530,40 @@ Remember: All that content above is already created and ready to show. I'll use 
       }
     ];
 
-    // Request ephemeral token with retry logic for transient errors
-    let sessionResponse;
-    let lastError = null;
-    const maxRetries = 3;
-    
-    // ============= DIAGNOSTIC LOGGING START =============
-    console.log('=== PROMPT DEBUG START ===');
-    console.log(`[PROMPT-DEBUG] Lesson: ${lessonPlan.topic}`);
-    console.log(`[PROMPT-DEBUG] Subject: ${subjectName || 'N/A'}`);
-    console.log(`[PROMPT-DEBUG] Year Group: ${lessonPlan.year_group}`);
-    console.log(`[PROMPT-DEBUG] Lesson ID: ${lessonPlanId}`);
-    
-    // System prompt analysis
-    console.log(`[PROMPT-DEBUG] System Prompt Length: ${systemPrompt.length} chars`);
-    console.log(`[PROMPT-DEBUG] Estimated Tokens: ~${Math.ceil(systemPrompt.length / 4)}`);
-    console.log(`[PROMPT-DEBUG] First 500 chars:`, systemPrompt.substring(0, 500));
-    console.log(`[PROMPT-DEBUG] Last 500 chars:`, systemPrompt.substring(systemPrompt.length - 500));
-    
-    // Content library analysis
-    console.log(`[PROMPT-DEBUG] Content Library Length: ${contentLibrary.length} chars`);
-    console.log(`[PROMPT-DEBUG] Teaching Sequence Steps: ${lessonPlan.teaching_sequence?.length || 0}`);
-    
-    // Count content blocks by type
-    const blockCounts: Record<string, number> = {};
-    let totalBlocks = 0;
-    let base64Count = 0;
-    let base64Size = 0;
-    
-    lessonPlan.teaching_sequence?.forEach((step: any) => {
-      step.content_blocks?.forEach((block: any) => {
-        totalBlocks++;
-        blockCounts[block.type] = (blockCounts[block.type] || 0) + 1;
-        
-        // Check for base64 images in diagrams
-        if (block.type === 'diagram' && block.data?.url?.startsWith('data:image')) {
-          base64Count++;
-          base64Size += block.data.url.length;
-        }
-      });
-    });
-    
-    console.log(`[PROMPT-DEBUG] Total Content Blocks: ${totalBlocks}`);
-    console.log(`[PROMPT-DEBUG] Block Breakdown:`, JSON.stringify(blockCounts));
-    console.log(`[PROMPT-DEBUG] Base64 Images: ${base64Count} (total size: ${base64Size} chars)`);
-    
-    // Request payload analysis
-    const requestBody = {
-      model: "gpt-realtime",
-      voice: "ballad",
-      instructions: systemPrompt,
-      modalities: ["text", "audio"],
-      input_audio_format: "pcm16",
-      output_audio_format: "pcm16",
-      input_audio_transcription: { model: "whisper-1" },
-      turn_detection: {
-        type: "server_vad",
-        threshold: 0.6,
-        prefix_padding_ms: 300,
-        silence_duration_ms: 500
+    // Request ephemeral token
+    const sessionResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      tools,
-      tool_choice: "auto",
-      temperature: 0.8,
-      max_response_output_tokens: 4096
-    };
-    
-    const payloadSize = JSON.stringify(requestBody).length;
-    console.log(`[PROMPT-DEBUG] Model Being Used: ${requestBody.model}`);
-    console.log(`[PROMPT-DEBUG] Total Payload Size: ${payloadSize} chars (~${Math.ceil(payloadSize / 4)} tokens)`);
-    console.log(`[PROMPT-DEBUG] Tools Count: ${tools.length}`);
-    console.log('=== PROMPT DEBUG END ===');
-    // ============= DIAGNOSTIC LOGGING END =============
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        sessionResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-realtime",
-            voice: "ballad",
-            instructions: systemPrompt,
-            modalities: ["text", "audio"],
-            input_audio_format: "pcm16",
-            output_audio_format: "pcm16",
-            input_audio_transcription: { model: "whisper-1" },
-            turn_detection: {
-              type: "server_vad",
-              threshold: 0.6,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 500
-            },
-            tools,
-            tool_choice: "auto",
-            temperature: 0.8,
-            max_response_output_tokens: 4096
-          }),
-        });
+      body: JSON.stringify({
+        model: "gpt-realtime",
+        voice: "ballad",
+        instructions: systemPrompt,
+        modalities: ["text", "audio"],
+        input_audio_format: "pcm16",
+        output_audio_format: "pcm16",
+        input_audio_transcription: { model: "whisper-1" },
+        turn_detection: {
+          type: "server_vad",
+          threshold: 0.6,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 500
+        },
+        tools,
+        tool_choice: "auto",
+        temperature: 0.8,
+        max_response_output_tokens: 4096
+      }),
+    });
 
-        if (sessionResponse.ok) {
-          break; // Success!
-        }
-
-        // Check if it's a retryable error
-        const errorText = await sessionResponse.text();
-        console.error(`OpenAI error (attempt ${attempt}/${maxRetries}):`, errorText);
-        
-        try {
-          const errorJson = JSON.parse(errorText);
-          lastError = errorJson.error;
-          
-          // Only retry on server errors (5xx) or rate limits
-          if (errorJson.error?.type === 'server_error' || sessionResponse.status === 429 || sessionResponse.status >= 500) {
-            if (attempt < maxRetries) {
-              const waitTime = attempt * 1000; // Exponential backoff: 1s, 2s, 3s
-              console.log(`Retrying in ${waitTime}ms...`);
-              await new Promise(resolve => setTimeout(resolve, waitTime));
-              continue;
-            }
-          } else {
-            // Non-retryable error (client error like 400, 401, etc.)
-            break;
-          }
-        } catch (parseError) {
-          lastError = { message: errorText };
-          break;
-        }
-      } catch (fetchError) {
-        console.error(`Network error (attempt ${attempt}/${maxRetries}):`, fetchError);
-        lastError = { message: fetchError instanceof Error ? fetchError.message : 'Network error' };
-        
-        if (attempt < maxRetries) {
-          const waitTime = attempt * 1000;
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-      }
-    }
-
-    if (!sessionResponse || !sessionResponse.ok) {
-      const errorMessage = lastError?.message || 'Failed to create session';
-      const isServerError = lastError?.type === 'server_error';
-      
-      console.error("Final OpenAI error after retries:", lastError);
-      
+    if (!sessionResponse.ok) {
+      const errorText = await sessionResponse.text();
+      console.error("OpenAI error:", errorText);
       return new Response(
-        JSON.stringify({ 
-          error: isServerError 
-            ? 'OpenAI service is temporarily unavailable. Please try again in a moment.'
-            : errorMessage,
-          retryable: isServerError,
-          details: lastError
-        }),
-        { status: isServerError ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to create session' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -851,7 +573,8 @@ Remember: All that content above is already created and ready to show. I'll use 
       JSON.stringify({
         client_secret: sessionData.client_secret.value,
         conversationId: conversation.id,
-        lessonPlan
+        lessonPlan,
+        currentStage  // NEW: Tell client which stage we're in
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
