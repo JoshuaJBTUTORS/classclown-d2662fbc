@@ -38,6 +38,22 @@ export function formatSingleBlock(block: any): string {
       description = `   • Diagram: ${title || data?.title || 'Visual diagram'}`;
       break;
       
+    case 'worked_example':
+      description = `   • Worked Example: ${title || 'Step-by-step solution'}`;
+      if (data?.question) {
+        description += `\n      Problem: ${data.question}`;
+      }
+      if (data?.steps && Array.isArray(data.steps)) {
+        description += `\n      Steps:`;
+        data.steps.forEach((step: string, idx: number) => {
+          description += `\n         ${idx + 1}. ${step}`;
+        });
+      }
+      if (data?.answer) {
+        description += `\n      ✅ Answer: ${data.answer}`;
+      }
+      break;
+      
     default:
       description = `   • ${type}: ${title || id}`;
   }
