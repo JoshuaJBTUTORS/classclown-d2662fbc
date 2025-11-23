@@ -752,6 +752,7 @@ Remember: All that content above is already created and ready to show. I'll use 
     };
     
     const payloadSize = JSON.stringify(requestBody).length;
+    console.log(`[PROMPT-DEBUG] Model Being Used: ${requestBody.model}`);
     console.log(`[PROMPT-DEBUG] Total Payload Size: ${payloadSize} chars (~${Math.ceil(payloadSize / 4)} tokens)`);
     console.log(`[PROMPT-DEBUG] Tools Count: ${tools.length}`);
     console.log('=== PROMPT DEBUG END ===');
