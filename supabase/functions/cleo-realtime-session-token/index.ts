@@ -732,7 +732,7 @@ Remember: All that content above is already created and ready to show. I'll use 
     
     // Request payload analysis
     const requestBody = {
-      model: "gpt-4o-realtime-preview",
+      model: "gpt-realtime",
       voice: "ballad",
       instructions: systemPrompt,
       modalities: ["text", "audio"],
@@ -766,7 +766,7 @@ Remember: All that content above is already created and ready to show. I'll use 
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "gpt-4o-realtime-preview",
+            model: "gpt-realtime",
             voice: "ballad",
             instructions: systemPrompt,
             modalities: ["text", "audio"],
