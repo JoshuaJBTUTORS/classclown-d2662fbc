@@ -61,7 +61,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMuted, setIsMuted] = useState(false);
-  const [sessionStage, setSessionStage] = useState<string>('mic_check');
 
   const rtcRef = useRef<RealtimeChat | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
@@ -176,11 +175,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 content: userMessage
               });
             }
-            
-            // NEW: Advance stage when user responds during introduction
-            if (['mic_check', 'paper_check', 'prior_knowledge', 'lesson_intro'].includes(sessionStage)) {
-              await advanceSessionStage(userMessage);
-            }
             break;
 
           case 'response.audio_transcript.delta':
@@ -209,11 +203,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
           case 'response.done':
             setIsSpeaking(false);
-            
-            // NEW: Check if we're in an introduction stage
-            if (['mic_check', 'paper_check', 'prior_knowledge', 'lesson_intro'].includes(sessionStage)) {
-              console.log(`✅ Stage "${sessionStage}" complete, waiting for user input...`);
-            }
             break;
 
           case 'response.function_call_arguments.done':
@@ -419,12 +408,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       currentConversationId.current = result.conversationId;
       onConversationCreated?.(result.conversationId);
       
-      // NEW: Receive stage from token response
-      const currentStage = result.currentStage || 'teaching';
-      console.log(`📍 Session stage: ${currentStage}`);
-      setSessionStage(currentStage);
-      
-      console.log("✅ WebRTC connection established");
+      console.log("✅ WebRTC connection established with unified introduction flow");
 
     } catch (error) {
       console.error('❌ Connection error:', error);
@@ -442,48 +426,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     }
   };
 
-  const advanceSessionStage = async (userInput: string) => {
-    const stageProgression: Record<string, string> = {
-      'mic_check': 'paper_check',
-      'paper_check': 'prior_knowledge',
-      'prior_knowledge': 'lesson_intro',
-      'lesson_intro': 'teaching'
-    };
-
-    const nextStage = stageProgression[sessionStage];
-    if (!nextStage) {
-      console.log('Already in teaching mode');
-      return;
-    }
-
-    console.log(`⏭️ Advancing from "${sessionStage}" to "${nextStage}"`);
-
-    try {
-      // Update conversation stage in database
-      const { error } = await supabase
-        .from('cleo_conversations')
-        .update({ session_stage: nextStage })
-        .eq('id', currentConversationId.current);
-
-      if (error) {
-        console.error('Failed to update session stage:', error);
-        return;
-      }
-
-      // Just update the stage - no need to reconnect
-      // The AI will naturally progress through stages based on conversation
-      setSessionStage(nextStage);
-      console.log(`✅ Stage updated to "${nextStage}" - continuing conversation`);
-      
-    } catch (error) {
-      console.error('Error advancing session stage:', error);
-      toast({
-        title: "Connection Issue",
-        description: "Let me try reconnecting...",
-        variant: "default",
-      });
-    }
-  };
+  // advanceSessionStage function removed - using unified prompt approach
 
   const disconnect = async (wasInterrupted: boolean = false) => {
     console.log('🔌 Disconnecting...');
