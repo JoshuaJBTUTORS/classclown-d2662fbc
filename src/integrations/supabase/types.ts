@@ -871,7 +871,7 @@ export type Database = {
             foreignKeyName: "cleo_lesson_plans_lesson_id_fkey"
             columns: ["lesson_id"]
             isOneToOne: false
-            referencedRelation: "lessons"
+            referencedRelation: "course_lessons"
             referencedColumns: ["id"]
           },
         ]

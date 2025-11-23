@@ -35,6 +35,22 @@ serve(async (req) => {
 
     // Helper function to get user's exam board for a subject
     async function getUserExamBoardForSubject(userId: string, subjectName: string): Promise<string | null> {
+      // First, get the subject ID from the subject name
+      console.log('Looking up subject ID for:', subjectName);
+      const { data: subjectData } = await supabase
+        .from('subjects')
+        .select('id')
+        .ilike('name', subjectName)
+        .single();
+      
+      if (!subjectData) {
+        console.warn('Subject not found in database:', subjectName);
+        return null;
+      }
+      
+      console.log('Subject ID found:', subjectData.id);
+      
+      // Then look up the user's exam board for that subject ID
       const { data: userProfile } = await supabase
         .from('profiles')
         .select('exam_boards')
@@ -42,7 +58,10 @@ serve(async (req) => {
         .single();
       
       const examBoards = userProfile?.exam_boards || {};
-      return examBoards[subjectName?.toLowerCase()] || null;
+      const examBoard = examBoards[subjectData.id] || null;
+      
+      console.log('User exam board for subject ID', subjectData.id, ':', examBoard);
+      return examBoard;
     }
 
     // Determine subject name and exam board from lesson structure
@@ -300,21 +319,13 @@ serve(async (req) => {
         .select()
         .single();
       
-      if (result.error && (result.error.code === '23503' || (result.error.message || '').includes('cleo_lesson_plans_lesson_id_fkey'))) {
-        console.warn('FK violation on lesson_id when inserting cleo_lesson_plans. Retrying without lesson_id.', { lessonId });
-        const retryPayload = { ...insertPayload };
-        delete retryPayload.lesson_id;
-        const retry = await supabase
-          .from('cleo_lesson_plans')
-          .insert(retryPayload)
-          .select()
-          .single();
-        lessonPlan = retry.data;
-        planError = retry.error;
-      } else {
-        lessonPlan = result.data;
-        planError = result.error;
+      if (result.error) {
+        console.error('Failed to insert lesson plan:', result.error);
+        throw result.error;
       }
+      
+      lessonPlan = result.data;
+      planError = result.error;
     }
 
     if (planError) throw planError;
