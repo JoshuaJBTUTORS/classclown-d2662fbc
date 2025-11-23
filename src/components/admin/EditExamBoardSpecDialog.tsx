@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+
+const EXAM_BOARDS = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Cambridge', 'CCEA', 'Eduqas'];
 
 interface EditExamBoardSpecDialogProps {
   open: boolean;
@@ -17,9 +20,13 @@ interface EditExamBoardSpecDialogProps {
 }
 
 interface FormData {
+  subject_id: string;
+  exam_board: string;
   title: string;
   description: string;
   specification_year: number;
+  version: string;
+  extracted_text: string;
 }
 
 const EditExamBoardSpecDialog = ({
@@ -28,21 +35,43 @@ const EditExamBoardSpecDialog = ({
   specification,
 }: EditExamBoardSpecDialogProps) => {
   const queryClient = useQueryClient();
+  const [subjects, setSubjects] = useState<any[]>([]);
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
+      subject_id: specification?.subject_id || '',
+      exam_board: specification?.exam_board || '',
       title: specification?.title || '',
       description: specification?.description || '',
       specification_year: specification?.specification_year || new Date().getFullYear(),
+      version: specification?.version || '',
+      extracted_text: specification?.extracted_text || '',
     },
   });
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      const { data } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('category', 'gcse')
+        .order('name');
+      
+      if (data) setSubjects(data);
+    };
+    fetchSubjects();
+  }, []);
 
   React.useEffect(() => {
     if (specification) {
       reset({
+        subject_id: specification.subject_id || '',
+        exam_board: specification.exam_board || '',
         title: specification.title,
         description: specification.description || '',
         specification_year: specification.specification_year || new Date().getFullYear(),
+        version: specification.version || '',
+        extracted_text: specification.extracted_text || '',
       });
     }
   }, [specification, reset]);
@@ -52,9 +81,13 @@ const EditExamBoardSpecDialog = ({
       const { error } = await supabase
         .from('exam_board_specifications')
         .update({
+          subject_id: data.subject_id,
+          exam_board: data.exam_board,
           title: data.title,
           description: data.description,
           specification_year: data.specification_year,
+          version: data.version,
+          extracted_text: data.extracted_text,
         })
         .eq('id', specification.id);
       
@@ -77,7 +110,7 @@ const EditExamBoardSpecDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Exam Board Specification</DialogTitle>
           <DialogDescription>
@@ -87,11 +120,55 @@ const EditExamBoardSpecDialog = ({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="subject_id">Subject *</Label>
+            <Select 
+              value={specification?.subject_id || ''} 
+              onValueChange={(value) => setValue('subject_id', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select subject" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.subject_id && (
+              <p className="text-sm text-destructive">{errors.subject_id.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="exam_board">Exam Board *</Label>
+            <Select 
+              value={specification?.exam_board || ''} 
+              onValueChange={(value) => setValue('exam_board', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select exam board" />
+              </SelectTrigger>
+              <SelectContent>
+                {EXAM_BOARDS.map((board) => (
+                  <SelectItem key={board} value={board}>
+                    {board}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.exam_board && (
+              <p className="text-sm text-destructive">{errors.exam_board.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
               {...register('title', { required: 'Title is required' })}
-              placeholder="e.g., Edexcel GCSE Maths (9-1)"
+              placeholder="e.g., AQA GCSE Biology Specification 2024"
             />
             {errors.title && (
               <p className="text-sm text-destructive">{errors.title.message}</p>
@@ -103,26 +180,57 @@ const EditExamBoardSpecDialog = ({
             <Textarea
               id="description"
               {...register('description')}
-              placeholder="Brief description of this specification..."
-              rows={4}
+              placeholder="Optional description"
+              rows={3}
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="specification_year">Year</Label>
+              <Input
+                id="specification_year"
+                type="number"
+                {...register('specification_year', { valueAsNumber: true })}
+                placeholder="2024"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="version">Version</Label>
+              <Input
+                id="version"
+                {...register('version')}
+                placeholder="v2.1"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="specification_year">Specification Year</Label>
-            <Input
-              id="specification_year"
-              type="number"
-              {...register('specification_year', { 
-                required: 'Year is required',
-                min: { value: 2000, message: 'Year must be 2000 or later' },
-                max: { value: 2100, message: 'Year must be before 2100' }
-              })}
-              placeholder="2024"
+            <Label htmlFor="extracted_text">Specification Content</Label>
+            <Textarea
+              id="extracted_text"
+              {...register('extracted_text')}
+              placeholder="=== Assessment Objectives (AOs) ===
+[Paste your specification content here...]
+
+=== Paper Structure ===
+...
+
+=== Marking Criteria ===
+...
+
+=== What Appears on Which Paper ===
+...
+
+=== Question Templates/Common Patterns ===
+..."
+              rows={15}
+              className="font-mono text-sm"
             />
-            {errors.specification_year && (
-              <p className="text-sm text-destructive">{errors.specification_year.message}</p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              The specification content that Cleo will use for teaching
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
