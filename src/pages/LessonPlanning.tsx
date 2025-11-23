@@ -69,18 +69,75 @@ const LessonPlanning: React.FC = () => {
       if (lessonPlanId) return;
 
       let data = null;
+      
+      // Get user's exam board preference for filtering
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('exam_boards')
+        .eq('id', user.id)
+        .single();
+      
+      let userExamBoard: string | null = null;
+      
+      // Determine user's exam board for this course if lessonId is available
+      if (lessonId && profile?.exam_boards) {
+        const { data: lessonData } = await supabase
+          .from('course_lessons')
+          .select(`
+            course_modules!inner(
+              courses!inner(
+                subject,
+                exam_board_specification_id
+              )
+            )
+          `)
+          .eq('id', lessonId)
+          .single();
+        
+        const courseSubject = lessonData?.course_modules?.courses?.subject;
+        
+        // Get subject ID to look up user's exam board
+        if (courseSubject) {
+          const { data: subjectData } = await supabase
+            .from('subjects')
+            .select('id')
+            .ilike('name', courseSubject)
+            .single();
+          
+          if (subjectData?.id) {
+            userExamBoard = profile.exam_boards[subjectData.id] || null;
+            console.log('User exam board preference:', userExamBoard);
+          }
+        }
+      }
 
-      // First try by lessonId
-      if (lessonId) {
+      // First try by lessonId + exam board
+      if (lessonId && userExamBoard) {
+        const result = await supabase
+          .from('cleo_lesson_plans')
+          .select('id, teaching_sequence')
+          .eq('lesson_id', lessonId)
+          .eq('exam_board', userExamBoard)
+          .maybeSingle();
+        data = result.data;
+        console.log('Searched for lesson plan with exam board:', userExamBoard, 'found:', !!data);
+      }
+      
+      // Fallback: try by lessonId without exam board filter
+      if (!data && lessonId) {
         const result = await supabase
           .from('cleo_lesson_plans')
           .select('id, teaching_sequence')
           .eq('lesson_id', lessonId)
           .maybeSingle();
         data = result.data;
+        console.log('Fallback: Searched for any lesson plan with lessonId, found:', !!data);
       }
 
-      // Fallback: try by topic + year_group
+      // Final fallback: try by topic + year_group
       if (!data) {
         const result = await supabase
           .from('cleo_lesson_plans')
@@ -90,6 +147,7 @@ const LessonPlanning: React.FC = () => {
           .eq('status', 'ready')
           .maybeSingle();
         data = result.data;
+        console.log('Fallback: Searched by topic + year_group, found:', !!data);
       }
 
       if (data) {
