@@ -383,18 +383,39 @@ ${examBoardSpecs ? `
 📋 EXAM BOARD SPECIFICATIONS FOR ${examBoard} ${subjectName}:
 ${examBoardSpecs}
 
-🎯 CRITICAL REQUIREMENTS - EXAM BOARD ALIGNMENT:
-- MUST align all learning objectives with the Assessment Objectives (AOs) stated above
-- MUST use ${examBoard}-specific terminology and methods
-- MUST structure questions to match ${examBoard} exam paper formats
-- MUST include exam tips that reference marking criteria from above
-- MUST focus on question types that appear in ${examBoard} papers
-- Reference specific topics from the specification when relevant
+🎯 CRITICAL REQUIREMENTS - MANDATORY EXAM BOARD ALIGNMENT:
 
-Example of good exam board integration:
-"In ${examBoard} ${subjectName} Paper 1, questions on this topic typically award 6 marks for..."
-"Remember, ${examBoard} examiners are looking for [specific criteria from marking scheme]..."
-"This connects to Assessment Objective 2 (AO2) - applying knowledge to new situations..."
+✅ LEARNING OBJECTIVES MUST REFERENCE AOs:
+- Every learning objective MUST link to at least one Assessment Objective (AO)
+- Format: "Objective text (Links to ${examBoard} AO1: Understanding core concepts)"
+- Extract AOs from the specifications above
+- Example: "Analyze Shakespeare's use of metaphor in Macbeth (${examBoard} AO2: Analyze writer's methods)"
+
+✅ CONTENT BLOCKS MUST REFERENCE EXAM BOARD:
+- Add teaching notes that explicitly mention ${examBoard}
+- Example teaching note: "Remind students that ${examBoard} Paper 1 focuses heavily on this skill"
+- For questions: Include which AO the question targets in the optional assessmentObjective field
+- Example assessmentObjective: "${examBoard} AO3: Compare texts"
+
+✅ SPECIFIC EXAM BOARD INTEGRATION:
+- Use ${examBoard}-specific terminology from the specifications
+- Reference ${examBoard} paper structures mentioned in specs
+- Include ${examBoard} marking criteria insights
+- Mention ${examBoard} command words (e.g., "evaluate", "analyze")
+
+✅ TEACHING NOTES MUST BE EXAM BOARD SPECIFIC:
+Every teaching_notes field should include at least ONE explicit ${examBoard} reference:
+- "In ${examBoard} exams, this concept appears in Section A of Paper 1"
+- "For ${examBoard}, examiners particularly look for..."
+- "This links to ${examBoard} AO2 - applying knowledge"
+
+❌ AVOID GENERIC PHRASES:
+- Don't say: "In the exam..." 
+- Do say: "In your ${examBoard} exam..."
+- Don't say: "Examiners look for..."
+- Do say: "${examBoard} examiners specifically look for..."
+
+🎯 TARGET: At least 3-5 explicit ${examBoard} references throughout the lesson plan
 ` : examBoard ? `
 
 ⚠️ EXAM BOARD CONTEXT: This lesson is for ${examBoard} ${subjectName}, but detailed specifications are not available.
@@ -426,7 +447,8 @@ CONTENT BLOCK TYPES (with detailed examples):
 3. DEFINITION: Key terms with examples
    Example: { type: "definition", title: "Key Term", data: { term: "Photosynthesis", definition: "The process by which plants make food", example: "A leaf absorbing sunlight to create glucose" } }
 
-4. QUESTION: Check understanding (multiple choice)
+4. QUESTION: Check understanding (multiple choice) with optional AO reference
+   Example: { type: "question", title: "Check Understanding", data: { question: "What gas do plants absorb during photosynthesis?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis and release oxygen as a byproduct", assessmentObjective: "AQA AO1: Demonstrate knowledge of key biological processes" }, teaching_notes: "This tests AQA Biology AO1 - factual recall of photosynthesis. Remind students this is a common Paper 1 question." }
    Example: { type: "question", title: "Check Understanding", data: { question: "What gas do plants absorb?", options: [{ text: "Carbon dioxide", isCorrect: true }, { text: "Oxygen", isCorrect: false }], explanation: "Plants absorb CO2 during photosynthesis" } }
 
 5. DIAGRAM: Visual representations
@@ -617,7 +639,11 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                         required: ['text', 'isCorrect']
                                       }
                                     },
-                                    explanation: { type: 'string' }
+                                    explanation: { type: 'string' },
+                                    assessmentObjective: { 
+                                      type: 'string',
+                                      description: 'OPTIONAL: The Assessment Objective this question targets (e.g., "AO2: Analyze writer\'s methods" or "AO3: Compare texts"). Include exam board name if available (e.g., "AQA AO1: Knowledge and understanding").'
+                                    }
                                   },
                                   required: ['question', 'options']
                                 },
